@@ -50,7 +50,7 @@
           허용 확장자(`accept`)도 서버가 내려 준다(`settings.accept` — 서버가 받는 확장자 목록에서 만든 값). 화면이 리터럴을 들면 서버가 확장자를 바꿨을 때 고를 수 있는 파일과 받는 파일이 갈린다.
           값이 없을 때의 폴백은 **null**(미선언)이다 — `maxSize` 에 0 을 넘기면 컴포지트가 모든 파일을 「0MB 초과」 로 거절한다. 미선언이면 컴포지트는 거르지 않고 핸들러가 설정값으로 판정한다.
           `maxSize` 는 MB 단위라 서버가 같은 상한을 MB 로도 내려 준다(`image_max_size_mb`) — 화면이 나눗셈을 하면 반올림 규칙이 화면마다 갈린다. 판정 기준은 화면 안내 문구와 **같은 설정값**(`image_max_size_kb`)이고, 핸들러(`setClaimImageFiles` → `filterClaimFilesByLimits()`)도 같은 값으로 한 번 더 거른다 — 설정이 바뀌어도 둘이 갈리지 않는다. -->
-        <file-uploader :autoUpload="false" accept="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.accept ?? null}}" maxFiles="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 5}}" maxSize="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_mb ?? null}}">
+        <file-uploader data-type="composite" :autoUpload="false" accept="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.accept ?? null}}" maxFiles="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 5}}" maxSize="{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_mb ?? null}}">
           <on type="change">
             <!-- 고른 증빙 사진을 신청서 로컬 상태에 담는다 — 장수·용량 상한을 넘는 파일은 핸들러가 걸러 안내하고, 업로드는 신청 제출 때 함께 한다(자동 업로드 끔) -->
             <action handler="sirsoft-ecommerce.setClaimImageFiles" files="{{$event.target.files ?? []}}"/>

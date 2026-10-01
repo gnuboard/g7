@@ -10,11 +10,13 @@
       <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
         <on type="click">
-          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다) -->
+          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
           <sequence>
             <set-state target="global">
               <field name="editingAddress">
                 <field name="is_default" :value="false"/>
+                <field name="country_code" value="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
               </field>
             </set-state>
             <open-modal target="addressModal"/>
@@ -96,11 +98,13 @@
       <p class="text-gray-500 dark:text-gray-400 mb-4">$t:mypage.addresses.empty</p>
       <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
-          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다) -->
+          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
           <sequence>
             <set-state target="global">
               <field name="editingAddress">
                 <field name="is_default" :value="false"/>
+                <field name="country_code" value="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
               </field>
             </set-state>
             <open-modal target="addressModal"/>

@@ -132,10 +132,10 @@
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <div data-ref="bot_kpi_row" data-if="{{(query.tab || 'bots') === 'bots'}}" class="grid grid-cols-2 gap-4 mb-4">
         <blur-until-loaded sources="analytics_bots"/>
-        <stat-card data-ref="kpi_bot_hits" value="{{(analytics_bots?.data?.totals?.hits ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.hits" iconName="robot"/>
-        <stat-card data-ref="kpi_bot_names" value="{{(analytics_bots?.data?.totals?.labels ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.names" iconName="list"/>
+        <stat-card data-type="composite" data-ref="kpi_bot_hits" value="{{(analytics_bots?.data?.totals?.hits ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.hits" iconName="robot"/>
+        <stat-card data-type="composite" data-ref="kpi_bot_names" value="{{(analytics_bots?.data?.totals?.labels ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.names" iconName="list"/>
       </div>
-      <tab-navigation data-ref="bot_tabs" class="mb-4" activeTabId="{{query.tab || 'bots'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="bot_tabs" class="mb-4" activeTabId="{{query.tab || 'bots'}}" variant="underline">
         <prop name="tabs">
           <item id="bots" label="$t:admin.analytics.bots.tabs.bots"/>
           <item id="pages" label="$t:admin.analytics.bots.tabs.pages"/>
@@ -156,7 +156,7 @@
         <div data-ref="bot_names_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.bots.names_title</h2>
           <div class="overflow-x-auto">
-            <data-grid data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
               <on type="action" event="onPageChange">
                 <!-- 봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는
                      목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다. -->
@@ -202,7 +202,7 @@
               </column>
             </data-grid>
           </div>
-          <empty-state data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
+          <empty-state data-type="composite" data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
         </div>
         <div data-ref="recent_hits_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.bots.recent_title</h2>
@@ -210,7 +210,7 @@
             <!-- 최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면
               카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서
               10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③). -->
-            <data-grid data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="occurred_at" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="occurred_at" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
               <column field="bot_name" header="$t:admin.analytics.bots.columns.bot" width="160px">
                 <cell>
                   <span class="text-heading">{{row.bot_name ?? '-'}}</span>
@@ -223,7 +223,7 @@
               </column>
               <column field="cache_status" header="$t:admin.analytics.bots.columns.cache_status" width="110px">
                 <cell>
-                  <badge color="{{row.cache_status === 'hit' ? 'green' : (row.cache_status === 'miss' ? 'yellow' : 'gray')}}" text="{{['hit', 'miss', 'bypass', 'none'].includes(row.cache_status ?? '') ? $t('admin.analytics.bots.cache_statuses.' + row.cache_status) : (row.cache_status ?? '-')}}" size="sm"/>
+                  <badge data-type="composite" color="{{row.cache_status === 'hit' ? 'green' : (row.cache_status === 'miss' ? 'yellow' : 'gray')}}" text="{{['hit', 'miss', 'bypass', 'none'].includes(row.cache_status ?? '') ? $t('admin.analytics.bots.cache_statuses.' + row.cache_status) : (row.cache_status ?? '-')}}" size="sm"/>
                 </cell>
               </column>
               <column field="occurred_at" header="$t:admin.analytics.bots.columns.time" width="160px">

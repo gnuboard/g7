@@ -37,7 +37,7 @@
     </div>
     <div class="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden">
       <div data-each="product, idx in {{recentProducts.data ?? []}}" id="recent-product-{{idx}}">
-        <product-card product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+        <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
       </div>
     </div>
   </div>

@@ -12,10 +12,10 @@
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-5">
           <div class="flex-between mb-4">
             <div class="flex-center gap-3">
-              <badge variant="outline">{{payment.payment_type_label}}</badge>
+              <badge data-type="composite" variant="outline">{{payment.payment_type_label}}</badge>
               <span class="font-semibold text-gray-900 dark:text-gray-100">{{payment.payment_number}}</span>
             </div>
-            <badge variant="{{payment.payment_status_variant}}">{{payment.payment_status_label}}</badge>
+            <badge data-type="composite" variant="{{payment.payment_status_variant}}">{{payment.payment_status_label}}</badge>
           </div>
           <!-- 무통장 입금확인 버튼 — 무통장(dbank) + 결제정보 자체가 미입금(payment_status=ready/waiting_deposit)인 결제건만 노출. order_status 가 아닌 payment 단위 상태로 판정해야 함(버튼이 payments 반복 내 결제카드 단위로 그려지고, order_status 가 다른 경로로 먼저 결제완료로 전이돼도 미입금 결제는 입금확인이 필요하므로). -->
           <div data-if="{{payment.payment_method === 'dbank' &amp;&amp; (payment.payment_status === 'ready' || payment.payment_status === 'waiting_deposit')}}" class="mb-4">

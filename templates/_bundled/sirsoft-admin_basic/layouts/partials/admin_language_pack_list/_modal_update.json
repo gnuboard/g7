@@ -205,7 +205,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.isLanguagePackUpdating}}",
-                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "children": [
                         {

@@ -191,7 +191,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "form-hint-xs mt-0.5"
+                                                "className": "text-field-hint block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint"
                                         }

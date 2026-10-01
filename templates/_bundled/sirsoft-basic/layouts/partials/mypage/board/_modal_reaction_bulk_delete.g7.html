@@ -2,7 +2,7 @@
      단건 창과 같은 문구로 말한다. 성공하면 선택 배열을 비운다 — 이미 없어진 ID 가 남아
      있으면 다음 일괄 해제가 헛도는 요청을 싣는다. -->
 <partial description="마이페이지 게시판 활동 - 반응 일괄 해제 확인" editor_label="$t:user.modal_label.mypage_board.reactionBulkDeleteModal">
-  <modal data-ref="reaction_bulk_delete_modal" id="reaction_bulk_delete_modal" title="$t:mypage.board_activities.reactions.bulk_delete_title" icon="trash" iconClassName="text-red-500" size="sm">
+  <modal data-type="composite" data-ref="reaction_bulk_delete_modal" id="reaction_bulk_delete_modal" title="$t:mypage.board_activities.reactions.bulk_delete_title" icon="trash" iconClassName="text-red-500" size="sm">
     <div data-testid="reaction-bulk-delete-modal" class="space-y-4">
       <p class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.bulk_delete_confirm|count={{(_global.myReactionsSelectedIds ?? []).length}}</p>
       <p class="text-sm text-gray-500 dark:text-gray-500">$t:mypage.board_activities.reactions.delete_notice</p>

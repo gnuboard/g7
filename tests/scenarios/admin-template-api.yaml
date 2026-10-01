@@ -1,0 +1,33 @@
+feature: 관리자 템플릿 관리 API (목록·상세·설치·활성·비활성·삭제·변경 이력)
+
+description: |
+  /api/admin/templates 엔드포인트의 요청 검증·권한·응답 모양을 컨트롤러 단위로 고정한다.
+  템플릿 매니저는 목으로 두고(파일 시스템 의존 제거) 컨트롤러·요청·서비스·리소스 경로만 본다.
+
+  축 endpoint 는 엔드포인트다.
+    - index: 목록 (유형 필터·abilities)
+    - show: 상세 (민감 필드 제외·externals 정규화)
+    - install / install_from_file / install_from_github: 설치 세 경로 (식별자 형식·ZIP·GitHub 주소 검증, 도메인 오류 422)
+    - activate: 활성화 (의존성 미충족 409·강제 활성화)
+    - deactivate: 비활성화 — 유형의 마지막 활성 템플릿 거절은 TemplateOperationGuardTest 가 본다(#703)
+    - uninstall: 삭제
+    - changelog: 변경 이력
+
+axes:
+  endpoint: [index, show, install, install_from_file, install_from_github, activate, deactivate, uninstall, changelog]
+
+effects:
+  - template_list_filters_by_type
+  - template_list_exposes_abilities_by_permission
+  - template_api_rejects_unauthenticated_and_unauthorized
+  - template_detail_excludes_sensitive_fields
+  - install_rejects_invalid_identifier_format
+  - install_from_file_maps_domain_errors_to_422
+  - install_from_github_accepts_only_github_urls
+  - activate_reports_missing_dependencies_as_409
+  - deactivate_succeeds_when_peer_template_stays_active
+  - uninstall_delegates_to_manager
+  - changelog_parsed_from_template_file
+
+test_files:
+  - tests/Feature/Api/Admin/TemplateControllerTest.php

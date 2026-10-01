@@ -264,7 +264,7 @@
         </button>
       </div>
       <!-- 페이지네이션 -->
-      <pagination data-if="{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-4">
+      <pagination data-type="composite" data-if="{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-4">
         <responsive on="portable" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-3"/>
         <on event="onPageChange">
           <set-state target="local" ordersPage="{{$args[0]}}"/>

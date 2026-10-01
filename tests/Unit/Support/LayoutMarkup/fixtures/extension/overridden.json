@@ -1,6 +1,6 @@
 {
   "id": "memo_card",
-  "type": "layout",
+  "type": "composite",
   "name": "gnuboard7-hello_module.MemoCard",
   "props": {
     "className": "admin-card",

@@ -292,8 +292,19 @@ class AttachmentService
             $linkedCount++;
         }
 
-        // 임시 디렉토리 정리
-        $this->storage->deleteDirectory('attachments', "{$slug}/temp/{$tempKey}");
+        // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
+        // 잠시 붙잡고 있으면(삭제 대기) 디렉토리 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로
+        // 되돌려 파일은 본경로, DB 는 임시 경로를 가리키는 어긋남이 남았다(#703 실측). 정리에 실패해 남는 것은 빈
+        // 임시 디렉토리뿐이라 동작에는 영향이 없다(경고 로그로 남긴다).
+        try {
+            $this->storage->deleteDirectory('attachments', "{$slug}/temp/{$tempKey}");
+        } catch (\Throwable $e) {
+            Log::warning('게시판 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                'board_slug' => $slug,
+                'temp_key' => $tempKey,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Log::info('게시판 임시 첨부파일 연결 완료', [
             'board_slug' => $slug,

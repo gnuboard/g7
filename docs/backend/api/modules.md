@@ -2395,7 +2395,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 모듈 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
+**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 설치본만 읽고 구버전 모듈처럼 설치본에 파일이 없으면 배포 원본을 대신 읽지 않고 빈 components 로 응답합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 모듈 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
 
 
 ### GET /api/modules/{identifier}/editor-spec
@@ -2489,6 +2489,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 모듈의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 모듈만 대상으로 하며 활성 디렉토리 → `_bundled` 폴백 순으로 읽어 `data.spec` 형태로 반환합니다. 비활성·미존재 모듈은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
+**설명** 모듈의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 모듈만 대상으로 하며 설치본(`modules/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 모듈은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
 
 

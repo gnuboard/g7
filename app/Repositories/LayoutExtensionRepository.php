@@ -109,13 +109,15 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
+     * @param  array<int, string>|null  $fragmentKeys  이 조각 키의 행만 복원 (null 이면 전부)
      * @return int 복원된 레코드 수
      */
-    public function restoreBySource(LayoutSourceType $sourceType, string $identifier): int
+    public function restoreBySource(LayoutSourceType $sourceType, string $identifier, ?array $fragmentKeys = null): int
     {
         return LayoutExtension::query()
             ->withTrashed()
             ->bySource($sourceType, $identifier)
+            ->when($fragmentKeys !== null, fn ($query) => $query->whereIn('fragment_key', $fragmentKeys))
             ->restore();
     }
 
@@ -335,6 +337,23 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
     public function findByAttributes(array $attributes): ?LayoutExtension
     {
         return LayoutExtension::query()->where($attributes)->first();
+    }
+
+    /**
+     * 확장 행의 조각 키를 바꿔 저장합니다 (soft delete 된 행 포함).
+     *
+     * `update()` 는 `findOrFail` 로 삭제 행을 찾지 못하므로, 이미 조회한 모델을 받아 그대로 저장합니다.
+     *
+     * @param  LayoutExtension  $extension  대상 확장 모델 (삭제 행일 수 있음)
+     * @param  string  $fragmentKey  새 조각 키
+     * @return LayoutExtension 저장된 확장 모델
+     */
+    public function saveFragmentKey(LayoutExtension $extension, string $fragmentKey): LayoutExtension
+    {
+        $extension->fragment_key = $fragmentKey;
+        $extension->save();
+
+        return $extension;
     }
 
     /**

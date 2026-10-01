@@ -58,7 +58,7 @@
           <div class="flex-center gap-4">
             <span class="w-40 shrink-0 text-label">{{log.created_at ?? ''}}</span>
             <div class="w-40 shrink-0">
-              <action-menu data-if="{{!!log.user?.uuid}}" position="left">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
@@ -118,7 +118,7 @@
         <div class="md:hidden border-b border-gray-100 dark:border-gray-800 py-3 px-2 space-y-1">
           <div class="flex-between gap-2">
             <div class="flex-center gap-2">
-              <action-menu data-if="{{!!log.user?.uuid}}" position="left">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
@@ -176,7 +176,7 @@
         </div>
       </div>
       <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-        <pagination currentPage="{{order_logs.data?.meta?.current_page ?? 1}}" totalPages="{{order_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{order_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
+        <pagination data-type="composite" currentPage="{{order_logs.data?.meta?.current_page ?? 1}}" totalPages="{{order_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{order_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <!-- 쪽 이동 — 쪽 번호만 바꾼다. 현재 쪽·마지막 쪽은 지역 상태가 아니라 응답이 알려 주므로 이 값은 다음 조회의 입력일 뿐이다. -->
             <sequence>

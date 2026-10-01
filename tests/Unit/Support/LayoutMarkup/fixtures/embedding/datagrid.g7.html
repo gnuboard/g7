@@ -1,4 +1,4 @@
-<data-grid data="{{coupons?.data ?? []}}" subRowClassName="bg-gray-50">
+<data-grid data-type="composite" data="{{coupons?.data ?? []}}" subRowClassName="bg-gray-50">
   <column field="checkbox" header="" width="40px" :selectable="true"/>
   <column field="name" header="$t:admin.coupon.name" width="200px">
     <cell>

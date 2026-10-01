@@ -25,6 +25,7 @@
   "applied": "적용 통화",
   "date_from": "시작일",
   "date_to": "종료일",
+  "date_range_invalid": "종료일이 시작일보다 앞서 있어 조회할 수 없습니다. 기간을 다시 선택하세요.",
   "all": "전체",
   "edit_template": "템플릿 편집",
   "reset": "기본값 되돌리기",

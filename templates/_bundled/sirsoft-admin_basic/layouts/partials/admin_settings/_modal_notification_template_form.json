@@ -433,6 +433,7 @@
                                                                             "event": "onSearch",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/users/search",
+                                                                            "if": "{{String($args[0] ?? '').trim() !== ''}}",
                                                                             "auth_required": true,
                                                                             "params": {
                                                                                 "method": "GET",

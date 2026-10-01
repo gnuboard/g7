@@ -740,7 +740,8 @@
     "option_search": "現在の検索条件でダウンロード",
     "option_search_desc": "合計{{count}}件の注文書がダウンロードされます",
     "option_selected": "選択した注文書のみダウンロード",
-    "option_selected_desc": "{{count}}件の注文書がダウンロードされます"
+    "option_selected_desc": "{{count}}件の注文書がダウンロードされます",
+    "download_failed": "Excelファイルをダウンロードできませんでした"
   },
   "bulk": {
     "selected_count": "{{count}}件選択されています",
@@ -832,6 +833,7 @@
     "no_permission": "交換·返品·キャンセル受け取り権限がありません。",
     "title_exchange": "交換受け取り（顧客の代わりに）",
     "title_return": "返品受け取り（顧客の代わりに）",
+    "editor_label": "顧客に代わる交換・返品受付ウィンドウ",
     "description": "顧客の代わりに受け取ります。申請期間·申請可能ステータス設定は適用されません。",
     "same_option": "同じオプションで交換",
     "sold_out": "品切れ",

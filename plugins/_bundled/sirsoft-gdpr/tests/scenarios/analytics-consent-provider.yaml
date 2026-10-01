@@ -1,0 +1,33 @@
+feature: 코어 방문자 통계의 동의 질문에 답하기
+
+description: |
+  코어 방문자 통계는 동의를 관리하는 확장이 무엇인지 모른다. 코어가 자기 필터·액션으로 묻고, 이
+  플러그인이 구독해 답한다. 코어 코드에는 이 플러그인의 식별자·클래스·경로·이벤트명이 없다.
+
+    core.analytics.consent_session_id   → 게스트 동의를 찾을 식별자(서명 검증한 gdpr_session UUID)
+    core.analytics.visitor_has_consent  → 동의 모드: 분석 쿠키 동의 여부
+    core.analytics.tracking_permission  → 식별자(IP·방문자 쿠키) 추적 허용 — 분석·기능 둘 다 동의해야 참
+    core.analytics.consent_revoked      ← 이 플러그인의 철회 알림을 코어 액션으로 옮김
+
+  브라우저 쪽은 동의 저장 뒤 코어 이벤트 `g7:analytics-permission-changed` 를 발행하고, 스크립트를 막을 때
+  코어 속성 `data-g7-script-deferred` 를 붙인다(Vitest consentChangedEvent · preblocker 가 잠근다).
+
+axes:
+  answer: [consent_session_id, visitor_has_consent, tracking_permission, revoked_relay]
+  visitor: [guest, member]
+
+exclusions:
+  - { answer: revoked_relay, visitor: member, reason: "철회 중계는 방문자 종류와 무관하게 액션 하나를 발행할 뿐이다" }
+
+effects:
+  - provider_answers_consent_session_id_with_the_verified_guest_uuid
+  - guest_consent_cookie_survives_web_cookie_encryption
+  - provider_answers_core_consent_filter_with_analytics_consent
+  - provider_permits_tracking_only_with_both_categories
+  - provider_relays_revocation_to_the_core_action
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprAnalyticsConsentListenerTest.php
+
+limitations:
+  - "재동의가 필요한 상태(정책 버전 변경)는 서비스의 현재 버전 필터에 맡긴다 — 이 리스너는 서비스가 돌려준 항목만 읽는다."

@@ -1,0 +1,17 @@
+feature: 에스크로 배송 등록 필수값 잠금과 실패 사유 표시
+
+description: |
+  관리자 주문 상세의 에스크로 배송 등록 버튼은 서버 필수값이 모두 채워져야 열린다.
+  등록이 실패하면 실패 문맥(error)의 서버 문구 — 검증 항목 오류 또는 PG 거절 사유 — 를 그대로 보이고,
+  문구가 없을 때만 일반 안내로 떨어진다.
+
+axes:
+  flow: [escrow_delivery_register]
+
+exclusions: []
+
+effects:
+  - escrow_register_requires_fields_and_shows_server_reason
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/escrowDeliveryRegisterGuard.test.tsx

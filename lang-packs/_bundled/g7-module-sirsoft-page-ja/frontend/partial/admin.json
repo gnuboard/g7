@@ -71,7 +71,8 @@
     "errors": {
       "delete_failed": "ページの削除に失敗しました。",
       "restore_failed": "バージョン復元に失敗しました。",
-      "publish_change_failed": "公開状態の変更に失敗しました。"
+      "publish_change_failed": "公開状態の変更に失敗しました。",
+      "download_failed": "添付ファイルをダウンロードできませんでした。"
     },
     "form": {
       "page_title_create": "ページを登録",

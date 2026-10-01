@@ -1,0 +1,17 @@
+feature: 비회원 구매확정의 권한 정합 (#703)
+
+description: |
+  비회원 주문 상세의 구매확정 버튼(options.*.can_confirm)은 guest 역할의 「구매확정」 권한을 보는데, 비회원
+  구매확정 API 는 권한 검사 없이 열려 있었다. 운영자가 권한을 거두면 버튼은 사라져도 요청을 직접 보내면
+  구매확정이 처리됐다. 비회원 취소 권한 정합(guest-cancel-permission-alignment)과 같은 부류로, 회원 구매확정
+  라우트와 같은 권한 하나로 버튼과 API 가 함께 판정된다.
+
+axes:
+  guest_confirm_permission: [granted, revoked]
+  surface: [confirm_api]
+
+effects:
+  - guest_confirm_api_requires_permission
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestConfirmPermissionAlignmentTest.php

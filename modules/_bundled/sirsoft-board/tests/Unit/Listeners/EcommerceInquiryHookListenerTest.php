@@ -15,7 +15,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * EcommerceInquiryHookListener 단위 테스트
  *
  * 검증 목적:
- * - getSubscribedHooks: 8개 훅 등록, 모두 filter 타입
+ * - getSubscribedHooks: 10개 훅 등록(운영 8 + 샘플 시더 2), 모두 filter 타입
+ * - 실패 사유: 게시판 자기 문구(sirsoft-board::messages.inquiry.*)로 던짐
+ * - seedSamplePost / purgeSamplePosts: 이커머스 샘플 시더 대신 글 생성·자기 타입만 정리
  * - createAndReturn: 성공(post_id/inquirable_type 반환), title 자동생성, parent_id Re: 처리, 예외 시 null,
  *   기존 살아있는 답변 존재 시 중복 생성 차단(duplicate 마커), 답변 soft delete 후 재등록 허용
  * - getByIds: 빈 배열 → carry 그대로, 유효 ID 목록 → 필드 포함 배열 반환
@@ -83,7 +85,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
     // ==========================================
 
     /**
-     * 8개 훅이 모두 등록되어 있고, 모두 filter 타입이어야 합니다.
+     * 운영 연동 8개와 샘플 시더 2개, 모두 10개 훅이 등록되어 있고 모두 filter 타입이어야 합니다.
      *
      * @return void 반환값 없음
      *
@@ -102,6 +104,8 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
             'sirsoft-ecommerce.inquiry.get_by_ids',
             'sirsoft-ecommerce.inquiry.get_settings',
             'sirsoft-ecommerce.inquiry.count_replies',
+            'sirsoft-ecommerce.inquiry.seed_sample_post',
+            'sirsoft-ecommerce.inquiry.purge_sample_posts',
         ];
 
         foreach ($expectedHooks as $hookName) {
@@ -109,7 +113,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
             $this->assertSame('filter', $hooks[$hookName]['type'], "훅 {$hookName}은 filter 타입이어야 합니다.");
         }
 
-        $this->assertCount(8, $hooks, '총 8개의 훅이 등록되어 있어야 합니다.');
+        $this->assertCount(10, $hooks, '총 10개의 훅이 등록되어 있어야 합니다(운영 8 + 샘플 시더 2).');
     }
 
     // ==========================================
@@ -559,6 +563,109 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
         $this->expectException(\RuntimeException::class);
 
         $this->listener->deletePost(null, $this->board->slug, 99999999);
+    }
+
+    /**
+     * deletePost 실패 사유는 게시판 자기 문구로 던진다 — 이커머스 번역 키를 빌려 쓰지 않는다.
+     *
+     * 게시판과 이커머스는 서로를 의존성으로 선언하지 않으므로, 훅에 답하는 쪽도 자기 lang 만
+     * 써야 이커머스가 없거나 대체된 설치에서 키 원문이 새지 않습니다. 문구 자체는 종전과 같습니다.
+     *
+     * @effects listener_failure_reason_uses_own_lang
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delete_post_failure_reason_uses_board_lang(): void
+    {
+        try {
+            $this->listener->deletePost(null, $this->board->slug, 99999999);
+            $this->fail('존재하지 않는 글 삭제는 예외를 던져야 합니다.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(__('sirsoft-board::messages.inquiry.board_changed'), $e->getMessage());
+            $this->assertStringNotContainsString('::', $e->getMessage(), '번역 키 원문이 새면 안 됩니다.');
+        }
+    }
+
+    // ==========================================
+    // seedSamplePost / purgeSamplePosts (이커머스 샘플 시더 계약)
+    // ==========================================
+
+    /**
+     * seedSamplePost: 문의 글과 답변 글을 만들고 inquiry.create 와 같은 모양의 참조를 돌려준다.
+     *
+     * 이커머스 샘플 시더가 게시판 모델을 직접 만들지 않도록 게시판이 대신 답하는 계약입니다.
+     * 비회원 비밀번호는 평문으로 받아 게시판이 해시하고, 작성 시각은 요청대로 남깁니다.
+     *
+     * @effects listener_seeds_sample_post_with_reply
+     *
+     * @return void 반환값 없음
+     */
+    public function test_seed_sample_post_creates_question_and_reply(): void
+    {
+        $createdAt = now()->subDays(10)->startOfSecond();
+
+        $result = $this->listener->seedSamplePost(null, $this->board->slug, [
+            'title' => '샘플 문의 제목',
+            'content' => '샘플 문의 내용',
+            'author_name' => '김민준',
+            'password' => '1234',
+            'is_secret' => true,
+            'created_at' => $createdAt,
+        ], [
+            'content' => '샘플 답변 내용',
+            'created_at' => $createdAt->copy()->addDay(),
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertSame(Post::class, $result['inquirable_type']);
+
+        $question = Post::find($result['post_id']);
+        $this->assertNotNull($question);
+        $this->assertSame('샘플 문의 제목', $question->title);
+        $this->assertTrue($question->is_secret);
+        $this->assertNotSame('1234', $question->password, '비밀번호는 해시되어 저장되어야 합니다.');
+
+        $reply = Post::where('parent_id', $question->id)->first();
+        $this->assertNotNull($reply, '답변 글이 함께 만들어져야 합니다.');
+        $this->assertSame('Re: 샘플 문의 제목', $reply->title);
+    }
+
+    /**
+     * seedSamplePost: 게시판이 없으면 이전 결과를 그대로 돌려준다(시더가 건너뛸 수 있게).
+     *
+     * @effects listener_degrades_to_carry_when_board_missing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_seed_sample_post_returns_carry_for_missing_board(): void
+    {
+        $this->assertNull($this->listener->seedSamplePost(null, 'no-such-board-slug', ['title' => 'x']));
+    }
+
+    /**
+     * purgeSamplePosts: 자기 글 타입 묶음과 문의 게시판의 답변 글만 영구 삭제한다.
+     *
+     * 다른 타입 묶음은 게시판의 것이 아니므로 같은 ID 라도 건드리지 않습니다.
+     *
+     * @effects listener_purges_only_own_type_sample_posts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_purge_sample_posts_force_deletes_own_type_only(): void
+    {
+        $questionId = $this->createTestPost(['title' => '샘플 문의']);
+        $replyId = $this->createTestPost(['title' => 'Re: 샘플 문의', 'parent_id' => $questionId, 'depth' => 1]);
+        $otherId = $this->createTestPost(['title' => '다른 타입과 ID 가 겹치는 글']);
+
+        $deleted = $this->listener->purgeSamplePosts(0, $this->board->slug, [
+            Post::class => [$questionId],
+            'Vendor\\Other\\Model' => [$otherId],
+        ]);
+
+        $this->assertSame(2, $deleted);
+        $this->assertDatabaseMissing('board_posts', ['id' => $questionId]);
+        $this->assertDatabaseMissing('board_posts', ['id' => $replyId]);
+        $this->assertDatabaseHas('board_posts', ['id' => $otherId]);
     }
 
     // ==========================================

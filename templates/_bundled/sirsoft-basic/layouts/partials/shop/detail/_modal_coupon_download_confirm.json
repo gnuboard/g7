@@ -159,7 +159,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             },
                             "text": "$t:shop.coupon_download.download_btn"
                         },
@@ -171,7 +171,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": true,
-                                "className": "px-4 py-2 text-sm bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed"
+                                "className": "px-4 py-2 text-sm bg-blue-400 dark:bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed"
                             },
                             "text": "$t:shop.coupon_download.downloading"
                         }

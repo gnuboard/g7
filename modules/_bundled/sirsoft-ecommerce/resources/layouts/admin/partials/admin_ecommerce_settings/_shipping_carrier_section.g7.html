@@ -37,7 +37,7 @@
         </div>
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name</label>
-          <multilingual-input value="{{_local.carrierForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.carrierFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.carriers.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.carrierForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.carrierFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.carriers.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 택배사 이름(언어별). -->
               <set-state target="local" carrierForm.name="{{$event.target.value}}"/>
@@ -133,7 +133,7 @@
                 <span data-if="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}" class="form-error">{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}" :hasChanges="true"/>
@@ -162,7 +162,7 @@
                 <span data-if="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}" class="form-error">{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}</span>
               </td>
               <td class="px-4 py-2 text-center">
-                <toggle checked="{{$carrier.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" checked="{{$carrier.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 사용 여부. -->
                     <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}" :hasChanges="true"/>

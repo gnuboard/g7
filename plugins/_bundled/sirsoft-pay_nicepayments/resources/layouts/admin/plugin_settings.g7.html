@@ -10,7 +10,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <page-header data-ref="page_header" title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -29,7 +29,7 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.test_mode_hint</p>
             </div>
-            <toggle name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode"/>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
               <on type="click">
                 <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
                 <sequence>
-                  <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}"/>
+                  <action handler="sirsoft-pay_nicepayments.copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}"/>
                   <toast type="success" message="$t:sirsoft-pay_nicepayments.settings.vbank_notify_copied"/>
                 </sequence>
               </on>
@@ -128,7 +128,7 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.use_escrow</label>
               <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.use_escrow_hint</p>
             </div>
-            <toggle name="use_escrow"/>
+            <toggle data-type="composite" name="use_escrow"/>
           </div>
         </div>
       </div>
@@ -143,45 +143,45 @@
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg</label>
               <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
-            <toggle name="easy_pay_allow_with_other_pg"/>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay</label>
               <p class="mt-0.5 text-xs text-green-600 dark:text-green-400">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay_hint</p>
             </div>
-            <toggle name="easy_pay_naverpay"/>
+            <toggle data-type="composite" name="easy_pay_naverpay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_kakaopay</label>
-            <toggle name="easy_pay_kakaopay"/>
+            <toggle data-type="composite" name="easy_pay_kakaopay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_samsungpay</label>
-            <toggle name="easy_pay_samsungpay"/>
+            <toggle data-type="composite" name="easy_pay_samsungpay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay</label>
               <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay_hint</p>
             </div>
-            <toggle name="easy_pay_applepay"/>
+            <toggle data-type="composite" name="easy_pay_applepay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_payco</label>
-            <toggle name="easy_pay_payco"/>
+            <toggle data-type="composite" name="easy_pay_payco"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_skpay</label>
-            <toggle name="easy_pay_skpay"/>
+            <toggle data-type="composite" name="easy_pay_skpay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_ssgpay</label>
-            <toggle name="easy_pay_ssgpay"/>
+            <toggle data-type="composite" name="easy_pay_ssgpay"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_lpay</label>
-            <toggle name="easy_pay_lpay"/>
+            <toggle data-type="composite" name="easy_pay_lpay"/>
           </div>
         </div>
       </div>

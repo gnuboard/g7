@@ -34,8 +34,13 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * 입금대기(vbank) 주문을 생성합니다.
      *
+     * 발급 때 청구액과 대조해 둔 금액(`toss_approved_amount`)을 결제행에 싣는다 — 입금통보는 그 값을
+     * 결제완료 금액 근거로 쓰고, 없으면 토스 결제 조회로 확인한다(`PaymentAmountVerificationTest`).
+     * 원화 스냅샷은 청구액이 상점 통화 설정에 따라 달라지지 않도록 자릿수까지 고정한다.
+     *
      * @param  string  $secret  저장할 웹훅 secret
      * @param  int  $totalAmount  주문 총액
+     * @return Order 생성된 주문
      */
     private function createWaitingDepositOrder(string $secret = self::SECRET, int $totalAmount = 50000): Order
     {
@@ -45,6 +50,16 @@ class WebhookControllerTest extends PluginTestCase
             'user_id' => $user->id,
             'order_number' => 'ORD-VBANK-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'currency' => 'KRW',
+            'currency_snapshot' => [
+                'base_currency' => 'KRW',
+                'order_currency' => 'KRW',
+                'exchange_rate' => 1.0,
+                'exchange_rates' => [
+                    'KRW' => ['rate' => 1.0, 'decimal_places' => 0, 'rounding_unit' => '1', 'rounding_method' => 'round'],
+                ],
+                'snapshot_at' => now()->toIso8601String(),
+            ],
             'subtotal_amount' => $totalAmount,
             'total_discount_amount' => 0,
             'total_coupon_discount_amount' => 0,
@@ -71,7 +86,11 @@ class WebhookControllerTest extends PluginTestCase
             'paid_amount_base' => $totalAmount,
             'paid_amount_local' => $totalAmount,
             'paid_at' => null,
-            'payment_meta' => ['toss_secret' => $secret, 'status' => 'WAITING_FOR_DEPOSIT'],
+            'payment_meta' => [
+                'toss_secret' => $secret,
+                'status' => 'WAITING_FOR_DEPOSIT',
+                'toss_approved_amount' => $totalAmount,
+            ],
         ]);
 
         return $order;
@@ -80,7 +99,8 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * 플러그인 설정을 mock 합니다.
      *
-     * @param  array<string, mixed>  $overrides
+     * @param  array<string, mixed>  $overrides  기본 설정을 덮어쓸 값
+     * @return void 반환값 없음
      */
     private function mockPluginSettings(array $overrides = []): void
     {
@@ -94,6 +114,8 @@ class WebhookControllerTest extends PluginTestCase
 
     /**
      * 입금통보 DONE 은 결제를 완료로 전이한다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario webhook_status=done, webhook_secret=match, replay=first
      *
@@ -127,6 +149,8 @@ class WebhookControllerTest extends PluginTestCase
      * 실측(주문 20260915-0631411217): 발급 시 `tviva20260915153144ZJqh9` 였던 값이 입금통보 뒤
      * `txrd_a01m2hx5hqvxk3bb3vy852hfjgx` 로 바뀌어, 환불이 승인까지 간 뒤 실행에서만 실패했다
      * (`PG_API_ERROR`). 올바른 paymentKey 는 `payment_meta.pg_raw_response` 에 남아 있었다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario webhook_case=deposit_done_keeps_payment_key
      *
@@ -162,6 +186,8 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * 입금통보 CANCELED 는 주문을 취소로 전이한다. (결제 상태는 코어 동작대로 유지)
      *
+     * @return void 반환값 없음
+     *
      * @scenario webhook_status=canceled, webhook_secret=match, replay=first
      *
      * @effects deposit_canceled_fails_payment
@@ -185,6 +211,8 @@ class WebhookControllerTest extends PluginTestCase
 
     /**
      * secret 이 어긋나면 401 이고 결제완료로 전이되지 않는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario webhook_status=done, webhook_secret=mismatch, replay=first
      *
@@ -210,6 +238,8 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * secret 검증을 끈 상점에서는 어떤 값이 와도 통보가 통과한다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario webhook_status=done, webhook_secret=disabled, replay=first
      *
      * @effects webhook_secret_verified
@@ -232,6 +262,8 @@ class WebhookControllerTest extends PluginTestCase
 
     /**
      * 이미 PAID 인 거래의 중복 통보는 멱등 200 이고 입금 시각도 바뀌지 않는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario webhook_status=done, webhook_secret=match, replay=duplicate
      *
@@ -270,6 +302,8 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * 알 수 없는 주문번호는 200 + 본문 `FAIL` 로 답한다 — 수신 자체는 성립시켜 재시도를 멈춘다.
      *
+     * @return void 반환값 없음
+     *
      * @effects deposit_for_an_unknown_order_number_answers_fail
      */
     public function test_order_not_found_returns_fail(): void
@@ -289,6 +323,8 @@ class WebhookControllerTest extends PluginTestCase
     /**
      * 규격 밖 status 는 분기에 들어가기 전 검증에서 422 로 걸린다.
      *
+     * @return void 반환값 없음
+     *
      * @effects deposit_with_an_unknown_status_is_rejected_by_validation
      */
     public function test_invalid_status_rejected_by_validation(): void
@@ -306,6 +342,8 @@ class WebhookControllerTest extends PluginTestCase
 
     /**
      * 입금대기가 아닌 결제행에는 통보가 아무 일도 하지 않는다 (200 무해).
+     *
+     * @return void 반환값 없음
      *
      * @effects non_waiting_deposit_is_noop
      */
@@ -336,6 +374,8 @@ class WebhookControllerTest extends PluginTestCase
      * 토스는 클레임 결제의 승인·취소에도 PAYMENT_STATUS_CHANGED 를 보내는데, `orderId` 가
      * CP 결제번호라 주문 분기를 그대로 태우면 정상 동작마다 `order not found` warning 이
      * 남는다 — 운영자 로그에서 결함으로 읽히므로 CP 는 자기 경로로 종결시킨다.
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_payment_status_webhook_terminates_without_an_order_lookup
      */

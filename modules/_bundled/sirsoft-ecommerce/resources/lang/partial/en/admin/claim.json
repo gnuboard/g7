@@ -465,6 +465,7 @@
     "title_exchange": "Complete exchange",
     "title_return": "Complete return",
     "title_generic": "Complete claims",
+    "editor_label": "Claim completion dialog",
     "description": "Move {{count}} selected claim(s) to completed. Review how each one is handled.",
     "col_claim_number": "Claim no.",
     "col_item": "Items",

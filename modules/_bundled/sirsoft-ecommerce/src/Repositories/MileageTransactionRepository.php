@@ -520,10 +520,10 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function getRemainingLotsByIds(int $userId, array $lotIds): Collection
+    public function getRemainingLotsByIds(?int $userId, array $lotIds): Collection
     {
         return MileageTransaction::query()
-            ->where('user_id', $userId)
+            ->when($userId !== null, fn ($query) => $query->where('user_id', $userId))
             ->whereIn('id', $lotIds)
             ->where('remaining_amount', '>', 0)
             ->get();

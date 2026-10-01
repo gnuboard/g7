@@ -498,7 +498,7 @@ HTTP/1.1 200
 
 > `_meta.limits` 는 모듈의 경계값 설정을 **통째로** 내려줍니다. 위 예시는 클레임 축 6키만 발췌한 것이고, 실제 응답에는 `auto_cancel_days_min`·`max_images_max`(리뷰 축) 등 다른 탭의 경계값도 함께 실립니다 — 항목이 늘어도 화면은 이 맵에서 자기가 쓸 키만 읽으면 됩니다.
 
-**설명** 관리자가 이커머스 모듈의 전체 환경설정을 카테고리별로 묶어 한 번에 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, `EcommerceSettingsService::getAllSettings()`로 JSON 설정을 읽은 뒤 DB 관리 대상(배송사·배송유형·클레임 사유 카탈로그 3종·마일리지 알림 채널)과 등록된 PG 목록을 병합해 반환합니다. `basic_info`·`shipping`·`order_settings`·`claim`·`mileage` 등 관리자 설정 화면 전 탭의 초기 데이터를 이 한 응답으로 채웁니다. 응답의 `abilities.can_update` 로 수정 권한 보유 여부도 함께 내려갑니다.
+**설명** 관리자가 이커머스 모듈의 전체 환경설정을 카테고리별로 묶어 한 번에 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, `EcommerceSettingsService::getAllSettings()`로 JSON 설정을 읽은 뒤 DB 관리 대상(배송사·배송유형·클레임 사유 카탈로그 3종·마일리지 알림 채널)과 등록된 PG 목록을 병합해 반환합니다. `basic_info`·`shipping`·`order_settings`·`claim`·`mileage` 등 관리자 설정 화면 전 탭의 초기 데이터를 이 한 응답으로 채웁니다. 응답의 `abilities.can_update` 로 수정 권한 보유 여부도 함께 내려갑니다. 저장된 `basic_info.public_asset_disk` 가 공개 자산 디스크 카탈로그(`available_public_asset_disks`)에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 실제 동작인 `none`(스트리밍)으로 바꿔 싣고, 사라진 디스크 이름을 `basic_info.public_asset_disk_unavailable` 로 함께 내려 화면이 안내를 띄웁니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/settings
@@ -1301,7 +1301,7 @@ HTTP/1.1 200
 
 사용 건수는 그 사유의 **유형에 맞는 표 전수**를 셉니다. 환불 유형은 환불신청(`order_refunds`)과 즉시취소(`order_cancels`) 두 표를 합산하므로, 즉시취소로만 쓰인 사유도 사용 중으로 판정됩니다.
 
-**설명** 관리자가 이커머스 환경설정을 저장합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, `_tab` 으로 저장할 카테고리를 지정하고 각 섹션(`basic_info`·`shipping`·`claim` 등)을 배열로 전달합니다. `EcommerceSettingsService::saveSettings()`가 JSON 설정을 저장하되, DB 관리 대상인 `shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종(`claim.exchange_reasons`·`claim.return_reasons`·`claim.refund_reasons`)은 분리해 각 Service 의 sync 메서드로 동기화합니다. 사유 카탈로그의 삭제 가드는 그 사유의 **유형에 맞는 표 전수**를 세므로, 교환·반품에서 사용 중인 사유는 이 경로로도 지워지지 않습니다. 저장 성공 시 `sirsoft-ecommerce.settings.after_save` 훅을 발화하고, 관리자 UI 상태 갱신을 위해 병합된 전체 설정을 다시 반환합니다.
+**설명** 관리자가 이커머스 환경설정을 저장합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, `_tab` 으로 저장할 카테고리를 지정하고 각 섹션(`basic_info`·`shipping`·`claim` 등)을 배열로 전달합니다. `EcommerceSettingsService::saveSettings()`가 JSON 설정을 저장하되, DB 관리 대상인 `shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종(`claim.exchange_reasons`·`claim.return_reasons`·`claim.refund_reasons`)은 분리해 각 Service 의 sync 메서드로 동기화합니다. 사유 카탈로그의 삭제 가드는 그 사유의 **유형에 맞는 표 전수**를 세므로, 교환·반품에서 사용 중인 사유는 이 경로로도 지워지지 않습니다. 저장 성공 시 `sirsoft-ecommerce.settings.after_save` 훅을 발화하고, 관리자 UI 상태 갱신을 위해 병합된 전체 설정을 다시 반환합니다(쓸 수 없게 된 공개 자산 디스크 정리는 조회와 같습니다). `basic_info.public_asset_disk_unavailable` 는 조회 응답의 표시용 값이라 함께 보내도 저장되지 않습니다.
 
 **섹션은 통째로 교체됩니다 (부분 병합 아님)** 저장 범위를 정하는 것은 **payload 에 실린 섹션 키**입니다 — `_tab` 은 저장 대상을 고르지 않으며(검증된 카테고리 목록에서 제외되고 저장 단계에서도 `_` 로 시작하는 키는 건너뜁니다) 화면이 어느 탭에서 보냈는지를 기록하는 메타 값입니다. 그리고 보낸 섹션 안에서는 **보낸 키만 남습니다**. 저장은 카테고리 단위 JSON 파일 쓰기이며 기존 저장본과 키 단위로 병합하지 않으므로, 요청에서 빠진 키는 저장 파일에서 사라지고 조회 시 `defaults.json` 의 기본값으로 되돌아갑니다. 응답은 **200** 이고 오류도 경고도 없습니다.
 

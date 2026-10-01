@@ -57,6 +57,21 @@ class TossPaymentsApiService
     }
 
     /**
+     * 결제 조회 API 호출
+     *
+     * 토스에 기록된 결제의 현재 상태(status)와 금액(totalAmount)을 서버에서 직접 확인할 때 쓴다.
+     *
+     * @param  string  $paymentKey  토스 결제 키
+     * @return array PG 응답 데이터 (Payment 객체)
+     *
+     * @throws TossPaymentsApiException API 호출 실패 시
+     */
+    public function getPayment(string $paymentKey): array
+    {
+        return $this->request('GET', '/v1/payments/'.rawurlencode($paymentKey), []);
+    }
+
+    /**
      * 결제 취소 API 호출
      *
      * 토스는 cancelAmount 를 넣지 않으면 전액 취소로 처리한다. 전액 취소를 부분 취소로

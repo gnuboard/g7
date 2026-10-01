@@ -1451,6 +1451,11 @@
             "required": false,
             "description": "액션 메뉴 선택 콜백 (actionId: string|number, id: string) => void"
           },
+          "resyncKey": {
+            "type": "string|number",
+            "required": false,
+            "description": "스위치 재동기 신호 — 값이 바뀌면 누른 채 기다리던 스위치 값을 버리고 서버 값을 따른다(토글 실패·의존 충돌 창 취소 경로에서 올린다)"
+          },
           "loading": {
             "type": "boolean",
             "required": false,

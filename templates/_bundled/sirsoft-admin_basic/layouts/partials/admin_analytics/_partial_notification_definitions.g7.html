@@ -34,14 +34,14 @@
         <div class="min-w-0 flex-1">
           <div class="flex-center gap-2 flex-wrap">
             <span class="text-heading">{{$localized(def.name)}}</span>
-            <badge data-if="{{def.is_active === true}}" color="green" text="$t:admin.analytics.settings.reports.definition_active" size="sm"/>
-            <badge data-if="{{def.is_active !== true}}" color="gray" text="$t:admin.analytics.settings.reports.definition_inactive" size="sm"/>
-            <badge data-each="ch in {{(def.channels ?? []).map(c => (typeof c === 'string' ? c : (c.id ?? c.channel ?? '')))}}" color="blue" text="{{ch}}" size="sm"/>
+            <badge data-type="composite" data-if="{{def.is_active === true}}" color="green" text="$t:admin.analytics.settings.reports.definition_active" size="sm"/>
+            <badge data-type="composite" data-if="{{def.is_active !== true}}" color="gray" text="$t:admin.analytics.settings.reports.definition_inactive" size="sm"/>
+            <badge data-type="composite" data-each="ch in {{(def.channels ?? []).map(c => (typeof c === 'string' ? c : (c.id ?? c.channel ?? '')))}}" color="blue" text="{{ch}}" size="sm"/>
           </div>
           <p class="text-label-subtle mt-0.5">{{$localized(def.description)}}</p>
         </div>
         <div class="flex-center gap-2">
-          <toggle checked="{{def.is_active === true}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.canManageDefinitions}}">
+          <toggle data-type="composite" checked="{{def.is_active === true}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.canManageDefinitions}}">
             <on type="change">
               <!-- 정의 켜기/끄기 — 즉시 적용되는 값이라 저장 버튼을 거치지 않고, 끝나면 목록을 다시 받아 실제 저장값으로 되맞춘다. -->
               <api-call :auth_required="true" target="/api/admin/notification-definitions/{{def.id}}/toggle-active" method="PATCH">

@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 찜 목록의 숨김 상품 제외 테스트 (이슈 #524 §4.3)
@@ -24,16 +25,20 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=user_wishlist,product_state=hidden
  *
  * @effects wishlist_excludes_hidden_products, wishlist_keeps_suspended_products
- *
- * @group ecommerce
- * @group wishlist
  */
+#[Group('ecommerce')]
+#[Group('wishlist')]
 class WishlistVisibilityTest extends ModuleTestCase
 {
     private string $apiBase = '/api/modules/sirsoft-ecommerce/wishlist';
 
     private User $member;
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,8 @@ class WishlistVisibilityTest extends ModuleTestCase
      * 숨김 상품은 찜 목록에서 빠진다.
      *
      * @effects wishlist_excludes_hidden_products
+     *
+     * @return void 반환값 없음
      */
     public function test_index_excludes_hidden_products(): void
     {
@@ -65,6 +72,8 @@ class WishlistVisibilityTest extends ModuleTestCase
      * 알 길이 없어진다 — 판매중지는 보여 주고 알리는 쪽이 맞다.
      *
      * @effects wishlist_keeps_suspended_products
+     *
+     * @return void 반환값 없음
      */
     public function test_index_keeps_suspended_products(): void
     {
@@ -83,6 +92,8 @@ class WishlistVisibilityTest extends ModuleTestCase
      * 다시 전시로 돌리면 찜 목록에 되돌아온다 (행 자체는 지워지지 않았다).
      *
      * @effects wishlist_hidden_product_reappears_when_visible_again
+     *
+     * @return void 반환값 없음
      */
     public function test_hidden_product_reappears_when_visible_again(): void
     {

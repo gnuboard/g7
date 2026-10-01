@@ -65,9 +65,9 @@ final class DocumentCompiler
     private readonly StructuredValueCompiler $values;
 
     /**
-     * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (산출에는 쓰지 않는다)
      */
-    public function __construct(private readonly ComponentRegistry $registry)
+    public function __construct(private readonly ?ComponentRegistry $registry = null)
     {
         $this->nodes = new NodeCompiler($registry);
         $this->actions = new ActionCompiler;
@@ -959,6 +959,12 @@ final class DocumentCompiler
 
         $meta = ['is_partial' => true] + $attributes;
         [$node, $dataSources] = $this->compilePartialNode($root->children[0], $path);
+
+        // 조각 문서는 루트 노드 자체라 meta 가 한 자리뿐이다. 루트 노드 안의 `<meta>` 를 받아 주면
+        // `<partial>` 속성 meta 에 덮여 소리 없이 사라지므로(편집기 라벨 등이 빠진 채 굽힘) 거부한다.
+        if (isset($node['meta'])) {
+            throw $this->error($root->children[0], LayoutMarkupErrorCode::PartialRootMetaNotAllowed, $path);
+        }
 
         $doc = ['meta' => $meta];
 

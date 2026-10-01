@@ -47,22 +47,26 @@
 ```text
 sirsoft-ecommerce 의 ProductCard
   → 등록 이름: sirsoft-ecommerce.ProductCard
-  → 마크업 태그: <sirsoft-ecommerce-product-card>
+  → 마크업 태그: <sirsoft-ecommerce.product-card data-type="composite">
 ```
 
 접두어 없는 이름은 거부된다. 접두어가 없으면 템플릿 소유 컴포넌트를 덮어쓸 수 있고, 작성자가 태그만 보고 출처를 알 수 없다. 정적 검사가 자동 차단한다.
 
-### 태그 프리픽스의 언더스코어 정규화
+### 태그 표기 — 식별자를 그대로 싣는다
 
-마크업 태그명은 소문자와 하이픈만 허용한다. 확장 식별자가 언더스코어를 품으면(번들 확장 14개 중 7개가 그렇다 — `gnuboard7-hello_module`, `sirsoft-pay_kginicis` 등) 태그 프리픽스는 `_` 를 `-` 로 접은 것이 된다.
+확장 컴포넌트 태그는 `확장식별자.kebab` 이다. 점 앞에는 확장 식별자를 **그대로**(밑줄 포함) 쓰고, 점 뒤에 이름의
+kebab 표기를 붙인다. 컴파일러는 점에서 나눠 등록 이름(`식별자.이름`)을 **어떤 목록도 보지 않고** 만든다 — JSON
+레이아웃이 `name` 을 그대로 적던 것과 같다(2026-09-28 결정: 마크업 컴파일은 템플릿·확장 목록과 무관).
 
 ```text
 gnuboard7-hello_module 의 MemoCard
-  → 등록 이름: gnuboard7-hello_module.MemoCard   (실제 식별자 그대로 — 런타임 조회 키)
-  → 마크업 태그: <gnuboard7-hello-module-memo-card>  (정규화된 프리픽스)
+  → 등록 이름: gnuboard7-hello_module.MemoCard
+  → 마크업 태그: <gnuboard7-hello_module.memo-card data-type="composite">
 ```
 
-정규화 결과가 겹치는 두 확장(`a_b` 와 `a-b`)은 컴파일 오류(`extension_id_tag_collision`)로 거부된다. 그 둘의 컴포넌트를 태그로 구분할 방법이 없기 때문이다.
+종전에는 식별자의 `_` 를 `-` 로 접은 프리픽스(`<gnuboard7-hello-module-memo-card>`)를 썼다. 그 표기는 식별자와 이름의
+경계, 원래 밑줄이 사라져 목록 없이는 이름을 되돌릴 수 없었고, `a_b` 와 `a-b` 같은 두 확장이 겹쳤다. 식별자를 그대로
+싣으므로 이제 두 문제가 모두 없다.
 
 ### 등록 — 확장은 스스로 등록한다
 
@@ -228,7 +232,7 @@ JSON 레이아웃에서는 노드 `name` 에 등록 이름을 그대로 쓴다.
 { "type": "composite", "name": "sirsoft-ecommerce.ProductCard", "props": { "title": "{{product.name}}" } }
 ```
 
-**"미등록 컴포넌트 확인" 규율의 대상이 넓어졌다** — 마크업 어휘는 이제 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 어떤 판본이 실제로 쓰이는지(원본/템플릿 대체본/전용 판본)는 작성자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
+**"미등록 컴포넌트 확인" 규율의 대상이 넓어졌다** — 레이아웃 편집기(와 템플릿 자신의 레이아웃 점검)의 검사 목록은 대상 템플릿의 `components.json` 단독이 아니라 **편집 대상 템플릿 + 설치된 모듈·플러그인 전부(활성·비활성 무관) + 그 템플릿의 확장 컴포넌트 오버라이드**다. 확장 매니페스트는 설치 디렉토리(`modules/{식별자}/components.json`·`plugins/{식별자}/components.json`)에서 읽는다 — 편집 도중 확장을 꺼도 그 컴포넌트를 쓴 레이아웃을 계속 저장할 수 있게 하려는 것이다. 목록에 없는 확장 컴포넌트(확장 삭제·이름 오타)는 **경고**(`extension_component_not_installed`)만 내고 저장을 막지 않는다. 점 없는 템플릿 컴포넌트 오타는 종전대로 오류다. 어떤 판본이 실제로 쓰이는지(원본/템플릿 대체본/전용 판본)는 작성자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
 
 ## 편집기
 

@@ -39,6 +39,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\OrderStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Listeners\PrivacyRetentionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ProductActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ProductInquiryBoardListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ProvideNecessaryStorageKeysListener;
 use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
@@ -54,6 +55,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListMileageFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceCoreSaveListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
@@ -74,6 +76,10 @@ class Module extends AbstractModule
             ['name' => 'sirsoft-ecommerce.currency.after_apply_rates', 'type' => 'action',
                 'description' => ['ko' => '환율 적용 후', 'en' => 'After applying exchange rates'],
                 'parameters' => ['result' => 'array - 환율 적용 결과', 'source' => 'string - 환율 제공자 식별자']],
+            ['name' => 'sirsoft-ecommerce.order.filter_payment_method_display_label', 'type' => 'filter',
+                'description' => ['ko' => '관리자 주문 목록 결제수단 표시 라벨', 'en' => 'Admin order list payment method display label'],
+                'parameters' => ['label' => 'string|null - 앞선 구독자가 채운 표시 라벨', 'payment' => 'OrderPayment - 주문 결제 레코드'],
+                'return' => 'string|null'],
         ];
     }
 
@@ -3609,6 +3615,7 @@ class Module extends AbstractModule
             UserEcommerceDataInfoListener::class,
             UserCurrencyInfoListener::class,
             UserShippingCountryInfoListener::class,
+            UserPreferenceCoreSaveListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
             AssignDefaultShippingCountryOnRegisterListener::class,
             UserMileageCleanupListener::class,
@@ -3624,6 +3631,7 @@ class Module extends AbstractModule
             // 코어 회원관리 목록의 확장 필터 예제 2종 — 마일리지 잔액·배송지 (#705)
             UserListMileageFilterListener::class,
             UserListAddressFilterListener::class,
+            ProvideNecessaryStorageKeysListener::class,
         ];
     }
 

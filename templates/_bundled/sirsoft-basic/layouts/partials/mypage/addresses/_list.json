@@ -41,7 +41,7 @@
                     },
                     "actions": [
                         {
-                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다)",
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -50,7 +50,8 @@
                                     "params": {
                                         "target": "global",
                                         "editingAddress": {
-                                            "is_default": false
+                                            "is_default": false,
+                                            "country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
                                         }
                                     }
                                 },
@@ -335,7 +336,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다)",
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -344,7 +345,8 @@
                                     "params": {
                                         "target": "global",
                                         "editingAddress": {
-                                            "is_default": false
+                                            "is_default": false,
+                                            "country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
                                         }
                                     }
                                 },

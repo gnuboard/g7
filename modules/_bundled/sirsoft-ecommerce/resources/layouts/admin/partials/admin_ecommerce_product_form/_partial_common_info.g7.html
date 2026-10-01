@@ -22,7 +22,7 @@
         </a>
       </div>
       <div data-ref="use_default_common_info_toggle" class="flex-center gap-3">
-        <toggle name="use_default_common_info" checked="{{_local.form.use_default_common_info ?? false}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+        <toggle data-type="composite" name="use_default_common_info" checked="{{_local.form.use_default_common_info ?? false}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
           <on type="change">
             <!-- 켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다) -->
             <sequence if="{{$event.target.checked}}">
@@ -87,7 +87,7 @@
           <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
         </div>
         <div data-ref="common_info_detail_body" data-if="{{_local.ui.commonInfoDetailExpanded}}" class="border-t border-gray-200 dark:border-gray-700">
-          <multilingual-tab-panel data-ref="common_info_locale_tabs" variant="underline" class="px-4 pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">
+          <multilingual-tab-panel data-type="composite" data-ref="common_info_locale_tabs" variant="underline" class="px-4 pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">
             <on event="onLocaleChange">
               <!-- 어느 언어 본문을 볼지. 탭은 내용이 실제로 채워진 언어만 세운다 -->
               <set-state target="local" ui.commonInfoLocale="{{$args[0]}}"/>

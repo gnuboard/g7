@@ -7,6 +7,10 @@
     "id": "shipping_policy_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "shipping_policies"
+    },
     "actions": [
         {
             "comment": "체크한 정책 id 묶음 — 위 일괄 작업 줄과 확인 창들이 함께 보므로 지역이 아니라 전역에 둔다.",
@@ -89,7 +93,6 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.bulkSelectedItems || []}}",
         "selectedCountText": "",
-        "loading": "{{shipping_policies?.loading}}",
         "emptyMessage": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.title",
         "pagination": true,
         "serverSidePagination": true,

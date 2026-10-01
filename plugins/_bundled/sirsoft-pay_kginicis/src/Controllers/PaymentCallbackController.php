@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\BindsApprovalToOrder;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
@@ -42,6 +43,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use BindsApprovalToOrder;
     use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
@@ -312,9 +314,50 @@ class PaymentCallbackController
 
             $tid = (string) ($pgResponse['tid'] ?? '');
 
+            // 승인 응답이 돌려준 주문번호가 이 콜백의 주문과 같아야 반영한다 (KVE-2026-2434 전수조사).
+            // authToken 은 주문번호를 묶지 않으므로, 싼 주문의 승인 토큰에 비싼 주문번호와 그 금액을 붙여
+            // 보내면 비싼 주문이 싼 금액으로 결제완료될 수 있었다. 금액은 PG 가 승인한 값만 기준이다 — 콜백
+            // TotPrice 는 브라우저를 거친 값이라 대조에 쓰면 대조가 항등식이 된다(아래 카드 경로와 같은 규칙).
+            $pgOrderNumber = $pgResponse['MOID'] ?? $pgResponse['moid'] ?? null;
+            $pgTotPrice = $pgResponse['TotPrice'] ?? $pgResponse['totPrice'] ?? null;
+            $pgApprovedAmount = is_numeric($pgTotPrice) ? (int) $pgTotPrice : null;
+            if (! $this->approvalOrderNumberMatches(is_scalar($pgOrderNumber) ? (string) $pgOrderNumber : null, (string) $moid)) {
+                Log::warning('KG Inicis: authorize response does not match callback order; net cancelling', [
+                    'moid' => $moid,
+                    'pg_moid' => $pgOrderNumber,
+                    'pg_price' => $pgTotPrice,
+                    'tid' => $tid,
+                ]);
+
+                $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                return redirect($this->resolveFailUrl(['error' => 'authorize_failed', 'orderId' => $moid]));
+            }
+
             // 가상계좌: completePayment 없이 계좌 정보만 저장 (입금 통보 시 completePayment)
             if (($pgResponse['payMethod'] ?? '') === 'VBank') {
-                $this->handleVbankIssued($order, $pgResponse, $tid, $request);
+                // 결제대기 주문에만 발급을 기록한다 — 이미 결제됐거나 다른 가상계좌가 붙은 결제 레코드를
+                // 덮어쓰면 환불 대상 거래번호가 오염된다. 같은 발급의 중복 콜백은 성공으로만 처리한다.
+                // 승인 응답에 금액이 없거나 청구액과 다르면 발급을 기록하지 않는다.
+                $issueDecision = $this->vbankIssueDecision($order, $pgApprovedAmount, $tid);
+                if ($issueDecision === 'reject') {
+                    Log::warning('KG Inicis: vbank issue rejected (order not payable or amount mismatch); net cancelling', [
+                        'moid' => $moid,
+                        'tid' => $tid,
+                        'order_status' => $order->order_status->value,
+                        'pg_price' => $pgTotPrice,
+                    ]);
+
+                    $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                    return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+                }
+
+                if ($issueDecision === 'issue') {
+                    $this->handleVbankIssued($order, $pgResponse, $tid, $request);
+                } else {
+                    $this->logReplayDetected($tid, $moid, 'PC authCallback (vbank issue)');
+                }
                 $this->queueReceiptCookie($moid);
 
                 return redirect($this->resolveSuccessUrl($moid));
@@ -326,6 +369,23 @@ class PaymentCallbackController
                 $this->queueReceiptCookie($moid);
 
                 return redirect($this->resolveSuccessUrl($moid));
+            }
+
+            // 결제 전 주문에만 승인을 반영한다 (모바일 콜백·가상계좌 발급과 같은 판정).
+            //
+            // 같은 거래번호의 재전송은 바로 위에서 성공으로 돌려보냈으므로, 여기까지 온 승인은 이 주문에
+            // 처음 도착한 새 승인이다. 이미 결제완료됐거나 취소된 주문이면 결제완료 처리가 조용히 건너뛰어져
+            // 승인된 돈이 PG 에 남고, 결제 레코드의 PG 사 표기만 바뀐다. 주문은 건드리지 않고 망취소로 돌려준다.
+            if (! $order->order_status->isBeforePayment()) {
+                Log::warning('KG Inicis: approval arrived for non-payable order; net cancelling', [
+                    'moid' => $moid,
+                    'tid' => $tid,
+                    'order_status' => $order->order_status->value,
+                ]);
+
+                $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
             }
 
             // 승인액은 **PG 승인 응답**의 TotPrice 만 쓴다. 콜백 TotPrice 를 먼저 쓰면 결제창 금액을 바꾼
@@ -344,7 +404,8 @@ class PaymentCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'invalid_payment_currency', 'orderId' => $moid]));
             }
-            if ($expectedAmount > 0 && $totPrice !== $expectedAmount) {
+            // 청구액이 0 이어도 대조를 건너뛰지 않는다 — PG 결제가 필요 없는 주문에 승인이 들어온 것 자체가 불일치다.
+            if ($totPrice !== $expectedAmount) {
                 $this->apiService->sendNetCancel($netCancelUrl, $authToken);
 
                 return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
@@ -710,7 +771,8 @@ class PaymentCallbackController
             return false;
         }
 
-        if ($expectedAmount > 0 && $notify['amount'] !== $expectedAmount) {
+        // 청구액이 0 이어도 대조를 건너뛰지 않는다 — 승인 콜백·가상계좌 발급과 같은 규칙.
+        if ($notify['amount'] !== $expectedAmount) {
             Log::warning('KG Inicis: vbank notify rejected - amount mismatch', [
                 'source' => $source,
                 'moid' => $order->order_number,

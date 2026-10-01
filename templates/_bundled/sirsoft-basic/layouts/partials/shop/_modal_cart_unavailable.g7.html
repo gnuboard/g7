@@ -1,7 +1,7 @@
 <!-- 주문을 진행할 수 없는 항목(품절·판매중지)을 알리는 창. 닫기·바깥 클릭을 막아 둔 이유는 이 창이
      흐름을 끊는 자리라 «봤다» 는 선택을 반드시 받아야 하기 때문이다. 장바구니와 주문서가 함께 쓴다. -->
 <partial description="장바구니 구매불가 상품 안내 모달" editor_label="$t:user.modal_label.shop.cart_unavailable_modal">
-  <modal data-ref="cart_unavailable_modal" title="{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}" size="md" :showCloseButton="false" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="cart_unavailable_modal" title="{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}" size="md" :showCloseButton="false" :closeOnOverlayClick="false">
     <!-- 모달 내용 -->
     <div class="p-4">
       <div class="flex items-center gap-3 mb-4">

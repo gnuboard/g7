@@ -65,7 +65,7 @@
 
 플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다. **반드시 `mode: append`** 를 사용하여 다른 IDV plugin 과 공존 가능하게 합니다.
 
-`scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 아래 예시의 `kcp-cdn.example.com` 은 자리표시자이므로, 실제 provider 도입 시 그 호스트를 허용 목록에 먼저 추가합니다.
+`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](../extension/module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 아래 예시의 `kcp-cdn.example.com` 은 자리표시자이므로, 실제 provider 도입 시 그 호스트를 provider 플러그인 매니페스트에 먼저 선언합니다.
 
 ```json
 {

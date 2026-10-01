@@ -1,3 +1,4 @@
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -157,6 +158,25 @@ const KCP_PAY_METHOD: Record<string, string> = {
     vbank:           '001000000000',
     phone:           '000010000000',
 };
+
+/**
+ * PC 결제창에 넘길 KCP 결제수단 비트마스크를 정합니다.
+ *
+ * 결제수단은 서버가 저장한 값(payment_method)으로 정한다 — 서버는 pay_method 를 보내지 않으므로 그 키만 보면
+ * 가상계좌·계좌이체 주문에도 카드 결제창이 열린다(모바일 경로와 같은 기준). 간편결제는 항상 카드 비트마스크이고
+ * direct 파라미터로 수단을 지정한다.
+ *
+ * @param paymentMethod 서버가 저장한 결제수단 id (card / vbank / bank / phone / nhnkcp_*)
+ * @param isEasyPay 간편결제 여부
+ * @returns KCP pay_method 비트마스크
+ */
+export function resolveKcpPcPayMethod(paymentMethod: string, isEasyPay: boolean): string {
+    if (isEasyPay) {
+        return '100000000000';
+    }
+
+    return KCP_PAY_METHOD[paymentMethod] ?? '100000000000';
+}
 
 // KCP 간편결제 direct 파라미터 (PC/모바일 공통)
 const KCP_EASY_PAY_DIRECT: Record<string, Record<string, string>> = {
@@ -325,8 +345,6 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             closeReportUrl: config.callback_urls.close_report,
             oid: pgPaymentData.order_number,
             price: Number(pgPaymentData.amount),
-            buyer_email: pgPaymentData.customer_email ?? '',
-            buyer_phone: pgPaymentData.customer_phone ?? '',
             payment_method: paymentMethod,
         };
         const callbackUrl = window.location.origin + config.callback_urls.callback;
@@ -334,8 +352,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         await preparePaymentRetry(closeReportContext);
 
         // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 실패 화면에서 서버에 보고할 때 쓸
-        // 구매자 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
-        // 소유권을 대조하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
+        // 주문 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
+        // 주문 소유자(회원 로그인 / 비회원 조회 토큰)를 확인하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
         rememberPendingClose(closeReportContext);
 
         if (isMobileDevice()) {
@@ -454,10 +472,7 @@ async function handlePcPayment(
     isEasyPay: boolean,
     callbackUrl: string,
 ): Promise<void> {
-    // 간편결제는 pay_method 항상 "100000000000" (카드 비트마스크), direct 파라미터로 수단 지정
-    const payMethod = isEasyPay
-        ? '100000000000'
-        : (KCP_PAY_METHOD[pgPaymentData.pay_method ?? 'card'] ?? '100000000000');
+    const payMethod = resolveKcpPcPayMethod(paymentMethod, isEasyPay);
 
     // PAYCO 전용 테스트 site_cd (S6729), 그 외 간편결제·에스크로·일반은 각자 site_cd 사용
     const siteCd = paymentMethod === 'nhnkcp_payco'

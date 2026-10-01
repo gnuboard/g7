@@ -207,13 +207,15 @@
             "request_comment_placeholder": "예: #{name}=홍길동, #{order_number}=20260823-1043226571",
             "request_comment_hint": "검수 신청 시 카카오 검수자에게 함께 전달됩니다(선택, 500자 이내). 카카오 심사 가이드는 본문 변수마다 예시값을 요구하므로 변수별 예시값을 적어 두면 반려를 줄일 수 있습니다. 저장되지 않으며 신청할 때만 전송됩니다.",
             "saved_toast": "알림 템플릿을 저장했습니다.",
-            "requested_toast": "검수를 신청했습니다. 승인되면 알림톡 발송이 시작됩니다."
+            "requested_toast": "검수를 신청했습니다. 승인되면 알림톡 발송이 시작됩니다.",
+            "editor_label": "알림톡 템플릿 편집"
         },
         "sms": {
             "modal_title": "SMS 본문 — {name}",
             "hint": "대체 SMS 와 SMS 단독 발송에 공통으로 사용하는 본문입니다. #{변수} 는 발송 시 자동 치환됩니다.",
             "btn_save": "저장",
-            "saved_toast": "SMS 본문을 저장했습니다."
+            "saved_toast": "SMS 본문을 저장했습니다.",
+            "editor_label": "SMS 본문 편집"
         },
         "cancel_approval": {
             "modal_title": "승인 취소 확인",
@@ -223,7 +225,8 @@
         },
         "rejection": {
             "modal_title": "반려 사유 — {name}",
-            "btn_close": "닫기"
+            "btn_close": "닫기",
+            "editor_label": "알림톡 반려 사유"
         },
         "approval": {
             "approved": "승인됨",

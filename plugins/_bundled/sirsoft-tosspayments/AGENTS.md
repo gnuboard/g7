@@ -52,7 +52,7 @@
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-tosspayments --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-tosspayments --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-tosspayments --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-tosspayments --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-tosspayments --force` |
@@ -70,16 +70,18 @@
 
 <!-- @intent START -->
 **결제 승인**: 통합결제창이 브라우저를 `/payment/callback?paymentKey&orderId&amount`로
-리다이렉트 → `PaymentCallbackController`가 주문 조회 →
-`sirsoft-tosspayments.payment.before_confirm` 훅 → `TossPaymentsApiService::confirmPayment()`
-가 토스 승인 확인 API 호출 → 응답 금액과 서버 재계산 금액 대조(불일치 시 실패 처리) →
-`sirsoft-tosspayments.payment.after_confirm` 훅 → 이커머스 주문 결제 완료 처리. 가상계좌가
-발급된 경우 응답에 실린 `secret`을 `payment_meta.toss_secret`에 저장해 이후 웹훅 대조에
-씁니다.
+리다이렉트 → `PaymentCallbackController`가 주문 조회 → 결제 가능 상태와 콜백 금액을 주문
+청구액과 대조(어긋나면 승인 없이 실패) → `sirsoft-tosspayments.payment.before_confirm` 훅 →
+`TossPaymentsApiService::confirmPayment()`가 **청구액으로** 토스 승인 확인 API 호출 →
+`sirsoft-tosspayments.payment.after_confirm` 훅 → 응답 `totalAmount`와 청구액 대조(어긋나거나
+없으면 토스 승인을 취소하고 실패) → 이커머스 주문 결제 완료 처리. 가상계좌가 발급된 경우 같은
+대조를 거친 뒤 응답에 실린 `secret`을 `payment_meta.toss_secret`에, 대조한 발급 금액을
+`payment_meta.toss_approved_amount`에 저장해 이후 웹훅 대조에 씁니다.
 
 **가상계좌 입금 웹훅**: 토스가 `/webhook/deposit`으로 POST → 저장된 `toss_secret`과 웹훅
 본문의 `secret`을 대조(`webhook_secret_verify` 설정이 꺼져 있지 않은 한 강제) → 일치하면
-결제 완료 처리, 불일치하면 경고 로그만 남기고 처리하지 않습니다.
+발급 때 저장한 `toss_approved_amount`(없는 옛 결제행은 토스 결제 조회 결과)를 현재 청구액과
+대조한 뒤 결제 완료 처리합니다. secret 불일치·금액 불일치는 처리하지 않습니다.
 
 **결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`가 토스 취소 API 호출
@@ -108,8 +110,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -139,7 +141,7 @@
 - [ ] 가상계좌 웹훅의 secret 대조(`webhook_secret_verify`)를 기본값 `true` 이외로 바꾸지 않는다 — 끄면 토스 노티 위조를 막을 수단이 사라진다
 - [ ] `order_sheet_mode` 관련 로직을 고칠 때 `RegisterPgProviderListener`(enabled_methods)와 `RegisterTossPaymentMethodsListener`(builtin 결제수단 주입) 양쪽을 함께 갱신 — 한쪽만 고치면 설정과 노출 목록이 어긋난다
 - [ ] `ValidateTossSettingsListener`에 새 범위 검증을 추가하면 `core.plugin_settings.before_save` 의 `sync: true`를 유지
-- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 자기 전용 `data_source`(`settings`, 입금통보 웹훅 전체 URL 을 받는 `webhook_info`)를 쓰므로 `editor-spec.json` 의 `sampleData.byDataSourceId` 와 화면 상태(`initialState.local`)에 같은 ID·키로 샘플을 함께 추가한다
 - [ ] 토스페이먼츠가 SDK 호스트를 바꾸면 `plugin.json` 의 `trusted_script_hosts`(+`trusted_script_hosts_reason`)와 `resources/js/handlers/requestPayment.ts` 의 `KNOWN_SDK_HOSTS` 를 **함께** 갱신 — 두 목록이 어긋나면 테스트가 실패하며, 코드 상수에 없는 호스트는 주입 직전 확인에서 거부되어 결제가 진행되지 않는다(fail-closed). 변경 후 `php artisan ext:docgen --scope=plugin:sirsoft-tosspayments` 재실행
 
 ## 6. 금지 패턴
@@ -152,8 +154,8 @@
 | `core.plugin_settings.before_save` 리스너에 `sync: true` 없이 등록 | 저장을 막아야 하는 검증 훅은 반드시 `sync: true` | 기본값(비동기 큐)이면 `ValidationException`이 워커 안에서 죽고 저장이 그대로 진행되어 검증이 무력화된다 |
 | 라이브 시크릿 키를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 서버측 API를 위조 호출할 수 있다 |
 | `fail()` 에서 `failPayment()` 등 주문 상태를 바꾸는 호출 | 로그 + `resolveFailUrl()` 만 | 이 엔드포인트는 인증도 서명도 없는 GET 이고 `orderId`·`code` 가 전부 쿼리스트링에서 온다. 실패 처리를 수행하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있다 |
-| 결제 실패를 `fail()` 이 기록해 줄 것으로 가정 | 구매자 정보를 대조하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 기록한다 | 결제 성립은 `success()` 의 서버 `confirmPayment`, 결제완료 후 취소는 secret 대조를 통과한 웹훅이 담당한다. 주문을 실패로 전이시키는 결제창 경로는 close-report 하나뿐이다 |
-| 결제창 컨텍스트(구매자 정보)를 `window` 전역에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남긴다 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 전역에만 두면 실패 화면에서 보고할 근거가 사라져 결제 실패가 어디에도 기록되지 않는다 |
+| 결제 실패를 `fail()` 이 기록해 줄 것으로 가정 | 주문 소유자(회원 본인 로그인 / 비회원 `X-Guest-Order-Token`)를 확인하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 기록한다 — 주문자 연락처 대조는 소유 증명이 아니다 (KVE-2026-2434) | 결제 성립은 `success()` 의 서버 `confirmPayment`, 결제완료 후 취소는 secret 대조를 통과한 웹훅이 담당한다. 주문을 실패로 전이시키는 결제창 경로는 close-report 하나뿐이다 |
+| 결제창 컨텍스트(주문 정보)를 `window` 전역에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남긴다 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 전역에만 두면 실패 화면에서 보고할 근거가 사라져 결제 실패가 어디에도 기록되지 않는다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
 <!-- @intent END -->
 
@@ -162,10 +164,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 20개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| PHPUnit | 24개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

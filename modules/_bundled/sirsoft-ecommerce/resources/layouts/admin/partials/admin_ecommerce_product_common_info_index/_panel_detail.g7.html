@@ -5,7 +5,7 @@
 <partial description="Common Info Detail Panel - View/Form Container">
   <div data-ref="detail_panel" class="admin-card col-span-2-lg">
     <div class="row-stack">
-      <empty-state data-ref="empty_state_panel" data-if="{{!_global.selectedId &amp;&amp; _global.panelMode !== 'create' &amp;&amp; _global.panelMode !== 'edit' &amp;&amp; _global.panelMode !== 'copy'}}" icon="info-circle" title="$t:sirsoft-ecommerce.admin.common_info.empty_state.title" description="$t:sirsoft-ecommerce.admin.common_info.empty_state.description" class="py-16"/>
+      <empty-state data-type="composite" data-ref="empty_state_panel" data-if="{{!_global.selectedId &amp;&amp; _global.panelMode !== 'create' &amp;&amp; _global.panelMode !== 'edit' &amp;&amp; _global.panelMode !== 'copy'}}" icon="info-circle" title="$t:sirsoft-ecommerce.admin.common_info.empty_state.title" description="$t:sirsoft-ecommerce.admin.common_info.empty_state.description" class="py-16"/>
       <include src="_panel_view.g7.html"/>
       <include src="_panel_form.g7.html"/>
     </div>

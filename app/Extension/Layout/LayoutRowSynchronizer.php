@@ -320,8 +320,9 @@ final class LayoutRowSynchronizer
             return ! LayoutContentComparator::sameDocument($row->getRawOriginal('content'), LayoutPartialOrigin::strip(json_decode($raw, true)));
         }
 
-        if ($row->original_content_hash !== null) {
-            return $this->computeContentHash($row->content ?? []) !== $row->original_content_hash;
+        // 옛 방식 해시는 7.0.x 직렬화(빈 map `{}` 보존)로 남은 행도 있다 — DB 원문으로도 대조해 표기 차이를 수정으로 세지 않는다.
+        if (is_string($row->original_content_hash) && $row->original_content_hash !== '') {
+            return ! $this->contentMatchesOriginalHash($row->content ?? [], $row->original_content_hash, $this->rawStoredContent($row));
         }
 
         return false;

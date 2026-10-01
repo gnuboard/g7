@@ -16,7 +16,7 @@
       </h2>
     </div>
     <!-- 결제 방법 선택 카드 (활성화된 결제수단 동적 렌더링) -->
-    <grid :cols="3" :gap="4" class="mb-4">
+    <grid data-type="layout" :cols="3" :gap="4" class="mb-4">
       <responsive on="portable" :cols="1" :gap="3" class="mb-3"/>
       <button data-each="method, methodIdx in {{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos))}}" type="button" data-testid="checkout-payment-method-{{method.id}}" data-payment-method="{{method.id}}" class="{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}">
         <responsive on="portable" class="{{_computed.selectedPaymentMethod === method.id ? 'p-3 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}"/>
@@ -33,7 +33,7 @@
         <div class="flex items-center gap-3">
           <responsive on="portable" class="flex items-center gap-2"/>
           <!-- 브랜드 마크(색 배지/SVG 로고) — 카탈로그 _cached_brand_mark 가 있는 결제수단(간편결제)만 렌더 -->
-          <brand-mark data-if="{{method._cached_brand_mark}}" brandMark="{{method._cached_brand_mark}}" :size="40">
+          <brand-mark data-type="composite" data-if="{{method._cached_brand_mark}}" brandMark="{{method._cached_brand_mark}}" :size="40">
             <responsive on="portable" :size="32"/>
           </brand-mark>
           <!-- 브랜드 마크가 없는 결제수단(무통장/카드 등) — 아이콘 폴백 -->
@@ -53,6 +53,12 @@
         </div>
       </button>
     </grid>
+    <!-- 고를 결제수단이 하나도 없을 때 안내 — 서버가 주문을 받을 수 없는 수단(입금 계좌가 없는 무통장입금 등)을 걸러
+         내므로 목록이 빌 수 있다. 빈 칸만 남기면 결제하기가 왜 잠겼는지 알 수 없다(결제하기 버튼도 이 조건으로 잠긴다). -->
+    <div data-if="{{paymentSettings?.data &amp;&amp; (paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos)).length === 0}}" class="p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <responsive on="portable" class="p-3 mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"/>
+      <p class="text-sm text-red-700 dark:text-red-400">$t:shop.checkout.no_payment_methods</p>
+    </div>
     <!-- 카드결제 선택 시 안내 -->
     <div data-if="{{_computed.selectedPaymentMethod === 'card'}}" class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <responsive on="portable" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"/>

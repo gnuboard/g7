@@ -4,6 +4,7 @@ namespace Tests\Feature\Analytics\Api;
 
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\UpdateAnalyticsSettingsRequest;
+use Illuminate\Support\Facades\Queue;
 
 /**
  * 설정 API — 무엇이 저장되고 무엇이 거절되는가.
@@ -135,6 +136,65 @@ class SettingsControllerTest extends AnalyticsApiTestCase
         $response->assertOk();
         $this->assertTrue($response->json('data.meta.retro_anonymize_available'));
         $this->assertSame(1, $response->json('data.meta.ledger_rows.visits'), '소급이 몇 건에 적용되는지 함께 보인다');
+    }
+
+    /**
+     * 동의 연동으로 올렸어도 가릴 폭이 0 이면 소급을 제안하지 않는지 확인합니다.
+     *
+     * 브라우저 실측(#703): 제안된 소급 창이 보내는 값(가릴 폭 0·해시 아님)을 소급 요청 검증이 422 로 거부했다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects tightening_without_retro_target_offers_nothing
+     */
+    public function test_consent_mode_without_mask_does_not_offer_retro(): void
+    {
+        config([
+            'g7_settings.core.analytics.privacy_mode' => 'full',
+            'g7_settings.core.analytics.ip_mask_octets' => 0,
+        ]);
+        $this->visit();
+
+        $response = $this->actingAs($this->updateAdmin())
+            ->putJson('/api/admin/analytics/settings', ['privacy_mode' => 'consent']);
+
+        $response->assertOk();
+        $this->assertFalse(
+            $response->json('data.meta.retro_anonymize_available'),
+            '소급 창이 보낼 값(가릴 폭 0·해시 아님)은 소급 요청 검증이 거부한다 — 띄우지 않는다',
+        );
+    }
+
+    /**
+     * 동의 연동으로 올리며 가릴 폭이 있으면 소급을 제안하고, 그 창이 보내는 값을 소급 요청이 받는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects stricter_privacy_offers_retroactive_anonymization
+     */
+    public function test_consent_mode_with_mask_offers_retro_and_request_accepts_it(): void
+    {
+        config([
+            'g7_settings.core.analytics.privacy_mode' => 'full',
+            'g7_settings.core.analytics.ip_mask_octets' => 0,
+        ]);
+        $this->visit();
+        Queue::fake();
+
+        $response = $this->actingAs($this->updateAdmin())
+            ->putJson('/api/admin/analytics/settings', ['privacy_mode' => 'consent', 'ip_mask_octets' => 1]);
+
+        $response->assertOk();
+        $this->assertTrue($response->json('data.meta.retro_anonymize_available'));
+
+        // 소급 창이 보내는 값 그대로(가릴 폭 = 저장한 설정, 익명 모드가 아니면 해시 없음)
+        $this->actingAs($this->updateAdmin())
+            ->postJson('/api/admin/analytics/privacy/anonymize', ['confirm' => true, 'mask_octets' => 1])
+            ->assertStatus(202);
     }
 
     /**

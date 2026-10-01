@@ -26,8 +26,10 @@ use Illuminate\Support\Facades\Validator;
  *    (websocket·background)를 가리키면 오버레이가 영영 안 걷힌다(UpdateLayoutContentRequest:451 상당).
  *  - **`<script src>` 화이트리스트** — NoExternalUrls 는 최상위 scripts 키를 안 본다(사각지대).
  *    외부 JS 로더의 호스트·스킴을 config 허용 목록으로 잡는다(Q4).
- *  - **컴포넌트 존재 그물** — 노드 층이 태그 해석으로 이미 보장하지만(UnknownTag), 산출 name 이
- *    레지스트리에 있는지 한 번 더 훑어 방어한다(ComponentExists 상당).
+ *  - **컴포넌트 존재 검사** — 검사용 레지스트리가 주어졌을 때만(편집기·템플릿 자신의 레이아웃) 산출 name 이
+ *    그 템플릿에 있는지 본다. 설치 경로에는 레지스트리가 없다 — JSON 과 같이 컴포넌트 존재는 런타임이 판정한다.
+ *    확장 컴포넌트(`식별자.이름`)는 여기서 세우지 않는다 — 설치된 확장 목록에 없으면 lint 경고
+ *    (`extension_component_not_installed`)로 알리고 저장은 허용한다(2026-09-28 결정).
  *
  * 규칙은 모두 첫 실패에서 조기 종료하므로, 이 층도 정해진 순서(구조→엔드포인트→외부URL→컴포넌트
  * →wait_for→script)로 **첫 위반에서 CompileError 를 던진다** — 작성자는 하나씩 고친다.
@@ -42,15 +44,14 @@ final class LayoutValidator
      *
      * @param  array<string, mixed>  $json  컴파일 산출 레이아웃 JSON
      * @param  string  $rootKind  문서 봉투 (`layout`·`partial`·`extension`·`override`)
-     * @param  ComponentRegistry  $registry  대상 템플릿 컴포넌트 레지스트리
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (없으면 컴포넌트 존재 검사 생략 — JSON 설치와 동일)
      * @param  CompileContext  $context  검증 문맥
      * @param  string|null  $path  소스 파일 경로 (오류 메시지용)
+     * @return void
      *
      * @throws CompileError 검증 위반 시
-     *
-     * @return void
      */
-    public function validate(array $json, string $rootKind, ComponentRegistry $registry, CompileContext $context, ?string $path = null): void
+    public function validate(array $json, string $rootKind, ?ComponentRegistry $registry, CompileContext $context, ?string $path = null): void
     {
         // ① 구조 — 완성 레이아웃은 ValidLayoutStructure, fragment 는 확장 스키마.
         if ($rootKind === 'layout') {
@@ -86,13 +87,19 @@ final class LayoutValidator
         // 즉 두 문자열 경로의 `NoExternalUrls` 는 더 강한 규칙에 흡수된 중복 선언이다(S11 이전부터).
 
         // ④ 컴포넌트 존재 그물
-        $this->assertComponentsExist($view['components'], $registry, $path);
+        if ($registry !== null) {
+            $this->assertComponentsExist($view['components'], $registry, $path);
+        }
 
         // ⑤ wait_for cross-field
         $this->assertWaitForResolves($json, $path);
 
-        // ⑥ 외부 JS 로더 화이트리스트
-        $this->assertScriptSrcAllowed($json, $context, $path);
+        // ⑥ 외부 JS 로더 화이트리스트 — 설치 경로는 JSON 설치와 같이 검사하지 않는다. 확장이 싣는
+        // 레이아웃의 호스트는 그 확장이 스스로 선언하므로 설치 시점 대조는 순환이고, 설치 순서(오버라이드
+        // 대상 확장이 아직 없음)에 따라 조각이 조용히 빠지는 부작용만 낳는다. 판정은 런타임 게이트가 한다.
+        if ($context->checksScriptSrc) {
+            $this->assertScriptSrcAllowed($json, $context, $path);
+        }
     }
 
     /**
@@ -102,10 +109,9 @@ final class LayoutValidator
      * @param  ValidationRule  $rule  검증 규칙
      * @param  LayoutMarkupErrorCode  $code  실패 시 승격할 코드
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 규칙 실패 시
-     *
-     * @return void
      */
     private function runRule(array $value, object $rule, LayoutMarkupErrorCode $code, ?string $path): void
     {
@@ -169,13 +175,15 @@ final class LayoutValidator
     /**
      * 산출 노드의 컴포넌트 name 이 레지스트리에 있는지 재귀로 확인합니다 (ComponentExists 상당).
      *
+     * 템플릿 컴포넌트(점 없는 이름)만 세운다. 확장 컴포넌트(`식별자.이름`)는 확장이 지워졌거나 편집 도중
+     * 꺼졌을 수 있어 막지 않고, `LayoutLinter` ⑩ 이 경고한다.
+     *
      * @param  array<int, mixed>  $components  노드 목록
      * @param  ComponentRegistry  $registry  레지스트리
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 미등록 컴포넌트 name 발견 시
-     *
-     * @return void
      */
     private function assertComponentsExist(array $components, ComponentRegistry $registry, ?string $path): void
     {
@@ -193,7 +201,7 @@ final class LayoutValidator
             $name = $node['name'] ?? null;
 
             if (is_string($type) && in_array($type, self::REGISTRY_BACKED_TYPES, true) && is_string($name)
-                && $registry->findByName($name) === null) {
+                && ! str_contains($name, '.') && $registry->findByName($name) === null) {
                 throw CompileError::inFile(LayoutMarkupErrorCode::ComponentNotInRegistry, $path, ['name' => $name]);
             }
 
@@ -214,10 +222,9 @@ final class LayoutValidator
      *
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 완료 불가 데이터소스를 가리키는 경우
-     *
-     * @return void
      */
     private function assertWaitForResolves(array $json, ?string $path): void
     {
@@ -262,10 +269,9 @@ final class LayoutValidator
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  CompileContext  $context  검증 문맥 (허용 호스트)
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 허용 목록 밖 호스트·스킴인 경우
-     *
-     * @return void
      */
     private function assertScriptSrcAllowed(array $json, CompileContext $context, ?string $path): void
     {

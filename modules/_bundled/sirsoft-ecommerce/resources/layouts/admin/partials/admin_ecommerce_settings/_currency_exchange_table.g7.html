@@ -33,7 +33,7 @@
           </td>
           <td>
             <span data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="text-sm text-primary">{{(typeof currency.name === 'object' ? $localized(currency.name, 'sirsoft-ecommerce::settings.currencies.' + (currency.code ?? '') + '.name') : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency) ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}</span>
-            <multilingual-input data-if="{{_local.editingCurrencyIdx === currency._idx}}" name="editingCurrency.name" value="{{_local.editingCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
+            <multilingual-input data-type="composite" data-if="{{_local.editingCurrencyIdx === currency._idx}}" name="editingCurrency.name" value="{{_local.editingCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
             <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.symbol'}}" value="{{currency.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-16 text-center" maxLength="8" disabled="{{_computed.isReadOnly}}"/>
@@ -72,7 +72,7 @@
           </td>
           <!-- 통화별 사용 언어 (가입 시 통화 추정 매핑, A4) -->
           <td>
-            <tag-input name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'min-w-40 input-error' : 'min-w-40'}}" disabled="{{_computed.isReadOnly}}"/>
+            <tag-input data-type="composite" name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'min-w-40 input-error' : 'min-w-40'}}" disabled="{{_computed.isReadOnly}}"/>
             <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) -->
             <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</span>
           </td>
@@ -131,7 +131,7 @@
             </input>
           </td>
           <td>
-            <multilingual-input name="newCurrency.name" value="{{_local.form?.newCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
+            <multilingual-input data-type="composite" name="newCurrency.name" value="{{_local.form?.newCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
             <input type="text" name="newCurrency.symbol" value="{{_local.form?.newCurrency?.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-16 text-center" maxLength="8" disabled="{{_computed.isReadOnly}}"/>

@@ -2,7 +2,7 @@
   등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다
   (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다). -->
 <partial description="Product Form - Label Registration/Edit Modal" editor_label="$t:sirsoft-ecommerce.admin.product.labels.modal_title_create">
-  <modal data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" description="$t:sirsoft-ecommerce.admin.product.labels.modal_description" size="md">
+  <modal data-type="composite" data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" description="$t:sirsoft-ecommerce.admin.product.labels.modal_description" size="md">
     <div data-ref="label_form_content">
       <div data-ref="label_preview_section">
         <div>
@@ -15,7 +15,7 @@
       <div data-ref="label_name_section">
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.name</label>
-          <multilingual-input name="label_name" value="{{_global.labelFormData?.name ?? { ko: '', en: '' }}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.name" layout="tabs">
+          <multilingual-input data-type="composite" name="label_name" value="{{_global.labelFormData?.name ?? { ko: '', en: '' }}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.name" layout="tabs">
             <on type="change">
               <!-- 라벨 이름(다국어 한 덩어리) — 한국어가 비면 저장 버튼이 잠긴다 -->
               <set-state target="global" labelFormData.name="{{$event.target.value}}"/>

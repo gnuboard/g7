@@ -207,13 +207,15 @@
       "request_comment_hint": "審査申請時にカカオの審査担当者へ一緒に送られます（任意・500文字以内）。カカオの審査ガイドは本文の変数ごとに例示値を求めるため、変数ごとの例を書いておくと差し戻しを減らせます。保存はされず、申請時にのみ送信されます。",
       "saved_toast": "通知テンプレートを保存しました。",
       "requested_toast": "審査を申請しました。承認されるとアラートトーク送信が開始されます。",
-      "image_hint": "jpg/png · {{max}} KB 以下 · 幅 {{width}} px 以上 · 幅:高さ 2:1 (アップロードすると URL が自動入力されます)"
+      "image_hint": "jpg/png · {{max}} KB 以下 · 幅 {{width}} px 以上 · 幅:高さ 2:1 (アップロードすると URL が自動入力されます)",
+      "editor_label": "アラートトークテンプレートの編集"
     },
     "sms": {
       "modal_title": "SMS本文 — {name}",
       "hint": "代替SMSとSMS単独送信に共通で使用する本文です。#{変数} は送信時に自動置換されます。",
       "btn_save": "保存",
-      "saved_toast": "SMS本文を保存しました。"
+      "saved_toast": "SMS本文を保存しました。",
+      "editor_label": "SMS本文の編集"
     },
     "cancel_approval": {
       "modal_title": "承認取り消しの確認",
@@ -223,7 +225,8 @@
     },
     "rejection": {
       "modal_title": "却下理由 — {name}",
-      "btn_close": "閉じる"
+      "btn_close": "閉じる",
+      "editor_label": "アラートトークの差し戻し理由"
     },
     "approval": {
       "approved": "承認済み",

@@ -369,11 +369,11 @@ class Plugin extends AbstractPlugin
             Listeners\ScrubEscrowRecipientOnOrderAnonymizeListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
-            Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailTestModeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
             Listeners\ValidateCbtSettingsListener::class,
+            Listeners\ProvideNecessaryStorageKeysListener::class,
         ];
     }
 

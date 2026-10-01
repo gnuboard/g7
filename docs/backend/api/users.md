@@ -1494,7 +1494,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 8자 이상·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
+기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 8자 이상·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
 
 
 ### POST /api/admin/users/{user}/unlock

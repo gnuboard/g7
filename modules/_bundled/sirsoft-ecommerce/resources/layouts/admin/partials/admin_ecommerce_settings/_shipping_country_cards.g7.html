@@ -13,7 +13,7 @@
           </div>
         </div>
         <div class="flex-center gap-2 shrink-0">
-          <toggle checked="{{country.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
+          <toggle data-type="composite" checked="{{country.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
             <on type="change">
               <!-- 사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 되고, 이미 받은 주문에는 영향이 없다. -->
               <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}" :hasChanges="true"/>

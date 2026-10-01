@@ -1,6 +1,6 @@
 <!-- 설정 기본값을 이미 있는 게시판들에 소급 적용하는 확인 창. 무엇을·어디에 적용할지는 창을 열기 «전»에 찍어 둔 스냅숏(`_global.bulkApplySnapshot`)이 들고 있어, 창이 떠 있는 동안 뒤 화면의 폼을 만져도 적용 대상이 흔들리지 않는다. 실행은 두 단이다 — 설정 자체를 먼저 저장하고, 그 다음 게시판들에 뿌린다 -->
 <partial description="게시판 설정 일괄 적용 확인 모달">
-  <modal data-ref="bulk_apply_confirm_modal" title="$t:sirsoft-board.admin.settings.bulk_apply_modal.title" size="lg">
+  <modal data-type="composite" data-ref="bulk_apply_confirm_modal" title="$t:sirsoft-board.admin.settings.bulk_apply_modal.title" size="lg">
     <div class="flex flex-col gap-4 pt-2">
       <!-- 저장/되돌릴수없음 경고 배너 -->
       <div class="alert-warning">

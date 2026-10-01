@@ -61,8 +61,8 @@
               </button>
             </div>
           </div>
-          <multilingual-tab-panel data-ref="notice_locale_panel" variant="underline" class="">
-            <dynamic-field-list data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <multilingual-tab-panel data-type="composite" data-ref="notice_locale_panel" variant="underline" class="">
+            <dynamic-field-list data-type="composite" data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_name"/>
                 <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_value" placeholder="$t:sirsoft-ecommerce.admin.product.notice.input_placeholder"/>

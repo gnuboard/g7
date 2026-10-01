@@ -48,7 +48,7 @@
     </set-state>
   </init>
   <slot name="content">
-    <container class="py-4">
+    <container data-type="layout" class="py-4">
       <responsive on="desktop" class="py-8"/>
       <!-- 페이지 헤더 -->
       <div class="mb-6">
@@ -63,7 +63,7 @@
       <include src="partials/search/_search_states.g7.html"/>
       <include src="partials/search/_search_results.g7.html"/>
       <!-- 페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때는 페이지 번호 목록과 마지막 페이지 점프가 사라지고 이전/다음만 남으며, 다음 이동은 has_more_pages 로 끝까지 열려 있다 -->
-      <pagination data-if="{{query?.q &amp;&amp; (query?.type ?? 'all') !== 'all' &amp;&amp; ((searchResults?.data?.last_page ?? 0) > 1 || searchResults?.data?.has_more_pages === true || (searchResults?.data?.current_page ?? 1) > 1)}}" currentPage="{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}" totalPages="{{searchResults?.data?.last_page ?? null}}" hasMorePages="{{searchResults?.data?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
+      <pagination data-type="composite" data-if="{{query?.q &amp;&amp; (query?.type ?? 'all') !== 'all' &amp;&amp; ((searchResults?.data?.last_page ?? 0) > 1 || searchResults?.data?.has_more_pages === true || (searchResults?.data?.current_page ?? 1) > 1)}}" currentPage="{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}" totalPages="{{searchResults?.data?.last_page ?? null}}" hasMorePages="{{searchResults?.data?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
         <prop name="comment">"커서로 넘길 때 서버는 페이지 번호를 세지 않으므로 표시용 번호는 화면이 센다"</prop>
         <on event="onPageChange">
           <!-- 같은 검색 안에서의 페이지 이동이라 mergeQuery 로 검색어·탭·정렬·게시판필터를 그대로 승계한다. 커서는 이동 방향으로 정한다 — 이 시점의 query.page 는 아직 이동 전 값이라 앞뒤를 알 수 있고, 서버가 커서를 발급하지 않는 정렬(관련도순)에서는 빈 값이 되어 키가 지워지고 page 로만 움직인다 -->

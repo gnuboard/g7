@@ -1,3 +1,4 @@
+import { buildGuestOwnershipHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
 
@@ -297,6 +298,9 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         if (authToken) {
             signDataHeaders['Authorization'] = `Bearer ${authToken}`;
         }
+        // 실패한 같은 주문을 다시 결제할 때 서버는 주문을 결제대기로 되살린다. 그 복구는 주문 소유자만
+        // 할 수 있으므로 비회원은 체크아웃이 저장해 둔 조회 토큰을 싣는다 (회원은 위 Bearer 로 증명).
+        Object.assign(signDataHeaders, buildGuestOwnershipHeaders());
         const signDataRes = await fetch(signDataUrl, {
             method: 'POST',
             credentials: 'include',
@@ -459,8 +463,6 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
                 closeReportUrl: config.close_report_url,
                 oid: pgPaymentData.order_number,
                 price: Number(pgPaymentData.amount),
-                buyer_email: pgPaymentData.customer_email ?? '',
-                buyer_phone: pgPaymentData.customer_phone ?? '',
                 payment_method: paymentMethod,
             }, closeReason);
             window.removeEventListener('popstate', handlePopState);

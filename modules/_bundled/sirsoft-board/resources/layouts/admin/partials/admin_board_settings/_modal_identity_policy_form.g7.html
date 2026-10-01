@@ -1,6 +1,6 @@
 <!-- 본인인증 정책을 만들고 고치는 폼 — 추가와 편집을 한 창이 겸한다(`isNew`). 값·오류·모드가 전부 `_global.identity_policy_form_modal` 한 객체에 모여 있고 목록이 열 때마다 통째로 갈아 끼운다. 확장이 심어 둔 정책(`source_type` 이 admin 이 아닌 것)은 키·범위·대상을 잠가, 코드가 기대하는 자리를 화면에서 바꾸지 못하게 한다 -->
 <partial description="게시판 환경설정 > 본인인증 정책 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)" editor_label="$t:sirsoft-board.admin.settings.identity.policy_form_editor_label">
-  <modal data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
     <div class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div data-ref="policy_form_body" class="flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2">
         <div data-if="{{_global.identity_policy_form_modal?.errors}}" class="alert-danger items-start">
@@ -127,7 +127,7 @@
           </div>
           <div class="flex items-end justify-between gap-2 pb-2">
             <span class="form-label">$t:admin.identity.policies.form.enabled</span>
-            <toggle checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
+            <toggle data-type="composite" checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
               <on type="change">
                 <!-- 정책을 켜고 끈다 — 지우지 않고 잠시 멈춰 둘 수 있게 하려는 자리다 -->
                 <set-state target="global" identity_policy_form_modal.form.enabled="{{!_global.identity_policy_form_modal?.form?.enabled}}"/>
@@ -159,7 +159,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
+        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
           <on type="click">
             <!-- 저장 — 새 정책은 만들고(POST) 기존 것은 고친다(PUT). 새로 만드는 것은 언제나 게시판 소유(`source_type=admin` · `source_identifier=sirsoft-board`)로 찍고, 편집일 때는 원래 출처를 그대로 지킨다. 성공하면 폼 객체를 통째로 비워 다음에 열릴 때 지난 값이 남지 않게 한다 -->
             <sequence>

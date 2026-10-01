@@ -7,7 +7,7 @@
   
   저장중 오버레이와 오류 배너도 같은 자리(`bankModalSaving`·`bankModalErrors`)를 읽는다. -->
 <partial description="은행 관리 모달">
-  <modal data-ref="bank_management_modal" title="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.modal_title" size="2xl">
+  <modal data-type="composite" data-ref="bank_management_modal" title="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.modal_title" size="2xl">
     <div class="flex flex-col relative">
       <on event="mount">
         <!-- 창이 뜰 때마다 저장중 표시와 이전 오류를 지운다 — 남겨 두면 지난번 실패의 빨간 배너가 새로 연 창에 붙어 있다. -->
@@ -60,7 +60,7 @@
               <!-- 은행명 (다국어) -->
               <td class="align-top">
                 <div class="{{Object.keys($parent._local.bankModalErrors ?? {}).some(k => k.startsWith('banks.' + bank._idx + '.name')) ? 'rounded border border-red-500 p-px' : ''}}">
-                  <multilingual-input value="{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}" layout="tabs" name="{{'bank_name_' + bank._idx}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder" disabled="{{$parent._computed.isReadOnly}}">
+                  <multilingual-input data-type="composite" value="{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}" layout="tabs" name="{{'bank_name_' + bank._idx}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder" disabled="{{$parent._computed.isReadOnly}}">
                     <on event="onChange">
                       <!-- 은행명은 언어별로 들어간다. 배열을 통째로 다시 만들면서 이 줄만 바꾸는 이유는 반복 항목을 제자리에서 고칠 수 없기 때문이다. -->
                       <set-state target="$parent._local" form.order_settings.banks="{{($parent._local.form?.order_settings?.banks ?? []).map((b, i) => i === bank._idx ? {...b, name: $args[0]?.target?.value ?? b.name} : b)}}"/>

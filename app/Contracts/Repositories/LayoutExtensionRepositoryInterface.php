@@ -33,7 +33,7 @@ interface LayoutExtensionRepositoryInterface
      * 확장 등록
      *
      * @param  array  $data  확장 데이터
-     * @return LayoutExtension 생성된 확장
+     * @return LayoutExtension 생성된 확장 모델
      */
     public function create(array $data): LayoutExtension;
 
@@ -44,7 +44,7 @@ interface LayoutExtensionRepositoryInterface
      *
      * @param  array  $attributes  조회 조건 (template_id, extension_type, target_name, source_type, source_identifier)
      * @param  array  $values  생성/업데이트할 값
-     * @return LayoutExtension 생성 또는 업데이트된 확장
+     * @return LayoutExtension 생성되거나 갱신된 확장 모델
      */
     public function updateOrCreate(array $attributes, array $values): LayoutExtension;
 
@@ -62,9 +62,10 @@ interface LayoutExtensionRepositoryInterface
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
+     * @param  array<int, string>|null  $fragmentKeys  이 조각 키의 행만 복원 (null 이면 전부)
      * @return int 복원된 레코드 수
      */
-    public function restoreBySource(LayoutSourceType $sourceType, string $identifier): int;
+    public function restoreBySource(LayoutSourceType $sourceType, string $identifier, ?array $fragmentKeys = null): int;
 
     /**
      * 출처별 확장 영구 삭제
@@ -185,6 +186,15 @@ interface LayoutExtensionRepositoryInterface
      * @return LayoutExtension|null 일치하는 확장 또는 null
      */
     public function findByAttributes(array $attributes): ?LayoutExtension;
+
+    /**
+     * 확장 행의 조각 키를 바꿔 저장 (soft delete 된 행 포함)
+     *
+     * @param  LayoutExtension  $extension  대상 확장 모델 (삭제 행일 수 있음)
+     * @param  string  $fragmentKey  새 조각 키
+     * @return LayoutExtension 저장된 확장 모델
+     */
+    public function saveFragmentKey(LayoutExtension $extension, string $fragmentKey): LayoutExtension;
 
     /**
      * 조회 조건에 일치하는 모든 LIVE 확장을 템플릿 구분 없이 조회 (cross-template 판정용)

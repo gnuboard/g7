@@ -18,6 +18,7 @@ return [
     ],
     'errors' => [
         'payment_failed' => '決済処理に失敗しました。しばらく後に再度お試しください。',
+        'approval_verification_cancel_reason' => '決済承認検証失敗による自動キャンセル',
     ],
     'claim' => [
         'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメータ(paymentKey, orderId, amount)がありません。',

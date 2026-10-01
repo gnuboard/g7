@@ -15,6 +15,10 @@
             "id": "mileage_transactions_datagrid",
             "type": "composite",
             "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "transactions"
+            },
             "actions": [
                 {
                     "comment": "체크한 행 id 묶음. 화면 위쪽의 일괄 유효기간 연장이 이 값을 대상으로 삼는다.",
@@ -128,7 +132,6 @@
             ],
             "props": {
                 "data": "{{transactions?.data?.data || []}}",
-                "loading": "{{transactions?.loading}}",
                 "selectable": true,
                 "selectionScope": "page",
                 "selectedIds": "{{_local.selectedItems || []}}",

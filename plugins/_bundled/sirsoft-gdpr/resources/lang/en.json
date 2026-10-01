@@ -60,7 +60,7 @@
         "description": "Operators control the cookie consent banner and the MyPage privacy card.",
         "section": {
             "operator": "Operator / Privacy Policy",
-            "operator_desc": "Register the operator name, data storage location, and privacy policy page slug shown in the cookie banner and policy page.",
+            "operator_desc": "Register the operator name, data storage location, and privacy policy address shown in the cookie banner and policy page.",
             "cookie_banner": "Cookie Consent Banner",
             "cookie_banner_desc": "Configure visibility, position, categories, and policy version of the cookie consent banner — all in one place.",
             "cookie_banner_settings": "Banner Display Settings",
@@ -88,10 +88,10 @@
                 "label": "Policy Version",
                 "hint": "When the policy body, category semantics, or operator/retention information changes, click \"+ Publish new version\". On publish, all members will re-consent on their next visit."
             },
-            "privacy_policy_slug": {
-                "label": "Privacy Policy Page Slug",
-                "hint": "Slug of the privacy policy page registered in the Page plugin. If empty, the policy link in the cookie banner is hidden.",
-                "placeholder": "e.g., privacy-policy"
+            "privacy_policy_url": {
+                "label": "Privacy Policy Address",
+                "hint": "Enter where your privacy policy is published. For a page on this site, use a path starting with / (e.g., /page/privacy); for another site, use a full address starting with https://. If empty, the policy link in the cookie banner is hidden.",
+                "placeholder": "e.g., /page/privacy or https://example.com/privacy"
             },
             "legal_entity_name": {
                 "label": "Legal Entity / Operator Name",
@@ -134,10 +134,12 @@
                 "warnings_title": "Notes",
                 "warning_purpose": "Only the items listed here survive without functional consent. Anything else is cleared on every visit, with no error or warning — it surfaces only as a setting that will not save.",
                 "warning_wildcard": "A trailing * matches every name with that prefix. For example g7_filters_* covers g7_filters_orders_1. The * is only allowed at the end.",
-                "warning_discovery": "The item names a newly installed extension writes are listed in that extension documentation, or visible in browser devtools (Application → Storage).",
+                "warning_discovery": "Most items an extension writes are provided by that extension itself and appear automatically under \"Provided by extensions\" below. For anything not shown there, check that extension documentation or browser devtools (Application → Storage).",
                 "warning_necessary_only": "List only what the site genuinely needs to work. Adding tracking or analytics items defeats the pre-consent blocking principle.",
                 "locked_label": "Locked items (cannot be removed)",
                 "locked_hint": "The site cannot operate without these. They cannot be removed from the list.",
+                "provided_label": "Provided by extensions (automatic)",
+                "provided_hint": "Items that active extensions provide on their own. They drop out when the extension is deactivated and are not edited here.",
                 "tag_input_placeholder": "Type an item name and press Enter (e.g., g7_locale, myplugin_*)",
                 "tag_no_options": "No suggestions. Type to add.",
                 "scope": {
@@ -227,9 +229,9 @@
             "snapshot_modal": {
                 "editor_label": "View policy version snapshot",
                 "title": "Policy version v{version} snapshot",
-                "description": "Full snapshot of settings at publication time — categories, privacy policy slug, blocked domains. Used by DPO as evidence in consent disputes.",
+                "description": "Full snapshot of settings at publication time — categories, privacy policy address, blocked domains. Used by DPO as evidence in consent disputes.",
                 "section_categories": "Cookie categories",
-                "section_privacy_policy": "Privacy policy slug",
+                "section_privacy_policy": "Privacy policy address",
                 "section_blocked_domains": "Blocked domain catalog",
                 "category_required_badge": "Required",
                 "no_categories": "No categories registered.",
@@ -237,7 +239,8 @@
                 "view_button": "View v{version} snapshot",
                 "close": "Close",
                 "open_policy_page": "Open policy page",
-                "no_policy_slug": "No privacy policy page registered."
+                "no_policy_url": "No privacy policy address registered.",
+                "legacy_slug_note": "Recorded in the previous format (page slug \"{slug}\"). Showing the address the link pointed to at the time."
             },
             "not_found": "Policy version not found.",
             "history_page_summary": "{total} total · page {current} / {last}",
@@ -395,7 +398,8 @@
             "total": "{{count}} in total",
             "empty": "There are no targets.",
             "loading": "Loading...",
-            "close": "Close"
+            "close": "Close",
+            "editor_label": "Annual notice recipients"
         },
         "manual_run": {
             "run": "Run now",
@@ -423,7 +427,8 @@
             "executing": "Queuing...",
             "queued_toast": "The notice has been queued. The result will appear when it finishes.",
             "queue_failed": "Could not queue the run.",
-            "preview_failed": "Could not load the target count."
+            "preview_failed": "Could not load the target count.",
+            "editor_label": "Annual notice manual send"
         }
     },
     "edit_template": "Edit template",

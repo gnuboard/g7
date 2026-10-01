@@ -113,7 +113,7 @@
           </button>
         </div>
       </div>
-      <tab-navigation data-ref="provider_tabs" tabs="{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}" activeTabId="{{query.provider_id ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
+      <tab-navigation data-type="composite" data-ref="provider_tabs" tabs="{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}" activeTabId="{{query.provider_id ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
         <on type="change" event="onTabChange">
           <!-- 제공자 탭 전환 — 제공자를 바꾸면서 **걸어 둔 조건을 전부 초기화한다**.
                상태·목적·채널 같은 값이 제공자마다 다르므로, 남겨 두면 새 탭에서 아무것도 안 나오는

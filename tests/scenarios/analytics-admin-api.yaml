@@ -133,6 +133,7 @@ effects:
   - settings_save_only_the_keys_that_were_sent
   - settings_reject_values_outside_their_range
   - stricter_privacy_offers_retroactive_anonymization
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
   - weaker_privacy_does_not_offer_it
   - the_core_settings_route_validates_analytics_the_same_way
   # 되돌릴 수 없는 길

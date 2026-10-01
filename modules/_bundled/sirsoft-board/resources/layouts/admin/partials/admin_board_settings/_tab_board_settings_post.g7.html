@@ -6,7 +6,7 @@
       <variant when="normal"></variant>
     </class-map>
     <div>
-      <section-layout data-ref="section_post" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_post" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.post</h3>
         <div class="row-stack">
           <div data-ref="field_min_title_length" class="">
@@ -103,7 +103,7 @@
                   <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.blocked_keywords</p>
                 </div>
               </label>
-              <tag-input name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input data-type="composite" name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_new_display_hours" class="">

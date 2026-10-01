@@ -70,10 +70,23 @@ effects:
   - close_report_ignores_order_whose_payment_already_paid
   - close_report_ignores_order_that_is_no_longer_payable
   - close_report_restores_mileage_and_option_state_through_fail_payment
+  # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
+  - close_report_rejects_request_without_ownership_proof
+  - close_report_rejects_matching_buyer_contact_without_ownership
+  - forged_guest_token_is_rejected
+  - expired_guest_token_is_rejected
+  - guest_token_of_another_order_is_rejected
+  - guest_with_order_token_can_report_close
+  - member_owner_can_report_close
+  - member_order_cannot_be_reported_without_login
+  - other_member_cannot_report_close_of_member_order
+  - order_without_address_is_rejected_without_ownership
+  - unauthenticated_request_with_matching_buyer_contact_is_rejected
 
 test_files:
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
 
 manual_verification:
   - description: "위조 실패 링크 PoC — 주소 하나로 남의 주문 취소"

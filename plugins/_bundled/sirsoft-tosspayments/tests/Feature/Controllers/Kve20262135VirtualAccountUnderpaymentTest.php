@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Controllers;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -14,16 +15,27 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
- * KVE-2026-2135 특성화(characterization) 테스트 — 검수 전용, 현재 동작을 실측한다.
+ * 회귀 테스트 — 가상계좌 과소금액 발급·입금이 결제완료로 이어지지 않는다.
  *
- * 신고 PoC: 주문 청구액 50,000원, 토스 confirm totalAmount 1,000원(가상계좌 WAITING_FOR_DEPOSIT).
- * 이 테스트는 "수정 후 기대치" 가 아니라 **현재 코드의 실제 동작**을 단언해, 취약점이 실존하는지
- * 자동 판정한다. 통과하면 취약(과소입금 승인)이라는 뜻이다.
+ * 신고 재현: 주문 청구액 50,000원, 성공 리다이렉트 amount 1,000원, 토스 발급 totalAmount 1,000원.
+ * 수정 전에는 발급 단계에서 금액을 대조하지 않아 1,000원 계좌가 입금대기로 저장됐고, 입금통보는
+ * 결제행에 저장해 둔 예정액(`paid_amount_base`)끼리 대조해 주문을 결제완료로 전이했다.
+ *
+ * @scenario path=vbank_issue, check=callback_amount
+ *
+ * @effects tampered_callback_amount_is_rejected_before_confirm,
+ *          legacy_deposit_is_verified_by_payment_lookup
  */
 class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
 {
     private const SECRET = 'wsk_kve_2026_2135';
 
+    /**
+     * 플러그인 설정을 mock 합니다.
+     *
+     * @param  array<string, mixed>  $overrides  기본 설정을 덮어쓸 값
+     * @return void 반환값 없음
+     */
     private function mockPluginSettings(array $overrides = []): void
     {
         $mock = $this->createMock(PluginSettingsService::class);
@@ -34,7 +46,14 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
-    private function createOrder(int $totalAmount = 50000): Order
+    /**
+     * 원화 스냅샷을 고정한 결제대기 주문을 만듭니다.
+     *
+     * @param  int  $totalAmount  주문 청구액
+     * @param  array<string, mixed>  $paymentOverrides  결제행 덮어쓸 속성
+     * @return Order 생성된 주문
+     */
+    private function createOrder(int $totalAmount = 50000, array $paymentOverrides = []): Order
     {
         $user = User::factory()->create();
 
@@ -67,7 +86,7 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
             'total_paid_amount' => 0,
         ]);
 
-        OrderPaymentFactory::new()->create([
+        OrderPaymentFactory::new()->create(array_merge([
             'order_id' => $order->id,
             'payment_status' => PaymentStatusEnum::READY,
             'payment_method' => PaymentMethodEnum::VBANK,
@@ -75,11 +94,19 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
             'paid_amount_base' => $totalAmount,
             'paid_amount_local' => $totalAmount,
             'paid_at' => null,
-        ]);
+        ], $paymentOverrides));
 
         return $order;
     }
 
+    /**
+     * 과소금액 가상계좌 발급 응답을 만듭니다.
+     *
+     * @param  string  $paymentKey  결제 키
+     * @param  string  $orderId  주문번호
+     * @param  int  $totalAmount  발급 금액
+     * @return array<string, mixed> 발급 응답
+     */
     private function underAmountVaConfirm(string $paymentKey, string $orderId, int $totalAmount): array
     {
         return [
@@ -100,8 +127,16 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
         ];
     }
 
-    /** 단계 1 — 성공 콜백: 50,000 주문에 1,000 confirm 이 와도 가상계좌가 저장되는가? */
-    public function test_step1_success_callback_saves_virtual_account_for_underamount(): void
+    /**
+     * 단계 1 — 성공 콜백: 50,000 원 주문에 1,000 원 콜백이 오면 발급을 요청하지 않고 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=vbank_issue, check=callback_amount
+     *
+     * @effects tampered_callback_amount_is_rejected_before_confirm
+     */
+    public function test_step1_underamount_callback_is_rejected_before_issuing_a_virtual_account(): void
     {
         $this->mockPluginSettings();
         $order = $this->createOrder(50000);
@@ -119,55 +154,48 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
             'amount' => 1000,
         ]));
 
-        $location = $response->headers->get('Location');
-        fwrite(STDERR, "\n[KVE-2135 step1] redirect Location = {$location}\n");
+        $this->assertStringContainsString('error=amount_mismatch', (string) $response->headers->get('Location'));
+        Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url(), '/v1/payments/confirm'));
 
-        $order->refresh();
         $payment = $order->payment->refresh();
-        fwrite(STDERR, "[KVE-2135 step1] payment_status = {$payment->payment_status->value}, vbank_number = ".($payment->vbank_number ?? 'null').", pg_raw totalAmount = ".($payment->payment_meta['pg_raw_response']['totalAmount'] ?? 'null')."\n");
-
-        // 현재(취약) 동작: amount_mismatch 로 가지 않고 가상계좌가 저장된다.
-        $this->assertStringNotContainsString('amount_mismatch', (string) $location, 'VULN: 과소금액인데 amount_mismatch 거부가 없다');
-        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value, 'VULN: 과소금액 가상계좌가 입금대기로 저장됨');
+        $this->assertSame(PaymentStatusEnum::READY->value, $payment->payment_status->value, '과소금액 가상계좌가 입금대기로 저장됨');
+        $this->assertNull($payment->vbank_number);
     }
 
-    /** 단계 2 — 입금통보 DONE: 1,000 만 입금됐는데 주문이 결제완료로 전이되는가? */
-    public function test_step2_deposit_webhook_completes_order_despite_underpayment(): void
+    /**
+     * 단계 2 — 입금통보 DONE: 수정 전에 1,000 원으로 발급된 결제행은 결제 조회로 금액을 확인해 거절한다.
+     *
+     * 발급 금액 기록(`toss_approved_amount`)이 없는 결제행이다. 결제 조회가 1,000 원 입금 완료를
+     * 돌려주므로 청구액 50,000 원과 어긋나 결제완료로 전이하지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=deposit_webhook, check=legacy_lookup
+     *
+     * @effects legacy_deposit_is_verified_by_payment_lookup
+     */
+    public function test_step2_legacy_underpaid_deposit_is_not_completed(): void
     {
         $this->mockPluginSettings();
 
-        // 단계 1 이후 저장된 상태를 재현: WAITING_DEPOSIT, pg_raw_response.totalAmount = 1000, secret 저장.
-        $user = User::factory()->create();
-        $order = OrderFactory::new()->create([
-            'user_id' => $user->id,
-            'order_number' => 'ORD-KVE-'.random_int(100000, 999999),
-            'order_status' => OrderStatusEnum::PENDING_ORDER,
-            'currency' => 'KRW',
-            'currency_snapshot' => [
-                'base_currency' => 'KRW', 'order_currency' => 'KRW', 'exchange_rate' => 1.0,
-                'exchange_rates' => ['KRW' => ['rate' => 1.0, 'decimal_places' => 0, 'rounding_unit' => '1', 'rounding_method' => 'round']],
-                'snapshot_at' => now()->toIso8601String(),
-            ],
-            'subtotal_amount' => 50000, 'total_product_coupon_discount_amount' => 0, 'total_order_coupon_discount_amount' => 0,
-            'total_code_discount_amount' => 0, 'base_shipping_amount' => 0, 'extra_shipping_amount' => 0, 'shipping_discount_amount' => 0,
-            'total_shipping_amount' => 0, 'total_amount' => 50000, 'total_due_amount' => 50000,
-            'total_points_used_amount' => 0, 'total_deposit_used_amount' => 0, 'total_paid_amount' => 0,
-        ]);
-
-        OrderPaymentFactory::new()->create([
-            'order_id' => $order->id,
+        // 수정 전 단계 1 이 남긴 상태를 재현: WAITING_DEPOSIT, pg_raw_response.totalAmount = 1000, secret 저장.
+        $order = $this->createOrder(50000, [
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            'payment_method' => PaymentMethodEnum::VBANK,
-            'pg_provider' => 'tosspayments',
             'transaction_id' => 'pk_test_kve_2135',
-            'paid_amount_base' => 50000,   // 애플리케이션 예정 금액 (신고서의 핵심)
-            'paid_amount_local' => 50000,
-            'paid_at' => null,
             'payment_meta' => [
                 'toss_secret' => self::SECRET,
                 'status' => 'WAITING_FOR_DEPOSIT',
-                'pg_raw_response' => ['status' => 'WAITING_FOR_DEPOSIT', 'totalAmount' => 1000], // 실제 PG 확인액 1,000
+                'pg_raw_response' => ['status' => 'WAITING_FOR_DEPOSIT', 'totalAmount' => 1000],
             ],
+        ]);
+
+        Http::fake([
+            'api.tosspayments.com/v1/payments/pk_test_kve_2135' => Http::response([
+                'paymentKey' => 'pk_test_kve_2135',
+                'orderId' => $order->order_number,
+                'status' => 'DONE',
+                'totalAmount' => 1000,
+            ], 200),
         ]);
 
         $response = $this->postJson('/plugins/sirsoft-tosspayments/webhook/deposit', [
@@ -177,13 +205,14 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
             'transactionKey' => 'txrd_kve_2135',
         ]);
 
+        $this->assertSame('FAIL', $response->getContent());
+        Http::assertSent(fn (HttpRequest $request) => $request->method() === 'GET'
+            && str_ends_with($request->url(), '/v1/payments/pk_test_kve_2135'));
+
         $order->refresh();
         $payment = $order->payment->refresh();
-        fwrite(STDERR, "\n[KVE-2135 step2] webhook body = ".$response->getContent().", http = {$response->getStatusCode()}\n");
-        fwrite(STDERR, "[KVE-2135 step2] order_status = {$order->order_status->value}, payment_status = {$payment->payment_status->value}, total_paid_amount = {$order->total_paid_amount}\n");
 
-        // 현재(취약) 동작: 실입금 1,000 인데 주문이 결제완료로 전이된다.
-        $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status, 'VULN: 과소입금인데 주문이 결제완료로 전이됨');
-        $this->assertSame(PaymentStatusEnum::PAID->value, $payment->payment_status->value, 'VULN: 과소입금인데 결제 PAID');
+        $this->assertSame(OrderStatusEnum::PENDING_ORDER, $order->order_status, '과소입금인데 주문이 결제완료로 전이됨');
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value, '과소입금인데 결제 PAID');
     }
 }

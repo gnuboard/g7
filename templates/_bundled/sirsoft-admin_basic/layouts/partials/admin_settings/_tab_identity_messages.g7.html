@@ -64,6 +64,9 @@
                 </field>
               </set-state>
               <open-modal target="modal_identity_message_definition_add"/>
+              <!-- 이미 메시지가 정의된 정책 목록을 새로 받는다 — 다른 화면에서 정의를 지웠거나 만든
+                   직후라도 창의 선택지가 서버의 중복 판정과 맞게(받는 동안은 저장이 잠겨 있다). -->
+              <refetch-data-source dataSourceId="identityMessagePolicyScopes"/>
             </sequence>
           </on>
           <icon name="fa-solid fa-plus" class="text-xs"/>
@@ -103,7 +106,7 @@
                 </div>
               </div>
               <div class="flex-center gap-3 flex-shrink-0">
-                <toggle size="sm" checked="{{def.is_active}}" disabled="{{!(def.abilities?.can_update ?? false)}}">
+                <toggle data-type="composite" size="sm" checked="{{def.is_active}}" disabled="{{!(def.abilities?.can_update ?? false)}}">
                   <on type="change">
                     <!-- 사용 여부 토글 — **성공이든 실패든 목록을 다시 받는다**. 실패 쪽에서도 받는 것이
                          요점이다(스위치가 눌린 모양으로 남지 않게 서버 값으로 되맞춘다). -->
@@ -176,7 +179,7 @@
             </div>
             <div data-if="{{(_local.expandedIdentityMessages ?? {})[def.id]}}" class="mt-3 pt-3">
               <span class="text-tertiary font-medium mb-2 block">$t:admin.settings.identity.messages.body_preview</span>
-              <html-content content="{{def.templates?.[0]?.body?.[$locale] ?? def.templates?.[0]?.body?.ko ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
+              <html-content data-type="composite" content="{{def.templates?.[0]?.body?.[$locale] ?? def.templates?.[0]?.body?.ko ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
             </div>
           </div>
         </div>
@@ -187,7 +190,7 @@
       <p class="text-label-subtle">$t:admin.settings.identity.messages.empty</p>
     </div>
     <div data-ref="identity_messages_pagination" class="flex justify-center mt-4">
-      <pagination currentPage="{{identityMessages?.data?.meta?.current_page ?? identityMessages?.data?.pagination?.current_page ?? 1}}" totalPages="{{identityMessages?.data?.meta?.last_page ?? identityMessages?.data?.pagination?.last_page ?? null}}" hasMorePages="{{identityMessages?.data?.meta?.has_more_pages ?? identityMessages?.data?.pagination?.has_more_pages ?? false}}">
+      <pagination data-type="composite" currentPage="{{identityMessages?.data?.meta?.current_page ?? identityMessages?.data?.pagination?.current_page ?? 1}}" totalPages="{{identityMessages?.data?.meta?.last_page ?? identityMessages?.data?.pagination?.last_page ?? null}}" hasMorePages="{{identityMessages?.data?.meta?.has_more_pages ?? identityMessages?.data?.pagination?.has_more_pages ?? false}}">
         <on type="action" event="onPageChange">
           <!-- 페이지 이동 — 자기 쿼리 키를 쓰고 나머지(탭·항목수)는 유지한다. -->
           <navigate path="/admin/settings" :replace="true" :mergeQuery="true">

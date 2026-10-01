@@ -54,7 +54,7 @@
       <div class="flex gap-4 items-start">
         <responsive on="portable" class="flex flex-col items-center gap-4"/>
         <!-- 프로필 아바타 - AvatarUploader 컴포넌트 (xl = 96px) -->
-        <avatar-uploader src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
+        <avatar-uploader data-type="composite" src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
           <responsive on="portable" size="lg"/>
           <prop name="uploadSuccessActions">
             <item>

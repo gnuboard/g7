@@ -3,7 +3,7 @@
 
      이 창은 대기 중인 건에서만 열린다(목록의 취소 버튼이 `can_cancel` 로 걸러진다). -->
 <partial description="마이페이지 게시판 활동 - 신고 취소 확인" editor_label="$t:user.modal_label.mypage_board.reportCancelModal">
-  <modal data-ref="report_cancel_modal" id="report_cancel_modal" title="$t:mypage.board_activities.reports.cancel_title" icon="flag" iconClassName="text-red-500" size="sm">
+  <modal data-type="composite" data-ref="report_cancel_modal" id="report_cancel_modal" title="$t:mypage.board_activities.reports.cancel_title" icon="flag" iconClassName="text-red-500" size="sm">
     <div data-testid="report-cancel-modal" class="space-y-4">
       <p class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reports.cancel_confirm</p>
       <p class="text-sm text-gray-500 dark:text-gray-500">$t:mypage.board_activities.reports.cancel_notice</p>

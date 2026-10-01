@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Factories\CartFactory;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 장바구니 관리 API Feature 테스트 (이슈 #524 §4.1)
@@ -25,11 +26,10 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=admin_cart_list,actor=admin
  *
  * @effects admin_cart_requires_read_permission, admin_cart_bulk_delete_writes_activity_log
- *
- * @group ecommerce
- * @group admin
- * @group cart
  */
+#[Group('ecommerce')]
+#[Group('admin')]
+#[Group('cart')]
 class AdminCartControllerTest extends ModuleTestCase
 {
     private string $apiBase = '/api/modules/sirsoft-ecommerce/admin/carts';
@@ -44,6 +44,11 @@ class AdminCartControllerTest extends ModuleTestCase
 
     private Product $product;
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 조회 권한 없는 관리자 → 403.
      *
      * @effects admin_cart_requires_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_requires_read_permission(): void
     {
@@ -76,6 +83,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 목록은 페이지네이션과 abilities 를 함께 낸다 (화면이 삭제 버튼 상태를 정할 근거).
      *
      * @effects admin_cart_returns_pagination_and_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_pagination_and_abilities(): void
     {
@@ -93,6 +102,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 삭제 권한 없는 관리자는 목록은 보되 can_manage=false 로 받는다.
      *
      * @effects admin_cart_read_only_cannot_manage
+     *
+     * @return void 반환값 없음
      */
     public function test_index_read_only_admin_gets_can_manage_false(): void
     {
@@ -108,6 +119,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * user_uuid 필터 — 없는 uuid 는 빈 결과여야 한다 (필터 무시 후 전체 노출 금지).
      *
      * @effects admin_cart_filters_by_user_uuid, admin_cart_unknown_uuid_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_uuid(): void
     {
@@ -130,6 +143,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 검색 대상 분기 — member(이름) / email / member_id(uuid).
      *
      * @effects admin_cart_search_field_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_field_branches(): void
     {
@@ -153,6 +168,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 삭제 권한 없는 관리자의 삭제 → 403.
      *
      * @effects admin_cart_destroy_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_requires_manage_permission(): void
     {
@@ -169,6 +186,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 일괄 삭제 → 건수 반환 + 행마다 관리자 활동 로그.
      *
      * @effects admin_cart_bulk_delete_writes_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_deletes_and_writes_activity_log(): void
     {
@@ -207,6 +226,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * 축을 따로 둔 것이 이 분기의 근거다.
      *
      * @effects admin_cart_owner_filter_guest_only
+     *
+     * @return void 반환값 없음
      */
     public function test_index_owner_filter_guest_only(): void
     {
@@ -225,6 +246,8 @@ class AdminCartControllerTest extends ModuleTestCase
      * owner=member → 회원 장바구니만 나온다.
      *
      * @effects admin_cart_owner_filter_member_only
+     *
+     * @return void 반환값 없음
      */
     public function test_index_owner_filter_member_only(): void
     {

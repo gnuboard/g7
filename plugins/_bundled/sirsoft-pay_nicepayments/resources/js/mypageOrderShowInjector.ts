@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { createOrderScreenPoller, enterOrderScreen, requestOncePerOrderScreen } from './orderScreenPolling';
 
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOrderShowInjectorInstalled';
@@ -13,6 +14,8 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // (/shop/guest/claims/{N}) 신청서 상세가 같은 카드를 쓰므로 둘을 함께 매칭한다 —
 // 비회원 쪽은 요청 헤더 도구가 비회원 주문 조회 토큰을 실어 준다.
 const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
+
+const poller = createOrderScreenPoller();
 
 interface Payment {
     pg_provider?: string;
@@ -96,7 +99,7 @@ function findPaymentContainer(): Element | null {
 // 이 스크립트는 결제 방법 행에 간편결제 이름을 덧붙이는 일만 한다. 가상계좌 입금 안내·영수증 행(결제 영수증·매출전표·
 // 현금영수증)은 레이아웃 조각 resources/extensions/user_mypage_order_receipt 가 번역 키로 그린다 — 종전에는 이 스크립트도
 // 같은 안내·행을 한국어 고정 글자로 한 번 더 그려 화면에 두 번 나왔다(#599, PO 결정 2026-09-28 「레이아웃 조각만 남김」).
-async function tryInject(orderNumber: string | null): Promise<boolean> {
+async function tryInject(orderNumber: string | null, isActive: () => boolean): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
     if (!orderData) return false;
 
@@ -109,34 +112,36 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
 
     const container = findPaymentContainer();
     if (!container) return false;
-    const receiptInfo = await fetchReceiptInfo(resolvedOrderNumber);
+    // 조회는 화면 진입당 한 번 — 응답을 기다리는 동안 다시 부르지 않고 결과(실패 포함)를 재사용한다.
+    const receiptInfo = await requestOncePerOrderScreen(
+        `nicepay-receipt:${resolvedOrderNumber}`,
+        () => fetchReceiptInfo(resolvedOrderNumber),
+    );
+    if (!isActive()) return true;
     patchMypagePaymentMethodDisplay(container, receiptInfo?.payment_method_display_label);
 
     return true;
 }
 
-function startPolling(orderNumber: string | null): void {
-    let attempts = 0;
-    const id = setInterval(() => {
-        attempts++;
-        void tryInject(orderNumber).then(done => {
-            if (done || attempts >= 30) clearInterval(id);
-        });
-    }, 400);
-}
-
 function onRouteChange(): void {
+    enterOrderScreen();
     const match = location.pathname.match(ORDER_SHOW_RE);
     // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
     const segment = match?.[1] ?? match?.[2];
     if (segment) {
-        startPolling(segment);
+        poller.start(location.pathname, isActive => tryInject(segment, isActive));
 
         return;
     }
 
     // 클레임 신청서 상세(회원·비회원) — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
-    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null);
+    if (CLAIM_SHOW_RE.test(location.pathname)) {
+        poller.start(location.pathname, isActive => tryInject(null, isActive));
+
+        return;
+    }
+
+    poller.stop();
 }
 
 export function installMypageOrderShowInjector(): void {

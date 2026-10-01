@@ -132,10 +132,24 @@
                                             "handler": "reloadExtensions"
                                         },
                                         {
+                                            "comment": "템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).\n                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을\n                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}",
+                                                "reactivateLanguagePacksRefreshAfter": "{{_global.selectedTemplate?.type === 'admin'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_reactivate_language_packs_modal",
+                                            "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                        },
+                                        {
                                             "handler": "conditions",
                                             "conditions": [
                                                 {
-                                                    "if": "{{_global.selectedTemplate.type === 'admin'}}",
+                                                    "if": "{{_global.selectedTemplate.type === 'admin' && !((response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage'))}}",
                                                     "then": {
                                                         "handler": "refresh",
                                                         "params": {

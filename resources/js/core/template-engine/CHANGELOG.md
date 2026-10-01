@@ -82,6 +82,21 @@
 - 발생 시점: 엔진 번들 이분 탐색으로 2026-06-21 번들(f7eb1615f)까지 정상, 2026-06-23 번들(3a2e76e46)부터 재현 — 창 안의 엔진 변경은 `0c3c32d4c`(engine-v1.50.0 COMPONENT 경로 `_global._local` 동기화)뿐이다. 2026-09-01 `addMissingLeafKeys` 보충(engine-v1.63.3)이 유출 범위를 바뀐 키에서 저장소 A 의 전체 키로 넓혔다. 확장(레이아웃·핸들러·컴포넌트) 변경과는 무관하다
 
 
+### Changed
+
+- `loadScript` 가 로드를 미룰 스크립트를 코어 속성 `data-g7-script-deferred`(`SCRIPT_DEFERRED_ATTRIBUTE`)로 판별합니다.
+  종전에는 특정 동의 관리 플러그인의 속성 이름을 직접 봤습니다. 스크립트를 막는 확장은 src setter 에서 이 속성을 붙입니다.
+- 방문자 통계 동의 브리지가 코어 API(`/api/analytics/consent`)와 코어 이벤트(`g7:analytics-permission-changed`)를 씁니다.
+  동의 확인 대상 유무는 활성 플러그인 이름이 아니라 서버가 인라인한 `settings.analytics.consent_provider` 로 판정합니다.
+
+### Fixed
+
+- 반복 컨텍스트(DataGrid 셀 `cellChildren`, 카드 children 등) 안의 확장점(`extension_point`)이 「컴포넌트를 찾을 수 없습니다」
+  경고와 함께 통째로 버려지던 문제를 고쳤습니다. `renderItemChildren` 이 확장점을 컴포넌트 이름으로 찾았기 때문입니다.
+  이제 백엔드가 주입한 children 을 행 컨텍스트로 평가해 그리며, 호스트 `<div>` 규칙(허용 DOM 속성·layout 클래스)은
+  `DynamicRenderer` 와 공용 헬퍼 `buildExtensionPointHostProps` 로 공유합니다. 관리자 주문 목록 결제수단 셀의 테스트 결제
+  배지(이커머스가 연 확장점에 결제 플러그인이 주입)가 여기에 해당합니다.
+
 ## [engine-v1.72.0] - 2026-09-26
 
 ### Added

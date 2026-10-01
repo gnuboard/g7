@@ -73,7 +73,7 @@
             </navigate>
           </on>
         </select>
-        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input flex-1 min-w-[200px]">
+        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
           <on type="keypress" key="Enter">
             <!-- 엔터로 검색 — 범위 셀렉트와 같은 규칙(빈 검색어는 키를 빼고, 쪽수는 1 로). 옆 「검색」 버튼과 달리 이쪽은 URL 을 갈아 조건 자체를 바꾼다 -->
             <navigate path="/admin/board/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
@@ -135,7 +135,7 @@
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
                 <td class="px-3 py-2">
-                  <toggle checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 표 판(넓은 화면)에서 정책을 바로 켜고 끈다. 실패해도 목록을 다시 읽는 이유는 화면의 토글이 이미 뒤집혀 있기 때문이다 — 서버 값으로 되돌려야 거짓 상태가 남지 않는다 -->
                       <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">
@@ -231,7 +231,7 @@
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
-              <toggle checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 좁은 화면 카드 판의 같은 토글 — 표 판과 짝이고 동작은 같다 -->
                   <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">

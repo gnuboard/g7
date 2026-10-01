@@ -91,10 +91,10 @@
         <div data-ref="header_content" class="pt-4 pb-0">
           <!-- 제목 wrapper — 게시판 설정(page_header_wrapper)과 동일하게 별도 className 없음. panel-header-row(border-b 포함) 를 쓰면 탭 위에 불필요한 구분선이 하나 더 생긴다. -->
           <div data-ref="header_top_row">
-            <page-header data-ref="page_header" title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+            <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
           </div>
           <!-- 상단 탭 스크롤 — settings_main_content(p-4 sm:p-6 lg:p-8) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신. -->
-          <tab-navigation-scroll data-ref="settings_tab_navigation" class="flex gap-1" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <tab-navigation-scroll data-type="composite" data-ref="settings_tab_navigation" class="flex gap-1" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
             <prop name="tabs">
               <item id="card_operator" label="$t:sirsoft-gdpr.settings.nav.operator"/>
               <item id="card_cookie_banner" label="$t:sirsoft-gdpr.settings.nav.cookie_banner"/>
@@ -149,15 +149,16 @@
                 <span data-if="{{_local.errors?.['data_storage_location']}}" class="form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
               </div>
             </div>
-            <div data-ref="field_privacy_policy_slug" class="grid-3col-responsive pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div data-ref="field_privacy_policy_url" class="grid-3col-responsive pt-6 border-t border-gray-200 dark:border-gray-700">
               <div class="lg:col-span-1">
-                <label class="form-label">$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.label</label>
-                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.hint</p>
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.privacy_policy_url.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.privacy_policy_url.hint</p>
               </div>
               <div class="lg:col-span-2">
-                <input type="text" name="privacy_policy_slug" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.placeholder" class="{{_local.errors?.['privacy_policy_slug'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <!-- 처리방침 주소 — 운영자가 직접 입력 (/ 로 시작하는 사이트 경로 또는 https:// 주소). 형식 검증은 서버 FormRequest 가 한다. -->
+                <input type="text" name="privacy_policy_url" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder" class="{{_local.errors?.['privacy_policy_url'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
                 <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
-                <span data-if="{{_local.errors?.['privacy_policy_slug']}}" class="form-error">{{_local.errors?.['privacy_policy_slug']?.[0] ?? ''}}</span>
+                <span data-if="{{_local.errors?.['privacy_policy_url']}}" class="form-error">{{_local.errors?.['privacy_policy_url']?.[0] ?? ''}}</span>
               </div>
             </div>
           </div>
@@ -180,7 +181,7 @@
                 <p class="form-hint">$t:sirsoft-gdpr.settings.fields.banner_enabled.hint</p>
               </div>
               <div class="lg:col-span-1 flex justify-end">
-                <toggle name="banner_enabled"/>
+                <toggle data-type="composite" name="banner_enabled"/>
               </div>
             </div>
             <div data-ref="field_banner_position" class="grid-3col-responsive">
@@ -430,7 +431,7 @@
                     <label class="form-label">{{$localized(category?.label) || category?.key || ''}} ({{category?.key ?? ''}})</label>
                   </div>
                   <!-- 도메인 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열 추출. options: 카탈로그 추천 (자동완성) -->
-                  <tag-input value="{{_local.form?.blocked_domains?.[category.key] ?? []}}" options="{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options">
+                  <tag-input data-type="composite" value="{{_local.form?.blocked_domains?.[category.key] ?? []}}" options="{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options">
                     <on type="change">
                       <set-state target="local" form.blocked_domains="{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                     </on>
@@ -485,8 +486,20 @@
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint</p>
                 </div>
+                <!-- 확장 제공 항목 읽기 전용 행. 활성 확장이 계약 훅으로 제공한 키를 서버가 요청마다 모은 계산값이다 — 설정이 아니므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다. 확장을 비활성화하면 다음 조회부터 빠진다. -->
+                <div data-ref="necessary_storage_provided_localStorage" data-if="{{(gdprSettings?.data?.settings?.necessary_storage_provided?.localStorage ?? []).length > 0}}" class="rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2">
+                  <div class="flex-center gap-2">
+                    <icon name="puzzle-piece" size="sm" class="text-sky-600 dark:text-sky-400"/>
+                    <span class="text-xs font-medium text-sky-700 dark:text-sky-300">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <!-- 확장 제공 칩 — 잠금 칩과 같이 편집 불가이며, 출처가 다르다는 것을 색으로 구분한다. -->
+                    <span data-each="providedKey, providedIdx in gdprSettings?.data?.settings?.necessary_storage_provided?.localStorage ?? []" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed">{{providedKey}}</span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
+                </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-ref="necessary_storage_input_localStorage" value="{{_local.form?.necessary_storage_allowlist?.localStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_localStorage" value="{{_local.form?.necessary_storage_allowlist?.localStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.localStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
                   <on type="change">
                     <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), localStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
@@ -513,8 +526,20 @@
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint</p>
                 </div>
+                <!-- 확장 제공 항목 읽기 전용 행. 활성 확장이 계약 훅으로 제공한 키를 서버가 요청마다 모은 계산값이다 — 설정이 아니므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다. 확장을 비활성화하면 다음 조회부터 빠진다. -->
+                <div data-ref="necessary_storage_provided_sessionStorage" data-if="{{(gdprSettings?.data?.settings?.necessary_storage_provided?.sessionStorage ?? []).length > 0}}" class="rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2">
+                  <div class="flex-center gap-2">
+                    <icon name="puzzle-piece" size="sm" class="text-sky-600 dark:text-sky-400"/>
+                    <span class="text-xs font-medium text-sky-700 dark:text-sky-300">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <!-- 확장 제공 칩 — 잠금 칩과 같이 편집 불가이며, 출처가 다르다는 것을 색으로 구분한다. -->
+                    <span data-each="providedKey, providedIdx in gdprSettings?.data?.settings?.necessary_storage_provided?.sessionStorage ?? []" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed">{{providedKey}}</span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
+                </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-ref="necessary_storage_input_sessionStorage" value="{{_local.form?.necessary_storage_allowlist?.sessionStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_sessionStorage" value="{{_local.form?.necessary_storage_allowlist?.sessionStorage ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.sessionStorage) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
                   <on type="change">
                     <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), sessionStorage: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
@@ -541,8 +566,20 @@
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.locked_hint</p>
                 </div>
+                <!-- 확장 제공 항목 읽기 전용 행. 활성 확장이 계약 훅으로 제공한 키를 서버가 요청마다 모은 계산값이다 — 설정이 아니므로 편집 대상 값(_local.form)에 넣지 않고 여기에만 표시한다. 확장을 비활성화하면 다음 조회부터 빠진다. -->
+                <div data-ref="necessary_storage_provided_cookie" data-if="{{(gdprSettings?.data?.settings?.necessary_storage_provided?.cookie ?? []).length > 0}}" class="rounded-md bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-3 space-y-2">
+                  <div class="flex-center gap-2">
+                    <icon name="puzzle-piece" size="sm" class="text-sky-600 dark:text-sky-400"/>
+                    <span class="text-xs font-medium text-sky-700 dark:text-sky-300">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_label</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <!-- 확장 제공 칩 — 잠금 칩과 같이 편집 불가이며, 출처가 다르다는 것을 색으로 구분한다. -->
+                    <span data-each="providedKey, providedIdx in gdprSettings?.data?.settings?.necessary_storage_provided?.cookie ?? []" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 cursor-not-allowed">{{providedKey}}</span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.provided_hint</p>
+                </div>
                 <!-- 항목 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열을 꺼낸다($event 를 그대로 넣으면 칩이 [object Object] 로 표시된다). options: 출하 카탈로그 추천 (자동완성) -->
-                <tag-input data-ref="necessary_storage_input_cookie" value="{{_local.form?.necessary_storage_allowlist?.cookie ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
+                <tag-input data-type="composite" data-ref="necessary_storage_input_cookie" value="{{_local.form?.necessary_storage_allowlist?.cookie ?? []}}" options="{{((gdprSettings?.data?.default_necessary_allowlist_preview?.cookie) ?? []).map(k => ({ value: k, label: k }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.necessary_storage_allowlist.tag_no_options">
                   <on type="change">
                     <set-state target="local" form.necessary_storage_allowlist="{{({...(_local.form?.necessary_storage_allowlist ?? {}), cookie: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                   </on>
@@ -563,7 +600,7 @@
             <p class="alert-warning">$t:sirsoft-gdpr.annual_notice.policy_hint</p>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.enabled</label>
-              <toggle name="annual_notice.enabled"/>
+              <toggle data-type="composite" name="annual_notice.enabled"/>
             </div>
             <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
                  건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
@@ -627,7 +664,7 @@
                  조건식은 느슨한 참 판정(저장값이 '0'·'1' 문자열일 수 있음, 보안 탭 scope 선례와 동일). -->
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.channels</label>
-              <tag-input data-ref="annual_notice_channels" value="{{_local.form?.annual_notice?.channels ?? []}}" :creatable="false" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}">
+              <tag-input data-type="composite" data-ref="annual_notice_channels" value="{{_local.form?.annual_notice?.channels ?? []}}" :creatable="false" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}">
                 <prop name="options">
                   <item value="mail" label="$t:sirsoft-gdpr.annual_notice.mail"/>
                   <item value="database" label="$t:sirsoft-gdpr.annual_notice.database"/>
@@ -647,7 +684,7 @@
             </div>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.introduction</label>
-              <multilingual-input name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+              <multilingual-input data-type="composite" name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
             </div>
             <div class="flex flex-wrap gap-3">
               <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_local.hasChanges || _local.noticeSending}}">
@@ -706,7 +743,7 @@
                   <span data-if="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-600 dark:text-amber-400">$t:sirsoft-gdpr.channel_template_missing</span>
                 </div>
               </div>
-              <toggle label="{{(ch.name ?? ch.id)}}" checked="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
+              <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
                 <on type="change">
                   <!-- 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
                   <set-state target="local" gdprChannels="{{({...(_local.gdprChannels ?? {}), [def.id]: ((_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.gdprChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.gdprChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"/>
@@ -758,7 +795,7 @@
                  한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다. -->
             <div data-each="template, tplIdx in {{def.templates ?? []}}" data-ref="gdpr_template_row_{{defIdx}}_{{tplIdx}}" class="flex flex-wrap items-center gap-3 my-3">
               <span>{{((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
-              <toggle label="{{$localized(def.name) + ' / ' + ((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+              <toggle data-type="composite" label="{{$localized(def.name) + ' / ' + ((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
                 <on type="change">
                   <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
                   <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">

@@ -292,11 +292,15 @@ Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
 Route::prefix('guest/orders/{orderNumber}')
     ->group(function () {
         // POST /guest/orders/{orderNumber}/cancel - 주문 취소
+        // 회원 취소 라우트·사유 목록 API 와 같은 「주문 취소」 권한(비로그인은 guest 역할)으로 판정한다 —
+        // 운영자가 권한을 거두면 버튼(abilities.can_cancel)·사유 목록·취소 API 가 함께 닫힌다.
         Route::post('/cancel', [PublicOrderController::class, 'cancel'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
             ->name('guest.orders.cancel');
 
-        // POST /guest/orders/{orderNumber}/estimate-refund - 환불 예상
+        // POST /guest/orders/{orderNumber}/estimate-refund - 환불 예상 (취소 창 전용 — 취소와 같은 권한)
         Route::post('/estimate-refund', [PublicOrderController::class, 'estimateRefund'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
             ->name('guest.orders.estimate-refund');
 
         // PUT /guest/orders/{orderNumber}/shipping-address - 배송지 수정 (배송 전 상태)
@@ -304,8 +308,11 @@ Route::prefix('guest/orders/{orderNumber}')
             ->name('guest.orders.update-shipping-address');
 
         // POST /guest/orders/{orderNumber}/options/{optionId}/confirm - 구매확정
+        // 회원 구매확정 라우트와 같은 「구매확정」 권한(비로그인은 guest 역할)으로 판정한다 — 운영자가 권한을
+        // 거두면 버튼(options.*.can_confirm)과 API 가 함께 닫힌다.
         Route::post('/options/{optionId}/confirm', [PublicOrderController::class, 'confirmOption'])
             ->whereNumber('optionId')
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.confirm')
             ->name('guest.orders.confirm-option');
 
         // GET /guest/orders/{orderNumber}/cash-receipt - 현금영수증 상태 조회
@@ -820,16 +827,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.mileage-transactions.linked');
     });
 
-    // 회원 결제 통화 변경 (A3 — 관리자 회원 편집에서 통화 지정)
-    // PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/currency
-    // 회원 식별은 UUID (User::getRouteKeyName()='uuid' — 관리자 회원 URL 규약과 동일). 라우트 모델 바인딩.
+    // 회원 결제 통화·배송국가 변경 — 폐기 예고(deprecated, 1.3.0). 번들 관리자 회원 수정 화면은 이제 코어 회원
+    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 UserPreferenceCoreSaveListener 가 코어 훅으로
+    // 검증·저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
+    // 다음 이커머스 버전에서 제거한다(결정 2026-09-28).
     Route::patch('users/{user}/currency', [AdminUserCurrencyController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-currency.manage')
         ->name('admin.users.currency.update');
 
-    // 회원 배송국가 변경 (MP08 후속 — 관리자 회원 편집에서 배송국가 지정)
-    // PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/shipping-country
-    // 회원 식별은 UUID (User::getRouteKeyName()='uuid'). 라우트 모델 바인딩.
     Route::patch('users/{user}/shipping-country', [AdminUserShippingCountryController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-shipping-country.manage')
         ->name('admin.users.shipping-country.update');

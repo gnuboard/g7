@@ -61,10 +61,14 @@ class CreateUserRequest extends FormRequest
             'bio' => 'nullable|string|max:5000',
             'admin_memo' => 'nullable|string|max:5000',
 
-            // 역할 정보 (객체 배열 또는 id 배열 모두 허용, 하나 이상 필수)
-            'roles' => 'required_without:role_ids|array|min:1',
+            // 역할 정보 (객체 배열 또는 id 배열 모두 허용, 생략 가능)
+            // 생략하거나 비워 보내면 서비스가 기본 역할('user')을 배정한다(UserService::createUser).
+            // 필수로 두면 역할 부여 권한(core.users.update) 없이 회원 생성 권한만 가진 운영자는
+            // 역할 칸이 잠긴 폼으로 등록하므로 늘 422 가 난다 — 부여 가능 여부는 화면이
+            // `can_assign_roles` 로, 부여 범위는 서버 상한(PermissionEscalationGuard)이 따로 정한다.
+            'roles' => 'nullable|array',
             'roles.*.id' => ['required', 'integer', Rule::exists(Role::class, 'id')],
-            'role_ids' => 'required_without:roles|array|min:1',
+            'role_ids' => 'nullable|array',
             'role_ids.*' => ['integer', Rule::exists(Role::class, 'id')],
         ];
 
@@ -116,12 +120,6 @@ class CreateUserRequest extends FormRequest
             'signature.max' => __('user.validation.signature_max'),
             'bio.max' => __('user.validation.bio_max'),
             'admin_memo.max' => __('user.validation.admin_memo_max'),
-
-            // 역할 정보
-            'roles.required_without' => __('user.validation.roles_required'),
-            'roles.min' => __('user.validation.roles_min'),
-            'role_ids.required_without' => __('user.validation.roles_required'),
-            'role_ids.min' => __('user.validation.roles_min'),
         ];
     }
 

@@ -465,6 +465,7 @@
     "title_exchange": "교환완료 처리",
     "title_return": "반품완료 처리",
     "title_generic": "완료 처리",
+    "editor_label": "클레임 완료 처리 창",
     "description": "선택한 {{count}}건을 완료 상태로 전환합니다. 처리 방식을 건별로 확인하세요.",
     "col_claim_number": "신청번호",
     "col_item": "상품",

@@ -461,6 +461,42 @@ class AnnualNoticeCommandTest extends PluginTestCase
     }
 
     /**
+     * 통지문의 처리방침 링크는 운영자가 적은 주소를 쓴다 — 사이트 경로는 앱 주소를 붙인 절대 주소로,
+     * https 주소는 그대로, 비었으면 빈 값으로 접수 시점 스냅샷에 얼린다. 페이지 모듈 주소 규칙
+     * (`/page/{slug}`)으로 조합하지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects notice_queued, annual_notice_links_operator_privacy_policy_url
+     */
+    public function test_privacy_policy_link_in_snapshot_follows_operator_url(): void
+    {
+        $settings = app(PluginSettingsService::class);
+        $cases = [
+            '/privacy' => url('/privacy'),
+            'https://example.com/privacy' => 'https://example.com/privacy',
+            '' => '',
+        ];
+
+        try {
+            foreach ($cases as $stored => $expected) {
+                $settings->save('sirsoft-gdpr', ['privacy_policy_url' => $stored]);
+                // 설정 서비스는 인스턴스마다 값을 캐시하므로(싱글턴 아님) 경우마다 새로 해석한다 —
+                // 루프 밖에서 한 번 만들면 첫 경우의 값을 계속 읽어 두 번째 경우부터 검증되지 않는다.
+                $attempt = app(GdprAnnualNoticeService::class)->sendTest($this->oldUser());
+                $log = GdprPrivacyNoticeLog::where('attempt_id', $attempt)->firstOrFail();
+
+                $this->assertSame($expected, $log->snapshot['privacy_policy_url'], '저장값: '.json_encode($stored));
+                $this->assertStringNotContainsString('/page/', (string) $log->snapshot['privacy_policy_url']);
+            }
+        } finally {
+            $settings->save('sirsoft-gdpr', ['privacy_policy_url' => '']);
+        }
+    }
+
+    /**
      * 비활성 템플릿의 접수가 실패로 닫혀 복구 후 재선정되는지 검증합니다.
      *
      * 트러블슈팅 사례 [case:annual-notice-skipped-channel-pending] 의 회귀 테스트다 —
@@ -593,5 +629,42 @@ class AnnualNoticeCommandTest extends PluginTestCase
         $this->assertSame(1, $run->processed_count, '발송 상한 1 — 한 번에 한 명만 접수');
         $this->assertSame(1, $run->remaining_count, '남은 인원은 다시 실행하면 이어서 접수된다');
         $this->assertSame(0, app(GdprAnnualNoticeService::class)->run(), '자동 경로는 여전히 토글을 본다');
+    }
+
+    /**
+     * 언어팩을 끈 뒤에도 설정을 저장할 수 있다 — 꺼진 언어의 통지 머리말이 저장을 막지 않고, 지워지지도 않는다.
+     *
+     * 화면은 폼 전체를 보내므로 예전에 입력한 ja 머리말이 늘 함께 올라온다. 통지가 꺼져 있으면
+     * 머리말 입력이 잠겨 그 칸을 지울 수도 없어, 지원 목록 밖 키를 거절하면 어떤 설정도 저장할 수 없었다.
+     * 값은 보존되어 언어팩을 다시 켜면 그대로 돌아오고, 길이 상한은 모든 키에 그대로 걸린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=api
+     *
+     * @effects stale_locale_introduction_does_not_block_save
+     */
+    public function test_settings_save_keeps_introduction_of_disabled_language_pack(): void
+    {
+        config(['app.translatable_locales' => ['ko', 'en']]);
+        $url = '/api/plugins/sirsoft-gdpr/admin/settings';
+        $this->actingAs($this->createPrivacyOperatorUser(), 'sanctum');
+        $introduction = ['ko' => '안내', 'en' => 'Notice', 'ja' => 'お知らせ'];
+
+        $this->putJson($url, [
+            'annual_notice' => ['enabled' => false, 'channels' => ['database'], 'batch_size' => 500, 'introduction' => $introduction],
+            'legal_entity_name' => '주식회사 예시',
+        ])->assertOk()->assertJsonPath('data.settings.annual_notice.introduction', $introduction);
+
+        foreach (Route::getRoutes() as $route) {
+            $route->flushController();
+        }
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('data.settings.annual_notice.introduction.ja', 'お知らせ')
+            ->assertJsonPath('data.settings.legal_entity_name', '주식회사 예시');
+
+        $this->putJson($url, [
+            'annual_notice' => ['enabled' => false, 'channels' => ['database'], 'batch_size' => 500, 'introduction' => ['ko' => '안내', 'ja' => str_repeat('あ', 2001)]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('annual_notice.introduction.ja');
     }
 }

@@ -3,7 +3,7 @@
   본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`(`ext_board_scraps`)
   하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
 
-  이 탭은 **요약만** 낸다(PO 결정 R1) — 건수와 최근 스크랩 시각, 그리고 「이 회원 스크랩 목록 보기」
+  이 탭은 **요약만** 낸다(결정 R1) — 건수와 최근 스크랩 시각, 그리고 「이 회원 스크랩 목록 보기」
   링크. 목록 자체는 스크랩 관리 화면이 검색·필터·일괄 삭제까지 갖추고 있으므로, 같은 표를 회원 상세
   안에 한 벌 더 두지 않고 그 화면으로 회원 uuid 를 실어 보낸다.
 
@@ -27,7 +27,7 @@
             <icon name="bookmark" class="text-xl text-gray-600 dark:text-gray-400"/>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.scraps.title</h3>
           </div>
-          <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div data-ref="field_scrap_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">

@@ -88,7 +88,6 @@ return [
         'override_target_component_unknown' => ':target 확장에 :component 컴포넌트가 없습니다. 이름을 확인하거나 targetVersion 제약을 맞추세요.',
         'duplicate_override_target' => ':component 를 두 번 오버라이드했습니다. 대체본은 하나만 선언하세요.',
         'for_variant_component_unknown' => 'for.:template 이 지목한 :component 는 이 확장이 제공하는 컴포넌트가 아닙니다. 전용 판본은 원본이 있어야 합니다.',
-        'extension_id_tag_collision' => ':first 와 :second 가 같은 태그 앞자리(:prefix)로 겹칩니다. 두 확장의 컴포넌트를 태그로 구분할 수 없습니다.',
 
         // 트리 구조
         'unexpected_end_tag' => '열린 태그가 없는데 종료 태그를 만났습니다: </:tag>',
@@ -105,8 +104,7 @@ return [
         ],
 
         // 태그 해석
-        'unknown_tag' => '<:tag> 는 :template 템플릿에 등록되지 않은 태그입니다.',
-        'unknown_tag_with_suggestion' => '<:tag> 는 등록되지 않은 태그입니다: <:suggestion> 을(를) 쓰려던 것 아닌가요?',
+        'invalid_component_type' => 'data-type 은 :allowed 중 하나를 문자 그대로 적어야 합니다(받은 값: :value). 생략하면 basic 입니다.',
         'root_tag_in_node_position' => '<:tag> 는 문서 맨 바깥에만 쓰는 태그입니다.',
         'tag_not_yet_supported' => '<:tag> 는 :owner 표기라 아직 이 단계에서 다루지 않습니다.',
 
@@ -159,6 +157,7 @@ return [
         'duplicate_section' => ':tag 섹션을 두 번 지정했습니다.',
         'unexpected_document_child' => '<:tag> 는 <:parent> 안에 올 수 없습니다.',
         'partial_root_not_single_node' => '<partial> 은 루트가 노드 하나입니다. 조각의 루트 컴포넌트를 하나만 두세요.',
+        'partial_root_meta_not_allowed' => '조각의 meta 는 <partial> 속성으로 적습니다. 루트 노드 안의 <meta> 를 <partial> 속성(예: editor_label="...")으로 옮기세요.',
         'modal_src_with_body' => '<modal src="..."> 는 조각을 참조하므로 본문을 함께 쓸 수 없습니다. 인라인 모달은 src 없이 노드로 쓰세요.',
         'modal_name_with_src' => '<modal src="..."> 에는 name 을 쓸 수 없습니다. name 은 인라인 모달의 layout_name(설치가 조각을 인라인할 때 붙는 이름)이라 본문이 있는 <modal name="..."> 에서만 뜻이 있습니다.',
         'partial_src_not_authoring' => '<:tag src=":src"> 는 소스를 가리켜야 합니다: src=":suggestion" 처럼 .g7.html 로 쓰세요. 산출 JSON 의 .json 표기는 컴파일러가 만듭니다.',
@@ -190,7 +189,6 @@ return [
         'script_src_not_allowed' => '<script> 로 실을 수 없는 외부 JS 입니다 (허용 목록 밖): :src',
 
         // 설치 통합 — .g7.html 을 설치 시점에 컴파일할 때 대상 템플릿 레지스트리를 못 찾은 경우
-        'registry_not_found' => '대상 템플릿의 컴포넌트 매니페스트(components.json)를 찾을 수 없습니다.',
     ],
 
     // .g7.html 정적 lint 경고 (S6) — 컴파일을 막지 않는 경고
@@ -198,10 +196,12 @@ return [
         'unregistered_handler' => '등록되지 않은 핸들러입니다: :handler — 코어·템플릿·확장 어디에도 없습니다.',
         'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
-        'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
+        'standalone_missing_global_host' => '독립 레이아웃이 :handler 를 발화하지만 그 전역 상태(:state)를 받는 자리가 없습니다 — 화면에 나타나지 않습니다. extends 로 베이스 레이아웃을 상속하거나 그 상태를 받는 컴포넌트를 두세요.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
         'action_param_misplaced_key' => ':handler 액션의 :key 가 params 로 들어갔습니다 — :handler 는 이 키를 읽지 않으므로 조용히 무시됩니다. 조건은 data-if(액션 if), 이벤트는 <on event="…">, 그 밖에는 해당 핸들러가 실제로 읽는 인자명을 쓰세요.',
         'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 작성한 내용이 렌더되지 않고 사라집니다.',
+        'component_type_mismatch' => ':component 의 종류를 :written 으로 적었지만 :template 템플릿은 :declared 로 선언합니다 — data-type 을 확인하세요(생략하면 basic).',
+        'extension_component_not_installed' => '설치된 확장 어디에도 없는 컴포넌트입니다: :name — :extension 확장이 삭제됐거나 이름이 틀렸을 수 있습니다. 저장은 되지만 그 확장이 없으면 화면에 그려지지 않습니다.',
     ],
 
     // 설정 관련 예외

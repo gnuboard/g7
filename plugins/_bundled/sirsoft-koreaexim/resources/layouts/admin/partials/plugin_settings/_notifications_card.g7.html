@@ -20,7 +20,7 @@
           <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-600 dark:text-amber-400">$t:sirsoft-koreaexim.channel_template_missing</span>
         </div>
       </div>
-      <toggle label="{{(ch.name ?? ch.id)}}" checked="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
+      <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
         <on type="change">
           <!-- 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
           <set-state target="local" koreaeximChannels="{{({...(_local.koreaeximChannels ?? {}), [def.id]: ((_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"/>
@@ -72,7 +72,7 @@
          한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다. -->
     <div data-each="template, tplIdx in {{def.templates ?? []}}" data-ref="koreaexim_template_row_{{defIdx}}_{{tplIdx}}" class="flex flex-wrap items-center gap-3 my-3">
       <span>{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
-      <toggle label="{{$localized(def.name) + ' / ' + ((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+      <toggle data-type="composite" label="{{$localized(def.name) + ' / ' + ((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
         <on type="change">
           <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
           <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">

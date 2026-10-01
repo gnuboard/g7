@@ -247,6 +247,43 @@ describe('requestPaymentHandler', () => {
             });
         });
 
+        it('비회원이면 SignData 요청에 조회 토큰을 싣는다 — 실패 주문 재결제 복구의 소유자 증명 (KVE-2026-2434)', async () => {
+            window.localStorage.removeItem('auth_token');
+            window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+            try {
+                await requestPaymentHandler({
+                    params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+                });
+
+                const [, init] = fetchSpy.mock.calls[0];
+                const headers = init?.headers as Record<string, string>;
+                expect(headers['X-Guest-Order-Token']).toBe('1999999999|guest-token');
+                expect(headers.Authorization).toBeUndefined();
+            } finally {
+                window.sessionStorage.removeItem('g7_guest_order_token');
+            }
+        });
+
+        it('회원이면 SignData 요청에 Bearer 만 싣고 비회원 토큰은 싣지 않는다', async () => {
+            window.localStorage.setItem('auth_token', 'member-token');
+            window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+            try {
+                await requestPaymentHandler({
+                    params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+                });
+
+                const [, init] = fetchSpy.mock.calls[0];
+                const headers = init?.headers as Record<string, string>;
+                expect(headers.Authorization).toBe('Bearer member-token');
+                expect(headers['X-Guest-Order-Token']).toBeUndefined();
+            } finally {
+                window.localStorage.removeItem('auth_token');
+                window.sessionStorage.removeItem('g7_guest_order_token');
+            }
+        });
+
         it("paymentMethod 미명시 시 _local.paymentMethod 로 fallback", async () => {
             (window as unknown as Record<string, unknown>).__templateApp = {
                 globalState: { _local: { paymentMethod: 'vbank' } },

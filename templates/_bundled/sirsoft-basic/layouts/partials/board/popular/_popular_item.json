@@ -14,7 +14,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500' : index === 1 ? 'bg-yellow-500' : index === 2 ? 'bg-yellow-400' : 'bg-gray-400'}}"
+                "className": "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500 dark:bg-orange-500' : index === 1 ? 'bg-yellow-500 dark:bg-yellow-500' : index === 2 ? 'bg-yellow-400 dark:bg-yellow-400' : 'bg-gray-400 dark:bg-gray-500'}}"
             },
             "text": "{{index + 1}}"
         },
@@ -62,7 +62,7 @@
                             "name": "Span",
                             "if": "{{post.is_new}}",
                             "props": {
-                                "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0"
+                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0"
                             },
                             "text": "N"
                         },

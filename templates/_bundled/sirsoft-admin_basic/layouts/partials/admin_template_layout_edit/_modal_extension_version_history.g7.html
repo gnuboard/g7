@@ -3,7 +3,7 @@
   본 화면 쪽과 달리 편집기 내용을 갈아 끼우지 않는데, 조각 편집은 목록을 다시 받으면 그 값이
   따라오기 때문이다. -->
 <partial name="modal_extension_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal">
-  <modal data-ref="extension_version_history_modal" size="medium" title="$t:admin.templates.modals.extension_version_history.title">
+  <modal data-type="composite" data-ref="extension_version_history_modal" size="medium" title="$t:admin.templates.modals.extension_version_history.title">
     <!-- 되돌리기 전 경고(D6). 지금 편집 중인 미저장분이 있으면, 되돌린 판본이 서버에 실리는 순간
          내 버퍼와 서버가 어긋난다. 그 자체는 `<code-workspace>` 가 충돌 바로 잡아 주지만 — 자동
          덮어쓰기는 일어나지 않는다 — **누르기 전에 알고 있는 편이 낫다**. 되돌리기는 새 판본을 만드는

@@ -157,6 +157,16 @@
                         ]
                     },
                     {
+                        "comment": "보호 역할 안내 — 행 메뉴의 삭제·수정과 사용 여부 스위치가 왜 잠겨 있는지 알려 준다.\n           잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,\n           수정·토글은 슈퍼 관리자만 — 서버 가드와 같은 판정).",
+                        "id": "protected_roles_hint",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                        },
+                        "text": "$t:admin.roles.protected_roles_hint"
+                    },
+                    {
                         "id": "search_bar_wrapper",
                         "type": "basic",
                         "name": "Div",

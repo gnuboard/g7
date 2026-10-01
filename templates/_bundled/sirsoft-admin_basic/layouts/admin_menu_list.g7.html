@@ -60,8 +60,8 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="menu_list_content" class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
-        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <refetch-data-source dataSourceId="menus"/>
           </on>

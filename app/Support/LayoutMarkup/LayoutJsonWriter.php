@@ -29,7 +29,7 @@ use Tests\Feature\LayoutMarkup\LayoutDecompileSyncTest;
  * `JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` + 끝 개행 1 · 개행 LF.
  *
  * 착수 실측: 코퍼스 634 의 실물 들여쓰기는 2-space 514 · 4-space 120 으로 갈려 있었고, 그
- * **4-space 120 은 정확히 `layout:add-permissions` 가 `JSON_PRETTY_PRINT` 로 이미 다시 쓴 최상위
+ * **4-space 120 은 정확히 (지금은 삭제된) `layout:add-permissions` 가 `JSON_PRETTY_PRINT` 로 이미 다시 쓴 최상위
  * 레이아웃들**이다(그 커맨드는 `partials/` 를 건너뛴다). 즉 이 저장소에서 "기계가 쓴 레이아웃
  * JSON" 의 선례는 4-space 이고, 2-space 는 손 작성 잔재다. 첫 churn 은 2-space 를 택하면 근사
  * 변경 줄이 431,583 → 181,543 으로 줄지만 그 이득은 **일회성**인 반면 사용자 정의 들여쓰기는

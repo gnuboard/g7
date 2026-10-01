@@ -34,6 +34,8 @@ exclusions:
 
 effects:
   - applies_extension_point_components
+  # 셀 템플릿(DataGrid columns[].cellChildren·cardColumns·expandChildren) 안의 확장점 — children 만 따라가면 빈 자리로 남는다
+  - applies_extension_points_inside_datagrid_cell_templates
   - marks_extension_source_with_type_and_identifier_in_edit_mode
   - marks_extension_source_on_injected_data_sources_in_edit_mode
   - marks_injected_props_on_host_node_in_edit_mode

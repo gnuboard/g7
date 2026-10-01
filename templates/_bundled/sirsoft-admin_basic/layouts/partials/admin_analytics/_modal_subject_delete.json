@@ -2,7 +2,8 @@
     "comment": "정보주체 기록 삭제 확인 창. 정보주체 요청 화면(검색 조건)과 방문자 상세(방문자 키) 두 곳이 같은 창을\n  쓴다 — 지울 기준은 `_global.analyticsSubject` 에 담아 온다. 액션·전환을 먼저 지우고 방문을 지우며\n  집계는 건드리지 않는다. 되돌릴 수 없어 체크 없이는 버튼이 잠긴다. 끝난 뒤 갈 곳은 부르는 쪽이\n  `analyticsSubjectAfter` 로 정한다(`visitors` 면 목록으로, 아니면 검색 결과를 다시 받는다).",
     "meta": {
         "is_partial": true,
-        "description": "방문자 통계 — 정보주체 기록 삭제 확인 창"
+        "description": "방문자 통계 — 정보주체 기록 삭제 확인 창",
+        "editor_label": "$t:admin.modal_label.analytics.subject_delete_modal"
     },
     "id": "analytics_subject_delete_modal",
     "type": "composite",

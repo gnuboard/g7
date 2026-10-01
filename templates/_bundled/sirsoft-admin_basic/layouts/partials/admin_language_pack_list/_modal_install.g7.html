@@ -4,7 +4,7 @@
   깔린 뒤에는 목록을 다시 받고 확장을 새로 읽는다 — 새 언어 자원이 곧바로 쓰이게 하려는 것이다.
   실패는 토스트가 아니라 창 위쪽 붉은 띠와 각 칸 아래 문구로 보여 준다(고칠 자리가 이 창 안에 있다). -->
 <partial description="언어팩 설치 모달 (ZIP/GitHub 2-tab) — 모듈 설치 모달 UX 패턴 동일" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_modal">
-  <modal data-ref="language_pack_install_modal" title="$t:admin.language_packs.install_modal.title" size="medium">
+  <modal data-type="composite" data-ref="language_pack_install_modal" title="$t:admin.language_packs.install_modal.title" size="medium">
     <div class="flex-start justify-between gap-3 mb-4">
       <p class="text-secondary">$t:admin.language_packs.install_modal.description</p>
       <button type="button" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md">
@@ -23,7 +23,7 @@
         </div>
       </div>
     </div>
-    <tab-navigation data-ref="language_pack_install_tabs" activeTabId="{{_global.languagePackInstallTab || 'file_upload'}}" variant="underline">
+    <tab-navigation data-type="composite" data-ref="language_pack_install_tabs" activeTabId="{{_global.languagePackInstallTab || 'file_upload'}}" variant="underline">
       <prop name="tabs">
         <item id="file_upload" label="$t:admin.language_packs.install_modal.tabs.zip" iconName="upload"/>
         <item id="github" label="$t:admin.language_packs.install_modal.tabs.github" iconName="code-branch"/>

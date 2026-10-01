@@ -1,6 +1,6 @@
 <partial description="마이페이지 스크랩 해제 확인 모달" editor_label="$t:user.modal_label.mypage_scrap.scrapDeleteModal">
   <!-- 스크랩 단건 해제 확인 — 대상은 전역 scrapDeleteModal 로 받는다 -->
-  <modal data-ref="scrap_delete_modal" title="$t:mypage.scrap.delete_title" width="420px">
+  <modal data-type="composite" data-ref="scrap_delete_modal" title="$t:mypage.scrap.delete_title" width="420px">
     <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
          ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
     <div data-testid="scrap-delete-modal" class="space-y-4">
@@ -13,7 +13,7 @@
           <!-- 삭제된 원글이면 제목 없이 일반 안내, 살아있으면 제목 포함 안내 -->
           <p data-if="{{!_global.scrapDeleteModal?.isDeleted}}" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">$t:mypage.scrap.delete_confirm|title={{_global.scrapDeleteModal?.title ?? ''}}</p>
           <p data-if="{{_global.scrapDeleteModal?.isDeleted}}" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">$t:mypage.scrap.delete_confirm_deleted</p>
-          <!-- 안내 문구(원글 보존 안내) — PO 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안) -->
+          <!-- 안내 문구(원글 보존 안내) — 검수 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안) -->
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">$t:mypage.scrap.delete_notice</p>
         </div>
       </div>

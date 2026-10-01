@@ -8,7 +8,7 @@
   <!-- 템플릿 목록. 종류(`route.type`)가 파라미터로 들어가므로 탭을 바꾸면 다른 목록이 된다.
        `refetchOnMount` 라 다른 화면에 다녀와도 다시 받는다 — 설치·활성 결과가 즉시 반영돼야 한다. -->
   <data-source id="templates" label_key="$t:editor.data_source.templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
-    <params type="{{route.type}}" page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
+    <params type="{{route.type}}" page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" include_hidden="{{query.include_hidden === '1' ? 1 : 0}}"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
@@ -37,7 +37,6 @@
   </data-source>
   <init-local>
     <field name="searchQuery" value=""/>
-    <field name="showHidden" :value="false"/>
   </init-local>
   <permissions>
     <permission>core.templates.read</permission>
@@ -64,8 +63,8 @@
   </init>
   <slot name="content">
     <div data-ref="template_list_content" class="admin-page-content-responsive-fluid">
-      <page-header data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
-        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <refetch-data-source dataSourceId="templates"/>
           </on>
@@ -159,21 +158,22 @@
           </div>
         </div>
       </div>
-      <div data-ref="include_hidden_toggle_wrapper" data-if="{{currentUser?.is_super === true}}" class="flex justify-end mb-3">
+      <!-- 최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측). -->
+      <div data-ref="include_hidden_toggle_wrapper" data-if="{{current_user?.data?.is_super === true}}" class="flex justify-end mb-3">
         <label data-ref="include_hidden_toggle" class="flex-center gap-2 text-body cursor-pointer select-none">
-          <input type="checkbox" checked="{{_local.showHidden === true}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+          <input type="checkbox" checked="{{query.include_hidden === '1'}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
             <on type="change">
-              <set-state showHidden="{{!_local.showHidden}}"/>
-            </on>
-            <on type="change">
-              <refetch-data-source dataSourceId="templates"/>
+              <!-- 숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다 -->
+              <navigate path="/admin/templates/{{route.type}}" :mergeQuery="true">
+                <query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/>
+              </navigate>
             </on>
           </input>
           <span>$t:admin.templates.include_hidden</span>
         </label>
       </div>
       <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
-        <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
+        <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
           <prop name="tabs">
             <item id="user" label="$t:admin.templates.tabs.user"/>
             <item id="admin" label="$t:admin.templates.tabs.admin"/>
@@ -221,6 +221,8 @@
   <modal src="partials/admin_template_list/_modal_force_activate.g7.html"/>
   <!-- 업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다. -->
   <modal src="partials/admin_template_list/_modal_update.g7.html"/>
+  <!-- 언어팩 되살리기 창 — 템플릿을 다시 켰을 때 함께 꺼졌던 언어팩이 있으면 활성 성공 갈래가 연다. -->
+  <modal src="partials/admin_template_list/_modal_reactivate_language_packs.g7.html"/>
   <!-- 라이선스 고지 창 — 상세 창에서 이어 연다. -->
   <modal src="partials/admin_template_list/_modal_extension_license.g7.html"/>
   <!-- 코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — 설정 화면 소유 조각을 세 확장

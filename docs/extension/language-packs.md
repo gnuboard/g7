@@ -3,7 +3,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어/번들 확장의 lang/{ko,en}/ 는 가상 보호 행으로 자동 노출 (DB 없이 항상 active+protected, 수정 불가)
+1. 코어와 설치된 확장(설치본)의 lang/{ko,en}/ 는 가상 보호 행으로 자동 노출 (DB 없이 항상 active+protected, 수정 불가) — 미설치 번들 확장은 노출 안 됨
 2. lang-packs/_bundled/ 패키지(ja, fr 등)는 비보호 — 사용자가 install/uninstall/update/activate/deactivate 자유
 3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약)
 4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의

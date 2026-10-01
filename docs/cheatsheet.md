@@ -322,7 +322,6 @@ php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
 php artisan layout:compile <path>                  # 단일 .json → 짝 .g7.html 생성
 php artisan layout:compile --all                   # 번들 확장·템플릿 전량 생성
 php artisan layout:compile --all --roundtrip       # 생성 없이 왕복 동등성만 검사 (불일치·escape 집계)
-php artisan layout:compile --all --template=sirsoft-admin_basic  # 대상 템플릿 한정
 php artisan layout:compile <path> --out=<file>     # 산출 경로 지정
 
 # decompile = HTML → JSON (설치·검증). 산출 JSON 은 디스크에 병존시키지 않는다

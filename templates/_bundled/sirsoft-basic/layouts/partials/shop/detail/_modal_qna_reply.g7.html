@@ -1,7 +1,7 @@
 <!-- 상품 문의 답변 창 — 판매자 권한이 있는 사람만 연다. 새 답변과 기존 답변 수정이 같은 창을 쓰고,
      들고 있는 답변 id 유무로 갈린다. -->
 <partial description="상품 1:1 문의 답변 작성/수정 모달" editor_label="$t:user.modal_label.shop_detail.qna_reply_modal">
-  <modal data-ref="qna_reply_modal" title="{{_global.qnaReplyEditId ? $t('shop.qna.reply_edit_title') : $t('shop.qna.reply_write_title')}}" size="md" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="qna_reply_modal" title="{{_global.qnaReplyEditId ? $t('shop.qna.reply_edit_title') : $t('shop.qna.reply_write_title')}}" size="md" :closeOnBackdropClick="false">
     <!-- 답변 내용 입력 -->
     <div class="space-y-4">
       <div class="space-y-1">

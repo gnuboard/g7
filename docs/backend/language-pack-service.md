@@ -25,7 +25,7 @@
 ```php
 class LanguagePackService
 {
-    // 조회 — list() 는 DB 행 + 가상 보호 행 + 미설치 번들 가상 행을 병합하며,
+    // 조회 — list() 는 DB 행 + 가상 보호 행(코어·설치된 확장 설치본의 lang/{ko,en}) + 미설치 번들 가상 행을 병합하며,
     //         각 행에 드리프트 파생 플래그 files_missing(active 인데 설치본 부재) 을 부여
     public function list(array $filters = [], int $perPage = 20): LengthAwarePaginator;
     public function find(int $id): ?LanguagePack;

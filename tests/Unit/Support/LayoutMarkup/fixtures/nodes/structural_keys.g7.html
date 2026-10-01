@@ -25,11 +25,11 @@
   <div data-ref="dashboard_dynamic" data-blur-until-loaded="{{_global.saving_modal?.isSaving}}"/>
   <div data-ref="dashboard_always" :data-blur-until-loaded="true"/>
   <div data-ref="comment_depth" style="margin-left: 1rem"/>
-  <data-grid data-ref="coupon_grid" data="{{coupons?.data?.data ?? []}}">
+  <data-grid data-type="composite" data-ref="coupon_grid" data="{{coupons?.data?.data ?? []}}">
     <prop name="rowActions">[{"id": "edit", "label": "$t:common.edit", "iconName": "pencil"}]</prop>
     <prop name="expandContext">{"rowId": "{{row.id}}", "rowHasReply": "{{row.has_reply}}"}</prop>
   </data-grid>
-  <modal data-ref="marketing_modal">
+  <modal data-type="composite" data-ref="marketing_modal">
     <prop name="title">{"$switch": "{{_local.mode}}", "$cases": {"create": "$t:marketing.create", "edit": "$t:marketing.edit"}, "$default": "$t:marketing.view"}</prop>
     <prop name="style">{"marginLeft": "{{Math.min(comment?.depth ?? 0, 10) * 1}}rem"}</prop>
   </modal>

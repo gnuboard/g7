@@ -38,6 +38,18 @@ class TempOrderService
      */
     protected const EXPIRATION_MINUTES = 30;
 
+    /**
+     * 임시 주문 서비스를 생성합니다.
+     *
+     * @param  TempOrderRepositoryInterface  $tempOrderRepository  임시 주문 저장소
+     * @param  CartRepositoryInterface  $cartRepository  장바구니 저장소
+     * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 저장소
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 저장소
+     * @param  OrderCalculationService  $orderCalculationService  주문 금액 계산 서비스
+     * @param  PurchaseEligibilityService  $purchaseEligibilityService  구매 대상 제한 판정 서비스
+     * @param  UserMileageService  $userMileageService  회원 마일리지 서비스
+     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가옵션 선택 검증 서비스
+     */
     public function __construct(
         protected TempOrderRepositoryInterface $tempOrderRepository,
         protected CartRepositoryInterface $cartRepository,
@@ -201,7 +213,7 @@ class TempOrderService
     /**
      * 직접 항목 배열을 미저장 Cart 모델 컬렉션으로 변환합니다.
      *
-     * product_option_id 로 옵션을 매칭하고(없으면 기본 옵션), product/productOption 관계를
+     * product_option_id 로 옵션을 매칭하고(없으면 첫 번째 활성 옵션), product/productOption 관계를
      * set 한 미저장 Cart 모델을 만들어 기존 검증/계산/직렬화 로직을 그대로 재사용합니다.
      *
      * @param  array  $items  직접 항목 배열 [{product_id, product_option_id?, quantity}]
@@ -209,7 +221,7 @@ class TempOrderService
      * @param  string|null  $cartKey  비회원 장바구니 키
      * @return Collection<int, Cart> 미저장 Cart 컬렉션
      *
-     * @throws \Exception 상품/옵션 미존재 시
+     * @throws CartOperationException 지정한 옵션이 없거나(option_not_found), 구매할 수 있는 옵션이 없는 상품일 때(no_purchasable_option)
      */
     protected function buildTransientCartItems(array $items, ?int $userId, ?string $cartKey): Collection
     {
@@ -240,9 +252,11 @@ class TempOrderService
                 continue;
             }
 
-            $defaultOption = $productOptions->first();
+            // 옵션을 지정하지 않은 항목은 판매 중인(활성) 옵션 중 첫 번째를 쓴다. 옵션 행이 아예 없거나
+            // 전부 비활성이면 구매할 수 있는 옵션이 없는 상품이다 — 서버 오류(500)가 아니라 422 로 거절한다.
+            $defaultOption = $productOptions->first(fn ($option) => (bool) $option->is_active);
             if (! $defaultOption) {
-                throw new CartOperationException('option_not_found');
+                throw new CartOperationException('no_purchasable_option');
             }
 
             $resolvedOptionIds[$index] = $defaultOption->id;
@@ -624,6 +638,7 @@ class TempOrderService
      * 장바구니 아이템을 저장용 배열로 직렬화
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션
+     * @return array<int, array<string, mixed>> 저장용 항목 배열
      */
     protected function serializeCartItems(Collection $cartItems): array
     {
@@ -761,6 +776,7 @@ class TempOrderService
      * @param  int|null  $userId  사용자 ID (비회원은 null)
      * @param  int  $usePoints  사용 요청 마일리지
      * @param  OrderCalculationResult  $calculationResult  주문 계산 결과
+     * @return void 반환값 없음
      *
      * @throws MileageValidationException 정책 위반 시
      */
@@ -808,6 +824,7 @@ class TempOrderService
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션 (product, productOption 관계 로드 필요)
      * @param  array<int, int>  $userRoleIds  현재 사용자의 역할 ID 배열 (비회원은 guest 역할 ID)
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 구매 불가능한 상품이 있는 경우
      */

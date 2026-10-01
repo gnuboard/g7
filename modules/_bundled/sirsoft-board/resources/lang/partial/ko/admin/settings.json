@@ -542,7 +542,8 @@
       "total": "총 {{count}}건",
       "empty": "대상이 없습니다.",
       "loading": "불러오는 중...",
-      "close": "닫기"
+      "close": "닫기",
+      "editor_label": "게시판 개인정보 보유기간 대상 목록"
     },
     "manual_run": {
       "run": "지금 실행",
@@ -570,7 +571,8 @@
       "executing": "접수 중...",
       "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 결과가 표시됩니다.",
       "queue_failed": "실행을 접수하지 못했습니다.",
-      "preview_failed": "대상 건수를 불러오지 못했습니다."
+      "preview_failed": "대상 건수를 불러오지 못했습니다.",
+      "editor_label": "게시판 개인정보 보유기간 직권 실행"
     }
   }
 }

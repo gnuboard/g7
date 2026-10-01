@@ -33,7 +33,7 @@ class GdprSettingsService
     private const SNAPSHOT_KEYS = [
         'cookie_categories',
         'blocked_domains',
-        'privacy_policy_slug',
+        'privacy_policy_url',
         'legal_entity_name',
         'data_storage_location',
     ];

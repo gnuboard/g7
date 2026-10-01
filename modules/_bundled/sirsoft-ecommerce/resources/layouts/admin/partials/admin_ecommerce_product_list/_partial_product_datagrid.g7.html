@@ -10,7 +10,7 @@
   다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
 <partial>
   <div data-ref="table_card" class="p-0 md:p-0">
-    <data-grid data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+    <data-grid data-type="composite" data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
           <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
@@ -23,7 +23,7 @@
         <cell>
           <div class="row-stack">
             <div>
-              <multilingual-input value="{{row.name}}" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" layout="tabs" inputType="text" :compact="true" class="w-full" :showCodeOnMobile="true" disabled="{{row.abilities?.can_update !== true}}">
+              <multilingual-input data-type="composite" value="{{row.name}}" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" layout="tabs" inputType="text" :compact="true" class="w-full" :showCodeOnMobile="true" disabled="{{row.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 상품명은 언어별로 들어가므로 전용 입력기를 쓴다 — 값 하나가 아니라 언어 묶음이 통째로 서버에 간다. -->
                   <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="name" value="{{$event.target.value}}"/>
@@ -207,7 +207,7 @@
                 </div>
                 <div class="mb-2">
                   <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.name</label>
-                  <multilingual-input value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
+                  <multilingual-input data-type="composite" value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 좁은 화면 카드 — 옵션명. 상품명과 같이 언어별 입력이다. -->
                       <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="option_name" value="{{$event.target.value}}"/>
@@ -266,7 +266,7 @@
                 </div>
                 <div class="flex-between pt-2 border-t border-gray-200 dark:border-gray-700">
                   <label class="text-tertiary">$t:sirsoft-ecommerce.admin.product.table.options.column.active</label>
-                  <toggle checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 좁은 화면 카드 — 옵션 사용 여부. 끄면 그 옵션만 고를 수 없게 되고 상품 자체는 계속 팔린다. -->
                       <action handler="sirsoft-ecommerce.updateOptionField" productId="{{row.id}}" optionId="{{option.id}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -315,7 +315,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <multilingual-input value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
+                    <multilingual-input data-type="composite" value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
                       <on type="change">
                         <!-- 넓은 화면 표 — 옵션명(언어별). -->
                         <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="option_name" value="{{$event.target.value}}"/>
@@ -373,7 +373,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2 text-center">
-                    <toggle checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                    <toggle data-type="composite" checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
                       <on type="change">
                         <!-- 넓은 화면 표 — 옵션 사용 여부. -->
                         <action handler="sirsoft-ecommerce.updateOptionField" productId="{{row.id}}" optionId="{{option.id}}" field="is_active" value="{{$event.target.checked}}"/>

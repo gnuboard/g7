@@ -238,7 +238,7 @@ readonly class AnalyticsConfig
     /**
      * 익명 모드로 동작해야 하는지 판정합니다.
      *
-     * 동의 모드인데 동의 출처가 없으면(GDPR 플러그인 비활성) 아무것도 모으지 않는 대신
+     * 동의 모드인데 동의 출처가 없으면(동의 필터에 답하는 확장이 없으면) 아무것도 모으지 않는 대신
      * 익명으로 모읍니다 — 개인정보를 남기지 않으므로 법적으로 가장 안전한 쪽이고,
      * 운영자가 이유도 모른 채 데이터를 잃는 상황을 막습니다.
      *
@@ -269,10 +269,11 @@ readonly class AnalyticsConfig
             return self::ANONYMOUS_REASON_NO_CONSENT_SOURCE;
         }
 
-        // IP 저장 모드인데 동의 관리 플러그인이 동의 전 쿠키를 막는다. 방문자 쿠키가
-        // 브라우저에 남지 않으므로 비콘마다 새 방문자 키가 생겨 방문·순방문자가 페이지뷰만큼
-        // 부풀고 이탈률이 100% 가 된다. 그런 사이트는 처음부터 일자 회전 해시로 묶는다.
-        if ($this->privacyMode === PrivacyMode::Full && $consentSource === 'gdpr') {
+        // IP 저장 모드인데 식별자 추적 허용을 방문자마다 정하는 확장이 있다(코어 필터
+        // `core.analytics.tracking_permission` 에 답한다) — 그런 확장은 허용 전 쿠키를 막는다. 방문자
+        // 쿠키가 브라우저에 남지 않으므로 비콘마다 새 방문자 키가 생겨 방문·순방문자가 페이지뷰만큼
+        // 부풀고 이탈률이 100% 가 된다. 허용 전 방문자는 처음부터 일자 회전 해시로 묶는다.
+        if ($this->privacyMode === PrivacyMode::Full && $consentSource === 'provider') {
             return self::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES;
         }
 

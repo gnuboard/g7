@@ -5,7 +5,7 @@
   <meta title="주문서 작성" description="주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"/>
   <!-- 장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관. -->
   <data-source id="checkoutData" label_key="$t:editor.data_source.checkoutData" type="api" endpoint="/api/modules/sirsoft-ecommerce/checkout" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
-    <params country_code="{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" zipcode="{{_local.checkout?.zipcode ?? ''}}"/>
+    <params country_code="{{_local.checkout?.country_code ?? ((_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR')}}" zipcode="{{_local.checkout?.zipcode ?? ''}}"/>
     <init-local>
       <field name="_merge" value="deep"/>
       <field name="checkout">
@@ -139,8 +139,13 @@
   <computed name="selectedCorePaymentMethod">{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}</computed>
   <permissions/>
   <init>
-    <!-- 배송국가 시드 — 주문서 진입 시 _local.checkout.country_code 를 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)로 채운다. 이 값이 checkoutData GET 쿼리(country_code)로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가 Select 를 바꾸면 그 시점 값이 SSoT 로 덮어쓴다(주문서 기준). -->
-    <set-state target="local" checkout.country_code="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <!-- 배송국가 시드 — 주문서 진입 시 배송비 계산용 _local.checkout.country_code 와 배송지 폼·주문 제출용 _local.shipping.country_code 를
+         **같은 값**으로 채운다. 값은 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)이되, 해외배송이 켜져 있고
+         그 나라가 활성 배송국가일 때만 쓰고 아니면 KR 이다(선택 칸 옵션에 없는 나라가 고른 값처럼 보이지 않도록).
+         둘 중 하나만 시드하면 선택 칸은 「미국」인데 주소 폼은 국내형이고 주문은 KR 로 저장되는 어긋남이 생긴다(#703).
+         checkout.country_code 는 checkoutData GET 쿼리로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가
+         Select 를 바꾸면 그 시점 값이 두 자리 모두를 덮어쓴다(주문서 기준). -->
+    <set-state target="local" checkout.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}" shipping.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
     <!-- 결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리 -->
     <conditions>
       <when if="{{!!query.error}}">
@@ -153,7 +158,7 @@
     </conditions>
   </init>
   <slot name="content">
-    <container data-blur-until-loaded="{{_local.isSubmittingOrder}}" class="py-8">
+    <container data-type="layout" data-blur-until-loaded="{{_local.isSubmittingOrder}}" class="py-8">
       <responsive on="portable" class="py-4"/>
       <!-- 에러 요약 (페이지 상단) -->
       <div data-if="{{_local.orderError}}" class="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
@@ -183,7 +188,7 @@
         </h1>
       </div>
       <!-- PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸) -->
-      <grid :cols="3" :gap="6">
+      <grid data-type="layout" :cols="3" :gap="6">
         <responsive on="portable" :cols="1" :gap="4"/>
         <!-- 좌측 영역 - 폼 섹션들 -->
         <div class="col-span-2 space-y-6">

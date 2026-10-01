@@ -32,7 +32,7 @@
             <icon name="fa-solid fa-chevron-down" class="text-xs"/>
           </button>
           <div data-testid="reaction-type-active-m-{{row.code}}">
-            <toggle checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <toggle data-type="composite" checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다. -->
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -45,7 +45,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.ko']?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.ko']?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -56,7 +56,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.icon</span>
           <div data-testid="reaction-type-uploader-m-{{row.code}}" class="excel-card-value flex-1">
-            <file-uploader collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
+            <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
               <prop name="apiEndpoints">
                 <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
                 <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
@@ -111,7 +111,7 @@
         </div>
         <div class="flex-center gap-2 shrink-0">
           <div data-testid="reaction-type-active-m-new">
-            <toggle checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다. -->
                 <set-state target="local" reactionTypeForm.is_active="{{!(_local.reactionTypeForm?.is_active ?? true)}}"/>
@@ -137,7 +137,7 @@
         <div class="excel-card-row">
           <div class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.name</div>
           <div class="excel-card-value">
-            <multilingual-input value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 이름 입력 — 로케일 맵을 통째로 폼에 둔다. 기본 언어(ko) 필수 검증은 확인 버튼에서 한다 -->
                 <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>
@@ -150,7 +150,7 @@
           <div class="excel-card-value">
             <!-- 유형이 아직 없어도 올릴 수 있다 — 업로드 API 의 `reaction_type_id` 가 선택이다. -->
             <div data-testid="reaction-type-uploader-m-new" class="min-w-0">
-              <file-uploader collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
+              <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
                 <prop name="apiEndpoints">
                   <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
                   <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>

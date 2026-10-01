@@ -15,7 +15,7 @@
           <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.enabled</label>
           <p class="text-tertiary">$t:sirsoft-board.admin.settings.privacy_retention.enabled_hint</p>
         </div>
-        <toggle name="privacy_retention.enabled" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+        <toggle data-type="composite" name="privacy_retention.enabled" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
       </div>
       <!-- 조치 대상 — 작성 IP 축과 비회원 작성자 정보 축을 **축마다 한 행**으로 둔다(코어 개인정보 탭과 같은 「대상 행」 양식:
         이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 직권 실행 결과). 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636).
@@ -140,7 +140,7 @@
         </div>
         <div data-ref="privacy_guest_mode_field" class="space-y-2">
           <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.guest_mode</label>
-          <radio-group name="privacy_retention.guest_mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+          <radio-group data-type="composite" name="privacy_retention.guest_mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
             <prop name="options">
               <item value="anonymize" label="$t:sirsoft-board.admin.settings.privacy_retention.modes.anonymize"/>
               <item value="delete" label="$t:sirsoft-board.admin.settings.privacy_retention.modes.delete"/>

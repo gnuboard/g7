@@ -30,8 +30,39 @@ describe('정보주체 요청 화면', () => {
     const named = layout.named_actions?.searchSubjects;
     expect(named?.handler).toBe('navigate');
     expect(named?.params).toMatchObject({ path: '/admin/analytics/privacy-requests', mergeQuery: true, replace: true });
-    expect(named?.params?.query?.value).toContain('_local.search?.value || undefined');
+    expect(named?.params?.query?.value).toBe("{{String(_local.search?.value ?? '').trim() || undefined}}");
     expect(stringify(layout).match(/"actionRef":"searchSubjects"/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // @scenario screen=privacy_requests, state=empty, viewport=1440, locale=ko
+  // @effects subject_search_is_locked_without_a_value
+  it('값 칸이 비었거나 공백뿐이면 찾기 버튼을 잠그고 Enter 도 검색하지 않는다', () => {
+    // 조건 없는 조회는 하지 않으므로 빈 값으로 눌러도 화면이 그대로였다 — 고장으로 읽혔다.
+    const button = nodeById(layout, 'search_button');
+    const disabled = new Function('_local', `return (${String(button?.props?.disabled).replace(/^\{\{|\}\}$/g, '')});`);
+    expect(disabled({ search: { value: '' } })).toBe(true);
+    expect(disabled({ search: { value: '   ' } })).toBe(true);
+    expect(disabled({})).toBe(true);
+    expect(disabled({ search: { value: '203.0.113.9' } })).toBe(false);
+
+    const enter = (nodeById(layout, 'subject_value')?.actions ?? []).find((a: any) => a.type === 'keydown' && a.key === 'Enter');
+    const guard = enter?.actions?.find((a: any) => a.handler === 'conditions');
+    expect(guard?.conditions?.[0]?.then).toEqual({ actionRef: 'searchSubjects' });
+    const pass = new Function('$event', `return (${String(guard?.conditions?.[0]?.if).replace(/^\{\{|\}\}$/g, '')});`);
+    expect(pass({ target: { value: '' } })).toBe(false);
+    expect(pass({ target: { value: '  ' } })).toBe(false);
+    expect(pass({ target: { value: '7' } })).toBe(true);
+  });
+
+  // @scenario screen=privacy_requests, state=empty, viewport=1440, locale=ko
+  // @effects subject_search_prompt_is_shown_before_query
+  it('조회 전에는 결과 카드 대신 무엇을 넣으면 되는지 안내 카드를 띄운다', () => {
+    const prompt = nodeById(layout, 'subjects_prompt');
+    expect(prompt?.if).toBe('{{!query.value}}');
+    const state = nodeById(prompt, 'subjects_prompt_state');
+    expect(state?.name).toBe('EmptyState');
+    expect(state?.props?.title).toBe('$t:admin.analytics.privacy_requests.prompt_title');
+    expect(state?.props?.description).toBe('$t:admin.analytics.privacy_requests.prompt_description');
   });
 
   // @scenario screen=privacy_requests, state=normal, viewport=1440, locale=ko

@@ -4884,19 +4884,19 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    describe('동의 관리(gdpr) 차단 경계', () => {
+    describe('스크립트 로드 지연 경계 (코어 속성)', () => {
       /** @effects load_script_respects_the_consent_block */
-      it('data-gdpr-blocked-src 가 붙으면 append 없이 resolve(false)', async () => {
+      it('data-g7-script-deferred 가 붙으면 append 없이 resolve(false)', async () => {
         const mockSetState = vi.fn();
 
-        // src setter 를 가로채 차단 속성을 기록하는 preblocker 를 모사
+        // src setter 를 가로채 코어 지연 속성을 기록하는 확장(동의 전 스크립트 차단 등)을 모사
         vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
           const el = originalCreateElement(tagName);
           if (tagName === 'script') {
             const script = el as HTMLScriptElement;
             Object.defineProperty(script, 'src', {
               set(value: string) {
-                script.setAttribute('data-gdpr-blocked-src', value);
+                script.setAttribute('data-g7-script-deferred', value);
               },
               get() {
                 return '';
@@ -4911,7 +4911,7 @@ describe('ActionDispatcher', () => {
         const action: ActionDefinition = {
           type: 'click',
           handler: 'loadScript',
-          params: { src: '/js/analytics.js', id: 'gdpr_blocked' },
+          params: { src: '/js/analytics.js', id: 'deferred_script' },
           onLoad: { type: 'click', handler: 'setState', params: { loaded: true } },
         } as ActionDefinition;
 
@@ -4924,8 +4924,8 @@ describe('ActionDispatcher', () => {
         expect(document.head.appendChild).not.toHaveBeenCalled();
         expect(mockSetState).not.toHaveBeenCalled();
         // 동의 후 재디스패치가 정상 로드되도록 캐시에 기록하지 않는다
-        expect((ActionDispatcher as any).loadedScripts.has('gdpr_blocked')).toBe(false);
-        expect((ActionDispatcher as any).loadingScripts.has('gdpr_blocked')).toBe(false);
+        expect((ActionDispatcher as any).loadedScripts.has('deferred_script')).toBe(false);
+        expect((ActionDispatcher as any).loadingScripts.has('deferred_script')).toBe(false);
       });
     });
   });

@@ -3,7 +3,7 @@
   목록이 담아 둔 값이라, 여기서 다시 조회하지 않는다.
   밀어붙이면 저쪽들이 없는 기능을 부르게 되므로, 끄기 전에 그 목록을 먼저 정리하는 편이 낫다. -->
 <partial description="플러그인 강제 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_deactivate_modal">
-  <modal data-ref="plugin_force_deactivate_modal" title="$t:admin.plugins.modals.deactivate_warning_title" size="sm">
+  <modal data-type="composite" data-ref="plugin_force_deactivate_modal" title="$t:admin.plugins.modals.deactivate_warning_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
@@ -55,7 +55,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
         <on type="click">
           <!-- 끌 때도 관리자 메뉴를 함께 다시 받는다 — 이 플러그인이 더해 둔 메뉴 항목을 걷어내야 사라진 화면으로 가는 길이 남지 않는다. -->
           <sequence>

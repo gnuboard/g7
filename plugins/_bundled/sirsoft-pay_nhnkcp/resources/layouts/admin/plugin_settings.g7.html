@@ -12,7 +12,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <page-header data-ref="page_header" title="$t:sirsoft-pay_nhnkcp.settings.title" description="$t:sirsoft-pay_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nhnkcp.settings.title" description="$t:sirsoft-pay_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <!-- 시스템 점검 — PC 결제(CLI 바이너리)와 모바일 결제(SOAP 확장) 사전조건 진단 -->
       <div data-ref="health_check_card" data-if="{{health.data}}" class="mt-6 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
         <!-- 헤더 — PC/모바일 결제 가능 여부 요약 + 새로고침 버튼 -->
@@ -102,7 +102,7 @@
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.test_mode_hint</p>
             </div>
-            <toggle name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode"/>
           </div>
         </div>
       </div>
@@ -155,39 +155,39 @@
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
-            <toggle name="easy_pay_allow_with_other_pg"/>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg"/>
           </div>
           <div class="flex items-center justify-between px-6 py-4">
             <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_payco</label>
-            <toggle name="easy_pay_payco"/>
+            <toggle data-type="composite" name="easy_pay_payco"/>
           </div>
           <div class="flex-start justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay</label>
               <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_hint</p>
             </div>
-            <toggle name="easy_pay_naverpay"/>
+            <toggle data-type="composite" name="easy_pay_naverpay"/>
           </div>
           <div class="flex-start justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point</label>
               <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point_hint</p>
             </div>
-            <toggle name="easy_pay_naverpay_point"/>
+            <toggle data-type="composite" name="easy_pay_naverpay_point"/>
           </div>
           <div class="flex-start justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay</label>
               <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay_hint</p>
             </div>
-            <toggle name="easy_pay_kakaopay"/>
+            <toggle data-type="composite" name="easy_pay_kakaopay"/>
           </div>
           <div class="flex-start justify-between px-6 py-4">
             <div>
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay_hint</p>
             </div>
-            <toggle name="easy_pay_applepay"/>
+            <toggle data-type="composite" name="easy_pay_applepay"/>
           </div>
         </div>
       </div>
@@ -311,7 +311,7 @@
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.use_escrow</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.use_escrow_hint</p>
             </div>
-            <toggle name="use_escrow"/>
+            <toggle data-type="composite" name="use_escrow"/>
           </div>
           <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="section-heading-md">
             <div class="lg:col-span-1">

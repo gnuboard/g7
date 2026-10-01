@@ -1628,10 +1628,11 @@
                                     "name": "SearchableDropdown",
                                     "actions": [
                                         {
-                                            "comment": "만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다.",
+                                            "comment": "만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다. 검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다.",
                                             "event": "onSearch",
                                             "handler": "apiCall",
                                             "target": "/api/admin/users/search",
+                                            "if": "{{String($args[0] ?? '').trim() !== ''}}",
                                             "auth_required": true,
                                             "params": {
                                                 "method": "GET",

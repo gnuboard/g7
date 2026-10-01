@@ -45,8 +45,8 @@
         <div class="flex items-center justify-between">
           <!-- 작성자 정보 -->
           <div class="flex items-center gap-3">
-            <avatar author="{{post?.data?.author}}" size="md"/>
-            <user-info author="{{post?.data?.author}}"/>
+            <avatar data-type="composite" author="{{post?.data?.author}}" size="md"/>
+            <user-info data-type="composite" author="{{post?.data?.author}}"/>
           </div>
           <!-- 날짜/조회수/댓글수 -->
           <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -100,7 +100,7 @@
           <!-- 일반 글인 경우 - 내용 -->
           <extension-point name="html_content" data-ref="parent_post_html_content" data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; !(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
             <default>
-              <html-content content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+              <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
             </default>
           </extension-point>
         </div>
@@ -146,7 +146,7 @@
           </div>
           <extension-point name="html_content" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none">
             <default>
-              <html-content content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
+              <html-content data-type="composite" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
             </default>
           </extension-point>
         </div>
@@ -217,7 +217,7 @@
         <!-- 게시글 내용 (정상) -->
         <extension-point name="html_content" data-if="{{post?.data?.status !== 'blinded' &amp;&amp; post?.data?.content !== null}}" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6">
           <default>
-            <html-content content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6"/>
+            <html-content data-type="composite" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6"/>
           </default>
         </extension-point>
       </div>
@@ -226,7 +226,7 @@
         <!-- 반응(추천/비추천) 영역 — 반응 사용 on + 게시판이 켠 유형이 1개 이상일 때만 노출(확정 11). 활성 유형을 iteration 으로 순회해 유형별 버튼(아이콘+라벨+개수, 개수 0도 항상 노출, 확정 09). 본인 글은 버튼/개수는 노출하되 클릭 불가(확정 08). 비로그인은 안내 후 로그인 유도, 로그인 사용자는 같은 유형 재클릭=해제·다른 유형=전환. -->
         <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="flex flex-wrap items-center gap-2">
           <div data-each="reactionType, reactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
-            <!-- 반응 유형 버튼 — 하이라이트는 클릭 즉시 이동(_local.myReactionTypeId override, 없으면 서버값), 개수는 react API 응답의 reaction_counts 로 갱신(_local.reactionCounts override). 처리 중(_local.reactingTypeId)은 짧은 로딩(스피너+비활성, 실제 disabled). 본인 글은 시각적으로만 비활성 톤이며 disabled 는 걸지 않는다 — disabled 버튼은 클릭 이벤트 자체가 발생하지 않아 안내 토스트를 띄울 수 없으므로, 클릭은 받고 switch 분기에서 토스트로 안내한다. 실패 시 override 를 클릭 전 값으로 롤백. 활성 상태는 배경색+테두리+하단 밑줄로 표시(상시 확대는 제거 — 부자연스럽다는 PO 피드백). 클릭하는 순간에만 active:scale-95 로 살짝 눌리는 촉각 피드백을 주며, 손을 떼면 즉시 원래 크기로 복귀(순수 CSS :active 의사클래스, 상태 관리 불필요). -->
+            <!-- 반응 유형 버튼 — 하이라이트는 클릭 즉시 이동(_local.myReactionTypeId override, 없으면 서버값), 개수는 react API 응답의 reaction_counts 로 갱신(_local.reactionCounts override). 처리 중(_local.reactingTypeId)은 짧은 로딩(스피너+비활성, 실제 disabled). 본인 글은 시각적으로만 비활성 톤이며 disabled 는 걸지 않는다 — disabled 버튼은 클릭 이벤트 자체가 발생하지 않아 안내 토스트를 띄울 수 없으므로, 클릭은 받고 switch 분기에서 토스트로 안내한다. 실패 시 override 를 클릭 전 값으로 롤백. 활성 상태는 배경색+테두리+하단 밑줄로 표시(상시 확대는 제거 — 부자연스럽다는 검수 피드백). 클릭하는 순간에만 active:scale-95 로 살짝 눌리는 촉각 피드백을 주며, 손을 떼면 즉시 원래 크기로 복귀(순수 CSS :active 의사클래스, 상태 관리 불필요). -->
             <button data-testid="post-react-{{reactionType.id}}" type="button" title="{{reactionType.name ?? ''}}" disabled="{{(_local?.reactingTypeId ?? null) !== null}}" aria-pressed="{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id}}" aria-disabled="{{(_local?.reactingTypeId ?? null) !== null}}" class="{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id ? 'px-4 py-2 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center gap-1.5 font-medium active:scale-95 transition-transform duration-150 ease-out' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1.5 active:scale-95 transition-transform duration-150 ease-out'}}{{(post?.data?.is_author || (_local?.reactingTypeId ?? null) !== null) ? ' cursor-not-allowed opacity-60' : ' cursor-pointer'}}">
               <on type="click">
                 <switch on="{{post?.data?.is_author ? 'self_post' : (_global.currentUser?.uuid ? 'logged_in' : 'not_logged_in')}}">

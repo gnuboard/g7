@@ -100,6 +100,58 @@ _`getSettingsSchema()` 선언이 없습니다._
 `sirsoft-ecommerce.currency.after_apply_rates` 액션만 발행합니다(`settings.after_save` 를 쓰면
 구독 플러그인과 무한 재귀합니다).
 
+관리 환율은 **화면이 보내지 않고 서버가 채웁니다.** 설정 화면의 저장 본문은 `language_currency` 탭에서
+활성 제공자가 관리하는(`_computed.managedRateCodes`) **기존 통화**의 `exchange_rate` 키를 빼고
+보냅니다. 받아 둔 값을 그대로 돌려보내면, 화면을 연 사이 제공자가 환율을 갱신한 경우 저장값과 달라져
+다른 칸만 고친 저장까지 「관리 환율 변경」 422 로 막히기 때문입니다.
+`StoreEcommerceSettingsRequest::prepareForValidation()` 의 `fillOmittedManagedExchangeRates()` 가
+**키가 빠진** 관리 통화에만 저장된 환율을 채워 넣고, 값을 명시해 보낸 요청은 종전대로
+`validateManagedExchangeRatesUnchanged()` 가 비교해 거절합니다. 따라서 화면 쪽에서 이 키를 다시
+싣거나, 서버 쪽에서 「키 없음」을 「변경」으로 판정하게 바꾸면 이 결함이 되살아납니다.
+
+### 설정 저장 요청의 계약 (`PUT …/admin/settings`)
+
+`StoreEcommerceSettingsRequest::SECTIONS` 상수(`basic_info` · `language_currency` · `seo` ·
+`order_settings` · `claim` · `shipping` · `review_settings` · `notification_definitions` ·
+`notifications` · `inquiry` · `mileage` · `privacy_retention`)가 `_tab` 허용값이자 「저장할 구역이
+있는가」의 판정 기준입니다. 이 가운데 배열로 실린 구역이 **하나도 없으면** `validateHasSettingsSection()`
+이 `_tab` 에 422(`validation.settings.empty_payload` — 새로고침 후 다시 저장 안내)를 냅니다. 종전에는
+빈 요청에도 아무것도 저장하지 않은 채 「설정이 저장되었습니다」로 응답해, 화면의 본문 식이 평가에
+실패해 식 원문 문자열이 본문으로 나갔을 때 운영자는 저장된 줄 알았습니다(#703). 새 설정 구역(탭)을
+더하면 이 상수에 함께 넣어야 그 탭 저장이 빈 요청으로 거절되지 않습니다.
+
+저장 본문을 만드는 레이아웃 식(`admin_ecommerce_settings.g7.html` 의 저장 `api-call` `body`)에서 객체
+키를 뺄 때 **구조분해 매개변수를 쓰지 않습니다** — 식 평가기가 읽지 못하면 본문 전체가 식 원문 문자열로
+나가 모든 탭 저장이 아무것도 저장하지 못했습니다(#703 실측). 관리 환율 제외처럼 키를 걸러야 하면
+`Object.keys(…).filter(…).reduce(…)` 로 구성합니다.
+
+**무통장입금은 사용할 수 있는 계좌와 짝입니다.** 「사용할 수 있는 계좌」는 사용 중(`is_active`)이고
+계좌번호가 채워진 계좌이며, 판정은 `EcommerceSettingsService::hasUsableBankAccount()` 한 곳입니다.
+공개 결제 설정(`getPublicPaymentSettings()`)은 그런 계좌가 없으면 무통장입금(`dbank`)을 결제수단
+목록에서 걸러 주문서에 내보내지 않고, 저장 검증 `validateDbankRequiresUsableAccount()` 는 무통장입금을
+켠 채 그런 계좌가 없으면 `order_settings.bank_accounts` 에 422 를 냅니다. 저장 검증은 이번 요청에
+실린 결제수단·계좌를 우선하고 빠진 쪽은 저장값으로 판정하며(결제수단만 또는 계좌만 보내는 저장도
+같은 결과), 주문설정을 싣지 않은 다른 탭 저장에는 관여하지 않습니다. 설치 기본값(무통장입금 활성 +
+비어 있는 비활성 계좌 1건)을 그대로 두면 주문서가 무통장입금을 기본 선택하고 결제하기가 「입금 은행을
+선택해주세요」로만 끝났기 때문에 둔 짝입니다.
+
+**공개 자산 디스크(`basic_info.public_asset_disk`)가 사라진 경우**: 선택지는 코어
+`DriverRegistryService::getAvailableDrivers('public_asset')` 카탈로그이고, 설정 조회·저장 응답 모두
+`EcommerceSettingsAdminService::withPublicAssetCatalog()` 로 `available_public_asset_disks` 를 붙입니다.
+저장된 디스크가 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 응답은 값을 실제 동작인
+스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을 표시용 키 `basic_info.public_asset_disk_unavailable`
+로 알립니다. 기본정보 탭은 이 키가 있으면 「저장했던 디스크를 쓸 수 없게 됐다」는 안내를 보이고, 저장
+성공 시 폼의 이 키를 저장 응답값으로 덮어 새 디스크를 고르면 안내가 바로 사라집니다(설정 재조회는 폼에
+없는 키를 지우지 않으므로 덮어쓰기가 필요합니다). 이 키는 저장 요청의 `prepareForValidation()` 이
+걷어 내므로 설정 파일에 남지 않습니다. 저장값을 그대로 실으면 선택 칸이 어떤 선택지와도 맞지 않고,
+기본정보 탭 저장이 다른 항목만 고쳐도 매번 카탈로그 검증 422 에 막혔습니다.
+
+**마일리지 알림 카드의 「활성 채널」** 은 알림 정의의 채널 목록을 코어
+`NotificationChannelService::resolveChannelCandidates('sirsoft-ecommerce', …)` 로 거른 뒤 채널별
+활성 여부로 좁힙니다. 이 진입점이 채널 제공 확장(문자 등)이 코어 훅에 더한 후보와 이 모듈의
+`sirsoft-ecommerce.notification.channels` 필터를 **발송 경로와 같은 순서로** 거치므로, 화면 표시와
+실제 발송 채널이 갈라지지 않습니다. 이 모듈 필터만 직접 부르면 코어에 등록된 채널이 카드에서 빠집니다.
+
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
 「개인정보 보유기간」 탭이 저장하는 카테고리입니다. 종결 주문의 개인정보를 보유기간이 지나면
@@ -202,15 +254,18 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-권한 22종은 세 무리로 갈립니다.
+권한 22종은 네 무리로 갈립니다.
 
 - **관리자 CRUD 13종** (`products` · `orders` · `claims` · `categories` · `brands` ·
   `product-notice-templates` · `product-common-infos` · `promotion-coupon` ·
   `shipping-policies` · `product-labels` · `reviews` · `inquiries` · `mileage`): 관리자 화면과
   1:1 대응하며, 라우트 키가 있는 것은 그 라우트에 스코프 미들웨어가 걸립니다.
-- **사용자 측 6종** (`user-products` · `user-orders` · `user-claims` · `user-reviews` ·
-  `user-currency` · `user-shipping-country`): 구매자가 자기 자원에 대해 갖는 권한입니다. 관리자
-  권한과 이름이 겹치지 않도록 `user-` 접두사를 씁니다.
+- **사용자 측 4종** (`user-products` · `user-orders` · `user-claims` · `user-reviews`): 구매자가 자기 자원에 대해
+  갖는 권한입니다. 관리자 권한과 이름이 겹치지 않도록 `user-` 접두사를 씁니다.
+- **회원 선호값 관리 2종** (`user-currency` · `user-shipping-country`): 이름은 `user-` 로 시작하지만
+  **관리자 권한**입니다. 관리자가 회원 수정 화면에서 다른 회원의 결제 통화·배송국가를 **바꿀 때만**
+  확인되며(코어 회원 저장 요청의 검증 단계), 없으면 그 칸에 검증 오류가 뜹니다. 구매자가 자기 선호값을
+  바꾸는 데에는 권한이 필요 없습니다.
 - **횡단 3종** (`settings` · `dashboard` · `identity.policies`): 화면 하나에 대응합니다.
 
 `orders` 에 `create`/`delete` 가 없는 것은 의도입니다 — 주문은 구매자 결제로 생기고

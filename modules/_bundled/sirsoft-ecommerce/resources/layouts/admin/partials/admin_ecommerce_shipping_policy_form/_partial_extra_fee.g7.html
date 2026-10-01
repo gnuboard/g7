@@ -14,7 +14,7 @@
     </div>
     <div data-ref="extra_fee_fields">
       <div data-ref="field_extra_fee_enabled">
-        <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled" checked="{{_computed.activeCountrySetting?.extra_fee_enabled ?? false}}" disabled="{{_computed.isReadOnly}}">
+        <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled" checked="{{_computed.activeCountrySetting?.extra_fee_enabled ?? false}}" disabled="{{_computed.isReadOnly}}">
           <on type="change">
             <!-- 추가배송비 사용 여부 — 켜야 아래 상세가 나타난다. 스위치 값을 읽지 않고 현재 값을 뒤집는다(기본은 끔). -->
             <action handler="sirsoft-ecommerce.updateCountryField" field="extra_fee_enabled" value="{{!(_computed.activeCountrySetting?.extra_fee_enabled ?? false)}}"/>
@@ -24,7 +24,7 @@
       </div>
       <div data-ref="extra_fee_detail" data-if="{{_computed.activeCountrySetting?.extra_fee_enabled}}" class="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
         <div data-ref="extra_fee_multiply_toggle">
-          <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply" checked="{{_computed.activeCountrySetting?.extra_fee_multiply ?? false}}" disabled="{{_computed.isReadOnly}}">
+          <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply" checked="{{_computed.activeCountrySetting?.extra_fee_multiply ?? false}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 수량만큼 곱할지 — 끄면 주문당 한 번, 켜면 상품 수만큼 붙는다. 금액이 몇 배로 갈리는 스위치다. -->
               <action handler="sirsoft-ecommerce.updateCountryField" field="extra_fee_multiply" value="{{!(_computed.activeCountrySetting?.extra_fee_multiply ?? false)}}"/>

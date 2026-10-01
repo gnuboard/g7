@@ -93,7 +93,8 @@
             "public_asset_disk": {
                 "label": "Public Asset Disk",
                 "hint": "Select to use a different disk for this plugin only. Leave empty to follow the core public asset disk setting.",
-                "follow_core": "Follow core setting"
+                "follow_core": "Follow core setting",
+                "unavailable": "The saved disk ({disk}) is no longer available, so editor images are being streamed. Select another disk and save to change it."
             },
             "editor_height": {
                 "label": "Editor Height (px)",

@@ -1,7 +1,7 @@
 <!-- 같은 이름의 배송지가 이미 있을 때 뜨는 확인 창. 저장이 409 로 거절된 **뒤에** 열리고, 확인하면
      `force_overwrite` 를 실어 같은 요청을 다시 보낸다. 마이페이지·주문서·주문 상세가 같은 창을 쓴다. -->
 <partial description="배송지명 중복 덮어쓰기 확인 모달" editor_label="$t:user.modal_label.mypage_addresses.confirmOverwriteModal">
-  <modal data-ref="confirmOverwriteModal" title="$t:mypage.addresses.overwrite_title" size="sm">
+  <modal data-type="composite" data-ref="confirmOverwriteModal" title="$t:mypage.addresses.overwrite_title" size="sm">
     <div class="space-y-4">
       <div class="flex items-start gap-3">
         <icon name="triangle-exclamation" class="text-2xl text-yellow-500 flex-shrink-0 mt-0.5"/>

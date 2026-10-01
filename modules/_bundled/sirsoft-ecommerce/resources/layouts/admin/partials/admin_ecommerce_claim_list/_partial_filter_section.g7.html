@@ -2,7 +2,7 @@
   <!-- 주문관리 `_partial_filter_section.json` 의 노드 순서·클래스·슬롯 구조를 정본으로 복제한 화면이다(D21). 주문관리 쪽이 바뀌면 이 파일도 함께 바꾼다. 노드 순서: 프리셋 → 검색행 → 기본필터 → 상세필터 → 액션행. -->
   <div data-ref="filter_card" data-key="filter" class="admin-card">
     <!-- 필터 표시/숨김 컨트롤 (UI 를 렌더하지 않는다 — 상태 관리 전용) -->
-    <filter-visibility-selector data-ref="filter_visibility_selector" id="admin_ecommerce_claim_filters" visibleFilters="{{_local.visibleFilters}}">
+    <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_ecommerce_claim_filters" visibleFilters="{{_local.visibleFilters}}">
       <prop name="defaultFilters">
         <item>searchField</item>
         <item>searchKeyword</item>
@@ -107,85 +107,85 @@
         <!-- exchange 상태 칩 14종 -->
         <div data-ref="claim_status_chips_exchange" data-if="{{(query.type || 'exchange') === 'exchange'}}" class="flex-center flex-wrap gap-2">
           <!-- 새로 접수돼 아직 승인·보류·반려 어느 쪽으로도 처리되지 않은 교환을 고른다. 상태 조건은 유형마다 어휘가 달라 서브탭 건수 뱃지에는 반영되지 않는다. -->
-          <chip-checkbox data-ref="f_100_status_exchange_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.requested" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_100_status_exchange_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.requested" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
             </on>
           </chip-checkbox>
           <!-- 고객이 교환 배송비·차액을 아직 결제하지 않은 건. 신청 시 결제는 접수 직후, 승인 후 결제는 운영자가 승인을 누를 때 이 상태로 들어온다. -->
-          <chip-checkbox data-ref="f_110_status_exchange_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.payment_pending" variant="orange">
+          <chip-checkbox data-type="composite" data-ref="f_110_status_exchange_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.exchange_status.payment_pending" variant="orange">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="payment_pending"/>
             </on>
           </chip-checkbox>
           <!-- 추가 결제가 확정된 교환. 승인 후 결제 건은 결제 확정과 함께 승인으로 넘어가므로, 여기 남은 건은 승인을 기다리는 신청 시 결제 건이거나 재고 부족 등으로 자동 승인이 막힌 건이다. -->
-          <chip-checkbox data-ref="f_120_status_exchange_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.paid" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_120_status_exchange_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.paid" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="paid"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 받아들여 회수 절차를 시작할 교환. 이 단계부터는 고객이 신청을 철회할 수 없다. -->
-          <chip-checkbox data-ref="f_130_status_exchange_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.approved" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_130_status_exchange_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.approved" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 판단을 미뤄 둔 교환. 보류 중에도 고객은 철회할 수 있고, 운영자는 승인이나 반려로 풀어 준다. -->
-          <chip-checkbox data-ref="f_140_status_exchange_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.exchange_status.on_hold" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_140_status_exchange_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.exchange_status.on_hold" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 거절해 종결된 교환. 종결 상태라 다른 상태로 다시 옮길 수 없다. -->
-          <chip-checkbox data-ref="f_150_status_exchange_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.rejected" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_150_status_exchange_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.rejected" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
             </on>
           </chip-checkbox>
           <!-- 승인 뒤 고객 상품을 회수하러 가기 전, 회수를 준비하는 단계의 교환. -->
-          <chip-checkbox data-ref="f_160_status_exchange_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.collection_ready" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_160_status_exchange_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.collection_ready" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collection_ready"/>
             </on>
           </chip-checkbox>
           <!-- 고객이 보낸 교환 대상 상품이 판매자에게 돌아오는 중인 건. -->
-          <chip-checkbox data-ref="f_170_status_exchange_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.collecting" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_170_status_exchange_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.collecting" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collecting"/>
             </on>
           </chip-checkbox>
           <!-- 회수 상품이 판매자에게 도착해 새 상품을 보낼 차례인 교환. -->
-          <chip-checkbox data-ref="f_180_status_exchange_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.collected" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_180_status_exchange_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.collected" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collected"/>
             </on>
           </chip-checkbox>
           <!-- 회수를 마치고 고객에게 보낼 교환 상품을 준비하는 단계. 반품에는 없는 재발송 구간의 시작이다. -->
-          <chip-checkbox data-ref="f_190_status_exchange_redelivery_ready" value="redelivery_ready" checked="{{(_local.filter.claimStatus || []).includes('redelivery_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_190_status_exchange_redelivery_ready" value="redelivery_ready" checked="{{(_local.filter.claimStatus || []).includes('redelivery_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivery_ready"/>
             </on>
           </chip-checkbox>
           <!-- 교환 상품이 고객에게 배송되는 중인 건. -->
-          <chip-checkbox data-ref="f_200_status_exchange_redelivering" value="redelivering" checked="{{(_local.filter.claimStatus || []).includes('redelivering')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivering" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_200_status_exchange_redelivering" value="redelivering" checked="{{(_local.filter.claimStatus || []).includes('redelivering')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivering" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivering"/>
             </on>
           </chip-checkbox>
           <!-- 교환 상품이 고객에게 도착해 완료 처리만 남은 건. -->
-          <chip-checkbox data-ref="f_210_status_exchange_redelivered" value="redelivered" checked="{{(_local.filter.claimStatus || []).includes('redelivered')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivered" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_210_status_exchange_redelivered" value="redelivered" checked="{{(_local.filter.claimStatus || []).includes('redelivered')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.redelivered" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="redelivered"/>
             </on>
           </chip-checkbox>
           <!-- 교환 흐름이 끝까지 가서 종결된 건. 반려·철회와 함께 더는 상태가 바뀌지 않는 세 종결 상태 중 하나다. -->
-          <chip-checkbox data-ref="f_220_status_exchange_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.completed" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_220_status_exchange_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.exchange_status.completed" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
             </on>
           </chip-checkbox>
           <!-- 고객이 스스로 신청을 거둬 종결된 교환. 승인 전(신청·결제대기·결제완료·보류)에서만 일어나고 운영자가 대신 지정할 수는 없다. -->
-          <chip-checkbox data-ref="f_230_status_exchange_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.withdrawn" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_230_status_exchange_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.exchange_status.withdrawn" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
             </on>
@@ -194,67 +194,67 @@
         <!-- return 상태 칩 11종 -->
         <div data-ref="claim_status_chips_return" data-if="{{(query.type || 'exchange') === 'return'}}" class="flex-center flex-wrap gap-2">
           <!-- 새로 접수된 반품 중 아직 승인·보류·반려로 처리되지 않은 건을 고른다. 칩 값은 교환과 같은 이름이어도 지금 탭 유형의 반품 상태로만 해석된다. -->
-          <chip-checkbox data-ref="f_240_status_return_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.requested" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_240_status_return_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.requested" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
             </on>
           </chip-checkbox>
           <!-- 고객이 반품 회수 배송비를 아직 결제하지 않은 건. 반품은 청구액이 회수 배송비뿐이라 차액 결제가 없다. -->
-          <chip-checkbox data-ref="f_250_status_return_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.payment_pending" variant="orange">
+          <chip-checkbox data-type="composite" data-ref="f_250_status_return_payment_pending" value="payment_pending" checked="{{(_local.filter.claimStatus || []).includes('payment_pending')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.return_status.payment_pending" variant="orange">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="payment_pending"/>
             </on>
           </chip-checkbox>
           <!-- 반품 배송비 결제가 확정된 건. 결제 후 자동 승인 설정이 꺼져 있으면 운영자가 승인할 때까지 여기 머문다. -->
-          <chip-checkbox data-ref="f_260_status_return_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.paid" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_260_status_return_paid" value="paid" checked="{{(_local.filter.claimStatus || []).includes('paid')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.paid" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="paid"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 받아들여 회수를 시작할 반품. 승인 뒤로는 고객 철회가 막힌다. -->
-          <chip-checkbox data-ref="f_270_status_return_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.approved" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_270_status_return_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.approved" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
             </on>
           </chip-checkbox>
           <!-- 판단을 미뤄 둔 반품. 풀려면 승인이나 반려로 옮기며, 그 사이 고객이 철회할 수도 있다. -->
-          <chip-checkbox data-ref="f_280_status_return_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.return_status.on_hold" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_280_status_return_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.return_status.on_hold" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 받아들이지 않아 종결된 반품. -->
-          <chip-checkbox data-ref="f_290_status_return_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.rejected" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_290_status_return_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.rejected" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
             </on>
           </chip-checkbox>
           <!-- 승인된 반품 상품을 회수하기 전 준비 단계에 있는 건. -->
-          <chip-checkbox data-ref="f_300_status_return_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.return_status.collection_ready" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_300_status_return_collection_ready" value="collection_ready" checked="{{(_local.filter.claimStatus || []).includes('collection_ready')}}" icon="box" label="$t:sirsoft-ecommerce.enums.return_status.collection_ready" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collection_ready"/>
             </on>
           </chip-checkbox>
           <!-- 반품 상품이 판매자에게 돌아오는 중인 건. -->
-          <chip-checkbox data-ref="f_310_status_return_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.return_status.collecting" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_310_status_return_collecting" value="collecting" checked="{{(_local.filter.claimStatus || []).includes('collecting')}}" icon="truck" label="$t:sirsoft-ecommerce.enums.return_status.collecting" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collecting"/>
             </on>
           </chip-checkbox>
           <!-- 반품 상품이 도착해 완료 처리만 남은 건. 반품은 재발송이 없어 회수 도착에서 바로 완료로 간다. -->
-          <chip-checkbox data-ref="f_320_status_return_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.collected" variant="yellow">
+          <chip-checkbox data-type="composite" data-ref="f_320_status_return_collected" value="collected" checked="{{(_local.filter.claimStatus || []).includes('collected')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.collected" variant="yellow">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="collected"/>
             </on>
           </chip-checkbox>
           <!-- 반품이 끝나 종결된 건. 완료하면서 만든 환불은 이 목록이 아니라 환불 탭에 별도 문서로 잡힌다. -->
-          <chip-checkbox data-ref="f_330_status_return_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.completed" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_330_status_return_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.return_status.completed" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
             </on>
           </chip-checkbox>
           <!-- 고객이 승인 전에 스스로 거둬 종결된 반품. -->
-          <chip-checkbox data-ref="f_340_status_return_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.withdrawn" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_340_status_return_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.return_status.withdrawn" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
             </on>
@@ -263,43 +263,43 @@
         <!-- refund 상태 칩 7종 -->
         <div data-ref="claim_status_chips_refund" data-if="{{(query.type || 'exchange') === 'refund'}}" class="flex-center flex-wrap gap-2">
           <!-- 심사가 필요한 취소·환불 신청이 운영자 승인을 기다리는 건. 즉시 취소 대상은 접수와 함께 자동으로 넘어가므로 여기 머물지 않는다. -->
-          <chip-checkbox data-ref="f_350_status_refund_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.requested" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_350_status_refund_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.requested" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
             </on>
           </chip-checkbox>
           <!-- 승인은 났지만 돈이 아직 나가지 않은 환불. 계좌 환불은 운영자가 직접 환불을 실행할 때까지 여기서 기다린다. -->
-          <chip-checkbox data-ref="f_360_status_refund_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.approved" variant="blue">
+          <chip-checkbox data-type="composite" data-ref="f_360_status_refund_approved" value="approved" checked="{{(_local.filter.claimStatus || []).includes('approved')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.approved" variant="blue">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="approved"/>
             </on>
           </chip-checkbox>
           <!-- PG 에 환불을 요청해 결과를 기다리는 중인 건. PG 왕복 도중 끊기면 이 상태로 멈춰 남으므로 오래 머문 건을 찾는 데 쓴다. -->
-          <chip-checkbox data-ref="f_370_status_refund_processing" value="processing" checked="{{(_local.filter.claimStatus || []).includes('processing')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.processing" variant="orange">
+          <chip-checkbox data-type="composite" data-ref="f_370_status_refund_processing" value="processing" checked="{{(_local.filter.claimStatus || []).includes('processing')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.refund_status.processing" variant="orange">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="processing"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 판단을 미뤄 둔 환불. 승인 뒤에도 보류로 돌릴 수 있다는 점이 교환·반품과 다르다. -->
-          <chip-checkbox data-ref="f_380_status_refund_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.refund_status.on_hold" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_380_status_refund_on_hold" value="on_hold" checked="{{(_local.filter.claimStatus || []).includes('on_hold')}}" icon="pause" label="$t:sirsoft-ecommerce.enums.refund_status.on_hold" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="on_hold"/>
             </on>
           </chip-checkbox>
           <!-- 환불금이 실제로 돌려진 건. 고객·운영자가 직접 접수한 환불이면 이때 취소 탭에 취소 문서가 함께 생긴다. -->
-          <chip-checkbox data-ref="f_390_status_refund_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.completed" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_390_status_refund_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.refund_status.completed" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
             </on>
           </chip-checkbox>
           <!-- 운영자가 받아들이지 않아 종결된 환불. -->
-          <chip-checkbox data-ref="f_400_status_refund_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.rejected" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_400_status_refund_rejected" value="rejected" checked="{{(_local.filter.claimStatus || []).includes('rejected')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.rejected" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="rejected"/>
             </on>
           </chip-checkbox>
           <!-- 신청자가 승인 전(신청·보류)에 스스로 거둔 환불. 운영자가 대신 접수한 환불은 고객이 철회할 수 없다. -->
-          <chip-checkbox data-ref="f_410_status_refund_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.withdrawn" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_410_status_refund_withdrawn" value="withdrawn" checked="{{(_local.filter.claimStatus || []).includes('withdrawn')}}" icon="x" label="$t:sirsoft-ecommerce.enums.refund_status.withdrawn" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="withdrawn"/>
             </on>
@@ -308,13 +308,13 @@
         <!-- cancel 상태 칩 2종 -->
         <div data-ref="claim_status_chips_cancel" data-if="{{(query.type || 'exchange') === 'cancel'}}" class="flex-center flex-wrap gap-2">
           <!-- 취소 문서는 주문에서 금액이 실제로 빠지는 순간 만들어져 같은 처리 안에서 바로 완료로 넘어간다. 운영자가 처리할 대기 건을 찾는 칩이 아니다. -->
-          <chip-checkbox data-ref="f_420_status_cancel_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.cancel_status.requested" variant="gray">
+          <chip-checkbox data-type="composite" data-ref="f_420_status_cancel_requested" value="requested" checked="{{(_local.filter.claimStatus || []).includes('requested')}}" icon="clock" label="$t:sirsoft-ecommerce.enums.cancel_status.requested" variant="gray">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="requested"/>
             </on>
           </chip-checkbox>
           <!-- 확정된 취소를 고른다. 결제 전 주문처럼 돌려줄 돈이 없던 취소도 환불 문서 없이 여기 잡힌다. -->
-          <chip-checkbox data-ref="f_430_status_cancel_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.cancel_status.completed" variant="green">
+          <chip-checkbox data-type="composite" data-ref="f_430_status_cancel_completed" value="completed" checked="{{(_local.filter.claimStatus || []).includes('completed')}}" icon="check" label="$t:sirsoft-ecommerce.enums.cancel_status.completed" variant="green">
             <on type="change">
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.claimStatus" value="completed"/>
             </on>
@@ -622,7 +622,7 @@
       <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
         <responsive on="portable" class="flex-center gap-2 w-full"/>
         <!-- 고른 컬럼은 운영자별로 이 브라우저에 저장돼 다음 진입 때 복원된다. 복원할 때도 이 변경 이벤트가 불리므로 여기에는 표시 상태를 옮기는 일만 둔다. -->
-        <column-selector data-ref="f_003_column_selector" id="admin_claim_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.claim.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+        <column-selector data-type="composite" data-ref="f_003_column_selector" id="admin_claim_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.claim.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
           <prop name="columns">
             <item field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" :required="true"/>
             <item field="claim_number" header="$t:sirsoft-ecommerce.admin.claim.column.claim_number" :required="true"/>
@@ -665,12 +665,12 @@
     </div>
     <!-- 기본 필터 영역 - SlotContainer로 렌더링 -->
     <div data-ref="basic_filter_section" class="flex flex-col p-4">
-      <slot-container data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
+      <slot-container data-type="composite" data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
     </div>
     <!-- 상세 필터 영역 - showDetailFilter 시 표시. 검색 드롭다운 4축(클레임번호·주문번호·신청자·상품명)은 여기 두지 않는다 (D27) -->
     <div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mx-4">
       <span class="text-body font-medium mb-2 block">$t:sirsoft-ecommerce.admin.claim.filter.detail_title</span>
-      <slot-container data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
+      <slot-container data-type="composite" data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
     </div>
     <!-- 필터 액션 버튼 영역 (D21 ⑤ 3분할) -->
     <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">

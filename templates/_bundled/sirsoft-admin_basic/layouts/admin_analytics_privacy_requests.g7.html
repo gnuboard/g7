@@ -60,10 +60,11 @@
   <transition-overlay>
     <wait-for>analytics_subjects</wait-for>
   </transition-overlay>
-  <!-- 검색 실행 — 폼 값을 질의로 옮긴다. 비면 키를 지워 조회 자체가 일어나지 않게 한다. -->
+  <!-- 검색 실행 — 폼 값을 질의로 옮긴다. 비면 키를 지워 조회 자체가 일어나지 않게 한다.
+       값은 앞뒤 공백을 떼고 싣는다 — 공백만 든 값은 버튼이 잠겨 있어도 질의에 남으면 원장을 헛조회한다. -->
   <action name="searchSubjects">
     <navigate path="/admin/analytics/privacy-requests" :mergeQuery="true" :replace="true">
-      <query subject="{{_local.search?.subject || 'ip'}}" value="{{_local.search?.value || undefined}}" from="{{_local.search?.from || undefined}}" to="{{_local.search?.to || undefined}}"/>
+      <query subject="{{_local.search?.subject || 'ip'}}" value="{{String(_local.search?.value ?? '').trim() || undefined}}" from="{{_local.search?.from || undefined}}" to="{{_local.search?.to || undefined}}"/>
     </navigate>
   </action>
   <init>
@@ -88,7 +89,7 @@
         <div class="filter-grid">
           <div class="filter-row">
             <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.subject_label</span>
-            <radio-group name="analytics_subject_type" value="{{_local.search?.subject || 'ip'}}" :inline="true">
+            <radio-group data-type="composite" name="analytics_subject_type" value="{{_local.search?.subject || 'ip'}}" :inline="true">
               <prop name="options">
                 <item label="$t:admin.analytics.privacy_requests.search.subject_ip" value="ip"/>
                 <item label="$t:admin.analytics.privacy_requests.search.subject_user" value="user_id"/>
@@ -109,10 +110,15 @@
               </on>
               <on type="keydown" key="Enter">
                 <!-- Enter 로 바로 검색 — change 가 아직 오지 않았을 수 있어 지금 칸의 값을 먼저 폼에 넣고 검색을 부른다.
-                     순서가 바뀌면 직전 값으로 찾는다. -->
+                     순서가 바뀌면 직전 값으로 찾는다. 칸이 비었으면 찾기 버튼처럼 아무것도 하지 않는다 — 그대로 부르면
+                     질의의 값이 지워져 앞선 결과가 말없이 닫힌다(비우기는 초기화 버튼 몫이다). -->
                 <sequence>
                   <set-state target="local" search.value="{{$event.target.value}}"/>
-                  <action-ref name="searchSubjects"/>
+                  <conditions>
+                    <when if="{{!!String($event.target.value ?? '').trim()}}">
+                      <action-ref name="searchSubjects"/>
+                    </when>
+                  </conditions>
                 </sequence>
               </on>
             </input>
@@ -137,7 +143,9 @@
           </div>
         </div>
         <div class="flex justify-center gap-3 mt-4">
-          <button data-ref="search_button" type="button" class="btn btn-primary px-6">
+          <!-- 값 칸이 비면 잠근다 — 조건 없는 조회는 하지 않으므로 눌러도 화면이 그대로라 고장처럼 보였다.
+               기간만으로는 찾지 않는다(기간만 준 조회도 원장 전체다). -->
+          <button data-ref="search_button" type="button" class="btn btn-primary px-6" disabled="{{!String(_local.search?.value ?? '').trim()}}">
             <on type="click">
               <action-ref name="searchSubjects"/>
             </on>
@@ -157,6 +165,11 @@
             $t:common.reset
           </button>
         </div>
+      </div>
+      <!-- 조회 전 안내 — 질의에 값이 없으면 조회하지 않아 결과 카드가 없다. 빈 화면으로 두면 목록이 안 뜨는
+           고장으로 읽히므로 무엇을 넣으면 무엇이 나오는지 알린다. -->
+      <div data-ref="subjects_prompt" data-if="{{!query.value}}" class="admin-card">
+        <empty-state data-type="composite" data-ref="subjects_prompt_state" iconName="search" title="$t:admin.analytics.privacy_requests.prompt_title" description="$t:admin.analytics.privacy_requests.prompt_description" class="py-10"/>
       </div>
       <div data-ref="results_card" data-if="{{!!query.value}}" class="admin-card">
         <blur-until-loaded sources="analytics_subjects"/>
@@ -215,9 +228,9 @@
             <p class="text-info-soft">{{analytics_subjects?.data?.notice}}</p>
           </div>
         </div>
-        <empty-state data-ref="subjects_empty" data-if="{{!analytics_subjects?.loading &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
+        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{!analytics_subjects?.loading &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
         <div class="overflow-x-auto" data-if="{{(analytics_subjects?.data?.visits ?? []).length > 0}}">
-          <data-grid data-ref="subjects_grid" data="{{analytics_subjects?.data?.visits ?? []}}" :pagination="true" :pageSize="25" idField="visit_id" :selectable="false" :sortable="false">
+          <data-grid data-type="composite" data-ref="subjects_grid" data="{{analytics_subjects?.data?.visits ?? []}}" :pagination="true" :pageSize="25" idField="visit_id" :selectable="false" :sortable="false">
             <column field="first_action_at" header="$t:admin.analytics.privacy_requests.columns.visit_at" width="170px">
               <cell>
                 <span class="text-label">{{row.first_action_at | datetime | default('-')}}</span>

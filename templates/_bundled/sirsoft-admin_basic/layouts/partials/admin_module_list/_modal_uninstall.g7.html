@@ -2,7 +2,7 @@
   지울지**. 데이터 삭제를 켤 때에만 무엇이 함께 지워지는지 서버에 물어 보여 준다(끄면 필요 없다).
   여는 쪽(목록 더보기 메뉴)도 같은 정보를 미리 받아 두므로, 처음부터 켜 둔 상태로 열릴 수 있다. -->
 <partial description="모듈 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_uninstall_modal">
-  <modal data-ref="module_uninstall_modal" title="{{_global.moduleUninstallBackups?.length ? '$t:admin.modules.modals.uninstall_done_title' : '$t:admin.modules.modals.uninstall_title'}}" size="medium">
+  <modal data-type="composite" data-ref="module_uninstall_modal" title="{{_global.moduleUninstallBackups?.length ? '$t:admin.modules.modals.uninstall_done_title' : '$t:admin.modules.modals.uninstall_title'}}" size="medium">
     <div data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="module_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
         <img data-if="{{_global.selectedModule?.icon_url}}" src="{{_global.selectedModule.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
@@ -41,7 +41,7 @@
     <div data-ref="extension_directory_section" data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
       <span class="text-primary text-sm font-semibold">$t:admin.modules.modals.extension_directory_title</span>
       <div data-if="{{!_global.moduleUninstallInfo}}" class="flex-center justify-center py-4">
-        <icon name="spinner" class="text-xl animate-spin text-gray-400"/>
+        <icon name="spinner" class="text-xl animate-spin text-gray-400 dark:text-gray-500"/>
       </div>
       <div data-if="{{_global.moduleUninstallInfo &amp;&amp; _global.moduleUninstallInfo.extension_directory}}" class="mt-3">
         <div class="flex-center gap-2 mb-2">
@@ -62,7 +62,7 @@
         <span class="text-primary text-sm font-semibold">$t:admin.modules.modals.delete_data_info_title</span>
       </div>
       <div data-if="{{!_global.moduleUninstallInfo}}" class="flex-center justify-center py-4">
-        <icon name="spinner" class="text-xl animate-spin text-gray-400"/>
+        <icon name="spinner" class="text-xl animate-spin text-gray-400 dark:text-gray-500"/>
       </div>
       <div data-if="{{_global.moduleUninstallInfo}}" class="mt-3 space-y-4">
         <div>
@@ -139,7 +139,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUninstalling}}">
+      <button data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUninstalling}}">
         <on type="click">
           <!-- 삭제 실행. 데이터 삭제 여부를 함께 보낸다. 성공 갈래가 대상과 선택을 모두 비우므로 **요청 본문은 그 전에 조립된 값을 쓴다**. 사이드바 메뉴와 프론트 확장 번들도 함께 갱신한다 — 안 하면 죽은 모듈의 메뉴가 남는다. -->
           <sequence>

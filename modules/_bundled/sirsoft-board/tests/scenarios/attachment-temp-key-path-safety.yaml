@@ -30,6 +30,8 @@ effects:
   - uuid_temp_key_accepted
   - empty_temp_link_deletes_nothing
   - owned_temp_attachments_moved_and_temp_dir_cleaned
+  # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다(#703 실측).
+  - temp_dir_cleanup_failure_does_not_abort_link
   - foreign_temp_attachments_not_linked_or_deleted
   - keyless_upload_gets_server_generated_temp_key
   - upload_stores_file_and_creates_row

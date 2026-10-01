@@ -40,6 +40,8 @@
 
 독립 레이아웃을 작성할 때는 위 베이스의 `global_toast` (또는 동등 항목) 블록을 그대로 복사한다. 사용자 정의 변형 없이 정의를 통일하면 회귀가 발생하지 않는다.
 
+`.g7.html` 컴파일의 `standalone_missing_global_host` 경고는 호스트를 **컴포넌트 이름으로 찾지 않는다**(템플릿마다 이름이 다를 수 있다). `toast` 를 발화하면 `_global.toasts` 를 props·조건에서 읽는 노드가, `openModal` 을 발화하면 `modals` 섹션(또는 `_global.modalStack` 을 읽는 노드)이 있어야 한다. `showAlert` 는 브라우저 `alert()` 라 호스트가 필요 없다.
+
 ---
 
 ## Partial 처리 방식

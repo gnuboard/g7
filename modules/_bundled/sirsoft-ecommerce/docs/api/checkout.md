@@ -440,6 +440,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutController@store` 가 직접 �
 | --- | --- | --- |
 | 400 | Bad Request | 장바구니가 비어 있음. 메시지: `장바구니가 비어있습니다.` |
 | 422 | Unprocessable Entity | 보유 잔액을 초과하는 마일리지 사용 요청 (`error.code: mileage_exceeds_balance`). 메시지: `주문서 생성에 실패했습니다.` |
+| 422 | Unprocessable Entity | 바로 구매(`direct_items`) 항목이 지정한 옵션이 그 상품에 없음 (`error.code: option_not_found`), 또는 옵션을 지정하지 않았는데 판매 중인 옵션이 하나도 없는 상품 (`error.code: no_purchasable_option`). 메시지: `지금은 구매할 수 있는 옵션이 없는 상품입니다.` 등 사유별 문구 |
 | 500 | Internal Server Error | 임시 주문 생성 중 예외 발생. 메시지: `주문서 생성에 실패했습니다.` |
 
 <!-- @generated:end -->

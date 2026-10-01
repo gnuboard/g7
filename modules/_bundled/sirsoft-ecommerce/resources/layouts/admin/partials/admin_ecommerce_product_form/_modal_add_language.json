@@ -32,7 +32,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 text-white"
+                        "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 dark:bg-blue-500 text-white"
                     },
                     "children": [
                         {

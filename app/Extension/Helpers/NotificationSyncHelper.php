@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,72 @@ use Illuminate\Support\Facades\Log;
  */
 class NotificationSyncHelper
 {
+    /**
+     * 알림 정의 시딩 공통 필터 훅 이름 (7.1.0).
+     *
+     * 코어 시더와 모든 모듈·플러그인의 알림 정의 동기화가 DB 에 쓰기 직전 이 필터를 한 번
+     * 통과시킨다. 알림 채널을 제공하는 확장은 도메인 이름을 모른 채 이 훅 하나에 답해 자기
+     * 채널의 template 을 정의에 더한다 — 도메인별 시딩 훅(`seed.{id}.notifications.translations`)은
+     * 언어팩 다국어 병합용이며 채널 확장이 구독할 대상이 아니다.
+     */
+    public const SEED_DEFINITIONS_FILTER = 'core.notification.filter_seed_definitions';
+
+    /**
+     * 시딩 직전 알림 정의 목록을 공통 필터 훅에 통과시킵니다.
+     *
+     * 각 정의에 소유자(`extension_type`·`extension_identifier`)를 채운 순차 배열로 넘기고,
+     * 같은 소유자를 두 번째 인자(context)로도 싣는다. 리스너가 배열이 아닌 값이나 빈 배열을
+     * 돌려주면 원본을 그대로 쓴다(빈 목록은 stale 정리가 소유자 정의를 모두 지우는 경로라 막는다).
+     * 정의 목록이 비어 있으면 훅을 발화하지 않는다(시딩할 정의가 없음).
+     *
+     * @param  array<int|string, array<string, mixed>>  $definitions  시딩할 알림 정의 목록(각 항목에 type 포함)
+     * @param  string  $extensionType  정의 소유자 유형 (core|module|plugin)
+     * @param  string  $extensionIdentifier  정의 소유자 식별자 (코어는 'core')
+     * @return array<int, array<string, mixed>> 필터를 거친 순차 배열 정의 목록
+     */
+    public function applySeedDefinitionsFilter(array $definitions, string $extensionType, string $extensionIdentifier): array
+    {
+        $list = [];
+        foreach ($definitions as $definition) {
+            if (! is_array($definition)) {
+                continue;
+            }
+
+            $definition['extension_type'] = $extensionType;
+            $definition['extension_identifier'] = $extensionIdentifier;
+            $list[] = $definition;
+        }
+
+        if ($list === []) {
+            return [];
+        }
+
+        $filtered = HookManager::applyFilters(
+            self::SEED_DEFINITIONS_FILTER,
+            $list,
+            [
+                'extension_type' => $extensionType,
+                'extension_identifier' => $extensionIdentifier,
+            ]
+        );
+
+        if (! is_array($filtered)) {
+            return $list;
+        }
+
+        // 데이터 손실 방어 — 빈 목록으로 저장하면 뒤따르는 stale 정리가 소유자의 정의를 전부 지운다.
+        if ($filtered === []) {
+            Log::warning('알림 정의 시딩 훅이 빈 목록을 반환해 원본 정의로 시딩합니다 (데이터 손실 방어)', [
+                'extension_type' => $extensionType,
+                'extension_identifier' => $extensionIdentifier,
+            ]);
+
+            return $list;
+        }
+
+        return array_values($filtered);
+    }
+
     /**
      * 알림 정의를 동기화합니다 (user_overrides 보존 upsert).
      *
@@ -157,7 +224,7 @@ class NotificationSyncHelper
      * 조합은 삭제. definition 삭제 시 FK cascade 로 자동 정리되는 경로와 별개로,
      * definition 은 유지되지만 channel 이 재구성된 경우에 사용됩니다.
      *
-     * @param  int  $definitionId
+     * @param  int  $definitionId  대상 definition id
      * @param  array<int, string>  $currentChannels  현재 유효한 channel 목록
      * @return int 삭제된 template 수
      */

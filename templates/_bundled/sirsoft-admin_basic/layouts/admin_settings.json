@@ -362,6 +362,27 @@
             "comment": "인증 메시지 정의 목록(메시지 하위 탭). 페이지 파라미터를 `messages_*` 로 따로 쓰는 것은\n       같은 탭 안에 정책 목록이 함께 있어 `page` 를 나눠 갖지 않으면 서로 밀어내기 때문이다."
         },
         {
+            "id": "identityMessagePolicyScopes",
+            "label_key": "$t:editor.data_source.identityMessagePolicyScopes",
+            "type": "api",
+            "endpoint": "/api/admin/identity/messages/definitions",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "provider_id": "g7:core.mail",
+                "scope_type": "policy",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "메시지 정의가 이미 있는 운영자 정책 — 「정의 추가」 창이 선택지에서 빼는 데만 쓴다.\n       서버의 중복 판정(제공자·범위 종류·범위 값 조합)과 **같은 조건**으로 받는다: 메일 제공자 +\n       정책 범위. 위 `identityMessages` 는 페이지가 나뉘어 있어 그것으로 거르면 다른 페이지의\n       정의가 빠진다. 정책 목록과 같은 한도(100건)로 한 번에 받는다."
+        },
+        {
             "id": "adminIdentityPolicies",
             "label_key": "$t:editor.data_source.adminIdentityPolicies",
             "type": "api",
@@ -498,6 +519,7 @@
             "identityProviders",
             "identityPurposes",
             "identityMessages",
+            "identityMessagePolicyScopes",
             "adminIdentityPolicies",
             "policies",
             "language_packs",
@@ -1076,7 +1098,7 @@
     },
     "modals": [
         {
-            "comment": "언어팩 설치 창.\n       여기부터 일곱은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의\n       목록 조각을 쓰므로 창도 같은 것이어야 동작이 이어진다(사본을 두면 한쪽만 고쳐져 갈린다).",
+            "comment": "언어팩 설치 창.\n       여기부터 여덟은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의\n       목록 조각을 쓰므로 창도 같은 것이어야 동작이 이어진다(사본을 두면 한쪽만 고쳐져 갈린다).",
             "partial": "partials/admin_language_pack_list/_modal_install.json"
         },
         {
@@ -1098,6 +1120,10 @@
         {
             "comment": "번역 캐시 다시 굽기 확인 창.",
             "partial": "partials/admin_language_pack_list/_modal_refresh_cache.json"
+        },
+        {
+            "comment": "같은 로케일 자리를 두 언어팩이 다툴 때 어느 쪽을 쓸지 고르는 창. 목록 조각의 스위치가 409 에서 이 창을\n       여는데 여기만 빠져 있어, 이 탭에서는 충돌 때 아무 창도 뜨지 않았다(#703 실측).",
+            "partial": "partials/admin_language_pack_list/_modal_slot_conflict.json"
         },
         {
             "comment": "언어팩 매니페스트 원문 서랍.",

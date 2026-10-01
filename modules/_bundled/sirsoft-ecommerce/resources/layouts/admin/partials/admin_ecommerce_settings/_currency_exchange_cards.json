@@ -531,7 +531,7 @@
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}",
                                         "value": "{{currency.rounding_unit}}",
                                         "options": "{{((currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}",
-                                        "className": "w-full",
+                                        "className": "input w-full",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }

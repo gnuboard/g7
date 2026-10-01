@@ -10,35 +10,35 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:173` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:506` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:845` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:517` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:856` |
 | `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:226` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:694` |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:705` |
 | `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:201` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:485` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:689` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:496` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:700` |
 | `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:126` |
 | `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:129` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |
 | `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:79` |
 | `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
 | `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:130` |
-| `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1130` |
-| `sirsoft-board.board.after_create` | action | — | `src/Services/BoardService.php:419` |
-| `sirsoft-board.board.after_delete` | action | — | `src/Services/BoardService.php:663` |
-| `sirsoft-board.board.after_remove_from_menu` | action | — | `src/Services/BoardService.php:1175` |
-| `sirsoft-board.board.after_update` | action | — | `src/Services/BoardService.php:582` |
-| `sirsoft-board.board.before_add_to_menu` | action | — | `src/Services/BoardService.php:1094` |
-| `sirsoft-board.board.before_copy` | action | — | `src/Services/BoardService.php:686` |
-| `sirsoft-board.board.before_create` | action | — | `src/Services/BoardService.php:388` |
-| `sirsoft-board.board.before_delete` | action | — | `src/Services/BoardService.php:614` |
-| `sirsoft-board.board.before_remove_from_menu` | action | — | `src/Services/BoardService.php:1161` |
-| `sirsoft-board.board.before_update` | action | — | `src/Services/BoardService.php:524` |
-| `sirsoft-board.board.filter_copy_data` | filter | — | `src/Services/BoardService.php:743` |
-| `sirsoft-board.board.filter_create_data` | filter | — | `src/Services/BoardService.php:391` |
-| `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1124` |
-| `sirsoft-board.board.filter_update_data` | filter | — | `src/Services/BoardService.php:529` |
-| `sirsoft-board.board.posts.before_force_delete` | action | — | `src/Services/BoardService.php:633` |
+| `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1133` |
+| `sirsoft-board.board.after_create` | action | — | `src/Services/BoardService.php:420` |
+| `sirsoft-board.board.after_delete` | action | — | `src/Services/BoardService.php:666` |
+| `sirsoft-board.board.after_remove_from_menu` | action | — | `src/Services/BoardService.php:1178` |
+| `sirsoft-board.board.after_update` | action | — | `src/Services/BoardService.php:583` |
+| `sirsoft-board.board.before_add_to_menu` | action | — | `src/Services/BoardService.php:1097` |
+| `sirsoft-board.board.before_copy` | action | — | `src/Services/BoardService.php:689` |
+| `sirsoft-board.board.before_create` | action | — | `src/Services/BoardService.php:389` |
+| `sirsoft-board.board.before_delete` | action | — | `src/Services/BoardService.php:615` |
+| `sirsoft-board.board.before_remove_from_menu` | action | — | `src/Services/BoardService.php:1164` |
+| `sirsoft-board.board.before_update` | action | — | `src/Services/BoardService.php:525` |
+| `sirsoft-board.board.filter_copy_data` | filter | — | `src/Services/BoardService.php:746` |
+| `sirsoft-board.board.filter_create_data` | filter | — | `src/Services/BoardService.php:392` |
+| `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1127` |
+| `sirsoft-board.board.filter_update_data` | filter | — | `src/Services/BoardService.php:530` |
+| `sirsoft-board.board.posts.before_force_delete` | action | — | `src/Services/BoardService.php:636` |
 | `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:247` |
 | `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:247` |
 | `sirsoft-board.board_type.after_create` | action | — | `src/Services/BoardTypeService.php:42` |
@@ -65,9 +65,9 @@
 | `sirsoft-board.comment.update_validation_rules` | filter | — | `src/Http/Requests/UpdateCommentRequest.php:68` |
 | `sirsoft-board.guest_author.after_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:192` |
 | `sirsoft-board.guest_author.before_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:186` |
-| `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:479` |
-| `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:640` |
-| `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:555` |
+| `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:480` |
+| `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:643` |
+| `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:556` |
 | `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:574` |
 | `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:720` |
 | `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:287` |
@@ -101,14 +101,14 @@
 | `sirsoft-board.report.before_delete` | action | — | `src/Services/ReportService.php:562` |
 | `sirsoft-board.report.before_update_status` | action | — | `src/Services/ReportService.php:332` |
 | `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:235` |
-| `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:459` |
-| `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:644` |
+| `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:460` |
+| `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:647` |
 | `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:69` 외 4곳 |
 | `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:57` |
 | `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:295` |
-| `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1443` |
-| `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1434` |
-| `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1336` |
+| `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1446` |
+| `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1437` |
+| `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1339` |
 | `sirsoft-board.user_post.store_validation_rules` | filter | — | `src/Http/Requests/User/StorePostRequest.php:167` |
 | `sirsoft-board.user_post.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdatePostRequest.php:116` |
 <!-- @generated:hooks-published END -->
@@ -131,6 +131,11 @@
 비회원 삭제 모드는 게시판 삭제 경로를 지나므로 `sirsoft-board.post.after_delete`·
 `sirsoft-board.comment.after_delete` 가 `trigger_type=system` 행에 대해 발화하지만
 **`before_delete` 는 발화하지 않습니다**(무인 배치에 본인인증 정책이 걸리면 법정 파기가 멈춤).
+
+`sirsoft-board.board.posts.before_force_delete` 는 게시판 영구 삭제 직전 1,000건 묶음마다
+`($board, array $postIds, string $postType)` 로 발화합니다. 셋째 인자 `$postType` 은 글 모델 타입
+(다형 참조 type)입니다 — 글을 다형 참조로 가리키는 확장(이커머스 문의 등)은 게시판 클래스 이름을 스스로
+적지 말고 이 값으로 자기 참조를 가려 지웁니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -222,6 +227,8 @@
 | `sirsoft-ecommerce.inquiry.delete_reply` | filter | `EcommerceInquiryHookListener` | `deleteReplyPost` | 10 |
 | `sirsoft-ecommerce.inquiry.get_by_ids` | filter | `EcommerceInquiryHookListener` | `getByIds` | 10 |
 | `sirsoft-ecommerce.inquiry.get_settings` | filter | `EcommerceInquiryHookListener` | `getBoardSettings` | 10 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | filter | `EcommerceInquiryHookListener` | `purgeSamplePosts` | 10 |
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | filter | `EcommerceInquiryHookListener` | `seedSamplePost` | 10 |
 | `sirsoft-ecommerce.inquiry.update` | filter | `EcommerceInquiryHookListener` | `updatePost` | 10 |
 | `sirsoft-ecommerce.inquiry.update_reply` | filter | `EcommerceInquiryHookListener` | `updateReplyPost` | 10 |
 <!-- @generated:hooks-subscribed END -->
@@ -231,8 +238,21 @@
 넣기 위해서입니다 — 이 필드는 `UserNotificationSetting` 모델(board 소유)에 저장되지만, 입력
 자체는 코어 회원 폼에서 받습니다. `sirsoft-ckeditor5.image.filter_reference_sources` 구독은
 board 글 본문(HTML 에디터)에 삽입된 이미지가 삭제 시 함께 정리되도록 참조 소스 목록에 게시글을
-등록하는 자리입니다. `sirsoft-ecommerce.inquiry.*` 8개는 이커머스 "상품 문의"가 board 의
-Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가 대신 처리하는 위임 지점입니다.
+등록하는 자리입니다. `sirsoft-ecommerce.inquiry.*` 는 이커머스 "상품 문의"가 board 의
+Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 정의하고 board 가 답합니다. 운영 경로 8개
+(`create`·`update`·`delete`·`update_reply`·`delete_reply`·`get_by_ids`·`get_settings`·`count_replies`)와
+이커머스 샘플 시더 전용 2개(`seed_sample_post`·`purge_sample_posts`)입니다.
+
+두 모듈은 서로를 의존성으로 선언하지 않으므로 **각자 자기 것만 씁니다.** board 가 훅에 답하다 실패하면
+자기 문구(`sirsoft-board::messages.inquiry.*`)로 예외를 던지고, 이커머스는 그것을 자기 실패 응답으로
+바꿉니다. 이커머스가 알아야 할 board 쪽 값(글 ID·글 모델 타입·게시판 설정·비밀글 열람 판정)은 전부 훅
+반환값이나 인자로 건넵니다.
+
+| 샘플 시더 훅 | 인자 | 반환 |
+|---|---|---|
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문, board 가 해시)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` · 게시판 없으면 이전 값 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 타입별 글 ID 묶음 | 영구 삭제한 글 수 (자기 글 타입 묶음 + 문의 게시판 답변 글만) |
+
 `SeoBoardCacheListener` 가 `board.after_update`·`board.after_delete`·`board.posts.before_force_delete`
 를 구독하는 것은 사이트맵 색인이 게시판(부모)과 게시글(자식)의 생명주기를 함께 따르게 하기
 위해서입니다 — 게시판을 비활성화·삭제하면 게시글 URL 도 빠지고, 다시 활성화하면 공개 글만
@@ -254,7 +274,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `BoardPostsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardPostsCountSyncListener.php` |
 | `Ckeditor5ReferenceSourcesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Ckeditor5ReferenceSourcesListener.php` |
 | `CommentReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/CommentReplySyncListener.php` |
-| `EcommerceInquiryHookListener` | 8개 | 명시 등록 | ✅ | `src/Listeners/EcommerceInquiryHookListener.php` |
+| `EcommerceInquiryHookListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/EcommerceInquiryHookListener.php` |
 | `PostAttachmentCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostAttachmentCountSyncListener.php` |
 | `PostCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostCountSyncListener.php` |
 | `PostReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostReplySyncListener.php` |

@@ -2,10 +2,10 @@
  * @file adminUserListFilterExtensions.test.ts
  * @description 회원관리 목록 확장 필터 조각 2종 구조 테스트 (#705 예제 E1·E2)
  *
- * 코어 회원 목록이 연 확장점(`admin_user_list_filters`)에 붙는 이커머스 필터 행이 규약을 지키는지
- * 잠근다 — 확장점·모드, 행 권한(서버 리스너와 같은 권한), 값을 직접 URL 에 싣지 않고 코어 핸들러
- * `setUserFilterExt` 로 `_local.userFilterExtraQuery` 배열을 갱신하는지, 키 형식이 서버 정규식과
- * 맞는지(`{확장id}.{키}`).
+ * 관리자 템플릿의 회원 목록이 연 확장점(`admin_user_list_filters`)에 붙는 이커머스 필터 행이 규약을
+ * 지키는지 잠근다 — 확장점·모드, 행 권한(서버 리스너와 같은 권한), 값을 직접 URL 에 싣지 않고 이 모듈의
+ * 핸들러 `sirsoft-ecommerce.setUserFilterExt` 로 `_local.userFilterExtraQuery` 배열을 갱신하는지(관리자
+ * 템플릿 핸들러에 기대지 않는지), 키 형식이 서버 정규식과 맞는지(`{확장id}.{키}`).
  *
  * @vitest-environment jsdom
  */
@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 
 import mileage from '../../../extensions/admin-user-list-filter-mileage.json';
 import address from '../../../extensions/admin-user-list-filter-address.json';
+import { handlerMap } from '../../handlers';
 
 /** 트리에서 조건을 만족하는 노드를 모두 모은다. */
 function collect(obj: any, predicate: (n: any) => boolean, out: any[] = []): any[] {
@@ -58,8 +59,8 @@ describe('회원관리 목록 확장 필터 조각', () => {
 
   // @scenario example=address, outcome=narrows
   // @effects ecommerce_address_filter_narrows_user_list
-  it.each(FRAGMENTS)('%s — 값은 setUserFilterExt 로 조립해 _local.userFilterExtraQuery 에 담는다', (_label, fragment, _perm, keys) => {
-    const calls = collect(fragment, (n) => n?.handler === 'setUserFilterExt');
+  it.each(FRAGMENTS)('%s — 값은 이 모듈의 setUserFilterExt 로 조립해 _local.userFilterExtraQuery 에 담는다', (_label, fragment, _perm, keys) => {
+    const calls = collect(fragment, (n) => n?.handler === 'sirsoft-ecommerce.setUserFilterExt');
     const usedKeys = new Set(calls.map((c) => c.params.key));
 
     expect(calls.length).toBeGreaterThan(0);
@@ -75,6 +76,15 @@ describe('회원관리 목록 확장 필터 조각', () => {
       expect(store.params.target).toBe('_local');
       expect(store.params.userFilterExtraQuery).toBe('{{$prev}}');
     }
+  });
+
+  // @scenario example=address, outcome=narrows
+  // @effects ecommerce_address_filter_narrows_user_list
+  // 조각은 어느 관리자 템플릿으로 그려지든 같은 동작을 해야 하므로 템플릿이 등록한 네임스페이스 없는
+  // 핸들러를 부르지 않는다 — 부르는 핸들러는 이 모듈이 등록한다.
+  it.each(FRAGMENTS)('%s — 관리자 템플릿 핸들러에 기대지 않고 모듈이 등록한 핸들러를 부른다', (_label, fragment) => {
+    expect(collect(fragment, (n) => n?.handler === 'setUserFilterExt')).toHaveLength(0);
+    expect(typeof handlerMap.setUserFilterExt).toBe('function');
   });
 
   // @scenario example=mileage, outcome=narrows

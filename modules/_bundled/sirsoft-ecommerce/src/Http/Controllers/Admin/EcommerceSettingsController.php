@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: develop-7.1.0 리베이스 후속 — 설정 응답 조립(공개 자산 디스크 카탈로그 정리·마일리지 알림 채널 후보)을 EcommerceSettingsAdminService 로 옮긴 내부 정리. 요청/응답 계약 불변(docs/api/settings.md 가 이미 같은 응답을 서술)
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Extension\HookManager;

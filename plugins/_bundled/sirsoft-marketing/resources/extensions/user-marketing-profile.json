@@ -460,6 +460,17 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Checkbox",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "제3자 제공 동의 — 저장값이 boolean 이 아닐 수 있어 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "profileEditForm.third_party_consent": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "name": "third_party_consent",
                                                                 "checked": "{{!!_local.profileEditForm?.third_party_consent}}",
@@ -582,6 +593,17 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Checkbox",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "정보 공개 동의 — 저장값이 boolean 이 아닐 수 있어 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "profileEditForm.info_disclosure": "{{$event.target.checked}}"
+                                                                            }
+                                                                        }
+                                                                    ],
                                                                     "props": {
                                                                         "name": "info_disclosure",
                                                                         "checked": "{{!!_local.profileEditForm?.info_disclosure}}",

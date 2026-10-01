@@ -224,6 +224,8 @@
       "bulk_withdraw_success": "사용자가 탈퇴 처리되었습니다.",
       "bulk_withdraw_partial": "{updated}명을 탈퇴 처리했습니다. {failed}명은 처리하지 못했습니다 — {reason}",
       "bulk_withdraw_all_failed": "탈퇴 처리하지 못했습니다 — {reason}",
+      "bulk_status_partial": "{updated}명의 상태를 변경했습니다. {failed}명은 변경하지 못했습니다 — {reason}",
+      "bulk_status_all_failed": "상태를 변경하지 못했습니다 — {reason}",
       "withdraw_confirm_title": "탈퇴 처리 확인",
       "withdraw_confirm_lead": "상태를 '탈퇴'로 저장하면 이 회원은 실제로 탈퇴 처리됩니다. 되돌릴 수 없습니다.",
       "withdraw_confirm_effects_title": "함께 처리되는 항목",
@@ -254,6 +256,7 @@
         "role": "역할",
         "role_placeholder": "역할을 선택하세요",
         "role_no_options": "선택 가능한 역할이 없습니다",
+        "role_default_hint": "역할을 고르지 않으면 기본 역할(일반 사용자)로 등록됩니다.",
         "status": "상태",
         "current_status": "현재 상태",
         "email": "이메일",
@@ -811,7 +814,11 @@
       "no_modified_layouts": "수정된 레이아웃이 없습니다.",
       "modified_layouts_check_failed": "수정 여부를 확인하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도하거나, 안전하게 '수정 유지'를 선택하세요.",
       "modified_layouts_list_title": "수정한 레이아웃 ({{count}}개)",
-      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다."
+      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 모듈을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다."
     },
     "tabs": {
       "file_upload": "파일 업로드",
@@ -1020,7 +1027,11 @@
       "no_modified_layouts": "수정된 레이아웃이 없습니다.",
       "modified_layouts_check_failed": "수정 여부를 확인하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도하거나, 안전하게 '수정 유지'를 선택하세요.",
       "modified_layouts_list_title": "수정한 레이아웃 ({{count}}개)",
-      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다."
+      "modified_layouts_keep_notice": "위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 플러그인을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다."
     },
     "tabs": {
       "file_upload": "파일 업로드",
@@ -1134,6 +1145,7 @@
     "refresh": "새로고침",
     "add_role": "역할 추가",
     "search_placeholder": "역할 검색...",
+    "protected_roles_hint": "코어·확장이 만든 역할(배지 표시)은 삭제할 수 없고, 수정·사용 여부 변경은 슈퍼 관리자만 할 수 있습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
     "columns": {
       "name": "역할명",
@@ -1702,6 +1714,7 @@
           "policy_key": "정책 키",
           "policy_key_placeholder": "운영자 정책을 선택하세요",
           "policy_empty": "운영자 정책이 없습니다. 정책 탭에서 먼저 등록해 주세요.",
+          "policy_all_defined": "모든 운영자 정책에 이미 메시지 정의가 있습니다. 기존 정의의 템플릿을 수정하거나 정책을 새로 등록해 주세요.",
           "name": "이름",
           "subject": "제목",
           "body": "본문",
@@ -2229,7 +2242,8 @@
         "total": "총 {{count}}건",
         "empty": "대상이 없습니다.",
         "loading": "불러오는 중...",
-        "close": "닫기"
+        "close": "닫기",
+        "editor_label": "개인정보 조치 대상 목록"
       },
       "manual_run": {
         "section_desc": "스케줄러를 기다리지 않고 관리자가 지금 한 번 실행합니다. 자동 실행이 꺼져 있어도 저장된 설정값으로 처리됩니다.",
@@ -2260,7 +2274,8 @@
         "executing": "접수 중...",
         "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 카드에 결과가 표시됩니다.",
         "queue_failed": "실행을 접수하지 못했습니다.",
-        "preview_failed": "대상 건수를 불러오지 못했습니다."
+        "preview_failed": "대상 건수를 불러오지 못했습니다.",
+        "editor_label": "개인정보 조치 직권 실행"
       }
     }
   },
@@ -2476,7 +2491,11 @@
       "wysiwyg_select_layout_title": "위지윅 편집 - 레이아웃 선택",
       "wysiwyg_select_layout_description": "편집할 레이아웃을 선택하세요. 선택한 레이아웃이 새 탭에서 위지윅 편집 모드로 열립니다.",
       "wysiwyg_no_layouts": "등록된 레이아웃이 없습니다.",
-      "wysiwyg_note": "위지윅 편집 모드에서는 실제 화면 위에 편집 도구가 표시됩니다. 변경사항은 저장 버튼을 클릭해야 적용됩니다."
+      "wysiwyg_note": "위지윅 편집 모드에서는 실제 화면 위에 편집 도구가 표시됩니다. 변경사항은 저장 버튼을 클릭해야 적용됩니다.",
+      "reactivate_language_packs_title": "언어팩 다시 켜기",
+      "reactivate_language_packs_message": "이 템플릿을 끌 때 함께 꺼졌던 언어팩입니다. 다시 켤까요?",
+      "reactivate_language_packs_success": "언어팩을 다시 켰습니다.",
+      "reactivate_language_packs_failed": "언어팩을 다시 켜지 못했습니다."
     },
     "tabs_install": {
       "file_upload": "파일 업로드",
@@ -3621,6 +3640,8 @@
       "export_button": "JSON 내보내기",
       "delete_button": "삭제",
       "no_results": "조건에 맞는 기록이 없습니다",
+      "prompt_title": "찾을 사람을 지정하세요",
+      "prompt_description": "IP 주소, 회원 번호, 방문자 키 중 하나를 고르고 값을 넣은 뒤 찾기를 누르면 그 사람의 방문 기록이 여기에 나옵니다. 기간은 넣지 않아도 됩니다.",
       "columns": {
         "visit_at": "방문 시각",
         "visitor_key": "방문자 키",
@@ -3674,7 +3695,7 @@
         "consent_source_label": "동의 출처",
         "consent_source_none": "없음",
         "consent_sources": {
-          "gdpr": "동의 관리 플러그인(GDPR)",
+          "provider": "방문자마다 추적 허용을 정하는 확장",
           "filter": "확장이 연결한 동의 판정"
         },
         "mode_label": "개인정보 수준",

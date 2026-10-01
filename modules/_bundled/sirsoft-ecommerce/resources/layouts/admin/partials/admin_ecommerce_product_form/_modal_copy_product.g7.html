@@ -2,7 +2,7 @@
   고른 항목은 폼이 들고 있어야 하므로(창이 아니라 그쪽이 복사 주소를 만든다) `$parent` 로 건너
   써넣고, 원본 미리보기도 같은 경로로 폼의 값을 읽는다. -->
 <partial description="Product Form - Copy Product Modal">
-  <modal data-ref="modal_copy_product" title="$t:sirsoft-ecommerce.admin.product.modal.copy.title" size="md">
+  <modal data-type="composite" data-ref="modal_copy_product" title="$t:sirsoft-ecommerce.admin.product.modal.copy.title" size="md">
     <div>
       <div data-ref="copy_source_info" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
         <div class="flex-center gap-3">
@@ -133,7 +133,7 @@
           </on>
           <span>$t:sirsoft-ecommerce.common.cancel</span>
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
           <on type="click">
             <!-- 복사 시작 — 진행 표시를 전역에 두는 것은 이 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다. 실제 이동은 핸들러가 고른 항목을 쿼리로 엮어 처리한다 -->
             <sequence>

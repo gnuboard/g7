@@ -88,7 +88,7 @@
     },
     "named_actions": {
         "searchSubjects": {
-            "comment": "검색 실행 — 폼 값을 질의로 옮긴다. 비면 키를 지워 조회 자체가 일어나지 않게 한다.",
+            "comment": "검색 실행 — 폼 값을 질의로 옮긴다. 비면 키를 지워 조회 자체가 일어나지 않게 한다.\n       값은 앞뒤 공백을 떼고 싣는다 — 공백만 든 값은 버튼이 잠겨 있어도 질의에 남으면 원장을 헛조회한다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/analytics/privacy-requests",
@@ -96,7 +96,7 @@
                 "replace": true,
                 "query": {
                     "subject": "{{_local.search?.subject || 'ip'}}",
-                    "value": "{{_local.search?.value || undefined}}",
+                    "value": "{{String(_local.search?.value ?? '').trim() || undefined}}",
                     "from": "{{_local.search?.from || undefined}}",
                     "to": "{{_local.search?.to || undefined}}"
                 }
@@ -292,7 +292,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "comment": "Enter 로 바로 검색 — change 가 아직 오지 않았을 수 있어 지금 칸의 값을 먼저 폼에 넣고 검색을 부른다.\n                     순서가 바뀌면 직전 값으로 찾는다.",
+                                                        "comment": "Enter 로 바로 검색 — change 가 아직 오지 않았을 수 있어 지금 칸의 값을 먼저 폼에 넣고 검색을 부른다.\n                     순서가 바뀌면 직전 값으로 찾는다. 칸이 비었으면 찾기 버튼처럼 아무것도 하지 않는다 — 그대로 부르면\n                     질의의 값이 지워져 앞선 결과가 말없이 닫힌다(비우기는 초기화 버튼 몫이다).",
                                                         "type": "keydown",
                                                         "key": "Enter",
                                                         "handler": "sequence",
@@ -305,7 +305,15 @@
                                                                 }
                                                             },
                                                             {
-                                                                "actionRef": "searchSubjects"
+                                                                "handler": "conditions",
+                                                                "conditions": [
+                                                                    {
+                                                                        "if": "{{!!String($event.target.value ?? '').trim()}}",
+                                                                        "then": {
+                                                                            "actionRef": "searchSubjects"
+                                                                        }
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     }
@@ -406,6 +414,7 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "값 칸이 비면 잠근다 — 조건 없는 조회는 하지 않으므로 눌러도 화면이 그대로라 고장처럼 보였다.\n               기간만으로는 찾지 않는다(기간만 준 조회도 원장 전체다).",
                                         "id": "search_button",
                                         "type": "basic",
                                         "name": "Button",
@@ -417,7 +426,8 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary px-6"
+                                            "className": "btn btn-primary px-6",
+                                            "disabled": "{{!String(_local.search?.value ?? '').trim()}}"
                                         },
                                         "text": "$t:admin.analytics.privacy_requests.search.button"
                                     },
@@ -466,6 +476,29 @@
                                         "text": "$t:common.reset"
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "조회 전 안내 — 질의에 값이 없으면 조회하지 않아 결과 카드가 없다. 빈 화면으로 두면 목록이 안 뜨는\n           고장으로 읽히므로 무엇을 넣으면 무엇이 나오는지 알린다.",
+                        "id": "subjects_prompt",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!query.value}}",
+                        "props": {
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "id": "subjects_prompt_state",
+                                "type": "composite",
+                                "name": "EmptyState",
+                                "props": {
+                                    "iconName": "search",
+                                    "title": "$t:admin.analytics.privacy_requests.prompt_title",
+                                    "description": "$t:admin.analytics.privacy_requests.prompt_description",
+                                    "className": "py-10"
+                                }
                             }
                         ]
                     },

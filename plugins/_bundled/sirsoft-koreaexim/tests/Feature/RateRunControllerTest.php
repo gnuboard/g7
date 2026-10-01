@@ -104,6 +104,28 @@ class RateRunControllerTest extends PluginTestCase
     }
 
     /**
+     * 뒤집힌 기간 거절 문구가 필드 원문 이름(date to·date from) 대신 화면의 칸 이름을 쓰는지 검증합니다.
+     *
+     * 화면이 뒤집힌 기간을 조회하던 때 이 문구가 「date to 필드는 date from 이후…」로 토스트에 떴다(#703 브라우저 실측).
+     *
+     * @effects inverted_date_range_rejection_names_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inverted_date_range_rejection_names_fields(): void
+    {
+        $user = $this->createAdminUser(['sirsoft-koreaexim.exchange_rate.view']);
+        $message = $this->actingAs($user)
+            ->getJson(self::PREFIX.'/runs?date_from=2026-09-15&date_to=2026-09-10')
+            ->assertUnprocessable()
+            ->json('errors.date_to.0');
+
+        $this->assertStringContainsString(__('sirsoft-koreaexim::validation.attributes.date_to'), $message);
+        $this->assertStringContainsString(__('sirsoft-koreaexim::validation.attributes.date_from'), $message);
+        $this->assertStringNotContainsString('date to', $message);
+    }
+
+    /**
      * 코어 설정 경로에서도 플러그인의 관리 권한을 요구하는지 검증합니다.
      *
      * @effects core_plugin_settings_cannot_bypass_own_manage_permission

@@ -46,12 +46,12 @@
     <action handler="initCartKey"/>
   </init>
   <slot name="content">
-    <container class="py-8">
+    <container data-type="layout" class="py-8">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
         <icon name="shopping-cart" class="text-2xl"/>
         <span>$t:shop.cart.title</span>
       </h1>
-      <grid :cols="3" :gap="6">
+      <grid data-type="layout" :cols="3" :gap="6">
         <responsive on="portable" :cols="1"/>
         <div class="col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
           <responsive on="portable" class="col-span-1"/>

@@ -5,7 +5,7 @@
   넣어야 하는데 이 창이 배송지를 따로 조회하지 않기 때문이다.
   지우는 것은 회원이 담아 둔 기록이라 「무엇이 사라지고 무엇은 남는가」 를 본문이 분명히 말한다. -->
 <partial description="User Address - Delete Confirm Modal">
-  <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.title" size="sm">
     <div>
       <div>
         <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.message|recipient={{_global.deleteTarget?.recipient_name}}|member={{_global.deleteTarget?.member_name}}</p>

@@ -7,11 +7,11 @@
   그 상태를 `_local` 이 아니라 `_global` 에 두는 이유는 발급취소 확인 창이 겹쳐 뜰 때 그
   창도 같은 값을 읽어야 하기 때문이다(창끼리는 서로의 `_local` 을 보지 못한다). -->
 <partial description="Coupon - Issue History Modal">
-  <modal data-ref="modal_issue_history" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" width="920px">
+  <modal data-type="composite" data-ref="modal_issue_history" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" width="920px">
     <div class="flex-between mb-4">
       <div class="flex-center gap-2">
         <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}</span>
-        <badge data-if="{{_global.issueHistoryFilterUser}}" color="blue" size="sm" class="flex-center gap-1">
+        <badge data-type="composite" data-if="{{_global.issueHistoryFilterUser}}" color="blue" size="sm" class="flex-center gap-1">
           <span>{{_global.issueHistoryFilterUser?.name}}</span>
           <button class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded">
             <on type="click">
@@ -40,7 +40,8 @@
         </on>
       </select>
     </div>
-    <data-grid data="{{couponIssues?.data?.data || []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
+    <data-grid data-type="composite" data="{{couponIssues?.data?.data || []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
+      <blur-until-loaded sources="couponIssues"/>
       <column field="issued_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at" width="180px"/>
       <column field="user_info" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user" width="200px">
         <cell>
@@ -51,7 +52,7 @@
                 <span class="font-medium text-gray-900 dark:text-white">{{row.user_name}}</span>
               </div>
             </div>
-            <action-menu triggerLabel="" triggerIconName="ellipsis-vertical" position="right" class="opacity-0 group-hover:opacity-100">
+            <action-menu data-type="composite" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" class="opacity-0 group-hover:opacity-100">
               <prop name="items">
                 <item id="view_member" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user"/>
                 <item id="filter_by_user" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user" iconName="filter"/>
@@ -81,7 +82,7 @@
         <cell>
           <!-- 배지가 셀 전체 너비를 차지하지 않도록 items-start 로 콘텐츠 너비만 차지 -->
           <div class="flex flex-col items-start gap-1">
-            <badge color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+            <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
             <span data-if="{{row.used_at}}" class="form-hint">{{row.used_at}}</span>
           </div>
         </cell>
@@ -114,7 +115,7 @@
       </column>
     </data-grid>
     <div class="mt-4 flex justify-center">
-      <pagination currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page ?? null}}" hasMorePages="{{couponIssues?.data?.pagination?.has_more_pages ?? false}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
+      <pagination data-type="composite" currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page ?? null}}" hasMorePages="{{couponIssues?.data?.pagination?.has_more_pages ?? false}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
         <on event="onPageChange">
           <!-- 쪽 이동. 이 목록은 URL 을 쓰지 않는다 — 창 안의 목록이라 주소로 되돌아올 자리가 없다(바깥 목록은 URL 로 쪽을 옮긴다). -->
           <sequence>

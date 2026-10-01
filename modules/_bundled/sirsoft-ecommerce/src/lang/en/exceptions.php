@@ -45,6 +45,7 @@ return [
     'cart_empty' => 'Cart is empty.',
     'temp_order_not_found' => 'Temporary order not found.',
     'option_not_found' => 'Product option not found.',
+    'no_purchasable_option' => 'This product has no option available for purchase right now.',
     'additional_option_invalid' => 'The selected additional option is invalid.',
     'additional_option_required' => 'Please select the required additional option (:name).',
     'additional_option_custom_text_required' => 'Please enter the custom text for the additional option (:name).',

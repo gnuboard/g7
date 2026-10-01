@@ -1688,6 +1688,7 @@
     "extension_versions": "Extension Versions",
     "identityLogs": "Identity Logs",
     "identityMessages": "Identity Messages",
+    "identityMessagePolicyScopes": "Identity Policies With Messages",
     "identityProviders": "Identity Providers",
     "identityPurposes": "Identity Purposes",
     "installed_modules": "Installed Modules",

@@ -228,6 +228,15 @@ export interface DataGridProps {
    *   하는 화면용.
    */
   selectionScope?: 'page' | 'free';
+  /**
+   * 선택할 수 없는 행의 id 목록 (`idField` 값).
+   *
+   * 이 행들은 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠진다.
+   * 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)을
+   * 화면이 고를 수 없게 할 때 쓴다. `selectionScope: 'page'` 면 선택 목록에 남아 있던
+   * 이 행들의 선택도 함께 버린다.
+   */
+  nonSelectableIds?: (string | number)[];
 
   // 컬럼 표시/숨김 기능
   showColumnSelector?: boolean;
@@ -680,6 +689,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   onSelectionChange,
   idField = 'id',
   selectionScope = 'free',
+  nonSelectableIds,
   // 컬럼 표시/숨김
   showColumnSelector = false,
   visibleColumns: initialVisibleColumns,
@@ -1033,11 +1043,24 @@ export const DataGrid: React.FC<DataGridProps> = ({
     onSortChange?.(field, newDirection);
   };
 
-  // 전체 선택 처리
+  // 선택할 수 없는 행 판정 — 값 형(숫자/문자열)이 섞여 와도 같게 비교한다
+  const nonSelectableKey = JSON.stringify((nonSelectableIds ?? []).map(String));
+  const nonSelectableSet = useMemo(
+    () => new Set((nonSelectableIds ?? []).map(String)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nonSelectableKey]
+  );
+  const isRowSelectable = useCallback(
+    (row: any): boolean => !nonSelectableSet.has(String(row?.[idField])),
+    [nonSelectableSet, idField]
+  );
+
+  // 전체 선택 처리 — 선택할 수 없는 행은 대상에서 뺀다
   const handleSelectAll = useCallback(() => {
     if (!onSelectionChange || !paginatedData) return;
 
-    const allIds = paginatedData.map((row) => row[idField]);
+    const allIds = paginatedData.filter(isRowSelectable).map((row) => row[idField]);
+    if (allIds.length === 0) return;
     const allSelected = allIds.every((id) => selectedIds.includes(id));
 
     if (allSelected) {
@@ -1046,12 +1069,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const newSelectedIds = [...new Set([...selectedIds, ...allIds])];
       onSelectionChange(newSelectedIds);
     }
-  }, [paginatedData, selectedIds, onSelectionChange, idField]);
+  }, [paginatedData, selectedIds, onSelectionChange, idField, isRowSelectable]);
 
   // 개별 선택 처리
   const handleSelectRow = useCallback(
     (rowId: string | number) => {
       if (!onSelectionChange) return;
+      if (nonSelectableSet.has(String(rowId))) return;
 
       if (selectedIds.includes(rowId)) {
         onSelectionChange(selectedIds.filter((id) => id !== rowId));
@@ -1059,7 +1083,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         onSelectionChange([...selectedIds, rowId]);
       }
     },
-    [selectedIds, onSelectionChange]
+    [selectedIds, onSelectionChange, nonSelectableSet]
   );
 
   // 목록에서 빠진 행의 선택 정리
@@ -1076,13 +1100,15 @@ export const DataGrid: React.FC<DataGridProps> = ({
     if (selectedIds.length === 0) return;
 
     const visibleIds = new Set((paginatedData ?? []).map((row) => row[idField]));
-    const survivors = selectedIds.filter((id) => visibleIds.has(id));
+    // 선택할 수 없는 행(nonSelectableIds)에 남아 있던 선택도 함께 버린다 — 그 행은 일괄 요청에
+    // 실리면 서버가 요청 전체를 거절하는 대상이다.
+    const survivors = selectedIds.filter((id) => visibleIds.has(id) && !nonSelectableSet.has(String(id)));
 
     // 길이가 같으면 버릴 것이 없다 — 여기서 끊지 않으면 setState 가 매 렌더 반복된다.
     if (survivors.length === selectedIds.length) return;
 
     onSelectionChange(survivors);
-  }, [selectionScope, selectable, paginatedData, selectedIds, onSelectionChange, idField]);
+  }, [selectionScope, selectable, paginatedData, selectedIds, onSelectionChange, idField, nonSelectableSet]);
 
   // 컬럼 표시/숨김 토글
   const handleColumnToggle = useCallback(
@@ -1201,17 +1227,20 @@ export const DataGrid: React.FC<DataGridProps> = ({
     [expandedRowRender, expandChildren, idField, expandContext, __componentContext, __componentContext?.state]
   );
 
-  // 전체 선택 상태 계산
+  // 전체 선택 상태 계산 — 선택할 수 없는 행은 세지 않는다(세면 영영 전체 선택이 되지 않아
+  // 머리글을 눌러 해제할 수 없다)
   const isAllSelected = useMemo(() => {
-    if (!paginatedData || paginatedData.length === 0) return false;
-    return paginatedData.every((row) => selectedIds.includes(row[idField]));
-  }, [paginatedData, selectedIds, idField]);
+    const selectableRows = (paginatedData ?? []).filter(isRowSelectable);
+    if (selectableRows.length === 0) return false;
+    return selectableRows.every((row) => selectedIds.includes(row[idField]));
+  }, [paginatedData, selectedIds, idField, isRowSelectable]);
 
   const isIndeterminate = useMemo(() => {
-    if (!paginatedData || paginatedData.length === 0) return false;
-    const selectedCount = paginatedData.filter((row) => selectedIds.includes(row[idField])).length;
-    return selectedCount > 0 && selectedCount < paginatedData.length;
-  }, [paginatedData, selectedIds, idField]);
+    const selectableRows = (paginatedData ?? []).filter(isRowSelectable);
+    if (selectableRows.length === 0) return false;
+    const selectedCount = selectableRows.filter((row) => selectedIds.includes(row[idField])).length;
+    return selectedCount > 0 && selectedCount < selectableRows.length;
+  }, [paginatedData, selectedIds, idField, isRowSelectable]);
 
   // 기본 카드 렌더러
   const defaultCardRenderer = (row: any, cols: DataGridColumn[]) => {
@@ -1238,8 +1267,9 @@ export const DataGrid: React.FC<DataGridProps> = ({
           {selectable && (
             <Checkbox
               checked={selectedIds.includes(row[idField])}
+              disabled={!isRowSelectable(row)}
               onChange={() => handleSelectRow(row[idField])}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
             />
           )}
           <Div className="flex-1">
@@ -1570,8 +1600,9 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Td className="px-4 py-4" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                           <Checkbox
                             checked={selectedIds.includes(row[idField])}
+                            disabled={!isRowSelectable(row)}
                             onChange={() => handleSelectRow(row[idField])}
-                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
+                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                           />
                         </Td>
                       )}

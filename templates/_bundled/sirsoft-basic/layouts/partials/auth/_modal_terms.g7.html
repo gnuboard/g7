@@ -1,6 +1,6 @@
 <!-- 이용약관 모달 조각 — 회원가입 화면이 약관 동의 옆에서 띄운다. 본문은 관리자가 발행한 정책 문서(termsContent)를 그대로 싣고, 그 데이터소스는 이 조각이 아니라 조각을 품는 화면이 선언한다. -->
 <partial description="이용약관 모달" editor_label="$t:user.modal_label.auth.termsModal">
-  <modal data-ref="termsModal" title="$t:policy.terms.title" size="lg" class="overflow-hidden">
+  <modal data-type="composite" data-ref="termsModal" title="$t:policy.terms.title" size="lg" class="overflow-hidden">
     <!-- 내부 레이아웃 (flex column, Body 스크롤 비활성화) -->
     <div class="flex flex-col">
       <!-- 로딩 상태 -->
@@ -15,7 +15,7 @@
       <div data-if="{{!termsContent?.loading &amp;&amp; termsContent?.data}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
         <extension-point name="html_content" data-ref="terms_html_content" content="{{termsContent?.data?.content ?? ''}}" isHtml="{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300">
           <default>
-            <html-content content="{{termsContent?.data?.content ?? ''}}" isHtml="{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+            <html-content data-type="composite" content="{{termsContent?.data?.content ?? ''}}" isHtml="{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
           </default>
         </extension-point>
       </div>

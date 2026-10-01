@@ -22,8 +22,11 @@ use Illuminate\Support\Facades\File;
  * 그 화면을 **활성 템플릿 디렉토리에만** 설치하므로 `_bundled`(배포 원본)은 손대지 않고,
  * 활성 디렉토리는 Git 무시 대상이라 릴리스 산출물에도 포함되지 않는다.
  *
+ * 대상은 **활성 템플릿**(사용자·관리자 각 하나)이다 — 코어가 특정 템플릿 식별자를 적어 두지 않는다
+ * (2026-09-28 결정). 시드 원본과 라우트 경로는 템플릿 종류(user·admin)로 고른다.
+ *
  * 설치 절차(템플릿별):
- *   ① `tests/Playwright/fixtures/seed-layouts/{identifier}.e2e_sandbox.json` 을
+ *   ① `tests/Playwright/fixtures/seed-layouts/{종류}.e2e_sandbox.json` 을
  *      `templates/{identifier}/layouts/e2e_sandbox.json` 으로 복사
  *   ② 활성 `templates/{identifier}/routes.json` 에 라우트 1건 추가(멱등 — 마커로 식별).
  *      편집기 라우트 트리는 routes.json 에서 만들어지므로 이 항목이 없으면 `?route=` 로
@@ -51,7 +54,7 @@ class PlaywrightSeedLayout extends Command
     use ComputesLayoutContentHash, InvalidatesLayoutCache;
 
     protected $signature = 'playwright:seed-layout
-        {--template=* : 대상 템플릿 identifier (생략 시 기본 대상 전체)}
+        {--template=* : 대상을 이 식별자의 활성 템플릿으로 한정 (생략 시 활성 템플릿 전체)}
         {--remove : 시드 레이아웃/라우트를 제거한다}';
 
     protected $description = 'Playwright E2E 전용 시드 레이아웃 설치/제거 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
@@ -71,17 +74,23 @@ class PlaywrightSeedLayout extends Command
     private const ROUTES_BACKUP_SUFFIX = '.playwright-backup';
 
     /**
-     * 기본 대상 템플릿 → 라우트 경로.
+     * 템플릿 종류 → 시드 라우트 경로.
      *
      * 관리자 템플릿 라우트는 관리자 URL 프리픽스 규약을 따른다.
      *
      * @var array<string, string>
      */
-    private const DEFAULT_TARGETS = [
-        'sirsoft-basic' => '/e2e-sandbox',
-        'sirsoft-admin_basic' => '*/admin/e2e-sandbox',
+    private const ROUTE_BY_TYPE = [
+        'user' => '/e2e-sandbox',
+        'admin' => '*/admin/e2e-sandbox',
     ];
 
+    /**
+     * 레이아웃·템플릿 저장소를 주입받습니다.
+     *
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
+     */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
         private TemplateRepositoryInterface $templateRepository
@@ -126,8 +135,8 @@ class PlaywrightSeedLayout extends Command
             return self::FAILURE;
         }
 
-        foreach ($targets as $identifier => $routePath) {
-            if (! $this->processTemplate($identifier, $routePath, $remove)) {
+        foreach ($targets as $identifier => $type) {
+            if (! $this->processTemplate($identifier, $type, $remove)) {
                 return self::FAILURE;
             }
         }
@@ -136,41 +145,47 @@ class PlaywrightSeedLayout extends Command
     }
 
     /**
-     * `--template` 옵션을 기본 대상 목록과 대조해 처리 대상을 결정합니다.
+     * 활성 템플릿에서 처리 대상을 결정합니다 (`--template` 이 있으면 그 식별자로 한정).
      *
-     * @return array<string, string> identifier => 라우트 경로
+     * @return array<string, string> identifier => 템플릿 종류 (user|admin)
      */
     private function resolveTargets(): array
     {
+        $targets = [];
+        foreach (array_keys(self::ROUTE_BY_TYPE) as $type) {
+            $template = $this->templateRepository->findActiveByType($type);
+
+            if ($template !== null) {
+                $targets[(string) $template->identifier] = $type;
+            }
+        }
+
         $requested = $this->option('template') ?: [];
 
         if ($requested === []) {
-            return self::DEFAULT_TARGETS;
+            return $targets;
         }
 
-        $targets = [];
         foreach ($requested as $identifier) {
-            if (! isset(self::DEFAULT_TARGETS[$identifier])) {
-                $this->warn("시드 라우트 경로가 정의되지 않은 템플릿입니다 — 건너뜁니다: {$identifier}");
-
-                continue;
+            if (! isset($targets[$identifier])) {
+                $this->warn("활성 템플릿이 아니어서 건너뜁니다: {$identifier}");
             }
-            $targets[$identifier] = self::DEFAULT_TARGETS[$identifier];
         }
 
-        return $targets;
+        return array_intersect_key($targets, array_flip($requested));
     }
 
     /**
      * 템플릿 1개에 대해 시드 레이아웃 설치 또는 제거를 수행합니다.
      *
      * @param  string  $identifier  템플릿 identifier
-     * @param  string  $routePath  시드 라우트 경로
+     * @param  string  $type  템플릿 종류 (user|admin) — 시드 원본·라우트 경로를 고른다
      * @param  bool  $remove  true 면 제거, false 면 설치
      * @return bool 성공 여부
      */
-    private function processTemplate(string $identifier, string $routePath, bool $remove): bool
+    private function processTemplate(string $identifier, string $type, bool $remove): bool
     {
+        $routePath = self::ROUTE_BY_TYPE[$type];
         $templateDir = base_path("templates/{$identifier}");
 
         // 활성 디렉토리가 없으면 그 템플릿은 설치되지 않은 것 — 조용히 건너뛴다
@@ -198,7 +213,7 @@ class PlaywrightSeedLayout extends Command
             $this->layoutRepository->deleteByName($template->id, self::LAYOUT_NAME);
         } else {
             $fixturePath = base_path(
-                'tests/Playwright/fixtures/seed-layouts/'.$identifier.'.'.self::LAYOUT_NAME.'.json'
+                'tests/Playwright/fixtures/seed-layouts/'.$type.'.'.self::LAYOUT_NAME.'.json'
             );
             if (! File::exists($fixturePath)) {
                 $this->error("시드 레이아웃 fixture 가 없습니다: {$fixturePath}");
@@ -247,6 +262,7 @@ class PlaywrightSeedLayout extends Command
      * @param  string  $identifier  템플릿 identifier
      * @param  string  $templateDir  활성 템플릿 디렉토리 절대 경로
      * @param  string  $routePath  등록할 시드 라우트 경로
+     * @return void
      */
     private function addSeedRoute(string $identifier, string $templateDir, string $routePath): void
     {
@@ -290,6 +306,7 @@ class PlaywrightSeedLayout extends Command
      *
      * @param  string  $identifier  템플릿 identifier
      * @param  string  $templateDir  활성 템플릿 디렉토리 절대 경로
+     * @return void
      */
     private function removeSeedRoute(string $identifier, string $templateDir): void
     {
@@ -364,6 +381,7 @@ class PlaywrightSeedLayout extends Command
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $identifier  템플릿 identifier (버전 포함 공개 서빙 키에 사용)
+     * @return void
      */
     private function forgetSeedLayoutCache(int $templateId, string $identifier): void
     {

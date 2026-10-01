@@ -77,6 +77,9 @@ return [
     'withdraw_admin_forbidden' => '관리자 계정은 탈퇴할 수 없습니다.',
     'withdraw_failed_unknown' => '알 수 없는 오류로 탈퇴 처리에 실패했습니다.',
 
+    // 일괄 상태 변경에서 제외된 대상의 사유
+    'bulk_status_out_of_scope' => '관리 범위 밖의 회원은 변경할 수 없습니다.',
+
     // 유효성 검사 메시지
     'validation' => [
         'page_integer' => '페이지 번호는 숫자여야 합니다.',

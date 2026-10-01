@@ -91,7 +91,7 @@ _단건 응답: `data` 객체의 필드._
 <!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.cancel -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.cancel`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController@cancel`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 공개 (로그인 불필요, `X-Guest-Order-Token`) + `permission:sirsoft-ecommerce.user-orders.cancel` (비로그인은 guest 역할로 판정)
 
 **요청 파라미터**
 
@@ -192,7 +192,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | payment | object\|null | — | 결제 정보 (`OrderPaymentResource`, 관계 로드 시에만 포함) |
 | shippings | array | — | 배송 정보 목록 (`OrderShippingResource`, 관계 로드 시에만 포함) |
 | cancels | array | — | 취소 이력 목록 (`OrderCancelResource` — 취소 사유·상세·취소일시) |
-| abilities | object | `{"can_cancel": false}` | 주문 상태로 판정한 허용 액션 (회원 권한이 아닌 상태 기반). `can_cancel` 은 환경설정 `order_settings.cancellable_statuses` 기준 |
+| abilities | object | `{"can_cancel": false}` | 허용 액션. `can_cancel` 은 환경설정 `order_settings.cancellable_statuses` 에 드는 주문 상태이면서 「주문 취소」 권한(`sirsoft-ecommerce.user-orders.cancel`, 비로그인은 guest 역할)이 있을 때 true — 취소·환불 예상·취소 사유 목록 API 와 같은 권한 |
 
 회원용 `OrderResource` 와 달리 관리자/내부 메모(`admin_memo`, `customer_memo`), 회원 정보(`user`, `user_id`), 내부 계산 스냅샷(`promotions_applied_snapshot` 등)은 노출하지 않습니다.
 
@@ -458,7 +458,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.estimate-refund -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.estimate-refund`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController@estimateRefund`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 공개 (로그인 불필요, `X-Guest-Order-Token`) + `permission:sirsoft-ecommerce.user-orders.cancel` (비로그인은 guest 역할로 판정)
 
 **요청 파라미터**
 
@@ -583,7 +583,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 <!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.confirm-option -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.confirm-option`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController@confirmOption`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 공개 (로그인 불필요, `X-Guest-Order-Token`) + `permission:sirsoft-ecommerce.user-orders.confirm` (비로그인은 guest 역할로 판정)
 
 **요청 파라미터**
 

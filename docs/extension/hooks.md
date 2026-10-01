@@ -63,6 +63,28 @@ G7의 훅 시스템은 WordPress 스타일로 구현되어 코어 수정 없이 
 반환 텍스트는 소비자가 HTML 이스케이프합니다. 개인 식별정보를 포함하지 않습니다.
 통지 플러그인 설치 여부와 관계없이 확장이 구독할 수 있으며 통지 발행자는 독립적으로 선택합니다.
 
+### 방문자 통계 동의 계약
+
+코어 방문자 통계는 동의를 관리하는 확장이 무엇인지 모릅니다. 코어가 자기 질문을 아래 코어 소유 훅으로 묻고,
+답할 수 있는 확장이 구독해 답합니다. 아무도 답하지 않는 것이 정상 상태(동의 관리 확장이 없는 사이트)이며
+그때는 코어 기본 동작을 따릅니다. 코어 코드는 특정 확장의 식별자·클래스·API 경로·이벤트명을 참조하지 않습니다.
+
+| 훅 | 유형 | 인자 → 반환 | 의미 |
+| --- | --- | --- | --- |
+| `core.analytics.consent_session_id` | filter | `(?string $default, Request $request)` → `?string` | 게스트 동의를 찾을 식별자. 답이 없으면 라라벨 세션 ID |
+| `core.analytics.visitor_has_consent` | filter | `(null, ?int $userId, ?string $sessionId)` → `?bool` | 동의 모드: 이 방문자가 분석 수집에 동의했는가 |
+| `core.analytics.tracking_permission` | filter | `(null, ?int $userId, ?string $sessionId)` → `?bool` | 이 방문자를 식별자(IP·방문자 쿠키)로 추적해도 되는가. 구독자가 있으면 IP 저장 모드에서도 허용되지 않은 방문자는 익명으로 모인다 |
+| `core.analytics.consent_revoked` | action | `()` | 방문자가 분석 동의를 철회했다(진단 카운터) |
+
+- 필터 첫 인자가 `null` 이 아니면 앞선 구독자가 이미 답한 것이므로 덮어쓰지 않습니다.
+- 동의 출처(`consent_source`)는 구독자 유무로만 정해집니다: `tracking_permission` 구독자 → `provider`,
+  `visitor_has_consent` 구독자만 → `filter`, 없음 → `none`.
+- 브라우저: 트래커는 코어 API `GET /api/analytics/consent`(`{consent_source, has_consent}`)로 묻고, 코어 이벤트
+  `g7:analytics-permission-changed`(`detail.has_consent: boolean`, 없으면 다시 조회)로 변경을 받습니다. 동의를
+  관리하는 확장은 동의를 저장한 뒤 이 이벤트를 발행합니다.
+- 스크립트 로드 지연: 동의 전 스크립트를 막는 확장은 `<script>` src setter 에서 코어 속성 `data-g7-script-deferred`
+  를 붙입니다. 코어 `loadScript` 는 그 태그를 붙이지 않고 미완료(`false`)로 돌려주며 캐시하지 않습니다.
+
 ### 개인정보 보유기간 핸들러 계약
 
 `core.privacy.retention_handlers`는 코어 소유 필터이며 보유기간 처리 진입점
@@ -189,6 +211,72 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
 코어 알림 리스너가 해당 채널의 활성 템플릿만 발송합니다. 키가 없으면 기존 전체 채널 동작을
 유지하며 빈 배열은 발송하지 않습니다. `context.skip`은 기존처럼 전체 발송을 중단합니다.
+
+### 알림 채널 후보 계약 (7.1.0)
+
+문자·알림톡·앱 푸시처럼 **채널을 제공하는 확장은 도메인을 알지 못한 채** 코어 훅 하나에 답합니다.
+코어는 채널을 정하지 않은 알림(다채널 결정)마다 후보를 다음 순서로 거칩니다 —
+`NotificationChannelService::resolveChannelCandidates()` 가 단일 진입점입니다.
+
+| 순서 | 훅 | 종류 | 인자 | 답하는 쪽 |
+| --- | --- | --- | --- | --- |
+| 1 | `core.notification.channels` | filter | `(array $channels, string $type, ?object $notifiable, string $hookPrefix)` | 채널 제공 확장 — 모든 도메인 공통으로 후보를 더함 |
+| 2 | `{hookPrefix}.notification.channels` | filter | `(array $channels, string $type, ?object $notifiable)` | 알림을 보내는 도메인 — 자기 설정으로 후보를 좁히거나 더함 |
+
+- 채널 제공 확장은 `core.auth`·게시판·이커머스 같은 **도메인 접두사를 구독하지 않습니다.** 접두사 목록을
+  적으면 목록에 없는 도메인(새로 생긴 모듈 등)에서 채널이 빠지고, 그 도메인이 없는 설치에서도 이름을
+  들고 있게 됩니다.
+- 도메인이 채널 후보를 화면 표시 등으로 직접 계산해야 하면 자기 훅을 발화하지 말고 코어 진입점을 부릅니다
+  (`resolveChannelCandidates($hookPrefix, $channels, $type)`) — 그래야 채널 제공 확장의 후보가 같이 보입니다.
+- 후보에 올라도 실제 발송 여부는 이어지는 확장 단위 활성(`core.notification.channel_enabled`)·준비 상태
+  (`core.notification.channel_readiness`)·게스트 허용 판정이 정합니다.
+
+### 수신 전화번호 표준 키 (7.1.0)
+
+수신자 객체에 전화번호(`mobile`)가 없는 알림(비회원 주문 등)은 **알림을 보내는 도메인이**
+`{hookPrefix}.notification.extract_data` 반환의 `data` 에 코어 표준 키
+`GenericNotification::RECIPIENT_PHONE_KEY`(`'_recipient_phone'`)로 수신 번호를 싣습니다. 문자·알림톡 채널은
+도메인의 모델을 읽지 않고 이 키만 읽습니다. 번호가 없으면 키를 넣지 않습니다(빈 문자열 금지).
+
+```php
+// 도메인의 extract_data 리스너
+if ($order->isGuestOrder() && $phone !== '') {
+    $data[GenericNotification::RECIPIENT_PHONE_KEY] = $phone;
+}
+```
+
+### 알림 정의 시딩 계약 (7.1.0)
+
+채널을 제공하는 확장이 **모든 도메인의 알림 정의에 자기 채널 템플릿을 더할 때** 답하는 코어 훅입니다.
+코어 알림 정의 시딩과 모든 모듈·플러그인의 알림 정의 동기화(설치·업데이트·재동기화)가 DB 에 쓰기 직전
+이 필터를 한 번 통과시킵니다 — 상수 `NotificationSyncHelper::SEED_DEFINITIONS_FILTER`.
+
+| 훅 | 종류 | 인자 | 답하는 쪽 |
+| --- | --- | --- | --- |
+| `core.notification.filter_seed_definitions` | filter | `(array $definitions, array $context)` | 채널 제공 확장 — 반환한 정의 목록이 그대로 저장됨 |
+
+- `$definitions` 는 순차 배열이고 각 항목에 `type`·`extension_type`·`extension_identifier` 가 들어 있습니다.
+  `$context` 는 `['extension_type' => 'core'|'module'|'plugin', 'extension_identifier' => 식별자]`(코어는 `'core'`)입니다.
+- 도메인별 언어팩 훅(`seed.{id}.notifications.translations`) **다음에** 발화합니다. 받은 본문에는 언어팩 로케일이
+  이미 병합돼 있습니다. 도메인별 언어팩 훅은 언어팩 병합 전용이라 채널 확장이 구독하지 않습니다 — 도메인 목록을
+  적으면 목록에 없는 새 모듈의 알림에 채널 템플릿이 생기지 않습니다.
+- 더한 템플릿은 시딩 주체가 자기 선언처럼 저장하므로 운영자 수정 보존·재동기화 시 정리 규칙을 그대로 따릅니다.
+  정의의 소유자는 바꿀 수 없고(시딩 주체가 다시 채움), 빈 목록을 반환하면 원본으로 시딩합니다.
+- 같은 증강을 [기본값 복원] 경로 `core.notification.filter_default_definitions` 에도 걸어야 복원이 시드값과 같아집니다.
+- 채널 확장이 켜지는 순간 이미 저장된 정의에도 훅을 다시 태우려면, 활성화 처리에서 코어 시더와 함께
+  `ModuleManager::resyncActiveModuleNotificationDefinitions()` · `PluginManager::resyncActivePluginNotificationDefinitions()`
+  를 부릅니다. 설치·활성 확장의 **알림 정의만** 설치본 기준으로 다시 동기화하며(`_bundled` 를 읽지 않고 역할·권한·메뉴는
+  건드리지 않음), 운영자가 고친 내용(`user_overrides`)은 보존됩니다. 대상 확장을 고르지 않습니다 — 활성 목록 전체입니다.
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.notification.filter_seed_definitions' => ['method' => 'augment', 'priority' => 50, 'type' => 'filter'],
+        'core.notification.filter_default_definitions' => ['method' => 'augment', 'priority' => 50, 'type' => 'filter'],
+    ];
+}
+```
 
 ### 1. Action Hooks (액션 훅)
 
@@ -327,6 +415,7 @@ sirsoft-ckeditor5.image.filter_reference_sources        # 에디터 이미지 �
 # FormRequest Validation Rules 훅 (Filter)
 core.user.create_validation_rules
 core.user.update_validation_rules
+core.user.update_profile_validation_rules          # 본인 프로필 수정 (PUT /api/me)
 core.role.store_validation_rules
 core.role.update_validation_rules
 core.permission.store_validation_rules
@@ -1401,6 +1490,28 @@ class UserNotificationSettingsListener implements HookListenerInterface
     }
 }
 ```
+
+### 회원 수정 화면에 확장 필드를 싣는 계약
+
+회원 수정 화면(관리자 회원 수정, 마이페이지 프로필 수정)은 **코어 회원 저장 API 하나만** 호출합니다
+(`PUT /api/admin/users/{user}`, `PUT /api/me`). 확장이 화면에 주입한 칸은 `name` 바인딩으로 같은 요청 본문에
+실리고, 확장은 아래 코어 훅으로 자기 필드를 같은 요청 안에서 검증·저장합니다. 저장 성공 뒤 확장 전용
+엔드포인트를 따로 부르면 한 번의 [저장]이 두 요청으로 갈라져 한쪽만 실패하는 상태가 생깁니다.
+
+| 단계 | 훅 | 확장이 할 일 |
+| --- | --- | --- |
+| 검증 | `core.user.update_validation_rules`(관리자) · `core.user.update_profile_validation_rules`(본인) | 자기 필드 규칙을 추가한다. 두 번째 인자는 검증 중인 FormRequest 다. 구독하지 않은 키는 `validated()` 에 들어오지 않아 무시된다 |
+| 분리 | `core.user.filter_update_data` | 자기 키를 데이터에서 제거해 반환한다 — `users` 쓰기에 섞이지 않게 |
+| 저장 | `core.user.after_update` (`'sync' => true`) | 두 번째 인자(필터 적용 전 원본 데이터)에서 값을 읽어 저장한다. 코어 저장이 커밋된 뒤, 응답을 만들기 전에 실행된다 |
+
+- 검증 오류는 필드 이름 키로 돌아오므로 화면은 주입 칸 아래에 `_local.errors.{필드}`(관리자) ·
+  `_local.profileErrors.{필드}`(마이페이지)로 표시한다.
+- 폼이 조회 응답으로 시드되면 저장된 값이 그대로 다시 전송된다. 저장된 값과 같은 값은 다시 검증하지 않아야
+  운영자가 선택지를 나중에 비활성화했을 때도 다른 칸만 고친 저장이 막히지 않는다.
+- 관리자 경로에서 확장 고유 권한이 필요하면 값이 **바뀔 때만** 확인하고, 없으면 그 필드 키로 검증 오류를 낸다.
+- 등록(`POST /api/admin/users`)은 별도 훅(`core.user.create_validation_rules` · `core.user.filter_create_data` ·
+  `core.user.after_create`)을 같은 방식으로 쓴다.
+- 선례: sirsoft-ecommerce `UserPreferenceCoreSaveListener`(결제 통화·배송국가).
 
 ### SEO 훅 활용 예시 — 리뷰 플러그인이 JSON-LD에 리뷰 데이터 주입
 

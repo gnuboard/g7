@@ -7,6 +7,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use App\Extension\HookManager;
 use App\Models\Menu;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnalyticsConsentListener;
@@ -35,14 +36,35 @@ class Plugin extends AbstractPlugin
     public const ANNUAL_NOTICE_CHANNELS = ['mail', 'database'];
 
     /**
+     * 확장이 strictly necessary 저장 키를 제공하는 계약 훅 (filter).
+     *
+     * 리스너는 `['localStorage' => [...], 'sessionStorage' => [...], 'cookie' => [...]]` 를 받아 자기
+     * 키를 덧붙여 돌려준다. 이 플러그인이 없으면 훅이 발행되지 않으므로 제공 확장은 아무 영향이 없다.
+     */
+    public const PROVIDED_NECESSARY_STORAGE_HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';
+
+    /**
+     * 필수 저장 항목(저장소 키 / 쿠키 이름) 형식 — 운영자 입력 검증과 확장 제공 키 수용의 단일 출처.
+     *
+     * - 이름 문자: 영숫자와 `_ . : @ + -`
+     * - 와일드카드 `*` 는 **끝에만** 1개 허용 (`g7_filters_*`)
+     * - `*` 단독 표기는 허용하지 않는다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화된다
+     */
+    public const NECESSARY_STORAGE_KEY_PATTERN = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
+
+    /**
      * strictly necessary 허용목록 출하 기본 카탈로그.
      *
      * 이 상수는 **판정 목록이 아니라 출하 기본값**입니다. 실제 판정은 운영자 설정
      * `necessary_storage_allowlist` 가 하며, 이 카탈로그는 신규 설치 시 그 설정의 기본값과
      * 관리자 화면 추천 목록(`default_necessary_allowlist_preview`)으로만 쓰입니다.
      *
-     * 그래서 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다 — 운영자가
-     * 관리자 화면에서 직접 추가합니다.
+     * 그래서 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다 — 확장은
+     * 계약 훅(self::PROVIDED_NECESSARY_STORAGE_HOOK)으로 자기 키를 제공하고, 운영자는
+     * 관리자 화면에서 나머지를 직접 추가합니다.
+     *
+     * **특정 확장의 키를 여기 적지 않습니다.** 이 플러그인은 어떤 확장이 설치돼 있는지
+     * 모르는 채로 동작해야 합니다. 확장 소유 키는 그 확장이 계약 훅으로 제공합니다.
      *
      * 표기 규칙: 끝의 `*` 는 앞부분 매칭, 없으면 정확 일치.
      *
@@ -65,14 +87,8 @@ class Plugin extends AbstractPlugin
             // 파기되면 재방문마다 기본 형식으로 첫 자산 요청을 보내 404 를 겪는다. 키에 캐시
             // 버전이 붙으므로 앞부분 매칭으로 등재한다.
             'g7_asset_url_mode*',
-            // 장바구니 게스트 키 — 익명 카트 식별 (구매 동선 필수)
-            'g7_cart_key',
             // devtools UI 상태
             'g7-devtools-panel',
-            // 비회원 주문 조회 — 주문 이행에 필요 (Art.6(1)(b))
-            'g7_guest_order_token',
-            'g7_guest_order_number',
-            'g7_guest_order_expires_at',
             // 관리자 화면 상태 (필터/정렬/컬럼/devtools) — 사용자 의사로 조작
             'g7_devtools_*',
             'g7_filters_*',
@@ -88,24 +104,14 @@ class Plugin extends AbstractPlugin
             'g7_view_mode_*',
             // 레이아웃 편집기 작업 상태 (라우트 트리 접힘) — 운영자 편집 동선 유지
             'g7le.*',
-            // 결제·본인인증 복귀 기록 — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소
+            // 본인인증 복귀 기록 (코어) — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소
             // 종류를 가리지 않았으므로 판정 범위를 좁히지 않는다.
-            '__sirsoftKginicisMobilePaymentReturnPending',
             'g7.identity.redirectStash',
-            'sirsoft-verification_nhnkcp.formStash',
         ],
         // 세션 저장소(sessionStorage) — 탭 수명 동안의 복귀·작업 상태
         'sessionStorage' => [
-            // 결제 진행 기록 — 결제창 복귀 시 종료·실패 사유 보고에 필요 (Art.6(1)(b)).
-            // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 부팅 시 파기되면 그 보고가 통째로 누락된다.
-            'g7:sirsoft-pay_kginicis:pendingClose',
-            'g7:sirsoft-pay_nhnkcp:pendingClose',
-            'g7:sirsoft-tosspayments:pendingClose',
-            // 본인인증 복귀 — 인증창에서 돌아왔을 때 원래 화면·입력 내용 복원에 필요
+            // 본인인증 복귀 (코어) — 인증창에서 돌아왔을 때 원래 화면 복원에 필요
             'g7.identity.redirectStash',
-            'sirsoft-verification_nhnkcp.formStash',
-            // 결제창 복귀 대기 표식
-            '__sirsoftKginicisMobilePaymentReturnPending',
             // 레이아웃 편집기 클립보드 — 같은 탭에서 다른 레이아웃으로 붙여넣기
             'g7le.*',
             // 관리자 화면 상태 — 저장소 종류를 가리지 않던 이관 전 판정 범위를 그대로 옮긴다
@@ -237,6 +243,17 @@ class Plugin extends AbstractPlugin
                 'parameters' => [
                     'consent' => 'Model - GdprUserConsent',
                     'source' => 'string - 철회 발생 경로',
+                ],
+            ],
+            [
+                'name' => self::PROVIDED_NECESSARY_STORAGE_HOOK,
+                'type' => 'filter',
+                'description' => [
+                    'ko' => '확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다)',
+                    'en' => 'Extensions provide their own storage keys that non-consenting visitors still need (merged into the strictly necessary allowlist)',
+                ],
+                'parameters' => [
+                    'keys' => 'array{localStorage: string[], sessionStorage: string[], cookie: string[]} - 지금까지 모인 제공 키 (자기 키를 덧붙여 반환)',
                 ],
             ],
         ];
@@ -514,6 +531,44 @@ class Plugin extends AbstractPlugin
     }
 
     /**
+     * 확장이 제공하는 strictly necessary 저장 키를 모읍니다 (계약 훅 pull).
+     *
+     * 이 플러그인은 어떤 확장이 있는지 모른다. 확장이 쿠키 미동의 방문자에게도 필요한 자기 키를
+     * 계약 훅(self::PROVIDED_NECESSARY_STORAGE_HOOK)으로 덧붙이고, 판정·화면 인라인 때마다 여기서
+     * 모은다. 비활성 확장의 리스너는 부팅 때 등록되지 않으므로 활성화·비활성화가 다음 요청부터
+     * 저절로 반영된다(이커머스 결제수단 등록과 같은 방식). 설정에 저장하지 않는다.
+     *
+     * 확장이 돌려준 값은 운영자 항목과 같은 형식 규칙을 통과한 것만 받는다 — 형식이 틀린 항목
+     * (특히 `*` 단독)이 섞이면 게이트 전체가 열린다.
+     *
+     * 진입 파일에 두는 이유는 lockedNecessaryStorage() 와 같다(설치 흐름의 오토로드 순서).
+     *
+     * @return array<string, array<int, string>> 스코프 => 항목 배열
+     */
+    public static function providedNecessaryStorage(): array
+    {
+        $empty = ['localStorage' => [], 'sessionStorage' => [], 'cookie' => []];
+        $raw = HookManager::applyFilters(self::PROVIDED_NECESSARY_STORAGE_HOOK, $empty);
+
+        if (! is_array($raw)) {
+            return $empty;
+        }
+
+        $provided = $empty;
+        foreach (array_keys($empty) as $scope) {
+            $items = is_array($raw[$scope] ?? null) ? $raw[$scope] : [];
+            foreach ($items as $item) {
+                if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
+                    $provided[$scope][] = $item;
+                }
+            }
+            $provided[$scope] = array_values(array_unique($provided[$scope]));
+        }
+
+        return $provided;
+    }
+
+    /**
      * 개인정보 통지는 정책 버전 발행과 별개인 정기 작업입니다.
      *
      * @return array 정기 실행 선언
@@ -551,6 +606,7 @@ class Plugin extends AbstractPlugin
                 ['key' => 'purpose', 'description' => '이용 목적'],
                 ['key' => 'retention', 'description' => '보유 기간'],
                 ['key' => 'privacy_policy_url', 'description' => '개인정보처리방침 URL'],
+                ['key' => 'privacy_policy_link', 'description' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)'],
                 ['key' => 'notice_sections', 'description' => '확장이 기여한 처리 내역'],
             ],
             'templates' => [
@@ -559,8 +615,8 @@ class Plugin extends AbstractPlugin
                     'recipients' => [['type' => 'trigger_user']],
                     'subject' => ['ko' => '[{app_name}] 개인정보 이용내역 안내', 'en' => '[{app_name}] Annual privacy notice'],
                     'body' => [
-                        'ko' => '<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1><p>{introduction}</p><h2>수집 항목</h2><p>{collection_summary}</p><h2>이용 목적</h2><p>{purpose}</p><h2>보유 기간</h2><p>{retention}</p>{notice_sections}<p><a href="{privacy_policy_url}">개인정보처리방침</a></p>',
-                        'en' => '<h1>{recipient_name}, here is your annual privacy notice.</h1><p>{introduction}</p><h2>Data collected</h2><p>{collection_summary}</p><h2>Purpose</h2><p>{purpose}</p><h2>Retention</h2><p>{retention}</p>{notice_sections}<p><a href="{privacy_policy_url}">Privacy policy</a></p>',
+                        'ko' => '<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1><p>{introduction}</p><h2>수집 항목</h2><p>{collection_summary}</p><h2>이용 목적</h2><p>{purpose}</p><h2>보유 기간</h2><p>{retention}</p>{notice_sections}{privacy_policy_link}',
+                        'en' => '<h1>{recipient_name}, here is your annual privacy notice.</h1><p>{introduction}</p><h2>Data collected</h2><p>{collection_summary}</p><h2>Purpose</h2><p>{purpose}</p><h2>Retention</h2><p>{retention}</p>{notice_sections}{privacy_policy_link}',
                     ],
                 ],
                 [
@@ -585,7 +641,9 @@ class Plugin extends AbstractPlugin
             ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT
             // (마이그레이션 시 initial 행 자동 시드). 본 settings 에서는 보관하지 않음.
-            'privacy_policy_slug' => 'privacy',
+            // 처리방침 주소는 운영자가 직접 입력한다 — 이 플러그인은 처리방침을 어느 확장이 어떤 주소로
+            // 게시하는지 모르므로 기본값을 비워 두고, 비어 있으면 배너의 정책 링크를 숨긴다.
+            'privacy_policy_url' => '',
             'legal_entity_name' => '',
             'data_storage_location' => '',
 
@@ -621,6 +679,11 @@ class Plugin extends AbstractPlugin
             // 섞여 와도 validated() 에서 배제되어 저장되지 않는다. 화면에는 읽기 전용으로
             // 표시하고, 판정은 언제나 '운영자 목록 ∪ 이 집합' 이다.
             'necessary_storage_locked' => self::lockedNecessaryStorage(),
+
+            // 확장 제공 항목 — 잠금 항목과 같이 설정이 아니라 계산값이다. 활성 확장이 계약 훅으로
+            // 덧붙인 키를 요청마다 모은다. 스키마에 없으므로 저장 요청에 섞여 와도 저장되지 않는다.
+            // 화면에는 읽기 전용으로 표시하고, 판정은 '운영자 목록 ∪ 잠금 ∪ 이 집합' 이다.
+            'necessary_storage_provided' => self::providedNecessaryStorage(),
 
             'cookie_categories' => json_encode([
                 [
@@ -689,13 +752,13 @@ class Plugin extends AbstractPlugin
             ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자는 직접 입력하지 않고, Material 변경 (카테고리 추가/삭제 등) 시 시스템이 자동 발행.
-            'privacy_policy_slug' => [
+            'privacy_policy_url' => [
                 'type' => 'string',
-                'default' => 'privacy',
-                'label' => ['ko' => '개인정보처리방침 페이지 슬러그', 'en' => 'Privacy Policy Page Slug'],
+                'default' => '',
+                'label' => ['ko' => '개인정보처리방침 주소', 'en' => 'Privacy Policy Address'],
                 'hint' => [
-                    'ko' => 'sirsoft-page 모듈의 페이지 slug. 미설치 또는 페이지 부재 시 관련 링크는 자동 숨김됩니다.',
-                    'en' => 'Slug of the sirsoft-page page. Links auto-hide when page is missing.',
+                    'ko' => '/ 로 시작하는 사이트 경로 또는 https:// 로 시작하는 주소. 비어 있으면 쿠키 배너의 정책 링크를 숨깁니다.',
+                    'en' => 'A site path starting with / or an address starting with https://. If empty, the policy link in the cookie banner is hidden.',
                 ],
                 'required' => false,
             ],

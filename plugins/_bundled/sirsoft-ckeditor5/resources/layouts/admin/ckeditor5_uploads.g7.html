@@ -168,7 +168,8 @@
           <span>$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button</span>
         </button>
       </div>
-      <data-grid data-ref="ckeditor5_uploads_datagrid" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" loading="{{ckeditor5Uploads?.loading}}" emptyText="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+      <data-grid data-type="composite" data-ref="ckeditor5_uploads_datagrid" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+        <blur-until-loaded sources="ckeditor5Uploads"/>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ckeditor5.admin.uploads.delete.button" iconName="trash" variant="danger"/>
         </prop>
@@ -239,7 +240,7 @@
   </slot>
   <modal>
     <!-- 행의 삭제 버튼으로 열린다. 아직 본문에 인용 중인 이미지도 지울 수 있으므로(목록이 참조 배지로 알려 줄 뿐 막지는 않는다) 확인을 한 단계 둔다 -->
-    <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title" size="sm">
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title" size="sm">
       <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message</p>
@@ -285,7 +286,7 @@
   </modal>
   <modal>
     <!-- 체크한 행이 하나라도 있을 때만 뜨는 일괄 삭제 바에서 열린다. 대상은 지금 화면에 보이는 선택분이며, 확인 문구가 그 건수를 그대로 되읽어 준다 -->
-    <modal data-ref="bulk_delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title" size="sm">
       <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}</p>

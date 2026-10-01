@@ -7,6 +7,8 @@ use App\Services\PluginSettingsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\Gdpr\Plugin;
+use Plugins\Sirsoft\Gdpr\Rules\PrivacyPolicyUrlRule;
+use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /**
  * 관리자 GDPR 설정 저장 요청 검증
@@ -41,13 +43,9 @@ class UpdateAdminSettingsRequest extends FormRequest
     private const DOMAIN_REGEX = '/^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i';
 
     /**
-     * 필수 저장 항목(저장소 키 / 쿠키 이름) 정규식
-     *
-     * - 이름 문자: 영숫자와 `_ . : @ + -` (코어·확장이 실제로 쓰는 키 형태)
-     * - 와일드카드 `*` 는 **끝에만** 1개 허용 (`g7_filters_*`)
-     * - `*` 단독 표기는 허용하지 않는다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화된다
+     * 필수 저장 항목(저장소 키 / 쿠키 이름) 정규식 — 확장 제공 키 수용과 같은 규칙 (Plugin 이 단일 출처)
      */
-    private const STORAGE_KEY_REGEX = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
+    private const STORAGE_KEY_REGEX = Plugin::NECESSARY_STORAGE_KEY_PATTERN;
 
     /**
      * 필수 저장 항목 허용목록의 스코프 화이트리스트
@@ -90,11 +88,18 @@ class UpdateAdminSettingsRequest extends FormRequest
             'annual_notice.batch_size' => $this->annualNoticeEnabled()
                 ? ['required_with:annual_notice', 'integer', 'min:'.Plugin::ANNUAL_NOTICE_MIN, 'max:'.Plugin::ANNUAL_NOTICE_MAX]
                 : ['sometimes', 'nullable', 'integer', 'min:'.Plugin::ANNUAL_NOTICE_MIN, 'max:'.Plugin::ANNUAL_NOTICE_MAX],
-            'annual_notice.introduction' => ['sometimes', new TranslatableField(maxLength: 2000, strictLocales: true)],
+            // 머리말은 저장된 설정이다 — 언어팩을 끄면 그 언어의 머리말이 남은 채로 화면이 폼 전체를
+            // 다시 보낸다. 지원 목록 밖 키를 거절(strict)하면 통지가 꺼져 입력이 잠긴 상태에서는 그 칸을
+            // 지울 수도 없어 어떤 설정도 저장하지 못한다. 코어 기본(비엄격)대로 통과시켜 값을 보존하고
+            // (언어팩을 다시 켜면 그대로 복구), 길이 상한은 아래 `.*` 규칙이 모든 키에 건다.
+            'annual_notice.introduction' => ['sometimes', new TranslatableField(maxLength: 2000)],
             'annual_notice.introduction.*' => ['nullable', 'string', 'max:2000'],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자가 직접 입력하지 않으므로 본 FormRequest 에서 검증하지 않음 (전달되어도 stripped).
-            'privacy_policy_slug' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9\-]*$/'],
+            // 처리방침 주소 — 운영자가 직접 입력한다. `/` 로 시작하는 사이트 내부 경로 또는 https 절대
+            // 주소만 받는다(다른 스킴·프로토콜 상대 주소·백슬래시·공백 거부). 판정 SSoT 는 PrivacyPolicyUrl.
+            // 1.0.x 의 privacy_policy_slug 는 규칙에 없으므로 보내도 validated() 에서 배제된다.
+            'privacy_policy_url' => ['nullable', 'string', 'max:'.PrivacyPolicyUrl::MAX_LENGTH, new PrivacyPolicyUrlRule],
             'legal_entity_name' => ['nullable', 'string', 'max:200'],
             // 데이터 저장 위치 — GDPR Art.13(1)(f) / PIPA 28조의8 은 "국가 단위" 표기를 요구.
             // 운영자가 실수로 보안 민감 식별자 (IP / CIDR / AWS 리전 코드) 를 입력하지 않도록
@@ -168,7 +173,7 @@ class UpdateAdminSettingsRequest extends FormRequest
     /**
      * 검증 메시지의 :attribute placeholder 를 사용자 친화 한국어/영어 라벨로 치환.
      *
-     * Laravel 기본 :attribute 는 underscore 만 공백으로 치환한 영문 표현 (예: "privacy policy slug")
+     * Laravel 기본 :attribute 는 underscore 만 공백으로 치환한 영문 표현 (예: "privacy policy url")
      * 노출 → 사용자 친화도 낮음. 본 메서드로 각 필드에 한국어/영어 라벨 매핑.
      *
      * 라벨 출처는 lang/{locale}/messages.php 의 settings.fields.{field}.label 키.
@@ -187,7 +192,7 @@ class UpdateAdminSettingsRequest extends FormRequest
             'annual_notice.batch_size' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_batch_size.label'),
             'annual_notice.introduction' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label'),
             'annual_notice.introduction.*' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label'),
-            'privacy_policy_slug' => __('sirsoft-gdpr::messages.settings.fields.privacy_policy_slug.label'),
+            'privacy_policy_url' => __('sirsoft-gdpr::messages.settings.fields.privacy_policy_url.label'),
             'legal_entity_name' => __('sirsoft-gdpr::messages.settings.fields.legal_entity_name.label'),
             'data_storage_location' => __('sirsoft-gdpr::messages.settings.fields.data_storage_location.label'),
             'banner_enabled' => __('sirsoft-gdpr::messages.settings.fields.banner_enabled.label'),

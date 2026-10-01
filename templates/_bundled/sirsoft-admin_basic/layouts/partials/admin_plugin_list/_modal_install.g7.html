@@ -7,7 +7,7 @@
   ⑵ 언어팩은 자기가 기대는 확장이 선택 목록에 있어야만 켤 수 있다. 그 확장을 빼면 언어팩 체크도
      함께 풀리고 칸이 잠긴다(깔 수 없는 것을 요청 본문에 실어 보내지 않으려는 것이다). -->
 <partial description="플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_install_modal">
-  <modal data-ref="plugin_install_modal" title="$t:admin.plugins.modals.install_title" size="medium">
+  <modal data-type="composite" data-ref="plugin_install_modal" title="$t:admin.plugins.modals.install_title" size="medium">
     <!-- 무엇이 함께 깔릴지와 각 항목의 기본 선택 여부를 서버가 정해 준다. 응답을 확장 공용 자리에 올려 두어 아래 체크리스트와 요청 본문이 같은 값을 읽게 한다. -->
     <data-source id="pluginInstallPreview" label_key="$t:editor.data_source.pluginInstallPreview" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>
     <div class="py-2">

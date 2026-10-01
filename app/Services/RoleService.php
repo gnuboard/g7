@@ -18,6 +18,12 @@ use Illuminate\Support\Str;
 
 class RoleService
 {
+    /**
+     * RoleService 생성자
+     *
+     * @param  RoleRepositoryInterface  $roleRepository  역할 리포지토리
+     * @param  PermissionEscalationGuard  $escalationGuard  권한 상승 방지 가드 (행위자 보유 범위 밖 권한 부여 차단)
+     */
     public function __construct(
         private RoleRepositoryInterface $roleRepository,
         private PermissionEscalationGuard $escalationGuard
@@ -229,6 +235,7 @@ class RoleService
      *
      * @param  Role  $role  역할 모델
      * @param  array  $permissions  권한 배열 [{id, scope_type}, ...]
+     * @return void 반환값 없음
      */
     public function syncPermissions(Role $role, array $permissions): void
     {
@@ -298,6 +305,7 @@ class RoleService
      * 코어/확장 소유 역할을 수정할 수 없습니다.
      *
      * @param  Role  $role  대상 역할
+     * @return void 반환값 없음
      *
      * @throws CannotModifyProtectedRoleException 상한 위반 시
      */
@@ -305,18 +313,10 @@ class RoleService
     {
         $actor = Auth::user();
 
-        // 인증 액터 부재 = 내부/Artisan 신뢰 경로 → 가드 미적용
-        if (! $actor instanceof User) {
-            return;
-        }
-
-        // 슈퍼 관리자는 모든 역할 수정 가능
-        if ($actor->isSuperAdmin()) {
-            return;
-        }
-
-        // 비-슈퍼관리자는 코어/확장 소유 역할 수정 불가
-        if ($role->isCore() || $role->isExtensionOwned()) {
+        // 판정은 모델 한 곳(Role::isModifiableBy)에 둔다 — 응답의 abilities 가 같은 판정을
+        // 읽어야 화면의 수정·토글 버튼이 서버 수락 여부와 어긋나지 않는다.
+        // 인증 액터 부재(내부/Artisan 신뢰 경로)·슈퍼 관리자는 통과, 그 외는 보호 역할 수정 불가.
+        if (! $role->isModifiableBy($actor instanceof User ? $actor : null)) {
             throw new CannotModifyProtectedRoleException;
         }
     }

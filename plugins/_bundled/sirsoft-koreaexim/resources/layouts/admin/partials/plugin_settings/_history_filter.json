@@ -51,7 +51,8 @@
                             "props": {
                                 "aria-label": "$t:sirsoft-koreaexim.date_from",
                                 "type": "date",
-                                "value": "{{query.date_from ?? ''}}"
+                                "value": "{{query.date_from ?? ''}}",
+                                "max": "{{query.date_to ?? ''}}"
                             }
                         }
                     ]
@@ -90,7 +91,8 @@
                             "props": {
                                 "aria-label": "$t:sirsoft-koreaexim.date_to",
                                 "type": "date",
-                                "value": "{{query.date_to ?? ''}}"
+                                "value": "{{query.date_to ?? ''}}",
+                                "min": "{{query.date_from ?? ''}}"
                             }
                         }
                     ]
@@ -252,6 +254,17 @@
                     ]
                 }
             ]
+        },
+        {
+            "comment": "뒤집힌 기간 안내 — 두 날짜 칸이 서로의 범위를 막아도 직접 입력·공유 주소로 들어올 수 있다. 이 기간이면 데이터소스 koreaeximRuns 가 조회하지 않고 그리드도 비우므로(직전 결과가 남지 않게), 「기록 없음」으로 읽히지 않게 이유를 적는다",
+            "type": "basic",
+            "name": "P",
+            "if": "{{!!query.date_from && !!query.date_to && query.date_to < query.date_from}}",
+            "props": {
+                "role": "alert",
+                "className": "form-error mt-2"
+            },
+            "text": "$t:sirsoft-koreaexim.date_range_invalid"
         }
     ]
 }

@@ -16,7 +16,7 @@
               <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
             </div>
           </div>
-          <toggle checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
             <on type="change">
               <!-- 채널 하나를 켜고 끈다 — 목록을 통째로 새로 만들면서 이 채널만 뒤집는다. 저장 버튼을 눌러야 반영되는 값이라 「변경 있음」도 함께 켠다 -->
               <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
@@ -100,7 +100,7 @@
                   <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
                     <on type="change">
                       <!-- 이 채널의 알림 사용 여부를 뒤집는다. 지금 보고 있는 채널의 템플릿을 골라 보내며, 성공하면 정의 목록을 다시 받아 표시를 맞춘다 -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
@@ -148,7 +148,7 @@
               <!-- 지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다 -->
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:sirsoft-board.admin.settings.notification_definitions.body_preview</span>
-                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white">
+                <html-content data-type="composite" content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white">
                   <prop name="comment">"미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."</prop>
                 </html-content>
               </div>
@@ -163,7 +163,7 @@
         </div>
       </div>
       <div data-ref="board_notif_pagination" class="flex justify-center">
-        <pagination currentPage="{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+        <pagination data-type="composite" currentPage="{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 쪽 넘기기 — 쪽수만 URL 에 다시 적으므로 고른 채널과 한 쪽 건수는 그대로 남는다 -->
             <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">

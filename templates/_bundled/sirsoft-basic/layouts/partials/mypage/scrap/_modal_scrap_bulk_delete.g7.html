@@ -1,6 +1,6 @@
 <partial description="마이페이지 스크랩 선택 해제 확인 모달" editor_label="$t:user.modal_label.mypage_scrap.scrapBulkDeleteModal">
   <!-- 선택 스크랩 일괄 해제 확인 — 선택 ID 배열을 한 요청으로 보낸다 -->
-  <modal data-ref="scrap_bulk_delete_modal" title="$t:mypage.scrap.bulk_delete_title" width="420px">
+  <modal data-type="composite" data-ref="scrap_bulk_delete_modal" title="$t:mypage.scrap.bulk_delete_title" width="420px">
     <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
          ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
     <div data-testid="scrap-bulk-delete-modal" class="space-y-4">

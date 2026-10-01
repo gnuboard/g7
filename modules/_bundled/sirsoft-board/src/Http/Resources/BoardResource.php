@@ -547,6 +547,12 @@ class BoardResource extends BaseApiResource
 
                 $result[$canKey] = $this->checkGuestPermission($permission);
             }
+
+            // 비회원은 공지를 지정할 수 없다 — 서버 판정(PostController::canSetNotice·StorePostRequest)이
+            // 로그인을 요구하므로 guest 역할에 공지 등록 권한이 있어도 글쓰기 화면의 공지 옵션을 열지 않는다
+            if (array_key_exists('can_write_notice', $result)) {
+                $result['can_write_notice'] = false;
+            }
         }
 
         return $result;

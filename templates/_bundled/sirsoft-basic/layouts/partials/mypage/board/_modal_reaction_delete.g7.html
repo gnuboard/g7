@@ -3,7 +3,7 @@
 
      대상이 이미 지워진 건은 제목을 실을 수 없으므로 문구가 갈린다(`isDeleted`). -->
 <partial description="마이페이지 게시판 활동 - 반응 해제 확인" editor_label="$t:user.modal_label.mypage_board.reactionDeleteModal">
-  <modal data-ref="reaction_delete_modal" id="reaction_delete_modal" title="$t:mypage.board_activities.reactions.delete_title" icon="trash" iconClassName="text-red-500" size="sm">
+  <modal data-type="composite" data-ref="reaction_delete_modal" id="reaction_delete_modal" title="$t:mypage.board_activities.reactions.delete_title" icon="trash" iconClassName="text-red-500" size="sm">
     <div data-testid="reaction-delete-modal" class="space-y-4">
       <p data-if="{{!_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm|title={{_global.reactionDeleteModal?.title ?? ''}}</p>
       <p data-if="{{_global.reactionDeleteModal?.isDeleted}}" class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reactions.delete_confirm_deleted</p>

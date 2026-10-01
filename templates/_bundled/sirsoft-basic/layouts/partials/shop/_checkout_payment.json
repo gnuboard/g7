@@ -236,6 +236,32 @@
             ]
         },
         {
+            "comment": "고를 결제수단이 하나도 없을 때 안내 — 서버가 주문을 받을 수 없는 수단(입금 계좌가 없는 무통장입금 등)을 걸러\n         내므로 목록이 빌 수 있다. 빈 칸만 남기면 결제하기가 왜 잠겼는지 알 수 없다(결제하기 버튼도 이 조건으로 잠긴다).",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{paymentSettings?.data && (paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active && (!m.requires_ios || _global.appConfig?.isIos)).length === 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "p-3 mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    }
+                }
+            },
+            "props": {
+                "className": "p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-red-700 dark:text-red-400"
+                    },
+                    "text": "$t:shop.checkout.no_payment_methods"
+                }
+            ]
+        },
+        {
             "comment": "카드결제 선택 시 안내",
             "type": "basic",
             "name": "Div",

@@ -6,7 +6,7 @@
   만료일이 따로 있는 이유는 생성된 파일이 영구 보관되지 않기 때문이고, 그래서 내려받기 횟수와
   이력이 이 창의 본론이다. -->
 <partial description="Excel Download - Download History Modal">
-  <modal data-ref="download_history_modal" title="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title" description="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.description" size="lg">
+  <modal data-type="composite" data-ref="download_history_modal" title="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title" description="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.description" size="lg">
     <div data-ref="file_info_section" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
       <div class="grid grid-cols-2 gap-y-3">
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.file_content</span>
@@ -48,7 +48,7 @@
       <div class="space-y-3 max-h-64 overflow-y-auto">
         <div data-ref="history_item_{{index}}" data-each="item, index in {{_local.selectedItem?.download_history ?? []}}" class="admin-card mb-3">
           <div class="flex-center gap-3">
-            <div class="avatar">
+            <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 justify-center flex-shrink-0">
               <icon name="user" class="text-base"/>
             </div>
             <div>

@@ -22,7 +22,7 @@
             <p class="text-label-subtle">$t:admin.settings.security.force_https_desc</p>
             <span data-if="{{_local.errors?.['security.force_https']}}" class="form-error">{{_local.errors?.['security.force_https']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="security.force_https" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="security.force_https" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="toggle_allow_internal_outbound_urls" class="flex-between">
           <div>
@@ -32,7 +32,7 @@
             <p class="text-label-subtle">$t:admin.settings.security.allow_internal_outbound_urls_desc</p>
             <span data-if="{{_local.errors?.['security.allow_internal_outbound_urls']}}" class="form-error">{{_local.errors?.['security.allow_internal_outbound_urls']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="security.allow_internal_outbound_urls" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="security.allow_internal_outbound_urls" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="toggle_login_attempt" class="flex-between">
           <div>
@@ -43,7 +43,7 @@
             <p class="text-label-subtle">$t:admin.settings.security.login_attempt_limit_desc</p>
             <span data-if="{{_local.errors?.['security.login_attempt_enabled']}}" class="form-error">{{_local.errors?.['security.login_attempt_enabled']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="security.login_attempt_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="security.login_attempt_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="field_auth_token_lifetime" class="">
           <label class="form-label">$t:admin.settings.security.auth_token_lifetime</label>

@@ -60,6 +60,12 @@ class PluginSettingsController extends AdminBaseController
      * 일치시킵니다 (ecommerce 모듈 설정 응답의 동명 키와 동형 계약).
      * 저장 시에는 스키마 기반 검증 whitelist 가 이 키를 걸러 설정에 남지 않습니다.
      *
+     * 저장값이 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 실제 동작인
+     * 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을 `public_asset_disk_unavailable`
+     * 로 알립니다. 저장값을 그대로 실으면 화면의 선택 칸이 어떤 선택지와도 맞지 않은 채
+     * 보이고, 폼 전체를 보내는 저장이 매번 카탈로그 검증(422)에 막힙니다. 런타임도 이미
+     * 고아 디스크를 스트리밍으로 폴백하므로(PublicAssetDisk::resolve) 표시가 동작과 같아집니다.
+     *
      * @param  string  $identifier  플러그인 식별자
      * @param  array<string, mixed>  $settings  응답에 실을 설정
      * @return array<string, mixed> 카탈로그가 부착된 설정
@@ -72,8 +78,14 @@ class PluginSettingsController extends AdminBaseController
             return $settings;
         }
 
-        $settings['available_public_asset_disks'] = app(DriverRegistryService::class)
-            ->getAvailableDrivers('public_asset');
+        $catalog = app(DriverRegistryService::class)->getAvailableDrivers('public_asset');
+        $settings['available_public_asset_disks'] = $catalog;
+
+        $stored = $settings['public_asset_disk'] ?? '';
+        if (is_string($stored) && $stored !== '' && ! in_array($stored, array_column($catalog, 'id'), true)) {
+            $settings['public_asset_disk'] = 'none';
+            $settings['public_asset_disk_unavailable'] = $stored;
+        }
 
         return $settings;
     }

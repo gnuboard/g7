@@ -268,7 +268,7 @@
   </init>
   <slot name="content">
     <div data-ref="page_container" class="admin-page-content-responsive pb-24 md:pb-0">
-      <page-header data-ref="page_header" title="$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})" description="$t:admin.templates.layout_edit.page_description">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})" description="$t:admin.templates.layout_edit.page_description">
         <!-- `data-leave-guard` — `<code-workspace>` 가 이 표식이 붙은 요소의 클릭을 가로채, 미저장이
              있으면 되묻고 없으면 그대로 보낸다(D5). 엔진의 `confirm` 은 진입점에서 무조건 발화해
              조건부로 물을 수 없으므로, dirty 여부를 아는 쪽이 판단한다. -->
@@ -400,7 +400,7 @@
            검색이 없어 144개를 스크롤해야 했다).
            `nodes` 는 레이아웃 파일과 확장 주입 조각을 **한 배열**로 합쳐 넘긴다 — 트리 변환·폴더 묶기는
            컴포넌트가 하므로 백엔드 응답 스키마는 그대로 둔다. -->
-      <file-tree-picker data-ref="file_tree_picker" mode="auto" storageKey="g7le.codeEditor.{{route.identifier}}" class="shrink-0 min-h-0"
+      <file-tree-picker data-type="composite" data-ref="file_tree_picker" mode="auto" storageKey="g7le.codeEditor.{{route.identifier}}" class="shrink-0 min-h-0"
         nodes="{{[...(layout_files?.data ?? []).map(f => ({ key: 'layout:' + f.name, kind: 'layout', path: f.name, meta: { size: f.size_formatted, updatedAt: f.updated_at }, badges: f.has_update ? [{ text: '$t:admin.templates.layout_edit.updated_badge', tone: 'red' }] : [] })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ key: 'ext:' + e.id, kind: 'extension', path: e.target_name, label: e.fragment_key &amp;&amp; e.fragment_key !== e.target_name ? (e.target_name + ' · ' + e.fragment_key) : e.target_name, group: g.source_label, groupKind: g.source_type, meta: { size: e.size_formatted, disabled: e.is_active === false }, badges: [...(e.is_override ? [{ text: '$t:admin.templates.layout_edit.extension_override_badge', tone: 'indigo' }] : []), ...(e.is_modified ? [{ text: '$t:admin.templates.layout_edit.extension_modified_badge', tone: 'amber' }] : []), ...(e.is_active === false ? [{ text: '$t:admin.templates.layout_edit.extension_inactive_badge', tone: 'gray' }] : [])] })))]}}"
         selectedKey="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}"
         dirtyKeys="{{_global.dirtyFileKeys ?? []}}"
@@ -512,7 +512,7 @@
             </div>
           </div>
           <!-- 서브탭 — HTML 이 유일한 편집 경로, JSON 은 읽기 전용 산출물(설계 결정 C2). 기본은 HTML. -->
-          <tab-navigation data-ref="editor_format_tabs" tabs="{{[{id: 'markup', label: '$t:admin.templates.layout_edit.tab_markup'}, {id: 'json', label: '$t:admin.templates.layout_edit.tab_json'}]}}" activeTabId="{{_global.editorFormat ?? 'markup'}}" variant="default" class="px-4 pt-2">
+          <tab-navigation data-type="composite" data-ref="editor_format_tabs" tabs="{{[{id: 'markup', label: '$t:admin.templates.layout_edit.tab_markup'}, {id: 'json', label: '$t:admin.templates.layout_edit.tab_json'}]}}" activeTabId="{{_global.editorFormat ?? 'markup'}}" variant="default" class="px-4 pt-2">
             <on type="change" event="onTabChange">
               <set-state target="global" editorFormat="{{$args[0]}}"/>
             </on>
@@ -531,7 +531,7 @@
                에 플러그인이 removeItem 으로 지웠다). -->
           <div data-ref="markup_editor_pane" class="flex-1 min-h-0 flex flex-col {{(_global.editorFormat ?? 'markup') === 'json' ? 'hidden' : ''}}">
             <!-- 마커는 오류(빨강)와 경고(노랑)를 합쳐 한 배열로 넘긴다 — `.g7.html` 검증은 Monaco 가 아니라 서버 컴파일러가 하므로 마커의 출처는 언제나 컴파일 응답이다. -->
-            <code-workspace data-ref="code_workspace" class="flex-1 min-h-0"
+            <code-workspace data-type="composite" data-ref="code_workspace" class="flex-1 min-h-0"
               fileKey="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}"
               serverKey="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.id ? ('ext:' + current_extension.data.id) : '') : (current_layout?.data?.name ? ('layout:' + current_layout.data.name) : '')}}"
               serverValue="{{raw:_global.selectedNodeKind === 'extension' ? (current_extension?.data?.content_markup ?? '') : (current_layout?.data?.content_markup ?? '')}}"
@@ -660,7 +660,7 @@
               <span data-ref="json_stale_badge" data-if="{{!!_global.jsonViewStale}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">$t:admin.templates.layout_edit.json_stale</span>
             </div>
             <div class="flex-1 min-h-0 px-4 pb-4">
-              <code-editor data-ref="json_editor" value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" :readOnly="true" theme="auto" height="100%"/>
+              <code-editor data-type="composite" data-ref="json_editor" value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" :readOnly="true" theme="auto" height="100%"/>
             </div>
           </div>
           <div data-ref="markup_error_panel" data-if="{{!!_global.markupCompileError}}" role="alert" class="mx-4 mt-3 p-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">

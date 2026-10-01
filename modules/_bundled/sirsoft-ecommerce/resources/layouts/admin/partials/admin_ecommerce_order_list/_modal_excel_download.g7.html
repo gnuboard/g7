@@ -9,7 +9,7 @@
   서 있으므로, 라우트가 생기면 그대로 붙는다. 상품 목록의 같은 창은 다른 이유로 멎어 있다 —
   그쪽은 버튼에 `<on>` 자체가 없다. -->
 <partial description="Order List - Excel Download Modal">
-  <modal data-ref="modal_excel_download" size="sm" title="$t:sirsoft-ecommerce.admin.order.excel.title">
+  <modal data-type="composite" data-ref="modal_excel_download" size="sm" title="$t:sirsoft-ecommerce.admin.order.excel.title">
     <div>
       <div>
         <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
@@ -23,7 +23,7 @@
             </input>
             <div class="flex-1">
               <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{_global.excelDownloadContext?.total ?? 0}}</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}</span>
             </div>
           </label>
           <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
@@ -35,7 +35,7 @@
             </input>
             <div class="flex-1">
               <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc|count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}</span>
             </div>
           </label>
         </div>
@@ -50,24 +50,23 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
         <on type="click">
-          <!-- 내려받기. 응답이 JSON 이 아니라 blob 이라 성공 처리가 다른 화면과 다르다 — 서버는 파일
-            바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 그래서
-            `downloadFile` 이 성공 사슬의 첫 자리에 있고 토스트·창 닫기는 그 뒤다. -->
+          <!-- 내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을
+            JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는
+            파일 바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 토스트·창 닫기는
+            저장이 시작된 뒤이고, 실패하면 진행 표시를 풀고 실패 안내를 띄운다. -->
           <sequence>
             <set-state target="global" :isDownloading="true"/>
-            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/orders/export-excel" method="POST" responseType="blob">
+            <action handler="sirsoft-ecommerce.downloadFile" url="/api/modules/sirsoft-ecommerce/admin/orders/export-excel" method="POST" filename="orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx" body="{{ { type: _global.excelDownloadContext?.type, order_ids: _global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : [], filters: _global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {} } }}">
               <success>
-                <action handler="downloadFile" blob="{{response}}" filename="orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx"/>
                 <set-state target="global" :isDownloading="false"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.order.excel.download_success"/>
                 <close-modal/>
               </success>
               <fail>
                 <set-state target="global" :isDownloading="false"/>
-                <toast type="error" message="{{error.message}}"/>
+                <toast type="error" message="$t:sirsoft-ecommerce.admin.order.excel.download_failed"/>
               </fail>
-              <body type="{{_global.excelDownloadContext?.type}}" order_ids="{{_global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : []}}" filters="{{_global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {}}}"/>
-            </api-call>
+            </action>
           </sequence>
         </on>
         <icon data-if="{{_global.isDownloading}}" name="spinner" class="spinner-sm"/>

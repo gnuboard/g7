@@ -31,6 +31,8 @@ type BoardAuthFixtures = {
   attachmentDownloadToken: string;
   /** 본문 썸네일 폴백 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-content-thumbnail) 글/첨부 관리 토큰 (공개 #22) */
   contentThumbnailToken: string;
+  /** 관리자 상세 원글·답변 첨부 내려받기 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-reply-attachment) 글/첨부 관리 토큰 (#703) */
+  replyAttachmentToken: string;
   /** 게시글 조회 권한 토큰 (#524 스크랩 사용자 흐름 검증용) */
   memberScrapToken: string;
   /** 게시판/게시글 조회 권한 토큰 (반응 등록/전환/해제 흐름 검증용, 반응은 로그인만 요구) */
@@ -108,6 +110,21 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
         'sirsoft-board.e2e-content-thumbnail.admin.manage',
         'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
+      ),
+    );
+  },
+  replyAttachmentToken: async ({}, use) => {
+    // 전용 게시판(e2e-reply-attachment)을 spec 안에서 생성/삭제하고, 관리자 글·답변 작성 +
+    // 첨부 업로드 후 관리자 상세 화면에서 원글·답변 첨부를 내려받는다 (#703).
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.boards.create',
+        'sirsoft-board.boards.delete',
+        'sirsoft-board.e2e-reply-attachment.admin.posts.read',
+        'sirsoft-board.e2e-reply-attachment.admin.posts.write',
+        'sirsoft-board.e2e-reply-attachment.admin.manage',
+        'sirsoft-board.e2e-reply-attachment.admin.attachments.upload',
       ),
     );
   },

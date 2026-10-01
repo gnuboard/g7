@@ -2,7 +2,8 @@
     "comment": "게시판 개인정보 보유기간 대상 창 (#636) — 「일반」 탭 보유기간 카드의 대상 건수 옆 버튼이 연다.\n  작성 IP 축과 비회원 축이 **같은 창 하나**를 돌려 쓴다. 명단은 코어 공통 대상 목록 API 가 두 핸들러\n  (`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려준다 — 배치와 같은 조건식(글 + 댓글)이다.\n  여는 버튼이 목록 경로와 제목을 `_global.privacyTargets` 에 넣고 첫 쪽을 다시 받은 뒤 연다.",
     "meta": {
         "is_partial": true,
-        "description": "게시판 환경설정 일반 탭 - 개인정보 보유기간 대상 목록 모달"
+        "description": "게시판 환경설정 일반 탭 - 개인정보 보유기간 대상 목록 모달",
+        "editor_label": "$t:sirsoft-board.admin.settings.privacy_retention.targets.editor_label"
     },
     "id": "privacy_targets_modal",
     "type": "composite",

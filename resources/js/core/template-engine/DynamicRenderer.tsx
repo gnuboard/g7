@@ -27,7 +27,7 @@ import { ComponentRegistry } from './ComponentRegistry';
 import { DataBindingEngine } from './DataBindingEngine';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
-import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap } from './helpers/RenderHelpers';
+import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
 import { getEngineFlags } from './EngineFlags';
@@ -4025,8 +4025,6 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // 백엔드에서 이미 children에 컴포넌트를 주입한 상태로 전달됩니다.
       // 프론트엔드에서는 단순히 컨테이너로 렌더링하고 children을 출력합니다.
       if (effectiveComponentDef.type === 'extension_point') {
-        const { layout, columns, gap, className, ...restProps } = effectiveComponentDef.props || {};
-
         /**
          * 호스트 `<div>` 에는 **DOM 표준 속성만** 남긴다 (engine-v1.68.1+)
          *
@@ -4045,32 +4043,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
          * 번들 코퍼스 실측(확장점 42노드 / props 키 14종)에 `data-*`·`aria-*` 는 0건이라
          * 이 전환으로 막히는 정상 사용은 없고, 앞으로의 탈출구만 열어 둔다.
          */
-        const domSafeRestProps: Record<string, any> = {};
-        for (const [key, value] of Object.entries(restProps)) {
-          const isDomAttribute =
-            key.startsWith('data-')
-            || key.startsWith('aria-')
-            || ['role', 'title', 'lang', 'dir', 'hidden', 'tabIndex', 'style'].includes(key);
-
-          if (!isDomAttribute) {
-            continue;
-          }
-          domSafeRestProps[key] = value;
-        }
-
-        // 레이아웃 설정에 따른 컨테이너 스타일 결정
-        let containerClass = className || '';
-        if (layout === 'grid' && columns) {
-          containerClass = `${containerClass} grid grid-cols-${columns} gap-${gap || 4}`.trim();
-        } else if (layout === 'flex') {
-          containerClass = `${containerClass} flex flex-col gap-${gap || 4}`.trim();
-        }
+        // 규칙은 반복 컨텍스트(renderItemChildren)의 확장점과 공유한다 (engine-v1.73.0).
+        const host = buildExtensionPointHostProps(effectiveComponentDef.props);
 
         return (
           <div
             id={resolvedComponentId}
-            className={containerClass || undefined}
-            {...domSafeRestProps}
+            className={host.className}
+            {...host.attrs}
           >
             {renderChildren}
           </div>

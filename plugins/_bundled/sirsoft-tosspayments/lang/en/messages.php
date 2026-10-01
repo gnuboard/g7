@@ -6,6 +6,7 @@
 return [
     'errors' => [
         'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
+        'approval_verification_cancel_reason' => 'Automatically cancelled because the payment approval could not be verified',
     ],
     'claim' => [
         'invalid_callback' => 'The callback parameters required to approve the claim payment (paymentKey, orderId, amount) are missing.',

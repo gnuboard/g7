@@ -1,7 +1,7 @@
 <!-- 장바구니에 담은 직후 뜨는 창 — 계속 둘러보기와 장바구니로 가기 중 고르게 한다. 담기 자체는 이미
      끝난 상태라 이 창은 되돌릴 것이 없고 «다음 걸음» 만 묻는다. -->
 <partial description="장바구니 담기 완료 모달" editor_label="$t:user.modal_label.shop_detail.cart_added_modal">
-  <modal data-ref="cart_added_modal" title="$t:shop.product.cart_added_modal_title" size="sm" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="cart_added_modal" title="$t:shop.product.cart_added_modal_title" size="sm" :closeOnBackdropClick="false">
     <!-- 모달 내용 -->
     <div class="pb-6 text-center">
       <div class="flex justify-center mb-4">

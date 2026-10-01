@@ -2,7 +2,8 @@
     "comment": "개인정보 보유기간 대상 주문 창 (#636) — 「개인정보 보유기간」 탭의 대상 건수 옆 버튼이 연다.\n  명단은 코어 공통 대상 목록 API(`/api/admin/privacy/retention-targets/sirsoft-ecommerce.order`)가 이 모듈 핸들러를\n  식별자로 찾아 내려준다 — 배치와 같은 조건식이라 여기 보이는 주문이 곧 다음 실행이 처리할 주문이다.\n  여는 버튼이 목록 경로와 제목을 `_global.privacyTargets` 에 넣고 첫 쪽을 다시 받은 뒤 연다. 무한 스크롤은\n  도서산간 추가배송비 템플릿 창과 같은 방식(스크롤 끝 → 다음 쪽 → append)이다.",
     "meta": {
         "is_partial": true,
-        "description": "쇼핑몰 설정 개인정보 보유기간 탭 - 대상 주문 목록 모달"
+        "description": "쇼핑몰 설정 개인정보 보유기간 탭 - 대상 주문 목록 모달",
+        "editor_label": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.editor_label"
     },
     "id": "privacy_targets_modal",
     "type": "composite",

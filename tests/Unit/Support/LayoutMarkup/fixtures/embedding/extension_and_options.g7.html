@@ -2,7 +2,7 @@
   <extension-point name="html_editor" data-ref="content_editor" :multilingual="true">
     <prop name="name">"content"</prop>
     <default>
-      <html-editor data-key="content"/>
+      <html-editor data-type="composite" data-key="content"/>
     </default>
     <callback name="onAddressSelect">
       <set-state target="local" zipcode="{{$event.zipcode}}"/>
@@ -18,7 +18,7 @@
   <select multiple>
     <option value="a">$t:admin.a</option>
   </select>
-  <status-badge>
+  <status-badge data-type="composite">
     <switch-value prop="color" on="{{row.status}}">
       <case when="active">green</case>
       <case when="pending">amber</case>

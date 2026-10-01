@@ -1,0 +1,20 @@
+feature: 페이지 첨부 업로더의 첨부 정책 참조 (#703)
+
+description: |
+  관리자 페이지 폼의 업로더가 10MB·확장자 7종·5개를 리터럴로 박아 두어 모듈 설정(attachment.*)과 서버 검증이
+  어긋났다. defaults.json 을 {_meta, defaults, frontend_schema} 구조로 바꿔 attachment.* 를 프론트엔드 전역에
+  노출한다. 업로더는 서버 공개 설정 데이터 소스(attachmentSettings)를 읽는다 — MIME → 확장자 변환과
+  「0 = 무제한」 해석은 서버(PageAttachmentService::publicLimits)가 한다.
+
+axes:
+  surface: [frontend_settings, settings_service, admin_page_form_uploader]
+  setting: [attachment_policy]
+
+effects:
+  - attachment_policy_exposed_to_frontend
+  - frontend_schema_not_treated_as_category
+  - page_uploader_reads_attachment_policy
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentFrontendSettingsTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-form-attachment-policy.test.ts

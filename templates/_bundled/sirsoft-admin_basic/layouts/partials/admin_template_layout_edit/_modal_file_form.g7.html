@@ -3,13 +3,13 @@
   같기 때문이다. 창을 셋으로 나누면 그 규칙 안내가 세 벌이 되고, 한쪽만 고쳐진 상태가 남는다.
   무엇을 하는 창인지는 `_global.fileFormMode` 가 정한다.
 
-  **새 폴더는 서버를 부르지 않는다.** 폴더는 실체가 아니라 파일 이름의 `/` 일 뿐이라(PO 결정 D-2),
+  **새 폴더는 서버를 부르지 않는다.** 폴더는 실체가 아니라 파일 이름의 `/` 일 뿐이라(결정 D-2),
   만드는 순간에는 트리에만 얹히고(`pendingFolders`) 그 안에 파일이 저장될 때 비로소 굳는다. -->
 <partial name="modal_file_form" editor_label="$t:admin.modal_label.admin_template_layout_edit.file_form_modal">
-  <modal data-ref="file_form_modal" size="small" title="{{_global.fileFormMode === 'rename' ? '$t:admin.templates.layout_edit.file.rename_title' : (_global.fileFormMode === 'create_folder' ? '$t:admin.templates.layout_edit.file.new_folder_title' : '$t:admin.templates.layout_edit.file.new_file_title')}}">
+  <modal data-type="composite" data-ref="file_form_modal" size="small" title="{{_global.fileFormMode === 'rename' ? '$t:admin.templates.layout_edit.file.rename_title' : (_global.fileFormMode === 'create_folder' ? '$t:admin.templates.layout_edit.file.new_folder_title' : '$t:admin.templates.layout_edit.file.new_file_title')}}">
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.layout_edit.file.name_hint</p>
 
-    <form-field label="$t:admin.templates.layout_edit.file.name_label" :required="true">
+    <form-field data-type="composite" label="$t:admin.templates.layout_edit.file.name_label" :required="true">
       <input type="text" value="{{_global.fileFormName ?? ''}}" placeholder="$t:admin.templates.layout_edit.file.name_placeholder" autoComplete="off" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
         <on type="change">
           <!-- 서버가 다시 판정하므로 여기 검사는 **버튼을 잠그는 용도**다. 규칙을 어긴 이름으로

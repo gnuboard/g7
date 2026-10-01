@@ -304,7 +304,7 @@
                                                 {
                                                     "handler": "reloadExtensions",
                                                     "params": {
-                                                        "moduleInfo": "{{result}}",
+                                                        "moduleInfo": "{{result.data?.module ?? result}}",
                                                         "action": "add"
                                                     }
                                                 }
@@ -319,6 +319,19 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "comment": "확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —\n                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은\n                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "module_reactivate_language_packs_modal",
+                                            "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
                                         }
                                     ],
                                     "onError": [
@@ -342,7 +355,7 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isForceActivating}}"
                     },
                     "children": [

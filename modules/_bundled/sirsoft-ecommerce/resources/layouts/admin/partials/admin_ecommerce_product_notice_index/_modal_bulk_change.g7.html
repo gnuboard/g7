@@ -4,7 +4,7 @@
   **이벤트로 되돌려 보내고**(`notice:bulkChangeConfirmed`), 실제 저장은 그 이벤트를 받은 폼이 한다
   — 폼은 다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다. -->
 <partial description="Product Notice Template Bulk Change Confirmation Modal">
-  <modal data-ref="bulk_change_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.title" size="medium">
+  <modal data-type="composite" data-ref="bulk_change_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.title" size="medium">
     <div>
       <div class="flex-start gap-3">
         <div class="flex-shrink-0 mt-0.5">
@@ -27,7 +27,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+      <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
         <on type="click">
           <!-- 확인 — 잡아 둔 폼 값을 폼 쪽으로 되돌려 보내고 창을 닫는다. 저장은 그 이벤트를 받은 폼이 하므로 여기에는 API 호출이 없다. -->
           <sequence>

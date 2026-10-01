@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 본인인증 창에서 돌아올 때 입력하던 양식을 복원하는 보관 항목(`sirsoft-verification_nhnkcp.formStash`)을 개인정보
+  동의 플러그인에 필수 저장 항목으로 직접 제공합니다. 지금까지는 그 플러그인이 이 항목 이름을 대신 들고 있었습니다.
+  동의 플러그인의 클래스를 참조하지 않으므로 그 플러그인이 없어도 이 플러그인은 그대로 동작합니다.
+
 - 설치 시 `.g7.html` 이 있으면 그것을 우선 사용합니다. 짝이 되는 JSON 과 결과가 완전히 같으므로 화면 동작은
   달라지지 않으며, JSON 만 쓰던 환경에서도 종전과 동일하게 설치됩니다.
 

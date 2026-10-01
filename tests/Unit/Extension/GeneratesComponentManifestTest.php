@@ -20,6 +20,11 @@ class GeneratesComponentManifestTest extends TestCase
 {
     use GeneratesComponentManifest;
 
+    /**
+     * 테스트 정리 — 만든 임시 자원을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         DB::disconnect();
@@ -30,7 +35,7 @@ class GeneratesComponentManifestTest extends TestCase
     /**
      * 스캔 결과를 반환합니다 (파일 쓰기 없이 스캔만).
      *
-     * @return array{components: array<string, array<int, array<string, mixed>>>, for: array<string, array<int, string>>}
+     * @return array{components: 반환값
      */
     private function scanHelloModule(): array
     {
@@ -38,9 +43,13 @@ class GeneratesComponentManifestTest extends TestCase
     }
 
     /**
+     * 컴포넌트 종류는 소스 디렉터리로 분류된다.
+     *
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects extension_component_sources_are_classified_by_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_component_is_classified_by_its_directory(): void
     {
@@ -60,6 +69,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects for_variant_is_listed_only_in_the_for_map_not_duplicated_as_a_component
+     *
+     * @return void 반환값 없음
      */
     public function test_for_variant_is_not_duplicated_as_a_separate_component(): void
     {
@@ -78,6 +89,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects props_are_extracted_from_the_component_source_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_props_are_extracted_from_the_props_interface(): void
     {
@@ -99,6 +112,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects generated_extension_manifest_passes_compiler_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_generated_manifest_is_accepted_by_the_compiler(): void
     {
@@ -117,7 +132,7 @@ class GeneratesComponentManifestTest extends TestCase
         $definition = $manifest->definitions[0];
 
         $this->assertSame('gnuboard7-hello_module.MemoCard', $definition->name);
-        $this->assertSame('gnuboard7-hello-module-memo-card', $definition->tag);
+        $this->assertSame('gnuboard7-hello_module.memo-card', $definition->tag);
     }
 
     /**
@@ -130,6 +145,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects sample_extension_three_concepts_work_end_to_end
+     *
+     * @return void 반환값 없음
      */
     public function test_sample_extension_and_template_manifests_interlock(): void
     {
@@ -150,7 +167,7 @@ class GeneratesComponentManifestTest extends TestCase
         $registry = ComponentRegistry::fromManifests($template, [$module]);
 
         // ① 제공 — 모듈 컴포넌트가 프리픽스 태그로 작성된다.
-        $card = $registry->resolveTag('gnuboard7-hello-module-memo-card');
+        $card = $registry->resolveTag('gnuboard7-hello_module.memo-card');
         $this->assertNotNull($card, '모듈이 제공한 컴포넌트가 마크업 어휘에 합류하지 않았습니다.');
         $this->assertSame('gnuboard7-hello_module.MemoCard', $card->name);
 
@@ -173,6 +190,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects sample_template_override_falls_back_when_module_version_moves_on
+     *
+     * @return void 반환값 없음
      */
     public function test_sample_override_falls_back_if_the_module_moves_to_an_incompatible_version(): void
     {
@@ -192,7 +211,7 @@ class GeneratesComponentManifestTest extends TestCase
         $registry = ComponentRegistry::fromManifests($template, [$module]);
 
         // 대체본이 폐기되어도 태그는 살아 있다 — 원본이 폴백으로 자리를 지킨다.
-        $card = $registry->resolveTag('gnuboard7-hello-module-memo-card');
+        $card = $registry->resolveTag('gnuboard7-hello_module.memo-card');
 
         $this->assertNotNull($card, '비호환 오버라이드가 원본까지 지웠습니다 — 화면이 통째로 사라집니다.');
         $this->assertSame('gnuboard7-hello_module.MemoCard', $card->name);
@@ -208,6 +227,8 @@ class GeneratesComponentManifestTest extends TestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects extension_without_component_sources_yields_an_empty_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_without_component_sources_scans_empty(): void
     {

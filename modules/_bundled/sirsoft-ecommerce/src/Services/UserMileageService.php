@@ -712,33 +712,34 @@ class UserMileageService
     /**
      * 일괄 유효기간 연장 (지급계 lot 의 expires_at 갱신)
      *
-     * @param  int  $userId  대상 사용자 ID
+     * 회원을 지정하지 않으면(null) 고른 lot 이 여러 회원에 걸쳐 있어도 전부 연장한다 — 관리자
+     * 마일리지 내역 화면은 회원을 섞어 고를 수 있다. 잔액 캐시 재계산과 활동 로그는 회원별로 남긴다.
+     *
+     * @param  int|null  $userId  대상 사용자 ID (null 이면 회원 제한 없음)
      * @param  array<int, int>  $lotIds  연장 대상 lot ID 목록
      * @param  int  $days  연장 일수
      * @return int 연장된 lot 수
      */
-    public function extendLotExpiry(int $userId, array $lotIds, int $days): int
+    public function extendLotExpiry(?int $userId, array $lotIds, int $days): int
     {
         return DB::transaction(function () use ($userId, $lotIds, $days) {
             $lots = $this->ledger->getRemainingLotsByIds($userId, $lotIds);
 
-            $currencies = [];
             foreach ($lots as $lot) {
                 $base = $lot->expires_at !== null ? $lot->expires_at->copy() : now();
                 $this->ledger->updateExpiry($lot, $base->addDays($days));
-                $currencies[$lot->currency] = true;
             }
 
-            foreach (array_keys($currencies) as $currency) {
-                $this->cache->recalculateForUser($userId, $currency);
-            }
+            foreach ($lots->groupBy('user_id') as $ownerId => $ownerLots) {
+                foreach ($ownerLots->pluck('currency')->unique() as $currency) {
+                    $this->cache->recalculateForUser((int) $ownerId, $currency);
+                }
 
-            if ($lots->isNotEmpty()) {
                 $this->logActivity('mileage.extend_expiry', [
-                    'loggable' => $lots->first(),
+                    'loggable' => $ownerLots->first(),
                     'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_extend_expiry',
                     'description_params' => ['days' => $days],
-                    'properties' => ['user_id' => $userId, 'lot_count' => $lots->count(), 'days' => $days],
+                    'properties' => ['user_id' => (int) $ownerId, 'lot_count' => $ownerLots->count(), 'days' => $days],
                 ]);
             }
 

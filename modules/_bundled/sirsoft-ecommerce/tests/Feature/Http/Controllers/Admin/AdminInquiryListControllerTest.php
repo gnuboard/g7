@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 상품문의 관리 API Feature 테스트 (이슈 #524 §4.1)
@@ -27,11 +28,10 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=admin_product_inquiry_list,actor=admin
  *
  * @effects admin_product_inquiry_requires_read_permission, admin_product_inquiry_bulk_delete_writes_activity_log
- *
- * @group ecommerce
- * @group admin
- * @group inquiry
  */
+#[Group('ecommerce')]
+#[Group('admin')]
+#[Group('inquiry')]
 class AdminInquiryListControllerTest extends ModuleTestCase
 {
     private string $apiBase = '/api/modules/sirsoft-ecommerce/admin/inquiries';
@@ -46,6 +46,11 @@ class AdminInquiryListControllerTest extends ModuleTestCase
 
     private Product $product;
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +71,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 조회 권한 없는 관리자 → 403.
      *
      * @effects admin_product_inquiry_requires_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_requires_read_permission(): void
     {
@@ -78,6 +85,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 목록은 페이지네이션과 abilities 를 함께 낸다 (화면이 삭제 버튼 상태를 정할 근거).
      *
      * @effects admin_product_inquiry_returns_pagination_and_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_pagination_and_abilities(): void
     {
@@ -95,6 +104,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 삭제 권한 없는 관리자는 목록은 보되 can_manage=false 로 받는다.
      *
      * @effects admin_product_inquiry_read_only_cannot_manage
+     *
+     * @return void 반환값 없음
      */
     public function test_index_read_only_admin_gets_can_manage_false(): void
     {
@@ -110,6 +121,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * user_uuid 필터 — 없는 uuid 는 빈 결과여야 한다 (필터 무시 후 전체 노출 금지).
      *
      * @effects admin_product_inquiry_filters_by_user_uuid, admin_product_inquiry_unknown_uuid_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_uuid(): void
     {
@@ -132,6 +145,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 검색 대상 분기 — member(이름) / email / member_id(uuid).
      *
      * @effects admin_product_inquiry_search_field_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_field_branches(): void
     {
@@ -155,6 +170,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 삭제 권한 없는 관리자의 삭제 → 403.
      *
      * @effects admin_product_inquiry_destroy_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_requires_manage_permission(): void
     {
@@ -171,6 +188,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 일괄 삭제 → 건수 반환 + 행마다 관리자 활동 로그.
      *
      * @effects admin_product_inquiry_bulk_delete_writes_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_deletes_and_writes_activity_log(): void
     {
@@ -201,6 +220,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * @scenario list=inquiry, action=bulk_delete
      *
      * @effects admin_inquiry_bulk_delete_rejects_soft_deleted_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_rejects_soft_deleted_ids(): void
     {
@@ -228,6 +249,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 를 잰다(게시판 모듈 없이도 계약이 성립해야 한다).
      *
      * @effects admin_product_inquiry_bulk_delete_removes_board_post
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_deletes_board_question_post_not_just_pivot(): void
     {
@@ -271,6 +294,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 「0건 삭제」 로 나간다(2026-09-15 브라우저 실측에서 드러난 자리).
      *
      * @effects admin_product_inquiry_bulk_delete_counts_cascaded_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_counts_rows_even_when_hook_cascades_the_pivot(): void
     {
@@ -304,6 +329,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 「:count개의 상품문의를 삭제했습니다」 가 그대로 뜬다.
      *
      * @effects admin_product_inquiry_bulk_delete_message_interpolates_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_message_interpolates_count(): void
     {
@@ -328,6 +355,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * (`deleteInquiriesForProduct()`)와 같은 판단이다.
      *
      * @effects admin_product_inquiry_bulk_delete_without_board_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_without_inquiry_board_still_removes_rows(): void
     {
@@ -359,6 +388,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * is_answered 필터 — false 가 「미답변만」 이라는 뜻이라 empty() 로 보면 안 된다.
      *
      * @effects admin_inquiry_is_answered_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_index_is_answered_filter(): void
     {
@@ -382,6 +413,8 @@ class AdminInquiryListControllerTest extends ModuleTestCase
      * 소프트 삭제된 문의는 목록에서 빠진다.
      *
      * @effects admin_inquiry_excludes_soft_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_excludes_soft_deleted(): void
     {

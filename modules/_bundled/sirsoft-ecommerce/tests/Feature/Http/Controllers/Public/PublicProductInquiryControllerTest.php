@@ -20,6 +20,11 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
 {
     private Product $product;
 
+    /**
+     * 문의 게시판 설정과 상품 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,13 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
     // index() — 문의 목록 조회
     // ========================================
 
+    /**
+     * 비회원도 문의 목록을 조회할 수 있다.
+     *
+     * @effects public_inquiry_list_open_to_guests
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비회원도_문의_목록을_조회할_수_있다(): void
     {
@@ -83,6 +95,10 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * 이름은 행마다 조회하면 N+1 이 되므로 표시할 ID 만 모아 한 번에 읽는다
      * (`UserRepositoryInterface::getNamesByIds`). 이 경로가 비면 목록의 작성자
      * 칸이 게시글 스냅샷 이름으로 조용히 대체되어, 개명 후에도 옛 이름이 남는다.
+     *
+     * @effects public_inquiry_author_name_masked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 문의_목록의_작성자_이름은_회원_계정에서_읽어_마스킹된다(): void
@@ -141,6 +157,8 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * @scenario layer=service, viewer=non_viewer
      *
      * @effects service_remasks_when_hook_omits_masking, service_remasks_title_with_shared_placeholder
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 훅이_마스킹을_누락해도_서비스가_can_view_secret_플래그로_원문을_재차단한다(): void
@@ -192,9 +210,9 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         // A2b: title 도 재마스킹 대상 — 훅이 실어 보낸 원문 제목이 유출되면 안 된다.
         $this->assertNotSame('비밀 문의 제목', $items[0]['title'], '훅 누락 시에도 서비스가 title 원문을 유출하면 안 됩니다');
         $this->assertSame(
-            __('sirsoft-board::messages.post.secret_post_title'),
+            __('sirsoft-ecommerce::messages.inquiries.secret_post_title'),
             $items[0]['title'],
-            '훅 누락 시에도 서비스가 title 을 게시판 비밀글 플레이스홀더로 재마스킹해야 합니다'
+            '훅 누락 시에도 서비스가 title 을 이커머스 비밀글 플레이스홀더로 재마스킹해야 합니다'
         );
     }
 
@@ -211,6 +229,8 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * @scenario layer=service, viewer=non_viewer
      *
      * @effects service_fails_closed_when_flag_absent
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function can_view_secret_키가_없으면_서비스가_마스킹_쪽으로_닫힌다(): void
@@ -259,7 +279,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         $this->assertNull($items[0]['reply'], '플래그 부재 시 reply 는 마스킹되어야 합니다(fail-closed)');
         $this->assertSame([], $items[0]['attachments'], '플래그 부재 시 attachments 는 비워져야 합니다');
         $this->assertSame(
-            __('sirsoft-board::messages.post.secret_post_title'),
+            __('sirsoft-ecommerce::messages.inquiries.secret_post_title'),
             $items[0]['title'],
             '플래그 부재 시 title 도 플레이스홀더로 마스킹되어야 합니다'
         );
@@ -271,6 +291,8 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * @scenario layer=service, viewer=owner
      *
      * @effects service_exposes_original_when_flag_true
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function can_view_secret_true면_비밀글_원문이_노출된다(): void
@@ -323,6 +345,10 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      *
      * 종전에는 전량 get() 후 PHP forPage() 잘라내기라, 문의가 늘수록 한 페이지를 여는
      * 것만으로 전 행이 적재됐다. 페이지 경계 정확성과 LIMIT 사용을 함께 고정한다.
+     *
+     * @effects public_inquiry_list_paginates_at_query_level
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 문의_목록은_쿼리_레벨_페이지네이션을_사용하고_페이지_경계가_정확하다(): void
@@ -385,6 +411,13 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * board slug 미설정 시 빈 목록과 inquiry available false를 반환한다.
+     *
+     * @effects public_inquiry_list_unavailable_without_board
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function board_slug_미설정_시_빈_목록과_inquiry_available_false를_반환한다(): void
     {
@@ -415,6 +448,10 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * 컨트롤러에 진입하기 전에 404 가 된다 (#450 상품코드 라우팅 전환). 문의 게시판 설정 여부와
      * 무관하다 — 설정 미비로 빈 목록을 주는 경우는 **존재하는 상품**에 한하며 그 계약은
      * `board_slug_미설정_시_빈_목록과_inquiry_available_false를_반환한다` 가 담당한다.
+     *
+     * @effects public_inquiry_list_open_to_guests
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 존재하지_않는_상품_조회_시_404를_반환한다(): void
@@ -429,6 +466,13 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
     // store() — 문의 작성
     // ========================================
 
+    /**
+     * 비인증 사용자는 문의를 작성할 수 없다.
+     *
+     * @effects public_inquiry_create_requires_auth_and_content
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비인증_사용자는_문의를_작성할_수_없다(): void
     {
@@ -449,6 +493,8 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * 없으면 주입 코드를 지워도 스위트가 green 이고 문의 IP 가 조용히 0.0.0.0 이 된다.
      *
      * @effects service_injects_client_ip_into_hook_payload
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서비스가_문의_생성_훅_payload_에_클라이언트_ip_를_주입한다(): void
@@ -483,6 +529,13 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 로그인 사용자는 문의를 작성할 수 있다.
+     *
+     * @effects public_inquiry_create_requires_auth_and_content
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 로그인_사용자는_문의를_작성할_수_있다(): void
     {
@@ -514,6 +567,13 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 필수 필드 content 없이 요청 시 422를 반환한다.
+     *
+     * @effects public_inquiry_create_requires_auth_and_content
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 필수_필드_content_없이_요청_시_422를_반환한다(): void
     {

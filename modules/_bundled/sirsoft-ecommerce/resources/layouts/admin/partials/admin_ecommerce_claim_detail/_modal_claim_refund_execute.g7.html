@@ -1,6 +1,6 @@
 <partial description="Claim Refund Execution Confirm Modal (D18) - detail screen only">
   <!-- 환불 실행 확인 모달 (D18). 환불은 되돌릴 수 없는 처리라 실행 전에 무엇이 나가는지 한 번 더 보인다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 `_global.claimRefundExecuteContext` 로 값을 넘긴다 — 그 하나를 모달 표시와 실행 본문이 함께 읽어야 '예고한 값 = 실행하는 값' 이 성립한다. 모달이 제 사본을 들면 왕복 중 입력이 바뀌었을 때 둘이 갈린다. -->
-  <modal data-ref="modal_claim_refund_execute" title="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title" size="md">
+  <modal data-type="composite" data-ref="modal_claim_refund_execute" title="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title" size="md">
     <div class="space-y-4">
       <p data-ref="crm_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.description|number={{_global.claimRefundExecuteContext?.claimNumber ?? ''}}</p>
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">

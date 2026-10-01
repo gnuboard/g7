@@ -465,6 +465,7 @@
     "title_exchange": "交換完了処理",
     "title_return": "返品完了処理",
     "title_generic": "完了処理",
+    "editor_label": "クレーム完了処理ウィンドウ",
     "description": "選択した{{count}}件を完了ステータスに切り替えます。処理方法を件別にご確認ください。",
     "col_claim_number": "申請番号",
     "col_item": "商品",

@@ -1,6 +1,6 @@
 <!-- 클레임 목록 — 검색 프리셋 삭제 확인 창(관리 창 위에 겹쳐 뜬다). 지울 프리셋의 id·이름은 관리 창이 `_global` 에 담아 둔 값을 읽으며, 이 창은 프리셋 목록을 따로 조회하지 않는다. -->
 <partial description="Claim List - Preset Delete Confirm Modal">
-  <modal data-ref="modal_claim_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_claim_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.title" size="sm">
     <p class="text-body">$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
     <div class="modal-footer-buttons">
       <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">

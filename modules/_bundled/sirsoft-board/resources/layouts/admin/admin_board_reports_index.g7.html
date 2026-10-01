@@ -37,7 +37,7 @@
   <slot name="content">
     <div data-ref="board_reports_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <page-header data-ref="page_header" title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description">
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
@@ -64,7 +64,7 @@
                   <set-state searchField="{{$event.target.value}}"/>
                 </on>
               </select>
-              <input data-ref="mobile_search_input" type="text" placeholder="$t:sirsoft-board.admin.reports.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
+              <input data-ref="mobile_search_input" type="text" placeholder="$t:sirsoft-board.admin.reports.search_placeholder" value="{{_local.searchQuery || ''}}" class="input flex-1 min-w-[120px]">
                 <on type="change">
                   <set-state searchQuery="{{$event.target.value}}"/>
                 </on>
@@ -74,7 +74,7 @@
               </input>
             </div>
             <div data-ref="mobile_action_row" class="flex flex-row gap-2 items-center">
-              <column-selector data-ref="mobile_column_selector" id="admin_board_reports_columns" visibleColumns="{{_global.visibleColumns_reports}}" triggerLabel="$t:common.column_selector" requiredText="$t:common.required" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right" :iconOnly="true">
+              <column-selector data-type="composite" data-ref="mobile_column_selector" id="admin_board_reports_columns" visibleColumns="{{_global.visibleColumns_reports}}" triggerLabel="$t:common.column_selector" requiredText="$t:common.required" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right" labelClassName="sr-only">
                 <prop name="columns">
                   <item field="created_at" header="$t:sirsoft-board.admin.reports.columns.reported_at"/>
                   <item field="status" header="$t:sirsoft-board.admin.reports.columns.status"/>
@@ -122,7 +122,7 @@
               <set-state searchField="{{$event.target.value}}"/>
             </on>
           </select>
-          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-board.admin.reports.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-board.admin.reports.search_placeholder" value="{{_local.searchQuery || ''}}" class="input flex-1 min-w-[200px]">
             <on type="change">
               <set-state searchQuery="{{$event.target.value}}"/>
             </on>
@@ -130,7 +130,7 @@
               <action-ref name="searchBoardReports"/>
             </on>
           </input>
-          <column-selector data-ref="column_selector" id="admin_board_reports_columns" visibleColumns="{{_global.visibleColumns_reports}}" triggerLabel="$t:common.column_selector" requiredText="$t:common.required" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <column-selector data-type="composite" data-ref="column_selector" id="admin_board_reports_columns" visibleColumns="{{_global.visibleColumns_reports}}" triggerLabel="$t:common.column_selector" requiredText="$t:common.required" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
             <prop name="columns">
               <item field="created_at" header="$t:sirsoft-board.admin.reports.columns.reported_at"/>
               <item field="status" header="$t:sirsoft-board.admin.reports.columns.status"/>
@@ -371,12 +371,13 @@
       <div data-ref="bulk_actions_area" class="bulk-actions-bar">
         <responsive on="portable" class="bulk-actions-bar">
           <span data-ref="mobile_selected_count" class="text-body font-medium">$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}</span>
-          <dropdown data-ref="mobile_bulk_action_dropdown" label="$t:sirsoft-board.admin.reports.bulk_action_select" position="bottom-right" class="ml-auto">
+          <!-- 좁은 화면 일괄 처리 메뉴 — 항목은 데스크톱 일괄 버튼 4개와 같은 조건으로 잠근다: 관리 권한이 없거나 고른 신고가 없으면 누를 수 없다(선택 없이 누르면 서버가 ids 필수로 거절한다) -->
+          <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:sirsoft-board.admin.reports.bulk_action_select" position="bottom-right" class="ml-auto">
             <prop name="items">
-              <item value="review" label="$t:sirsoft-board.admin.reports.actions.review"/>
-              <item value="rejected" label="$t:sirsoft-board.admin.reports.actions.reject"/>
-              <item value="suspended" label="$t:sirsoft-board.admin.reports.actions.suspend"/>
-              <item value="deleted" label="$t:sirsoft-board.admin.reports.actions.delete"/>
+              <item value="review" label="$t:sirsoft-board.admin.reports.actions.review" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"/>
+              <item value="rejected" label="$t:sirsoft-board.admin.reports.actions.reject" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"/>
+              <item value="suspended" label="$t:sirsoft-board.admin.reports.actions.suspend" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"/>
+              <item value="deleted" label="$t:sirsoft-board.admin.reports.actions.delete" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"/>
             </prop>
             <on event="onItemClick">
               <!-- 좁은 화면 판 일괄 처리 — 네 갈래(검토·기각·정지·삭제)가 같은 형태다: 고른 갈래를 표시해 두고, 선택한 건들이 실제로 그 상태로 갈 수 있는지 먼저 세어 본 뒤(`status-counts`) 결과에 따라 확인 모달을 열거나 「전부 바꿀 수 없다」 경고를 띄운다 -->
@@ -522,7 +523,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="reports_data_grid" :data-blur-until-loaded="true" data="{{reports?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reports?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reports?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reports?.data?.pagination?.has_more_pages ?? false}}" :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_reports}}" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" actionsColumnHeader="$t:common.actions" requiredText="$t:common.required" selectedCountText="">
+      <data-grid data-type="composite" data-ref="reports_data_grid" :data-blur-until-loaded="true" data="{{reports?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reports?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reports?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reports?.data?.pagination?.has_more_pages ?? false}}" :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_reports}}" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" actionsColumnHeader="$t:common.actions" requiredText="$t:common.required" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.reports.columns.reported_at" :sortable="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -567,7 +568,7 @@
             <div class="flex flex-col">
               <div class="flex-center gap-2">
                 <span class="text-heading">{{row.author?.name ?? ''}}</span>
-                <badge data-if="{{row.author?.is_guest}}" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
+                <badge data-type="composite" data-if="{{row.author?.is_guest}}" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
               </div>
               <span data-if="{{row.author?.email}}" class="text-tertiary">({{row.author?.email}})</span>
             </div>
@@ -638,7 +639,7 @@
   </slot>
   <modal>
     <!-- 일괄 상태 변경 확인 — 이 모달의 본문은 대부분 「미리 세어 본 결과」다. 실제로 바뀔 건수 · 이미 같은 상태인 건 · 원본이 지워져 손댈 수 없는 건 · (기각일 때) 다시 공개될 글 수를 각각 다른 등급으로 보여주고, 그 뒤에야 확인을 받는다 -->
-    <modal data-ref="status_change_modal" title="{{_global.bulkActionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.bulkActionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.bulkActionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="sm">
+    <modal data-type="composite" data-ref="status_change_modal" title="{{_global.bulkActionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.bulkActionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.bulkActionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.reports.modals.status_change_editor_label"/>
       <div class="py-2">
         <p data-if="{{!_global.statusCountsLoading &amp;&amp; _global.statusCountsData?.unchangeable_count > 0}}" class="text-body mb-2">$t:sirsoft-board.admin.reports.modals.changeable_warning_with_deleted|count={{_global.statusCountsData?.changeable_count ?? 0}}|status={{_global.statusCountsData?.target_status_label ?? ''}}</p>
@@ -717,7 +718,7 @@
   </modal>
   <modal>
     <!-- 일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
-    <modal data-ref="error_modal" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>
@@ -733,7 +734,7 @@
   </modal>
   <modal>
     <!-- 고른 건이 전부 이미 삭제된 상태일 때 — 확인을 받아 봐야 바뀔 것이 없으므로 알림 한 줄로 끝낸다 -->
-    <modal data-ref="all_deleted_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_deleted_warning_title" size="sm">
+    <modal data-type="composite" data-ref="all_deleted_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_deleted_warning_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.reports.modals.all_deleted_warning_message</p>
       </div>
@@ -749,7 +750,7 @@
   </modal>
   <modal>
     <!-- 고른 건이 하나도 그 상태로 갈 수 없을 때 — 앞의 「전부 삭제됨」과 달리 사유가 여럿이다(이미 같은 상태 · 원본 소실 등). 미리 세어 본 결과가 이 창과 확인 모달을 가른다 -->
-    <modal data-ref="all_unchangeable_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_title" size="sm">
+    <modal data-type="composite" data-ref="all_unchangeable_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_message</p>
       </div>

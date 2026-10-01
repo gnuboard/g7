@@ -129,7 +129,7 @@
       </div>
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
-      <tab-navigation data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'types'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'types'}}" variant="underline">
         <prop name="tabs">
           <item id="types" label="$t:admin.analytics.referrers.tabs.types"/>
           <item id="sites" label="$t:admin.analytics.referrers.tabs.sites"/>
@@ -157,7 +157,7 @@
       <div data-ref="referrer_type_chart_card" data-if="{{(query.tab || 'types') === 'types' &amp;&amp; (analytics_report?.data?.data ?? []).length > 0}}" class="admin-card mb-4">
         <h2 class="section-heading mb-3">$t:admin.analytics.referrers.type_share_title</h2>
         <div class="flex justify-center">
-          <donut-chart data-ref="referrer_type_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981', '#EF4444', '#6366F1'][i % 6] }))}}" :size="220" :showLegend="true"/>
+          <donut-chart data-type="composite" data-ref="referrer_type_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981', '#EF4444', '#6366F1'][i % 6] }))}}" :size="220" :showLegend="true"/>
         </div>
       </div>
       <div data-ref="report_grid_wrap" data-if="{{!((query.tab || 'types') === 'sites' &amp;&amp; !!query.host)}}">
@@ -188,7 +188,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_referrer_urls"/>
-          <data-grid data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
             <on type="action" event="onPageChange">
               <!-- 유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다. -->
               <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
@@ -213,7 +213,7 @@
             </column>
           </data-grid>
         </div>
-        <empty-state data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
+        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
       </div>
       <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
       <extension-point name="analytics_referrers_widgets" class="space-y-4 mt-4">

@@ -18,6 +18,7 @@ use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
+use App\Models\Template;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
 use Illuminate\Http\UploadedFile;
@@ -444,7 +445,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.installation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.installation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -466,6 +467,12 @@ class TemplateService
         ?array &$preservedBackups = null,
     ): ?array {
         $preservedBackups = [];
+
+        // 유형의 마지막 활성 템플릿은 지울 수 없다 — 화면은 활성 템플릿의 삭제를 잠근다
+        $record = $this->templateRepository->findByIdentifier($identifier);
+        if ($record) {
+            $this->assertNotLastActiveOfType($record, 'templates.errors.last_active_uninstall');
+        }
 
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
@@ -528,6 +535,10 @@ class TemplateService
             ]);
         }
 
+        // 유형의 마지막 활성 템플릿은 끌 수 없다 — 화면은 활성 템플릿의 스위치를 잠그고,
+        // 전환은 같은 유형의 다른 템플릿을 활성화하는 것으로만 한다
+        $this->assertNotLastActiveOfType($template, 'templates.errors.last_active_deactivate');
+
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
@@ -552,9 +563,44 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.deactivation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.deactivation_failed', ['error' => $e->getMessage()])],
             ]);
         }
+    }
+
+    /**
+     * 템플릿이 유형(관리자·사용자)의 마지막 활성 템플릿이면 비활성화·삭제를 거절합니다.
+     *
+     * 유형마다 활성 템플릿은 하나이고, 그것이 없으면 그 화면(관리자 또는 사이트)이 통째로 그려지지
+     * 않는다. 관리자 템플릿 목록은 그래서 활성 템플릿의 스위치·삭제를 잠그고 다른 템플릿을 활성화하는
+     * 것으로만 바꾸게 한다 — API 도 같은 조건으로 받아야 화면과 서버의 판정이 어긋나지 않는다.
+     * 비활성 템플릿이나, 같은 유형에 다른 활성 템플릿이 남는 경우는 통과한다.
+     *
+     * 관리자 API 경로에만 적용한다. 코어 비호환 자동 비활성화(`CoreServiceProvider`)와 Artisan
+     * 커맨드는 매니저를 직접 호출하므로 이 가드를 거치지 않는다.
+     *
+     * @param  Template  $template  대상 템플릿 레코드
+     * @param  string  $messageKey  거절 메시지 번역 키 (`:type` 치환)
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException 유형의 마지막 활성 템플릿일 때
+     */
+    private function assertNotLastActiveOfType(Template $template, string $messageKey): void
+    {
+        if ($template->status !== ExtensionStatus::Active->value) {
+            return;
+        }
+
+        $othersActive = $this->templateRepository->getActiveByType($template->type)
+            ->contains(fn (Template $active) => $active->identifier !== $template->identifier);
+
+        if ($othersActive) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'template_name' => [__($messageKey, ['type' => __('templates.types.'.$template->type)])],
+        ]);
     }
 
     /**
@@ -607,7 +653,7 @@ class TemplateService
             ];
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.activation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.activation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -1253,14 +1299,16 @@ class TemplateService
      * (`{kind, identifier}`)를 태깅하지만, 편집기 요구사항에 맞춰 두 가지가 다르다:
      *  - 활성/비활성 무관: 설치돼 있으나 비활성인 템플릿도 편집 가능해야 하므로
      *  활성 상태 가드를 적용하지 않는다.
-     *  - `_bundled` 폴백: 활성 디렉토리에 routes.json 이 없으면 `_bundled` 원본을 읽는다.
+     *  - 설치본 전용: routes.json 은 설치본(`templates/{id}/routes.json`)만 읽는다. 설치본에
+     *  없으면 배포 원본(`_bundled`)을 대신 읽지 않고 `routes_not_found` 를 돌려준다 —
+     *  편집기가 실제로 돌아가는 설치본과 다른 라우트 목록을 보여주지 않게 한다.
      *
      * source 태깅이 없으면 편집기 `buildRouteTree`(useRouteTree)가 `route.source.kind`
      * 접근에서 throw 하여 라우트 트리 전체가 network 에러로 무너진다 — 본 메서드가
      * 편집기 진입 routes 응답의 SSoT 다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{success: bool, data: array|null, error: string|null}
+     * @return array{success: bool, data: array|null, error: string|null} 성공 시 병합 라우트 데이터, 실패 시 오류 코드(`routes_not_found`·`invalid_json`)
      */
     public function getEditorRoutesDataWithModules(string $identifier): array
     {
@@ -1269,19 +1317,9 @@ class TemplateService
         // 모듈 디렉토리가 복구된 뒤의 병합까지 열화로 보고된다.
         $this->routeMergeDegraded = false;
 
-        // 1. routes.json 경로 — 활성 디렉토리 우선, _bundled 폴백 (활성/비활성 무관).
-        $candidates = [
-            base_path("templates/{$identifier}/routes.json"),
-            base_path("templates/_bundled/{$identifier}/routes.json"),
-        ];
-        $routesFilePath = null;
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                $routesFilePath = $candidate;
-                break;
-            }
-        }
-        if ($routesFilePath === null) {
+        // 1. routes.json 경로 — 설치본만 본다(활성/비활성 무관, 배포 원본 폴백 없음).
+        $routesFilePath = base_path("templates/{$identifier}/routes.json");
+        if (! file_exists($routesFilePath)) {
             return ['success' => false, 'data' => null, 'error' => 'routes_not_found'];
         }
 
@@ -1360,7 +1398,7 @@ class TemplateService
      *
      * 다음 세 출처의 `layouts/` 를 재귀 순회해 수집한다(계획서 8.4.5 — "대상 템플릿의
      * 모든 레이아웃의 modals 섹션을 스캔"):
-     *  - 템플릿: `templates/{id}/layouts/` (활성 → `_bundled` 폴백). host_layout 접두사 없음.
+     *  - 템플릿: `templates/{id}/layouts/` (설치본만 — 배포 원본 폴백 없음). host_layout 접두사 없음.
      *  - 활성 모듈: `modules/{id}/resources/layouts/`. host_layout 에 `{moduleId}.` 접두사.
      *  - 활성 플러그인: `plugins/{id}/resources/layouts/`. host_layout 에 `{pluginId}.` 접두사.
      *
@@ -1382,7 +1420,8 @@ class TemplateService
      * 라벨은 base 는 `meta.editor_label`/`layout_name`, 모달은 `modal.meta.editor_label`/
      * `modal.title`/`modal.id` 우선순위로 해석한다(편집기 클라이언트 라벨 규칙과 동형).
      * 활성/비활성 무관(편집은 비활성 템플릿도 허용), 파일 부재/파싱 실패는
-     * 조용히 건너뛴다(라우트 그룹은 정상 표시).
+     * 조용히 건너뛴다(라우트 그룹은 정상 표시). 설치본에 `layouts/` 가 없으면 배포 원본을
+     * 대신 순회하지 않고 템플릿 몫을 비운다 — routes.json 부재는 상위에서 이미 404 로 안내된다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $templateType  템플릿 타입(`admin`/`user`) — 모듈/플러그인 레이아웃 타입 필터
@@ -1393,19 +1432,10 @@ class TemplateService
         $baseLayouts = [];
         $modals = [];
 
-        // 1. 템플릿 레이아웃 (활성 → _bundled 폴백). host_layout 접두사 없음.
+        // 1. 템플릿 레이아웃 (설치본만 — 배포 원본 폴백 없음). host_layout 접두사 없음.
         //    템플릿 레이아웃은 해당 템플릿 전용이므로 타입 필터 없이 전부 수집한다.
-        $templateDir = null;
-        foreach ([
-            base_path("templates/{$identifier}/layouts"),
-            base_path("templates/_bundled/{$identifier}/layouts"),
-        ] as $candidate) {
-            if (File::isDirectory($candidate)) {
-                $templateDir = $candidate;
-                break;
-            }
-        }
-        if ($templateDir !== null) {
+        $templateDir = base_path("templates/{$identifier}/layouts");
+        if (File::isDirectory($templateDir)) {
             $collected = $this->collectBaseAndModalsFromLayoutDir($templateDir, '');
             $baseLayouts = array_merge($baseLayouts, $collected['base_layouts']);
             $modals = array_merge($modals, $collected['modals']);
@@ -2223,7 +2253,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.refresh_layouts_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }

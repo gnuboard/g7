@@ -1,6 +1,6 @@
 <partial description="클레임 신청서 작성 - 교환상품 변경 모달 (D29)" editor_label="$t:user.modal_label.mypage_claims.change_product_modal">
   <!-- 교환 방식은 신청서 전체가 아니라 상품마다 정하는 속성이다(D29). 이 모달은 어느 상품인지(index)를 파라미터로 받아 그 항목만 갱신한다 — index 없이 열면 언제나 첫 상품이 바뀌고 오류 없이 조용히 잘못된 신청서가 저장된다. 상태는 페이지 로컬(_local)에 두어 적용 핸들러가 읽는 값과 화면이 그리는 값이 같은 저장소를 보게 한다. -->
-  <modal data-ref="modal_claim_change_product" title="$t:claim.change_product.title" size="md">
+  <modal data-type="composite" data-ref="modal_claim_change_product" title="$t:claim.change_product.title" size="md">
     <div class="p-4 space-y-4">
       <!-- 로딩 -->
       <div data-if="{{_local.changeProductLoading === true}}" class="py-8 text-center">

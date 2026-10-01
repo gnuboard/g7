@@ -411,10 +411,11 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다.",
+                                                                                    "comment": "회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다.",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/users/search",
+                                                                                    "if": "{{String($args[0] ?? '').trim() !== ''}}",
                                                                                     "auth_required": true,
                                                                                     "params": {
                                                                                         "method": "GET",

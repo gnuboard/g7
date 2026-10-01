@@ -121,7 +121,7 @@
             <div class="flex-between gap-3">
               <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.type</span>
               <div>
-                <badge color="{{analytics_visitor?.data?.visitor?.visitor_type === 'admin' ? 'red' : (analytics_visitor?.data?.visitor?.visitor_type === 'member' ? 'blue' : (analytics_visitor?.data?.visitor?.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (analytics_visitor?.data?.visitor?.visitor_type ?? 'guest'))}}" size="sm"/>
+                <badge data-type="composite" color="{{analytics_visitor?.data?.visitor?.visitor_type === 'admin' ? 'red' : (analytics_visitor?.data?.visitor?.visitor_type === 'member' ? 'blue' : (analytics_visitor?.data?.visitor?.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (analytics_visitor?.data?.visitor?.visitor_type ?? 'guest'))}}" size="sm"/>
               </div>
             </div>
             <div class="flex-between gap-3">
@@ -141,7 +141,7 @@
                  `mode_notice` 안내가 그 한계를 함께 말한다(계획서 §4.11). -->
             <div data-ref="card_returning_row" class="flex-between gap-3">
               <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.returning</span>
-              <badge color="{{analytics_visitor?.data?.visitor?.is_returning ? 'blue' : 'gray'}}" text="{{analytics_visitor?.data?.visitor?.is_returning ? $t('admin.analytics.visitor_detail.card.returning_yes') : $t('admin.analytics.visitor_detail.card.returning_no')}}" size="sm"/>
+              <badge data-type="composite" color="{{analytics_visitor?.data?.visitor?.is_returning ? 'blue' : 'gray'}}" text="{{analytics_visitor?.data?.visitor?.is_returning ? $t('admin.analytics.visitor_detail.card.returning_yes') : $t('admin.analytics.visitor_detail.card.returning_no')}}" size="sm"/>
             </div>
             <!-- 방문자 정보는 원장이 아는 부수정보를 모두 보인다 — 가장 최근 방문 기준(방문마다 다를 수 있는 값은
                  오른쪽 방문 이력을 펼치면 방문별로 보인다). #682 S4 라운드 8. -->
@@ -179,7 +179,7 @@
                    — 서버가 내려준 마스킹 옥텟 수를 배지로 함께 보인다(§4.10 「IP(마스킹 표시)」). -->
               <div class="flex-center gap-2">
                 <span class="text-body font-mono">{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}</span>
-                <badge data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
+                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
               </div>
             </div>
             <div class="flex-between gap-3">
@@ -194,7 +194,7 @@
         </div>
         <div data-ref="visits_column" class="lg:col-span-2 space-y-3">
           <h2 class="section-heading">$t:admin.analytics.visitor_detail.visits_title</h2>
-          <empty-state data-ref="visits_empty" data-if="{{!analytics_visitor?.loading &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
+          <empty-state data-type="composite" data-ref="visits_empty" data-if="{{!analytics_visitor?.loading &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
           <div data-ref="visit_item_{{$idx}}" data-each="visit, $idx in {{analytics_visitor?.data?.visits ?? []}}" class="admin-card">
             <button type="button" class="w-full flex-between gap-3 text-left">
               <on type="click">
@@ -206,12 +206,12 @@
               <div class="flex-center gap-3 flex-wrap">
                 <span class="text-heading">{{visit.first_action_at | datetime | default('-')}}</span>
                 <span class="text-label-subtle">· $t:defer:admin.analytics.visitor_detail.visit_summary|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}</span>
-                <badge data-if="{{!!visit.referrer_name}}" color="gray" text="{{visit.referrer_name}}" size="sm"/>
+                <badge data-type="composite" data-if="{{!!visit.referrer_name}}" color="gray" text="{{visit.referrer_name}}" size="sm"/>
                 <!-- 미룬 번역 토큰이 값의 **전부**이면 반복 서브트리에서 풀리지 않아 키가 그대로 보인다
                   (#682 S3 라운드 8 실측: 전환이 든 방문에서 `$t:defer:…conversions_badge|count=1` 노출).
                   바로 위 방문 요약(`· $t:defer:…`)처럼 앞에 고정 글자를 두면 값까지 채워 해소된다 —
                   그래서 라벨을 정적 `$t:` 로 앞세우고 토큰은 건수만 맡는다. -->
-                <badge data-if="{{(visit.conversions ?? []).length > 0}}" color="green" text="$t:admin.analytics.visitor_detail.conversions_badge_label $t:defer:admin.analytics.visitor_detail.conversions_badge|count={{((visit.conversions ?? []).length) | number}}" size="sm"/>
+                <badge data-type="composite" data-if="{{(visit.conversions ?? []).length > 0}}" color="green" text="$t:admin.analytics.visitor_detail.conversions_badge_label $t:defer:admin.analytics.visitor_detail.conversions_badge|count={{((visit.conversions ?? []).length) | number}}" size="sm"/>
               </div>
               <icon name="{{(_local.openVisits ?? {})[visit.visit_id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm" class="text-gray-400 dark:text-gray-500"/>
             </button>
@@ -244,7 +244,7 @@
               </div>
               <div data-each="action, $aidx in {{visit.actions ?? []}}" class="flex items-start gap-3 text-sm">
                 <span class="text-hint font-mono whitespace-nowrap w-20">{{action.occurred_at | datetime('HH:mm:ss') | default('-')}}</span>
-                <badge color="{{action.action_type === 'pageview' ? 'blue' : (action.action_type === 'download' ? 'indigo' : (action.action_type === 'outlink' ? 'cyan' : (action.action_type === 'site_search' ? 'yellow' : (action.action_type === 'goal' ? 'green' : 'gray'))))}}" text="{{$t('admin.analytics.visitor_detail.timeline.' + (action.action_type ?? 'event'))}}" size="sm"/>
+                <badge data-type="composite" color="{{action.action_type === 'pageview' ? 'blue' : (action.action_type === 'download' ? 'indigo' : (action.action_type === 'outlink' ? 'cyan' : (action.action_type === 'site_search' ? 'yellow' : (action.action_type === 'goal' ? 'green' : 'gray'))))}}" text="{{$t('admin.analytics.visitor_detail.timeline.' + (action.action_type ?? 'event'))}}" size="sm"/>
                 <span class="text-body break-all flex-1" title="{{action.name ?? ''}}">{{action.name_display ?? action.name ?? '-'}}</span>
                 <!-- 검색 액션만 결과 건수를 덧붙인다(§4.11 「검색 "그누보드" 결과 12건」). 0 건도 보여야
                      한다 — 빈손으로 돌아간 검색이 이 화면에서 가려낼 값이다. 검색이 아닌 액션은 응답에
@@ -256,7 +256,7 @@
                 <p class="text-label-subtle mb-1">$t:admin.analytics.visitor_detail.conversions_title</p>
                 <div data-each="conv, $cidx in {{visit.conversions ?? []}}" class="flex items-start gap-3 text-sm">
                   <span class="text-hint font-mono whitespace-nowrap w-20">{{conv.occurred_at | datetime('HH:mm:ss') | default('-')}}</span>
-                  <badge color="green" text="$t:admin.analytics.visitor_detail.timeline.goal" size="sm"/>
+                  <badge data-type="composite" color="green" text="$t:admin.analytics.visitor_detail.timeline.goal" size="sm"/>
                   <!-- 목표 이름은 서버가 등록부에서 푼 `goal_label`(전환 탭과 같은 이름). `label` 은 목표
                        이름이 아니라 전환 속성(주문번호 등)이라 옆에 덧붙인다. -->
                   <span class="text-body flex-1 min-w-0 break-all">{{conv.goal_label ?? conv.goal_key ?? '-'}}</span>

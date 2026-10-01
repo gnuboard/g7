@@ -5,7 +5,7 @@
       <h3>$t:sirsoft-board.admin.settings.seo.meta_settings.title</h3>
       <p>$t:sirsoft-board.admin.settings.seo.meta_settings.description</p>
     </div>
-    <section-layout data-ref="boards_page_card" class="admin-card">
+    <section-layout data-type="layout" data-ref="boards_page_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.boards_page.title</h3>
       <div class="row-stack">
         <div data-ref="field_boards_title" class="form-group">
@@ -22,7 +22,7 @@
         </div>
       </div>
     </section-layout>
-    <section-layout data-ref="board_page_card" class="admin-card">
+    <section-layout data-type="layout" data-ref="board_page_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.board_page.title</h3>
       <div class="row-stack">
         <div data-ref="field_board_title" class="form-group">
@@ -39,7 +39,7 @@
         </div>
       </div>
     </section-layout>
-    <section-layout data-ref="post_page_card" class="admin-card">
+    <section-layout data-type="layout" data-ref="post_page_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.post_page.title</h3>
       <div class="row-stack">
         <div data-ref="field_post_title" class="form-group">
@@ -115,7 +115,7 @@
                   </api-call>
                 </sequence>
               </on>
-              <icon data-if="{{_local.clearingCache ?? false}}" name="circle-notch" class="fa-spin mr-2"/>
+              <icon data-if="{{_local.clearingCache ?? false}}" name="circle-notch" :spin="true" class="mr-2"/>
               <span>$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache</span>
             </button>
           </div>

@@ -75,7 +75,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // 소실된다 — 착수 시 소스를 고치도록 전환해야 하는 자리"* 였고, 그 전환을 S18.5 가
         // 이행했다: 모집단을 `LayoutCorpus`(번들 트리)로 옮기고 소스 선택을
         // `mergeLayoutSourcesByPriority()` 에 위임해, 이긴 소스가 소스면 `<permissions>` 를
-        // 고친다({@see \App\Support\LayoutMarkup\MarkupPermissionsEditor}).
+        // 고쳤다. 그 뒤 2026-09-28 에 커맨드 자체가 삭제됐다 — 권한은 각 레이아웃 소스에 이미 들어 있고,
+        // 코어가 확장 레이아웃→권한 표를 들고 있는 것이 코어·확장 책임 경계 위반이었다.
         'app/Console/Commands/PlaywrightSeedLayout.php' => 'Playwright E2E 전용 시드 화면 '
             .'(`e2e_sandbox`)을 활성 템플릿에 깔고 지우는 커맨드. 원본은 `tests/Playwright/fixtures/'
             .'seed-layouts/*.json` 이고 **소스 짝이 없으며, 소스 코퍼스 스캔 대상도 아니다** '
@@ -443,7 +444,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // `TemplateManager::validateErrorLayouts()` 가 에러 레이아웃을 `.json` 전용으로 찾는데,
         // 같은 파일 다른 메서드의 `loadFragmentDefinitions(` 하나가 파일 전체를 검사 밖으로
         // 밀어냈다. 30차 ❌3 과 같은 파일·같은 형태의 재발이다.
-        // 레이아웃 경로를 **아는가**는 클래스 맥락이다 — 실물 두 자리(`AddLayoutPermissionsCommand`·
+        // 레이아웃 경로를 **아는가**는 클래스 맥락이다 — 당시 실물 두 자리(삭제된 `AddLayoutPermissionsCommand`·
         // `TemplateService`)가 경로 조립과 `.json` 선별을 서로 다른 메서드에 두고 있으므로, 두
         // 신호를 같은 메서드에서 요구하면 이미 등재된 부채를 놓친다. 반면 **`.json` 을 고르는
         // 행위**와 **규약 위임**은 같은 자리에서 일어나므로 메서드 단위로 본다. 알리바이는 이
@@ -580,7 +581,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         }
 
         // 조각 **참조를 소비**하는가. 경로에서 `partials/` 디렉토리를 걸러내기만 하는 코드
-        // (`AddLayoutPermissionsCommand`)와 참조를 파일로 해석하는 코드를 갈라내는 지점이다 —
+        // (당시의 `AddLayoutPermissionsCommand`)와 참조를 파일로 해석하는 코드를 갈라내는 지점이다 —
         // 후자만 규약을 필요로 한다.
         if (preg_match('/\$partialPath|\[[\'"]partial[\'"]\]/', $unit) !== 1) {
             return false;

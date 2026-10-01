@@ -9,7 +9,7 @@
   택배사와 송장이 둘 다 있어야** 열린다 — 송장 없이 '배송중' 으로 넘겨 고객에게 추적 불가한 상태가
   나가는 것을 막는다. -->
 <partial description="Order Detail - Batch Change Confirm Modal">
-  <modal data-ref="modal_batch_change_confirm" title="$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title" width="750px">
+  <modal data-type="composite" data-ref="modal_batch_change_confirm" title="$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title" width="750px">
     <div>
       <div>
         <p class="text-label">$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.confirm_message|count={{($parent._local.bulkConfirmItems || []).length}}</p>

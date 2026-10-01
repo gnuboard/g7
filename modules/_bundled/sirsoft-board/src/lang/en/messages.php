@@ -436,6 +436,13 @@ return [
     ],
     'inquiry' => [
         'default_title' => 'Product Inquiry',
+        // 이커머스 문의 연동 훅(sirsoft-ecommerce.inquiry.*)에 답할 때 게시판이 던지는 실패 사유
+        'board_changed' => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
+        'update_failed' => 'Failed to update inquiry.',
+        'delete_failed' => 'Failed to delete inquiry.',
+        'reply_not_found' => 'Reply not found.',
+        'reply_update_failed' => 'Failed to update reply.',
+        'reply_delete_failed' => 'Failed to delete reply.',
     ],
     // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
     'privacy_retention' => [

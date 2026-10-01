@@ -1290,7 +1290,7 @@
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
-                                                                                "handler": "copyToClipboard",
+                                                                                "handler": "sirsoft-message_bizppurio.copyToClipboard",
                                                                                 "params": {
                                                                                     "text": "{{report_url?.data?.url ?? '/api/plugins/sirsoft-message_bizppurio/webhook'}}"
                                                                                 }
@@ -4367,7 +4367,7 @@
                             "if": "{{!(_global.bz_tpl_modal?.id)}}",
                             "actions": [
                                 {
-                                    "comment": "임시 저장(신규) — DB 에 초안 행만 만든다. 검수 신청은 하지 않는다.",
+                                    "comment": "임시 저장(신규) — DB 에 초안 행만 만든다. 검수 신청은 하지 않는다. draft 표시를 실어 쓰다 만 내용(본문·카테고리·유형별 필수값 미입력)도 남기고, 필수값은 검수 신청 때 서버가 확인한다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
@@ -4388,6 +4388,7 @@
                                                 "method": "POST",
                                                 "body": {
                                                     "alimtalk_enabled": true,
+                                                    "draft": true,
                                                     "content": "{{_global.bz_tpl_modal?.content}}",
                                                     "notification_type": "{{_global.bz_tpl_modal?.notification_type}}"
                                                 }
@@ -4443,7 +4444,7 @@
                             "if": "{{_global.bz_tpl_modal?.id}}",
                             "actions": [
                                 {
-                                    "comment": "임시 저장(기존) — 초안 내용만 갱신한다. 검수 신청은 하지 않는다.",
+                                    "comment": "임시 저장(기존) — 초안 내용만 갱신한다. 검수 신청은 하지 않는다. 신규와 같이 draft 표시를 실어 미완성 내용도 받는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
@@ -4464,6 +4465,7 @@
                                                 "method": "PUT",
                                                 "body": {
                                                     "alimtalk_enabled": true,
+                                                    "draft": true,
                                                     "content": "{{_global.bz_tpl_modal?.content}}"
                                                 }
                                             },
@@ -4703,7 +4705,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-message_bizppurio.template.form.editor_label"
+            }
         },
         {
             "comment": "대체 SMS/SMS 단독 본문 편집 모달(#597 §4.1). 값은 _global.bz_sms_modal, 저장은 delivery upsert(행 없으면 draft 생성). #{var} 치환 규칙은 알림톡 본문과 동일.",
@@ -4948,7 +4953,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-message_bizppurio.template.sms.editor_label"
+            }
         },
         {
             "comment": "승인 취소 경고 확인 모달(#597 §3.2). 확정 시 kapi cancel_approval → draft 복귀 — status 가 approved 를 벗어나는 즉시 발송 게이트가 차단된다(대체 SMS 는 sms 채널 규칙으로 계속). 취소 후 상세를 받아 작성 모달을 이어서 연다.",
@@ -5163,7 +5171,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-message_bizppurio.template.rejection.editor_label"
+            }
         },
         {
             "comment": "템플릿 삭제 확인 모달(#597 §3.2 DELETE). 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다.",

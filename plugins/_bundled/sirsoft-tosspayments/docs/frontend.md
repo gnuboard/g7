@@ -25,15 +25,16 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 1개 (정의: `resources/js/handlers/index.ts`).
+핸들러 2개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `requestPayment` | `sirsoft-tosspayments.requestPayment` |
+| `copyToClipboard` | `sirsoft-tosspayments.copyToClipboard` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-핸들러가 이것 하나뿐인 이유는 이 플러그인이 통합결제창 SDK 호출 이후를 전부 브라우저
+결제 핸들러가 `requestPayment` 하나뿐인 이유는 이 플러그인이 통합결제창 SDK 호출 이후를 전부 브라우저
 리다이렉트에 위임하기 때문입니다(§AGENTS.md "1. 이 확장은 무엇인가") — 다른 PG처럼 결제
 수단 선택 UI를 DOM으로 직접 조작할 필요가 없습니다. `order_sheet_mode`에 따라 통합결제창
 하나(카드 한 장)를 열지, 사용자가 고른 개별 토스 결제수단(`params.paymentMethodId`)을
@@ -47,6 +48,9 @@
 발급합니다. 헤더가 빠지면 서버가 404 로 거부하는데, 여기서는 `console.warn` 만 남기고
 취소 안내 모달이 평소대로 뜨기 때문에 이력이 유실된 사실이 화면에 드러나지 않습니다.
 `G7Core.api` 는 레이아웃의 `globalHeaders` 를 타지 않으므로 헤더는 호출부가 직접 붙입니다.
+
+`copyToClipboard` 는 플러그인 설정의 입금통보 웹훅 주소를 복사합니다(토스 상점관리자에 그대로 붙여 넣는 값). 주소는 `webhook_info` 데이터소스(`/api/plugins/sirsoft-tosspayments/admin/webhook-url`)가 내려주는 사이트 주소 포함 전체 URL 이며, 화면 표시와 복사가 같은 값(`_local.webhookInfo.url`)을 씁니다. 응답 전에는 경로로 폴백합니다.
+설정 화면이 어느 관리자 템플릿으로 그려지든 같게 동작해야 하므로 특정 템플릿의 핸들러에 기대지 않고 플러그인이 직접 둡니다(코어에는 클립보드 핸들러가 없습니다). `navigator.clipboard` 가 막힌 비보안(HTTP) 접속에서는 숨긴 입력칸 복사로 내려갑니다.
 <!-- @intent END -->
 
 ## 전역 진입점
@@ -91,4 +95,20 @@
 
 관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
 `data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+
+## 결제창 닫힘 보고의 소유자 증명
+
+<!-- @intent START -->
+결제창 닫힘 보고(`POST /api/plugins/sirsoft-tosspayments/payment/close-report`)는 결제대기 주문을
+실패·취소로 바꾸므로 서버가 **주문 소유자만** 받아 준다(KVE-2026-2434). 주문자 이메일·전화번호는
+제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
+
+- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
+- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+
+헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
+상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
+토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
+결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+<!-- @intent END -->

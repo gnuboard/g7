@@ -508,17 +508,22 @@ class CartController extends PublicBaseController
     /**
      * 장바구니 단건 조작 예외를 사유별 4xx 응답으로 변환합니다.
      *
-     * 항목없음/권한없음/옵션없음/타상품옵션 조작 예외를 generic 500 이 아닌
+     * 항목없음/권한없음/옵션없음/타상품옵션/구매가능옵션없음 조작 예외를 generic 500 이 아닌
      * 사유별 404/403/422 로 매핑합니다. (MP07 §1-c — U9 전면 정비)
+     *
+     * 예외의 메시지 키는 이미 `sirsoft-ecommerce::` 네임스페이스를 포함하므로 모듈 도메인을
+     * 한 번 더 붙이는 moduleError 가 아니라 error 로 넘긴다. 도메인을 겹쳐 붙이면 번역을 찾지
+     * 못해 화면 안내에 키 원문이 그대로 나간다.
      *
      * @param  CartOperationException  $e  장바구니 조작 예외
      * @return JsonResponse 사유별 4xx 에러 응답
      */
     protected function cartOperationResponse(CartOperationException $e): JsonResponse
     {
-        return ResponseHelper::moduleError(
-            'sirsoft-ecommerce',
-            $e->getMessageKey(),
+        $messageKey = $e->getMessageKey();
+
+        return ResponseHelper::error(
+            $messageKey,
             $e->getStatusCode(),
             ['code' => $e->getReason()]
         );

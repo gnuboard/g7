@@ -41,6 +41,12 @@ export interface PreblockerConfig {
 }
 
 const BLOCKED_SRC_ATTR = 'data-gdpr-blocked-src';
+
+/**
+ * 코어 계약 속성 — 스크립트 로드가 미뤄졌음을 코어 로더(`loadScript`)에 알린다.
+ * 이 플러그인의 복원용 속성(`BLOCKED_SRC_ATTR`)과 별개로 함께 붙인다.
+ */
+const CORE_SCRIPT_DEFERRED_ATTR = 'data-g7-script-deferred';
 const BLOCKED_CATEGORY_ATTR = 'data-gdpr-blocked-category';
 const CATEGORY_ATTR = 'data-gdpr-category';
 
@@ -120,6 +126,7 @@ export function installPreblocker(initialConfig: PreblockerConfig): void {
             const category = decideBlock(this, value);
             if (category !== null) {
                 this.setAttribute(BLOCKED_SRC_ATTR, value);
+                this.setAttribute(CORE_SCRIPT_DEFERRED_ATTR, '');
                 this.setAttribute(BLOCKED_CATEGORY_ATTR, category);
                 return;
             }
@@ -178,6 +185,7 @@ export function restorePreblockedCategory(category: string): void {
             if (
                 attr.name === BLOCKED_SRC_ATTR ||
                 attr.name === BLOCKED_CATEGORY_ATTR ||
+                attr.name === CORE_SCRIPT_DEFERRED_ATTR ||
                 attr.name === 'src'
             ) {
                 continue;

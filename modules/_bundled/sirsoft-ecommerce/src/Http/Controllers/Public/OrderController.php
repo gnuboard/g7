@@ -100,12 +100,14 @@ class OrderController extends PublicBaseController
                 }
 
                 // 비회원: 민감 필드 노출을 피하기 위해 GuestOrderResource 로 응답
-                return $this->buildOrderResponseData(
+                $responseData = $this->buildOrderResponseData(
                     $order,
                     $requiresPg,
                     $pgProvider,
                     new GuestOrderResource($order)
                 );
+
+                return array_merge($responseData, $this->issueGuestOrderToken($order));
             },
             afterCreate: function (Order $order, bool $requiresPg) use ($request, $userId): void {
                 // 회원만 배송지 자동 저장 후처리 수행 (비회원은 user_addresses 매칭 대상 아님)
@@ -115,6 +117,36 @@ class OrderController extends PublicBaseController
             },
             logEndpoint: 'user.orders.store'
         );
+    }
+
+    /**
+     * 방금 생성한 비회원 주문의 조회 토큰을 응답 필드로 발급합니다.
+     *
+     * 결제창 닫힘 보고(PG 플러그인 close-report)는 이 토큰으로 주문 소유자를 확인한다.
+     * 주문자 연락처는 제3자도 알 수 있어 소유 증명이 되지 못하므로, 주문을 실제로 만든
+     * 브라우저만 받는 이 응답에서 발급한다. 발급 실패가 주문 생성 실패로 번지지 않도록
+     * 예외는 기록만 하고 빈 배열을 돌려준다 — 그 경우 닫힘 보고는 거부되고 만료 정리 잡이 주문을 정리한다.
+     *
+     * @param  Order  $order  방금 생성된 비회원 주문
+     * @return array{guest_order_token?: string, guest_order_token_expires_at?: string} 응답에 병합할 토큰 필드
+     */
+    protected function issueGuestOrderToken(Order $order): array
+    {
+        try {
+            $issued = $this->guestOrderAuthService->issueForOrder($order);
+
+            return [
+                'guest_order_token' => $issued['token'],
+                'guest_order_token_expires_at' => $issued['expires_at'],
+            ];
+        } catch (Exception $e) {
+            Log::warning('Guest order token issue failed on order creation', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**

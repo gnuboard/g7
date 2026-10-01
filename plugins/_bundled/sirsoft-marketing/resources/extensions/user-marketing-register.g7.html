@@ -132,7 +132,7 @@
   <data-source id="marketing_settings" label_key="$t:sirsoft-marketing.editor.data_source.marketing_settings" type="api" endpoint="/api/plugins/sirsoft-marketing/settings" method="GET" :auto_fetch="true" :auth_required="false"/>
   <modal>
     <!-- 약관 본문 창 — 어떤 약관을 띄울지는 전역에 심어 둔 값으로 가른다 -->
-    <modal data-ref="marketing_terms_modal">
+    <modal data-type="composite" data-ref="marketing_terms_modal">
       <switch-value prop="title" on="{{_global.marketingTermsModalType}}">
         <case when="marketing_consent">$t:sirsoft-marketing.terms_modal_marketing_consent</case>
         <case when="email_subscription">$t:sirsoft-marketing.terms_modal_email_subscription</case>
@@ -148,7 +148,7 @@
           <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>
         </div>
         <div data-if="{{_global.marketingTermsPageData}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
-          <html-content content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+          <html-content data-type="composite" content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
         </div>
         <div data-if="{{!_global.marketingTermsLoading &amp;&amp; !_global.marketingTermsPageData}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.no_terms_content</div>
         <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">

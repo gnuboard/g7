@@ -90,7 +90,7 @@
             $t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change
           </button>
         </div>
-        <data-grid data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
+        <data-grid data-type="composite" data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
           <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
             <cell>
               <div class="flex items-start gap-3">
@@ -126,8 +126,8 @@
               <div class="flex flex-col items-end gap-1 whitespace-nowrap">
                 <span class="text-sm text-gray-900 dark:text-gray-100">{{row.quantity}} 개</span>
                 <!-- 재고 적용 여부 배지 -->
-                <badge data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
-                <badge data-if="{{!row.is_stock_deducted}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.not_deducted</badge>
+                <badge data-type="composite" data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
+                <badge data-type="composite" data-if="{{!row.is_stock_deducted}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.not_deducted</badge>
               </div>
             </cell>
           </column>
@@ -176,17 +176,17 @@
               <div class="flex flex-col items-end gap-1 whitespace-nowrap">
                 <span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{{row.subtotal_earned_points_amount | number}}P</span>
                 <!-- 실제 적립 여부 배지 (적립예정액이 있을 때만 노출) -->
-                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
-                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned &amp;&amp; !row.is_points_earn_cancelled}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned &amp;&amp; !row.is_points_earn_cancelled}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
                 <!-- S1-D19: 취소된 옵션은 다시 적립 대상이 되지 않는다 — 「적립예정」이 아니라 「적립 없음」 -->
-                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earn_cancelled}}" size="sm" color="red">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.cancelled</badge>
+                <badge data-type="composite" data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earn_cancelled}}" size="sm" color="red">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.cancelled</badge>
               </div>
             </cell>
           </column>
           <column field="status" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.status" width="100px" :sortable="false">
             <cell>
               <div class="whitespace-nowrap">
-                <badge variant="{{row.option_status_variant}}" icon="{{row.option_status_icon ?? ''}}">{{row.option_status_label}}</badge>
+                <badge data-type="composite" variant="{{row.option_status_variant}}" icon="{{row.option_status_icon ?? ''}}">{{row.option_status_label}}</badge>
               </div>
             </cell>
           </column>
@@ -284,7 +284,7 @@
           <div class="grid-2col-responsive">
             <div>
               <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.name</span>
-              <action-menu data-if="{{!!order.data?.user_id}}" position="left">
+              <action-menu data-type="composite" data-if="{{!!order.data?.user_id}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
                   <item id="search_by_orderer" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.search_by_member" iconName="magnifying-glass"/>

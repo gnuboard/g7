@@ -47,7 +47,7 @@ KG 이니시스 PG(결제 게이트웨이)를 `sirsoft-ecommerce`에 연결하�
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_kginicis --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_kginicis --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_kginicis --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_kginicis --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_kginicis --force` |
@@ -136,7 +136,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 일본 결제 설정 미완료 시 한국 표준결제로 조용히 대체 | 설정 미완료면 결제 자체를 중단 | 통화·수수료·정산 구조가 다른 결제가 잘못된 흐름으로 승인될 수 있다 |
 | 라이브 키(사인키·INIAPI 키/IV·해시키)를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제창 서명을 위조할 수 있다 |
 | 서버 승인 실패 분기(PC `authorizePayment` · 모바일 `P_STATUS` · CBT `approveCbtPayment`)에서 `failPayment()` 호출 | 로그 + `resolveFailUrl()` 만. 주문 상태는 건드리지 않는다 | 세 콜백 모두 PG 서명도 IP 증명도 없는 비인증 브라우저 요청이고 주문번호(`MOID`/`P_OID`/`oid`)도 요청자가 고른 값이다. 승인 실패는 위조 `authToken`/`P_TID`/`sid` 만으로 만들어낼 수 있으므로, 그것을 근거로 실패 처리하면 타인의 결제대기 주문이 취소된다 |
-| 정당한 결제 실패 기록을 콜백에서 처리 | 소유권을 검증하는 `close-report`(`requestMatchesOrderBuyer`) 경유 | 구매자 이메일·전화 대조를 통과한 요청만 주문 상태를 바꿔야 한다 |
+| 정당한 결제 실패 기록을 콜백에서 처리 | 주문 소유자를 확인하는 `close-report`(`VerifiesOrderOwnership::requestOwnsOrder` — 회원 본인 로그인 / 비회원 `X-Guest-Order-Token`) 경유 | 브라우저 콜백은 서명 없는 입력이라 남의 주문번호로 만들 수 있다. 주문자 이메일·전화 대조도 소유 증명이 아니다 — 제3자가 연락처만 알면 남의 결제대기 주문을 취소할 수 있었다 (KVE-2026-2434) |
+| 승인 콜백에서 브라우저가 보낸 `MOID`·`TotPrice` 로 승인을 주문에 반영 | 승인 응답의 주문번호(`MOID`·`P_OID`)·승인 금액을 콜백 주문과 대조(`BindsApprovalToOrder`), 가상계좌 발급은 결제대기 주문에만 기록 | authToken·P_TID 는 주문번호를 묶지 않는다. 싼 주문의 승인에 비싼 주문번호를 붙여 과소결제로 결제완료되거나, 남의(결제완료) 주문 결제 레코드가 덮어써졌다 (KVE-2026-2434 전수조사) |
 | PG 대상 `netCancel` 을 로컬 주문 실패 처리와 같은 것으로 취급 | `sendNetCancel()` 은 PG 잔존 승인 해제이므로 유지, 로컬 주문 mutation 은 별개 판단 | 두 동작을 묶으면 PG 정합성을 지키려다 주문 취소 통로를 다시 연다 |
 | 결제창 컨텍스트를 `window` 전역에만 보관 | `markStandardPaymentCloseReportContext()` 가 sessionStorage 에도 남기고, 부팅 시 `reportStandardPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 전역이 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
 | 리턴 콜백 복귀 보고에 체크아웃 경로 검사를 강제 | `reportStandardPaymentWindowClosed($reason, requireCheckoutPage: false)` | 상점이 `redirect_fail_url` 을 바꿔 두면 경로 검사가 보고를 통째로 막는다. 닫힘 메시지 경로(체크아웃 화면 전용)와 리턴 복귀 경로는 판정 기준이 다르다 |
@@ -152,9 +153,9 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 45개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 22개 | `vitest.config.ts` |
+| Vitest | 26개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 17개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

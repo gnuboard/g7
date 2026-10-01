@@ -322,7 +322,7 @@
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.scrap.empty</p>
       </div>
       <!-- 페이지네이션 — 마이페이지 문의내역 탭과 동일하게 항상 노출 (1페이지뿐이어도 표시). 총 건수가 상한에 걸리면 last_page 가 null 로 온다 — 그때는 has_more_pages 로 다음 이동을 끝까지 열어 둔다 -->
-      <pagination currentPage="{{scrap.data.pagination.current_page ?? 1}}" totalPages="{{scrap.data.pagination.last_page ?? null}}" hasMorePages="{{scrap.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">
+      <pagination data-type="composite" currentPage="{{scrap.data.pagination.current_page ?? 1}}" totalPages="{{scrap.data.pagination.last_page ?? null}}" hasMorePages="{{scrap.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">
         <on event="onPageChange">
           <!-- 다음 쪽으로 넘어가면 화면에 없는 행이 선택된 채로 일괄 해제에 실린다 — 함께 비운다 -->
           <set-state target="local" scrapPage="{{$args[0]}}" :scrapSelectedIds="[]"/>

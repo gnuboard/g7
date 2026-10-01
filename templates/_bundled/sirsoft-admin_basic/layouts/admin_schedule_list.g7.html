@@ -47,8 +47,8 @@
   <slot name="content">
     <div data-ref="schedule_list_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>
-      <page-header data-ref="page_header" title="$t:admin.schedules.title" description="$t:admin.schedules.description">
-        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.schedules.title" description="$t:admin.schedules.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <!-- 새로고침 겸 조건 초기화. 경로를 고정하지 않고 **지금 있는 경로 그대로** 다시 밟는다 —
                  탭이 둘이라 목적지를 박아 두면 큐 탭에서 눌렀을 때 다른 탭으로 튄다. -->
@@ -79,7 +79,7 @@
         </button>
       </page-header>
       <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav">
-        <tab-navigation data-ref="tab_navigation" activeTabId="{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}" variant="default">
+        <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}" variant="default">
           <prop name="tabs">
             <item id="schedules" label="$t:admin.schedules.tabs.schedules" iconName="clock"/>
             <item id="queue" label="$t:admin.schedules.tabs.queue" iconName="chart-column" :disabled="true"/>

@@ -2269,7 +2269,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-outline"
+                                                            "className": "btn btn-outline btn-sm"
                                                         },
                                                         "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value"
                                                     },

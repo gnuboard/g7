@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
-use App\Exceptions\TemplateOperationException;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Http\Resources\LayoutResource;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\CompileResult;
+use App\Support\LayoutMarkup\ComponentManifest;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
@@ -13,11 +15,12 @@ use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use App\Support\LayoutMarkup\LintWarning;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 설치본(DB 행) 레이아웃의 JSON ↔ `.g7.html` 변환 서비스 — 코드 편집기·점검 커맨드의 공용 진입점.
  *
- * DB 는 JSON 만 유지한다(PO 결정 C1). 편집기가 행을 **열 때** JSON→마크업으로 되돌리고, **저장·미리보기
+ * DB 는 JSON 만 유지한다(결정 C1). 편집기가 행을 **열 때** JSON→마크업으로 되돌리고, **저장·미리보기
  * 때** 마크업→JSON 으로 프로덕션 컴파일한다. 두 방향 모두 설치 경로와 같은 클래스
  * ({@see LayoutMarkupDecompiler}·{@see LayoutMarkupCompiler})를 타며, 표(`components.json`)와 문맥은
  * 붙어 있는 템플릿에서 고른다 — 파일 경로가 없는 문서라 {@see MarkupCompileContextResolver::registryForTemplate()}·
@@ -38,13 +41,56 @@ class LayoutMarkupService
     private array $registries = [];
 
     /**
+     * 설치 확장 매니페스트 캐시 (요청 단위 — null 이면 아직 읽지 않음).
+     *
+     * @var array<int, ComponentManifest>|null
+     */
+    private ?array $extensionManifests = null;
+
+    /**
      * 변환 서비스를 만듭니다.
      *
      * @param  MarkupCompileContextResolver|null  $resolver  표·문맥 해석기 (테스트가 대역을 주입할 수 있게 열어 둔다)
+     * @param  ModuleRepositoryInterface|null  $modules  설치 모듈 목록 저장소 (없으면 컨테이너에서 얻는다)
+     * @param  PluginRepositoryInterface|null  $plugins  설치 플러그인 목록 저장소 (없으면 컨테이너에서 얻는다)
      */
-    public function __construct(?MarkupCompileContextResolver $resolver = null)
-    {
+    public function __construct(
+        ?MarkupCompileContextResolver $resolver = null,
+        private ?ModuleRepositoryInterface $modules = null,
+        private ?PluginRepositoryInterface $plugins = null,
+    ) {
         $this->resolver = $resolver ?? new MarkupCompileContextResolver;
+    }
+
+    /**
+     * 설치된 모듈·플러그인 전부(활성 여부 무관)의 컴포넌트 매니페스트를 돌려줍니다 (요청 단위 캐시).
+     *
+     * 편집 대상 템플릿의 검사 목록에 확장 컴포넌트(`식별자.이름`)를 싣기 위한 것이다 — 활성 여부로 거르면
+     * 편집 도중 확장을 끈 순간 그 레이아웃을 다시 저장할 수 없게 된다(2026-09-28 결정). 설치 목록은
+     * DB 행이고 매니페스트는 설치 디렉토리(`modules/{id}`·`plugins/{id}`)에서 읽는다. 목록을 읽지 못하면
+     * (DB 미준비 등) 확장 없이 검사한다 — 확장 컴포넌트는 경고로 남을 뿐 저장을 막지 않는다.
+     *
+     * @return array<int, ComponentManifest> 설치 확장 매니페스트
+     */
+    public function installedExtensionManifests(): array
+    {
+        if ($this->extensionManifests !== null) {
+            return $this->extensionManifests;
+        }
+
+        try {
+            $modules = ($this->modules ?? app(ModuleRepositoryInterface::class))->getInstalledIdentifiers();
+            $plugins = ($this->plugins ?? app(PluginRepositoryInterface::class))->getInstalledIdentifiers();
+        } catch (\Throwable $e) {
+            Log::warning('설치 확장 목록을 읽지 못해 확장 컴포넌트 없이 검사합니다', ['error' => $e->getMessage()]);
+
+            return $this->extensionManifests = [];
+        }
+
+        return $this->extensionManifests = $this->resolver->extensionManifests(
+            array_values(array_filter($modules, 'is_string')),
+            array_values(array_filter($plugins, 'is_string')),
+        );
     }
 
     /**
@@ -56,8 +102,6 @@ class LayoutMarkupService
      * @param  array<string, mixed>  $json  레이아웃 JSON (DB `content`)
      * @param  string  $templateId  붙어 있는 템플릿 식별자
      * @return array{markup: string, escapes: array<int, string>}
-     *
-     * @throws TemplateOperationException 템플릿 컴포넌트 매니페스트를 찾지 못하면
      */
     public function toMarkup(array $json, string $templateId): array
     {
@@ -123,7 +167,6 @@ class LayoutMarkupService
      * @return CompileResult 산출 JSON + lint 경고
      *
      * @throws CompileError 토큰화·트리·문서·강검증 어느 단계든 위반 시
-     * @throws TemplateOperationException 템플릿 컴포넌트 매니페스트를 찾지 못하면
      */
     public function toJson(string $markup, string $templateId, ?string $sourceKind, ?string $identifier, string $label): CompileResult
     {
@@ -186,20 +229,21 @@ class LayoutMarkupService
     }
 
     /**
-     * 템플릿의 컴포넌트 레지스트리를 돌려줍니다 (요청 단위 캐시).
+     * 편집 대상 템플릿의 검사용 컴포넌트 레지스트리를 돌려줍니다 (요청 단위 캐시).
+     *
+     * 컴파일·역변환 산출은 템플릿과 무관하다 — 레지스트리는 그 템플릿에 없는 컴포넌트를 세우는 검사에만
+     * 쓴다. 검사 목록 = **편집 대상 템플릿**(활성 템플릿이 아니다) + 설치된 확장 전부의 선언 + 그 템플릿의
+     * 확장 컴포넌트 오버라이드. 템플릿에 컴포넌트 목록이 없으면 검사 없이 컴파일한다(설치 경로와 같은 결과).
      *
      * @param  string  $templateId  템플릿 식별자
-     * @return ComponentRegistry 레지스트리
-     *
-     * @throws TemplateOperationException 매니페스트가 없으면
+     * @return ComponentRegistry|null 레지스트리, 목록이 없으면 null
      */
-    private function registry(string $templateId): ComponentRegistry
+    private function registry(string $templateId): ?ComponentRegistry
     {
         if (! array_key_exists($templateId, $this->registries)) {
-            $this->registries[$templateId] = $this->resolver->registryForTemplate($templateId);
+            $this->registries[$templateId] = $this->resolver->registryForTemplate($templateId, $this->installedExtensionManifests());
         }
 
-        return $this->registries[$templateId]
-            ?? throw new TemplateOperationException('exceptions.layout_markup.registry_not_found');
+        return $this->registries[$templateId];
     }
 }

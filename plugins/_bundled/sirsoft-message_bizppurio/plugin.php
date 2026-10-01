@@ -8,13 +8,13 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Models\NotificationDefinition;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Http\Middleware\BizppurioWebhookIpWhitelist;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\BalanceLowNotificationDataListener;
-use Plugins\Sirsoft\MessageBizppurio\Listeners\GuestPhoneExtractListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\InvalidateTokenOnSettingsSaveListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\LinkNotificationLogListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\RegisterNotificationChannelsListener;
@@ -48,14 +48,18 @@ class Plugin extends AbstractPlugin
     /**
      * 플러그인 활성화 — 기존 회원 알림에 sms·alimtalk template 을 즉시 증강.
      *
-     * SeedChannelTemplatesListener 는 코어/모듈이 알림 정의를 *시딩할 때* 필터 훅으로 증강한다.
-     * 그러나 플러그인 활성화 시점에는 코어/모듈 정의가 이미 시딩돼 있어(우리 채널 없이) 다음
-     * 재시딩까지 alimtalk template 이 생기지 않는다. 따라서 활성화 시 코어·활성 모듈의 알림
-     * 정의를 재시드해, 이제 활성화된 우리 필터를 통과시켜 기존 정의에도 채널을 즉시 반영한다.
+     * SeedChannelTemplatesListener 는 코어·모듈·플러그인이 알림 정의를 *시딩할 때* 코어 공통 시딩 훅
+     * (core.notification.filter_seed_definitions)으로 증강한다.
+     * 그러나 플러그인 활성화 시점에는 다른 확장의 정의가 이미 시딩돼 있어(우리 채널 없이) 다음
+     * 재시딩까지 alimtalk template 이 생기지 않는다. 따라서 활성화 시 코어 알림 정의와, 이미
+     * 설치·활성인 모든 모듈·플러그인의 **알림 정의만** 코어 진입점으로 다시 동기화해, 이제 활성화된
+     * 우리 필터를 통과시켜 기존 정의에도 채널을 즉시 반영한다.
      *
-     * 재시드는 모두 user_overrides 보존 upsert(멱등)이며 코어·모듈 파일을 수정하지 않는다.
-     * 실패는 로그만 남기고 활성화 자체는 막지 않는다(발송·연동은 채널 등록만으로도 동작하며,
-     * template 은 다음 정상 재시딩에도 수렴).
+     * 재동기화는 설치본의 선언만 읽고(_bundled 를 읽지 않음) 역할·권한·메뉴는 건드리지 않는다.
+     * 모두 user_overrides 보존 upsert(멱등)라 운영자가 고친 템플릿은 그대로 남는다. 코어가 특정
+     * 확장 이름을 모르듯 이 플러그인도 대상 확장을 고르지 않는다 — 활성 목록 전체가 대상이다.
+     * 단계별 실패는 로그만 남기고 다음 단계와 활성화 자체는 막지 않는다(발송·연동은 채널 등록만으로도
+     * 동작하며, template 은 다음 정상 재시딩에도 수렴).
      *
      * 리스너 선등록: PluginManager::activatePlugin() 은 DB status 를 active 로 바꾸기
      * '전에' 이 activate() 를 호출한다. 그런데 registerPluginHookListeners() 의 active 가드는
@@ -71,13 +75,27 @@ class Plugin extends AbstractPlugin
         try {
             // 재시딩이 편승할 시딩 필터 리스너를 status=active 전환 이전에 명시적으로 등록한다.
             HookListenerRegistrar::register(SeedChannelTemplatesListener::class, $this->getIdentifier());
-
-            app(NotificationDefinitionSeeder::class)->run();
-            app(ModuleManager::class)->resyncAllActiveDeclarativeArtifacts();
         } catch (\Throwable $e) {
-            Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
+            Log::warning('[sirsoft-message_bizppurio] 시딩 리스너 선등록 실패', [
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        $steps = [
+            'core' => fn () => app(NotificationDefinitionSeeder::class)->run(),
+            'modules' => fn () => app(ModuleManager::class)->resyncActiveModuleNotificationDefinitions(),
+            'plugins' => fn () => app(PluginManager::class)->resyncActivePluginNotificationDefinitions(),
+        ];
+
+        foreach ($steps as $step => $run) {
+            try {
+                $run();
+            } catch (\Throwable $e) {
+                Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
+                    'step' => $step,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return true;
@@ -439,9 +457,9 @@ class Plugin extends AbstractPlugin
     /**
      * 훅 리스너 목록 반환
      *
-     * - RegisterNotificationChannelsListener: 채널 등록/readiness/3영역 노출(Phase 3)
+     * - RegisterNotificationChannelsListener: 채널 등록/readiness/코어 채널 후보 훅 응답(도메인 비인지)
      * - SeedChannelTemplatesListener: 회원 알림에 sms·alimtalk template 증강(Phase 6 결정 D — 시딩 필터 훅)
-     * - GuestPhoneExtractListener: 비회원 주문 전화번호 주입(Phase 3)
+     *   (비회원 수신 전화번호는 도메인이 코어 표준 키로 알림 data 에 싣는다 — 이 플러그인은 읽기만 한다)
      * - LinkNotificationLogListener: 코어 알림 로그↔dispatch 연결(A-2 — 발송 이력 결과 주입 연결고리)
      * - ValidateBizppurioSettingsListener: 환경설정 검증
      * - InvalidateTokenOnSettingsSaveListener: 설정 저장 시 인증 토큰 캐시 무효화
@@ -453,7 +471,6 @@ class Plugin extends AbstractPlugin
         return [
             RegisterNotificationChannelsListener::class,
             SeedChannelTemplatesListener::class,
-            GuestPhoneExtractListener::class,
             BalanceLowNotificationDataListener::class,
             LinkNotificationLogListener::class,
             ValidateBizppurioSettingsListener::class,

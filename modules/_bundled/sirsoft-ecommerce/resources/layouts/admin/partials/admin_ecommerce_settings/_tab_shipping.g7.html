@@ -22,7 +22,7 @@
         <div data-ref="international_shipping_field">
           <label class="form-label mb-1.5">$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping</label>
           <div class="flex-center gap-3">
-            <toggle checked="{{_local.form?.shipping?.international_shipping_enabled ?? false}}" disabled="{{_computed.isReadOnly}}">
+            <toggle data-type="composite" checked="{{_local.form?.shipping?.international_shipping_enabled ?? false}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 해외배송 사용. 켜는 방향이라 바로 반영한다. -->
                 <set-state if="{{$event.target.checked}}" target="local" :form.shipping.international_shipping_enabled="true" :hasChanges="true"/>

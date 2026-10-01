@@ -49,11 +49,12 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 1개 (정의: `resources/js/handlers/index.ts`).
+핸들러 2개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `requestPayment` | `sirsoft-pay_kginicis.requestPayment` |
+| `copyToClipboard` | `sirsoft-pay_kginicis.copyToClipboard` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
@@ -62,6 +63,9 @@
 CBT 인증 URL로 이동할지는 핸들러 내부에서 서버 응답(§API `/payment/*/signature`,
 `/payment/cbt/hash-data`)에 따라 분기합니다. 레이아웃 JSON 작성자가 결제수단별로 다른
 핸들러를 호출할 필요가 없다는 뜻입니다.
+
+`copyToClipboard` 는 플러그인 설정의 가상계좌 입금통보 주소를 복사합니다(상점관리자에 그대로 붙여 넣는 값).
+설정 화면이 어느 관리자 템플릿으로 그려지든 같게 동작해야 하므로 특정 템플릿의 핸들러에 기대지 않고 플러그인이 직접 둡니다(코어에는 클립보드 핸들러가 없습니다). `navigator.clipboard` 가 막힌 비보안(HTTP) 접속에서는 숨긴 입력칸 복사로 내려갑니다.
 <!-- @intent END -->
 
 ## 전역 진입점
@@ -128,3 +132,60 @@ KG 이니시스가 제공하는 `INIStdPay.js`/모바일 결제창 스크립트�
 ### 스크립트가 그리는 글자는 번역 키로 낸다
 
 영수증 버튼을 누른 뒤의 조회 중 글자는 `user.loading` 번역 키(`translateKginicis`)로 낸다. 플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.
+
+## 결제창 닫힘 보고의 소유자 증명
+
+<!-- @intent START -->
+결제창 닫힘 보고(`POST /api/plugins/sirsoft-pay_kginicis/payment/close-report`)는 결제대기 주문을
+실패·취소로 바꾸므로 서버가 **주문 소유자만** 받아 준다(KVE-2026-2434). 주문자 이메일·전화번호는
+제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
+
+- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
+- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+
+헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
+상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
+토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
+결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+<!-- @intent END -->
+
+## 주문 화면 주입의 폴링·조회 규약
+
+<!-- @intent START -->
+주문 상세 화면에 결제 정보를 덧붙이는 인젝터 셋 — 관리자 주문 상세 결제수단 표시
+(`adminOrderPaymentDisplayInjector.ts`), 마이페이지·비회원 주문 상세 영수증 행
+(`mypageOrderShowInjector.ts`), 마이페이지 가상계좌 안내(`vbankInfoInjector.ts`) — 는 대상 DOM 이
+그려질 때까지 재시도하며, 폴링과 서버 조회를 전부 `resources/js/orderScreenPolling.ts` 에 맡깁니다.
+예전 `setInterval` 폴러는 틱이 앞선 비동기 조회를 기다리지 않아 첫 응답이 올 때까지 400ms 마다 같은
+조회를 새로 보냈고(조회마다 서버가 KG 이니시스 API 까지 갑니다), 라우트가 바뀔 때마다 폴러가 겹겹이
+쌓였습니다.
+
+- **직렬 폴러** — `createOrderScreenPoller()`(기본 400ms · 최대 30틱)는 한 틱의 비동기 작업이 끝난 뒤에야
+  다음 틱을 예약합니다. 인젝터마다 폴러를 모듈 수준에 **하나만** 두고, `start(key, tick)` 은 같은 key 가
+  돌고 있으면 무시하고 다른 key 면 이전 폴러를 멈춥니다. 대상 경로를 벗어나면 `stop()` 합니다. 틱은
+  `isActive()` 를 받아, 응답을 기다리는 사이 폴러가 멈췄으면(다른 주문으로 이동) DOM 을 건드리지 않고 끝냅니다.
+- **화면 진입당 1회 조회** — 서버 조회는 `requestOncePerOrderScreen(key, request)` 로만 보냅니다. 한 화면
+  진입(같은 경로) 동안 key 별로 한 번 보내고, 진행 중이거나 끝난 결과를 **실패(`null`·404)까지 포함해**
+  재사용합니다. 캐시 키에는 회원 인증 토큰·비회원 조회 토큰이 들어가므로, 비회원 토큰이 늦게 준비되면 그때
+  한 번 더 보냅니다. 인젝터의 라우트 변경 처리는 첫머리에서 `enterOrderScreen()` 을 불러, 경로가 바뀌면 이전
+  화면의 결과를 버립니다. 영수증 행과 가상계좌 안내는 같은 주소를 부르므로
+  `fetchKginicisReceiptInfoForOrderScreen()`(key `kginicis-receipt:{주문번호}`)으로 한 결과를 나눠 씁니다.
+  영수증 버튼 클릭 같은 사용자 동작은 이 경로를 쓰지 않고 매번 새로 조회합니다.
+- **관리자 주문 상세는 레이아웃 확장의 데이터 소스를 재사용** — 같은 화면의 `admin_order_payment_query`
+  확장이 이미 `transaction-status` 를 데이터 소스 `kginicis_status` 로 받으므로, 인젝터는
+  `G7Core.dataSource.get('kginicis_status')` 값을 읽어(`readSharedDataSource`) 씁니다. 값이 아직 없으면 최대
+  20틱(약 8초) 기다리고, 그래도 없으면(확장 미적용·조회 실패) 화면 진입당 한 번만 직접 조회합니다. 엔진이
+  없으면 바로 직접 조회합니다. 라우트 전환 직후에는 엔진이 새 값을 받기 전이라 이전 주문의 값이 남아 있으므로,
+  `history.pushState`·`popstate` 직후 `rememberLeavingDataSources(['kginicis_status'])` 로 떠나는 화면의 값을
+  기억해 두고 그 값과 같은 객체는 새 화면 값으로 쓰지 않습니다. 이 재사용이 없던 때는 주문 상세를 열 때마다
+  거래 조회가 두 번 나갔습니다.
+- **주문 데이터 로딩 대기** — 마이페이지·비회원 영수증 행 인젝터는 `isOrderDataLoading()`(데이터 컨텍스트에
+  `order` 키가 있고 값이 아직 `undefined`)인 동안 조회하지 않고 기다립니다. 불러오는 도중 「주문 정보 없음」으로
+  보고 비회원 경로의 주문번호로 영수증을 조회하면, 다른 결제대행사 주문에도 404 가 났습니다.
+
+**깨뜨리면 안 되는 것**: 인젝터 안에서 `setInterval` 이나 직접 `fetch` 루프로 되돌리지 않는다 · 조회 결과
+캐시에서 실패를 빼지 않는다(실패 주문에서 매 틱 재조회가 된다) · 레이아웃 확장의 데이터 소스 ID
+`kginicis_status` 를 바꾸면 인젝터 상수 `STATUS_DATA_SOURCE` 도 함께 바꾼다(어긋나면 매번 20틱을 기다린 뒤
+직접 조회로 떨어져 중복 조회가 되살아난다). 회귀는 Vitest `resources/js/__tests__/orderPaymentDisplayInjectors.test.ts` 가
+지킵니다 — 느린 외부 PG 응답·라우트 전환 타이밍에 의존해 브라우저 E2E 로는 재현하지 않습니다.
+<!-- @intent END -->

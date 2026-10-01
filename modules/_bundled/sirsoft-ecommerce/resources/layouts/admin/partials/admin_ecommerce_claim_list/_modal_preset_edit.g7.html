@@ -1,6 +1,6 @@
 <!-- 클레임 목록 — 검색 프리셋 이름 바꾸기 창(관리 창 위에 겹쳐 뜬다). 서버에 보내는 것은 이름뿐이라 저장된 조건은 그대로 남고, 대상 id 와 편집 중인 이름은 관리 창이 `_global` 에 담아 둔 값을 쓴다. -->
 <partial description="Claim List - Preset Edit Modal">
-  <modal data-ref="modal_claim_preset_edit" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_edit.title" size="sm">
+  <modal data-type="composite" data-ref="modal_claim_preset_edit" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_edit.title" size="sm">
     <!-- 이름 입력칸. 관리 창이 채워 둔 현재 이름에서 시작해 같은 `_global.editingPresetName` 을 고쳐 쓴다 — 저장 버튼의 잠금 식과 요청 본문이 그 키를 읽으므로, 입력을 다른 자리에 쓰면 화면에 친 이름과 저장되는 이름이 갈린다. -->
     <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">
       <on type="input">

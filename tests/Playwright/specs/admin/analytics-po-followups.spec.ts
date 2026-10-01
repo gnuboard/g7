@@ -1,5 +1,5 @@
 /**
- * E2E: PO 가 브라우저에서 짚은 것들 (이슈 #682 S3 라운드 4)
+ * E2E: 브라우저 검수에서 짚은 것들 (이슈 #682 S3 라운드 4)
  *
  * 이 넷은 레이아웃 계약 테스트로는 끝까지 잠글 수 없다.
  *
@@ -15,7 +15,7 @@
 import { authenticatePage, expect, issueToken, test } from '../../fixtures/auth';
 import { AnalyticsSettingsGuard, bearer } from '../../fixtures/analytics';
 
-test.describe('#682 라운드 4 — PO 지적의 브라우저 왕복', () => {
+test.describe('#682 라운드 4 — 검수 지적의 브라우저 왕복', () => {
   test.beforeEach(async ({ page }) => {
     // 방문자 목록은 개인정보 권한이 있어야 열린다 — 한 토큰으로 네 축을 모두 돈다.
     await authenticatePage(page, issueToken('core.analytics.read', 'core.analytics.privacy'));
@@ -252,7 +252,7 @@ test.describe('#682 라운드 6 — 마스킹 표시·회원 이동·CSV 파일�
       await expect(page.locator('#settings_tabs')).toBeVisible({ timeout: 30_000 });
       await expect(page.locator('#site_timezone_badge')).toBeVisible({ timeout: 30_000 });
     } finally {
-      // 계정은 반드시 되돌린다 — 이 설치는 PO 가 계속 쓰는 개발 환경이다.
+      // 계정은 반드시 되돌린다 — 이 설치는 개발자가 계속 쓰는 개발 환경이다.
       await setTimezone(original ?? 'Asia/Seoul');
     }
   });
@@ -326,14 +326,14 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
 });
 
 /**
- * #682 PO 실측 후속 4 — 필터 초기화 · 전체 삭제 확인 창의 경고 아이콘.
+ * #682 실측 후속 4 — 필터 초기화 · 전체 삭제 확인 창의 경고 아이콘.
  *
  * 초기화는 구운 JSON 으로 「키를 지우는 이동이 있다」까지 잰다(analyticsFilterReset.test.ts). 여기서는 그 이동 뒤
  * **입력칸·선택·칩이 주소를 따라 비워지는가**와 **다른 영역의 조건이 남는가**를 브라우저에서 잰다 — 입력칸 값이
  * 주소를 다시 읽지 않으면 주소는 비었는데 칸에 옛 검색어가 남는다.
  * 경고 아이콘은 클래스 조합이 아니라 실제로 그려진 글리프 크기와 원 안 위치를 잰다.
  */
-test.describe('#682 PO 실측 후속 4 — 필터 초기화 · 경고 아이콘', () => {
+test.describe('#682 실측 후속 4 — 필터 초기화 · 경고 아이콘', () => {
   // @scenario screen=visitors, state=normal, viewport=1440, locale=ko, e2e=overview
   // @effects every_filter_area_has_a_reset_that_clears_its_keys, filter_reset_is_locked_when_nothing_to_clear
   test('방문자 초기화는 검색어·유형만 걷고 기간은 남기며, 걷은 뒤 잠긴다', async ({ page }) => {
@@ -403,5 +403,42 @@ test.describe('#682 PO 실측 후속 4 — 필터 초기화 · 경고 아이콘'
     expect(m.dy).toBeLessThanOrEqual(2);
 
     await page.keyboard.press('Escape');
+  });
+});
+
+test.describe('정보주체 요청 — 값 없이 찾기', () => {
+  // @scenario screen=privacy_requests, state=empty, viewport=1440, locale=ko, e2e=overview
+  // @effects subject_search_is_locked_without_a_value, subject_search_prompt_is_shown_before_query
+  test('값이 비면 찾기가 잠기고 안내 카드가 보이며, 값을 넣으면 결과 카드로 바뀐다', async ({ page }) => {
+    // 값 없이 찾기를 눌러도 화면이 그대로라 목록이 안 뜨는 고장으로 읽혔다 — 잠금·안내·Enter 무시를 한 번에 잰다.
+    await authenticatePage(page, issueToken('core.analytics.read', 'core.analytics.privacy'));
+    const subjectCalls: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/api/admin/analytics/privacy/subjects')) subjectCalls.push(r.url());
+    });
+
+    await page.goto('/admin/analytics/privacy-requests');
+    const search = page.locator('#search_button');
+    const input = page.locator('input[name="analytics_subject_value"]');
+    await expect(page.locator('#subjects_prompt')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#subjects_prompt')).toContainText('찾을 사람을 지정하세요');
+    await expect(page.locator('#results_card')).toHaveCount(0);
+    await expect(search).toBeDisabled();
+
+    // 공백만 넣어도 잠긴 채이고, Enter 로도 질의가 생기지 않는다.
+    await input.fill('   ');
+    await expect(search).toBeDisabled();
+    await input.press('Enter');
+    await expect(page).not.toHaveURL(/[?&]value=/);
+    expect(subjectCalls).toHaveLength(0);
+
+    await input.fill('127.0.0.1');
+    await expect(search).toBeEnabled();
+    const subjects = page.waitForResponse((r) => r.url().includes('/api/admin/analytics/privacy/subjects'), { timeout: 30_000 });
+    await search.click();
+    expect((await subjects).status()).toBe(200);
+    await expect(page).toHaveURL(/value=127\.0\.0\.1/);
+    await expect(page.locator('#results_card')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#subjects_prompt')).toHaveCount(0);
   });
 });

@@ -14,7 +14,6 @@ use App\Services\LayoutExtensionService;
 use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 
 /**
  * 설치본(DB 행) 전량을 역변환→프로덕션 컴파일→왕복 대조하는 점검 커맨드 (#476 C5).
@@ -37,8 +36,7 @@ class LayoutCheckInstalledCommand extends Command
      * @var string
      */
     protected $signature = 'layout:check-installed
-                            {--template= : 점검할 템플릿 식별자 (기본: templates/_bundled 에 있는 식별자의 템플릿 행 전부)}
-                            {--all-templates : DB 의 모든 템플릿 행을 점검}
+                            {--template= : 점검할 템플릿 식별자 (기본: 설치된 템플릿 전부)}
                             {--json : 기계 판독용 JSON 출력}';
 
     /**
@@ -121,13 +119,9 @@ class LayoutCheckInstalledCommand extends Command
             return $all->filter(static fn (Template $t): bool => $t->identifier === $wanted)->values()->all();
         }
 
-        if ($this->option('all-templates')) {
-            return $all->values()->all();
-        }
-
-        $official = array_map('basename', File::directories(base_path('templates/_bundled')));
-
-        return $all->filter(static fn (Template $t): bool => in_array($t->identifier, $official, true))->values()->all();
+        // 기본은 설치된 템플릿 전부다. 종전에는 배포 원본(`_bundled`)에 같은 식별자가 있는 템플릿만 골라, 제3자
+        // 템플릿은 옵션을 따로 주지 않으면 점검에서 조용히 빠졌다(2026-09-28 결정 — 번들 여부로 대상을 고르지 않는다).
+        return $all->values()->all();
     }
 
     /**

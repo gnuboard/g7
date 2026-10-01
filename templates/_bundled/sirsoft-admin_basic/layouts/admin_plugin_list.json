@@ -21,7 +21,7 @@
                 "per_page": "{{query.per_page || 12}}",
                 "search": "{{query.search}}",
                 "status": "{{query.status}}",
-                "include_hidden": "{{_local.showHidden ? 1 : 0}}"
+                "include_hidden": "{{query.include_hidden === '1' ? 1 : 0}}"
             },
             "fallback": {
                 "data": {
@@ -34,7 +34,7 @@
                     }
                 }
             },
-            "comment": "플러그인 목록. 모듈 화면과 같이 검색·페이지는 URL, 숨김 포함 여부만 화면 상태다."
+            "comment": "플러그인 목록. 모듈 화면과 같이 검색·페이지·숨김 포함 여부를 모두 URL 에서 읽는다."
         },
         {
             "id": "auto_deactivated_banner",
@@ -58,8 +58,7 @@
         }
     ],
     "initLocal": {
-        "searchQuery": "",
-        "showHidden": false
+        "searchQuery": ""
     },
     "permissions": [
         "core.plugins.read"
@@ -717,10 +716,11 @@
                                 ]
                             },
                             {
+                                "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).",
                                 "id": "include_hidden_toggle",
                                 "type": "basic",
                                 "name": "Label",
-                                "if": "{{currentUser?.is_super === true}}",
+                                "if": "{{current_user?.data?.is_super === true}}",
                                 "props": {
                                     "className": "flex-center gap-2 text-body cursor-pointer select-none"
                                 },
@@ -730,23 +730,22 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
                                                 "type": "change",
-                                                "handler": "setState",
+                                                "handler": "navigate",
                                                 "params": {
-                                                    "showHidden": "{{!_local.showHidden}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "change",
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "plugins"
+                                                    "path": "/admin/plugins",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
+                                                        "page": 1
+                                                    }
                                                 }
                                             }
                                         ],
                                         "props": {
                                             "type": "checkbox",
-                                            "checked": "{{_local.showHidden === true}}",
+                                            "checked": "{{query.include_hidden === '1'}}",
                                             "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
                                         }
                                     },
@@ -807,7 +806,7 @@
                         },
                         "children": [
                             {
-                                "comment": "확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.\n             한 트리에 두 모드를 겹쳐 놓고 클래스만 바꾸던 앞선 방식은 성립하지 않았다:\n             카드 셀의 렌더 컨텍스트에는 `_global` 이 없어 카드 안쪽에서는 보기 상태를\n             볼 수 없다. 그래서 보기 분기는 `viewMode` prop 으로 컴포넌트에 넘기고,\n             행 → 카드 데이터 변환은 여기 prop 식에서 한다(`_global` 이 보이는 자리다).\n             각 항목은 `row` 에 원본 행을 싣고, 콜백은 그 행을 `$args` 로 되돌려 준다\n             (data-grid 의 onRowAction 과 같은 형태). 열 수는 컴포넌트가 컨테이너 실측\n             폭으로 정한다 — 사이드바 개폐까지 따라간다.",
+                                "comment": "확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.\n             한 트리에 두 모드를 겹쳐 놓고 클래스만 바꾸던 앞선 방식은 성립하지 않았다:\n             카드 셀의 렌더 컨텍스트에는 `_global` 이 없어 카드 안쪽에서는 보기 상태를\n             볼 수 없다. 그래서 보기 분기는 `viewMode` prop 으로 컴포넌트에 넘기고,\n             행 → 카드 데이터 변환은 여기 prop 식에서 한다(`_global` 이 보이는 자리다).\n             각 항목은 `row` 에 원본 행을 싣고, 콜백은 그 행을 `$args` 로 되돌려 준다\n             (data-grid 의 onRowAction 과 같은 형태). 열 수는 컴포넌트가 컨테이너 실측\n             폭으로 정한다 — 사이드바 개폐까지 따라간다.\n             버튼 잠금은 서버가 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible=false`)이면\n             설치와 켜기를, 설치·삭제·업데이트가 진행 중이면 스위치·삭제·업데이트를 잠근다(둘 다 서버 422).",
                                 "id": "plugin_card_grid",
                                 "type": "composite",
                                 "name": "ExtensionCardGrid",
@@ -875,37 +874,52 @@
                                                 "plugin_name": "{{$args[1].identifier}}"
                                             }
                                         },
-                                        "onSuccess": {
-                                            "handler": "parallel",
-                                            "actions": [
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{$args[0] ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"
+                                        "onSuccess": [
+                                            {
+                                                "handler": "parallel",
+                                                "actions": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{$args[0] ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "plugins"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "admin_menu"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "reloadExtensions",
+                                                        "params": {
+                                                            "pluginInfo": "{{result.data?.plugin ?? result}}",
+                                                            "action": "{{$args[0] ? 'add' : 'remove'}}"
+                                                        }
                                                     }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "plugins"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "admin_menu"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "reloadExtensions",
-                                                    "params": {
-                                                        "pluginInfo": "{{result}}",
-                                                        "action": "{{$args[0] ? 'add' : 'remove'}}"
-                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —\n                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은\n                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다.",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}"
                                                 }
-                                            ]
-                                        },
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "plugin_reactivate_language_packs_modal",
+                                                "if": "{{!!$args[0] && (response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                            }
+                                        ],
                                         "onError": {
                                             "handler": "sequence",
                                             "actions": [
@@ -914,6 +928,14 @@
                                                     "params": {
                                                         "type": "error",
                                                         "message": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다.",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
                                                     }
                                                 },
                                                 {
@@ -928,6 +950,20 @@
                                             "409": {
                                                 "handler": "sequence",
                                                 "actions": [
+                                                    {
+                                                        "comment": "409 는 fail 을 거치지 않으므로 여기서도 목록을 다시 받는다 — 강제 창을 취소하면 확장은 그대로인데\n                       누른 스위치만 꺼진(켜진) 채 남던 문제(#703 실측).",
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "plugins"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                                        }
+                                                    },
                                                     {
                                                         "handler": "setState",
                                                         "params": {
@@ -1188,13 +1224,14 @@
                                     "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
                                     "minCardWidth": 250,
                                     "maxColumns": 5,
+                                    "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
                                     "loading": "{{plugins?.loading ?? false}}",
                                     "pagination": true,
                                     "alwaysShowPagination": true,
                                     "currentPage": "{{plugins?.data?.pagination?.current_page ?? 1}}",
                                     "totalPages": "{{plugins?.data?.pagination?.last_page ?? null}}",
                                     "hasMorePages": "{{plugins?.data?.pagination?.has_more_pages ?? false}}",
-                                    "items": "{{(plugins?.data?.data ?? []).map(p => ({\n          id: p.identifier,\n          row: p,\n          name: p.name ?? p.identifier,\n          version: p.version,\n          description: p.description ?? '',\n          vendor: p.vendor,\n          iconUrl: p.icon_url,\n          fallbackIcon: 'puzzle-piece',\n          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name })),\n          badges: [\n            ...(p.status === 'active' ? [{ label: '$t:admin.plugins.status.active', tone: 'success' }] : []),\n            ...(p.status === 'inactive' ? [{ label: '$t:admin.plugins.status.inactive', tone: 'neutral' }] : []),\n            ...(p.status === 'uninstalled' ? [{ label: '$t:admin.plugins.status.not_installed', tone: 'info' }] : []),\n            ...(p.status === 'installing' ? [{ label: '$t:admin.plugins.status.installing', tone: 'warning' }] : []),\n            ...(p.status === 'uninstalling' ? [{ label: '$t:admin.plugins.status.uninstalling', tone: 'warning' }] : []),\n            ...(p.status === 'updating' ? [{ label: '$t:admin.plugins.status.updating', tone: 'accent' }] : []),\n            ...(p.update_available && p.status !== 'updating' && p.status !== 'uninstalled' ? [{ label: '$t:admin.plugins.update_available', tone: 'danger' }] : []),\n            ...(p.is_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n          ],\n          toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true, label: p.name ?? p.identifier } : null,\n          primaryAction: p.status === 'uninstalled'\n            ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true }\n            : (p.update_available && p.status !== 'updating' ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true || p.is_compatible === false } : null),\n          actions: [\n            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_activate !== true },\n            { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' },\n            { id: 'view_detail', label: '$t:admin.plugins.actions.view_detail', iconName: 'info-circle' },\n            { id: 'uninstall', label: '$t:admin.plugins.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || p.status === 'uninstalling' || p.status === 'installing' || p.abilities?.can_uninstall !== true }\n          ]\n        }))}}"
+                                    "items": "{{(plugins?.data?.data ?? []).map(p => ({\n          id: p.identifier,\n          row: p,\n          name: p.name ?? p.identifier,\n          version: p.version,\n          description: p.description ?? '',\n          vendor: p.vendor,\n          iconUrl: p.icon_url,\n          fallbackIcon: 'puzzle-piece',\n          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name })),\n          badges: [\n            ...(p.status === 'active' ? [{ label: '$t:admin.plugins.status.active', tone: 'success' }] : []),\n            ...(p.status === 'inactive' ? [{ label: '$t:admin.plugins.status.inactive', tone: 'neutral' }] : []),\n            ...(p.status === 'uninstalled' ? [{ label: '$t:admin.plugins.status.not_installed', tone: 'info' }] : []),\n            ...(p.status === 'installing' ? [{ label: '$t:admin.plugins.status.installing', tone: 'warning' }] : []),\n            ...(p.status === 'uninstalling' ? [{ label: '$t:admin.plugins.status.uninstalling', tone: 'warning' }] : []),\n            ...(p.status === 'updating' ? [{ label: '$t:admin.plugins.status.updating', tone: 'accent' }] : []),\n            ...(p.update_available && p.status !== 'updating' && p.status !== 'uninstalled' ? [{ label: '$t:admin.plugins.update_available', tone: 'danger' }] : []),\n            ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n          ],\n          toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true || ['installing', 'uninstalling', 'updating'].includes(p.status) || (p.status !== 'active' && p.core_compatible === false), label: p.name ?? p.identifier } : null,\n          primaryAction: p.status === 'uninstalled'\n            ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n            : (p.update_available && !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true || p.is_compatible === false } : null),\n          actions: [\n            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_activate !== true },\n            { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' },\n            { id: 'view_detail', label: '$t:admin.plugins.actions.view_detail', iconName: 'info-circle' },\n            { id: 'uninstall', label: '$t:admin.plugins.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n          ]\n        }))}}"
                                 }
                             },
                             {
@@ -1254,6 +1291,10 @@
         {
             "comment": "업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다.",
             "partial": "partials/admin_plugin_list/_modal_update.json"
+        },
+        {
+            "comment": "언어팩 되살리기 창 — 플러그인을 다시 켰을 때 함께 꺼졌던 언어팩이 있으면 활성 성공 갈래가 연다.",
+            "partial": "partials/admin_plugin_list/_modal_reactivate_language_packs.json"
         },
         {
             "comment": "라이선스 고지 창 — 상세 창에서 이어 연다.",

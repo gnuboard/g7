@@ -72,7 +72,7 @@
       <div data-ref="basic_filters" class="row-stack">
         <div data-ref="type_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.type</span>
-          <radio-group name="type_filter" value="{{query.type || ''}}" :inline="true">
+          <radio-group data-type="composite" name="type_filter" value="{{query.type || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.type.artisan" value="artisan"/>
@@ -89,7 +89,7 @@
         </div>
         <div data-ref="frequency_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.frequency</span>
-          <radio-group name="frequency_filter" value="{{query.frequency || ''}}" :inline="true">
+          <radio-group data-type="composite" name="frequency_filter" value="{{query.frequency || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.frequency.everyMinute" value="everyMinute"/>
@@ -189,7 +189,7 @@
         </div>
         <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.status</span>
-          <radio-group name="status_filter" value="{{query.status || ''}}" :inline="true">
+          <radio-group data-type="composite" name="status_filter" value="{{query.status || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.status.active" value="active"/>
@@ -207,7 +207,7 @@
       <div data-ref="advanced_search_panel" data-if="{{_global.showAdvancedSearch}}" class="mt-4 pt-4 space-y-4">
         <div data-ref="last_result_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.last_result</span>
-          <radio-group name="last_result_filter" value="{{query.last_result || ''}}" :inline="true">
+          <radio-group data-type="composite" name="last_result_filter" value="{{query.last_result || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.result.success" value="success"/>
@@ -225,7 +225,7 @@
         </div>
         <div data-ref="without_overlapping_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.without_overlapping</span>
-          <radio-group name="without_overlapping_filter" value="{{query.without_overlapping || ''}}" :inline="true">
+          <radio-group data-type="composite" name="without_overlapping_filter" value="{{query.without_overlapping || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.filters.use" value="1"/>
@@ -241,7 +241,7 @@
         </div>
         <div data-ref="run_in_maintenance_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.run_in_maintenance</span>
-          <radio-group name="run_in_maintenance_filter" value="{{query.run_in_maintenance || ''}}" :inline="true">
+          <radio-group data-type="composite" name="run_in_maintenance_filter" value="{{query.run_in_maintenance || ''}}" :inline="true">
             <prop name="options">
               <item label="$t:admin.schedules.filters.all" value=""/>
               <item label="$t:admin.schedules.filters.allow" value="1"/>
@@ -380,7 +380,7 @@
         </select>
       </div>
     </div>
-    <data-grid selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>
@@ -429,7 +429,7 @@
       </column>
       <column field="is_active" header="$t:admin.schedules.columns.status" :sortable="false">
         <cell>
-          <toggle checked="{{row.is_active}}" size="sm">
+          <toggle data-type="composite" checked="{{row.is_active}}" size="sm">
             <on type="change">
               <!-- 줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다). -->
               <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">

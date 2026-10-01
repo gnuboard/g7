@@ -5,7 +5,7 @@
       <variant when="readonly">opacity-60</variant>
       <variant when="normal"></variant>
     </class-map>
-    <section-layout data-ref="section_comment" class="admin-card">
+    <section-layout data-type="layout" data-ref="section_comment" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.comment</h3>
       <div class="row-stack">
         <div data-ref="field_use_comment" class="">
@@ -22,7 +22,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_comment</p>
               </div>
             </label>
-            <toggle name="basic_defaults.use_comment" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.use_comment" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_max_comment_depth" class="">

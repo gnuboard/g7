@@ -176,6 +176,8 @@
         <div class="w-full md:w-64">
           <select name="basic_info.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
           <span data-if="{{_local.errors?.['basic_info.public_asset_disk']}}" class="form-error">{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}</span>
+          <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
+          <div data-if="{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}" role="status" class="text-warning-soft mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}</div>
           <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help</div>
         </div>
       </div>

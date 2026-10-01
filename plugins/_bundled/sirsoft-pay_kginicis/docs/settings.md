@@ -112,8 +112,9 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-`sirsoft-ecommerce >=1.1.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는 이커머스가
+`sirsoft-ecommerce >=1.3.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는 이커머스가
 소유, 이 플러그인은 절차만 소유)의 직접적 결과입니다 — 이커머스 없이는 이 플러그인이 다룰
 주문 자체가 존재하지 않습니다. 이커머스의 PG 등록 훅(`registered_pg_providers` 등)이나
 `Order` 모델 구조가 바뀌면 이 최소 버전을 올려야 합니다(§코어 AGENTS.md "확장 → 확장 동기화").
+최소 버전 1.3.0 은 관리자 주문 목록 결제수단 칸의 표시 자리(확장점 `admin_order_list_payment_method_badges`)가 도입된 버전입니다.
 <!-- @intent END -->

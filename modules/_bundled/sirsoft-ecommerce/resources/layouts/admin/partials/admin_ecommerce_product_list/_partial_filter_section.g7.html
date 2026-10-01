@@ -487,7 +487,7 @@
       </div>
       <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
         <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
-        <column-selector data-ref="column_selector" id="admin_product_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.product.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_product_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.product.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
           <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
           <prop name="columns">
             <item field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image"/>
@@ -534,11 +534,11 @@
       </div>
     </div>
     <div data-ref="basic_filter_section" class="flex flex-col mt-4">
-      <slot-container data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
+      <slot-container data-type="composite" data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
     </div>
     <div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}" class="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
       <span class="text-body font-medium mb-2 block">$t:sirsoft-ecommerce.admin.product.filter.detail_title</span>
-      <slot-container data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
+      <slot-container data-type="composite" data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
     </div>
     <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
       <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>

@@ -17,7 +17,7 @@
       </div>
     </div>
     <div data-ref="search_area" class="px-4 panel-header">
-      <search-bar placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+      <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
         <on type="submit">
           <!-- 검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 처음으로 돌아간다. -->
           <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
@@ -66,7 +66,7 @@
             <span class="text-primary text-sm font-medium">{{$localized(template.name)}}</span>
             <div class="flex-center gap-2">
               <span class="text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
-              <toggle size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
+              <toggle data-type="composite" size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
                 <on type="change">
                   <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
                   <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active" method="PATCH">
@@ -84,7 +84,7 @@
           </div>
         </div>
       </div>
-      <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+      <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
     </div>
     <div data-ref="empty_template_state" data-if="{{(templates?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
       <icon name="file-alt" class="text-gray-400 dark:text-gray-500" size="md"/>

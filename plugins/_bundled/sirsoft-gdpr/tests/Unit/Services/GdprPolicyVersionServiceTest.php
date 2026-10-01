@@ -18,6 +18,11 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
 {
     private GdprPolicyVersionService $service;
 
+    /**
+     * 테스트 대상 서비스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->service = app(GdprPolicyVersionService::class);
     }
 
+    /**
+     * 설치 시드(v1) 다음 발행은 버전 2 부터 시작합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario expected_publish=yes_v_plus_1, current_db_state=fresh_install_v1_only
+     *
+     * @effects publish_starts_after_initial_seed
+     */
     public function test_publish_starts_after_initial_seed(): void
     {
         // 마이그레이션 시 initial 행 (version=1) 이 자동 시드됨
@@ -41,6 +55,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::Material, $version->change_type);
     }
 
+    /**
+     * 연속 발행은 버전 번호를 하나씩 올립니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario expected_publish=yes_v_plus_1, current_db_state=fresh_install_v1_only
+     *
+     * @effects publish_monotonically_increments_version
+     */
     public function test_publish_monotonically_increments_version(): void
     {
         // initial 시드 (v1) 위에 publish 호출 → v2, v3, v4 순차 증가
@@ -53,6 +76,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(4, $fourth->version);
     }
 
+    /**
+     * 발행 시 처리방침 주소를 포함한 스냅샷과 메모를 그대로 저장합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario expected_publish=yes_v_plus_1, memo_input=provided
+     *
+     * @effects publish_persists_snapshot_and_memo_and_user_id
+     */
     public function test_publish_persists_snapshot_and_memo(): void
     {
         $snapshot = [
@@ -60,7 +92,7 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
                 ['key' => 'necessary', 'required' => true],
                 ['key' => 'analytics', 'required' => false],
             ],
-            'privacy_policy_slug' => 'privacy-policy',
+            'privacy_policy_url' => '/privacy-policy',
         ];
 
         $version = $this->service->publish(
@@ -74,6 +106,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame('analytics 카테고리 신설', $version->memo);
     }
 
+    /**
+     * 발행 운영자의 회원 번호를 기록합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario expected_publish=yes_v_plus_1, user_role=privacy_operator
+     *
+     * @effects publish_persists_snapshot_and_memo_and_user_id
+     */
     public function test_publish_records_user_id(): void
     {
         $user = User::factory()->create();
@@ -89,6 +130,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame($user->id, $version->createdBy->id);
     }
 
+    /**
+     * 쿠키 카테고리가 늘면 Material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=material_add_category, expected_publish=yes_v_plus_1
+     *
+     * @effects material_when_category_key_added
+     */
     public function test_detect_change_type_returns_material_when_category_added(): void
     {
         $oldSnapshot = [
@@ -103,6 +153,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::Material, $changeType);
     }
 
+    /**
+     * 쿠키 카테고리가 줄면 Material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=material_remove_category, expected_publish=yes_v_plus_1
+     *
+     * @effects material_when_category_key_removed
+     */
     public function test_detect_change_type_returns_material_when_category_removed(): void
     {
         $oldSnapshot = [
@@ -115,6 +174,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::Material, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
     }
 
+    /**
+     * 카테고리 설명(처리 목적)이 바뀌면 Material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=material_description_change, expected_publish=yes_v_plus_1
+     *
+     * @effects material_when_category_description_changed
+     */
     public function test_detect_change_type_returns_material_when_description_changed(): void
     {
         $oldSnapshot = [
@@ -131,19 +199,55 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::Material, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
     }
 
-    public function test_detect_change_type_returns_material_when_slug_changed(): void
+    /**
+     * 개인정보처리방침 주소가 바뀌면 Material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=material_privacy_policy_url_change, expected_publish=yes_v_plus_1
+     *
+     * @effects material_when_privacy_policy_url_changed
+     */
+    public function test_detect_change_type_returns_material_when_privacy_policy_url_changed(): void
     {
+        $oldSnapshot = ['privacy_policy_url' => '/privacy'];
+        $newSnapshot = ['privacy_policy_url' => 'https://example.com/privacy'];
+
+        $this->assertSame(GdprPolicyChangeType::Material, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
+    }
+
+    /**
+     * 1.0.x 스냅샷끼리 슬러그가 다르면 옛 링크 경로로 풀어 비교해 Material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=material_privacy_policy_url_change, expected_publish=yes_v_plus_1
+     *
+     * @effects material_when_privacy_policy_url_changed
+     */
+    public function test_detect_change_type_returns_material_when_legacy_slug_snapshots_differ(): void
+    {
+        // 1.0.x 발행분끼리 비교할 때도 옛 슬러그를 그 시절 링크 경로로 풀어 같은 판정을 유지한다.
         $oldSnapshot = ['privacy_policy_slug' => 'privacy-policy'];
         $newSnapshot = ['privacy_policy_slug' => 'privacy-policy-v2'];
 
         $this->assertSame(GdprPolicyChangeType::Material, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
     }
 
+    /**
+     * 차단 도메인만 바뀌면 Non-material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=non_material_domain_add, expected_publish=no
+     *
+     * @effects non_material_when_only_domains_changed
+     */
     public function test_detect_change_type_returns_non_material_when_only_domains_changed(): void
     {
         $base = [
             'cookie_categories' => [['key' => 'necessary'], ['key' => 'analytics']],
-            'privacy_policy_slug' => 'privacy-policy',
+            'privacy_policy_url' => '/privacy-policy',
         ];
         $oldSnapshot = array_merge($base, [
             'blocked_domains' => ['analytics' => ['google-analytics.com']],
@@ -155,6 +259,15 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::NonMaterial, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
     }
 
+    /**
+     * 카테고리 라벨만 바뀌면 Non-material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=non_material_label_change, expected_publish=no
+     *
+     * @effects non_material_when_only_label_changed
+     */
     public function test_detect_change_type_returns_non_material_when_only_label_changed(): void
     {
         $oldSnapshot = [
@@ -171,16 +284,34 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
         $this->assertSame(GdprPolicyChangeType::NonMaterial, $this->service->detectChangeType($oldSnapshot, $newSnapshot));
     }
 
+    /**
+     * 스냅샷이 같으면 Non-material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=no_change, expected_publish=no
+     *
+     * @effects non_material_when_snapshots_equal
+     */
     public function test_detect_change_type_returns_non_material_when_snapshots_equal(): void
     {
         $snapshot = [
             'cookie_categories' => [['key' => 'necessary'], ['key' => 'analytics']],
-            'privacy_policy_slug' => 'privacy-policy',
+            'privacy_policy_url' => '/privacy-policy',
         ];
 
         $this->assertSame(GdprPolicyChangeType::NonMaterial, $this->service->detectChangeType($snapshot, $snapshot));
     }
 
+    /**
+     * 카테고리 순서만 바뀌면 Non-material 로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario change_type=no_change, expected_publish=no
+     *
+     * @effects non_material_when_category_order_changed_only
+     */
     public function test_detect_change_type_ignores_category_order(): void
     {
         $oldSnapshot = [
@@ -195,7 +326,13 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
     }
 
     /**
-     * 작업 2 (B-3 옵션 X): getByVersion 이 매칭 row 를 반환.
+     * 발행된 버전 번호로 그 행을 조회합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario current_db_state=has_v2_published
+     *
+     * @effects get_by_version_returns_row_or_null
      */
     public function test_get_by_version_returns_matching_row(): void
     {
@@ -215,7 +352,13 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
     }
 
     /**
-     * 작업 2 (B-3 옵션 X): getByVersion 이 미발행 버전에 null 반환.
+     * 발행되지 않은 버전 번호는 null 을 돌려줍니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario current_db_state=fresh_install_v1_only
+     *
+     * @effects get_by_version_returns_row_or_null
      */
     public function test_get_by_version_returns_null_when_not_found(): void
     {
@@ -225,7 +368,13 @@ class GdprPolicyVersionServiceTest extends PluginTestCase
     }
 
     /**
-     * 작업 2 (B-3 옵션 X): getByVersion 이 initial seed (v1) 도 조회 가능.
+     * 설치 시드 버전(v1)도 조회됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario current_db_state=fresh_install_v1_only
+     *
+     * @effects get_by_version_returns_row_or_null, migration_up_seeds_initial_row
      */
     public function test_get_by_version_returns_initial_seed(): void
     {

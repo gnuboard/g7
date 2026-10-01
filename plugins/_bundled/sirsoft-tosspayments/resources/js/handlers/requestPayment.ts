@@ -1,3 +1,4 @@
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
 /**
  * 토스페이먼츠 결제창 호출 핸들러
  *
@@ -36,6 +37,8 @@ interface PgPaymentData {
     customer_email?: string;
     customer_phone?: string;
     customer_key?: string | null;
+    /** 서버가 저장한 결제수단 id (코어 id `card`·`vbank` 또는 `toss_*`) — 결제창 수단 결정의 기준 */
+    payment_method?: string | null;
     escrow_products?: EscrowProduct[];
     // 클레임 추가결제에만 실린다 — 주문 결제에는 없다.
     //
@@ -216,6 +219,26 @@ async function loadScript(src: string): Promise<void> {
  * @param selectedId 선택된 결제수단 id (toss_* 또는 코어 id)
  * @returns SDK method 와 easyPay provider
  */
+/**
+ * 결제창에 쓸 결제수단 id 를 정합니다.
+ *
+ * 액션 인자가 있으면 그 값, 다음은 서버가 저장한 결제수단(payment_method), 마지막으로 화면 상태
+ * (`_local.paymentMethod`)다. 화면 상태만 보면 주문서가 아닌 화면(클레임 추가결제 등)에서 값이 비어
+ * 가상계좌 주문에도 카드 결제창이 열린다.
+ *
+ * @param paramId 액션 인자로 받은 결제수단 id
+ * @param serverId 서버가 결제 데이터에 실어 준 결제수단 id
+ * @param localId 화면 상태의 결제수단 id
+ * @returns 결제수단 id (모두 비어 있으면 undefined)
+ */
+export function resolveSelectedMethodId(
+    paramId?: string | null,
+    serverId?: string | null,
+    localId?: string | null,
+): string | undefined {
+    return paramId || serverId || localId || undefined;
+}
+
 function resolveMethod(config: ClientConfig, selectedId?: string): { method: string; easyPay: string | null } {
     if (!config.order_sheet_mode || !selectedId) {
         return { method: 'CARD', easyPay: null };
@@ -305,9 +328,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
     const G7Core = (window as any).G7Core;
 
-    // 선택된 결제수단 id — action.params 우선, 없으면 _local.paymentMethod 참조
-    const selectedMethodId: string | undefined =
-        params.paymentMethod ?? G7Core?.state?.getLocal?.()?.paymentMethod;
+    const selectedMethodId = resolveSelectedMethodId(
+        params.paymentMethod,
+        pgPaymentData.payment_method,
+        G7Core?.state?.getLocal?.()?.paymentMethod,
+    );
 
     try {
         // 1. Client Config API 호출
@@ -408,13 +433,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 실패 화면에서 서버에 보고할 때 쓸
-        // 구매자 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
-        // 소유권을 대조하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
+        // 주문 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
+        // 주문 소유자(회원 로그인 / 비회원 조회 토큰)를 확인하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
         rememberPendingClose({
             orderId: pgPaymentData.order_number,
             amount: pgPaymentData.amount,
-            buyer_email: pgPaymentData.customer_email ?? '',
-            buyer_phone: pgPaymentData.customer_phone ?? '',
         });
 
         await payment.requestPayment(requestPayload);

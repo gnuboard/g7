@@ -65,7 +65,7 @@
         },
         {
             "id": "koreaeximRuns",
-            "if": "{{query.tab === 'history'}}",
+            "if": "{{query.tab === 'history' && !(query.date_from && query.date_to && query.date_to < query.date_from)}}",
             "label_key": "$t:sirsoft-koreaexim.history_tab",
             "type": "api",
             "endpoint": "/api/plugins/sirsoft-koreaexim/admin/runs",
@@ -98,7 +98,7 @@
                     }
                 }
             },
-            "comment": "이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다"
+            "comment": "이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다. 종료일이 시작일보다 앞선 기간은 서버가 422 로 거절하므로 조회하지 않는다(필터 아래 안내가 이유를 적는다)"
         },
         {
             "id": "koreaeximNotificationChannels",

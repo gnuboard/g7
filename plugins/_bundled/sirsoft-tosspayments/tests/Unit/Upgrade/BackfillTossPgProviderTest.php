@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftTosspayments\V1_0_1\Migrations\BackfillTossPgProvider;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
@@ -20,10 +21,9 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
  *
  * @effects upgrade_step_backfills_settings_file, saved_null_pg_provider_self_healed
- *
- * @group payment
- * @group upgrade
  */
+#[Group('payment')]
+#[Group('upgrade')]
 class BackfillTossPgProviderTest extends PluginTestCase
 {
     private string $settingsPath;
@@ -32,6 +32,11 @@ class BackfillTossPgProviderTest extends PluginTestCase
 
     private ?string $originalSettings = null;
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,11 @@ class BackfillTossPgProviderTest extends PluginTestCase
         File::ensureDirectoryExists(dirname($this->settingsPath));
     }
 
+    /**
+     * 각 테스트 뒤에 만든 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->hadOriginalSettings && $this->originalSettings !== null) {
@@ -56,6 +66,13 @@ class BackfillTossPgProviderTest extends PluginTestCase
         parent::tearDown();
     }
 
+    /**
+     * 토스 결제수단 설정에 PG 선언을 채워 넣는다.
+     *
+     * @effects backfills_pg_declaration_for_toss_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_backfills_pg_declaration_for_toss_methods(): void
     {
         // 결함 시절의 저장 상태 재현: pg_provider=null, 능력 키 부재
@@ -80,6 +97,13 @@ class BackfillTossPgProviderTest extends PluginTestCase
         }
     }
 
+    /**
+     * 다른 플러그인·내장 결제수단 설정은 건드리지 않는다.
+     *
+     * @effects does_not_touch_other_plugins_or_builtin_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_touch_other_plugins_or_builtin_methods(): void
     {
         // 각 플러그인은 자기 접두사 수단만 백필한다 (다른 PG 의 수단을 건드리면 안 된다).
@@ -107,6 +131,13 @@ class BackfillTossPgProviderTest extends PluginTestCase
         $this->assertSame('tosspayments', $methods['toss_card']['pg_provider']);
     }
 
+    /**
+     * 여러 번 실행해도 결과가 같다.
+     *
+     * @effects is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent(): void
     {
         $this->writeSettings([
@@ -122,6 +153,13 @@ class BackfillTossPgProviderTest extends PluginTestCase
         $this->assertSame($first, $second, '재실행해도 결과가 달라지지 않아야 한다');
     }
 
+    /**
+     * 설정 파일이 없으면 아무것도 하지 않는다.
+     *
+     * @effects skips_when_settings_file_is_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_file_is_missing(): void
     {
         File::delete($this->settingsPath);
@@ -131,6 +169,13 @@ class BackfillTossPgProviderTest extends PluginTestCase
         $this->assertFalse(File::exists($this->settingsPath));
     }
 
+    /**
+     * 설정 JSON 이 깨져 있으면 아무것도 하지 않는다.
+     *
+     * @effects skips_when_settings_json_is_malformed
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_json_is_malformed(): void
     {
         File::put($this->settingsPath, '{ not valid json');
@@ -145,6 +190,7 @@ class BackfillTossPgProviderTest extends PluginTestCase
      * 테스트용 주문설정 파일을 기록합니다.
      *
      * @param  array<int, array<string, mixed>>  $paymentMethods  결제수단 배열
+     * @return void 반환값 없음
      */
     private function writeSettings(array $paymentMethods): void
     {
@@ -172,6 +218,8 @@ class BackfillTossPgProviderTest extends PluginTestCase
 
     /**
      * 백필 마이그레이션을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runMigration(): void
     {

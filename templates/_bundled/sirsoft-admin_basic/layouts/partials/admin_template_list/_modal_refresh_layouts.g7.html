@@ -1,7 +1,7 @@
 <!-- 템플릿이 들고 온 레이아웃을 **다시 심는** 확인 창. 레이아웃 편집기로 고친 것이 원본으로 덮이므로
   경고를 앞세운다 — 이 템플릿에서는 그 편집기가 바로 옆 화면이라 되돌릴 것이 있을 가능성이 높다. -->
 <partial description="템플릿 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_refresh_layouts_modal">
-  <modal data-ref="template_refresh_layouts_modal" title="$t:admin.templates.modals.refresh_layouts_title" size="sm">
+  <modal data-type="composite" data-ref="template_refresh_layouts_modal" title="$t:admin.templates.modals.refresh_layouts_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
@@ -17,7 +17,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts}}">
         <on type="click">
           <!-- 다시 심기 실행 — 편집기로 고친 레이아웃이 원본으로 덮인다. -->
           <sequence>

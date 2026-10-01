@@ -58,7 +58,7 @@
                 }
             ],
             "props": {
-                "data": "{{koreaeximRuns?.data?.data ?? []}}",
+                "data": "{{(query.date_from && query.date_to && query.date_to < query.date_from) ? [] : (koreaeximRuns?.data?.data ?? [])}}",
                 "pagination": true,
                 "serverSidePagination": true,
                 "serverCurrentPage": "{{koreaeximRuns?.data?.pagination?.current_page ?? 1}}",

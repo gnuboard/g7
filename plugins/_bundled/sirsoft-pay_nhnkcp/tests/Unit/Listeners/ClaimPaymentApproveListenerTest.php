@@ -17,6 +17,13 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  */
 class ClaimPaymentApproveListenerTest extends PluginTestCase
 {
+    /**
+     * site_cd·테스트 모드와 승인 응답을 고정한 NhnKcpApiService mock 을 주입한다.
+     *
+     * @param  array<string, mixed>  $approveResponse  approvePayment 가 돌려줄 응답
+     * @param  bool  $expectNoApprove  승인 호출이 없어야 하는지 여부
+     * @return NhnKcpApiService 주입한 mock
+     */
     private function mockApiService(array $approveResponse = [], bool $expectNoApprove = false): NhnKcpApiService
     {
         $mock = $this->createMock(NhnKcpApiService::class);
@@ -34,6 +41,13 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         return $mock;
     }
 
+    /**
+     * KCP 결제 대기 클레임 결제 건을 만든다.
+     *
+     * @param  array<string, mixed>  $overrides  덮어쓸 속성
+     * @param  bool  $withSnapshot  KRW 통화 스냅샷을 가진 부모 주문을 함께 만들지 여부
+     * @return ClaimPayment 생성된 클레임 결제 건
+     */
     private function makePendingPayment(array $overrides = [], bool $withSnapshot = true): ClaimPayment
     {
         $attributes = array_merge([
@@ -57,11 +71,22 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         return ClaimPaymentFactory::new()->create($attributes);
     }
 
+    /**
+     * 승인 필터가 처음 받는 기본 결과 값을 돌려준다. (아직 처리되지 않은 상태)
+     *
+     * @return array<string, mixed> 필터 초기값
+     */
     private function defaultFilterValue(): array
     {
         return ['success' => false, 'handled' => false, 'transaction_id' => null, 'paid_amount' => null, 'raw_response' => null, 'error_code' => null, 'error_message' => null];
     }
 
+    /**
+     * KCP 결제창이 승인 단계로 넘기는 콜백 값을 만든다.
+     *
+     * @param  array<string, mixed>  $overrides  덮어쓸 값
+     * @return array<string, mixed> 콜백 값
+     */
     private function pgCallback(array $overrides = []): array
     {
         return array_merge([
@@ -73,6 +98,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         ], $overrides);
     }
 
+    /**
+     * 리스너가 클레임 결제 승인 훅을 필터로 구독한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects kcp_claim_approve_listener_subscribes_the_approve_filter
+     */
     public function test_get_subscribed_hooks_returns_a_filter_mapping(): void
     {
         $hooks = ClaimPaymentApproveListener::getSubscribedHooks();
@@ -81,6 +115,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertSame('filter', $hooks['sirsoft-ecommerce.claim_payment.approve']['type']);
     }
 
+    /**
+     * 다른 PG 의 결제 건은 처리하지 않고 넘긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=other_provider
+     *
+     * @effects kcp_claim_approve_listener_skips_other_providers
+     */
     public function test_skips_payments_of_other_providers(): void
     {
         $payment = $this->makePendingPayment(['pg_provider' => 'tosspayments'], withSnapshot: false);
@@ -90,6 +133,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertFalse($result['handled']);
     }
 
+    /**
+     * 결제창 단계 실패는 PG 결과 코드를 실어 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=window_failure
+     *
+     * @effects kcp_claim_window_failure_is_rejected_with_the_pg_code
+     */
     public function test_window_failure_is_rejected_with_the_pg_code(): void
     {
         $payment = $this->makePendingPayment(withSnapshot: false);
@@ -100,6 +152,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertSame('9999', $result['error_code']);
     }
 
+    /**
+     * KRW 가 아닌 주문의 클레임 결제는 승인 호출 없이 CURRENCY_NOT_SUPPORTED 로 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=non_krw
+     *
+     * @effects kcp_claim_non_krw_payment_is_rejected_before_approval
+     */
     public function test_a_non_krw_payment_is_rejected_before_approval(): void
     {
         $this->mockApiService(expectNoApprove: true);
@@ -124,6 +185,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertSame('CURRENCY_NOT_SUPPORTED', $result['error_code']);
     }
 
+    /**
+     * 콜백 결제수단이 입금 대기 수단(VCNT)이면 승인 호출 없이 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=deposit_method
+     *
+     * @effects kcp_claim_deposit_pending_method_is_rejected_before_approval
+     */
     public function test_a_deposit_pending_method_is_rejected_before_approval(): void
     {
         $this->mockApiService(expectNoApprove: true);
@@ -135,12 +205,22 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertSame('CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED', $result['error_code']);
     }
 
+    /**
+     * CLI 승인이 성공하면 거래번호·결제 금액과 환급용 site_cd·모드 메타를 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=cli_approved
+     *
+     * @effects kcp_claim_cli_approval_returns_transaction_and_credential_meta
+     */
     public function test_cli_approval_returns_transaction_and_credential_meta(): void
     {
         $this->mockApiService([
             'res_cd' => '0000',
             'res_msg' => 'OK',
             'tno' => 'KCP-CLAIM-TNO-1',
+            'amount' => '3000',
         ]);
         $payment = $this->makePendingPayment();
 
@@ -154,6 +234,15 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->assertTrue($result['raw_response']['is_test_mode'] ?? null);
     }
 
+    /**
+     * CLI 가 승인을 거절하면 PG 코드와 메시지를 담은 실패 결과를 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=cli_refused
+     *
+     * @effects kcp_claim_cli_refusal_returns_a_failure_result
+     */
     public function test_cli_refusal_returns_a_failure_result(): void
     {
         $this->mockApiService(['res_cd' => '8123', 'res_msg' => '한도초과']);

@@ -168,6 +168,7 @@ class GateTestPopulation
      *
      * @param  array<string, string>  $samples  상대 경로(파일명만) → PHP 소스
      * @param  callable():void  $callback  주입 상태에서 실행할 검사
+     * @return void 반환값 없음
      */
     public static function withInjectedFiles(array $samples, callable $callback): void
     {

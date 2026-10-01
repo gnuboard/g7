@@ -1,6 +1,6 @@
 <partial description="Claim Item Quantity Confirm Modal (§4-6) - detail screen only">
   <!-- 상품 단위 전이의 수량 확인 모달 (§4-6). 수량 입력을 일괄 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없고, 행 인라인에 두면 선택과 무관하게 살아 있어 '체크하지 않은 행의 수량을 바꿔 둔' 상태가 생긴다. 주문상세 선례도 확인 모달이다. 주문상세 모달을 복제하지 않는 이유: 그 파일은 주문 상태 어휘 하드코딩·`_local.changeQuantities` 키·`confirmItems` 계약에 묶여 있다. 여기서 재사용하는 것은 마크업 계약(type:number, min:1, max=현재수량, `/ 수량` 보조 표기)과 클램핑 패턴뿐이다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로 여는 핸들러가 `_global.claimItemQuantityContext` 로 값을 넘긴다. -->
-  <modal data-ref="modal_claim_item_quantity_confirm" title="$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_title" size="md">
+  <modal data-type="composite" data-ref="modal_claim_item_quantity_confirm" title="$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_title" size="md">
     <div class="space-y-4">
       <p data-ref="ciq_001_description" data-if="{{_global.claimItemQuantityContext?.trackingOnly !== true}}" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_description|status={{_global.claimItemQuantityContext?.statusLabel ?? ''}}</p>
       <!-- 「송장만 저장」 모드 — 상태는 옮기지 않고 고른 행(지정 수량)에 송장만 적는다(R7). -->

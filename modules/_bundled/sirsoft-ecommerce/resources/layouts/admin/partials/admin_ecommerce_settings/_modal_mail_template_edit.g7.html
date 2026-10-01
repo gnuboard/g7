@@ -6,7 +6,7 @@
   값은 `$parent._local.editingTemplate` 에 있다 — 목록 화면이 편집 대상을 그 자리에 담아 두고
   저장도 그 화면 기준으로 돌아가기 때문이다. -->
 <partial description="이커머스 메일 템플릿 편집 모달">
-  <modal data-ref="modal_ecommerce_mail_template_edit" title="$t:sirsoft-ecommerce.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_ecommerce_mail_template_edit" title="$t:sirsoft-ecommerce.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="ecommerce_edit_form_container" data-blur-until-loaded="{{$parent._local.isSaving}}" class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="ecommerce_validation_error_banner" data-if="{{$parent._local.templateErrors}}" class="alert-danger">
@@ -74,7 +74,7 @@
               <span>$t:sirsoft-ecommerce.admin.settings.mail_templates.edit_modal.body</span>
               <span class="text-required">*</span>
             </label>
-            <html-editor content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
+            <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
                 <!-- 한국어 본문. 위지윅이라 값이 HTML 문자열로 들어온다. -->
                 <set-state target="$parent._local" editingTemplate.body.ko="{{$event.target.value}}"/>
@@ -86,7 +86,7 @@
         <div data-ref="ecommerce_edit_body_en" data-if="{{($parent._local.editLang ?? $locale) === 'en'}}">
           <div>
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.mail_templates.edit_modal.body</label>
-            <html-editor content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
+            <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
                 <!-- 영어 본문. -->
                 <set-state target="$parent._local" editingTemplate.body.en="{{$event.target.value}}"/>
@@ -96,7 +96,7 @@
           </div>
         </div>
         <div data-ref="ecommerce_edit_is_active_toggle" class="flex-center gap-3">
-          <toggle name="ecommerceTemplateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}" disabled="{{$parent._computed.isReadOnly}}">
+          <toggle data-type="composite" name="ecommerceTemplateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}" disabled="{{$parent._computed.isReadOnly}}">
             <on type="change">
               <!-- 사용 여부. 끄면 이 템플릿으로 나가는 메일이 멈춘다(템플릿은 남는다). -->
               <set-state target="$parent._local" editingTemplate.is_active="{{$event.target.checked}}"/>

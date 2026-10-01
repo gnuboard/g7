@@ -11,6 +11,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
  */
 class ProductOptionService
 {
+    /**
+     * ProductOptionService 생성자
+     *
+     * @param  ProductOptionRepositoryInterface  $repository  상품 옵션 리포지토리
+     * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
+     */
     public function __construct(
         protected ProductOptionRepositoryInterface $repository,
         protected ProductRepositoryInterface $productRepository
@@ -302,13 +308,17 @@ class ProductOptionService
     /**
      * 가격 조정 적용
      *
+     * 옵션 판매가는 「상품 판매가 + 조정액」이다. 인하(subtract)·음수 가산·비율 변경 결과가
+     * 옵션 판매가를 0 아래로 끌어내리지 않도록 조정액 하한을 `-상품 판매가` 로 둔다.
+     *
      * @param  int  $optionId  옵션 ID
-     * @param  string  $method  변경 방식 (set, add, percent)
+     * @param  string  $method  변경 방식 (set, add, subtract, percent)
      * @param  float  $value  변경 값 (소수 통화 대응)
+     * @return void
      */
     private function applyPriceAdjustment(int $optionId, string $method, float $value): void
     {
-        $option = $this->repository->findById($optionId);
+        $option = $this->repository->findByIdWithProduct($optionId);
         if (! $option) {
             return;
         }
@@ -317,9 +327,14 @@ class ProductOptionService
         $newValue = match ($method) {
             'set' => $value,
             'add' => (float) $option->price_adjustment + $value,
+            'subtract' => (float) $option->price_adjustment - $value,
             'percent' => round((float) $option->price_adjustment * (1 + $value / 100), 2),
             default => (float) $option->price_adjustment,
         };
+
+        // 옵션 판매가 하한 0 — 조정액이 상품 판매가만큼 음수가 되면 그 이상 내려가지 않는다
+        $floor = -1 * (float) ($option->product?->selling_price ?? 0);
+        $newValue = max($newValue, $floor);
 
         $this->repository->update($optionId, ['price_adjustment' => $newValue]);
     }
@@ -330,6 +345,7 @@ class ProductOptionService
      * @param  int  $optionId  옵션 ID
      * @param  string  $method  변경 방식 (set, add, subtract)
      * @param  int  $value  변경 값
+     * @return void
      */
     private function applyStockChange(int $optionId, string $method, int $value): void
     {

@@ -8,7 +8,6 @@ use App\Analytics\TrackingRequest;
 use App\Enums\Analytics\CollectFailureReason;
 use App\Enums\Analytics\ReferrerType;
 use App\Extension\HookManager;
-use App\Extension\PluginManager;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use App\Models\Analytics\AnalyticsVisit;
 use App\Services\Analytics\CollectFailureLogger;
@@ -40,6 +39,14 @@ class PrivacyModeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 방문자 통계 설정 전체를 기본값(config/settings/defaults.json)으로 되돌린다 — 관리자 화면에서 저장한 운영 설정이 부팅 config 로 스며든다
+        // (mem:core-settings-boot-config-leaks-into-unit-tests). 각 테스트는 필요한 값을 제 본문에서 덮어쓴다.
+        $defaults = json_decode((string) file_get_contents(base_path('config/settings/defaults.json')), true);
+        config(['g7_settings.core.analytics' => array_replace(
+            (array) config('g7_settings.core.analytics', []),
+            $defaults['defaults']['analytics'] ?? []
+        )]);
 
         $this->privacy = app(PrivacyService::class);
     }
@@ -175,7 +182,7 @@ class PrivacyModeTest extends TestCase
      * 아무것도 모으지 않으면 운영자가 이유도 모른 채 데이터를 잃는다. 익명 수집은
      * 개인정보를 남기지 않아 법적으로 가장 안전한 쪽이다.
      *
-     * @scenario mode=consent, gdpr=absent
+     * @scenario mode=consent, consent_provider=absent
      *
      * @effects consent_mode_without_consent_source_falls_back_to_anonymous
      *
@@ -196,7 +203,7 @@ class PrivacyModeTest extends TestCase
      * 익명으로 동작하는지를 원장과 같은 판정(`PrivacyService::isAnonymous`)으로 구해, 기록기를
      * 직접 부르는 경로와 실제 수집 요청(형식 오류) 경로 모두에서 그 판정과 같게 남는지 본다.
      *
-     * @scenario mode=anonymous, gdpr=absent, ip_family=ipv4
+     * @scenario mode=anonymous, consent_provider=absent, ip_family=ipv4
      *
      * @effects anonymous_mode_failure_log_stores_no_ip
      *
@@ -236,7 +243,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의 관리 플러그인이 없으면 IP 저장 모드는 그대로 IP 저장 모드다.
      *
-     * @scenario mode=full, gdpr=absent
+     * @scenario mode=full, consent_provider=absent
      *
      * @effects full_mode_stores_masked_ip_and_issues_cookie
      *
@@ -256,7 +263,7 @@ class PrivacyModeTest extends TestCase
      * 코어가 동의 관리 플러그인의 클래스를 직접 부르면 그 플러그인 없이는 코어가
      * 서지 못한다. 필터를 열어 두고 답할 수 있는 확장이 답하게 한다.
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario mode=consent, consent_provider=active_consented
      *
      * @effects consent_mode_with_granted_consent_behaves_like_full
      *
@@ -276,7 +283,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의하지 않았으면 거짓을 돌려준다.
      *
-     * @scenario mode=consent, gdpr=active_declined
+     * @scenario mode=consent, consent_provider=active_declined
      *
      * @effects consent_mode_with_declined_consent_records_nothing
      *
@@ -302,7 +309,7 @@ class PrivacyModeTest extends TestCase
      * 세션을 시작하지 않아 null)로 물었다. 배너에서 동의한 게스트의 비콘이 전부 「동의 없음」
      * 으로 빠졌다. 식별자는 요청이 살아 있을 때 정해 실어 보내야 한다 — 큐로 넘어가면 요청이 없다.
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario mode=consent, consent_provider=active_consented
      *
      * @effects consent_lookup_uses_the_consent_providers_guest_session_id
      *
@@ -332,7 +339,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의 관리 확장이 식별자를 주지 않으면 종전대로 라라벨 세션 ID(없으면 null)로 묻는다.
      *
-     * @scenario mode=consent, gdpr=active_declined
+     * @scenario mode=consent, consent_provider=active_declined
      *
      * @effects consent_lookup_uses_the_consent_providers_guest_session_id
      *
@@ -392,10 +399,39 @@ class PrivacyModeTest extends TestCase
         foreach ([
             'mode' => ['privacy_mode' => 'anonymous'],
             'mask' => ['ip_mask_octets' => 2],
-            'pseudonymize' => ['pseudonymize_user_id' => true],
+            // 가명화만 켜면 소급 요청이 가릴 폭·해시 없이 나가 거부된다 — 가릴 폭이 함께 있을 때만 제안한다.
+            'pseudonymize' => ['pseudonymize_user_id' => true, 'ip_mask_octets' => 1],
+            'consent' => ['privacy_mode' => 'consent', 'ip_mask_octets' => 1],
         ] as $case => $change) {
             $after = $this->configWith(array_merge(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false], $change));
             $this->assertTrue(PrivacyService::tightensPrivacy($before, $after), $case);
+        }
+    }
+
+    /**
+     * 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다.
+     *
+     * 브라우저 실측(#703): 「전체 → 동의 연동」으로 저장하면 소급 창이 떴는데, 창이 보내는 값(가릴 폭 0,
+     * 해시 아님)을 소급 요청 검증이 「둘 중 하나는 지정」으로 거부해 어떤 조작으로도 적용할 수 없었다.
+     * 창을 띄우는 판정과 요청을 받는 판정이 같은 기준(`hasRetroTarget`)을 쓴다.
+     *
+     * @scenario mode=consent
+     *
+     * @effects tightening_without_retro_target_offers_nothing
+     *
+     * @return void 없음
+     */
+    public function test_tightening_without_retro_target_offers_nothing(): void
+    {
+        $before = $this->configWith(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false]);
+
+        foreach ([
+            'consent' => ['privacy_mode' => 'consent'],
+            'pseudonymize' => ['pseudonymize_user_id' => true],
+        ] as $case => $change) {
+            $after = $this->configWith(array_merge(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false], $change));
+            $this->assertFalse(PrivacyService::tightensPrivacy($before, $after), $case);
+            $this->assertFalse(PrivacyService::hasRetroTarget($after->ipMaskOctets, false), $case.' — 요청 검증도 같은 판정');
         }
     }
 
@@ -477,7 +513,7 @@ class PrivacyModeTest extends TestCase
      * 모드별 「무엇이 남는가」를 저장된 행으로 단언한다. 서비스 메서드의 반환값만 보면
      * 조립 단계에서 값이 뒤바뀌어도 잡히지 않는다.
      *
-     * @scenario mode=full, gdpr=absent, ip_family=ipv4
+     * @scenario mode=full, consent_provider=absent, ip_family=ipv4
      *
      * @effects full_mode_stores_masked_ip_and_issues_cookie, full_mode_reports_returning_visitors
      *
@@ -502,7 +538,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의 모드에서 동의를 받으면 IP 저장 모드와 같은 행이 남는다.
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario mode=consent, consent_provider=active_consented
      *
      * @effects consent_mode_with_granted_consent_behaves_like_full
      *
@@ -526,7 +562,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의 모드에서 동의가 없으면 아무 행도 남지 않고 제외 사유가 세어진다.
      *
-     * @scenario mode=consent, gdpr=active_declined, exclusion=consent
+     * @scenario mode=consent, consent_provider=active_declined, exclusion=consent
      *
      * @effects consent_mode_with_declined_consent_records_nothing, each_exclusion_reason_is_counted_separately
      *
@@ -550,7 +586,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 동의 모드인데 동의 출처가 없으면 익명 모드의 행이 남는다.
      *
-     * @scenario mode=consent, gdpr=inactive
+     * @scenario mode=consent, consent_provider=inactive
      *
      * @effects consent_mode_without_consent_source_falls_back_to_anonymous
      *
@@ -573,7 +609,7 @@ class PrivacyModeTest extends TestCase
     /**
      * 익명 모드의 원장 행 — ip 없음·솔트 해시·쿠키 없음·재방문 null·같은 날 같은 키.
      *
-     * @scenario mode=anonymous, gdpr=absent, ip_family=ipv4
+     * @scenario mode=anonymous, consent_provider=absent, ip_family=ipv4
      *
      * @effects anonymous_mode_stores_no_ip, anonymous_mode_stores_salted_ip_hash_instead, anonymous_mode_issues_no_cookie, anonymous_mode_leaves_returning_flag_null
      *
@@ -730,31 +766,31 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * 동의 관리 플러그인을 활성으로 흉내 냅니다.
+     * 식별자 추적 허용을 방문자마다 정하는 확장이 있는 사이트를 흉내 냅니다.
      *
-     * 동의 출처 판정은 활성 플러그인 목록을 본다. 목록만 바꿔 「그 플러그인이 켜진 사이트」를
-     * 만든다 — 플러그인 파일을 설치하지 않아도 판정 경로는 같다.
+     * 코어는 어느 확장이 답하는지 모른다 — 코어 필터 `core.analytics.tracking_permission` 에 답하는
+     * 구독자가 있는지만 본다. 그래서 필터 하나를 걸어 「그런 확장이 켜진 사이트」를 만든다.
      *
+     * @param  bool|null  $permitted  이 방문자에게 돌려줄 답 (null 이면 답하지 않음)
      * @return void 없음
      */
-    private function activateConsentPlugin(): void
+    private function answerTrackingPermission(?bool $permitted): void
     {
-        $this->mock(PluginManager::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('getActivePlugins')->andReturn(['sirsoft-gdpr' => ['identifier' => 'sirsoft-gdpr']]);
-        });
+        HookManager::clearFilter(PrivacyService::TRACKING_PERMISSION_FILTER);
+        HookManager::addFilter(PrivacyService::TRACKING_PERMISSION_FILTER, fn ($default) => $permitted ?? $default);
 
         $this->privacy = app(PrivacyService::class);
     }
 
     /**
-     * IP 저장 모드라도 동의 관리 플러그인이 켜져 있으면 **동의 전 방문자는** 익명으로 모인다.
+     * IP 저장 모드라도 추적 허용을 정하는 확장이 있으면 **허용 전 방문자는** 익명으로 모인다.
      *
-     * 그 플러그인은 동의 전 응답에서 방문자 쿠키를 지운다. 쿠키가 남지 않으면 비콘마다
+     * 그런 확장은 허용 전 응답에서 방문자 쿠키를 지운다. 쿠키가 남지 않으면 비콘마다
      * 새 방문자 키가 생겨 한 사람의 이동이 방문 여러 건이 되고, 방문·순방문자가 페이지뷰만큼
      * 부풀며 이탈률이 100% 가 된다. 동의 전 방문자는 일자 회전 해시로 묶는 편이 정직하다.
      * 사이트 모드 자체는 IP 저장 그대로다 — 동의한 방문자는 IP·쿠키로 모인다(다음 테스트).
      *
-     * @scenario mode=full, gdpr=active_declined
+     * @scenario mode=full, consent_provider=active_declined
      *
      * @effects full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
      *
@@ -762,7 +798,7 @@ class PrivacyModeTest extends TestCase
      */
     public function test_full_mode_falls_back_to_anonymous_when_cookies_are_blocked(): void
     {
-        $this->activateConsentPlugin();
+        $this->answerTrackingPermission(false);
 
         $config = AnalyticsConfig::fromSettings();
 
@@ -785,14 +821,14 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * 동의 관리 플러그인이 켜진 IP 저장 사이트에서, 분석·기능 쿠키에 모두 동의한 방문자는 IP·쿠키로 모인다.
+     * 추적 허용을 정하는 확장이 있는 IP 저장 사이트에서, 허용된 방문자는 IP·쿠키로 모인다.
      *
      * 라운드 12 는 동의 전 방문자의 쿠키가 지워지는 문제를 풀려고 사이트 전체를 익명으로 내렸고,
-     * 동의한 방문자까지 IP 를 잃었다(브라우저 실측 — 전체 동의 뒤 방문자 상세 IP 「-」). 기능
-     * 동의가 없으면 플러그인이 쿠키를 지우므로 분석만 동의한 방문자는 익명으로 남긴다.
-     * 모집단은 두 항목의 동의 조합 4가지 전부다(#682 S4 라운드 8 「동의자는 IP 저장 모드」).
+     * 동의한 방문자까지 IP 를 잃었다(브라우저 실측 — 전체 동의 뒤 방문자 상세 IP 「-」). 허용 여부는
+     * 확장이 정한다 — 코어는 답이 `true` 일 때만 식별자로 모으고, `false` 나 무응답이면 익명으로 남긴다
+     * (#682 S4 라운드 8 「동의자는 IP 저장 모드」).
      *
-     * @scenario mode=full, gdpr=active_consented
+     * @scenario mode=full, consent_provider=active_consented
      *
      * @effects consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
      *
@@ -800,23 +836,15 @@ class PrivacyModeTest extends TestCase
      */
     public function test_consented_visitor_is_recorded_in_full_mode_under_the_consent_plugin(): void
     {
-        $this->activateConsentPlugin();
-        $service = 'Plugins\Sirsoft\Gdpr\Services\GdprConsentService';
-        $this->assertTrue(class_exists($service), '전제: 동의 관리 플러그인 서비스가 있다');
-
         $cases = [
-            'analytics+functional' => [['analytics' => true, 'functional' => true], false],
-            'analytics only' => [['analytics' => true, 'functional' => false], true],
-            'functional only' => [['analytics' => false, 'functional' => true], true],
-            'none' => [[], true],
+            'permitted' => [true, false],
+            'denied' => [false, true],
+            'no answer from the subscriber' => [null, true],
         ];
 
-        foreach ($cases as $label => [$consents, $expectAnonymous]) {
+        foreach ($cases as $label => [$permitted, $expectAnonymous]) {
             AnalyticsVisit::query()->delete();
-            $this->mock($service, function (MockInterface $mock) use ($consents): void {
-                $mock->shouldReceive('getCurrentCookieConsents')->andReturn($consents);
-            });
-            $this->privacy = app(PrivacyService::class);
+            $this->answerTrackingPermission($permitted);
 
             ['visit' => $visit, 'result' => $result] = $this->trackOne();
 

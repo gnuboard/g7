@@ -29,7 +29,7 @@
         </button>
       </div>
       <div data-ref="reply_meta" class="flex-center flex-wrap gap-2 text-label">
-        <action-menu data-ref="author_name_menu" data-if="{{!item.author?.is_guest}}" triggerLabel="{{item.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
+        <action-menu data-type="composite" data-ref="author_name_menu" data-if="{{!item.author?.is_guest}}" triggerLabel="{{item.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
           <prop name="items">
             <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
           </prop>
@@ -71,8 +71,12 @@
       <div data-ref="attachments_list_{{index}}" data-if="{{_local.expandedReplyAttachments?.[item.id]}}" data-each="attachment, index in item.attachments ?? []" class="mt-3 ml-4 grid grid-cols-1 gap-2">
         <div data-ref="attachment_card_{{index}}" class="flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group">
           <on type="click">
-            <!-- 답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다 -->
-            <action handler="downloadAttachment" url="{{attachment.download_url}}" filename="{{attachment.original_filename}}"/>
+            <!-- 답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다 -->
+            <action handler="sirsoft-board.downloadAttachment" url="{{attachment.download_url}}" filename="{{attachment.original_filename}}">
+              <fail>
+                <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
+              </fail>
+            </action>
           </on>
           <icon name="download" class="text-base text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"/>
           <span class="text-primary text-sm truncate flex-1">{{attachment.original_filename}} ({{attachment.size_formatted}})</span>
@@ -82,7 +86,7 @@
     <div data-ref="reply_content" class="p-6">
       <extension-point name="html_content" data-ref="reply_html_content" content="{{item?.content}}" isHtml="{{(item?.content_mode ?? 'text') === 'html'}}" class="{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100">
         <default>
-          <html-content content="{{item?.content}}" isHtml="{{(item?.content_mode ?? 'text') === 'html'}}" class="{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"/>
+          <html-content data-type="composite" content="{{item?.content}}" isHtml="{{(item?.content_mode ?? 'text') === 'html'}}" class="{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"/>
         </default>
       </extension-point>
       <button data-if="{{(item?.content?.length ?? 0) > 150}}" type="button" class="flex-center mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1">

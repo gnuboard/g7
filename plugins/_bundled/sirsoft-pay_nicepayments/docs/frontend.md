@@ -25,12 +25,13 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 2개 (정의: `resources/js/handlers/index.ts`).
+핸들러 3개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `requestPayment` | `sirsoft-pay_nicepayments.requestPayment` |
 | `setPaymentMethod` | `sirsoft-pay_nicepayments.setPaymentMethod` |
+| `copyToClipboard` | `sirsoft-pay_nicepayments.copyToClipboard` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
@@ -39,6 +40,9 @@
 제공하는 DOM을 그대로 쓰기 때문입니다 — React 상태로 선택 하이라이트를 그리는 대신 DOM을
 직접 조작해 선택된 버튼에 테두리를 입힙니다(`updateEasyPayButtonStyles`). `requestPayment`
 하나로 PC/모바일 2가지 프로토콜(§docs/architecture.md "인증→승인 2단계")을 모두 처리합니다.
+
+`copyToClipboard` 는 플러그인 설정의 가상계좌 입금통보 주소를 복사합니다(상점관리자에 그대로 붙여 넣는 값).
+설정 화면이 어느 관리자 템플릿으로 그려지든 같게 동작해야 하므로 특정 템플릿의 핸들러에 기대지 않고 플러그인이 직접 둡니다(코어에는 클립보드 핸들러가 없습니다). `navigator.clipboard` 가 막힌 비보안(HTTP) 접속에서는 숨긴 입력칸 복사로 내려갑니다.
 <!-- @intent END -->
 
 ## 전역 진입점
@@ -131,3 +135,56 @@
 `translateNicepay(key, 대체 문구, 값)`(`plugins/_bundled/sirsoft-pay_nicepayments/resources/js/translate.ts`)로 낸다. 영수증 조각의 간편결제 이름은
 `$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + PayMethod)` 로 푼다 — 조각 안에 한국어 이름표를 두지 않는다.
 플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.
+
+## 결제창 닫힘 보고의 소유자 증명
+
+<!-- @intent START -->
+결제창 닫힘 보고(`POST /api/plugins/sirsoft-pay_nicepayments/payment/close-report`)는 결제대기 주문을
+실패·취소로 바꾸므로 서버가 **주문 소유자만** 받아 준다(KVE-2026-2434). 주문자 이메일·전화번호는
+제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
+
+- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
+- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+
+헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
+상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
+토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
+결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+
+나이스페이의 결제창 서명 발급(`sign-data`)도 같은 헤더를 싣는다. 실패한 같은 주문을 다시 결제할 때 서버가
+주문을 결제대기로 되살리는데, 그 복구는 주문 소유자만 할 수 있기 때문이다.
+<!-- @intent END -->
+
+## 주문 화면 주입의 폴링·조회 규약
+
+<!-- @intent START -->
+주문 상세 화면에 결제 정보를 덧붙이는 인젝터 둘 — 관리자 주문 상세 결제수단 표시
+(`adminOrderPaymentDisplayInjector.ts`), 마이페이지·비회원 주문 상세의 결제수단 표시(간편결제 이름)
+(`mypageOrderShowInjector.ts`) — 는 대상 DOM 이 그려질 때까지 재시도하며, 폴링과 서버 조회를
+`resources/js/orderScreenPolling.ts` 에 맡긴다. 예전 `setInterval` 폴러는 틱이 앞선 비동기 조회를 기다리지 않아
+첫 응답이 올 때까지 400ms 마다 같은 조회를 새로 보냈고(조회마다 서버가 나이스페이먼츠 API 까지 간다), 라우트가
+바뀔 때마다 폴러가 쌓였다.
+
+- **직렬 폴러** — `createOrderScreenPoller()`(기본 400ms · 최대 30틱)는 한 틱의 비동기 작업이 끝난 뒤에야 다음
+  틱을 예약한다. 인젝터마다 폴러를 모듈 수준에 **하나만** 두고, `start(key, tick)` 은 같은 key 면 무시하고 다른
+  key 면 이전 폴러를 멈춘다. 대상 경로를 벗어나면 `stop()` 한다. 틱은 `isActive()` 를 받아, 응답을 기다리는 사이
+  폴러가 멈췄으면 DOM 을 건드리지 않고 끝낸다.
+- **화면 진입당 1회 조회** — 영수증(`nicepay-receipt:{주문번호}`)과 관리자 거래 조회는
+  `requestOncePerOrderScreen()` 으로만 보낸다. 한 화면 진입(같은 경로) 동안 key 별로 한 번 보내고 결과를 **실패까지
+  포함해** 재사용한다. 캐시 키에 회원·비회원 토큰이 들어가 토큰이 늦게 준비되면 그때 한 번 더 보낸다. 라우트 변경
+  처리 첫머리의 `enterOrderScreen()` 이 경로가 바뀌면 이전 결과를 버린다.
+- **관리자 주문 상세는 레이아웃 확장의 데이터 소스를 재사용** — 같은 화면의 `admin_order_payment_query` 확장이
+  `transaction-status` 를 데이터 소스 `nicepay_status` 로 이미 받으므로 인젝터는
+  `G7Core.dataSource.get('nicepay_status')` 값을 쓴다(`readSharedDataSource`). 값이 아직 없으면 최대 20틱(약 8초)
+  기다리고, 그래도 없으면(확장 미적용·조회 실패) 화면 진입당 한 번만 직접 조회한다. 라우트 전환 직후 남아 있는
+  이전 주문 값을 새 값으로 오인하지 않도록 `history.pushState`·`popstate` 직후
+  `rememberLeavingDataSources(['nicepay_status'])` 로 떠나는 값을 기억해 두고, 그 값과 같은 객체는 쓰지 않는다. 이
+  재사용 전에는 주문 상세를 열 때마다 거래 조회가 두 번 나갔다.
+- 마이페이지 인젝터는 상태에서 주문을 읽지 못하면(불러오는 중 포함) 조회 없이 재시도만 하므로 별도의 로딩 대기
+  가드(`isOrderDataLoading`)를 두지 않는다. 공용 도우미 파일은 세 결제 플러그인이 같은 내용으로 가진다.
+
+**깨뜨리면 안 되는 것**: 인젝터 안에서 `setInterval` 이나 직접 `fetch` 루프로 되돌리지 않는다 · 결과 캐시에서
+실패를 빼지 않는다 · 레이아웃 확장의 데이터 소스 ID `nicepay_status` 를 바꾸면 인젝터 상수 `STATUS_DATA_SOURCE` 도
+함께 바꾼다(어긋나면 매번 20틱을 기다린 뒤 직접 조회로 떨어져 중복 조회가 되살아난다). 회귀는 Vitest
+`resources/js/__tests__/orderPaymentDisplayInjectors.test.ts` 가 지킨다.
+<!-- @intent END -->

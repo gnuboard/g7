@@ -1,9 +1,9 @@
+import { buildGuestOwnershipHeaders, isSameOriginUrl } from './guestOrderToken';
+
 export interface PaymentCloseReportContext {
     closeReportUrl?: string;
     oid: string;
     price: number;
-    buyer_email?: string;
-    buyer_phone?: string;
     payment_method?: string;
 }
 
@@ -35,16 +35,31 @@ function resolveRetryUrl(closeReportUrl?: string): string | undefined {
     return closeReportUrl.replace(/\/payment\/close-report$/, '/payment/retry');
 }
 
+/**
+ * 결제 컨텍스트를 서버에 보냅니다 (결제창 닫힘 보고·재시도 준비).
+ *
+ * 두 엔드포인트 모두 주문 상태를 바꾸므로 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만
+ * 받아 준다. 회원 Bearer 는 G7Core.api 가 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰을 싣는다.
+ */
 async function postPaymentContext(url: string, payload: Record<string, unknown>, keepalive = false): Promise<void> {
+    const ownershipHeaders = buildGuestOwnershipHeaders();
     const apiClient = ((window as any).G7Core)?.api;
     if (typeof apiClient?.post === 'function') {
-        await apiClient.post(url, payload);
+        if (Object.keys(ownershipHeaders).length > 0) {
+            await apiClient.post(url, payload, { headers: ownershipHeaders });
+        } else {
+            await apiClient.post(url, payload);
+        }
         return;
     }
 
-    const response = await fetch(resolveApiUrl(url), {
+    const resolvedUrl = resolveApiUrl(url);
+    const response = await fetch(resolvedUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...(isSameOriginUrl(resolvedUrl) ? ownershipHeaders : {}),
+        },
         body: JSON.stringify(payload),
         keepalive,
     });
@@ -75,14 +90,12 @@ export async function preparePaymentRetry(context: PaymentCloseReportContext): P
     await postPaymentContext(retryUrl, {
         oid: context.oid,
         price: Number(context.price),
-        buyer_email: context.buyer_email ?? '',
-        buyer_phone: context.buyer_phone ?? '',
         payment_method: context.payment_method ?? '',
     });
 }
 
 /**
- * 결제 실패 화면으로 돌아왔을 때 보고에 쓸 구매자 정보를 남겨 두는 저장소 키.
+ * 결제 실패 화면으로 돌아왔을 때 보고에 쓸 주문 정보를 남겨 두는 저장소 키.
  *
  * 결제창은 전체 페이지 이동으로 열리고 돌아오므로 JS 컨텍스트가 소실된다. sessionStorage 는
  * 같은 탭에서 외부 도메인을 다녀와도 유지되므로, 결제 요청 직전에 저장해 두었다가 꺼내 쓴다.
@@ -104,7 +117,7 @@ function safeSessionStorage(): Storage | null {
 /**
  * 결제창을 열기 직전에 보고용 컨텍스트를 저장합니다.
  *
- * @param context 결제창 닫힘 보고에 필요한 주문·구매자 정보
+ * @param context 결제창 닫힘 보고에 필요한 주문 정보
  */
 export function rememberPendingClose(context: PaymentCloseReportContext): void {
     const storage = safeSessionStorage();
@@ -219,8 +232,6 @@ export async function reportPaymentWindowClosed(
     const payload = {
         oid: context.oid,
         price: Number(context.price),
-        buyer_email: context.buyer_email ?? '',
-        buyer_phone: context.buyer_phone ?? '',
         payment_method: context.payment_method ?? '',
         reason: trimReason(reason) || 'kcp-window-closed',
     };

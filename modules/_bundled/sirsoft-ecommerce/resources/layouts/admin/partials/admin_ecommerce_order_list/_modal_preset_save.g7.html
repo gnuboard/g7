@@ -4,7 +4,7 @@
   키가 빠지면 나중에 이 프리셋을 불러올 때 그 자리가 직전 검색값으로 남는다.
   `target_screen` 이 "orders" 로 고정돼 있어 상품·쿠폰 목록의 프리셋과 한 저장소를 나눠 쓴다. -->
 <partial description="Order List - Preset Save Modal">
-  <modal data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.order.modal.preset_save.title" description="$t:sirsoft-ecommerce.admin.order.modal.preset_save.description" size="sm">
+  <modal data-type="composite" data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.order.modal.preset_save.title" description="$t:sirsoft-ecommerce.admin.order.modal.preset_save.description" size="sm">
     <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
       <on type="input">
         <!-- 이름만 이 창의 `_local` 에 둔다 — 저장할 조건은 이미 `_global` 에 담겨 왔고, 이름은 저장이 끝나면 비워 다음 저장에 남지 않게 한다. -->

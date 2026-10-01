@@ -641,7 +641,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-stack.5"
+                                                        "className": "stack-tight"
                                                     },
                                                     "children": [
                                                         {
@@ -679,7 +679,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-stack.5"
+                                                        "className": "stack-tight"
                                                     },
                                                     "children": [
                                                         {
@@ -903,7 +903,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-stack.5"
+                                                        "className": "stack-tight"
                                                     },
                                                     "children": [
                                                         {

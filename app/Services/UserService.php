@@ -805,12 +805,25 @@ class UserService
 
         // ① 등급 축: 비-슈퍼관리자 액터가 포함시킨 슈퍼 관리자 대상은 제외한다
         // (슈퍼 관리자 무력화 차단 — 슈퍼 세션 유지).
-        $modifiable = UserGradeGuard::filterModifiable($targets);
+        $gradeAllowed = UserGradeGuard::filterModifiable($targets);
 
         // ② 스코프 축: 액터의 유효 스코프(self/role/글로벌) 밖 대상은 제외한다.
         // 판정은 상세 경로와 동일한 SSoT(PermissionHelper::checkScopeAccess)에 위임한다 —
         // 여기서 재구현하면 role 분기만 빠지는 식으로 두 경로의 강도가 갈린다.
-        $modifiable = PermissionHelper::filterByScope($modifiable, 'core.users.update');
+        $modifiable = PermissionHelper::filterByScope($gradeAllowed, 'core.users.update');
+
+        // 제외는 조용히 하되 결과에는 남긴다 — 200 응답에 제외 건수가 없으면 화면은 고른 전원이
+        // 바뀐 것처럼 성공만 안내한다. 두 축의 사유를 따로 실어 운영자가 왜 빠졌는지 알게 한다.
+        $excludedCount = count($targets) - count($modifiable);
+        $excludedReasons = [];
+
+        if (count($targets) > count($gradeAllowed)) {
+            $excludedReasons[] = __('exceptions.cannot_modify_super_admin');
+        }
+
+        if (count($gradeAllowed) > count($modifiable)) {
+            $excludedReasons[] = __('user.bulk_status_out_of_scope');
+        }
 
         // 일괄 '탈퇴'는 건별 정식 탈퇴로 전환한다 — 상태 컬럼만 바꾸면 익명화와
         // before/after_withdraw 훅이 통째로 생략되어, 본인 탈퇴와 결과가 달라진다.
@@ -818,7 +831,13 @@ class UserService
         if ($statusEnum === UserStatus::Withdrawn) {
             $modifiableUuids = array_map(static fn (User $u): string => $u->uuid, $modifiable);
 
-            return $this->bulkWithdraw($modifiableUuids, $status);
+            $result = $this->bulkWithdraw($modifiableUuids, $status);
+
+            return [
+                'updated_count' => $result['updated_count'],
+                'failed_count' => $result['failed_count'] + $excludedCount,
+                'failed_reasons' => array_values(array_unique(array_merge($excludedReasons, $result['failed_reasons']))),
+            ];
         }
 
         $userIds = array_map(static fn (User $u): int => $u->id, $modifiable);
@@ -828,8 +847,8 @@ class UserService
 
             return [
                 'updated_count' => 0,
-                'failed_count' => 0,
-                'failed_reasons' => [],
+                'failed_count' => $excludedCount,
+                'failed_reasons' => $excludedReasons,
             ];
         }
 
@@ -860,8 +879,8 @@ class UserService
 
         return [
             'updated_count' => $updatedCount,
-            'failed_count' => 0,
-            'failed_reasons' => [],
+            'failed_count' => $excludedCount,
+            'failed_reasons' => $excludedReasons,
         ];
     }
 

@@ -57,7 +57,7 @@
           <label class="form-label">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled</label>
           <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint</p>
         </div>
-        <toggle name="attachment_settings.purge_enabled" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}" checked="{{!!_local.form?.attachment_settings?.purge_enabled}}">
+        <toggle data-type="composite" name="attachment_settings.purge_enabled" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}" checked="{{!!_local.form?.attachment_settings?.purge_enabled}}">
           <on type="change">
             <!-- 오래된 첨부 자동 정리 사용 여부. 켜야 아래 보관 일수가 쓰인다 -->
             <set-state target="local" :hasChanges="true" form.attachment_settings.purge_enabled="{{$event.target.checked}}"/>

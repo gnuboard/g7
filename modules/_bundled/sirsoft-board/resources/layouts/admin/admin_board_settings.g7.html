@@ -166,7 +166,7 @@
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <div data-ref="page_header_wrapper">
-        <page-header data-ref="page_header" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+        <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
       </div>
       <div data-ref="sticky_header" class="sticky-section-header">
         <div data-ref="header_content">
@@ -174,7 +174,7 @@
             <icon name="lock" size="lg" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
             <span class="text-warning-soft">$t:sirsoft-board.admin.settings.read_only_message</span>
           </div>
-          <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeBoardSettingsTab || query.tab || 'general'}}" variant="default">
+          <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeBoardSettingsTab || query.tab || 'general'}}" variant="default">
             <prop name="tabs">
               <item id="general" label="$t:sirsoft-board.admin.settings.tabs.general"/>
               <item id="basic_defaults" label="$t:sirsoft-board.admin.settings.tabs.basic_defaults"/>
@@ -199,7 +199,7 @@
             </on>
           </tab-navigation>
         </div>
-        <tab-navigation-scroll data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="sub-tab-nav" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+        <tab-navigation-scroll data-type="composite" data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="sub-tab-nav" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
           <prop name="tabs">
             <item id="basic" label="$t:sirsoft-board.admin.settings.board_settings_tabs.basic"/>
             <item id="permissions" label="$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"/>

@@ -28,7 +28,7 @@
     </div>
     <div data-ref="claim_datagrid_card" class="p-0 md:p-0">
       <!-- DataGrid 의 id 가 전환 오버레이 대상(`claim_datagrid__body`)의 앞자리를 정한다 — 셸의 `named_actions.searchClaims` 와 이 파일의 페이지·페이지크기 이동이 같은 이름을 가리킨다. -->
-      <data-grid data-ref="claim_datagrid" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="claim_datagrid" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" width="140px" :sortable="false" :required="true">
           <cell>
             <span>{{row.requested_at_formatted ?? '-'}}</span>
@@ -47,10 +47,10 @@
             </span>
             <!-- 행 뱃지 — 판매자 접수(D8)·선교환·회수 지연(선교환 반송 기한 경과)·환불 미접수(D9). 판정은 전부 서버가 행에 실어 준다. -->
             <div class="flex flex-wrap gap-1 mt-0.5">
-              <badge data-if="{{row.is_admin_requested === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge</badge>
-              <badge data-if="{{row.is_advance_exchange === true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge</badge>
-              <badge data-if="{{row.is_collection_overdue === true}}" variant="danger" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}</badge>
-              <badge data-if="{{row.has_pending_refund === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge</badge>
+              <badge data-type="composite" data-if="{{row.is_admin_requested === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge</badge>
+              <badge data-type="composite" data-if="{{row.is_advance_exchange === true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge</badge>
+              <badge data-type="composite" data-if="{{row.is_collection_overdue === true}}" variant="danger" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}</badge>
+              <badge data-type="composite" data-if="{{row.has_pending_refund === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge</badge>
             </div>
           </cell>
         </column>
@@ -83,7 +83,7 @@
         </column>
         <column field="status" header="$t:sirsoft-ecommerce.admin.claim.column.status" width="120px" :sortable="false" :required="true">
           <cell>
-            <status-badge status="{{row.status_variant ?? 'default'}}" label="{{row.status_label ?? row.status}}" :showIcon="false"/>
+            <status-badge data-type="composite" status="{{row.status_variant ?? 'default'}}" label="{{row.status_label ?? row.status}}" :showIcon="false"/>
           </cell>
         </column>
         <column field="reason_label" header="$t:sirsoft-ecommerce.admin.claim.column.reason" width="130px" :sortable="false" :required="false">

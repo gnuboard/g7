@@ -1,0 +1,23 @@
+feature: 마일리지 일괄 유효기간 연장 — 여러 회원 적립건 선택 (#703)
+
+description: |
+  관리자 마일리지 내역에서 여러 회원의 적립건을 골라 「유효기간 연장」을 누르면 화면이 첫 행의 회원
+  식별자 하나만 보냈고, 서버는 그 회원의 적립건만 연장했다. 나머지 회원 적립건은 오류 없이 빠졌다.
+  수정 후 화면은 적립건 묶음만 보내고(회원 미지정), 서버는 회원 제한 없이 고른 적립건을 모두 연장하며
+  잔액 캐시 재계산·활동 로그는 회원별로 남긴다. 회원을 명시하는 종전 호출 계약은 유지한다.
+
+axes:
+  selection: [single_member, multiple_members]
+  user_id_param: [omitted, given]
+
+exclusions:
+  - { selection: single_member, user_id_param: given, reason: "종전 계약과 동일 — 기존 MileageTransactionControllerTest::test_extend_expiry 가 고정" }
+  - { selection: single_member, user_id_param: omitted, reason: "multiple_members+omitted 가 상위 집합으로 같은 경로를 검증" }
+
+effects:
+  - all_selected_members_lots_extended
+  - explicit_member_scope_preserved
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageBulkExtendAcrossMembersTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_mileage_transaction_index.test.tsx

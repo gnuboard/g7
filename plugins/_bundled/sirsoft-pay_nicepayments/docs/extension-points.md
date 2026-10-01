@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:319` |
-| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:312` |
-| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:314` |
-| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:289` |
+| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:324` |
+| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:347` |
+| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:319` |
+| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:324` |
 | `sirsoft-pay_nicepayments.payment.refund_failed` | action | — | `src/Listeners/PaymentRefundListener.php:166` |
 <!-- @generated:hooks-published END -->
 
@@ -30,11 +30,11 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 40 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -59,7 +59,8 @@
 
 승인 리스너는 서명 금액(`Amt`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
 `AMOUNT_MISMATCH`), 콜백·응답의 주문번호(`Moid`)가 이 결제 건이 아니면 거절하며, 응답 금액이 서명
-금액과 다르면 망취소한 뒤 실패로 돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+금액과 다르거나 응답에 승인 금액이 없으면(숫자가 아닌 값 포함) 망취소한 뒤 실패로 돌려줍니다. 모듈에 넘기는
+`paid_amount` 는 브라우저 콜백 금액이 아니라 승인 응답의 금액입니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
 `sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
 콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
 한 구현입니다.
@@ -108,8 +109,8 @@
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
-| `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
 | `PaymentRefundListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
@@ -118,8 +119,16 @@
 <!-- @intent START -->
 `RestoreLayoutExtensionsAfterUpdateListener`는 `plugin:update`가 레이아웃 확장 조각(§레이아웃
 확장)의 활성/비활성 상태를 초기화할 수 있어서 존재합니다 — 운영자가 특정 화면을 꺼둔 상태로
-업데이트해도 그 선택이 사라지지 않도록 복원합니다. 8개 리스너 전부가
-`HookListenerInterface`를 구현하는 것은 이 저장소의 전 리스너 공통 계약입니다.
+업데이트해도 그 선택이 사라지지 않도록 복원합니다. 대상 화면에 덧붙이는 조각(overlay)뿐 아니라
+확장점에 붙는 조각(주문 목록 테스트 결제 배지)도 되살리며, 확장점 조각은 그 확장점을 가진 레이아웃이
+있는 템플릿에만 등록합니다. 리스너 전부가 `HookListenerInterface`를 구현하는 것은 이 저장소의 전
+리스너 공통 계약입니다.
+
+`ProvidePaymentMethodDisplayLabelListener` 는 관리자 주문 목록의 결제수단 이름을 채웁니다. 이커머스는
+PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문도 기본 결제수단 이름만 압니다. 이 리스너가
+필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 **자기 결제(`pg_provider`)의
+간편결제 주문에만** 「원 수단 (기본 수단)」 이름을 채우고, 자기 결제가 아니거나 앞선 구독자가 채운 값은
+그대로 돌려줍니다 — 한 목록에 여러 PG 의 주문이 섞이기 때문입니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -127,7 +136,7 @@
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_list_test_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_list` |
+| `resources/extensions/admin_order_list_payment_method_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_order_list_payment_method_badges` |
 | `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
 | `resources/extensions/checkout_easy_pay.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
 | `resources/extensions/user_mypage_order_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
@@ -135,7 +144,7 @@
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트배지, 관리자 주문
+5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트 결제 배지, 관리자 주문
 상세의 거래조회 UI, 체크아웃의 간편결제 버튼, 마이페이지·주문완료의 영수증 버튼이 서로
 다른 화면에 주입되므로 하나로 합치지 않았습니다. `user_mypage_order_receipt.g7.html`과
 `user_order_complete_receipt.g7.html`이 별도 파일인 것은 두 화면의 컴포넌트 트리와 데이터

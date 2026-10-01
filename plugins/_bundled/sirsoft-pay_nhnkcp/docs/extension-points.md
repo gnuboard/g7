@@ -13,10 +13,10 @@
 | `sirsoft-pay_nhnkcp.escrow.denial_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:98` |
 | `sirsoft-pay_nhnkcp.escrow.purchase_cancelled` | action | — | `src/Controllers/EscrowCommonNotifyController.php:97` |
 | `sirsoft-pay_nhnkcp.escrow.purchase_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:96` |
-| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:262` |
-| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:322` |
-| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:241` |
-| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:317` |
+| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:280` |
+| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:327` |
+| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:259` |
+| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:321` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -35,23 +35,30 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 30 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | `RegisterPgProviderListener` | `registerProvider` | 10 |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | `RegisterEasyPayMethodsListener` | `injectEasyPayMethods` | 30 |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
 `RegisterPgProviderListener` 가 우선순위 10 으로 두 훅(`get_client_config`/
 `registered_pg_providers`)을 모두 구독하는 이유는 "이 PG 가 존재한다는 사실"과 "체크아웃
 화면이 필요로 하는 클라이언트 설정값"이 같은 리스너의 책임이기 때문입니다 — 등록과 설정
-노출이 다른 리스너로 갈라지면 한쪽만 갱신되는 사각이 생깁니다. `PaymentRefundListener`(10)
+노출이 다른 리스너로 갈라지면 한쪽만 갱신되는 사각이 생깁니다.
+
+`ProvidePaymentMethodDisplayLabelListener` 는 관리자 주문 목록의 결제수단 이름을 채웁니다. 이커머스는
+PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문도 기본 결제수단 이름만 압니다. 이 리스너가
+필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 **자기 결제(`pg_provider`)의
+간편결제 주문에만** 「원 수단 (기본 수단)」 이름을 채우고, 자기 결제가 아니거나 앞선 구독자가 채운 값은
+그대로 돌려줍니다 — 한 목록에 여러 PG 의 주문이 섞이기 때문입니다. `PaymentRefundListener`(10)
 가 `CancelActivityLogListener`(20)보다 먼저 실행되도록 우선순위를 명시한 것은 실제 취소가
 성공한 뒤에야 활동 로그를 남기기 위함입니다 — 순서가 뒤바뀌면 "로그는 있는데 취소는 실패"가
 생깁니다.
@@ -63,8 +70,10 @@
 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
 
 승인 리스너는 결제창 금액(`good_mny`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
-`AMOUNT_MISMATCH`), KCP 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을 직접 취소한 뒤 실패로
-돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`AMOUNT_MISMATCH`), 승인 요청에 청구액을 `ordr_mony` 로 실어 KCP 가 결제창 금액과 대조하게 합니다.
+승인 뒤에는 KCP 응답 금액(`amount`)만 근거로 삼아, 청구액과 다르거나 응답에 금액이 없으면 승인분을
+직접 취소한 뒤 실패로 돌려줍니다 — 브라우저가 보낸 `good_mny` 는 승인액의 대체값으로 쓰지 않습니다.
+거래번호도 응답의 `tno` 만 씁니다(없으면 `MISSING_TNO` 로 거절). 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
 `sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
 콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
 한 구현입니다.
@@ -113,8 +122,9 @@
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
-| `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
 | `PaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
+| `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
@@ -123,9 +133,11 @@
 <!-- @intent START -->
 `RestoreLayoutExtensionsAfterUpdateListener`가 존재하는 이유는 `plugin:update`가 레이아웃
 확장 조각(§레이아웃 확장)의 활성/비활성 상태를 초기화할 수 있어서입니다 — 운영자가 특정
-화면(예: 테스트배지)을 꺼둔 상태로 플러그인을 업데이트해도 그 선택이 사라지지 않도록
-업데이트 직후 복원합니다. 8개 리스너 전부가 `HookListenerInterface`를 구현하는 것은
-auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 공통 계약입니다.
+화면(예: 주문 목록 테스트 결제 배지)을 꺼둔 상태로 플러그인을 업데이트해도 그 선택이 사라지지 않도록
+업데이트 직후 복원합니다. 대상 화면에 덧붙이는 조각(overlay)뿐 아니라 확장점에 붙는 조각도 되살리며,
+확장점 조각은 그 확장점을 가진 레이아웃이 있는 템플릿에만 등록합니다. 리스너 전부가
+`HookListenerInterface`를 구현하는 것은 auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너
+공통 계약입니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -133,7 +145,7 @@ auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 �
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_list_test_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_list` |
+| `resources/extensions/admin_order_list_payment_method_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_order_list_payment_method_badges` |
 | `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
 | `resources/extensions/checkout_easy_pay.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
 | `resources/extensions/user_order_complete_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/order_complete` |
@@ -141,7 +153,7 @@ auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 �
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트배지, 관리자 주문
+5개 조각은 각각 독립적인 화면 관심사입니다 — 관리자 주문 목록의 테스트 결제 배지, 관리자 주문
 상세의 거래조회 UI, 체크아웃의 간편결제 버튼, 주문완료/마이페이지의 영수증 버튼이 서로
 다른 화면·다른 컴포넌트 트리에 주입되므로 하나의 조각으로 합치지 않았습니다. 새 KCP 기능이
 필요로 하는 화면이 이 5개 중 하나에 해당하면 새 조각을 만들지 말고 기존 조각을 확장합니다.

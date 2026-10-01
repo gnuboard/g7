@@ -65,7 +65,7 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
         <!-- 떠난 화면의 미리보기 응답이 다음 화면의 로컬 상태에 쓰이지 않도록 debounce 타이머와 세대 번호를 정리한다. -->
         <action handler="sirsoft-ecommerce.clearClaimApplyTimers"/>
       </on>
-      <container class="py-8">
+      <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 주문상세로 돌아간다. 같은 목록 클러스터 안의 이동이므로 목록 상태를 그대로 물려준다. -->
         <div class="flex items-center gap-2 mb-4">

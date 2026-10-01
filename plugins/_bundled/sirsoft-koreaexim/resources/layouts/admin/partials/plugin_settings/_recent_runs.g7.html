@@ -11,7 +11,7 @@
       <span>$t:sirsoft-koreaexim.history_tab</span>
     </button>
   </div>
-  <data-grid data-ref="koreaexim_recent_runs" data="{{koreaeximRecentRuns?.data?.data ?? []}}" :pagination="false" :selectable="false" emptyMessage="$t:sirsoft-koreaexim.empty">
+  <data-grid data-type="composite" data-ref="koreaexim_recent_runs" data="{{koreaeximRecentRuns?.data?.data ?? []}}" :pagination="false" :selectable="false" emptyMessage="$t:sirsoft-koreaexim.empty">
     <column field="search_date" header="$t:sirsoft-koreaexim.date"/>
     <column field="trigger_label" header="$t:sirsoft-koreaexim.trigger"/>
     <column field="status_label" header="$t:sirsoft-koreaexim.result">

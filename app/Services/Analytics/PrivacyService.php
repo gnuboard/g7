@@ -8,7 +8,6 @@ use App\Analytics\TrackingRequest;
 use App\Analytics\VisitorRecognizer;
 use App\Enums\Analytics\PrivacyMode;
 use App\Extension\HookManager;
-use App\Extension\PluginManager;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,45 +20,61 @@ use Illuminate\Support\Facades\Log;
  * 동의 모드인데 동의를 확인할 곳이 없으면 익명으로 내려갑니다 — 아무것도 모으지
  * 않으면 운영자가 이유도 모른 채 데이터를 잃고, 익명 수집은 개인정보를 남기지 않아
  * 법적으로 가장 안전한 쪽입니다.
+ *
+ * **코어는 동의를 관리하는 확장이 무엇인지 모릅니다.** 코어가 자기 질문을 자기 필터로 묻고,
+ * 답할 수 있는 확장이 구독해 답합니다. 아무도 답하지 않는 것이 정상 상태이며(동의 관리 확장이
+ * 없는 사이트) 그때는 코어 기본 동작을 따릅니다.
+ *
+ *   - `core.analytics.visitor_has_consent` — 동의 모드: 이 방문자가 분석 수집에 동의했는가
+ *   - `core.analytics.tracking_permission` — 이 방문자를 식별자(IP·방문자 쿠키)로 추적해도 되는가.
+ *     답하는 확장이 있으면 방문자마다 허용 여부가 갈린다는 뜻이다(동의 전 쿠키를 막는 확장).
  */
 class PrivacyService
 {
-    /** GDPR 플러그인 식별자 */
-    private const GDPR_PLUGIN = 'sirsoft-gdpr';
+    /** 동의 모드에서 분석 동의 여부를 묻는 필터 이름 (코어 소유) */
+    public const CONSENT_FILTER = 'core.analytics.visitor_has_consent';
 
-    /** 동의 여부를 묻는 필터 이름 */
-    private const CONSENT_FILTER = 'core.analytics.visitor_has_consent';
+    /** 식별자 추적 허용 여부를 묻는 필터 이름 (코어 소유) */
+    public const TRACKING_PERMISSION_FILTER = 'core.analytics.tracking_permission';
+
+    /** 동의 출처 — 방문자마다 추적 허용을 정하는 확장이 답한다 */
+    public const SOURCE_PROVIDER = 'provider';
+
+    /** 동의 출처 — 동의 모드의 동의 여부만 답하는 확장이 있다 */
+    public const SOURCE_FILTER = 'filter';
+
+    /** 동의 출처 — 답하는 확장이 없다 */
+    public const SOURCE_NONE = 'none';
 
     /**
      * 개인정보 처리기를 생성합니다.
      *
      * @param  VisitorRecognizer  $recognizer  방문자 식별기
-     * @param  PluginManager  $plugins  플러그인 관리자 (동의 출처 판정용)
      */
     public function __construct(
         private readonly VisitorRecognizer $recognizer,
-        private readonly PluginManager $plugins,
     ) {}
 
     /**
      * 동의 출처를 판정합니다.
      *
-     * @return string 동의 출처 (`filter`·`gdpr`·`none`)
+     * 코어는 어느 확장이 답하는지 알 필요가 없다 — 자기 필터에 답하는 구독자가 있는지만 본다.
+     *
+     * @return string 동의 출처 (`provider`·`filter`·`none`)
      */
     public function consentSource(): string
     {
-        // 동의 필터에 답하는 확장이 있으면 그것이 출처다. 코어는 어느 확장이 답하는지
-        // 알 필요가 없다 — 답이 오는지만 본다.
-        if (array_key_exists(self::CONSENT_FILTER, HookManager::getFilters())) {
-            return 'filter';
+        $filters = HookManager::getFilters();
+
+        if (! empty($filters[self::TRACKING_PERMISSION_FILTER])) {
+            return self::SOURCE_PROVIDER;
         }
 
-        try {
-            return array_key_exists(self::GDPR_PLUGIN, $this->plugins->getActivePlugins()) ? 'gdpr' : 'none';
-        } catch (\Throwable $e) {
-            // 플러그인 목록을 못 읽으면 동의 출처가 없는 것으로 본다 — 익명으로 내려간다.
-            return 'none';
+        if (! empty($filters[self::CONSENT_FILTER])) {
+            return self::SOURCE_FILTER;
         }
+
+        return self::SOURCE_NONE;
     }
 
     /**
@@ -76,12 +91,11 @@ class PrivacyService
     /**
      * 이 방문자의 요청을 익명 모드로 다뤄야 하는지 판정합니다.
      *
-     * 사이트 전체 판정(`isAnonymous`)과 하나만 다르다 — IP 저장 모드인데 동의 관리 플러그인이
-     * 켜진 사이트에서는 **방문자마다** 가른다. 분석·기능 쿠키에 모두 동의한 방문자는 IP 저장
-     * 모드 그대로(IP·방문자 쿠키) 모으고, 그렇지 않은 방문자만 익명으로 모은다. 기능 동의까지
-     * 보는 이유는 그 플러그인이 기능 동의 전에는 방문자 쿠키를 응답에서 지우기 때문이다 —
-     * 쿠키가 남지 못하는 방문자를 쿠키 방식으로 세면 비콘마다 새 방문이 된다(#682 S4 라운드 8,
-     * 결정 「동의자는 IP 저장 모드」).
+     * 사이트 전체 판정(`isAnonymous`)과 하나만 다르다 — IP 저장 모드인데 식별자 추적 허용을
+     * 방문자마다 정하는 확장이 답하는 사이트에서는 **방문자마다** 가른다. 허용된 방문자는 IP 저장
+     * 모드 그대로(IP·방문자 쿠키) 모으고, 그렇지 않은 방문자만 익명으로 모은다. 그런 확장은 허용 전에
+     * 방문자 쿠키를 응답에서 지우므로, 쿠키가 남지 못하는 방문자를 쿠키 방식으로 세면 비콘마다 새
+     * 방문이 된다(#682 S4 라운드 8, 결정 「동의자는 IP 저장 모드」).
      *
      * @param  TrackingRequest  $request  수집 요청
      * @param  AnalyticsConfig  $config  설정
@@ -96,7 +110,7 @@ class PrivacyService
         }
 
         if ($config->anonymousFallbackReason($source) === AnalyticsConfig::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES) {
-            return ! $this->visitorAcceptsTrackingCookies($request);
+            return ! $this->visitorPermitsTracking($request);
         }
 
         return true;
@@ -105,7 +119,7 @@ class PrivacyService
     /**
      * 사이트의 모든 방문자가 익명 모드로 모이는지 판정합니다.
      *
-     * 진단 화면의 「실제 모드」가 읽는다. 동의 관리 플러그인 때문에 **동의 전 방문자만**
+     * 진단 화면의 「실제 모드」가 읽는다. 추적 허용을 정하는 확장 때문에 **허용 전 방문자만**
      * 익명으로 모이는 경우는 사이트 모드가 여전히 IP 저장이다 — 사유는 따로 실린다.
      *
      * @param  AnalyticsConfig  $config  설정
@@ -120,22 +134,25 @@ class PrivacyService
     }
 
     /**
-     * 방문자가 분석·기능 쿠키에 모두 동의했는지 확인합니다.
+     * 이 방문자를 식별자로 추적해도 되는지 코어 필터로 묻습니다.
      *
-     * 동의 관리 플러그인에 직접 묻는다(이 판정은 그 플러그인이 켜진 사이트에서만 불린다).
-     * 확인할 수 없으면 동의하지 않은 것으로 본다 — 모르는 상태에서 IP 를 남기지 않는다.
+     * 이 판정은 추적 허용 필터에 답하는 확장이 있을 때만 불린다. 확인할 수 없거나 답이 `true` 가
+     * 아니면 허용하지 않은 것으로 본다 — 모르는 상태에서 IP 를 남기지 않는다.
      *
      * @param  TrackingRequest  $request  수집 요청
-     * @return bool 두 항목 모두 동의했으면 true
+     * @return bool 허용이면 true
      */
-    private function visitorAcceptsTrackingCookies(TrackingRequest $request): bool
+    private function visitorPermitsTracking(TrackingRequest $request): bool
     {
         try {
-            $consents = $this->installedConsentPluginConsents($request);
-
-            return ($consents['analytics'] ?? false) === true && ($consents['functional'] ?? false) === true;
+            return HookManager::applyFilters(
+                self::TRACKING_PERMISSION_FILTER,
+                null,
+                $request->userId,
+                $request->sessionId,
+            ) === true;
         } catch (\Throwable $e) {
-            Log::warning('방문자 통계 동의 확인 실패', ['error' => $e->getMessage()]);
+            Log::warning('방문자 통계 추적 허용 확인 실패', ['error' => $e->getMessage()]);
 
             return false;
         }
@@ -164,68 +181,34 @@ class PrivacyService
      */
     public function hasAnalyticsConsent(TrackingRequest $request, AnalyticsConfig $config): ?bool
     {
-        if ($config->privacyMode !== PrivacyMode::Consent || $this->consentSource() === 'none') {
+        if ($config->privacyMode !== PrivacyMode::Consent || $this->consentSource() === self::SOURCE_NONE) {
             return null;
         }
 
+        return $this->visitorHasConsent($request->userId, $request->sessionId);
+    }
+
+    /**
+     * 방문자가 분석 수집에 동의했는지 코어 필터로 묻습니다.
+     *
+     * 코어는 동의 관리 확장의 클래스를 부르지 않는다 — 코어가 확장에 의존하면 그 확장 없이는
+     * 코어가 서지 않는다. 필터를 열어 두고 답할 수 있는 확장이 답하게 한다. 아무도 답하지 않으면
+     * 동의하지 않은 것으로 본다. 브라우저의 동의 조회 API 도 같은 판정을 쓴다.
+     *
+     * @param  int|null  $userId  회원 ID (게스트면 null)
+     * @param  string|null  $sessionId  동의 조회용 세션 식별자
+     * @return bool 동의 여부
+     */
+    public function visitorHasConsent(?int $userId, ?string $sessionId): bool
+    {
         try {
-            // 코어는 동의 관리 플러그인의 클래스를 직접 부르지 않는다 — 코어가 플러그인에
-            // 의존하면 그 플러그인 없이는 코어가 서지 않는다. 대신 필터를 열어 두고
-            // 답할 수 있는 확장이 답하게 한다. 아무도 답하지 않으면 기본값(false)이 남는다.
-            $granted = HookManager::applyFilters(
-                self::CONSENT_FILTER,
-                null,
-                $request->userId,
-                $request->sessionId,
-            );
-
-            if ($granted !== null) {
-                return (bool) $granted;
-            }
-
-            // 아직 이 필터에 답하는 확장이 없는 설치를 위한 폴백. 동의 관리 플러그인이
-            // 설치돼 있으면 그 서비스에 직접 묻는다 — 클래스가 없으면 묻지 않으므로
-            // 코어가 플러그인 없이도 그대로 선다.
-            return $this->askInstalledConsentPlugin($request);
+            return (bool) HookManager::applyFilters(self::CONSENT_FILTER, null, $userId, $sessionId);
         } catch (\Throwable $e) {
             // 동의를 확인할 수 없으면 수집하지 않는다 — 모르는 상태에서 모으는 것보다 안전하다.
             Log::warning('방문자 통계 동의 확인 실패', ['error' => $e->getMessage()]);
 
             return false;
         }
-    }
-
-    /**
-     * 설치돼 있는 동의 관리 플러그인에 동의 여부를 묻습니다.
-     *
-     * 클래스 이름을 문자열로만 들고 있고 존재할 때만 해석합니다 — `use` 로 가져오면
-     * 코어가 그 플러그인에 컴파일 단위로 묶여 플러그인 없는 설치에서 깨집니다.
-     *
-     * @param  TrackingRequest  $request  수집 요청
-     * @return bool 동의 여부 (물을 곳이 없으면 false)
-     */
-    private function askInstalledConsentPlugin(TrackingRequest $request): bool
-    {
-        return (bool) ($this->installedConsentPluginConsents($request)['analytics'] ?? false);
-    }
-
-    /**
-     * 설치돼 있는 동의 관리 플러그인에서 이 방문자의 쿠키 동의 항목을 읽습니다.
-     *
-     * @param  TrackingRequest  $request  수집 요청
-     * @return array<string, mixed> 항목 → 동의 여부 (물을 곳이 없으면 빈 배열)
-     */
-    private function installedConsentPluginConsents(TrackingRequest $request): array
-    {
-        $serviceClass = 'Plugins\\Sirsoft\\Gdpr\\Services\\GdprConsentService';
-
-        if (! class_exists($serviceClass)) {
-            return [];
-        }
-
-        $consents = app($serviceClass)->getCurrentCookieConsents($request->userId, $request->sessionId);
-
-        return is_array($consents) ? $consents : [];
     }
 
     /**
@@ -288,6 +271,10 @@ class PrivacyService
      * 모드가 올라가거나, 주소를 더 가리거나, 회원 번호 가명화를 새로 켜면 강해진 것입니다.
      * 설정 저장 응답(`retro_anonymize_available`)이 이 판정 하나만 씁니다.
      *
+     * 강해졌어도 소급 요청이 성립하지 않으면 제안하지 않습니다 — 소급 창은 새 설정의 가릴 폭과 해시 여부
+     * (익명 모드)를 그대로 보내고, 요청 검증은 둘 다 비면 거부합니다(`hasRetroTarget`). 「전체 → 동의 연동」
+     * 처럼 가릴 폭 0 으로 모드만 올리면 창을 띄워도 적용할 수 없었다(#703 실측).
+     *
      * @param  AnalyticsConfig  $before  변경 전 설정
      * @param  AnalyticsConfig  $after  변경 후 설정
      * @return bool 소급 제안 여부
@@ -300,8 +287,26 @@ class PrivacyService
             PrivacyMode::Anonymous => 2,
         };
 
-        return $rank($after->privacyMode) > $rank($before->privacyMode)
+        $tightened = $rank($after->privacyMode) > $rank($before->privacyMode)
             || $after->ipMaskOctets > $before->ipMaskOctets
             || ($after->pseudonymizeUserId && ! $before->pseudonymizeUserId);
+
+        return $tightened
+            && self::hasRetroTarget($after->ipMaskOctets, $after->privacyMode === PrivacyMode::Anonymous);
+    }
+
+    /**
+     * 소급 익명화 요청에 가릴 대상이 있는지 판정합니다.
+     *
+     * 소급 제안(`tightensPrivacy`)과 소급 요청 검증(`AnonymizeRequest`)이 이 판정 하나를 함께 씁니다 —
+     * 둘이 다른 기준을 쓰면 띄운 창의 요청이 거부된다.
+     *
+     * @param  int  $maskOctets  가릴 IP 옥텟 수
+     * @param  bool  $hash  주소를 지우고 해시만 남길지 여부
+     * @return bool 가릴 대상이 하나라도 있으면 true
+     */
+    public static function hasRetroTarget(int $maskOctets, bool $hash): bool
+    {
+        return $maskOctets > 0 || $hash;
     }
 }

@@ -1,7 +1,8 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "Admin Claim Request Modal — exchange / return on behalf of the customer (#599 §3-11)"
+        "description": "Admin Claim Request Modal — exchange / return on behalf of the customer (#599 §3-11)",
+        "editor_label": "$t:sirsoft-ecommerce.admin.order.claim_request.editor_label"
     },
     "comment": "관리자 직권 접수 창 (교환·반품 — D5~D8). 주문 상세 선택 바의 [교환 접수]·[반품 접수] 가 연다. 모달은 부모 `_local` 을 해석하지 못하므로 상태는 전부 `_global.adminClaimRequest` 다(핸들러 `adminClaimRequestHandlers`). 사유는 판매자 귀책(고객 비노출) 사유까지, 청구는 사유로 자동 계산한 값을 미리보기가 보여 주고 운영자가 배송비·청구 방식(「무료」 포함)을 고친다. 선택지는 `claimRequestContext` 가 나른다(사유 카탈로그·청구 방식 설정은 `settings.read` 게이트).",
     "id": "modal_admin_claim_request",

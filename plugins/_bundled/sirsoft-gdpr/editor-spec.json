@@ -19,7 +19,6 @@
           "show_settings_button": true,
           "consent_version": 3,
           "consent_expiry_days": 365,
-          "privacy_policy_slug": "privacy",
           "privacy_policy_url": "/privacy",
           "geo_targeting": false,
           "geo_countries": [
@@ -175,7 +174,7 @@
               "email": "manager@example.com"
             },
             "snapshot": {
-              "privacy_policy_slug": "privacy",
+              "privacy_policy_url": "/privacy",
               "cookie_categories": [
                 {
                   "key": "necessary",
@@ -190,6 +189,10 @@
                   "enabled": true
                 }
               ]
+            },
+            "privacy_policy": {
+              "url": "/privacy",
+              "legacy_slug": null
             },
             "blocked_domains_list": [
               "www.google-analytics.com",
@@ -246,7 +249,7 @@
       "gdprPublicSettings": {
         "data": {
           "cookie_policy_version": "1",
-          "privacy_policy_slug": "privacy",
+          "privacy_policy_url": "/privacy",
           "privacy_policy_available": true,
           "legal_entity_name": "",
           "data_storage_location": "",
@@ -906,7 +909,6 @@
                   "show_settings_button": true,
                   "consent_version": 3,
                   "consent_expiry_days": 365,
-                  "privacy_policy_slug": "privacy",
                   "privacy_policy_url": "/privacy",
                   "geo_targeting": false,
                   "geo_countries": [
@@ -975,7 +977,7 @@
                 "form": {
                   "banner_enabled": true,
                   "consent_expiry_days": "",
-                  "privacy_policy_slug": ""
+                  "privacy_policy_url": ""
                 }
               }
             },
@@ -983,8 +985,8 @@
               "_local.errors.consent_expiry_days": [
                 "1 이상 3650 이하의 일수를 입력해 주세요."
               ],
-              "_local.errors.privacy_policy_slug": [
-                "개인정보처리방침 페이지 주소를 입력해 주세요."
+              "_local.errors.privacy_policy_url": [
+                "개인정보처리방침 주소 에는 / 로 시작하는 사이트 경로나 https:// 로 시작하는 주소만 입력할 수 있습니다."
               ]
             }
           }

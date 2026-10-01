@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\LayoutMarkup;
 
+use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
@@ -75,16 +76,9 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         foreach ($files as $file) {
             $relative = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
 
-            // 아래 둘은 종전 조용한 `continue` 였다. 조용히 넘기면 레지스트리 해석이 깨지거나 JSON 이
-            // 손상돼도 "왕복 불일치 0" 이 유지된다 — 같은 파일의 이관 게이트(:250 이하)는 이미 이 둘을
-            // 실패로 다루고 있어 엄격도가 비대칭이었다. 여기서도 실패로 맞춘다.
+            // 레지스트리는 템플릿 자신의 파일에서만 해석된다(검사용). 모듈·플러그인 파일은 null 이 정상이다 —
+            // 컴파일·역변환 산출은 템플릿과 무관하므로 템플릿 없이 왕복한다(설치 경로와 같은 조건).
             $registry = $resolver->registryFor($file);
-
-            if ($registry === null) {
-                $failures[] = "{$relative} (대상 템플릿 레지스트리를 해석하지 못했습니다)";
-
-                continue;
-            }
 
             $json = json_decode(File::get($file), true);
 
@@ -437,18 +431,18 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-message_bizppurio/resources/extensions/notification_template_form_footer_actions.g7.html',
         'plugins/_bundled/sirsoft-message_bizppurio/resources/extensions/notification_template_form_sections.g7.html',
         'plugins/_bundled/sirsoft-message_bizppurio/resources/layouts/admin/plugin_settings.g7.html',
-        'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_test_badge.g7.html',
+        'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_payment_method_badge.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_payment_query.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/checkout_payment_error.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/user_order_show.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/layouts/admin/plugin_settings.g7.html',
-        'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_test_badge.g7.html',
+        'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_payment_method_badge.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_payment_query.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/checkout_easy_pay.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/user_order_complete_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/user_order_show.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/layouts/admin/plugin_settings.g7.html',
-        'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_list_test_badge.g7.html',
+        'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_list_payment_method_badge.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_payment_query.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/checkout_easy_pay.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_mypage_order_receipt.g7.html',
@@ -1092,13 +1086,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
+            // 템플릿 자신의 파일만 검사용 레지스트리가 있다 — 모듈·플러그인 파일은 템플릿 없이 컴파일한다.
             $registry = $resolver->registryFor($markupFile);
-
-            if ($registry === null) {
-                $failures[] = "{$relative} — 대상 템플릿 레지스트리를 해석하지 못했습니다";
-
-                continue;
-            }
 
             // D41 — `<json>` 태그만 세면 속성값·`<prop>` 본문의 통짜 JSON 을 놓친다.
             // 1급 문법이 있는데 blob 으로 떨어진 자리를 여기서 잡는다.
@@ -1109,7 +1098,10 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
             // 레지스트리를 함께 넘긴다(D53) — 컴포넌트 노드의 텍스트는 화면에 그려질 콘텐츠라
             // 문법으로 없앨 수 없다. 넘기지 않으면 그런 표시용 JSON 이 영원히 닫히지 않는 대장
             // 항목으로 남아 진짜 잔여와 구분되지 않는다.
-            $emitted = array_count_values(LayoutMarkupRoundTrip::rawJsonEmissions($source, $registry));
+            //
+            // 모듈·플러그인 파일은 붙을 템플릿이 정해지지 않으므로(컴파일은 템플릿과 무관) 계량 보조로만
+            // 저장소에 있는 모든 템플릿의 컴포넌트를 합친 목록을 쓴다 — 특정 템플릿을 고르지 않는다.
+            $emitted = array_count_values(LayoutMarkupRoundTrip::rawJsonEmissions($source, $registry ?? $this->allTemplateComponents()));
             ksort($emitted);
 
             $allowed = self::RAW_JSON_PENDING_GRAMMAR[$relative] ?? [];
@@ -1233,6 +1225,45 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
             '이관 제외 집합이 대장과 다릅니다 — 결함만 고치고 이관을 잊었거나(대장에 남아 있음), '
             .'사유 없이 새로 제외됐습니다(대장에 없음).',
         );
+    }
+
+    /** @var ComponentRegistry|null 저장소 전 템플릿 컴포넌트 합집합 (계량 보조, 1회 생성) */
+    private ?ComponentRegistry $allTemplateComponents = null;
+
+    /**
+     * 저장소에 있는 모든 템플릿의 컴포넌트를 합친 레지스트리를 만듭니다 (원시 JSON 계량의 컴포넌트 판별용).
+     *
+     * 템플릿 목록은 디렉터리에서 도출한다 — 특정 템플릿을 이름으로 고르지 않는다. 같은 이름은 한 번만 싣는다.
+     *
+     * @return ComponentRegistry 합집합 레지스트리
+     */
+    private function allTemplateComponents(): ComponentRegistry
+    {
+        if ($this->allTemplateComponents !== null) {
+            return $this->allTemplateComponents;
+        }
+
+        $merged = ['templateId' => 'measurement-union', 'version' => '0.0.0', 'components' => ['basic' => [], 'composite' => [], 'layout' => []]];
+        $seen = [];
+
+        foreach (glob(base_path('templates/_bundled/*/components.json')) ?: [] as $manifest) {
+            $decoded = json_decode((string) file_get_contents($manifest), true);
+
+            foreach (($decoded['components'] ?? []) as $category => $entries) {
+                foreach ((array) $entries as $entry) {
+                    $name = is_array($entry) ? ($entry['name'] ?? null) : null;
+
+                    if (! is_string($name) || isset($seen[$name]) || ! isset($merged['components'][$category])) {
+                        continue;
+                    }
+
+                    $seen[$name] = true;
+                    $merged['components'][$category][] = $entry;
+                }
+            }
+        }
+
+        return $this->allTemplateComponents = ComponentRegistry::fromArray($merged);
     }
 
     /**

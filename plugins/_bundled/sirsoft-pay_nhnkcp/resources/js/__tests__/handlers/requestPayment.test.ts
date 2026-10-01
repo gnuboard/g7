@@ -14,6 +14,7 @@ import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS,
     buildKcpTaxFields,
     isSupportedKcpCurrency,
     requestPaymentHandler,
+    resolveKcpPcPayMethod,
     watchKcpPaymentFrameClosure,
 } from '../../handlers/requestPayment';
 
@@ -223,6 +224,19 @@ describe('requestPaymentHandler', () => {
         });
         expect(buildKcpEasyPayReturnFields('card', false)).toEqual({});
         expect(buildKcpEasyPayReturnFields('nhnkcp_unknown', true)).toEqual({});
+    });
+
+    // 서버는 pay_method 를 보내지 않고 payment_method 만 싣는다 — 그 키로 PC 결제창 수단을 정해야
+    // 가상계좌·계좌이체 주문이 카드 결제창으로 열리지 않는다(2026-10-01 테스트 상점 실측: 가상계좌 주문에 카드 창).
+    it('PC 결제창 수단은 서버가 저장한 payment_method 로 정한다', () => {
+        expect(resolveKcpPcPayMethod('vbank', false)).toBe('001000000000');
+        expect(resolveKcpPcPayMethod('bank', false)).toBe('010000000000');
+        expect(resolveKcpPcPayMethod('phone', false)).toBe('000010000000');
+        expect(resolveKcpPcPayMethod('card', false)).toBe('100000000000');
+        // 간편결제는 카드 비트마스크 + direct 파라미터
+        expect(resolveKcpPcPayMethod('nhnkcp_kakaopay', true)).toBe('100000000000');
+        // 모르는 수단은 카드로 떨어진다(종전과 같은 폴백)
+        expect(resolveKcpPcPayMethod('unknown', false)).toBe('100000000000');
     });
 });
 

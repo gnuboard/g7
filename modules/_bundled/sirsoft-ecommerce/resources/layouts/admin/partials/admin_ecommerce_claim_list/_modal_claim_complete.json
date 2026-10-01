@@ -1,7 +1,8 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "Claim Completion Modal (D26) - shared by all three entry points"
+        "description": "Claim Completion Modal (D26) - shared by all three entry points",
+        "editor_label": "$t:sirsoft-ecommerce.admin.claim.complete.editor_label"
     },
     "comment": "완료 처리 모달 (D26). 세 진입점(① 목록 일괄 변경의 '완료' 선택 ② 신청서 내 상품 일괄 적용의 완료 선택 ③ 상세의 [완료 처리] 버튼)이 이 파일 하나를 공유한다 — 복제하면 한 곳만 고쳤을 때 나머지 두 경로가 조용히 옛 규칙으로 남는다. 그래서 이 모달은 목록 데이터소스를 읽지 않고 `_global.claimComplete*` 계약만 읽는다: 여는 쪽이 `sirsoft-ecommerce.openClaimCompleteModal` 에 대상과 실행 경로를 넘기면 된다. 제목은 유형이 정한다 — 교환·반품 둘만 완료 처리 모달을 연다. 셋째 값이 오면(계약 위반) 유형 없는 일반 제목으로 떨어뜨린다: 반품 제목을 폴백으로 쓰면 교환·반품이 아닌 대상에 '반품완료 처리' 라는 틀린 안내가 나간다.",
     "id": "modal_claim_complete",

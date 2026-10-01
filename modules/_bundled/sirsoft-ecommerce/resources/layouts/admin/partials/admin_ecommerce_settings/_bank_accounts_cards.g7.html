@@ -22,7 +22,7 @@
           <span class="font-medium text-gray-900 dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
         </div>
         <div class="flex-center gap-2 flex-shrink-0">
-          <toggle name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
           <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <!-- 계좌 삭제. 마지막 한 줄은 지울 수 없게 버튼 자체를 숨긴다 — 계좌가 0개면 무통장 결제를 받을 수 없기 때문이다. -->

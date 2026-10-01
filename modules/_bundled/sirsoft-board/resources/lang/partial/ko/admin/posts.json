@@ -31,6 +31,7 @@
     "view_count": "조회 {{count}}",
     "reaction_total": "반응 {{count}}",
     "attachments": "첨부파일 ({{count}})",
+    "download_failed": "첨부파일을 내려받지 못했습니다.",
     "prev": "이전",
     "next": "다음",
     "comments_title": "댓글 ({{count}})",

@@ -4,9 +4,9 @@
   서버가 null 을 주므로 그때는 화살표를 그리지 않는다. -->
 <partial description="방문자 통계 개요 KPI 카드 4장">
   <div data-ref="analytics_kpi_row" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-    <stat-card data-ref="kpi_today" value="{{(analytics_overview?.data?.kpi?.today ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.today" change="{{analytics_overview?.data?.kpi?.change_pct ?? undefined}}" changeLabel="$t:admin.analytics.overview.kpi.change_label" trend="{{(analytics_overview?.data?.kpi?.change_pct ?? 0) > 0 ? 'up' : ((analytics_overview?.data?.kpi?.change_pct ?? 0) < 0 ? 'down' : 'neutral')}}" iconName="users"/>
-    <stat-card data-ref="kpi_yesterday" value="{{(analytics_overview?.data?.kpi?.yesterday ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.yesterday" iconName="calendar-day"/>
-    <stat-card data-ref="kpi_max" value="{{(analytics_overview?.data?.kpi?.max?.value ?? 0) | number}}" label="{{$t('admin.analytics.overview.kpi.max') + (analytics_overview?.data?.kpi?.max?.date ? ' (' + analytics_overview.data.kpi.max.date + ')' : '')}}" iconName="arrow-trend-up"/>
-    <stat-card data-ref="kpi_total" value="{{(analytics_overview?.data?.kpi?.total ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.total" iconName="chart-line"/>
+    <stat-card data-type="composite" data-ref="kpi_today" value="{{(analytics_overview?.data?.kpi?.today ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.today" change="{{analytics_overview?.data?.kpi?.change_pct ?? undefined}}" changeLabel="$t:admin.analytics.overview.kpi.change_label" trend="{{(analytics_overview?.data?.kpi?.change_pct ?? 0) > 0 ? 'up' : ((analytics_overview?.data?.kpi?.change_pct ?? 0) < 0 ? 'down' : 'neutral')}}" iconName="users"/>
+    <stat-card data-type="composite" data-ref="kpi_yesterday" value="{{(analytics_overview?.data?.kpi?.yesterday ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.yesterday" iconName="calendar-day"/>
+    <stat-card data-type="composite" data-ref="kpi_max" value="{{(analytics_overview?.data?.kpi?.max?.value ?? 0) | number}}" label="{{$t('admin.analytics.overview.kpi.max') + (analytics_overview?.data?.kpi?.max?.date ? ' (' + analytics_overview.data.kpi.max.date + ')' : '')}}" iconName="arrow-trend-up"/>
+    <stat-card data-type="composite" data-ref="kpi_total" value="{{(analytics_overview?.data?.kpi?.total ?? 0) | number}}" label="$t:admin.analytics.overview.kpi.total" iconName="chart-line"/>
   </div>
 </partial>

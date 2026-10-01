@@ -290,7 +290,7 @@
             ]
         },
         {
-            "comment": "배송 국가 선택 (국제 배송 활성화 시만 표시)",
+            "comment": "배송 국가 선택 (국제 배송 활성화 시만 표시). 선택값·국내/해외 주소 폼·결제 버튼 잠금·배송비 계산이 모두\n         같은 자리(_local.shipping.country_code, 없으면 주문서 진입 때 시드한 _local.checkout.country_code)를 본다 —\n         선택 칸만 선호 배송국가를 보고 주소 폼은 KR 로 떨어지면 「미국」이 골라진 채 국내 폼이 보였다.",
             "type": "basic",
             "name": "Div",
             "if": "{{shippingSettings?.data?.shipping?.international_shipping_enabled === true}}",
@@ -394,7 +394,7 @@
                     ],
                     "props": {
                         "name": "country_code",
-                        "value": "{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
+                        "value": "{{_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR'}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
                         "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: $localized(c.name) || c.code }))}}"
                     }
@@ -576,7 +576,7 @@
             "comment": "국내 주소 검색 - sirsoft-daum_postcode 플러그인 연동 (KR 국가만 표시)",
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.shipping?.country_code ?? 'KR') === 'KR'}}",
+            "if": "{{(_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR'}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -768,18 +768,41 @@
                             "text": "{{_local.errors?.['shipping.address']?.[0] ?? ''}}"
                         },
                         {
-                            "comment": "상세 주소",
+                            "comment": "상세 주소 — 국내 주문의 필수 칸이다(서버가 해외 주소 1행이 없을 때 요구한다). 별표와 칸 아래 오류가\n             없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다).",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:shop.checkout.detail_address"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-red-500 ml-1"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
                             "type": "basic",
                             "name": "Input",
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                                        "className": "{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
                                     }
                                 }
                             },
                             "actions": [
                                 {
+                                    "comment": "입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -793,8 +816,17 @@
                                 "name": "address_detail",
                                 "value": "{{_local.shipping?.address_detail ?? ''}}",
                                 "placeholder": "$t:shop.checkout.detail_address_placeholder",
-                                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                "className": "{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
                             }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['shipping.address_detail']}}",
+                            "props": {
+                                "className": "text-red-500 text-xs block"
+                            },
+                            "text": "{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}"
                         }
                     ]
                 }
@@ -804,7 +836,7 @@
             "comment": "해외 주소 입력 폼 (KR 이외 국가 선택 시 표시)",
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.shipping?.country_code ?? 'KR') !== 'KR'}}",
+            "if": "{{(_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') !== 'KR'}}",
             "responsive": {
                 "portable": {
                     "props": {

@@ -455,7 +455,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── admin_analytics_bots.g7.html (봇·크롤러 — 봇별 집계 + 최근 요청)
 │   ├── admin_analytics_diagnostics.g7.html (수집 진단 — 실패 로그·집계 실행 이력·구간 재집계)
 │   ├── admin_analytics_privacy_requests.g7.html (정보주체 요청)
-│   ├── admin_analytics_settings.g7.html (설정 — 수집·개인정보·봇/제외·보존/용량·리포트 탭)
+│   ├── admin_analytics_settings.g7.html (설정 — 수집·개인정보·봇/제외·보존/용량·리포트 탭. 개인정보 탭의 「동의 출처」는 코어가 주는 `provider`·`filter`·`none` 값만 해석한다 — 특정 동의 관리 확장의 이름을 알지 않는다)
 │   └── partials/admin_analytics/
 │       ├── _partial_period_bar.g7.html (공통 기간 바 — 프리셋 8·달력·단위·제외·CSV)
 │       ├── _partial_report_grid.g7.html (공통 리포트 표 — 검색·정렬·쪽·부가 열)
@@ -463,6 +463,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │       ├── _partial_kpi_row.g7.html (KPI 카드 4)
 │       ├── _partial_realtime_bar.g7.html (실시간 한 줄)
 │       ├── _partial_notification_definitions.g7.html (설정>리포트 탭의 알림 정의 상태)
+│       ├── _modal_row_trend.g7.html (한 항목 추이 — 리포트 표 행 끝의 추이 아이콘이 연다)
 │       ├── _modal_reaggregate.g7.html (구간 재집계)
 │       ├── _modal_purge_all.g7.html (전체 삭제)
 │       ├── _modal_retro_anonymize.g7.html (소급 익명화)
@@ -755,7 +756,14 @@ slots.content:
 ✅ Form 내 Button에 type="button" 명시 (submit 방지)
 ✅ 수정 폼은 route.id 존재 여부로 생성/수정 구분
 ✅ FormField에 error prop으로 서버 검증 에러 표시
+✅ 모듈이 주입한 칸도 같은 폼 상태에 실어 저장 요청 한 번으로 보낸다 (아래)
 ```
+
+**모듈이 주입한 칸의 저장**: `admin_user_form` 의 [저장]은 코어 회원 저장 요청 **한 번**입니다
+(`_local.form` 전체가 본문). 이커머스의 결제 통화·배송국가처럼 모듈이 `extension_form_content` 에 주입한
+칸도 `name` 바인딩으로 같은 `_local.form` 에 실리고, 그 모듈이 코어 훅으로 같은 요청 안에서 검증·저장합니다.
+검증 오류는 필드 이름 키로 `_local.errors` 에 담겨 주입 칸 아래에 뜹니다. 저장 성공 뒤 모듈 전용 엔드포인트를
+따로 부르지 않습니다 — 저장이 두 요청으로 갈라지면 한쪽만 실패한 채 저장 완료가 뜨는 상태가 생깁니다.
 
 ---
 
@@ -783,6 +791,16 @@ slots.content:
 - `setState` — 탭 전환
 - `apiCall` — 설정 저장
 - `openModal` — 확인 다이얼로그
+
+**상태 배지 색**: 정적 파일 상태(일반 탭)·사이트맵 진행(SEO 탭) 배지처럼 값에 따라 색을 바꾸는 배지는 `<class-map key="{{…}}">` 안에
+`<variant when="값">클래스</variant>` 로 적는다. 굽기 결과는 노드 최상위 `classMap` 이고 엔진은 그 자리만 읽는다 — 컴포넌트 속성으로
+`classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(#703 에서 두 배지를 이렇게 바로잡음).
+
+**언어팩 탭의 빌려 온 창**: 언어팩 탭은 언어팩 관리 화면의 목록 조각(`admin_language_pack_list/_content`)을 그대로 쓰므로,
+그 조각이 여는 창도 `admin_settings.g7.html` 이 같은 조각 파일(`partials/admin_language_pack_list/_modal_*`)을 `<modal>` 로
+선언해야 동작이 이어진다(사본을 두지 않는다). 같은 로케일 자리를 두 언어팩이 다툴 때 스위치의 409 갈래가 여는
+`_modal_slot_conflict` 도 여기에 포함된다 — 이 선언이 빠져 있어 환경설정에서는 충돌 때 아무 창도 뜨지 않았다(#703).
+목록 조각이 여는 창을 늘리면 이 화면의 선언도 함께 늘린다.
 
 ---
 
@@ -816,6 +834,25 @@ modals:
 **특수사항**:
 - 템플릿 관리는 Admin/User 탭 분리 (`_tab_admin.g7.html`, `_tab_user.g7.html`)
 - 레이아웃 편집기 (`admin_template_layout_edit.g7.html`)는 CodeEditor + 실시간 미리보기
+- 목록 격자는 `ExtensionCardGrid` 다(언어팩 목록 `admin_language_pack_list/_content` 도 같다).
+- **「숨김 항목 포함」 체크는 주소(`query.include_hidden`)가 원천이다.** 목록 `params` 는
+  `include_hidden="{{query.include_hidden === '1' ? 1 : 0}}"` 로 읽고, 체크 `change` 는
+  `<navigate path="…" :mergeQuery="true"><query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/></navigate>`
+  로 주소만 바꾼다(주소가 바뀌면 목록을 다시 받으므로 따로 `refetch-data-source` 하지 않는다). 종전의
+  `_local.showHidden` 은 페이지를 넘기면 풀려 체크는 켜진 채 숨김을 뺀 목록을 받았고, `set-state` 직후 재조회가
+  이전 값으로 나가 한 박자 늦게 반영됐다(#703). 이 값을 화면 상태로 되돌리지 않는다.
+- 이 체크는 최고관리자 전용이며 `data-if="{{current_user?.data?.is_super === true}}"` 로 가린다 — 관리자 로그인
+  응답 전역 이름은 `current_user` 이고 값은 `data` 아래에 있다. 존재하지 않는 `currentUser` 를 읽어 최고관리자에게도
+  체크가 보이지 않던 것을 #703 에서 바로잡았다.
+- 켜기/끄기 스위치는 격자의 `resyncKey="{{_global.extensionToggleResync ?? 0}}"` 계약을 따른다
+  (§[components.md](components.md) `ExtensionCardGrid` 스위치 재동기). 토글 요청의 `fail` 과 409(의존 충돌 창)
+  갈래에서 `_global.extensionToggleResync` 를 1 올린다 — 409 는 `fail` 을 거치지 않으므로 그 갈래에서도 목록을
+  다시 받는다. 템플릿은 확인 창을 여는 시점에 올려, 창이 답을 받을 때까지 스위치를 서버 값에 둔다.
+- 버튼 잠금은 서버가 422 로 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible === false`)이면 설치와
+  켜기를, `installing`·`uninstalling`·`updating` 진행 중이면 스위치·삭제·업데이트를 잠근다.
+- 모듈·플러그인·템플릿을 다시 켜면 서버가 함께 꺼졌던 언어팩(`pending_language_packs`)을 한 번만 실어 주므로, 활성
+  성공 갈래(모듈·플러그인은 스위치 요청, 템플릿은 `_modal_activate`·`_modal_force_activate`)가 `_global.reactivateLanguagePacksData` 에 담고 언어팩 관리 권한(`core.language_packs.manage`)이 있을
+  때만 `_modal_reactivate_language_packs` 를 연다. 각 목록 레이아웃이 이 창을 `<modal>` 로 선언해 둔다.
 
 ---
 

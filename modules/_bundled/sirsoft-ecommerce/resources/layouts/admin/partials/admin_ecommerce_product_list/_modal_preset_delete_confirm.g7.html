@@ -3,7 +3,7 @@
   표시(`isDeleting`)를 두지 않아 버튼이 잠기지 않는다 — 응답이 늦으면 같은 삭제가 두 번 나갈 수
   있는 자리다. -->
 <partial description="Product Index - Preset Delete Confirm Modal">
-  <modal data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
     <p data-ref="preset_delete_message" class="text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
     <div data-ref="preset_delete_footer" class="flex justify-end gap-2 mt-4">
       <button type="button" class="btn btn-secondary">

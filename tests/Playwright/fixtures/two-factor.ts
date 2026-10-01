@@ -85,6 +85,28 @@ export function plantTwoFactorCode(challengeId: string, code = '135790'): string
 }
 
 /**
+ * 인증 앱 플러그인의 `playwright:seed-totp` 를 실행하고 마지막 출력 줄을 돌려준다.
+ *
+ * 인증 앱 자격증명은 그 플러그인 소유라 코어 커맨드가 아니라 플러그인 커맨드가 심는다.
+ *
+ * @param args 커맨드 인자 (예: ['--enroll=<email>'])
+ * @returns stdout 의 마지막 비어있지 않은 줄
+ */
+function runSeedTotp(args: string[]): string {
+  const command = `php artisan playwright:seed-totp ${args.join(' ')}`.trim();
+  const stdout = execSync(command, {
+    cwd: coreRoot(),
+    encoding: 'utf-8',
+    env: { ...process.env, G7_PLAYWRIGHT_BYPASS: '1' },
+  });
+  const lines = stdout.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) {
+    throw new Error(`playwright:seed-totp 가 빈 응답을 반환했습니다: ${command}`);
+  }
+  return lines[lines.length - 1].trim();
+}
+
+/**
  * 대상 계정에 «인증 앱이 이미 등록된 상태» 를 만들고 평문 시크릿을 돌려준다.
  *
  * 실측은 휴대폰을 들 수 없으므로 QR 스캔 단계를 서버에서 건너뛴다. 돌려받은 시크릿으로
@@ -94,7 +116,7 @@ export function plantTwoFactorCode(challengeId: string, code = '135790'): string
  * @returns Base32 시크릿
  */
 export function enrollTotpFor(email: string): string {
-  return runSeedTwoFactor([`--enroll-totp=${email}`, '--gc-hours=0']);
+  return runSeedTotp([`--enroll=${email}`]);
 }
 
 /**
@@ -106,7 +128,7 @@ export function enrollTotpFor(email: string): string {
  * @returns 6자리 코드
  */
 export function totpCodeFor(secret: string): string {
-  return runSeedTwoFactor([`--totp-code=${secret}`, '--gc-hours=0']);
+  return runSeedTotp([`--code=${secret}`]);
 }
 
 /**

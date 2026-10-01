@@ -177,7 +177,7 @@
           </a>
         </div>
       </div>
-      <tab-navigation-scroll data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
+      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
         <prop name="tabs">
           <item id="basic" label="$t:sirsoft-ecommerce.admin.product.tabs.basic"/>
           <item id="sales" label="$t:sirsoft-ecommerce.admin.product.tabs.sales"/>
@@ -206,18 +206,18 @@
           </div>
         </div>
         <section data-ref="product_code_info_section" data-if="{{!!route.itemCode}}" id="section_product_code_info" class="scroll-mt-32 mt-6 mb-6">
-          <grid :cols="2" :gap="4">
+          <grid data-type="layout" :cols="2" :gap="4">
             <responsive on="portable" :cols="1"/>
-            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.product_code">
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.product_code">
               <span class="text-primary font-medium">{{product?.data?.product_code ?? '-'}}</span>
             </form-field>
-            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.sales_product_code">
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.sales_product_code">
               <span class="text-primary font-medium">{{product?.data?.sales_product_code ?? '-'}}</span>
             </form-field>
-            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.created_at">
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.created_at">
               <span class="text-secondary">{{product?.data?.created_at | datetime('YYYY-MM-DD HH:mm')}}</span>
             </form-field>
-            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.updated_at">
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.updated_at">
               <span class="text-secondary">{{product?.data?.updated_at | datetime('YYYY-MM-DD HH:mm')}}</span>
             </form-field>
           </grid>
@@ -235,7 +235,7 @@
                 <responsive on="portable" class="w-full text-center"/>
                 <p class="text-primary font-medium truncate">{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}</p>
                 <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}</p>
-                <p class="text-sm font-medium text-primary-600 dark:text-primary-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
+                <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
               </div>
               <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
                 <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"/>

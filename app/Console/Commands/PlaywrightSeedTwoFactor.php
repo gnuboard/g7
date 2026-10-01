@@ -7,14 +7,10 @@ use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
 use App\Models\Role;
 use App\Models\User;
-use Plugins\Sirsoft\Totp\Models\TotpCredential;
-use Plugins\Sirsoft\Totp\Support\Base32;
-use Plugins\Sirsoft\Totp\Support\Totp;
+use App\Services\UserService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Playwright E2E 용 2단계 인증 픽스처 커맨드.
@@ -28,6 +24,11 @@ use Illuminate\Support\Facades\DB;
  * 보는 대신 알려진 값을 심어 "코드가 맞을 때" 를 재현한다 — 검증 대상은 코드 생성이
  * 아니라 로그인 흐름(코드 확인 전 토큰 미발급 / 확인 후 발급)이다.
  * 심는 방식은 PHPUnit `TwoFactorAuthTest::issuedCode()` 와 동일하다.
+ *
+ * 인증 앱(TOTP) 자격증명 심기·코드 계산은 그 플러그인의 `playwright:seed-totp` 가 맡는다 — 종전에는
+ * 이 커맨드가 플러그인 모델을 직접 import 했다(2026-09-28 결정으로 이관). 테스트 계정 정리는
+ * 실제 삭제 경로(`UserService::deleteUser`)를 태워, 확장이 `core.user.before_delete` 에서 자기 행을
+ * 치우게 한다 — 코어가 확장 테이블 이름을 알 필요가 없다.
  *
  * 보안 가드 (3중, `playwright:issue-token` 과 동형):
  *   ① CLI 한정 — `php_sapi_name() === 'cli'`. production 웹 요청에서 도달 불가
@@ -44,14 +45,12 @@ class PlaywrightSeedTwoFactor extends Command
         {--ensure-user= : 이 접미사로 Active 테스트 사용자를 생성/갱신하고 이메일을 출력한다}
         {--password= : --ensure-user 가 설정할 비밀번호 (기본값 Passw0rd!2fa)}
         {--admin : --ensure-user 계정에 admin 역할을 부여한다}
-        {--role=* : --admin 과 함께, 확장이 만든 전용 역할 identifier 를 추가로 부여한다 (예: sirsoft-totp.credentials)}
+        {--role=* : --admin 과 함께, 확장이 만든 전용 역할 identifier 를 추가로 부여한다 (예: 확장식별자.credentials)}
         {--plant= : 이 challenge 에 알려진 인증 코드의 해시를 심는다 (challenge UUID)}
         {--code=135790 : --plant 가 심을 인증 코드}
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 2FA 테스트 계정을 정리. 0 이면 정리 안 함}
         {--purge-users : 나이와 무관하게 playwright 2FA 테스트 계정을 전부 제거 (실측 종료 직후 호출)}
-        {--purge-prefix= : --purge-users 대상을 이 접미사로 시작하는 계정으로 한정 (스펙별 정리)}
-        {--enroll-totp= : 이 이메일 계정에 확정된 TOTP 자격증명을 심고 시크릿을 출력한다}
-        {--totp-code= : 이 Base32 시크릿의 현재 코드를 계산해 출력한다 (인증 앱 대역)}';
+        {--purge-prefix= : --purge-users 대상을 이 접미사로 시작하는 계정으로 한정 (스펙별 정리)}';
 
     protected $description = 'Playwright E2E 용 2단계 인증 픽스처 (테스트 계정 준비 / 인증 코드 심기)';
 
@@ -59,16 +58,9 @@ class PlaywrightSeedTwoFactor extends Command
     private const TEST_EMAIL_PREFIX = 'playwright_2fa_';
 
     /**
-     * 실측이 쓰는 고정 백업 코드 — 평문을 알아야 «백업 코드로 로그인» 축을 자동화할 수 있다.
-     *
-     * @var array<int, string>
-     */
-    private const TEST_BACKUP_CODES = ['pwtst-aaaa1', 'pwtst-bbbb2'];
-
-    /**
      * 커맨드를 실행합니다.
      *
-     * 지정된 옵션에 따라 테스트 계정 준비·인증 코드 심기·TOTP 등록·계정 정리를 수행합니다.
+     * 지정된 옵션에 따라 테스트 계정 준비·인증 코드 심기·계정 정리를 수행합니다.
      *
      * @return int 종료 코드
      */
@@ -119,77 +111,13 @@ class PlaywrightSeedTwoFactor extends Command
             $did = true;
         }
 
-        if ($email = $this->option('enroll-totp')) {
-            if (! $this->enrollTotp((string) $email)) {
-                return self::FAILURE;
-            }
-            $did = true;
-        }
-
-        if ($secret = $this->option('totp-code')) {
-            $this->line(Totp::codeAt((string) $secret, Totp::timestepAt()));
-            $did = true;
-        }
-
         if (! $did) {
-            $this->error('--ensure-user · --plant · --purge-users · --enroll-totp · --totp-code 중 하나는 지정해야 합니다.');
+            $this->error('--ensure-user · --plant · --purge-users 중 하나는 지정해야 합니다.');
 
             return self::FAILURE;
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * 대상 계정에 확정된 TOTP 자격증명을 심고 평문 시크릿을 출력합니다.
-     *
-     * 실측은 휴대폰을 들 수 없으므로 «앱이 이미 등록된 상태»를 서버에서 만들어 준다.
-     * 등록 API 를 그대로 태우면 QR 을 사람이 읽어야 해서 자동화가 불가능하다.
-     *
-     * 이 커맨드 전체가 `G7_PLAYWRIGHT_BYPASS` 가드 뒤에 있으므로 운영에서는 실행되지 않는다.
-     *
-     * @param  string  $email  대상 계정 이메일
-     * @return bool 성공 여부
-     */
-    private function enrollTotp(string $email): bool
-    {
-        $user = User::where('email', $email)->first();
-
-        if ($user === null) {
-            $this->error("계정을 찾을 수 없습니다: {$email}");
-
-            return false;
-        }
-
-        if (! class_exists(TotpCredential::class)) {
-            $this->error('sirsoft-totp 플러그인이 설치되어 있지 않습니다.');
-
-            return false;
-        }
-
-        $secret = Base32::randomSecret();
-
-        TotpCredential::query()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'secret' => $secret,
-                'confirmed_at' => now(),
-                // 방금 심은 자격증명으로 즉시 로그인해야 하므로 리플레이 기준을 비워 둔다.
-                'last_used_timestep' => null,
-                // 대조 시점(TotpCredential::matchBackupCode)이 하이픈을 걷어내고 소문자로
-                // 맞추므로 저장도 같은 규칙을 거쳐야 한다 — 어긋나면 올바른 코드가 거절된다.
-                'backup_codes' => array_map(
-                    static fn (string $code): string => Hash::make(
-                        strtolower((string) preg_replace('/[^A-Za-z0-9]/', '', $code))
-                    ),
-                    self::TEST_BACKUP_CODES,
-                ),
-            ]
-        );
-
-        $this->line($secret);
-
-        return true;
     }
 
     /**
@@ -241,7 +169,7 @@ class PlaywrightSeedTwoFactor extends Command
                 $user->roles()->attach($adminRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
             }
 
-            // 확장이 만든 전용 역할(예: `sirsoft-totp.credentials`)은 admin 역할에 딸려오지
+            // 확장이 만든 전용 역할(예: 인증 앱 플러그인의 자격증명 관리 역할)은 admin 역할에 딸려오지
             // 않는다 — 그 권한으로만 보이는 화면을 측정하려면 따로 붙여야 한다. 이미 있는
             // 역할만 붙인다(없으면 그 확장이 비활성이라는 뜻이라 조용히 지나간다).
             foreach (array_filter((array) $this->option('role')) as $identifier) {
@@ -314,10 +242,7 @@ class PlaywrightSeedTwoFactor extends Command
         User::where('email', 'like', $prefix.'%')
             ->chunkById(100, function ($chunk) use (&$removed) {
                 foreach ($chunk as $user) {
-                    $user->tokens()->delete();
-                    $user->roles()->detach();
-                    $this->detachExtensionRows((int) $user->id);
-                    $user->delete();
+                    $this->deleteTestUser($user);
                     $removed++;
                 }
             });
@@ -326,24 +251,19 @@ class PlaywrightSeedTwoFactor extends Command
     }
 
     /**
-     * 사용자 삭제를 막는 확장 소유 행을 먼저 치웁니다.
+     * 테스트 계정을 실제 삭제 경로로 지웁니다.
      *
-     * 이 커맨드는 `core.user.before_delete` 훅을 태우지 않고 모델을 직접 지우므로, 확장이
-     * 그 훅에서 하던 정리가 일어나지 않아 외래키가 삭제를 막는다 — 정리 실패로 알려진
-     * 비밀번호를 가진 관리자 계정이 DB 에 남는 것이 실제 위험이라 여기서 직접 치운다.
+     * 모델을 직접 지우면 확장이 `core.user.before_delete` 에서 하던 정리(예: 인증 앱 자격증명)가
+     * 일어나지 않아 외래키가 삭제를 막고, 알려진 비밀번호를 가진 관리자 계정이 DB 에 남는다.
+     * 종전에는 그 확장 테이블 이름을 여기 적어 두고 직접 지웠다 — 이제 운영자 삭제와 같은
+     * `UserService::deleteUser` 를 태워, 어떤 확장이 설치돼 있든 그 확장이 자기 행을 치운다.
      *
-     * 테이블이 없는 설치(플러그인 미설치)에서는 아무것도 하지 않는다.
-     *
-     * @param  int  $userId  대상 사용자 ID
+     * @param  User  $user  삭제할 테스트 계정
      * @return void
      */
-    private function detachExtensionRows(int $userId): void
+    private function deleteTestUser(User $user): void
     {
-        foreach (['totp_credentials'] as $table) {
-            if (Schema::hasTable($table)) {
-                DB::table($table)->where('user_id', $userId)->delete();
-            }
-        }
+        app(UserService::class)->deleteUser($user);
     }
 
     /**
@@ -365,10 +285,7 @@ class PlaywrightSeedTwoFactor extends Command
             ->where('created_at', '<', $threshold)
             ->chunkById(100, function ($chunk) use (&$removed) {
                 foreach ($chunk as $user) {
-                    $user->tokens()->delete();
-                    $user->roles()->detach();
-                    $this->detachExtensionRows((int) $user->id);
-                    $user->delete();
+                    $this->deleteTestUser($user);
                     $removed++;
                 }
             });

@@ -2,7 +2,7 @@
      (`reviewSettings`)을 그대로 읽어 컴포넌트에 넘긴다. 사진은 곧바로 올리지 않고(`autoUpload=false`)
      리뷰 등록과 함께 보낸다 — 쓰다 만 리뷰의 사진이 서버에 남지 않게 하기 위해서다. -->
 <partial description="리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부" editor_label="$t:user.modal_label.mypage_orders.modal_write_review">
-  <modal data-ref="modal_write_review" width="560px" title="$t:mypage.order_detail.review_modal.title">
+  <modal data-type="composite" data-ref="modal_write_review" width="560px" title="$t:mypage.order_detail.review_modal.title">
     <div class="p-5 space-y-5">
       <!-- 상품 정보 -->
       <div class="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
@@ -72,7 +72,7 @@
       <!-- 이미지 첨부 (리뷰 정책 max_images=0 이면 숨김) -->
       <div data-if="{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}</label>
-        <file-uploader :autoUpload="false" accept=".jpg,.jpeg,.png,.gif,.webp" maxFiles="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}" maxSize="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}">
+        <file-uploader data-type="composite" :autoUpload="false" accept=".jpg,.jpeg,.png,.gif,.webp" maxFiles="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}" maxSize="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}">
           <on type="change">
             <!-- 고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다 -->
             <set-state target="_local" reviewImages="{{$event.target.files ?? []}}"/>

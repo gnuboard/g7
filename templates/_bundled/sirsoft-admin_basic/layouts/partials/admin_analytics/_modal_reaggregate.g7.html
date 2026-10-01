@@ -1,9 +1,8 @@
 <!-- 구간 재집계 창(진단 화면). 시작·종료일과 「확정된 날도 다시」를 받아 워커에게 넘긴다(202). 응답에는
   실행 번호가 없다 — 진행 상태의 출처가 실행 이력 행이라, 화면은 이력 표와 방송/폴링으로 진행률을 본다.
   원장 보존 기간 밖의 날은 서버가 `skipped` 로 남기므로 그 안내를 미리 적는다. -->
-<partial description="방문자 통계 — 구간 재집계 창">
-  <modal data-ref="analytics_reaggregate_modal" title="$t:admin.analytics.modals.reaggregate.title" size="md">
-    <meta editor_label="$t:admin.modal_label.analytics.reaggregate_modal"/>
+<partial description="방문자 통계 — 구간 재집계 창" editor_label="$t:admin.modal_label.analytics.reaggregate_modal">
+  <modal data-type="composite" data-ref="analytics_reaggregate_modal" title="$t:admin.analytics.modals.reaggregate.title" size="md">
     <div class="py-2 space-y-4">
       <p class="text-label-subtle">$t:admin.analytics.modals.reaggregate.hint</p>
       <div class="grid grid-cols-2 gap-3">

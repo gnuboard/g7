@@ -15,9 +15,9 @@
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.usage_conditions</h2>
     <div class="space-y-5">
       <!-- 타 쿠폰과 중복 가능 -->
-      <form-field data-ref="field_is_combinable" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_overlap" error="{{_local.errors?.is_combinable?.[0] ?? ''}}">
+      <form-field data-type="composite" data-ref="field_is_combinable" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_overlap" error="{{_local.errors?.is_combinable?.[0] ?? ''}}">
         <!-- boolean 필드는 자동바인딩 금지 — e.target.value 문자열이 그대로 저장되어 서버 boolean 규칙에서 422 (공개 #97). 표시는 String() 변환, 쓰기는 change 액션의 === 'true' 캐스팅 -->
-        <radio-group name="is_combinable" :inline="true" :autoBinding="false" value="{{String(_local.form?.is_combinable ?? true)}}">
+        <radio-group data-type="composite" name="is_combinable" :inline="true" :autoBinding="false" value="{{String(_local.form?.is_combinable ?? true)}}">
           <responsive on="mobile" :inline="false"/>
           <prop name="options">
             <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_yes" value="true"/>
@@ -29,8 +29,8 @@
         </radio-group>
       </form-field>
       <!-- 적용 대상 -->
-      <form-field data-ref="field_target_scope" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.apply_target" error="{{_local.errors?.target_scope?.[0] ?? ''}}">
-        <radio-group name="target_scope" :inline="true">
+      <form-field data-type="composite" data-ref="field_target_scope" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.apply_target" error="{{_local.errors?.target_scope?.[0] ?? ''}}">
+        <radio-group data-type="composite" name="target_scope" :inline="true">
           <responsive on="mobile" :inline="false"/>
           <prop name="options">
             <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_all" value="all"/>
@@ -133,7 +133,7 @@
               </sequence>
             </on>
             <!-- 검색 결과 DataGrid -->
-            <data-grid data="{{_local.productSearchResults ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.productSearchSelected ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results">
+            <data-grid data-type="composite" data="{{_local.productSearchResults ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.productSearchSelected ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results">
               <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="120px"/>
               <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
               <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="100px" align="right"/>
@@ -142,7 +142,7 @@
               </on>
             </data-grid>
             <!-- 무한스크롤 로딩 인디케이터 -->
-            <loading-spinner data-ref="product_search_loading" data-if="{{_local.productSearchIsLoadingMore === true}}" size="sm"/>
+            <loading-spinner data-type="composite" data-ref="product_search_loading" data-if="{{_local.productSearchIsLoadingMore === true}}" size="sm"/>
           </div>
         </div>
         <!-- 선택된 상품 테이블 -->
@@ -150,7 +150,7 @@
           <div class="text-body font-medium mb-2">
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_products ({{(_local.form?.products ?? []).length}})</span>
           </div>
-          <data-grid data="{{_local.form?.products ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProductIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+          <data-grid data-type="composite" data="{{_local.form?.products ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProductIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
             <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="150px"/>
             <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
             <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="120px" align="right"/>
@@ -212,7 +212,7 @@
             </button>
           </div>
           <!-- 카테고리 트리 -->
-          <category-tree data="{{categories?.data?.data ?? categories?.data ?? []}}" expandedIds="{{_local.categoryExpandedIds ?? []}}" selectedIds="{{_local.categorySearchSelected ?? []}}" searchKeyword="{{_local.categorySearchKeyword ?? ''}}" :showProductCount="true" :selectable="true">
+          <category-tree data-type="composite" data="{{categories?.data?.data ?? categories?.data ?? []}}" expandedIds="{{_local.categoryExpandedIds ?? []}}" selectedIds="{{_local.categorySearchSelected ?? []}}" searchKeyword="{{_local.categorySearchKeyword ?? ''}}" :showProductCount="true" :selectable="true">
             <on event="onToggle">
               <!-- 트리 펼침 상태 — 고른 것과는 별개 값이다. 펼쳐 놓은 가지가 검색어를 바꿔도 유지된다. -->
               <set-state target="_local" categoryExpandedIds="{{$args[0] ?? []}}"/>
@@ -228,7 +228,7 @@
           <div class="text-body font-medium mb-2">
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_categories ({{(_local.form?.categories ?? []).length}})</span>
           </div>
-          <data-grid data="{{_local.form?.categories ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedCategoryIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+          <data-grid data-type="composite" data="{{_local.form?.categories ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedCategoryIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
             <column field="path" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.category_name"/>
             <column field="products_count" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_count" width="120px" align="right"/>
             <on event="onSelectionChange">

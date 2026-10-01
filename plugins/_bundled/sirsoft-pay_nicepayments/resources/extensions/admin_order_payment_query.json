@@ -346,7 +346,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
-                                                            "comment": "에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다",
+                                                            "comment": "에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 네 칸 모두 서버 필수값이라 하나라도 비면 버튼이 잠긴다. 실패하면 서버가 준 검증·PG 문구를 그대로 보인다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -393,7 +393,7 @@
                                                                         "params": {
                                                                             "target": "local",
                                                                             "_escrowSubmitting": false,
-                                                                            "_escrowError": "$t:sirsoft-pay_nicepayments.admin.escrow_register_error"
+                                                                            "_escrowError": "{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_nicepayments.admin.escrow_register_error'}}"
                                                                         }
                                                                     }
                                                                 }
@@ -401,7 +401,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "disabled": "{{_local._escrowSubmitting}}",
+                                                        "disabled": "{{_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== '')}}",
                                                         "className": "flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     },
                                                     "children": [

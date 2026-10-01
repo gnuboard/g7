@@ -48,7 +48,7 @@ API 호출)와 달리 **로컬 프로세스 실행**을 최종 승인 수단으�
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
@@ -93,8 +93,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 8개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -140,8 +140,9 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 라이브 사이트 키(`live_site_key`)를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제창 요청을 위조할 수 있다 |
 | 승인 성립 전 실패 분기(브라우저 결과코드·금액 불일치·CLI 승인 거절)에서 `failPayment()` 호출 | 로그 + `resolveFailUrl()` 만. 주문 상태는 건드리지 않는다 | `authCallback` 은 PG 서명도 IP 증명도 없는 비인증 브라우저 POST 이고 `ordr_idxx` 도 요청자가 고른 값이다. 승인 실패는 남의 주문번호와 위조 암호문만으로 만들어낼 수 있으므로, 그것을 근거로 실패 처리하면 타인의 결제대기 주문이 취소된다 |
 | catch 블록에서 `$approvedTno` 확인 없이 주문을 실패 처리 | `hasApproval($approvedTno)` 가 참일 때만 — tno 는 승인 성공 후에만 채워진다 | 승인 전에 터진 예외까지 반영하면 위 금지 패턴과 같은 통로가 catch 경로로 다시 열린다 |
-| 정당한 결제 실패 기록을 콜백에서 처리 | 소유권을 검증하는 `close-report`(`requestMatchesOrderBuyer`) 경유 | 구매자 이메일·전화 대조를 통과한 요청만 주문 상태를 바꿔야 한다 |
-| 결제창 컨텍스트(구매자 정보)를 메모리에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남기고, 부팅 시 `reportPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
+| 정당한 결제 실패 기록을 콜백에서 처리 | 주문 소유자를 확인하는 `close-report`(`VerifiesOrderOwnership::requestOwnsOrder` — 회원 본인 로그인 / 비회원 `X-Guest-Order-Token`) 경유 | 브라우저 콜백은 서명 없는 입력이라 남의 주문번호로 만들 수 있다. 주문자 이메일·전화 대조도 소유 증명이 아니다 — 제3자가 연락처만 알면 남의 결제대기 주문을 취소할 수 있었다 (KVE-2026-2434) |
+| `payment/retry` 를 주문자 연락처 대조로 허용 | close-report 와 같은 소유자 확인(`requestOwnsOrder`) | 재시도는 취소된 주문을 결제대기로 되살리는 상태 변경이다 — 연락처만으로 남의 주문을 되살릴 수 있었다 (KVE-2026-2434) |
+| 결제창 컨텍스트(주문 정보)를 메모리에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남기고, 부팅 시 `reportPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지·라벨을 넣기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → 라벨은 `children._patch`(by: id)로 text 만, 배지는 `children._append` | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
@@ -153,10 +154,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 37개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 19개 | `vitest.config.ts` |
+| PHPUnit | 41개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 21개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

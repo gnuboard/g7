@@ -7,7 +7,7 @@
     </class-map>
     <div>
       <!-- ========== 카드 1: 자동 블라인드 처리 ========== -->
-      <section-layout data-ref="section_auto_hide" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_auto_hide" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.auto_hide</h3>
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.auto_hide_description</div>
         <div class="row-stack">
@@ -35,7 +35,7 @@
         </div>
       </section-layout>
       <!-- ========== 카드 2: 신고 남발 방지 ========== -->
-      <section-layout data-ref="section_report_abuse_prevention" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_report_abuse_prevention" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_abuse_prevention</h3>
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_abuse_prevention_description</div>
         <div class="row-stack">
@@ -82,28 +82,28 @@
         </div>
       </section-layout>
       <!-- ========== 카드 3: 신고 관리 권한 ========== -->
-      <section-layout data-ref="section_report_permissions" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_report_permissions" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_permissions</h3>
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_permissions_description</div>
         <div class="row-stack">
           <div data-ref="field_report_view_roles">
             <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</span>
             <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_view_roles_description</span>
-            <tag-input name="report_permissions.view_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+            <tag-input data-type="composite" name="report_permissions.view_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['report_permissions.view_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}</span>
           </div>
           <div data-ref="field_report_manage_roles" class="">
             <div>
               <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</span>
               <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_manage_roles_description</span>
-              <tag-input name="report_permissions.manage_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input data-type="composite" name="report_permissions.manage_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
               <span data-if="{{_local.errors?.['report_permissions.manage_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}</span>
             </div>
           </div>
         </div>
       </section-layout>
       <!-- ========== 카드 4: 신고 처리 알림 ========== -->
-      <section-layout data-ref="section_report_notification" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_report_notification" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_notification</h3>
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_notification_description</div>
         <div class="card-stack">
@@ -118,16 +118,16 @@
             </div>
             <!-- 하위 옵션 (토글 제거로 항상 표시). option-card 자산이 padding + border-t 책임 -->
             <div class="space-y-4">
-              <div data-ref="field_notify_admin_on_report_scope" class="row-stack.5">
+              <div data-ref="field_notify_admin_on_report_scope" class="stack-tight">
                 <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope</label>
-                <radio-group name="report_policy.notify_admin_on_report_scope" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+                <radio-group data-type="composite" name="report_policy.notify_admin_on_report_scope" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
                   <prop name="options">
                     <item value="per_case" label="$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_case"/>
                     <item value="per_report" label="$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_report"/>
                   </prop>
                 </radio-group>
               </div>
-              <div data-ref="field_notify_admin_on_report_channels" class="row-stack.5">
+              <div data-ref="field_notify_admin_on_report_channels" class="stack-tight">
                 <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
                 <div data-ref="report_received_admin_template_status" class="space-y-2">
                   <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
@@ -173,7 +173,7 @@
             </div>
             <!-- 하위 옵션 (토글 제거로 항상 표시). option-card 자산이 padding + border-t 책임 -->
             <div class="space-y-4">
-              <div data-ref="field_notify_author_on_report_action_channels" class="row-stack.5">
+              <div data-ref="field_notify_author_on_report_action_channels" class="stack-tight">
                 <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
                 <div data-ref="report_action_template_status" class="space-y-2">
                   <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">

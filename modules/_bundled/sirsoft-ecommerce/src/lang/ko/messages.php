@@ -1291,6 +1291,8 @@ return [
         'reply_deleted' => '답변이 삭제되었습니다.',
         'reply_delete_failed' => '답변 삭제에 실패했습니다.',
         'reply_not_found' => '답변을 찾을 수 없습니다.',
+        // 비밀 문의를 열람 권한 없는 사람에게 보일 때의 제목 자리 문구
+        'secret_post_title' => '비밀글',
         // 서비스가 던진 사유를 그대로 덧붙여, 실패 원인을 서버 기록 없이도 알 수 있게 한다
         'operation_failed_reason' => ':reason',
     ],

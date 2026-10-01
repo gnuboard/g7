@@ -6,7 +6,6 @@
             "kcp_status": "Payment Status",
             "nhnkcp_test_mode_status": "Test Mode Status",
             "nhnkcp_easy_pay_config": "Easy Pay Config",
-            "nhnkcp_easy_pay_display_map": "Easy Pay Display Map",
             "nhnkcp_test_map": "Test Payment Map",
             "settings": "Payment Settings",
             "vbank_info": "Virtual Account Info"

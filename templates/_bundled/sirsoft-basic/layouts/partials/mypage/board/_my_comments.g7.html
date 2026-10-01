@@ -117,7 +117,7 @@
       </div>
     </div>
     <!-- 페이지네이션 -->
-    <pagination data-if="{{((myComments?.data?.last_page ?? 0) > 1) || (myComments?.data?.has_more_pages === true) || ((myComments?.data?.current_page ?? 1) > 1)}}" currentPage="{{myComments?.data?.current_page ?? 1}}" totalPages="{{myComments?.data?.last_page ?? null}}" hasMorePages="{{myComments?.data?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+    <pagination data-type="composite" data-if="{{((myComments?.data?.last_page ?? 0) > 1) || (myComments?.data?.has_more_pages === true) || ((myComments?.data?.current_page ?? 1) > 1)}}" currentPage="{{myComments?.data?.current_page ?? 1}}" totalPages="{{myComments?.data?.last_page ?? null}}" hasMorePages="{{myComments?.data?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
       <on event="onPageChange">
         <set-state target="global" myCommentsPage="{{$args[0]}}"/>
         <refetch-data-source dataSourceId="myComments"/>

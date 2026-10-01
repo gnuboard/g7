@@ -9,7 +9,7 @@
     <div data-ref="dashboard_analytics_header" class="flex-start justify-between mb-4">
       <div class="flex-center gap-2">
         <h2 data-ref="dashboard_analytics_title" class="section-heading">$t:admin.analytics.dashboard_widget.title</h2>
-        <badge data-ref="dashboard_analytics_off_badge" data-if="{{dashboard_analytics?.data?.meta?.collection_enabled === false}}" color="yellow" text="$t:admin.analytics.dashboard_widget.collection_off" size="sm"/>
+        <badge data-type="composite" data-ref="dashboard_analytics_off_badge" data-if="{{dashboard_analytics?.data?.meta?.collection_enabled === false}}" color="yellow" text="$t:admin.analytics.dashboard_widget.collection_off" size="sm"/>
       </div>
       <button data-ref="dashboard_analytics_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
         <on type="click">
@@ -50,7 +50,7 @@
       </div>
       <div data-ref="dashboard_analytics_chart_wrap" class="bg-white dark:bg-slate-700 rounded-lg p-3">
         <p class="text-label-subtle mb-2">$t:admin.analytics.dashboard_widget.trend</p>
-        <line-chart data-ref="dashboard_analytics_chart" labels="{{(dashboard_analytics?.data?.series?.points ?? []).map(p => String(p.ts ?? '').slice(5, 10))}}" datasets="{{[{label: $t('admin.analytics.common.visitors'), data: (dashboard_analytics?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}]}}" :height="140" :showYAxis="false" :showYGrid="false"/>
+        <line-chart data-type="composite" data-ref="dashboard_analytics_chart" labels="{{(dashboard_analytics?.data?.series?.points ?? []).map(p => String(p.ts ?? '').slice(5, 10))}}" datasets="{{[{label: $t('admin.analytics.common.visitors'), data: (dashboard_analytics?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}]}}" :height="140" :showYAxis="false" :showYGrid="false"/>
       </div>
       <div data-ref="dashboard_analytics_realtime" class="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-700 rounded-lg p-4 h-full">
         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"/>

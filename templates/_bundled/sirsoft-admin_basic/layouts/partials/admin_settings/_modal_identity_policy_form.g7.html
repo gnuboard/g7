@@ -8,7 +8,7 @@
   가입 목적일 때만 나오는 단계 선택이 하나 더 있다(`conditions` 아래로 들어간다).
   상태는 전역 한 객체에 모으고, 성공하면 그 객체를 통째로 비운다. -->
 <partial description="S1d identity_policy_form_modal — 환경설정 > 인증 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)" editor_label="$t:admin.modal_label.admin_settings.identity_policy_form_modal">
-  <modal data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
     <div class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div data-ref="policy_form_body" class="flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2">
         <div data-if="{{_global.identity_policy_form_modal?.errors}}" class="alert-danger">
@@ -140,7 +140,7 @@
           </div>
           <div class="flex items-end justify-between gap-2 pb-2">
             <span class="form-label">$t:admin.identity.policies.form.enabled</span>
-            <toggle checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
+            <toggle data-type="composite" checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
               <on type="change">
                 <!-- 사용 여부 — 체크 상태가 아니라 **현재 값을 뒤집어** 담는다(값이 없으면 켜진다). -->
                 <set-state target="global" identity_policy_form_modal.form.enabled="{{!_global.identity_policy_form_modal?.form?.enabled}}"/>
@@ -173,7 +173,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
+        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
           <on type="click">
             <!-- 저장 — 등록/수정에 따라 주소와 메서드가 함께 갈린다.
                  숫자 칸들은 보내기 직전에 한 번 더 숫자로 바꾼다(입력 때 놓친 경로가 있어도 막힌다).

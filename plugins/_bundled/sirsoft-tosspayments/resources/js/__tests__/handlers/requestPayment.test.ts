@@ -14,7 +14,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
+import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler, resolveSelectedMethodId } from '../../handlers/requestPayment';
 
 const CLIENT_CONFIG_DATA = {
     data: {
@@ -597,6 +597,27 @@ describe('requestPaymentHandler', () => {
  * manifest `trusted_script_hosts` 와 코드 상수가 어긋나면 그 차집합이 그대로
  * 사각이 되므로 두 목록의 일치도 함께 고정한다.
  */
+/**
+ * 결제수단 id 결정 순서 — 액션 인자, 서버가 저장한 payment_method, 화면 상태.
+ *
+ * 화면 상태만 보면 주문서가 아닌 화면(클레임 추가결제 등)에서 값이 비어 가상계좌 주문에도 카드 결제창이 열린다.
+ */
+describe('resolveSelectedMethodId', () => {
+    it('액션 인자가 있으면 그 값을 쓴다', () => {
+        expect(resolveSelectedMethodId('toss_kakaopay', 'vbank', 'card')).toBe('toss_kakaopay');
+    });
+
+    it('액션 인자가 없으면 서버가 저장한 결제수단을 화면 상태보다 먼저 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, 'vbank', 'card')).toBe('vbank');
+        expect(resolveSelectedMethodId(undefined, 'vbank', undefined)).toBe('vbank');
+    });
+
+    it('둘 다 없을 때만 화면 상태를 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, null, 'toss_virtual_account')).toBe('toss_virtual_account');
+        expect(resolveSelectedMethodId(undefined, null, undefined)).toBeUndefined();
+    });
+});
+
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://js.tosspayments.com/v2/standard';
 

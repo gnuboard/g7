@@ -382,12 +382,19 @@
                             "name": "Div",
                             "actions": [
                                 {
-                                    "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다",
+                                    "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
                                     "type": "click",
-                                    "handler": "downloadAttachment",
+                                    "handler": "sirsoft-board.downloadAttachment",
                                     "params": {
                                         "url": "{{attachment.download_url}}",
                                         "filename": "{{attachment.original_filename}}"
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
+                                        }
                                     }
                                 }
                             ],

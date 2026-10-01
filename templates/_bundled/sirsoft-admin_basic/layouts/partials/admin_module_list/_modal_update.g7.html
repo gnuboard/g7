@@ -6,7 +6,7 @@
      여는 쪽이 미리 물어 전역에 담아 준다.
   실패 문구는 토스트와 **창 안에 함께** 남긴다 — 방식을 바꿔 다시 시도하는 자리라 창이 닫히면 안 된다. -->
 <partial description="모듈 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_update_modal">
-  <modal data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
+  <modal data-type="composite" data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
     <div data-if="{{_global.selectedModule?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
       <div class="flex-start gap-2">
         <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>

@@ -15,7 +15,7 @@
  * auto_blocking 동작은 banner_enabled (쿠키 배너 노출) 와 단일 토글로 통합되어 별도 토글 없음.
  *
  * @scenario scope=sessionStorage, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
- * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
+ * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_provided_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
  */
 
 import { describe, it, expect } from 'vitest';
@@ -99,7 +99,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(cardIds).toEqual(expectedCards);
         });
 
-        // PO 실측 2026-09-21 — 카드마다 겉 여백 규격이 갈려 상하 간격이 들쭉날쭉했다.
+        // 실측 2026-09-21 — 카드마다 겉 여백 규격이 갈려 상하 간격이 들쭉날쭉했다.
         // 겉은 여백만(첫 카드 제외 mt-4), 안쪽 패딩은 본문 컨테이너(p-6)가 갖는다.
         it.each(expectedCards)('카드 %s 는 겉에 패딩을 두지 않는다 (간격 규격 통일)', (cardId) => {
             const className = (findById(root, cardId)?.props as { className?: string })?.className ?? '';
@@ -145,12 +145,32 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_operator (운영 주체 + 정책 페이지)', () => {
-        it('legal_entity_name + data_storage_location + privacy_policy_slug 3 필드 포함', () => {
+        it('legal_entity_name + data_storage_location + privacy_policy_url 3 필드 포함', () => {
             const fields = findById(root, 'card_operator_fields');
             const ids = (asArray(fields?.children) as AnyNode[]).map((c) => c.id);
             expect(ids).toContain('field_legal_entity_name');
             expect(ids).toContain('field_data_storage_location');
-            expect(ids).toContain('field_privacy_policy_slug');
+            expect(ids).toContain('field_privacy_policy_url');
+            // 1.0.x 의 슬러그 입력칸은 사라졌다 — 처리방침 주소를 운영자가 직접 적는다.
+            expect(ids).not.toContain('field_privacy_policy_slug');
+        });
+
+        /**
+         * @scenario surface=admin_update
+         * @effects admin_settings_field_binds_privacy_policy_url
+         */
+        it('처리방침 주소 입력칸은 privacy_policy_url 을 바인딩하고 라벨·힌트·예시 키가 ko/en 에 있다', () => {
+            const field = findById(root, 'field_privacy_policy_url');
+            const serialized = JSON.stringify(field);
+            expect(serialized).toContain('"name":"privacy_policy_url"');
+            expect(serialized).not.toContain('privacy_policy_slug');
+            for (const leaf of ['label', 'hint', 'placeholder']) {
+                expect(serialized).toContain(`sirsoft-gdpr.settings.fields.privacy_policy_url.${leaf}`);
+                const ko = (koLang as { settings?: { fields?: Record<string, Record<string, string>> } }).settings?.fields?.privacy_policy_url?.[leaf];
+                const en = (enLang as { settings?: { fields?: Record<string, Record<string, string>> } }).settings?.fields?.privacy_policy_url?.[leaf];
+                expect(typeof ko).toBe('string');
+                expect(typeof en).toBe('string');
+            }
         });
     });
 
@@ -159,7 +179,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
      * 배치 필드가 `section-heading-md`(텍스트 스타일 전용, grid 미정의) 를 컨테이너
      * className 으로 사용해 col-span-* 자식이 무효화되고 컨트롤이 아래 줄로 밀려나던
      * 결함. 코드베이스 표준은 `grid-3col-responsive`(grid grid-cols-1 lg:grid-cols-3
-     * gap-4 items-start) — field_privacy_policy_slug 가 원래 이 클래스를 올바르게
+     * gap-4 items-start) — 처리방침 입력칸(현 field_privacy_policy_url)이 원래 이 클래스를 올바르게
      * 사용하고 있었다 (참조 패턴).
      */
     describe('필드 2단 배치 컨테이너 — grid-3col-responsive 사용 (section-heading-md 오용 회귀 가드)', () => {
@@ -532,7 +552,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         it.each([
             ['field_legal_entity_name', 'legal_entity_name'],
             ['field_data_storage_location', 'data_storage_location'],
-            ['field_privacy_policy_slug', 'privacy_policy_slug'],
+            ['field_privacy_policy_url', 'privacy_policy_url'],
         ])('단일 Input 필드 %s — 422 검증 에러 시 빨간 테두리 + 필드 아래 에러 메시지 (검토 #10 옵션 X — 코어 _tab_general 단순 패턴)', (fieldId, formField) => {
             const wrapper = findById(root, fieldId);
             expect(wrapper).not.toBeNull();
@@ -916,6 +936,22 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('opacity-70');
     });
 
+    /** @effects layout_provided_chips_read_response_not_form_state */
+    it.each(SCOPES)('%s 카드의 확장 제공 칩 행이 응답의 제공 집합을 읽고 편집 값에는 넣지 않는다', (scope) => {
+        const providedRow = findById(root, `necessary_storage_provided_${scope}`);
+        expect(providedRow).toBeTruthy();
+        const serialized = JSON.stringify(providedRow);
+
+        // 제공 집합은 서버가 요청마다 계약 훅에서 모은 계산값이다 — 폼에 담기면 저장 요청에 실린다.
+        expect(serialized).toContain(`gdprSettings?.data?.settings?.necessary_storage_provided?.${scope}`);
+        expect(serialized).not.toContain('_local.form?.');
+        expect(serialized).toContain(`(gdprSettings?.data?.settings?.necessary_storage_provided?.${scope} ?? []).length > 0`);
+        expect(serialized).not.toContain('"TagInput"');
+        expect(serialized).toContain('cursor-not-allowed');
+        expect(serialized).toContain('necessary_storage_allowlist.provided_label');
+        expect(serialized).toContain('necessary_storage_allowlist.provided_hint');
+    });
+
     it('카드 본문이 banner_enabled 게이트 뒤에 있지 않다 (배너를 꺼도 저장 게이팅은 동작한다)', () => {
         const card = findById(root, 'card_necessary_storage');
         const serialized = JSON.stringify(card);
@@ -955,20 +991,36 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
 });
 
 /**
- * 이슈 #509 체크리스트 12번 회귀 테스트 — 정책 버전 snapshot 모달의 본문 페이지 링크가
- * `/{{slug}}` 로 조합되어 페이지 모듈(sirsoft-page) 실제 URL 패턴 `/page/{slug}` 와
- * 불일치, 클릭 시 404 발생하던 결함. 쿠키 배너의 '변경된 정책 본문 보기' 링크와
- * 동일하게 `/page/{{slug}}` 로 조합되어야 한다.
+ * 정책 버전 snapshot 모달의 처리방침 링크.
+ *
+ * 1.0.x 는 스냅샷의 슬러그를 페이지 모듈 주소 규칙(`/page/{slug}`)으로 화면에서 조합했다(#509 에서
+ * `/page/` 누락으로 404 가 났던 자리). 1.1.0 부터 운영자가 주소를 직접 적고, 서버 리소스가 스냅샷을
+ * 읽어 `privacy_policy.url`(옛 슬러그 스냅샷은 그 시절 링크 경로로 푼 값)과 `legacy_slug` 를 내보낸다.
+ * 화면은 그 주소를 그대로 href 로 쓰고 경로를 조합하지 않는다.
+ *
+ * @scenario surface=policy_snapshot
+ * @effects snapshot_modal_links_resolved_privacy_policy_url, snapshot_modal_labels_legacy_slug_snapshot
  */
-describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 본문 페이지 링크', () => {
+describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 처리방침 링크', () => {
     const layoutJson = JSON.stringify(snapshotModal);
 
-    it('본문 페이지 링크 href 가 /page/{{slug}} 형식으로 조합된다 (페이지 모듈 URL 패턴 일치)', () => {
-        expect(layoutJson).toContain('"href":"/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? \'\'}}"');
+    it('링크 href 는 서버가 푼 privacy_policy.url 을 그대로 쓴다 (화면에서 /page/ 를 조합하지 않는다)', () => {
+        expect(layoutJson).toContain(`"href":"{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}"`);
+        expect(layoutJson).not.toContain('/page/{{');
+        expect(layoutJson).not.toContain('snapshot?.privacy_policy_slug');
     });
 
-    it('href 에 /page/ 프리픽스 없이 슬러그만 조합하는 결함 패턴이 없다', () => {
-        expect(layoutJson).not.toContain('"href":"/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}"');
+    it('옛 슬러그 스냅샷이면 이전 형식 안내를 보이고, 주소가 없으면 빈 안내를 보인다', () => {
+        expect(layoutJson).toContain('"if":"{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug}}"');
+        expect(layoutJson).toContain('sirsoft-gdpr.settings.policy_version.snapshot_modal.legacy_slug_note|slug=');
+        expect(layoutJson).toContain('"if":"{{!gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}"');
+        expect(layoutJson).toContain('sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_url');
+        for (const key of ['legacy_slug_note', 'no_policy_url']) {
+            const ko = (koLang as { settings?: { policy_version?: { snapshot_modal?: Record<string, string> } } }).settings?.policy_version?.snapshot_modal?.[key];
+            const en = (enLang as { settings?: { policy_version?: { snapshot_modal?: Record<string, string> } } }).settings?.policy_version?.snapshot_modal?.[key];
+            expect(typeof ko).toBe('string');
+            expect(typeof en).toBe('string');
+        }
     });
 
     it('본문 페이지 링크는 새 탭(target=_blank) + noopener 로 연다', () => {

@@ -20,7 +20,7 @@
               <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
             </div>
           </div>
-          <toggle checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 채널 사용 여부 — **저장 버튼을 눌러야 반영되는 유일한 값**이라 여기서는 폼만 고치고
                    "고친 것이 있다" 표시를 켠다. 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
@@ -106,7 +106,7 @@
                   <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).
                            그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.
@@ -155,7 +155,7 @@
               </div>
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:admin.settings.notification_definitions.body_preview</span>
-                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                <html-content data-type="composite" content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
                   <prop name="comment">"미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."</prop>
                 </html-content>
               </div>
@@ -168,7 +168,7 @@
         <p class="text-label-subtle">$t:admin.settings.notification_definitions.empty_message</p>
       </div>
       <div data-ref="notif_pagination" class="flex justify-center mt-4">
-        <pagination currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+        <pagination data-type="composite" currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 페이지 이동 — 채널 탭과 항목수를 유지한다. -->
             <navigate path="/admin/settings" :replace="true" :mergeQuery="true">

@@ -478,7 +478,7 @@ class CoreUpdateService
                 return ['version' => ltrim($data['tag_name'], 'v'), 'error' => null];
             }
 
-            return ['version' => null, 'error' => __('settings.core_update.no_releases_found')];
+            return ['version' => null, 'error' => __('settings.core_update.no_releases_found', ['status' => $statusCode, 'message' => $apiMessage])];
         } catch (\Exception $e) {
             Log::channel('upgrade')->error(__('settings.core_update.log_version_check_error'), ['error' => $e->getMessage()]);
 

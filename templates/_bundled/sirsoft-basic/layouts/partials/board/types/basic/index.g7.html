@@ -49,7 +49,7 @@
             <set-state target="local" boardSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <search-bar name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
+        <search-bar data-type="composite" name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
           <on type="submit">
             <!-- 글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다. -->
             <navigate path="/board/{{route.slug}}" :mergeQuery="true">
@@ -116,8 +116,8 @@
               </div>
               <!-- 작성자 -->
               <div class="flex items-center gap-2">
-                <avatar author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-                <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
+                <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
+                <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
               </div>
               <!-- 작성일 -->
               <span class="text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
@@ -164,8 +164,8 @@
               <!-- 하단: 작성자, 작성일, 조회수 -->
               <div class="flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}">
                 <div class="flex items-center gap-2">
-                  <avatar author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-                  <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
+                  <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
+                  <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
                 </div>
                 <div class="flex items-center gap-3">
                   <span title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
@@ -180,7 +180,7 @@
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
+    <pagination data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

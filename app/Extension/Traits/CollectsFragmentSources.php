@@ -96,7 +96,7 @@ trait CollectsFragmentSources
      * @param  string  $extensionsPath  확장 fragment 디렉토리 경로
      * @param  array<int, string>  $jsonFiles  이미 알고 있는 `.json` 경로 (모르면 빈 배열)
      * @param  array<string, mixed>  $logContext  실패 로그에 덧붙일 문맥
-     * @param  string|null  $templateId  붙을 템플릿 식별자 — 그 템플릿의 `components.json` 으로 컴파일한다 (C10). null 이면 경로로 판별
+     * @param  string|null  $templateId  붙을 템플릿 식별자 — 호환용으로 받기만 한다. 컴파일은 템플릿과 무관하다(JSON 과 동일)
      * @return array<int, array{path: string, data: array<string, mixed>, key: string}> 읽기에 성공한 정의만
      */
     protected function loadFragmentDefinitions(string $extensionsPath, array $jsonFiles, array $logContext = [], ?string $templateId = null): array
@@ -148,7 +148,7 @@ trait CollectsFragmentSources
      *
      * @param  array{path: string, markup: bool}  $source  소스 디스크립터
      * @param  array<string, mixed>  $logContext  실패 로그에 덧붙일 문맥
-     * @param  string|null  $templateId  붙을 템플릿 식별자 (마크업 컴파일 표 선택)
+     * @param  string|null  $templateId  붙을 템플릿 식별자 (호출 계약 호환용 — 산출에 쓰지 않는다)
      * @return array<string, mixed>|null 실패 시 null
      */
     protected function loadFragmentSource(array $source, array $logContext = [], ?string $templateId = null): ?array
@@ -182,38 +182,25 @@ trait CollectsFragmentSources
      * fragment `.g7.html` 소스 파일을 등록 시점에 메모리로 컴파일합니다 (강검증 포함, 디스크 미기록).
      *
      * @param  string  $markupFile  `.g7.html` 절대 경로
-     * @param  string|null  $templateId  붙을 템플릿 식별자 — 그 템플릿의 `components.json`·핸들러·nesting 규칙으로 컴파일
+     * @param  string|null  $templateId  붙을 템플릿 식별자 (호출 계약 호환용 — 산출에 쓰지 않는다)
      * @return array<string, mixed> 컴파일된 fragment JSON
      *
      * @throws CompileError 컴파일·강검증 실패 시
-     * @throws \RuntimeException 대상 템플릿 컴포넌트 매니페스트를 찾지 못하면
      */
     protected function compileMarkupFragmentFile(string $markupFile, ?string $templateId = null): array
     {
-        $resolver = new MarkupCompileContextResolver;
-
-        // 붙을 템플릿의 표로 컴파일한다 (C10). 태그→컴포넌트 표(`components.json`)는 템플릿마다 다른데 조각
-        // 파일은 `resources/extensions/` 한 곳에 있어 경로로는 표를 고를 수 없다 — 종전엔 `/user/` 가
-        // 없는 경로를 전부 관리자 표로 골라, 사용자 조각이 관리자 전용 컴포넌트를 써도 설치가 통과했다.
-        // 그 템플릿에 매니페스트가 없으면(테스트용 템플릿 등) 경로 판별로 폴백한다 — 어차피 그 템플릿은
-        // 아무 조각도 해석할 수 없고, 폴백은 종전 동작 그대로다.
-        $templateOverride = $templateId !== null && $templateId !== '' && $resolver->registryFor($markupFile, $templateId) !== null
-            ? $templateId
-            : null;
+        // 템플릿과 무관하게 컴파일한다 — 산출은 태그 이름·`data-type` 만으로 정해지므로 붙을 템플릿이
+        // 무엇이든 같다(JSON 조각이 어떤 템플릿의 컴포넌트 목록도 보지 않았던 것과 같다). `$templateId` 는
+        // 호출 계약 호환을 위해 받지만 산출에 쓰지 않는다 — 템플릿마다 결과가 갈리면 템플릿 교체·요청마다
+        // 도는 리스너·업데이트 복원 경로가 서로 다른 조각을 쌓는다.
 
         // 실행 단위 캐시 — 설치는 같은 조각을 여러 번 읽고, 런타임 소비처(확장 Listener)는 요청마다
         // 자기 확장점 정의를 읽는다. 짝 `.json` 을 파싱하던 비용이 마크업 컴파일로 바뀌므로,
-        // 캐시가 없으면 소스 SSoT 로 옮기는 대가가 그대로 응답 시간이 된다. 표가 템플릿마다 다르므로 키에 넣는다.
-        $cacheKey = $markupFile.'|'.(@filemtime($markupFile) ?: 0).'|'.(@filesize($markupFile) ?: 0).'|'.($templateOverride ?? '');
+        // 캐시가 없으면 소스 SSoT 로 옮기는 대가가 그대로 응답 시간이 된다.
+        $cacheKey = $markupFile.'|'.(@filemtime($markupFile) ?: 0).'|'.(@filesize($markupFile) ?: 0);
 
         if (isset(self::$fragmentCompileCache[$cacheKey])) {
             return self::$fragmentCompileCache[$cacheKey];
-        }
-
-        $registry = $resolver->registryFor($markupFile, $templateOverride);
-
-        if ($registry === null) {
-            throw new \RuntimeException(__('exceptions.layout_markup.registry_not_found'));
         }
 
         // 업데이트 백업 경로(`{id}_{Ymd_His}`)처럼 경로로 소유 확장을 알 수 없는 읽기는 강제 지정값을 쓴다
@@ -222,10 +209,10 @@ trait CollectsFragmentSources
             ? ($this->compileContextOverride['extension'] ?? null)
             : null;
 
-        $result = (new LayoutMarkupCompiler($registry))->compile(
+        $result = (new LayoutMarkupCompiler)->compile(
             File::get($markupFile),
             $markupFile,
-            $resolver->contextFor($markupFile, $templateOverride, $identifierOverride),
+            (new MarkupCompileContextResolver)->installContextFor($markupFile, $identifierOverride),
         );
 
         return self::$fragmentCompileCache[$cacheKey] = $result->json;

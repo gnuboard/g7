@@ -437,6 +437,13 @@ return [
     ],
     'inquiry' => [
         'default_title' => '상품 문의',
+        // 이커머스 문의 연동 훅(sirsoft-ecommerce.inquiry.*)에 답할 때 게시판이 던지는 실패 사유
+        'board_changed' => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
+        'update_failed' => '문의 수정에 실패했습니다.',
+        'delete_failed' => '문의 삭제에 실패했습니다.',
+        'reply_not_found' => '답변을 찾을 수 없습니다.',
+        'reply_update_failed' => '답변 수정에 실패했습니다.',
+        'reply_delete_failed' => '답변 삭제에 실패했습니다.',
     ],
     // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
     'privacy_retention' => [

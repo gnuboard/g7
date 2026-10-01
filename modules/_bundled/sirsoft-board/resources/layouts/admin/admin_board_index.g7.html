@@ -18,7 +18,7 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="board_list_content" class="admin-page-content-responsive-fluid">
-      <page-header data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
         <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
@@ -41,7 +41,7 @@
       </page-header>
       <div data-ref="content_area" class="admin-card">
         <div data-ref="search_area" class="flex justify-end mb-6">
-          <search-bar data-ref="search_bar" name="search" placeholder="$t:sirsoft-board.admin.board.index.search_placeholder" value="{{query.search || ''}}" class="w-64">
+          <search-bar data-type="composite" data-ref="search_bar" name="search" placeholder="$t:sirsoft-board.admin.board.index.search_placeholder" value="{{query.search || ''}}" class="w-64">
             <on type="submit">
               <!-- 검색은 URL 로 남긴다 — 다른 query(per_page 등)는 두고 검색어만 갈아 끼우되 페이지는 1 로 되돌린다(3페이지에서 검색하면 결과가 없는 페이지에 떨어지므로) -->
               <navigate path="/admin/boards" :mergeQuery="true">
@@ -50,16 +50,16 @@
             </on>
           </search-bar>
         </div>
-        <card-grid data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <card-grid data-type="composite" data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <card id="board_card">
             <div data-ref="card_header_row" class="flex items-start justify-between">
               <div data-ref="header_left" class="flex items-center gap-3">
-                <status-badge data-ref="board_slug_badge" status="info" label="{{row.slug}}" :showIcon="false"/>
+                <status-badge data-type="composite" data-ref="board_slug_badge" status="info" label="{{row.slug}}" :showIcon="false"/>
                 <h3 data-ref="board_name" class="section-heading">{{row.name}}</h3>
                 <span data-ref="board_type" class="text-label-subtle">({{row.type}})</span>
               </div>
               <div data-ref="header_right" class="flex items-center gap-3">
-                <toggle data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
                   <on type="change">
                     <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다 -->
                     <sequence>
@@ -76,7 +76,7 @@
                     </sequence>
                   </on>
                 </toggle>
-                <action-menu data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
+                <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
                   <prop name="items">
                     <item id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
                     <item id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
@@ -122,7 +122,7 @@
             </div>
             <div data-ref="categories_row" data-if="{{row.categories &amp;&amp; row.categories.length > 0}}" class="flex flex-wrap gap-2 items-center">
               <span data-ref="category_label" class="text-label-subtle">$t:sirsoft-board.admin.board.index.categories_label</span>
-              <status-badge data-ref="category_tag_{{categoryIdx}}" data-each="category, categoryIdx in row.categories" status="default" label="{{category}}" :showIcon="false"/>
+              <status-badge data-type="composite" data-ref="category_tag_{{categoryIdx}}" data-each="category, categoryIdx in row.categories" status="default" label="{{category}}" :showIcon="false"/>
             </div>
           </card>
           <on type="change" event="onPageChange">
@@ -137,7 +137,7 @@
   </slot>
   <modal>
     <!-- 복제 확인 — 복제가 무엇을 가져오고 무엇을 빼는지(글·slug) 먼저 알린 뒤, 실제 복제는 생성 화면에 `copy_id` 를 달아 넘기는 것으로 끝난다. 이 모달 자체는 아무것도 저장하지 않는다 -->
-    <modal data-ref="copy_confirm_modal" title="$t:sirsoft-board.admin.modals.copy.title" size="sm">
+    <modal data-type="composite" data-ref="copy_confirm_modal" title="$t:sirsoft-board.admin.modals.copy.title" size="sm">
       <div data-ref="copy_modal_content" class="row-stack">
         <p data-ref="copy_board_name" class="text-primary font-medium">$t:sirsoft-board.admin.modals.copy.message|name={{_global.modal_data.name}}</p>
         <div data-ref="copy_info_box" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3">
@@ -179,11 +179,11 @@
   </modal>
   <modal>
     <!-- 삭제 확인 — 남은 글 수에 따라 경고 등급과 문구가 갈린다(글이 있으면 error, 없으면 warning). 게시판 삭제는 글까지 함께 지우는 되돌릴 수 없는 동작이라 백업 안내를 함께 띄운다 -->
-    <modal data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.modals.delete.title" size="sm">
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.modals.delete.title" size="sm">
       <div data-ref="delete_warning" class="row-stack">
         <p data-ref="delete_board_name" class="text-primary font-semibold text-lg">$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}</p>
         <p data-ref="delete_posts_info" class="text-gray-700 dark:text-gray-300">{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}</p>
-        <alert data-ref="delete_main_alert" type="{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}" message="{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"/>
+        <alert data-type="composite" data-ref="delete_main_alert" type="{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}" message="{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"/>
         <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
       </div>
       <div class="modal-footer-buttons">

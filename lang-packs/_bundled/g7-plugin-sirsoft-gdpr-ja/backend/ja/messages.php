@@ -23,6 +23,7 @@ return [
             'joined_at' => '登録日',
         ],
         'manual_run_label' => '個人情報年間通知発送',
+        'privacy_policy_link_label' => 'プライバシーポリシー',
     ],
     'consent' => [
         'granted' => '同意が保存されました。',
@@ -58,7 +59,7 @@ return [
         'description' => 'クッキー同意バナーとマイページ同意管理カードの動作を運営者が制御します。',
         'section' => [
             'operator' => '運営主体 / 個人情報保護方針',
-            'operator_desc' => 'クッキーバナー·ポリシーページに表示される運営主体、データ保存位置、ポリシーページスラッグを登録します。(GDPR Art.13 透明性義務)',
+            'operator_desc' => 'クッキーバナー·ポリシーページに表示される運営主体、データ保存位置、プライバシーポリシーのURLを登録します。(GDPR Art.13 透明性義務)',
             'cookie_banner' => 'クッキー同意バナー',
             'cookie_banner_desc' => '訪問者に表示されるクッキー同意バナーの表示/位置/カテゴリー/ポリシーバージョンを一箇所で設定します。',
             'cookie_banner_settings' => 'バナー表示設定',
@@ -85,11 +86,6 @@ return [
                 'hint' => '運営者が直接入力せず、システムが自動管理します。
 • カテゴリー追加/削除、カテゴリー意味変更、ポリシーページ変更 → 新バージョン自動公開 + すべての会員再同意
 • ドメイン追加/削除、ラベル変更など単純変更 → 公開なし',
-            ],
-            'privacy_policy_slug' => [
-                'label' => '個人情報保護方針ページスラッグ',
-                'hint' => 'ページプラグインに登録された処理方針ページのスラッグ。空の場合、クッキーバナーのポリシーリンクが表示されません。',
-                'placeholder' => '例: privacy-policy',
             ],
             'legal_entity_name' => [
                 'label' => '法人名 / 運営主体',
@@ -151,6 +147,12 @@ return [
             'annual_notice_introduction' => [
                 'label' => '通知文序文',
             ],
+            'privacy_policy_url' => [
+                'label' => 'プライバシーポリシーのURL',
+                'hint' => 'プライバシーポリシーを掲載したURLを入力してください。サイト内のページは / で始まるパス(例: /page/privacy)、他のサイトは https:// で始まる完全なURLを記入します。空欄の場合、Cookieバナーのポリシーリンクは表示されません。',
+                'placeholder' => '例: /page/privacy または https://example.com/privacy',
+                'invalid' => ':attribute には / で始まるサイトパスか、https:// で始まるURLのみ入力できます。',
+            ],
         ],
         'save_success' => '設定が保存されました。',
         'save_error' => '設定保存中にエラーが発生しました。',
@@ -198,9 +200,9 @@ return [
             ],
             'snapshot_modal' => [
                 'title' => 'ポリシーバージョン v:version 本文',
-                'description' => '公開時点での設定のカテゴリー一覧・ポリシー本文スラッグ・ブロックドメインなど全体の本文です。DPOが同意紛争時の証拠資料として活用します。',
+                'description' => '公開時点での設定のカテゴリー一覧・プライバシーポリシーのURL・ブロックドメインなど全体の本文です。DPOが同意紛争時の証拠資料として活用します。',
                 'section_categories' => 'クッキーカテゴリー',
-                'section_privacy_policy' => 'ポリシー本文スラッグ',
+                'section_privacy_policy' => 'プライバシーポリシーのURL',
                 'section_blocked_domains' => 'ブロックドメインカタログ',
                 'category_required_badge' => '必須',
                 'no_categories' => '登録されたカテゴリーがありません。',
@@ -208,7 +210,8 @@ return [
                 'view_button' => 'v:version 本文を表示',
                 'close' => '閉じる',
                 'open_policy_page' => '本文ページを開く',
-                'no_policy_slug' => '登録されたポリシー本文ページがありません。',
+                'no_policy_url' => '登録されたプライバシーポリシーのURLがありません。',
+                'legacy_slug_note' => '以前の形式(ページスラッグ「:slug」)で記録されたバージョンです。当時リンクが指していたURLを表示します。',
             ],
             'not_found' => '該当するポリシーバージョンが見つかりません。',
         ],

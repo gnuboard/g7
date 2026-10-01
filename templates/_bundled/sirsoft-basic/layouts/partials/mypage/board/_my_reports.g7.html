@@ -162,7 +162,7 @@
       </div>
     </div>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{myReports?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReports?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReports?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+    <pagination data-type="composite" currentPage="{{myReports?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReports?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReports?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
       <on event="onPageChange">
         <sequence>
           <set-state target="global" myReportsPage="{{$args[0]}}"/>

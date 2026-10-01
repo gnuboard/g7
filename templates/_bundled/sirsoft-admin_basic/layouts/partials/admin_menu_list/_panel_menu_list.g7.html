@@ -8,7 +8,7 @@
     <div data-ref="menu_list_header" class="px-4 panel-header">
       <h3 class="text-heading">$t:admin.menus.menu_list_title</h3>
     </div>
-    <sortable-menu-list data-ref="sortable_menu_list" items="{{menus?.data?.data ?? []}}" selectedId="{{_global.selectedMenuId}}" enableDrag="{{menus?.data?.abilities?.can_update ?? false}}" toggleDisabled="{{menus?.data?.abilities?.can_update !== true}}" class="py-2" itemClassName="py-2.5 px-3 mx-4 my-2 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+    <sortable-menu-list data-type="composite" data-ref="sortable_menu_list" items="{{menus?.data?.data ?? []}}" selectedId="{{_global.selectedMenuId}}" enableDrag="{{menus?.data?.abilities?.can_update ?? false}}" toggleDisabled="{{menus?.data?.abilities?.can_update !== true}}" class="py-2" itemClassName="py-2.5 px-3 mx-4 my-2 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
       <on type="action" event="onSelect">
         <!-- 고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다. -->
         <sequence>

@@ -14,10 +14,10 @@
     <!-- 찜 목록 카드 -->
     <div>
       <!-- 찜 목록 그리드 -->
-      <grid data-if="{{wishlist.data.data &amp;&amp; wishlist.data.data.length > 0}}" :cols="5" :gap="4" class="p-6">
+      <grid data-type="layout" data-if="{{wishlist.data.data &amp;&amp; wishlist.data.data.length > 0}}" :cols="5" :gap="4" class="p-6">
         <responsive on="portable" :cols="2" :gap="3" class="p-4"/>
         <div data-each="item in {{wishlist.data.data ?? []}}" class="relative group">
-          <product-card product="{{item.product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+          <product-card data-type="composite" product="{{item.product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
           <!-- 찜 해제 버튼 (카드 우상단 오버레이) -->
           <button class="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:scale-110 transition-all cursor-pointer">
             <on type="click">
@@ -49,7 +49,7 @@
         </button>
       </div>
       <!-- 페이지네이션 -->
-      <pagination data-if="{{((wishlist.data.pagination.last_page ?? 0) > 1) || (wishlist.data.pagination.has_more_pages === true) || ((wishlist.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{wishlist.data.pagination.current_page}}" totalPages="{{wishlist.data.pagination.last_page ?? null}}" hasMorePages="{{wishlist.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">
+      <pagination data-type="composite" data-if="{{((wishlist.data.pagination.last_page ?? 0) > 1) || (wishlist.data.pagination.has_more_pages === true) || ((wishlist.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{wishlist.data.pagination.current_page}}" totalPages="{{wishlist.data.pagination.last_page ?? null}}" hasMorePages="{{wishlist.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">
         <on event="onPageChange">
           <set-state target="local" wishlistPage="{{$args[0]}}"/>
           <refetch-data-source dataSourceId="wishlist"/>

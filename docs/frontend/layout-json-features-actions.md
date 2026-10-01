@@ -1099,7 +1099,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 **전역 상태 체크**:
 
 ```html
-<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="ckeditor_script" data-if="{{_global.settings?.editor?.use_ckeditor}}"/>
+<script src="/plugins/vendor-sample/vendor/editor.js" id="editor_script" data-if="{{_global.settings?.editor?.use_rich_editor}}"/>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -1108,9 +1108,9 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 {
   "scripts": [
     {
-      "src": "https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js",
-      "id": "ckeditor_script",
-      "if": "{{_global.settings?.editor?.use_ckeditor}}"
+      "src": "/plugins/vendor-sample/vendor/editor.js",
+      "id": "editor_script",
+      "if": "{{_global.settings?.editor?.use_rich_editor}}"
     }
   ]
 }

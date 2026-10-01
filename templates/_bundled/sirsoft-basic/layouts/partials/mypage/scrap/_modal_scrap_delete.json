@@ -75,7 +75,7 @@
                                     "text": "$t:mypage.scrap.delete_confirm_deleted"
                                 },
                                 {
-                                    "comment": "안내 문구(원글 보존 안내) — PO 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안)",
+                                    "comment": "안내 문구(원글 보존 안내) — 검수 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안)",
                                     "type": "basic",
                                     "name": "P",
                                     "props": {

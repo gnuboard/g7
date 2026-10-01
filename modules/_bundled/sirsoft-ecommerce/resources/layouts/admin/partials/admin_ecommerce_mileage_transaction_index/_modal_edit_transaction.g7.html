@@ -7,7 +7,7 @@
   라벨 등). 이 창은 그것을 다시 조립하지 않는다.
   바깥을 눌러도 닫히지 않게 해 두었다 — 입력 중 실수로 사라지는 것을 막는다. -->
 <partial description="마일리지 적립건 사유·만료일 변경 모달. 회원·금액·유형·적립일은 읽기전용(비활성), 사유(memo)·만료일만 편집. 소멸/전액사용 lot 은 만료일 비활성. PATCH /admin/mileage-transactions/{id}.">
-  <modal data-ref="modal_edit_transaction" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.title" size="md" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_edit_transaction" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.title" size="md" :closeOnOverlayClick="false">
     <div class="space-y-4">
       <div data-ref="edit_error_banner" data-if="{{_global.mileageEdit?.errors}}" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
         <div class="flex gap-2">

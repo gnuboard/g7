@@ -1,6 +1,6 @@
 <partial description="공용 삭제 모달 - 게시글/댓글" editor_label="$t:user.modal_label.board_show.board_delete_modal">
   <!-- 공용 삭제 모달 - 게시글/댓글 모두 사용 가능 -->
-  <modal data-ref="board_delete_modal" id="board_delete_modal" title="{{_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_title' : '$t:board.modals.delete_post_title'}}" icon="trash" iconClassName="text-red-500" size="sm">
+  <modal data-type="composite" data-ref="board_delete_modal" id="board_delete_modal" title="{{_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_title' : '$t:board.modals.delete_post_title'}}" icon="trash" iconClassName="text-red-500" size="sm">
     <div class="space-y-4">
       <!-- 삭제 확인 메시지 (비회원인 경우 비밀번호 안내, 회원인 경우 삭제 확인) -->
       <p class="text-gray-600 dark:text-gray-400">{{_global.deleteModal.isGuest ? (_global.deleteModal.type === 'comment' ? '$t:board.guest_password_comment_delete_message' : '$t:board.guest_password_post_delete_message') : (_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_confirm' : '$t:board.modals.delete_post_confirm')}}</p>
@@ -39,7 +39,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button disabled="{{_local.deleteSubmitting || (_global.deleteModal.isGuest &amp;&amp; !_global.deleteModal.password)}}" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button disabled="{{_local.deleteSubmitting || (_global.deleteModal.isGuest &amp;&amp; !_global.deleteModal.password)}}" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 삭제 실행. 댓글이면 목록만 다시 부르고, 글이면 그 글이 사라지므로 게시판 목록으로 나간다 -->
             <sequence>

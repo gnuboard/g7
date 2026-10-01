@@ -2486,7 +2486,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
+**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며(게시글 저장 검증과 같은 기준) 초과 시 422를 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
 
 
 ### PATCH /api/modules/sirsoft-board/boards/{slug}/attachments/reorder
@@ -3354,7 +3354,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `user_abilities.can_write_notice` 는 공지 등록 권한(`sirsoft-board.{slug}.posts.write-notice`) 보유 여부로, 화면은 `can_manage` 또는 이 값이 참일 때 공지 옵션을 보여 준다(서버의 공지 지정 판정과 같은 기준 — 게시판이 권한 행을 갖지 않으면 키가 빠진다). `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
+**설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `user_abilities.can_write_notice` 는 공지 등록 권한(`sirsoft-board.{slug}.posts.write-notice`) 보유 여부로, 화면은 `can_manage` 또는 이 값이 참일 때 공지 옵션을 보여 준다(서버의 공지 지정 판정과 같은 기준 — 게시판이 권한 행을 갖지 않으면 키가 빠진다). 비회원은 서버가 공지 지정에 로그인을 요구하므로 guest 역할에 공지 등록 권한이 있어도 `can_write_notice` 가 false 로 내려갑니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
 
 비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
 

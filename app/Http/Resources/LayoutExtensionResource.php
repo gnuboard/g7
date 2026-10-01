@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 /**
@@ -183,6 +184,9 @@ class LayoutExtensionResource extends BaseApiResource
             return false;
         }
 
-        return $this->computeContentHash($content) !== $originalHash;
+        // 모델이면 DB 원문(빈 map `{}` 보존)도 함께 대조한다 — 캐스트된 배열만 보면 손대지 않은 확장도 수정본이 된다.
+        $raw = $this->resource instanceof Model ? $this->rawStoredContent($this->resource) : null;
+
+        return ! $this->contentMatchesOriginalHash($content, $originalHash, $raw);
     }
 }

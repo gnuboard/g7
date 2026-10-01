@@ -1,6 +1,6 @@
 <!-- 클레임 목록 — 일괄 상태 변경 확인 창(교환·반품·환불 탭). 유형·바꿀 상태와 라벨·대상 id 는 목록의 선택 상태를 직접 보지 않고, [일괄 적용] 핸들러가 창을 열기 전에 채워 둔 `_global.claimBulkConfirmData` 에서 읽는다. -->
 <partial description="Claim List - Bulk Status Confirm Modal (S8b)">
-  <modal data-ref="modal_claim_bulk_confirm" title="$t:sirsoft-ecommerce.admin.claim.bulk.confirm_title" size="md">
+  <modal data-type="composite" data-ref="modal_claim_bulk_confirm" title="$t:sirsoft-ecommerce.admin.claim.bulk.confirm_title" size="md">
     <div class="space-y-3">
       <p data-ref="cbc_001_message" class="text-label">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_message|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}</p>
       <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">

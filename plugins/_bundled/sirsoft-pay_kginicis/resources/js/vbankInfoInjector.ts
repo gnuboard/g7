@@ -1,4 +1,5 @@
-import { fetchKginicisReceiptInfo, KginicisReceiptInfo, translateKginicis as t } from './receiptPopup';
+import { fetchKginicisReceiptInfoForOrderScreen, KginicisReceiptInfo, translateKginicis as t } from './receiptPopup';
+import { createOrderScreenPoller, enterOrderScreen } from './orderScreenPolling';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__kginicisVbankInfoInjectorInstalled';
@@ -13,6 +14,8 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // 입금 안내만 빠진 채 열리고, 오류도 경고도 남지 않는다. 비회원 신청서 상세(/shop/guest/claims/{N})도
 // 같은 카드를 쓰므로 함께 매칭한다.
 const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
+
+const mypagePoller = createOrderScreenPoller();
 
 interface Payment {
     pg_provider?: string;
@@ -195,7 +198,7 @@ function buildCbtCvsSection(payment: Payment, receiptInfo: KginicisReceiptInfo |
     return section;
 }
 
-async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
+async function tryInjectMypage(orderNumber: string | null, isActive: () => boolean): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
     if (!orderData) return false;
 
@@ -213,7 +216,10 @@ async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
     const container = findPaymentContainer();
     if (!container) return false;
 
-    const receiptInfo = await fetchKginicisReceiptInfo(resolvedOrderNumber);
+    // 조회는 화면 진입당 한 번 — 영수증 행 인젝터와 같은 결과를 나눠 쓴다.
+    const { info: receiptInfo } = await fetchKginicisReceiptInfoForOrderScreen(resolvedOrderNumber);
+    if (!isActive() || document.getElementById(MP_SECTION_ID)) return true;
+
     // 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입혀 준 값을 그대로 쓴다 — 플러그인이 다시 서식을 입히지 않는다.
     const dueDateStr = payment.vbank_due_at_formatted ?? '';
     container.appendChild(
@@ -226,29 +232,24 @@ async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
     return true;
 }
 
-function startMypagePolling(orderNumber: string | null): void {
-    let attempts = 0;
-    const id = setInterval(() => {
-        attempts++;
-        void tryInjectMypage(orderNumber).then(done => {
-            if (done || attempts >= 30) clearInterval(id);
-        });
-    }, 400);
-}
-
 function onRouteChange(): void {
+    enterOrderScreen();
     const mp = location.pathname.match(ORDER_SHOW_RE);
     if (mp) {
-        startMypagePolling(mp[1] ?? mp[2]);
-
+        const orderNumber = mp[1] ?? mp[2];
+        mypagePoller.start(location.pathname, isActive => tryInjectMypage(orderNumber, isActive));
         return;
     }
 
     // 클레임 신청서 상세 — 주소가 클레임 번호라 주문번호를 뽑을 수 없다. 화면이 읽어 둔
     // 주문을 그대로 쓴다.
     if (CLAIM_SHOW_RE.test(location.pathname)) {
-        startMypagePolling(null);
+        mypagePoller.start(location.pathname, isActive => tryInjectMypage(null, isActive));
+
+        return;
     }
+
+    mypagePoller.stop();
 }
 
 export function installVbankInfoInjector(): void {

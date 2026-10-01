@@ -2,8 +2,8 @@
   갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if="{{route?.id}}"`).
   입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.
   탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.
-  이커머스가 설치돼 있으면 통화·배송국가 두 값만 저장 뒤에 모듈 엔드포인트로 따로 보낸다
-  (코어 회원 API 가 자기 것이 아닌 키를 버리기 때문이다 — 아래 성공 갈래 참조). -->
+  저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에
+  실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다. -->
 <layout name="admin_user_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"/>
   <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).
@@ -114,9 +114,9 @@
   </init>
   <slot name="content">
     <div data-ref="user_form_content" data-key="form" class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
+      <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation-scroll data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
+        <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
           <prop name="tabs">
             <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
             <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
@@ -179,12 +179,15 @@
                 <input type="text" name="nickname" placeholder="$t:admin.users.form.fields.nickname" class=""/>
               </div>
             </div>
+            <!-- 역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —
+                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면
+                 채울 수 없는 칸을 요구하는 셈이 된다. -->
             <div data-ref="field_roles">
               <label class="form-label">
                 <span>$t:admin.users.form.fields.role</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span data-if="{{!!route?.id}}" class="text-red-500 ml-1">*</span>
               </label>
-              <tag-input name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{user?.data?.abilities?.can_assign_roles !== true &amp;&amp; roles?.data?.abilities?.can_assign_roles !== true}}">
+              <tag-input data-type="composite" name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{user?.data?.abilities?.can_assign_roles !== true &amp;&amp; roles?.data?.abilities?.can_assign_roles !== true}}">
                 <on type="change">
                   <!-- 역할 선택. 표시값은 저장된 `role_ids` 를 먼저 보고 없으면 조회 응답의 역할 객체에서
                        id 만 뽑아 쓰지만(수정 진입 직후), 저장에 실리는 것은 언제나 이 `role_ids` 다. -->
@@ -196,6 +199,7 @@
                 </on>
               </tag-input>
               <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="text-red-500 text-xs mt-1">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
+              <p data-if="{{!route?.id}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.fields.role_default_hint</p>
             </div>
             <div data-ref="field_status">
               <label class="form-label">$t:admin.users.form.fields.status</label>
@@ -270,7 +274,7 @@
           <div class="row-stack">
             <div data-ref="field_country">
               <label class="form-label">$t:admin.users.form.fields.country</label>
-              <searchable-dropdown options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+              <searchable-dropdown data-type="composite" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
                   <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
                        이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->
@@ -451,18 +455,6 @@
                   <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                     <success>
                       <set-state target="global" :isSaving="false"/>
-                      <!-- 회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH. -->
-                      <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}">
-                        <fail>
-                          <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
-                        </fail>
-                      </api-call>
-                      <!-- 회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만. -->
-                      <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}">
-                        <fail>
-                          <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
-                        </fail>
-                      </api-call>
                       <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
                       <navigate path="/admin/users" :mergeQuery="true">
                         <query/>
@@ -499,7 +491,7 @@
       </div>
     </div>
     <!-- modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다. -->
-    <modal data-ref="withdraw_confirm_dialog" data-if="{{_local.showWithdrawConfirm === true}}" :isOpen="true" title="$t:admin.users.modals.withdraw_confirm_title" width="520px" :closeOnEscape="false" :closeOnOverlayClick="false" :showCloseButton="false">
+    <modal data-type="composite" data-ref="withdraw_confirm_dialog" data-if="{{_local.showWithdrawConfirm === true}}" :isOpen="true" title="$t:admin.users.modals.withdraw_confirm_title" width="520px" :closeOnEscape="false" :closeOnOverlayClick="false" :showCloseButton="false">
       <div class="py-2 space-y-3">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.withdraw_confirm_lead</p>
         <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:admin.users.modals.withdraw_confirm_effects_title</p>
@@ -526,18 +518,6 @@
               <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                 <success>
                   <set-state target="global" :isSaving="false"/>
-                  <!-- 회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH. -->
-                  <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}">
-                    <fail>
-                      <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
-                    </fail>
-                  </api-call>
-                  <!-- 회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만. -->
-                  <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}">
-                    <fail>
-                      <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
-                    </fail>
-                  </api-call>
                   <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
                   <navigate path="/admin/users" :mergeQuery="true">
                     <query/>

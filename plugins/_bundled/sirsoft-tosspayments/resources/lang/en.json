@@ -1,7 +1,8 @@
 {
     "editor": {
         "data_source": {
-            "settings": "Payment Settings"
+            "settings": "Payment Settings",
+            "webhook_info": "Deposit Webhook URL"
         }
     },
     "plugin_name": "TossPayments",
@@ -58,9 +59,9 @@
         "escrow_shipping_info_notice": "Register shipping information in the TossPayments merchant console.",
         "escrow_shipping_info_link": "Open ↗",
         "webhook_secret_verify": "Webhook Secret Verification",
-        "webhook_secret_verify_hint": "Verifies the deposit webhook secret against the payment confirmation response to block forged requests.",
+        "webhook_secret_verify_hint": "Verifies the deposit webhook secret against the payment confirmation response to block forged requests. If turned off, anyone who knows an order number can mark the order as paid without depositing, and the operator is responsible for any security incident while it is off.",
         "webhook_url_label": "Deposit Webhook URL",
-        "webhook_url_hint": "Prefix this path with your store's full domain (https://your-domain) and register it as a DEPOSIT_CALLBACK event in the TossPayments Developer Center > Webhook menu.",
+        "webhook_url_hint": "Copy the URL above as is and register it as a DEPOSIT_CALLBACK event in the TossPayments Developer Center > Webhook menu.",
         "webhook_url_copy": "Copy",
         "webhook_url_copied": "Webhook URL copied."
     },

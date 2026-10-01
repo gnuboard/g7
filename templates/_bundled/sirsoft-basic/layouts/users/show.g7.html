@@ -28,7 +28,7 @@
   <permissions/>
   <slot name="content">
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <container class="py-8">
+      <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 로딩/에러 상태 처리 -->
         <div data-if="{{profile.loading}}" class="flex justify-center items-center py-20">
@@ -47,7 +47,7 @@
             <div class="flex gap-6 items-start">
               <responsive on="portable" class="flex flex-col items-center gap-4"/>
               <!-- 아바타 (author 객체로 탈퇴 사용자 자동 처리) -->
-              <avatar author="{{profile.data}}" size="xl">
+              <avatar data-type="composite" author="{{profile.data}}" size="xl">
                 <responsive on="portable" size="lg"/>
               </avatar>
               <!-- 기본 정보 (일반 사용자) -->

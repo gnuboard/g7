@@ -179,7 +179,7 @@
       <p data-if="{{!query.search &amp;&amp; !query.search_type}}" class="text-label-subtle">$t:admin.settings.mail_templates.empty_message</p>
     </div>
     <div data-ref="mail_templates_pagination" class="flex justify-center">
-      <pagination currentPage="{{mailTemplates?.data?.pagination?.current_page ?? 1}}" totalPages="{{mailTemplates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{mailTemplates?.data?.pagination?.has_more_pages ?? false}}">
+      <pagination data-type="composite" currentPage="{{mailTemplates?.data?.pagination?.current_page ?? 1}}" totalPages="{{mailTemplates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{mailTemplates?.data?.pagination?.has_more_pages ?? false}}">
         <on type="action" event="onPageChange">
           <!-- 페이지 이동 — 검색 조건과 항목수를 유지한다. -->
           <navigate path="/admin/settings" :replace="true" :mergeQuery="true">

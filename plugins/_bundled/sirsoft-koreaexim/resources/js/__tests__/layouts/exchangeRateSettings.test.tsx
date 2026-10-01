@@ -303,3 +303,24 @@ describe('Exchange rate history controls', () => {
     expect(keys.filter(k=>resolve(ko,k)===undefined||resolve(en,k)===undefined)).toEqual([]);
   });
 });
+
+describe('알림 수신자 회원 검색 — 빈 검색어 요청 차단 (#703)', () => {
+  // 코어 회원 검색 API 는 keyword 가 비면(공백뿐이어도 요청 정리 뒤 빈 값) 422 로 거절한다.
+  // 검색칸을 지우면 드롭다운이 빈 문자열로 onSearch 를 부르므로 그때는 요청하지 않아야 한다.
+  const userSearchCalls=()=>nodes(tplModal).filter((n:any)=>n?.handler==='apiCall'&&String(n.target).includes('/api/admin/users/search'));
+  const evaluate=(raw:string,scope:Record<string,unknown>)=>new Function(...Object.keys(scope),`return (${String(raw).trim().replace(/^\{\{/,'').replace(/\}\}$/,'')});`)(...Object.values(scope));
+  /** @scenario flow=notifications
+   * @effects recipient_user_search_skips_empty_keyword */
+  it('검색칸이 비거나 공백뿐이면 회원 검색을 요청하지 않고, 검색어가 있으면 keyword 로 보낸다',()=>{
+    const calls=userSearchCalls();
+    expect(calls.length).toBeGreaterThan(0);
+    for(const call of calls){
+      expect(call.if,'빈 검색어 차단 조건이 없습니다 — 서버가 422 로 거절합니다.').toBeDefined();
+      expect(evaluate(call.if,{$args:['']})).toBe(false);
+      expect(evaluate(call.if,{$args:['   ']})).toBe(false);
+      expect(evaluate(call.if,{$args:[undefined]})).toBe(false);
+      expect(evaluate(call.if,{$args:['홍']})).toBe(true);
+      expect(call.params?.query?.keyword).toBe('{{$args[0]}}');
+    }
+  });
+});

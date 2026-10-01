@@ -6,7 +6,7 @@
       <variant when="normal"></variant>
     </class-map>
     <div>
-      <section-layout data-ref="section_permissions" class="admin-card">
+      <section-layout data-type="layout" data-ref="section_permissions" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.permissions</h3>
         <div class="card-description">$t:sirsoft-board.admin.settings.permissions_table.description</div>
         <div class="alert-info">
@@ -39,7 +39,7 @@
                 </div>
               </label>
               <div class="row-content-indent">
-                <tag-input data-ref="perm_tag_admin_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
+                <tag-input data-type="composite" data-ref="perm_tag_admin_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 관리자용 권한에 어떤 역할을 열지 고른다 — 표 전체를 다시 지으면서 건드린 키만 새 값으로 바꾼다(중첩 객체를 통째로 새로 만들어야 변경이 잡힌다) -->
                     <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>
@@ -75,7 +75,7 @@
                 </div>
               </label>
               <div class="row-content-indent">
-                <tag-input data-ref="perm_tag_user_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+                <tag-input data-type="composite" data-ref="perm_tag_user_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 사용자용 권한에 어떤 역할을 열지 고른다 — 관리자용 줄과 같은 갱신 규칙을 쓴다 -->
                     <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>

@@ -131,7 +131,12 @@ TotpCredentialRepository → TotpCredential` 의 표준 계층입니다. 코드 
   `Base32` 를 쓰지만 그 반대는 없고, 둘 다 Laravel 컨테이너에 바인딩되지 않습니다.
 - 바인딩은 `TotpServiceProvider::$repositories` 한 줄
   (`TotpCredentialRepositoryInterface → TotpCredentialRepository`)뿐이고,
-  `TotpResetCommand` 는 `runningInConsole()` 일 때만 등록됩니다.
+  `TotpResetCommand` 와 E2E 픽스처 `PlaywrightSeedTotp`(`playwright:seed-totp`)는
+  `runningInConsole()` 일 때만 등록됩니다.
+- `playwright:seed-totp` 는 브라우저 실측용입니다 — `--enroll=<email>` 이 확정된 자격증명과
+  고정 백업 코드를 심고 시크릿을 출력하며, `--code=<secret>` 이 그 순간의 코드를 계산합니다.
+  CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` 가드 뒤에 있습니다. 종전에는 코어 커맨드가 이 플러그인의
+  모델을 직접 import 해 같은 일을 했습니다(코어가 확장을 아는 자리 — 이 플러그인으로 이관).
 
 **세 갈래 해제 경로가 한 서비스로 모입니다**: 본인 해제
 (`TotpEnrollmentService::disable()` — 코드 확인 필요), 관리자 강제 해제
@@ -155,7 +160,7 @@ TotpCredentialRepository → TotpCredential` 의 표준 계층입니다. 코드 
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-totp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-totp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-totp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-totp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-totp --force` |

@@ -6,8 +6,8 @@ description: |
   결제 건이 결제완료로 확정됐다. 주문 경로는 KVE-2026-2018 때문에 저장된 결제수단으로만 판정한다.
 
   판정 층: ① 승인 전 — 결제 건에 저장된 결제수단. ② 승인 뒤 — KCP 응답의 결제수단(가상계좌면 발급분 취소).
-  대조 금액은 KCP 응답 금액을 먼저 쓰고(청구액과 다르면 승인분 취소 + 거절 — validate-p2-plugin.yaml),
-  응답에 없을 때만 승인 전에 청구액과 대조한 브라우저 값(good_mny)을 쓴다.
+  대조 금액은 KCP 응답 금액만 쓴다(청구액과 다르거나 응답에 없으면 승인분 취소 + 거절 —
+  validate-p2-plugin.yaml, approval-amount-verification.yaml). 브라우저 값(good_mny)은 대체값으로 쓰지 않는다.
 
 axes:
   judged_by: [stored_method, pg_response]

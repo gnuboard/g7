@@ -2,12 +2,15 @@
 
 namespace App\Services\Extension;
 
+use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Support\ExtensionIcon\ExtensionIconValidator;
 
 /**
  * 확장 아이콘 해석기
  *
- * 확장 하나의 아이콘 파일을 「활성 → _pending → _bundled」 순으로 찾아 준다.
+ * 확장 하나의 아이콘 파일을 찾아 준다. **설치된** 확장(DB 에 active·inactive 행)은
+ * 설치본(활성 디렉터리)만 본다 — 설치본에 아이콘이 없으면 없는 것이다(동봉 원본으로
+ * 채우지 않는다). **미설치** 확장만 「활성 → _pending → _bundled」 순으로 찾는다.
  * 자산 서빙 lane(PluginService::getAssetFilePath 등)은 활성 디렉터리만 보므로
  * 미설치 번들 확장의 아이콘은 이 해석기만 찾아낼 수 있다.
  *
@@ -39,8 +42,8 @@ final class ExtensionIconResolver
     /**
      * 확장의 아이콘을 해석합니다.
      *
-     * 활성 → _pending → _bundled 순으로 첫 유효 아이콘을 돌려준다. 어느 루트에도
-     * 없거나 찾은 파일이 규격 위반이면 null 이다.
+     * 설치된 확장은 활성 디렉터리만, 미설치 확장은 활성 → _pending → _bundled 순으로
+     * 첫 유효 아이콘을 돌려준다. 어느 루트에도 없거나 찾은 파일이 규격 위반이면 null 이다.
      *
      * @param  string  $type  확장 유형 (module|plugin|template|language-pack)
      * @param  string  $identifier  확장 식별자
@@ -223,6 +226,10 @@ final class ExtensionIconResolver
     /**
      * 유형별 아이콘 후보 루트를 위치 이름 → 절대 경로로 돌려줍니다.
      *
+     * 모듈·플러그인·템플릿이 설치되어 있으면(InstalledExtensionLookup) 설치본 하나만 후보다 —
+     * 운영에서 동작하는 것은 설치본이고, 설치본은 동봉 원본과 버전이 다르거나 원본에 없을 수 있다.
+     * 미설치 확장(목록의 번들·_pending 행)만 _pending·_bundled 까지 본다.
+     *
      * 언어팩은 _pending 이 없다 — 설치본과 _bundled 둘뿐이며 LanguagePack::
      * resolveDirectory() 의 폴백 규칙과 같은 순서다.
      *
@@ -248,6 +255,10 @@ final class ExtensionIconResolver
 
         if ($directory === null) {
             return [];
+        }
+
+        if (InstalledExtensionLookup::isInstalled($type, $identifier)) {
+            return ['active' => base_path($directory.'/'.$identifier)];
         }
 
         return [

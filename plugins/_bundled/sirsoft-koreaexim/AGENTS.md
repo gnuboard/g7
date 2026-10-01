@@ -35,7 +35,7 @@
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-koreaexim --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-koreaexim --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-koreaexim --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-koreaexim --force` |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
@@ -99,7 +99,7 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 9개 | `plugins/_bundled/sirsoft-koreaexim/tests` |
-| Vitest | 2개 | `vitest.config.ts` |
+| Vitest | 3개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 

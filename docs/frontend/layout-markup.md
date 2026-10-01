@@ -5,7 +5,7 @@
 ```text
 1. 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 소스 SSoT 이고 설치 시 서버(PHP)가 설치 시점에 메모리로 JSON 컴파일해 DB 등록(디스크 산출 JSON 미기록)
 2. 문법 3원칙: 접두어 없음(지시 속성만 data-*) / 소문자·kebab 태그 / 속성값에 JSON 금지(구조체=자식 태그, 배열=반복 태그)
-3. 태그명이 컴포넌트를 정한다(레지스트리 kebab 해석). 조건표시=data-if, 반복=data-each, 참조=data-ref (무접두 if/each/ref·v-if 는 컴파일 에러)
+3. 컴파일은 템플릿과 무관하다(JSON 과 동일): 태그명 → 이름은 표기 규칙(kebab→Pascal, 확장은 `식별자.kebab`), 종류는 `data-type`(생략 시 basic). 조건표시=data-if, 반복=data-each, 참조=data-ref (무접두 if/each/ref·v-if 는 컴파일 에러)
 4. 용어(D38): compile=JSON→HTML(소스 산출) / decompile=HTML→JSON(설치·검증). 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint)
 5. 문서루트 4갈래(layout/partial/extension/override). 태그·속성명은 명명 3순위 규칙으로 확정(S8 동결, 2026-07-18)
 6. 주석 `<!-- -->` 은 바로 다음 태그의 `comment` 가 된다 — 산출에 자리가 없는 태그(`<on>`·값/구조 태그·섹션 컨테이너) 앞에 쓰면 컴파일 에러(§10.5)
@@ -18,7 +18,8 @@
 - 소스 파일: `.g7.html` (본 레이아웃·partial·확장 주입·오버라이드) — 소스 SSoT
 - 컴파일러: `app/Support/LayoutMarkup/`
 - 설치(D38·D39): 디스크에는 `.g7.html`(기본) + 원본 `.json`(선택 설치원) 병존. 설치·갱신은 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 DB(template_layouts)에 등록하고 **산출 JSON 을 디스크에 쓰지 않는다**. `.g7.html` 이 없으면 `.json` 을 직접 등록. 둘이 나란히 있으면 소스 SSoT 인 `.g7.html` 이 이긴다
-- 검증 커맨드: `php artisan layout:decompile {path|--all}` (HTML→JSON 강검증·lint, 산출 JSON 미기록 — `--out` 지정 시 단일 파일 진단 덤프) / `--template={id}`
+- 검증 커맨드: `php artisan layout:decompile {path|--all}` (HTML→JSON 강검증·lint, 산출 JSON 미기록 — `--out` 지정 시 단일 파일 진단 덤프). 대상 템플릿 옵션은 없다 — 산출이 템플릿과 무관하므로, 템플릿 기준 검사는 템플릿 자신의 레이아웃(경로로 자기 템플릿을 안다)과 레이아웃 편집기(편집 대상 템플릿)에서만 한다
+- **템플릿 비의존 (2026-09-28 결정)**: 설치·업데이트·조각 주입·삭제·플러그인 설정 화면 어느 경로도 템플릿 컴포넌트 목록을 보지 않는다. JSON 레이아웃이 작성자가 적은 `name`·`type` 으로 설치되고 컴포넌트는 런타임이 활성 템플릿에서 찾았던 것과 똑같다. 그래서 활성 템플릿이 무엇이든(아직 없어도) 같은 JSON 이 등록되고, 템플릿을 바꿔도 확장 레이아웃이 다르게 컴파일되지 않는다
 - 이관(생성) 커맨드: `php artisan layout:compile {path|--all}` (JSON→HTML 소스 산출) / `--roundtrip` (왕복 동등성 검증)
 - 코퍼스(왕복 하네스·`<json>` 예산·이관 게이트의 모집단): 본 레이아웃(`layouts/`) **+ 레이아웃 확장 fragment(`extensions/`)**. 정의는 `LayoutCorpus` 가 SSoT — 스캔 글롭을 곳곳에 복제하면 한쪽만 넓힐 때 나머지가 반쪽 코퍼스로 남고 그 위에서 "escape-0" 같은 완료 판정이 나온다
 - 강검증 축(`LayoutValidator`): ① 구조(레이아웃/fragment) ② 엔드포인트 화이트리스트 ③ 컴포넌트 존재 ④ `wait_for` cross-field ⑤ `<script src>` 호스트 화이트리스트. **외부 URL·위험 스킴(`NoExternalUrls`)은 돌리지 않는다** — 설치 경로(`ValidatesLayoutFiles`)가 원래 돌리지 않아 `.json` 설치와 패리티를 맞춘 것이고(설계 결정 2026-07-20), 번들 결제 플러그인이 PG사 공식 주소를 정상 기능으로 들고 있다. 작성 API 경로(`Store/Update LayoutRequest`·`UpdateLayout{Content,ExtensionContent}Request`)에는 규칙이 그대로 살아 있다
@@ -58,7 +59,7 @@
 | 확장 주입 (`target_layout`/`extension_point`) | `<extension>` | 개념어 |
 | 템플릿→확장 레이아웃 대체 (`override_target`) | `<override>` | 어휘 계승 |
 
-> `<partial name>` 은 `<layout name>` 과 같은 규율 — 최상위 `layout_name` 으로 접히고 **meta 로 흘리지 않는다**. `name` 을 뺀 나머지 `<partial>` 속성은 `meta` 로 접히며, `is_partial: true` 는 컴파일러가 항상 주입한다(작성 불요). partial 의 루트는 노드 **하나**이고, 모달 조각은 그 루트 노드에 `<data-source>` 자식을 얹어 오픈 시 fetch 를 선언할 수 있다.
+> `<partial name>` 은 `<layout name>` 과 같은 규율 — 최상위 `layout_name` 으로 접히고 **meta 로 흘리지 않는다**. `name` 을 뺀 나머지 `<partial>` 속성은 `meta` 로 접히며, `is_partial: true` 는 컴파일러가 항상 주입한다(작성 불요). partial 의 루트는 노드 **하나**이고, 모달 조각은 그 루트 노드에 `<data-source>` 자식을 얹어 오픈 시 fetch 를 선언할 수 있다. 조각 문서는 루트 노드 자체라 meta 자리가 하나뿐이므로 조각의 meta(예: 편집기 라벨 `editor_label`)는 **`<partial>` 속성으로만** 적는다 — 루트 노드 안의 `<meta>` 는 컴파일 에러 `partial_root_meta_not_allowed` 다(`<partial description="…" editor_label="$t:…">`).
 
 ---
 
@@ -235,11 +236,25 @@
 
 ## 5. 노드 + 지시 속성
 
-태그명이 컴포넌트를 정한다(레지스트리 kebab→PascalCase 해석). 미등록 태그는 `unknown_tag_with_suggestion`(근접 제안).
+태그명이 컴포넌트 이름을 정한다 — **표기 규칙**(kebab → PascalCase)이며 어떤 템플릿의 컴포넌트 목록도 보지 않는다. 종류(`type`)는 `data-type` 으로 적고 생략하면 `basic` 이다. 템플릿에 없는 이름도 컴파일된다 — 그 컴포넌트가 있는지는 JSON 과 같이 런타임(활성 템플릿)이 판정한다.
+
+```html
+<div class="p-4">                               <!-- {type: basic, name: Div} -->
+  <data-grid data-type="composite" .../>        <!-- {type: composite, name: DataGrid} -->
+  <container data-type="layout">…</container>   <!-- {type: layout, name: Container} -->
+  <gnuboard7-hello_module.memo-card data-type="composite" .../>
+                                                <!-- 확장 컴포넌트: {type: composite, name: gnuboard7-hello_module.MemoCard} -->
+</div>
+```
+
+- 확장 컴포넌트 태그는 `확장식별자.kebab` — 점 앞은 식별자를 **그대로**(밑줄 포함) 쓴다. 점에서 나눠 JSON 의 `식별자.이름` 을 목록 없이 만든다.
+- `data-type` 은 `basic`·`composite`·`layout` 중 하나를 문자 그대로 적는다(`:data-type` 바인딩 불가 → `invalid_component_type`).
+- 종류를 잘못 적으면 렌더러가 다른 갈래를 탄다(아래 「노드 `type`」). 대상 템플릿이 분명한 자리(레이아웃 편집기·템플릿 자신의 레이아웃)에서는 템플릿 선언과 다르면 `component_type_mismatch` 경고를 낸다.
 
 | JSON 노드 키 | `.g7.html` |
 |---|---|
-| `type`/`name` | 태그명 자동 판정 (`<data-grid>` `<button>`) |
+| `name` | 태그명 (`<data-grid>` → `DataGrid`, `<a.b-c>` 형태는 확장 컴포넌트 `a.BC`) |
+| `type` | `data-type="composite|layout"` (생략 = basic) |
 | `props` | 무접두 속성 + `<prop name="…">JSON</prop>` |
 | `children` / `text` | 자식 태그 / 태그 본문 (둘 공존 = `mixed_text_and_children` 에러) |
 | `id` | `data-ref="…"` (HTML `id` 는 props.id 로 감). 렌더 시 props.id 가 없으면 이 값이 DOM `id` 가 되고 `data-ref` 속성은 DOM 에 남지 않는다 — E2E 는 `#…` 로 찾는다 |
@@ -266,38 +281,53 @@
 
 ---
 
-## 6. 임베딩 (DataGrid·Modal 서브트리)
+## 6. 임베딩 (props 서브트리 hoist)
 
-| JSON 위치 | `.g7.html` |
+hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키로 끌어올린다(2026-09-28 결정). `<column>` 은 `<data-grid>` 밑이든 다른 템플릿의 `<my-table>` 밑이든 `props.columns` 원소다 — 문법이 번들 템플릿의 컴포넌트 이름(`DataGrid`·`Modal`)에 묶이면 다른 템플릿의 같은 역할 컴포넌트가 이 표기를 쓸 수 없다. 그 prop 을 **받는** 컴포넌트인지는 대상 템플릿이 분명한 자리(편집기·템플릿 자신의 레이아웃)에서 lint 가 선언으로 판정한다(아래).
+
+| JSON 위치 | `.g7.html` (어느 부모 아래서나) |
 |---|---|
 | `props.columns[]`(+`cellChildren`) | `<column field="name" header="이름"><cell>…</cell></column>` |
 | `props.expandChildren` | `<expand>…</expand>` |
-| `props.subRowChildren`(+`subRowCondition`) | `<sub-row condition="{{…}}">…</sub-row>` |
+| `props.subRowChildren`(+`subRowCondition`) | `<sub-row>…</sub-row>` (`subRowCondition` 은 `<prop>`) |
 | `props.footerCells[]` | `<footer-cell field="…">…</footer-cell>` |
 | `props.footerCardChildren` | `<footer-card>…</footer-card>` |
-| `props.cardColumns[0].cellChildren`(CardGrid) | `<card>…</card>` (그리드 부모일 때만; 그 밖은 Card 컴포넌트 — 셋 다 admin 전용) |
-| `props.titlePrefix`/`titleSuffix`(Modal) | `<title-prefix>…</title-prefix>`/`<title-suffix>` (⚠️ 템플릿 비대칭 — 아래 참조) |
-| **`props.footer`(Modal, S8)** | **`<footer>…</footer>`** (Modal 부모일 때만; 그 밖은 Footer 컴포넌트 — **`Footer` 는 `sirsoft-basic` 전용**이고 admin 은 `AdminFooter` 다. ⚠️ 템플릿 비대칭 — 아래 참조) |
+| `props.cardColumns[]`(`{id, cellChildren}`) | `<prop-card id="…">…</prop-card>` |
+| `props.titlePrefix`/`titleSuffix` | `<title-prefix>…</title-prefix>`/`<title-suffix>…</title-suffix>` (⚠️ 템플릿 비대칭 — 아래 참조) |
+| `props.footer` | `<prop-footer>…</prop-footer>` (⚠️ 템플릿 비대칭 — 아래 참조) |
 | `$switch` 값 props | `<switch-value prop="…" on="…"><case when>…<default></switch-value>` |
-| Select 정적 옵션 | `<select><option value="…" label="…"/></select>` (multiple/size 없을 때만 리프트) |
+| `props.options`(정적 옵션 데이터) | `<options><option value="…">라벨</option></options>` (§11 `<options>`) |
+
+### 이름이 겹치는 옛 표기 — `<card>`·`<footer>`
+
+`<card>`(Card 컴포넌트)·`<footer>`(Footer 컴포넌트, HTML `<footer>`)는 태그 이름이 컴포넌트와 겹쳐, 부모 이름 없이는 hoist 인지 컴포넌트인지 가를 수 없다. 그래서 두 옛 표기는 **종전 부모 아래에서만** hoist 로 읽고 그 밖에서는 컴포넌트다 — 기존 소스는 고치지 않아도 산출이 한 글자도 바뀌지 않는다. 새로 쓸 때는 부모와 무관한 `<prop-card>`·`<prop-footer>` 를 쓴다(`prop-` 은 "부모의 props 로 간다" 는 표시이고, 번들·설치 `components.json` 어디에도 `PropCard`·`PropFooter` 컴포넌트가 없음을 확인했다).
+
+| 옛 표기 | hoist 로 읽는 부모 | 그 밖의 부모 | 부모 무관 표기 |
+|---|---|---|---|
+| `<card id>` | `<data-grid>`·`<card-grid>` | Card 컴포넌트 | `<prop-card id>` |
+| `<footer>` | `<modal>` | Footer 컴포넌트 | `<prop-footer>` |
+
+옵션 데이터는 처음부터 부모와 무관한 `<options>` 래퍼가 맡는다 — 래퍼 안 `<option>` 은 언제나 데이터, 래퍼 밖 `<option>` 은 언제나 Option 컴포넌트라 새 표기가 필요 없다.
+
+역변환(JSON → `.g7.html`)은 종전 부모(`DataGrid`·`CardGrid`·`Modal`·`Select`)에서는 옛 표기를 그대로 찍고, 그 밖의 부모에서는 부모 무관 표기를 찍는다. 되컴파일로 그 키 하나를 확인해 어긋나면(예: `field` 없는 컬럼) 종전 `<prop>` 표기로 물러선다.
 
 ### Modal footer (S8 신설)
 
 ```html
 <modal title="재고 조정">
   <div text="{{_local.stockMessage}}"/>
-  <footer>
+  <prop-footer>
     <button type="button" text="$t:common.cancel"><on event="click"><close-modal target="…"/></on></button>
     <button variant="primary" text="$t:common.save"><on event="click">…</on></button>
-  </footer>
+  </prop-footer>
 </modal>
 ```
 
-`<footer>` 는 Modal 자식일 때만 `props.footer` 로 hoist 된다(`Footer` 컴포넌트와 이름이 겹쳐 부모 문맥이 가른다 — `<card>` 와 동일). Modal 밖의 `<footer>` 는 `Footer` 컴포넌트로 해석.
+`<modal>` 안에서는 옛 표기 `<footer>` 도 같은 `props.footer` 가 된다. Modal 밖의 `<footer>` 는 `Footer` 컴포넌트로 해석된다.
 
-> **이 계약은 이제 기계가 강제한다 (S23 축 B).** 대상 템플릿의 `Modal` 이 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 작성할 수 없게 된다. 판정 집합은 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `MODAL_TAGS` 에서 도출하므로 hoist 를 하나 더하면 검사도 따라온다.
+> **이 계약은 기계가 강제한다 (S23 축 B).** 대상 템플릿의 그 노드 컴포넌트가 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다 — 부모 이름(`Modal`)이 아니라 **그 컴포넌트의 선언**으로 판정한다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 작성할 수 없게 된다. 판정 키는 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `DECLARATION_CHECKED_PROPS` 셋으로 닫혀 있다 — 나머지 hoist 키(`expandChildren`·`options` 등)는 선언 없이 렌더하는 조합이 실측 수백 건이라 선언 대조가 오탐이다.
 >
-> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, 그 props 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 세 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 버튼이 조용히 사라진다**. 사용자 템플릿 모달의 확인/취소 버튼은 `children` 안에 둔다. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
+> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<prop-footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, 그 props 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 세 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 버튼이 조용히 사라진다**. 사용자 템플릿 모달의 확인/취소 버튼은 `children` 안에 둔다. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
 >
 > **너비는 `<modal size="…">` 로 고른다** — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. `width` 를 함께 주면 `width` 가 이기고, 모르는 값은 기본 500px 으로 떨어진다. 좁은 화면 넘침은 컨테이너의 `max-w-[calc(100vw-2rem)]` 이 막는다.
 
@@ -538,7 +568,7 @@ JSON 은 `comment` 키만 늘어난다).
 ### 자리가 없는 곳에 쓰면 컴파일 에러다
 
 `comment_not_attachable` 로 거부하며 정본 자리를 함께 안내한다. 판정은 태그 목록이 아니라 **그 컴파일이
-실제로 낸 산출과의 대조**다 — 같은 태그라도 자리에 따라 갈리기 때문이다(Modal 자식 `<footer>` 는
+실제로 낸 산출과의 대조**다 — 같은 태그라도 자리에 따라 갈리기 때문이다(`<prop-footer>`·Modal 자식 `<footer>` 는
 `props.footer` 로 접혀 자리가 없고, 같은 이름의 `Footer` 컴포넌트 노드에는 있다).
 
 이 검사가 없던 동안 `<on>` 앞 주석은 경고도 에러도 없이 사라졌다. 왕복 게이트는 JSON→마크업→JSON 이라
@@ -669,7 +699,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 | 정규화 대상 | 컴파일 정본 | 근거 |
 | --- | --- | --- |
-| 노드 `type`(basic/composite/layout) | 레지스트리(name)에서 파생 — **수렴이 아니라 정정**(아래) | name 비교는 엄격 유지 — 태그 오방출은 name 으로 잡힘 |
+| 노드 `type`(basic/composite/layout) | 작성자가 `data-type` 으로 적은 값 — 번들 전량은 레지스트리 파생값으로 기계 이관됨(아래) | name 비교는 엄격 유지 — 태그 오방출은 name 으로 잡힘 |
 | `meta.is_partial` | `<partial>` 이 항상 주입 | 소스 부재해도 산출엔 존재 |
 | 빈 `props`/`children`(`[]`) | 항상 생략 | `props:[]` 는 방출되지 않음 |
 | 콜백 단일 원소 배열(`onSuccess:[{x}]`) | 객체(`{x}`) | 런타임 동치, compileCallbackActions 1개=객체 |
@@ -677,9 +707,9 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 정규화 목록에 **런타임 동치가 아닌 것을 넣으면 안 된다** — 넣는 순간 이관이 실제로 shape 를 바꿔놓아도 왕복 게이트가 green 이 된다. Select 옵션이 그 사례였다(아래 G13).
 
-#### 노드 `type` 은 수렴이 아니라 정정이다
+#### 노드 `type` 은 렌더 갈래를 정한다
 
-`type`(basic/composite/layout)은 레지스트리에서 파생하지만, 이것을 "무해한 수렴" 으로 읽으면 안 된다. `DynamicRenderer` 는 이 값을 **레지스트리가 아니라 레이아웃 노드에서** 읽어 세 갈래를 가른다:
+`type`(basic/composite/layout)은 작성자가 `data-type` 으로 적는다(2026-09-28 결정 — 종전 D47 은 대상 템플릿 레지스트리에서 파생했고, 그 파생이 확장 설치를 번들 기본 템플릿에 묶은 원인이었다. 번들 `.g7.html` 1,343곳에 파생값을 기계 이관해 산출 JSON 은 한 글자도 바뀌지 않았다). `DynamicRenderer` 는 이 값을 **레이아웃 노드에서** 읽어 세 갈래를 가른다:
 
 1. `dynamicState`(loadingActions·apiError)를 props 로 주입 — composite 만
 2. `__componentContext` 자동 전달 — composite 는 무조건
@@ -690,7 +720,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 - `Toggle`·`Badge` 가 `basic` 으로 적혀 있었다. 두 컴포넌트는 `editorAttrs` 를 명시 수신하고 `{...props}` 를 펼치지 않으므로, basic 분기에서 `editorAttrs` 가 제거되면 **편집 표식이 DOM 에 도달하지 못한다** — 레이아웃 편집기에서 누락된다.
 - 반대로 `Input` 등이 `composite` 로 적혀 있어 `dynamicState` 가 DOM 으로 샜고, `Input.tsx` 가 `const { loadingactions, formdata, ...validProps }` 로 **손수 걷어내는 방어코드**를 달고 있다.
 
-따라서 이관이 `type` 을 레지스트리 값으로 되돌리는 것은 결함 수정이다. 작성 시 `type` 을 적지 않는다 — 태그가 곧 `name` 이고 `type` 은 거기서 나온다.
+그 정정은 이관 때 끝났고, 이제 값은 `data-type` 으로 소스에 드러나 있다. 새로 작성할 때 composite·layout 컴포넌트에는 `data-type` 을 적고, 대상 템플릿이 분명한 자리의 `component_type_mismatch` 경고로 어긋남을 잡는다.
 
 ### `<options>` — Select 옵션 데이터 래퍼 (D42 G13)
 
@@ -753,6 +783,10 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 | 타이핑이 멈춘 1초 뒤 | `POST …/markup-compile {markup}` | 저장 없이 **프로덕션 컴파일** — 200 이면 JSON 탭을 갱신, 422 면 `compile_error {code,message,line,column}` 로 마커·오류 패널을 찍고 JSON 탭은 마지막 성공본에 '오래됨' 배지 |
 | 저장·미리보기 | `PUT …/layouts/{name}` · `POST …/preview` 에 `format=markup` + `content=<HTML>` | 서버가 검증 전에 컴파일해 JSON 으로 바꾼 뒤 **기존 규칙 그대로** 검증·저장한다. 컴파일 오류는 422 + `compile_error`, 저장되지 않는다 |
 
+- **검사 목록 (2026-09-28 결정)** — 산출 JSON 은 템플릿과 무관하고, 편집기는 목록을 **검사에만** 쓴다. 목록은 **편집 대상 템플릿**(활성 템플릿이 아니다)의 `components.json` + **설치된 모듈·플러그인 전부**(활성·비활성 무관)의 `components.json` + 그 템플릿의 확장 컴포넌트 오버라이드다. 모두 설치 디렉토리(`templates/{id}`·`modules/{id}`·`plugins/{id}`)에서만 읽고 `_bundled` 로 물러서지 않는다. 편집 도중 확장을 꺼도 그 컴포넌트를 쓴 레이아웃을 계속 저장할 수 있게 하려고 활성 여부로 거르지 않는다.
+  - 목록에 없는 **확장 컴포넌트**(`식별자.이름` — 확장 삭제·이름 오타)는 경고(`extension_component_not_installed`)만 내고 **저장을 허용한다**. 그 확장이 없으면 화면에 그려지지 않을 뿐이다.
+  - 점 없는 **템플릿 컴포넌트** 오타(`<dvi>` → `Dvi`)는 종전대로 오류(`component_not_in_registry`)다.
+  - 확장 컴포넌트는 템플릿 `nesting.json` 판정에서 뺀다 — 템플릿은 어떤 확장이 설치될지 몰라 그 이름을 `accepts` 에 적을 수 없다.
 - 편집기가 여는 것은 **설치본**이라 저장소 파일과 다르다 — 설치가 `<include src>`·`<modal src>` 조각을 인라인한 평탄 문서이고, 인라인 모달의 원래 이름은 `<modal name>` 으로 남는다. 저장하면 본문이 서버 정규형(역변환 산출)으로 갱신되므로 손으로 맞춘 줄바꿈·들여쓰기는 유지되지 않는다.
 - 변환은 설치·게이트와 **같은 클래스**(`LayoutMarkupDecompiler`·`LayoutMarkupCompiler`)를 탄다. 왕복 오라클(`layout:compile --roundtrip`)도 같은 진입점이라 "게이트는 초록인데 편집기 저장은 거부" 가 생기지 않는다.
 - 설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다(행마다 역변환→프로덕션 컴파일→왕복 대조 + 조각 등록 정합성).

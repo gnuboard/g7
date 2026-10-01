@@ -903,6 +903,14 @@
                                         }
                                     },
                                     {
+                                        "comment": "서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다(#703).",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                        }
+                                    },
+                                    {
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "language_packs"
@@ -914,6 +922,14 @@
                                 "409": {
                                     "handler": "sequence",
                                     "actions": [
+                                        {
+                                            "comment": "창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703).",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                            }
+                                        },
                                         {
                                             "handler": "setState",
                                             "params": {
@@ -1072,6 +1088,7 @@
                         "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
                         "minCardWidth": 250,
                         "maxColumns": 5,
+                        "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
                         "loading": "{{language_packs?.loading ?? false}}",
                         "pagination": true,
                         "alwaysShowPagination": true,

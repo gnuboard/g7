@@ -1128,6 +1128,17 @@
                                     "text": "{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}"
                                 },
                                 {
+                                    "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}",
+                                    "props": {
+                                        "role": "status",
+                                        "className": "text-warning-soft mt-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}"
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {

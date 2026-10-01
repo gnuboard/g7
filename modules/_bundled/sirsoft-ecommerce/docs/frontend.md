@@ -313,7 +313,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 219개 (정의: `resources/js/handlers/index.ts`).
+핸들러 224개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -363,6 +363,9 @@
 | `addAdditionalOptionValue` | `sirsoft-ecommerce.addAdditionalOptionValue` |
 | `updateAdditionalOptionValue` | `sirsoft-ecommerce.updateAdditionalOptionValue` |
 | `removeAdditionalOptionValue` | `sirsoft-ecommerce.removeAdditionalOptionValue` |
+| `updateMultilingualTagValue` | `sirsoft-ecommerce.updateMultilingualTagValue` |
+| `cancelMultilingualTag` | `sirsoft-ecommerce.cancelMultilingualTag` |
+| `saveMultilingualTag` | `sirsoft-ecommerce.saveMultilingualTag` |
 | `uploadImages` | `sirsoft-ecommerce.uploadImages` |
 | `setThumbnail` | `sirsoft-ecommerce.setThumbnail` |
 | `reorderImages` | `sirsoft-ecommerce.reorderImages` |
@@ -419,6 +422,7 @@
 | `buildOrderBulkConfirmData` | `sirsoft-ecommerce.buildOrderBulkConfirmData` |
 | `executeOrderBulkAction` | `sirsoft-ecommerce.executeOrderBulkAction` |
 | `downloadOrderExcel` | `sirsoft-ecommerce.downloadOrderExcel` |
+| `downloadFile` | `sirsoft-ecommerce.downloadFile` |
 | `saveVisibleColumns` | `sirsoft-ecommerce.saveVisibleColumns` |
 | `loadVisibleColumns` | `sirsoft-ecommerce.loadVisibleColumns` |
 | `loadVisibleFilters` | `sirsoft-ecommerce.loadVisibleFilters` |
@@ -532,6 +536,7 @@
 | `closeClaimWithdraw` | `sirsoft-ecommerce.closeClaimWithdraw` |
 | `withdrawClaim` | `sirsoft-ecommerce.withdrawClaim` |
 | `payClaimOutstanding` | `sirsoft-ecommerce.payClaimOutstanding` |
+| `setUserFilterExt` | `sirsoft-ecommerce.setUserFilterExt` |
 | `initCategoryFromUrl` | `sirsoft-ecommerce.initCategoryFromUrl` |
 | `initBrandFromUrl` | `sirsoft-ecommerce.initBrandFromUrl` |
 | `initCommonInfoFromUrl` | `sirsoft-ecommerce.initCommonInfoFromUrl` |
@@ -590,6 +595,14 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
   `uploadPendingClaimFiles()` 는 그 표식이 선 것을 빼고 돌려줍니다. 빼지 않으면 서버가 귀속분을
   "이 주문의 미귀속 첨부" 로 찾다가 실패해 저장 전체가 422 로 떨어지고, 첨부가 한 장이라도 있는
   신청서는 **사유조차 고칠 수 없게** 됩니다. 귀속분의 삭제는 `remove_image_ids` 가 맡습니다.
+
+관리자 화면이 쓰는 범용에 가까운 동작도 이 모듈이 직접 둡니다 — 옵션값 다국어 태그 편집 창의
+`updateMultilingualTagValue` · `cancelMultilingualTag` · `saveMultilingualTag`(편집 중 값은
+`_global.multilingualTagEdit`, 저장은 창을 연 상품 폼 `_local` 의 `statePath` 경로)와 파일 응답을 토큰을
+실어 받아 저장하는 `downloadFile`(주문 목록 엑셀 내려받기 창) 입니다. 같은 이름을 관리자 템플릿이
+등록해 두었거나 어디에도 없었는데, 이 모듈 화면은 **어느 관리자 템플릿으로 그려지든** 같게 동작해야
+하므로 템플릿 핸들러에 기대지 않습니다. 코어 `apiCall` 은 응답을 JSON 으로만 읽어 파일을 넘겨주지
+못하므로 파일 내려받기는 요청과 저장을 `downloadFile` 한 액션이 합니다.
 
 핸들러 TS 를 고치면 **빌드가 필요합니다** — `php artisan module:build` 후
 `module:update --force`. 커밋되는 `dist/` 는 배포 산출물이므로 `--production` 으로 굽고

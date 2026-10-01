@@ -2,7 +2,7 @@
 <partial description="게시판 목록 로딩 스켈레톤 및 오류 페이지">
   <div>
     <!-- 로딩 페이지 - 스켈레톤 + 스피너 혼합 (오류 없을 때만) -->
-    <container data-if="{{!posts?.data?.board &amp;&amp; !_global.hasError}}" class="py-8">
+    <container data-type="layout" data-if="{{!posts?.data?.board &amp;&amp; !_global.hasError}}" class="py-8">
       <!-- 헤더 스켈레톤 -->
       <div class="flex justify-between items-start mb-4">
         <div class="space-y-2">
@@ -22,7 +22,7 @@
       </div>
     </container>
     <!-- 오류 발생 시 - 오류 메시지 및 재시도 버튼 -->
-    <container data-if="{{_global.hasError}}" class="py-8">
+    <container data-type="layout" data-if="{{_global.hasError}}" class="py-8">
       <div class="flex flex-col items-center justify-center py-16 text-center">
         <!-- 경고 아이콘 -->
         <div class="text-5xl rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-6 p-4">

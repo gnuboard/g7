@@ -32,7 +32,7 @@ axes:
   geo_before_mask: [true, false]
   referrer_anon: [none, domain_only]
   pseudonymize: [true, false]
-  gdpr: [active_consented, active_declined, inactive, absent]
+  consent_provider: [active_consented, active_declined, inactive, absent]
   ip_family: [ipv4, ipv6]
   # 모드가 판정을 바꾸는 자리 — 수집 매니페스트의 같은 이름 축 중 이 매니페스트가 쓰는 값
   exclusion: [none, consent, dnt]
@@ -40,13 +40,13 @@ axes:
   visit_state: [new, open]
 
 exclusions:
-  - { mode: anonymous, gdpr: active_consented, reason: "익명 모드는 동의 출처와 무관하게 동작한다 — 동의 축이 판정에 관여하지 않는다" }
-  - { mode: full, gdpr: active_declined, reason: "IP 저장 모드는 동의를 게이트로 쓰지 않는다(운영자 재량)" }
+  - { mode: anonymous, consent_provider: active_consented, reason: "익명 모드는 동의 출처와 무관하게 동작한다 — 동의 축이 판정에 관여하지 않는다" }
   - { geo_before_mask: false, mask_octets: 0, reason: "마스킹이 없으면 조회 순서가 결과를 바꾸지 않는다" }
 
 effects:
   - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
   - consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
+  - consent_status_api_answers_through_the_core_filter
   - full_mode_stores_masked_ip_and_issues_cookie
   - full_mode_reports_returning_visitors
   - anonymous_mode_stores_no_ip
@@ -60,7 +60,6 @@ effects:
   - consent_mode_with_granted_consent_behaves_like_full
   - consent_mode_with_declined_consent_records_nothing
   - consent_lookup_uses_the_consent_providers_guest_session_id
-  - guest_consent_cookie_survives_web_cookie_encryption
   - consent_mode_without_consent_source_falls_back_to_anonymous
   - ip_masking_clears_requested_octets_for_ipv4
   - ip_masking_clears_requested_blocks_for_ipv6
@@ -69,6 +68,7 @@ effects:
   - referrer_anonymization_keeps_domain_only
   - pseudonymized_user_id_is_replaced_by_a_hash
   - tightening_privacy_settings_offers_retroactive_anonymization
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
   - loosening_privacy_settings_offers_nothing
   - past_date_ip_hash_is_unavailable_once_the_salt_is_gone
   - failure_log_applies_the_same_ip_masking_rule
@@ -78,8 +78,8 @@ effects:
   - each_exclusion_reason_is_counted_separately
 
 test_files:
-  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprAnalyticsConsentListenerTest.php
   - tests/Feature/Analytics/PrivacyModeTest.php
+  - tests/Feature/Analytics/ConsentStatusApiTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
   - tests/Feature/Analytics/CollectControllerTest.php
   - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php

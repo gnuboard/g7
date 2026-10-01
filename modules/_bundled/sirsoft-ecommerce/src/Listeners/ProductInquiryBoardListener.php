@@ -215,24 +215,33 @@ class ProductInquiryBoardListener implements HookListenerInterface
      * 피벗이 존재하지 않는 Post 를 가리킨 채 잔존합니다(역방향 고아). chunk 당 1회
      * 다회 발화되며 이미 삭제된 피벗은 0건 처리라 멱등합니다.
      *
-     * inquirable_type 은 게시판 Post FQCN 리터럴을 사용합니다 — 이커머스는 board
-     * 모듈 클래스에 컴파일 타임 의존하지 않습니다(훅 전용 연동).
+     * 피벗의 inquirable_type 은 게시판이 훅 셋째 인자로 실어 보내는 글 모델 타입을 씁니다 —
+     * 이커머스는 게시판 클래스 이름을 스스로 적지 않습니다(훅 전용 연동, 각자 자기 것만).
+     * 타입을 싣지 않는 게시판(이전 판)이 발화하면 어느 피벗을 지울지 확정할 수 없으므로
+     * 지우지 않고 경고만 남깁니다 — 남은 고아는 업그레이드 스텝 백필이 정리합니다.
      *
-     * @param  object  $board  삭제 중인 게시판 모델
+     * @param  object|null  $board  삭제 중인 게시판 모델
      * @param  array<int>  $postIds  삭제될 Post ID 배열 (withTrashed 포함)
+     * @param  string|null  $postType  삭제될 글의 모델 타입 (피벗 inquirable_type 과 같은 값)
      * @return void
      */
-    public function handleBoardPostsForceDeleting(?object $board, array $postIds = []): void
+    public function handleBoardPostsForceDeleting(?object $board, array $postIds = [], ?string $postType = null): void
     {
         if ($postIds === []) {
             return;
         }
 
+        if ($postType === null || $postType === '') {
+            Log::warning('ProductInquiryBoardListener: 게시판 삭제 훅에 글 타입이 없어 피벗 정리를 건너뜀', [
+                'board_id' => $board->id ?? null,
+                'count' => count($postIds),
+            ]);
+
+            return;
+        }
+
         try {
-            $deleted = $this->repository->deleteByInquirableIds(
-                'Modules\\Sirsoft\\Board\\Models\\Post',
-                $postIds
-            );
+            $deleted = $this->repository->deleteByInquirableIds($postType, $postIds);
 
             if ($deleted > 0) {
                 Log::debug('ProductInquiryBoardListener: 게시판 삭제 → 문의 피벗 정리', [

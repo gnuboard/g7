@@ -8,7 +8,7 @@
   <transition-overlay><wait-for>gdprNoticeLog</wait-for></transition-overlay>
   <slot name="content">
     <div class="admin-page-content">
-      <page-header title="$t:sirsoft-gdpr.annual_notice.log_title" description="$t:sirsoft-gdpr.annual_notice.log_description" backPath="/admin/plugins/sirsoft-gdpr/settings"/>
+      <page-header data-type="composite" title="$t:sirsoft-gdpr.annual_notice.log_title" description="$t:sirsoft-gdpr.annual_notice.log_description" backPath="/admin/plugins/sirsoft-gdpr/settings"/>
       <div class="flex-between my-4">
         <span>$t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}</span>
         <button type="button" class="btn btn-secondary">
@@ -16,7 +16,7 @@
           <span>$t:common.refresh</span>
         </button>
       </div>
-      <data-grid data-ref="gdpr_notice_log_grid" data="{{gdprNoticeLog?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprNoticeLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprNoticeLog?.data?.pagination?.last_page ?? null}}" :pageSize="20" :alwaysShowPagination="true" :selectable="false" idField="id" serverHasMorePages="{{gdprNoticeLog?.data?.pagination?.has_more_pages ?? false}}" emptyMessage="$t:sirsoft-gdpr.annual_notice.empty">
+      <data-grid data-type="composite" data-ref="gdpr_notice_log_grid" data="{{gdprNoticeLog?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprNoticeLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprNoticeLog?.data?.pagination?.last_page ?? null}}" :pageSize="20" :alwaysShowPagination="true" :selectable="false" idField="id" serverHasMorePages="{{gdprNoticeLog?.data?.pagination?.has_more_pages ?? false}}" emptyMessage="$t:sirsoft-gdpr.annual_notice.empty">
         <responsive on="mobile" visibleColumns="{{['created_at', 'user_id', 'status_label', 'is_test']}}"/>
         <column field="created_at" header="$t:sirsoft-gdpr.annual_notice.created_at" :sortable="false"/>
         <column field="user_id" header="$t:sirsoft-gdpr.annual_notice.user_id" :sortable="false"/>

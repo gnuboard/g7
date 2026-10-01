@@ -252,6 +252,9 @@ return [
         'index_success' => '방문자 목록을 불러왔습니다.',
         'anonymous_mode_notice' => '익명 모드에서는 방문자 키가 날마다 바뀝니다 — 같은 사람의 방문은 하루 안에서만 묶입니다.',
     ],
+    'consent' => [
+        'fetch_success' => '방문자 동의 상태를 확인했습니다.',
+    ],
     'summary' => [
         'fetch_success' => '방문자 요약을 불러왔습니다.',
         'disabled' => '공개 방문자 요약이 꺼져 있습니다.',

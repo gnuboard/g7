@@ -205,7 +205,7 @@
       </p>
     </div>
     <!-- 페이지네이션 -->
-    <pagination data-if="{{((mileage_history.data.transactions.pagination.last_page ?? 0) > 1) || (mileage_history.data.transactions.pagination.has_more_pages === true) || ((mileage_history.data.transactions.pagination.current_page ?? 1) > 1)}}" currentPage="{{mileage_history.data.transactions.pagination.current_page}}" totalPages="{{mileage_history.data.transactions.pagination.last_page ?? null}}" hasMorePages="{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}" class="mt-4">
+    <pagination data-type="composite" data-if="{{((mileage_history.data.transactions.pagination.last_page ?? 0) > 1) || (mileage_history.data.transactions.pagination.has_more_pages === true) || ((mileage_history.data.transactions.pagination.current_page ?? 1) > 1)}}" currentPage="{{mileage_history.data.transactions.pagination.current_page}}" totalPages="{{mileage_history.data.transactions.pagination.last_page ?? null}}" hasMorePages="{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}" class="mt-4">
       <responsive on="portable" currentPage="{{mileage_history.data.transactions.pagination.current_page}}" totalPages="{{mileage_history.data.transactions.pagination.last_page ?? null}}" hasMorePages="{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}" class="mt-3"/>
       <on event="onPageChange">
         <set-state target="local" mileagePage="{{$args[0]}}"/>

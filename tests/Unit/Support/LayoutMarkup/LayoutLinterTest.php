@@ -4,9 +4,11 @@ namespace Tests\Unit\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupLintCode;
 use App\Support\LayoutMarkup\CompileContext;
+use App\Support\LayoutMarkup\ComponentManifest;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutLinter;
 use App\Support\LayoutMarkup\LintWarning;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 
 /**
  * LayoutLinter 단위 테스트 (`.g7.html` 마크업 형식 S6 — 정적 lint 5종).
@@ -18,6 +20,11 @@ class LayoutLinterTest extends LayoutMarkupTestCase
 {
     private LayoutLinter $linter;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,9 +54,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 코어·템플릿·확장 어디에도 없는 핸들러는 경고한다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects unregistered_handler_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_unregistered_handler_warns(): void
     {
@@ -61,9 +72,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 코어·확장(점 포함)·템플릿 등록·custom 핸들러는 경고하지 않는다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects core_template_extension_handlers_are_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_known_handlers_do_not_warn(): void
     {
@@ -97,6 +112,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects plugin_complete_layout_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_complete_layout_does_not_warn(): void
     {
@@ -107,9 +124,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 모듈의 완전 레이아웃은 경고하지 않는다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects module_complete_layout_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_module_complete_layout_does_not_warn(): void
     {
@@ -124,9 +145,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 부모의 accepts 가 허용하지 않는 자식은 경고한다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects disallowed_child_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_nesting_violation_warns(): void
     {
@@ -141,9 +166,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * accepts 가 빈 부모는 nesting 판정에서 뺀다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects empty_accepts_parent_is_not_checked
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_accepts_parent_does_not_warn(): void
     {
@@ -169,6 +198,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects extension_point_child_is_not_nesting_checked
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_point_child_does_not_warn(): void
     {
@@ -182,14 +213,90 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, $context);
     }
 
+    /**
+     * 번들 모듈·플러그인의 조각·레이아웃은 템플릿 문맥 없이도 미등록 핸들러가 없다.
+     *
+     * 확장 화면은 어느 템플릿으로 그려질지 모르므로 네임스페이스 없는 템플릿 핸들러를 부르지 않는다 —
+     * 코어 내장 핸들러나 자기(또는 다른 확장의) 네임스페이스 핸들러만 쓴다. 템플릿 핸들러 목록 없이
+     * lint 하면 그 호출만 `unregistered_handler` 로 남는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects bundled_extension_screens_call_no_template_handler
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_extension_screens_call_no_template_handler(): void
+    {
+        $linter = new LayoutLinter;
+        $files = [];
+        foreach (glob(base_path('{modules,plugins}/_bundled/*/resources/{extensions,layouts}'), GLOB_BRACE | GLOB_ONLYDIR) as $dir) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                if (str_ends_with((string) $file, '.json')) {
+                    $files[] = (string) $file;
+                }
+            }
+        }
+
+        $hits = [];
+        foreach ($files as $file) {
+            $json = json_decode((string) file_get_contents($file), true);
+            if (! is_array($json)) {
+                continue;
+            }
+            foreach ($linter->lint($json, 'layout', new CompileContext) as $warning) {
+                if ($warning->getCode() === LayoutMarkupLintCode::UnregisteredHandler) {
+                    $hits[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
+                }
+            }
+        }
+
+        $this->assertGreaterThan(100, count($files), '번들 확장 화면 모집단이 비었다');
+        $this->assertSame([], array_values(array_unique($hits)));
+    }
+
+    /**
+     * 회원 목록의 필터 표시 선택기(FilterVisibilitySelector)는 실제 admin_basic nesting 규칙에서 경고하지 않는다.
+     *
+     * 선택기가 컨테이너 accepts 에 없어 편집기 문맥 컴파일마다 nesting 경고가 났다. 같은 자리에 서는
+     * 열 선택기(ColumnSelector)를 받는 컨테이너가 선택기도 받는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects filter_visibility_selector_is_accepted_where_column_selector_is
+     *
+     * @return void 반환값 없음
+     */
+    public function test_filter_visibility_selector_in_user_list_does_not_warn(): void
+    {
+        // 번들 트리 문서를 넘겨 번들 nesting.json 을 읽는다(문서 없이 부르면 설치본을 본다).
+        $document = base_path('templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.g7.html');
+        $rules = app(MarkupCompileContextResolver::class)->loadNestingRules('sirsoft-admin_basic', $document);
+        $json = json_decode(
+            (string) file_get_contents(base_path('templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.json')),
+            true,
+        );
+
+        foreach ($rules as $container => $accepts) {
+            if (in_array('ColumnSelector', $accepts, true)) {
+                $this->assertContains('FilterVisibilitySelector', $accepts, "{$container} 는 ColumnSelector 를 받으면서 FilterVisibilitySelector 를 받지 않는다");
+            }
+        }
+        $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, new CompileContext(nestingRules: $rules));
+    }
+
     // ---------------------------------------------------------------------
     // ④ responsive breakpoint 혼용
     // ---------------------------------------------------------------------
 
     /**
+     * portable 과 mobile/tablet 프리셋을 한 문서에 섞으면 경고한다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects portable_mixed_with_split_presets_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_breakpoint_mix_warns(): void
     {
@@ -202,9 +309,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 한 계열의 브레이크포인트만 쓰면 경고하지 않는다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects consistent_breakpoints_are_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_consistent_breakpoints_do_not_warn(): void
     {
@@ -220,9 +331,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 독립 레이아웃이 호스트 없이 toast 를 발화하면 경고한다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects standalone_layout_firing_toast_without_host_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_standalone_missing_global_host_warns(): void
     {
@@ -236,9 +351,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 독립 레이아웃이 `_global.toasts` 를 읽는 호스트를 두면 경고하지 않는다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects standalone_layout_with_toast_host_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_standalone_with_toast_host_does_not_warn(): void
     {
@@ -246,7 +365,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
             'layout_name' => 'admin_login',
             'init_actions' => [['handler' => 'toast']],
             'components' => [
-                ['type' => 'composite', 'name' => 'Toast', 'props' => []],
+                ['type' => 'composite', 'name' => 'Toast', 'props' => ['toasts' => '{{_global.toasts}}']],
             ],
         ];
 
@@ -254,9 +373,58 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 호스트는 컴포넌트 이름이 아니라 그 전역 상태를 읽는지로 판정한다.
+     *
+     * 번들 템플릿의 이름(`Toast`·`Modal`)을 보면 다른 템플릿의 호스트(`<notice-stack>`)를 놓치고, 상태를 읽지 않는
+     * 같은 이름 노드를 호스트로 오인한다(2026-09-28 결정: 템플릿 무관). `showAlert` 는 브라우저 `alert()` 라
+     * 호스트가 필요 없고, `openModal` 은 `modals` 섹션이 있으면 엔진이 연다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects global_host_is_judged_by_engine_state_not_component_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_global_host_is_judged_by_bound_state_not_by_name(): void
+    {
+        $base = ['layout_name' => 'standalone', 'init_actions' => [['handler' => 'toast']]];
+
+        // 이름만 Toast 이고 상태를 읽지 않으면 호스트가 아니다.
+        $this->assertHasLint(LayoutMarkupLintCode::StandaloneMissingGlobalHost, $base + [
+            'components' => [['type' => 'composite', 'name' => 'Toast']],
+        ]);
+
+        // 이름이 무엇이든 `_global.toasts` 를 읽으면 호스트다.
+        $this->assertNoLint(LayoutMarkupLintCode::StandaloneMissingGlobalHost, $base + [
+            'components' => [['type' => 'composite', 'name' => 'NoticeStack', 'props' => ['items' => '{{_global.toasts}}']]],
+        ]);
+
+        // openModal 은 modals 섹션이 호스트 — 이름 있는 Modal 노드가 트리에 있어도 섹션이 없으면 열리지 않는다.
+        $modal = ['layout_name' => 'standalone', 'init_actions' => [['handler' => 'openModal', 'target' => 'm']]];
+        $this->assertHasLint(LayoutMarkupLintCode::StandaloneMissingGlobalHost, $modal + [
+            'components' => [['type' => 'composite', 'name' => 'Modal']],
+        ]);
+        $this->assertNoLint(LayoutMarkupLintCode::StandaloneMissingGlobalHost, $modal + [
+            'components' => [['type' => 'basic', 'name' => 'Div']],
+            'modals' => [['id' => 'm', 'type' => 'composite', 'name' => 'Dialog']],
+        ]);
+
+        // showAlert 는 브라우저 alert() — 호스트가 필요 없다.
+        $this->assertNoLint(LayoutMarkupLintCode::StandaloneMissingGlobalHost, [
+            'layout_name' => 'standalone',
+            'init_actions' => [['handler' => 'showAlert', 'target' => 'hi']],
+            'components' => [['type' => 'basic', 'name' => 'Div']],
+        ]);
+    }
+
+    /**
+     * 베이스를 상속한 레이아웃은 호스트를 베이스에 맡기므로 경고하지 않는다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects extends_layout_delegates_host_to_base
+     *
+     * @return void 반환값 없음
      */
     public function test_extends_layout_does_not_warn(): void
     {
@@ -280,6 +448,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects switch_top_level_value_is_warned_as_not_consumed
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_top_level_value_warns(): void
     {
@@ -306,6 +476,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects switch_params_value_is_the_canonical_placement
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_params_value_does_not_warn(): void
     {
@@ -336,6 +508,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects misplaced_action_param_key_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_action_params_condition_warns(): void
     {
@@ -350,6 +524,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects misplaced_action_param_key_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_action_params_trigger_warns(): void
     {
@@ -364,6 +540,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects misplaced_action_param_key_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_action_params_id_warns_for_handler_that_does_not_read_it(): void
     {
@@ -381,6 +559,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects param_key_consumed_by_the_handler_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_action_params_id_does_not_warn_for_interval_handlers(): void
     {
@@ -400,6 +580,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects param_key_consumed_by_the_handler_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_and_custom_handlers_are_not_judged(): void
     {
@@ -417,6 +599,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects canonical_action_placement_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_canonical_action_placement_does_not_warn(): void
     {
@@ -444,6 +628,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects unsupported_hoist_prop_is_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_hoist_props_warn_when_target_template_modal_does_not_declare_them(): void
     {
@@ -464,6 +650,8 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @scenario compile_unit=linter,source_health=valid
      *
      * @effects declared_hoist_prop_is_not_warned
+     *
+     * @return void 반환값 없음
      */
     public function test_hoist_props_do_not_warn_when_target_template_declares_them(): void
     {
@@ -473,24 +661,88 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 같은 이름의 prop 이 Modal 이 아닌 노드에 있으면 판정 대상이 아니다.
+     * hoist 판정은 부모 이름이 아니라 그 노드 컴포넌트의 선언으로 한다.
      *
-     * hoist 3키의 소스 경로는 Modal 자식뿐이고(EmbeddingCompiler 가 부모를 못박는다), 다른 노드까지
-     * 넓히면 매니페스트 부분 선언(75~77%) 위에서 오탐이 시작된다(D19).
+     * hoist 는 부모 이름과 무관하므로(`<prop-footer>` 는 어느 부모 아래서나 `props.footer`) Modal 이 아닌 컴포넌트도
+     * 그 prop 을 선언하지 않았으면 경고한다. 대상 템플릿이 모르는 이름은 판정하지 않는다 — 없는 컴포넌트는 존재
+     * 검사가 맡고, 선언이 없는 것을 "받지 않는다" 로 읽으면 오탐이다.
      *
      * @scenario compile_unit=linter,source_health=valid
      *
-     * @effects hoist_judgment_is_scoped_to_the_hoist_parent
+     * @effects hoist_judgment_follows_declaration_not_parent_name
+     *
+     * @return void 반환값 없음
      */
-    public function test_same_named_prop_on_other_components_is_not_judged(): void
+    public function test_hoist_judgment_uses_the_node_declaration_not_the_parent_name(): void
     {
-        $json = ['layout_name' => 'x', 'components' => [[
+        $footer = [['type' => 'basic', 'name' => 'Span']];
+        $linter = $this->linterFor('sirsoft-basic');
+
+        $this->assertHasLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, ['layout_name' => 'x', 'components' => [[
             'type' => 'basic',
             'name' => 'Div',
-            'props' => ['footer' => [['type' => 'basic', 'name' => 'Span']]],
-        ]]];
+            'props' => ['footer' => $footer],
+        ]]], linter: $linter);
 
-        $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $json, linter: $this->linterFor('sirsoft-basic'));
+        $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, ['layout_name' => 'x', 'components' => [[
+            'type' => 'composite',
+            'name' => 'MyDialog',
+            'props' => ['footer' => $footer],
+        ]]], linter: $linter);
+    }
+
+    // ---------------------------------------------------------------------
+    // ⑩ 설치되지 않은 확장 컴포넌트
+    // ---------------------------------------------------------------------
+
+    /**
+     * 목록에 없는 확장 컴포넌트는 경고한다 — 저장을 막지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects missing_extension_component_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_missing_extension_component_warns(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [['type' => 'basic', 'name' => 'Div', 'children' => [
+            ['type' => 'composite', 'name' => 'removed-module.MemoCard'],
+        ]]]];
+
+        $this->assertHasLint(LayoutMarkupLintCode::ExtensionComponentNotInstalled, $json);
+    }
+
+    /**
+     * 설치된 확장이 선언한 컴포넌트는 경고하지 않고, 템플릿 nesting 판정에도 걸리지 않는다.
+     *
+     * 템플릿 nesting.json 은 어떤 확장이 설치될지 몰라 확장 컴포넌트를 accepts 에 적을 수 없다 — 판정하면 거짓
+     * 경고다(확장점을 거르는 것과 같은 이유).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects installed_extension_component_is_not_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_installed_extension_component_is_neither_missing_nor_nesting_checked(): void
+    {
+        $registry = ComponentRegistry::fromManifests(
+            ComponentManifest::fromFile(base_path('templates/_bundled/sirsoft-basic/components.json')),
+            [ComponentManifest::fromArray([
+                'identifier' => 'probe-module',
+                'version' => '1.0.0',
+                'components' => ['basic' => [], 'composite' => [['name' => 'MemoCard', 'type' => 'composite', 'props' => []]], 'layout' => []],
+            ], 'probe.json')],
+        );
+        $linter = new LayoutLinter($registry);
+        $json = ['layout_name' => 'x', 'components' => [['type' => 'basic', 'name' => 'Div', 'children' => [
+            ['type' => 'composite', 'name' => 'probe-module.MemoCard'],
+        ]]]];
+        $context = new CompileContext(nestingRules: ['Div' => ['Span']]);
+
+        $this->assertNoLint(LayoutMarkupLintCode::ExtensionComponentNotInstalled, $json, $context, linter: $linter);
+        $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, $context, linter: $linter);
     }
 
     // ---------------------------------------------------------------------
@@ -536,6 +788,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @param  CompileContext|null  $context  lint 문맥
      * @param  string  $rootKind  문서 봉투
      * @param  LayoutLinter|null  $linter  대상 린터 (축 ⑧ 처럼 템플릿마다 답이 갈리는 경우 지정)
+     * @return void 반환값 없음
      */
     private function assertHasLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout', ?LayoutLinter $linter = null): void
     {
@@ -555,6 +808,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @param  CompileContext|null  $context  lint 문맥
      * @param  string  $rootKind  문서 봉투
      * @param  LayoutLinter|null  $linter  대상 린터 (축 ⑧ 처럼 템플릿마다 답이 갈리는 경우 지정)
+     * @return void 반환값 없음
      */
     private function assertNoLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout', ?LayoutLinter $linter = null): void
     {

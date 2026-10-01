@@ -38,29 +38,46 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 액션 핸들러가 없습니다._
+핸들러 1개 (정의: `resources/js/handlers/index.ts`).
+
+| 핸들러 | 레이아웃에서 부르는 이름 |
+|---|---|
+| `downloadAttachment` | `sirsoft-page.downloadAttachment` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-없습니다. 이 모듈의 관리자 화면은 코어 엔진의 기본 핸들러(`apiCall` · `navigate` · `setState`
-등)만으로 충분해서 자체 핸들러를 두지 않았습니다.
+하나뿐입니다 — 관리자 페이지 상세의 첨부 카드가 부르는 `sirsoft-page.downloadAttachment`.
+나머지 화면 동작은 코어 엔진의 기본 핸들러(`apiCall` · `navigate` · `setState` 등)로 충분합니다.
 
-그래서 **전역 진입점(`initModule`)도 없고 빌드 산출물(`dist/`)도 없습니다.** 핸들러를 처음
-추가할 때는 셋이 함께 필요합니다 — 엔트리 파일, `window.__SirsoftPage.initModule()` 재등록
-진입점, 그리고 `module:build --production` 으로 구운 `dist/` 커밋. 진입점을 빠뜨리면 로케일
-전환 직후 그 핸들러들이 오류 없이 무반응이 됩니다.
+이 핸들러를 모듈이 직접 두는 이유는 둘입니다. 첨부 내려받기 주소는 미발행 페이지의 첨부를 읽기
+권한이 있는 운영자에게만 내주므로 `<a href>` 로는 받을 수 없고(로그인 토큰이 실리지 않음) 코어
+ApiClient 로 blob 을 받아야 합니다. 그런데 코어에는 내려받기 핸들러가 없고, 같은 이름의 핸들러를
+관리자 템플릿(`sirsoft-admin_basic`)이 등록해 두었지만 이 화면은 **어느 관리자 템플릿으로
+그려지든** 같게 동작해야 하므로 특정 템플릿의 핸들러에 기대지 않습니다. 핸들러는 실패하면 예외를
+던지고, 안내 문구는 레이아웃의 `onError` 가 띄웁니다.
+
+핸들러를 더하거나 고치면 셋이 함께 움직입니다 — `resources/js/handlers/index.ts` 등록,
+`window.__SirsoftPage.initModule()` 재등록 진입점, `--production` 으로 구운 `dist/` 커밋.
+진입점을 빠뜨리면 로케일 전환 직후 그 핸들러들이 오류 없이 무반응이 됩니다.
 <!-- @intent END -->
 
 ## 전역 진입점
 
 <!-- @generated:frontend-entry START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_프론트 엔트리포인트가 없습니다._
+| 항목 | 값 |
+|---|---|
+| 엔트리 파일 | `resources/js/index.ts` |
+| 전역 객체 | `window.__SirsoftPage` |
+| 재등록 진입점 | `initModule()` |
+
+로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
-없습니다 — 등록할 액션 핸들러가 없기 때문입니다.
+`resources/js/index.ts` 가 핸들러를 `sirsoft-page.{이름}` 으로 등록하고 `window.__SirsoftPage` 에
+`initModule()` 을 노출합니다.
 
-핸들러를 도입하는 순간 이 진입점이 **필수**가 됩니다. 코어는 로케일 전환 시 확장의 재등록
+이 진입점은 **필수**입니다. 코어는 로케일 전환 시 확장의 재등록
 진입점을 다시 부르는데, 그 함수가 없거나 이름이 다르면 전환 직후 그 확장의 액션이 전부
 무반응이 되고 오류도 토스트도 남지 않습니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅
 작업을 포함하지 않습니다.
@@ -71,18 +88,22 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/js/module.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-JS·CSS 산출물이 없고 `editor-spec.json` 하나만 있습니다 — 레이아웃 편집기가 이 모듈의 화면을
-편집할 때 쓰는 팔레트·중첩 규칙 선언이며, 실행 코드가 아니라 manifest 입니다.
+JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트·CSS 없음).
+소스는 `resources/js/` 이고 `php artisan module:build sirsoft-page --production` 으로 굽습니다
+(소스맵을 남기지 않는 배포용 빌드). 굽고 나면 `dist/` 를 함께 커밋합니다.
 
-로딩 설정(`strategy: global`, `priority: 100`)은 골격 기본값이 그대로 남은 것입니다. 실을
-자산이 없으므로 현재는 아무 영향이 없지만, 나중에 JS 를 더하면 이 선언이 확장 번들 안에서의
-순서를 정하게 됩니다.
+`editor-spec.json` 은 레이아웃 편집기가 이 모듈의 화면을 편집할 때 쓰는 팔레트·중첩 규칙
+선언이며, 실행 코드가 아니라 manifest 입니다.
+
+로딩 설정(`strategy: global`, `priority: 100`)은 이 번들을 모든 화면에서 앱 초기화 때 싣습니다.
+다른 확장의 전역·핸들러에 기대지 않으므로 순서에 민감하지 않습니다.
 
 `editor-spec.json` 을 고친 뒤에는 빌드 없이 `php artisan module:update sirsoft-page --force`
 만 실행합니다. 편집기는 활성 디렉토리 기준으로 서빙하므로 `_bundled` 만 고치면 반영되지

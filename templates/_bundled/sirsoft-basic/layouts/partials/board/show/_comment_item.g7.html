@@ -7,14 +7,14 @@
     <!-- 답글 아이콘 (depth > 0일 때만) -->
     <icon data-if="{{(comment?.depth ?? 0) > 0}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0 self-start mt-4"/>
     <!-- 댓글 작성자 아바타 -->
-    <avatar author="{{comment?.author}}" size="sm"/>
+    <avatar data-type="composite" author="{{comment?.author}}" size="sm"/>
     <div class="flex-1">
       <!-- 작성자 정보 + 버튼 영역 -->
       <div class="flex items-start justify-between mb-1">
         <!-- 작성자 정보 -->
         <div class="flex items-center gap-1">
           <!-- UserInfo 컴포넌트 (이름 + 작성일시 한 줄) -->
-          <user-info author="{{comment?.author}}" subText="{{comment?.created_at_formatted ?? ''}}" subTextTitle="{{comment?.created_at ?? ''}}" layout="horizontal"/>
+          <user-info data-type="composite" author="{{comment?.author}}" subText="{{comment?.created_at_formatted ?? ''}}" subTextTitle="{{comment?.created_at ?? ''}}" layout="horizontal"/>
         </div>
         <!-- 더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김 -->
         <div data-if="{{!comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; ((comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author) || (post?.data?.abilities?.can_write_comments &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at))}}" class="relative">
@@ -202,7 +202,7 @@
             <img data-if="{{!!commentReactionType.icon_url &amp;&amp; (_local?.commentReacting?.[comment?.id] ?? null) !== commentReactionType.id}}" src="{{commentReactionType.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
             <icon data-if="{{!commentReactionType.icon_url || (_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" name="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id ? 'fa-spinner' : (commentReactionType.icon_name ?? 'fa-thumbs-up')}}" spin="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" size="sm"/>
             <!-- 아이콘 이미지가 없는 유형은 기본 글리프로 떨어져 서로 구분되지 않는다 — 그때만 이름을 병기한다.
-                 이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (PO 결정 2026-09-16). -->
+                 이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (결정 2026-09-16). -->
             <span data-if="{{!commentReactionType.icon_url}}">{{commentReactionType.name ?? ''}}</span>
             <span class="tabular-nums">{{(_local?.commentReactionCounts?.[comment?.id] ?? comment?.reaction_counts)?.[commentReactionType.id] ?? 0}}</span>
           </button>
@@ -233,7 +233,7 @@
             </on>
             $t:common.cancel
           </button>
-          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.editingCommentSubmitting === true}}">
+          <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.editingCommentSubmitting === true}}">
             <on type="click">
               <!-- 수정 저장 — 비회원 댓글이면 앞서 확인받아 둔 비밀번호를 함께 보낸다(회원이면 아예 싣지 않는다). 성공하면 수정 모드와 그 비밀번호를 함께 비우고 글을 다시 받는다. -->
               <sequence if="{{_local.editingCommentSubmitting !== true}}">
@@ -286,7 +286,7 @@
         <!-- 답글 입력 영역 -->
         <div class="flex gap-3">
           <!-- 현재 사용자 아바타 (로그인 시만 표시) -->
-          <avatar data-if="{{_global.currentUser?.uuid}}" name="{{_global.currentUser?.name}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
+          <avatar data-type="composite" data-if="{{_global.currentUser?.uuid}}" name="{{_global.currentUser?.name}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
           <div class="flex-1">
             <textarea name="reply_content" value="{{_local.reply_content ?? ''}}" placeholder="$t:board.reply_placeholder" :rows="3" class="w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2">
               <on type="input">
@@ -302,7 +302,7 @@
                 </on>
                 $t:common.cancel
               </button>
-              <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.commentSubmitting === true}}">
+              <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.commentSubmitting === true}}">
                 <on type="click">
                   <!-- 답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다. -->
                   <sequence>

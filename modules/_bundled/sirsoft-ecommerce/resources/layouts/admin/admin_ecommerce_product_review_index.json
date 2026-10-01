@@ -1620,6 +1620,10 @@
                                 "id": "review_datagrid",
                                 "type": "composite",
                                 "name": "DataGrid",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "reviews"
+                                },
                                 "actions": [
                                     {
                                         "comment": "표에서 고른 행 목록 — 위 일괄처리 줄이 이 값을 대상으로 삼는다",
@@ -1651,7 +1655,6 @@
                                     "expandedRowIds": "{{_local.expandedRows ?? []}}",
                                     "visibleColumns": "{{_local.visibleColumns ?? []}}",
                                     "emptyMessage": "$t:sirsoft-ecommerce.admin.product_review.table.empty",
-                                    "loading": "{{reviews.$loading ?? false}}",
                                     "expandContext": {
                                         "rowId": "{{row.id}}",
                                         "rowHasReply": "{{row.has_reply}}",

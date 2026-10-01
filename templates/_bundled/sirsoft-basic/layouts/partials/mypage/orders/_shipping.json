@@ -73,7 +73,7 @@
                     "if": "{{_local.orderShippingReadonly !== true && (order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete')}}",
                     "actions": [
                         {
-                            "comment": "배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.g7.html(_global.editingAddress) 와 동일 패턴.",
+                            "comment": "배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 저장된 배송지가 0건인 회원도 manual 로 연다 — saved 로 열면 고를 것이 없는 빈 목록에서 적용이 address_id 없이 나가 422 로 막혔다(#703). 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.g7.html(_global.editingAddress) 와 동일 패턴.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -81,7 +81,7 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "changeAddressMode": "{{_global.currentUser?.uuid ? 'saved' : 'manual'}}",
+                                        "changeAddressMode": "{{_global.currentUser?.uuid && (userAddresses?.data?.addresses?.data ?? []).length > 0 ? 'saved' : 'manual'}}",
                                         "selectedAddressId": null,
                                         "editingShippingAddress": {
                                             "recipient_name": "{{order.data.shipping_address?.recipient_name ?? ''}}",

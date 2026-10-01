@@ -11,7 +11,8 @@
  * 특정할 수 없다.
  *
  * 이 테스트는 목록을 **손으로 열거하지 않는다.** 저장소의 소스를 훑어 `.setItem()` 이 쓰는
- * 키를 기계 도출하고, 그 전량이 출하 카탈로그(`plugin.php`)에 등재되었거나 의도적 비필수
+ * 키를 기계 도출하고, 그 전량이 출하 카탈로그(`plugin.php`)에 등재되었거나, 그 키를 쓰는 확장이
+ * 계약 훅(`sirsoft-gdpr.necessary_storage.filter_provided_keys`)으로 제공하거나, 의도적 비필수
  * (INTENTIONALLY_NON_NECESSARY)로 선언되었는지 검사한다.
  *
  * 허용목록이 코드 상수에서 운영자 설정으로 옮겨진 뒤로 대조 대상이 **PHP 출하 카탈로그**다.
@@ -29,6 +30,8 @@
  *   8. 카탈로그가 잠금 항목을 담지 않는다 (담기면 API 로 지울 수 있게 된다)
  *   9. 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)
  *  10. 와일드카드 매칭 규칙이 PHP·TS 에서 동형이다 (발견 ②)
+ *  11. 확장 제공 키가 저장 검증 규칙을 통과하고 출하 카탈로그와 겹치지 않는다
+ *  12. 제공 리스너가 이 플러그인의 클래스를 참조하지 않는다 (훅 이름·배열 모양만이 계약)
  *
  * @module sirsoft-gdpr/__tests__/necessaryAllowlistCoverage
  *
@@ -424,12 +427,65 @@ const REQUEST_PHP = fs.readFileSync(
     'utf-8',
 );
 
+/**
+ * 계약 훅 이름 — 제공 리스너를 찾는 기준 (plugin.php 상수와 같아야 한다).
+ */
+const PROVIDED_HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';
+
+interface ProviderListener {
+    file: string;
+    source: string;
+    keys: Record<string, string[]>;
+}
+
+/**
+ * 계약 훅을 구독하는 확장 리스너를 찾아 그 제공 키를 읽습니다.
+ *
+ * 모집단은 손으로 적지 않는다 — 모듈·플러그인 `src/Listeners` 전량을 훑어 훅 이름을 구독하는
+ * 파일을 고른다. 제공 키는 리스너의 `KEYS` 상수에서 읽는다.
+ *
+ * @return 제공 리스너 목록
+ */
+function discoverProviderListeners(): ProviderListener[] {
+    const found: ProviderListener[] = [];
+    for (const group of ['modules', 'plugins']) {
+        const bundled = path.join(REPO_ROOT, group, '_bundled');
+        if (!fs.existsSync(bundled)) {
+            continue;
+        }
+        for (const entry of fs.readdirSync(bundled)) {
+            const dir = path.join(bundled, entry, 'src', 'Listeners');
+            if (!fs.existsSync(dir)) {
+                continue;
+            }
+            for (const name of fs.readdirSync(dir)) {
+                if (!name.endsWith('.php')) {
+                    continue;
+                }
+                const file = path.join(dir, name);
+                const source = fs.readFileSync(file, 'utf-8');
+                if (!source.includes(`'${PROVIDED_HOOK}'`)) {
+                    continue;
+                }
+                found.push({
+                    file: path.relative(REPO_ROOT, file).replace(/\\/g, '/'),
+                    source,
+                    keys: parsePhpScopeMap(sliceBracketBlock(source, 'const KEYS =')),
+                });
+            }
+        }
+    }
+
+    return found;
+}
+
 const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
 const PHP_LOCKED = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),
 );
+const PROVIDER_LISTENERS = discoverProviderListeners();
 
 /**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
@@ -505,6 +561,21 @@ function isInShippedCatalog(discovered: DiscoveredKey): boolean {
     );
 }
 
+/**
+ * 확장이 계약 훅으로 제공하는 키가 도출된 키를 덮는지 검사합니다.
+ *
+ * @param  discovered  도출된 키
+ * @return 제공 여부
+ */
+function isProvidedByExtension(discovered: DiscoveredKey): boolean {
+    return PROVIDER_LISTENERS.some((listener) => Object.values(listener.keys).some((patterns) =>
+        patterns.some((pattern) => (
+            matchesAllowlistPattern(discovered.key, pattern)
+            || (pattern.endsWith('*') && pattern.slice(0, -1) === discovered.key)
+        )),
+    ));
+}
+
 describe('strictly necessary 허용목록 모집단 커버리지', () => {
     const { keys: discovered, unresolved } = discoverStorageKeys();
 
@@ -525,7 +596,7 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
         expect(SHIPPED_CATALOG.localStorage.length).toBeGreaterThanOrEqual(10);
     });
 
-    it('도출된 모든 저장 키가 출하 카탈로그 등재 또는 의도적 비필수 선언 중 하나에 해당한다', () => {
+    it('도출된 모든 저장 키가 출하 카탈로그 등재·확장 제공·의도적 비필수 선언 중 하나에 해당한다', () => {
         const exempt = new Set(INTENTIONALLY_NON_NECESSARY.map((e) => e.key));
         const lockedKeys = new Set([...PHP_LOCKED.localStorage, ...PHP_LOCKED.sessionStorage]);
 
@@ -533,6 +604,7 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
             .filter((d) => !exempt.has(d.key))
             .filter((d) => !lockedKeys.has(d.key))
             .filter((d) => !isInShippedCatalog(d))
+            .filter((d) => !isProvidedByExtension(d))
             .map((d) => `${d.key} (${d.matchType}) ← ${d.origin}`);
 
         expect(uncovered).toEqual([]);
@@ -608,7 +680,9 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     });
 
     it('출하 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)', () => {
-        const m = /STORAGE_KEY_REGEX = '(.+)';/.exec(REQUEST_PHP);
+        // 형식 규칙의 단일 출처는 plugin.php 상수다 — 저장 요청은 그것을 가리키기만 한다.
+        expect(REQUEST_PHP).toContain('STORAGE_KEY_REGEX = Plugin::NECESSARY_STORAGE_KEY_PATTERN;');
+        const m = /NECESSARY_STORAGE_KEY_PATTERN = '(.+)';/.exec(PLUGIN_PHP);
         expect(m).not.toBeNull();
 
         // PHP 구분자(/.../)를 벗겨 JS 정규식으로 옮긴다.
@@ -651,5 +725,73 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         const parsed = [...(phpScopes as RegExpExecArray)[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
 
         expect(parsed).toEqual([...ALLOWLIST_SCOPES] as AllowlistScope[]);
+    });
+});
+
+describe('확장 제공 키 계약', () => {
+    /**
+     * plugin.php 의 형식 규칙을 JS 정규식으로 옮깁니다.
+     *
+     * @return 형식 정규식
+     */
+    function keyPattern(): RegExp {
+        const m = /NECESSARY_STORAGE_KEY_PATTERN = '(.+)';/.exec(PLUGIN_PHP) as RegExpExecArray;
+        // PHP 작은따옴표 문자열의 `\\` 는 역슬래시 하나다.
+        return new RegExp(m[1].replace(/^\//, '').replace(/\/$/, '').replace(/\\\\/g, '\\'));
+    }
+
+    it('제공 리스너를 찾는다 (모집단 하한 — 탐색이 죽으면 붉어진다)', () => {
+        expect(PROVIDER_LISTENERS.length).toBeGreaterThanOrEqual(5);
+        for (const listener of PROVIDER_LISTENERS) {
+            const total = Object.values(listener.keys).reduce((n, items) => n + items.length, 0);
+            expect(total, listener.file).toBeGreaterThan(0);
+        }
+    });
+
+    it('제공 키는 알려진 저장소 종류만 쓰고 저장 검증 규칙을 통과한다', () => {
+        const re = keyPattern();
+        const rejected: string[] = [];
+        for (const listener of PROVIDER_LISTENERS) {
+            for (const [scope, items] of Object.entries(listener.keys)) {
+                if (!(ALLOWLIST_SCOPES as readonly string[]).includes(scope)) {
+                    rejected.push(`${listener.file} ${scope}`);
+                    continue;
+                }
+                for (const item of items) {
+                    if (!re.test(item) || item.length > 128) {
+                        rejected.push(`${listener.file} ${scope}:${item}`);
+                    }
+                }
+            }
+        }
+
+        expect(rejected).toEqual([]);
+    });
+
+    it('출하 카탈로그는 확장이 제공하는 키를 담지 않는다 (이 플러그인은 특정 확장을 모른다)', () => {
+        const leaked: string[] = [];
+        for (const listener of PROVIDER_LISTENERS) {
+            for (const [scope, items] of Object.entries(listener.keys)) {
+                for (const item of items) {
+                    if (ALLOWLIST_SCOPES.some((s) => (SHIPPED_CATALOG[s] ?? []).includes(item))) {
+                        leaked.push(`${scope}:${item} ← ${listener.file}`);
+                    }
+                }
+            }
+        }
+
+        expect(leaked).toEqual([]);
+    });
+
+    it('제공 리스너는 이 플러그인의 클래스를 참조하지 않는다 (미설치여도 제공 확장이 선다)', () => {
+        const coupled = PROVIDER_LISTENERS
+            .filter((listener) => /Plugins\\Sirsoft\\Gdpr\\/.test(listener.source))
+            .map((listener) => listener.file);
+
+        expect(coupled).toEqual([]);
+    });
+
+    it('계약 훅 이름이 plugin.php 상수와 같다', () => {
+        expect(PLUGIN_PHP).toContain(`PROVIDED_NECESSARY_STORAGE_HOOK = '${PROVIDED_HOOK}';`);
     });
 });

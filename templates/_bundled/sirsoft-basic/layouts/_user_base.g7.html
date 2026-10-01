@@ -121,8 +121,8 @@
   </init>
   <!-- 통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → 헤더의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯(렌더 영향 0). 헤더는 주입 모듈을 모른다. -->
   <div data-ref="header_currency_inject_anchor"/>
-  <toast data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
-  <page-transition-indicator data-ref="page_transition_indicator"/>
+  <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
+  <page-transition-indicator data-type="composite" data-ref="page_transition_indicator"/>
   <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- === Extension Point: 모든 사용자 페이지에서 플러그인이 전역 오버레이 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->
     <extension-point name="user_global_overlay" data-ref="user_global_overlay_slot">
@@ -151,9 +151,9 @@
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
       <div data-ref="mobile_header_right" class="flex items-center gap-1">
         <!-- 다크모드 전환 -->
-        <theme-toggle data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
+        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
-        <notification-center data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" dropdownAlign="right">
+        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" dropdownAlign="right">
           <on event="onClose">
             <!-- 드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다. -->
             <sequence>
@@ -324,7 +324,7 @@
           </div>
         </div>
         <!-- 통화 선택 — 이커머스 모듈 주입 슬롯(헤더에서 이동). 모듈 미설치 시 빈 슬롯 → 렌더 영향 0. 헤더는 가로 flex 였으나 드로어는 세로 블록이므로 block 으로 둔다(flex items-center 면 주입 루트가 콘텐츠 폭으로 줄어 펼친 목록이 좁아짐). 주입 루트가 portable 에서 스스로 w-full 을 갖는다. -->
-        <slot-container data-ref="mobile_drawer_currency_wrap" slotId="header_currency" class="block"/>
+        <slot-container data-type="composite" data-ref="mobile_drawer_currency_wrap" slotId="header_currency" class="block"/>
       </div>
       <!-- 로그인된 사용자 정보 - 아코디언 토글 -->
       <div data-if="{{_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
@@ -333,7 +333,7 @@
           <on type="click">
             <set-state target="global" mobileUserMenuOpen="{{!_global.mobileUserMenuOpen}}"/>
           </on>
-          <avatar avatar="{{_global.currentUser?.avatar}}" name="{{_global.currentUser?.name ?? '?'}}" size="md"/>
+          <avatar data-type="composite" avatar="{{_global.currentUser?.avatar}}" name="{{_global.currentUser?.name ?? '?'}}" size="md"/>
           <div class="flex-1 min-w-0 text-left">
             <div class="font-medium text-gray-900 dark:text-white truncate">{{_global.currentUser?.name}}</div>
             <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{_global.currentUser?.email}}</div>
@@ -569,7 +569,7 @@
       </div>
     </div>
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -660,12 +660,12 @@
     </header>
     <!-- === 메인 콘텐츠 영역 === -->
     <div data-ref="main_content_area" class="flex-1">
-      <container data-ref="main_content" data-slot="content" class="min-h-fit px-4">
+      <container data-type="layout" data-ref="main_content" data-slot="content" class="min-h-fit px-4">
         <responsive on="desktop" class="min-h-fit max-w-7xl mx-auto px-8"/>
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}">
+    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}">
       <prop name="socialLinks">
         <field name="github" value="{{_global.settings?.social?.github}}"/>
         <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>

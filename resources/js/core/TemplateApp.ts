@@ -878,8 +878,9 @@ export class TemplateApp {
 
             this.analytics = createTracker({
                 settings,
-                consentPluginActive: Array.isArray(config.activePlugins)
-                    && config.activePlugins.some((plugin: any) => plugin?.identifier === 'sirsoft-gdpr'),
+                // 동의를 확인할 곳이 있는지는 서버가 계산해 싣는다(코어 동의 필터 구독자 유무) —
+                // 코어는 동의를 관리하는 확장이 무엇인지 모른다.
+                consentPluginActive: settings.consent_provider === true,
                 locale: this.config.locale,
                 getAuthToken: () => {
                     try {

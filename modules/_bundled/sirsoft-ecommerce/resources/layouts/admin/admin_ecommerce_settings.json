@@ -649,7 +649,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.",
+                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.\n              통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어\n              운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과\n              달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.\n              키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문\n              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -686,10 +686,11 @@
                                                 "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
-                                                    "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
+                                                    "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } if (tab === 'language_currency') { const managed = _computed.managedRateCodes ?? []; const savedCodes = (settings?.data?.language_currency?.currencies ?? []).map(c => c?.code); const lc = form.language_currency ?? {}; const currencies = Array.isArray(lc.currencies) ? lc.currencies.map(c => (c && managed.includes(c.code) && savedCodes.includes(c.code)) ? Object.keys(c).filter(k => k !== 'exchange_rate').reduce((o, k) => ({ ...o, [k]: c[k] }), {}) : c) : lc.currencies; return { _tab: tab, language_currency: { ...lc, currencies }, inquiry: form.inquiry ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
                                                 },
                                                 "onSuccess": [
                                                     {
+                                                        "comment": "쓸 수 없게 된 공개 자산 디스크 안내는 저장 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다. 다른 탭을 저장하면 응답이 여전히 옛 이름을 실어 안내가 유지된다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
@@ -698,7 +699,8 @@
                                                             "isAddingCurrency": false,
                                                             "form.newCurrency": null,
                                                             "isAddingMileageCurrency": false,
-                                                            "form.newMileageCurrency": null
+                                                            "form.newMileageCurrency": null,
+                                                            "form.basic_info.public_asset_disk_unavailable": "{{response.data?.basic_info?.public_asset_disk_unavailable ?? null}}"
                                                         }
                                                     },
                                                     {

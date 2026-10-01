@@ -9,7 +9,7 @@
     </on>
     $t:common.save
   </button>
-  <data-grid data-ref="user_grid" data="{{users?.data?.data ?? []}}">
+  <data-grid data-type="composite" data-ref="user_grid" data="{{users?.data?.data ?? []}}">
     <on event="onRowAction">
       <switch on="{{$args[0]}}">
         <case when="edit"><navigate path="/admin/users/{{$args[1].uuid}}/edit"/></case>

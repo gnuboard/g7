@@ -1,6 +1,6 @@
 <!-- 메일 문안 편집 창 — 제목·본문을 언어별로 고친다. 언어 탭은 값을 나르지 않고 «어느 쪽 칸을 보여줄지»만 가르므로 한국어와 영어 입력이 서로를 덮어쓰지 않는다. 상태를 `$parent._local` 에 두는 것은 이 조각이 부모 화면의 편집 상태를 그대로 쓰기 때문이다 -->
 <partial description="게시판 메일 템플릿 편집 모달">
-  <modal data-ref="modal_board_mail_template_edit" title="$t:sirsoft-board.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_board_mail_template_edit" title="$t:sirsoft-board.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="board_edit_form_container" data-blur-until-loaded="{{$parent._local.isSaving}}" class="flex flex-col max-h-[70vh]">
       <class-map key="{{$parent._computed.isReadOnly ? 'readonly' : 'normal'}}">
         <variant when="readonly">opacity-60</variant>
@@ -72,7 +72,7 @@
               <span>$t:sirsoft-board.admin.settings.mail_templates.edit_modal.body</span>
               <span class="text-required">*</span>
             </label>
-            <html-editor content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
+            <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
                 <!-- 한국어 본문 — 메일이라 늘 HTML 로 다루고 모드 토글을 주지 않는다. 필수 값이다 -->
                 <set-state target="$parent._local" editingTemplate.body.ko="{{$event.target.value}}"/>
@@ -84,7 +84,7 @@
         <div data-ref="board_edit_body_en" data-if="{{($parent._local.editLang ?? $locale) === 'en'}}">
           <div>
             <label class="form-label">$t:sirsoft-board.admin.settings.mail_templates.edit_modal.body</label>
-            <html-editor content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
+            <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
                 <!-- 영어 본문 — 한국어 본문과 짝이고 필수가 아니다 -->
                 <set-state target="$parent._local" editingTemplate.body.en="{{$event.target.value}}"/>
@@ -94,7 +94,7 @@
           </div>
         </div>
         <div data-ref="board_edit_is_active_toggle" class="flex-center gap-3">
-          <toggle name="boardTemplateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}" disabled="{{$parent._computed.isReadOnly}}">
+          <toggle data-type="composite" name="boardTemplateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}" disabled="{{$parent._computed.isReadOnly}}">
             <on type="change">
               <!-- 이 문안을 쓸지 말지 — 언어와 무관한 값이라 탭 밖에 둔다. 저장 버튼을 눌러야 반영된다 -->
               <set-state target="$parent._local" editingTemplate.is_active="{{$event.target.checked}}"/>

@@ -187,7 +187,7 @@ class TemplateController extends AdminBaseController
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
-                ?? __('templates.install_failed');
+                ?? __('templates.install_failed', ['error' => $e->getMessage()]);
 
             return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
@@ -247,7 +247,11 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.activate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.activate_failed', ['error' => $e->getMessage()])
+            );
         } catch (\Exception $e) {
             return $this->error('templates.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -276,7 +280,11 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.deactivate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.deactivate_failed', ['error' => $e->getMessage()])
+            );
         } catch (\Exception $e) {
             return $this->error('templates.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -433,7 +441,11 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.refresh_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.refresh_layouts_failed', ['error' => $e->getMessage()])
+            );
         } catch (\Exception $e) {
             return $this->error('templates.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -451,7 +463,11 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.check_updates_failed', ['error' => $e->getMessage()])
+            );
         } catch (\Exception $e) {
             return $this->error('templates.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -479,7 +495,11 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.check_modified_layouts_failed', ['error' => $e->getMessage()])
+            );
         } catch (\Exception $e) {
             return $this->error('templates.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }

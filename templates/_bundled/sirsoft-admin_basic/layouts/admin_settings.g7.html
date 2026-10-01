@@ -194,6 +194,18 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 메시지 정의가 이미 있는 운영자 정책 — 「정의 추가」 창이 선택지에서 빼는 데만 쓴다.
+       서버의 중복 판정(제공자·범위 종류·범위 값 조합)과 **같은 조건**으로 받는다: 메일 제공자 +
+       정책 범위. 위 `identityMessages` 는 페이지가 나뉘어 있어 그것으로 거르면 다른 페이지의
+       정의가 빠진다. 정책 목록과 같은 한도(100건)로 한 번에 받는다. -->
+  <data-source id="identityMessagePolicyScopes" label_key="$t:editor.data_source.identityMessagePolicyScopes" type="api" endpoint="/api/admin/identity/messages/definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params provider_id="g7:core.mail" scope_type="policy" :per_page="100"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭이 이것만 보여 준다).
        아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가
        다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다. -->
@@ -267,6 +279,7 @@
     <wait-for>identityProviders</wait-for>
     <wait-for>identityPurposes</wait-for>
     <wait-for>identityMessages</wait-for>
+    <wait-for>identityMessagePolicyScopes</wait-for>
     <wait-for>adminIdentityPolicies</wait-for>
     <wait-for>policies</wait-for>
     <wait-for>language_packs</wait-for>
@@ -295,7 +308,7 @@
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="$t:admin.settings.page_title">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.settings.page_title">
         <button data-ref="refresh_button" type="button" class="btn-icon">
           <on type="click">
             <refetch-data-source dataSourceId="settings"/>
@@ -316,7 +329,7 @@
         </div>
       </div>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
+        <tab-navigation data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
           <prop name="tabs">
             <item id="general" label="$t:admin.settings.tabs.general"/>
             <item id="mail" label="$t:admin.settings.tabs.mail"/>
@@ -345,7 +358,7 @@
             </sequence>
           </on>
         </tab-navigation>
-        <tab-navigation-scroll data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="sub-tab-nav" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+        <tab-navigation-scroll data-type="composite" data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="sub-tab-nav" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
           <prop name="tabs">
             <item id="basic" label="$t:admin.settings.identity.sub_tabs.basic"/>
             <item id="providers" label="$t:admin.settings.identity.sub_tabs.providers"/>
@@ -423,7 +436,7 @@
     </div>
   </slot>
   <!-- 언어팩 설치 창.
-       여기부터 일곱은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의
+       여기부터 여덟은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의
        목록 조각을 쓰므로 창도 같은 것이어야 동작이 이어진다(사본을 두면 한쪽만 고쳐져 갈린다). -->
   <modal src="partials/admin_language_pack_list/_modal_install.g7.html"/>
   <!-- 번들 언어팩 설치 창. -->
@@ -436,6 +449,9 @@
   <modal src="partials/admin_language_pack_list/_modal_uninstall.g7.html"/>
   <!-- 번역 캐시 다시 굽기 확인 창. -->
   <modal src="partials/admin_language_pack_list/_modal_refresh_cache.g7.html"/>
+  <!-- 같은 로케일 자리를 두 언어팩이 다툴 때 어느 쪽을 쓸지 고르는 창. 목록 조각의 스위치가 409 에서 이 창을
+       여는데 여기만 빠져 있어, 이 탭에서는 충돌 때 아무 창도 뜨지 않았다(#703 실측). -->
+  <modal src="partials/admin_language_pack_list/_modal_slot_conflict.g7.html"/>
   <!-- 언어팩 매니페스트 원문 서랍. -->
   <modal src="partials/admin_language_pack_list/_drawer_manifest_preview.g7.html"/>
   <!-- 비밀번호 재확인 창 — 민감한 값(앱 키 등)을 보거나 바꾸기 전에 본인을 다시 묻는다. -->

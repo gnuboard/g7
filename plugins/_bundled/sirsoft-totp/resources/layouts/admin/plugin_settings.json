@@ -1,5 +1,5 @@
 {
-    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     e2e:allow 이번 변경은 `<on>` 블록 주석 4곳 추가뿐 — 마크업·배선·문구가 그대로라 브라우저에서 잴 차이가 없다(화면 동작은 admin-totp-enrollment.spec.ts 가 덮는다).\n     audit:allow extension-doc-coverage 주석만 추가해 생성 문서 블록에 반영될 변경이 없다(ext:docgen 재실행 시 이슈 0·산출 무변경).\n\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(PO 확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
+    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     e2e:allow 이번 변경은 `<on>` 블록 주석 4곳 추가뿐 — 마크업·배선·문구가 그대로라 브라우저에서 잴 차이가 없다(화면 동작은 admin-totp-enrollment.spec.ts 가 덮는다).\n     audit:allow extension-doc-coverage 주석만 추가해 생성 문서 블록에 반영될 변경이 없다(ext:docgen 재실행 시 이슈 0·산출 무변경).\n\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -227,7 +227,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다.",
+                                                "comment": "백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. 서버가 6자 이상만 받으므로(앞뒤 공백 제외) 그 전에는 버튼이 잠긴다(해제 버튼도 같다).",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -281,7 +281,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{!_local.code || _local.busy}}"
+                                            "disabled": "{{String(_local.code ?? '').trim().length < 6 || _local.busy}}"
                                         },
                                         "children": [
                                             {
@@ -361,7 +361,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{!_local.code || _local.busy}}"
+                                            "disabled": "{{String(_local.code ?? '').trim().length < 6 || _local.busy}}"
                                         },
                                         "children": [
                                             {

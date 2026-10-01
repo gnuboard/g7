@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
@@ -146,6 +147,7 @@ class GuestOrderResource extends BaseApiResource
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
             // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.
+            // 비회원 주문 품목 표시 — 리뷰 작성 가능(can_write_review)을 끈다 (비회원 상세에는 리뷰 창이 없다)
             'options' => $this->whenLoaded('options', function () use ($orderCurrency, $currencySnapshot) {
                 $locked = OrderOptionResource::lockedQuantitiesFor($this->options);
 
@@ -153,6 +155,7 @@ class GuestOrderResource extends BaseApiResource
                     fn ($r) => $r->withOrderCurrency($orderCurrency)
                         ->withCurrencySnapshot($currencySnapshot)
                         ->withClaimLockedQuantity($locked[(int) $r->resource->id] ?? null)
+                        ->forGuestOrder()
                 );
             }),
 
@@ -201,10 +204,11 @@ class GuestOrderResource extends BaseApiResource
     }
 
     /**
-     * 비회원에게 허용되는 액션을 주문 상태 기준으로 계산합니다.
+     * 비회원에게 허용되는 액션을 계산합니다.
      *
-     * 토큰 인증으로 본인 확인이 이미 끝났으므로 회원 권한 체크는 적용하지 않고,
-     * 주문 상태/환경설정으로만 가능 여부를 판정합니다.
+     * 본인 확인은 조회 토큰으로 끝났지만, 취소는 회원과 같은 「주문 취소」 권한(guest 역할)을 함께
+     * 본다 — 취소 창이 여는 사유 목록 API 와 비회원 취소 API 가 이 권한으로 판정되므로, 여기서 빼면
+     * 운영자가 비회원 취소 권한을 거뒀을 때 버튼만 남고 창이 사유를 불러오지 못한다.
      *
      * @return array<string, bool>
      */
@@ -217,7 +221,8 @@ class GuestOrderResource extends BaseApiResource
         );
 
         return [
-            'can_cancel' => $this->resource->isCancellable($cancellableStatuses),
+            'can_cancel' => $this->resource->isCancellable($cancellableStatuses)
+                && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel'),
         ];
     }
 }

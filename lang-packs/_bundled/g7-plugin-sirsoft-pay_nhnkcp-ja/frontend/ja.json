@@ -8,8 +8,7 @@
       "nhnkcp_test_mode_status": "テストモード状態",
       "nhnkcp_test_map": "テスト決済マップ",
       "settings": "決済設定",
-      "vbank_info": "仮想口座情報",
-      "nhnkcp_easy_pay_display_map": "簡易決済表示マップ"
+      "vbank_info": "仮想口座情報"
     }
   },
   "messages": {

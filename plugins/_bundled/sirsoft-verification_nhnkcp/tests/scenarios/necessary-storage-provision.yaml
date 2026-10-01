@@ -1,0 +1,27 @@
+feature: 개인정보 동의 플러그인에 필수 저장 키 제공
+
+description: |
+  개인정보 동의 플러그인(sirsoft-gdpr)은 쿠키 미동의 방문자의 브라우저에서 허용목록 밖의 저장 키를
+  부팅마다 지운다. 그 플러그인은 어떤 확장이 있는지 모르므로, 이 확장이 쓰는 필수 키는 이 확장이
+  그 플러그인이 소유한 필터 훅(`sirsoft-gdpr.necessary_storage.filter_provided_keys`)으로 제공한다.
+
+  왜: 본인인증 복귀 때 입력하던 양식 보관분이 지워지면 사용자가 입력한 내용이 사라진다.
+
+  계약: 훅 이름과 배열 모양(localStorage · sessionStorage · cookie → 문자열 배열)만 공유한다. 동의
+  플러그인의 클래스를 참조하지 않으므로 그 플러그인이 없으면 훅이 발행되지 않을 뿐, 이 확장은 그대로 선다.
+
+axes:
+  scope: [sessionStorage]
+  consent_plugin: [installed, absent]
+
+effects:
+  - provider_subscribes_to_consent_plugin_filter_hook
+  - provider_appends_own_keys_without_dropping_others
+  - provider_keys_match_the_storage_writing_code
+  - provider_does_not_reference_consent_plugin_classes
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Listeners/ProvideNecessaryStorageKeysListenerTest.php
+
+limitations:
+  - "키 이름은 저장 코드의 문자열과 원문 대조로만 묶인다 — 저장 코드가 키를 실행 시점에 조립하게 바뀌면 이 대조가 그 변경을 잡지 못한다."

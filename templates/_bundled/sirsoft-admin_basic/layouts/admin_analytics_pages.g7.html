@@ -99,7 +99,7 @@
       </div>
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
-      <tab-navigation data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'popular'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'popular'}}" variant="underline">
         <prop name="tabs">
           <item id="popular" label="$t:admin.analytics.pages.tabs.popular"/>
           <item id="entry" label="$t:admin.analytics.pages.tabs.entry"/>

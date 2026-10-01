@@ -8,6 +8,7 @@ use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutValidator;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 
 /**
  * LayoutValidator 단위 테스트 (`.g7.html` 마크업 형식 S6 — 강검증).
@@ -25,6 +26,11 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
 
     private ComponentRegistry $registry;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,9 +40,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 올바른 레이아웃은 강검증 전부를 통과한다.
+     *
      * @scenario compile_unit=validator,source_health=valid
      *
      * @effects valid_layout_passes_all_strong_checks
+     *
+     * @return void 반환값 없음
      */
     public function test_valid_layout_passes(): void
     {
@@ -46,9 +56,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 최상위 version 이 없으면 구조 오류다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects layout_missing_required_top_level_field_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_version_is_structure_invalid(): void
     {
@@ -59,9 +73,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 허용 목록 밖 엔드포인트는 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects endpoint_outside_whitelist_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_non_whitelisted_endpoint_is_rejected(): void
     {
@@ -82,6 +100,8 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
      * @scenario compile_unit=validator,source_health=valid
      *
      * @effects external_url_and_dangerous_scheme_pass_migration_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_external_url_and_dangerous_scheme_pass_migration_validation(): void
     {
@@ -100,6 +120,8 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects authoring_api_still_rejects_dangerous_scheme
+     *
+     * @return void 반환값 없음
      */
     public function test_authoring_api_still_rejects_external_url_and_dangerous_scheme(): void
     {
@@ -116,9 +138,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 레지스트리에 없는 컴포넌트 이름은 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects component_name_not_in_registry_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_component_not_in_registry_is_rejected(): void
     {
@@ -129,9 +155,38 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 목록에 없는 확장 컴포넌트(`식별자.이름`)는 강검증이 세우지 않는다 — 점 없는 템플릿 컴포넌트 오타만 거부한다.
+     *
+     * 확장은 편집 도중 지워지거나 꺼질 수 있어, 그 확장 하나 때문에 레이아웃을 저장하지 못하게 하면 안 된다
+     * (2026-09-28 결정). 알림은 lint 경고(`extension_component_not_installed`)가 맡는다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects missing_extension_component_is_not_a_strong_validation_error
+     *
+     * @return void 반환값 없음
+     */
+    public function test_missing_extension_component_is_not_rejected_but_template_typo_is(): void
+    {
+        $json = $this->layout();
+        $json['components'] = [['type' => 'basic', 'name' => 'Div', 'children' => [
+            ['type' => 'composite', 'name' => 'removed-module.MemoCard'],
+        ]]];
+
+        $this->assertNull($this->errorOrNull($json));
+
+        $json['components'][0]['children'][] = ['type' => 'basic', 'name' => 'Dvi'];
+        $this->assertSame(LayoutMarkupErrorCode::ComponentNotInRegistry, $this->error($json));
+    }
+
+    /**
+     * wait_for 가 웹소켓 데이터소스를 가리키면 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects wait_for_pointing_at_never_resolving_source_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_wait_for_websocket_source_is_rejected(): void
     {
@@ -143,9 +198,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * wait_for 가 백그라운드 데이터소스를 가리키면 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects wait_for_pointing_at_never_resolving_source_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_wait_for_background_source_is_rejected(): void
     {
@@ -157,9 +216,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * wait_for 가 없는 id 를 가리키면 무시하고 통과한다.
+     *
      * @scenario compile_unit=validator,source_health=valid
      *
      * @effects wait_for_pointing_at_missing_id_is_ignored
+     *
+     * @return void 반환값 없음
      */
     public function test_wait_for_missing_id_passes(): void
     {
@@ -172,9 +235,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 허용 목록 밖 외부 스크립트 호스트는 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects script_src_outside_allowlist_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_non_allowlisted_script_src_is_rejected(): void
     {
@@ -185,9 +252,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 허용 호스트라도 http(비암호) 스크립트는 거부된다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects script_src_outside_allowlist_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_http_script_src_is_rejected_even_if_host_allowlisted(): void
     {
@@ -199,14 +270,59 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 허용 호스트의 protocol-relative 스크립트는 통과한다.
+     *
      * @scenario compile_unit=validator,source_health=valid
      *
      * @effects allowlisted_protocol_relative_script_src_passes
+     *
+     * @return void 반환값 없음
      */
     public function test_allowlisted_protocol_relative_script_src_passes(): void
     {
         $json = $this->layout();
         $json['scripts'] = [['src' => '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js', 'id' => 'daum']];
+
+        $this->validate($json, context: new CompileContext(declaredScriptHosts: ['t1.daumcdn.net']));
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 코어 설정은 확장 호스트를 담지 않고, 선언 없는 호스트는 거부된다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects core_config_ships_no_extension_script_host
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_config_ships_no_extension_script_host(): void
+    {
+        // 코어 설정은 운영자 몫만 담는다 — 확장 호스트는 그 확장이 매니페스트로 선언한다.
+        $this->assertSame([], (require base_path('config/template.php'))['layout_markup']['script_src_allowlist'] ?? null);
+
+        $json = $this->layout();
+        $json['scripts'] = [['src' => '//undeclared.cdn.example/x.js', 'id' => 'x']];
+
+        $this->assertSame(LayoutMarkupErrorCode::ScriptSrcNotAllowed, $this->error($json));
+    }
+
+    /**
+     * 운영자가 설정에 덧붙인 호스트는 허용된다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects operator_configured_script_host_is_allowed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_operator_configured_script_host_is_allowed(): void
+    {
+        config()->set('template.layout_markup.script_src_allowlist', ['Operator.CDN.example']);
+
+        $json = $this->layout();
+        $json['scripts'] = [['src' => 'https://operator.cdn.example/x.js', 'id' => 'x']];
 
         $this->validate($json);
 
@@ -214,9 +330,64 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 설치 경로 문맥은 JSON 설치처럼 스크립트 호스트를 대조하지 않는다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects install_context_does_not_check_script_host
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_context_does_not_check_script_host(): void
+    {
+        // JSON 설치와 같이 설치 경로는 호스트를 대조하지 않는다 — 오버라이드 대상 확장이 아직 없어도
+        // 조각이 빠지지 않아야 한다. 판정은 런타임 게이트(TrustedScriptHosts)가 한다.
+        $context = (new MarkupCompileContextResolver)->installContextFor(
+            base_path('templates/_bundled/sirsoft-basic/extensions/any-extension/any.g7.html'),
+        );
+
+        $json = $this->layout();
+        $json['scripts'] = [['src' => '//undeclared.cdn.example/x.js', 'id' => 'x']];
+
+        $this->validator->validate($json, 'layout', null, $context);
+
+        $this->assertFalse($context->checksScriptSrc);
+    }
+
+    /**
+     * 소유 확장과 오버라이드 대상 확장의 매니페스트 선언 호스트를 읽는다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects owner_and_override_target_manifest_hosts_are_declared
+     *
+     * @return void 반환값 없음
+     */
+    public function test_owner_and_override_target_manifest_hosts_are_declared(): void
+    {
+        $resolver = new MarkupCompileContextResolver;
+
+        // 확장 자신의 레이아웃 — 위로 올라가 처음 만나는 매니페스트(plugin.json)의 선언.
+        $own = $resolver->contextFor(base_path('plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html'));
+        $this->assertSame(['t1.daumcdn.net'], $own->declaredScriptHosts);
+
+        // 템플릿의 확장 오버라이드 — 같은 트리의 대상 확장 매니페스트 선언을 더한다.
+        $override = $resolver->contextFor(base_path('templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html'));
+        $this->assertSame(['t1.daumcdn.net'], $override->declaredScriptHosts);
+
+        // 선언 없는 확장 — 아무 호스트도 얻지 않는다.
+        $none = $resolver->contextFor(base_path('modules/_bundled/sirsoft-board/resources/layouts/admin/any.g7.html'));
+        $this->assertSame([], $none->declaredScriptHosts);
+    }
+
+    /**
+     * 같은 origin 스크립트는 외부로 보지 않는다.
+     *
      * @scenario compile_unit=validator,source_health=valid
      *
      * @effects same_origin_script_src_is_not_treated_as_external
+     *
+     * @return void 반환값 없음
      */
     public function test_same_origin_script_src_passes(): void
     {
@@ -229,9 +400,13 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 대상이 없는 조각은 구조 오류다.
+     *
      * @scenario compile_unit=validator,source_health=invalid
      *
      * @effects fragment_structure_violation_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_without_target_is_structure_invalid(): void
     {
@@ -267,10 +442,12 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
      *
      * @param  array<string, mixed>  $json  레이아웃 JSON
      * @param  string  $rootKind  문서 봉투
+     * @param  CompileContext|null  $context  검증 문맥 (생략 시 기본 문맥)
+     * @return void 반환값 없음
      */
-    private function validate(array $json, string $rootKind = 'layout'): void
+    private function validate(array $json, string $rootKind = 'layout', ?CompileContext $context = null): void
     {
-        $this->validator->validate($json, $rootKind, $this->registry, new CompileContext);
+        $this->validator->validate($json, $rootKind, $this->registry, $context ?? new CompileContext);
     }
 
     /**

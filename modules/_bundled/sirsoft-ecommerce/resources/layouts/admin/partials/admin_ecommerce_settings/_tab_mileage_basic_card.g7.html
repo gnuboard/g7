@@ -17,7 +17,7 @@
         <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.basic.enabled</label>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.basic.enabled_hint</p>
       </div>
-      <toggle name="mileage.enabled" value="{{_local.form?.mileage?.enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+      <toggle data-type="composite" name="mileage.enabled" value="{{_local.form?.mileage?.enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
     <div class="border-t border-gray-200 dark:border-gray-700 py-4">
       <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate</label>

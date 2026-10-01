@@ -11721,6 +11721,27 @@
         }
       }
     },
+    "identityMessagePolicyScopes": {
+      "data": {
+        "data": [
+          {
+            "key": "policy.checkout_verification",
+            "name": "주문 결제 본인인증",
+            "channel": "mail",
+            "provider_id": "g7:core.mail",
+            "scope_type": "policy",
+            "scope_value": "sirsoft-ecommerce.checkout.before_pay",
+            "enabled": true
+          }
+        ],
+        "meta": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 100,
+          "total": 1
+        }
+      }
+    },
     "installed_plugins": {
       "data": [
         {

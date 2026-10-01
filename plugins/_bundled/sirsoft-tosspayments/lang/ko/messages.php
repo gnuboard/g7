@@ -6,6 +6,7 @@
 return [
     'errors' => [
         'payment_failed' => '결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+        'approval_verification_cancel_reason' => '결제 승인 검증 실패에 따른 자동 취소',
     ],
     'claim' => [
         'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터(paymentKey, orderId, amount)가 없습니다.',

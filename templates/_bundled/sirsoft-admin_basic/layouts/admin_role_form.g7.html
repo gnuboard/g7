@@ -83,7 +83,7 @@
   <slot name="content">
     <div data-ref="role_form_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact pb-24"/>
-      <page-header data-ref="page_header" title="{{route?.id ? $t:admin.roles.form.edit_title : $t:admin.roles.form.create_title}}" description="{{route?.id ? $t:admin.roles.form.edit_description : $t:admin.roles.form.create_description}}"/>
+      <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? $t:admin.roles.form.edit_title : $t:admin.roles.form.create_title}}" description="{{route?.id ? $t:admin.roles.form.edit_description : $t:admin.roles.form.create_description}}"/>
       <div data-ref="validation_error" data-if="{{_global.formErrors}}" class="alert-danger">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -142,7 +142,7 @@
                 <span>$t:admin.roles.form.name</span>
                 <span class="text-red-500 ml-1">*</span>
               </label>
-              <multilingual-input name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
+              <multilingual-input data-type="composite" name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
               <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
             </div>
             <div data-ref="identifier_field">
@@ -157,7 +157,7 @@
             </div>
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
-              <multilingual-input name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
+              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
               <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <div data-ref="is_active_field" class="flex-between">
@@ -165,7 +165,7 @@
                 <span class="block text-heading">$t:admin.roles.form.is_active</span>
                 <span class="block text-label-subtle mt-0.5">$t:admin.roles.form.is_active_hint</span>
               </div>
-              <toggle name="is_active"/>
+              <toggle data-type="composite" name="is_active"/>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
           </h3>
           <div class="card-description">$t:admin.roles.form.permissions_hint</div>
-          <tab-navigation data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">
+          <tab-navigation data-type="composite" data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">
             <on type="change" event="onTabChange">
               <!-- 권한 종류 탭 전환. 선택한 권한 값은 종류와 무관하게 한 배열에 모여 있으므로
                    탭을 옮겨도 고른 것이 풀리지 않는다 — 이 값은 어느 탭을 보고 있는지만 정한다. -->
@@ -187,7 +187,7 @@
           <div data-ref="permission_tab_contents" class="mt-4">
             <div data-each="permType, typeIndex in {{permissions?.data?.data?.types ?? []}}">
               <div data-if="{{(_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin') === permType}}">
-                <permission-tree data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
+                <permission-tree data-type="composite" data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
                   <on type="change">
                     <!-- 권한 선택. 트리는 탭마다 따로 렌더되지만 **쓰는 값은 한 배열**이라, 어느 탭에서
                          골랐든 여기 모이고 상단 개수 배지도 그 길이를 센다. 설치된 확장 목록을 넘겨

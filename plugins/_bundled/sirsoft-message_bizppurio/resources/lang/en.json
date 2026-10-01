@@ -207,13 +207,15 @@
             "request_comment_placeholder": "e.g. #{name}=Jane Doe, #{order_number}=20260823-1043226571",
             "request_comment_hint": "Sent to the Kakao reviewer together with the inspection request (optional, up to 500 characters). Kakao review guidelines ask for an example value per body variable, so listing them here reduces rejections. It is not stored — it is only sent when you request inspection.",
             "saved_toast": "Notification template saved.",
-            "requested_toast": "Inspection requested. Alimtalk delivery starts once approved."
+            "requested_toast": "Inspection requested. Alimtalk delivery starts once approved.",
+            "editor_label": "AlimTalk template editor"
         },
         "sms": {
             "modal_title": "SMS Body — {name}",
             "hint": "This body is shared by SMS fallback and SMS-only delivery. #{variables} are substituted at send time.",
             "btn_save": "Save",
-            "saved_toast": "SMS body saved."
+            "saved_toast": "SMS body saved.",
+            "editor_label": "SMS body editor"
         },
         "cancel_approval": {
             "modal_title": "Cancel Approval",
@@ -223,7 +225,8 @@
         },
         "rejection": {
             "modal_title": "Rejection Reasons — {name}",
-            "btn_close": "Close"
+            "btn_close": "Close",
+            "editor_label": "AlimTalk rejection reason"
         },
         "approval": {
             "approved": "Approved",

@@ -1,13 +1,12 @@
 <!-- 모든 통계 데이터 삭제 확인 창(설정 › 보존 탭). 원장·집계·봇 기록·실패 로그·실행 이력·솔트를 전부
   지우며 되돌릴 수 없다. 서버도 `confirm` 없이는 422 로 막지만, 화면은 그 전에 체크 없이 버튼을
   잠가 실수로 누르는 길 자체를 없앤다. -->
-<partial description="방문자 통계 — 모든 통계 데이터 삭제 확인 창">
-  <modal data-ref="analytics_purge_all_modal" title="$t:admin.analytics.modals.purge.title" size="md">
-    <meta editor_label="$t:admin.modal_label.analytics.purge_all_modal"/>
+<partial description="방문자 통계 — 모든 통계 데이터 삭제 확인 창" editor_label="$t:admin.modal_label.analytics.purge_all_modal">
+  <modal data-type="composite" data-ref="analytics_purge_all_modal" title="$t:admin.analytics.modals.purge.title" size="md">
     <div class="py-2 space-y-3">
       <div class="danger-confirm-alert">
         <!-- 원은 감싸는 칸이 그린다. 아이콘 요소에 원 자산을 직접 주면 글꼴 아이콘이 48px 칸 위쪽에
-          본문 글자 크기로 붙는다(#682 PO 실측 후속 4). -->
+          본문 글자 크기로 붙는다(#682 실측 후속 4). -->
         <div class="danger-confirm-icon">
           <icon name="triangle-exclamation" aria-hidden="true"/>
         </div>

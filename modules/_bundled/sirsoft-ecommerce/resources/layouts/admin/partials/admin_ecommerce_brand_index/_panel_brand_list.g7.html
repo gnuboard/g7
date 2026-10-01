@@ -18,7 +18,7 @@
     <div data-ref="search_sort_area" class="px-4 panel-header">
       <div class="search-bar">
         <div class="flex-1 min-w-0">
-          <search-bar placeholder="$t:sirsoft-ecommerce.admin.brand.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+          <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.brand.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
             <on type="submit">
               <!-- 검색어를 URL 에 실어 다시 들어간다. `mergeQuery` 로 기존 조건을 남기면서도 정렬을
                 명시로 다시 넣는 이유는, 정렬이 없던 주소에서 검색했을 때 기본값이 URL 에도 박혀
@@ -50,7 +50,7 @@
       </div>
     </div>
     <div>
-      <sortable-menu-list data-ref="sortable_brand_list" data-if="{{(brands?.data?.data?.length ?? 0) > 0}}" items="{{brands?.data?.data ?? []}}" selectedId="{{_global.selectedBrandId}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-5 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" :enableDrag="false" toggleDisabled="{{brands?.data?.abilities?.can_update !== true}}">
+      <sortable-menu-list data-type="composite" data-ref="sortable_brand_list" data-if="{{(brands?.data?.data?.length ?? 0) > 0}}" items="{{brands?.data?.data ?? []}}" selectedId="{{_global.selectedBrandId}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-5 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" :enableDrag="false" toggleDisabled="{{brands?.data?.abilities?.can_update !== true}}">
         <on type="action" event="onSelect">
           <!-- 브랜드 선택 — 목록이 이미 들고 있는 행 전체(`$args[0]`)를 그대로 전역에 옮긴다. 오른쪽
             보기 패널은 이 값을 읽어 그리므로 상세를 따로 부르지 않는다(목록 응답에 없는 필드는

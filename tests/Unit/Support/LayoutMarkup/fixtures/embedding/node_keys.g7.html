@@ -7,7 +7,7 @@
       </div>
     </item-template>
   </div>
-  <rich-select value="{{_local.selected}}" placeholder="$t:admin.select_file">
+  <rich-select data-type="composite" value="{{_local.selected}}" placeholder="$t:admin.select_file">
     <template slot="item">
       <div class="flex-col">
         <span class="font-medium" text="{{item.name}}"/>
@@ -18,14 +18,14 @@
       <span class="truncate" text="{{item.name}}"/>
     </template>
   </rich-select>
-  <card-grid data="{{items}}">
+  <card-grid data-type="composite" data="{{items}}">
     <card id="board_card">
       <div class="card-body">
         <span text="{{row.title}}"/>
       </div>
     </card>
   </card-grid>
-  <modal data-ref="delete_modal">
+  <modal data-type="composite" data-ref="delete_modal">
     <title-prefix>
       <icon name="fa-solid fa-triangle-exclamation" class="text-red-500"/>
     </title-prefix>

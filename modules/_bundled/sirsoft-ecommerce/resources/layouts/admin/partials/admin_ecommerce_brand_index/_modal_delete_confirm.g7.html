@@ -6,7 +6,7 @@
   삭제가 끝나면 목록을 다시 부르는 것으로 그치지 않고 오른쪽 패널을 빈 상태로 되돌린다 — 방금
   지운 브랜드가 선택된 채 남아 있으면 상세가 빈 응답을 그리게 된다. -->
 <partial description="Brand Delete Confirmation Modal">
-  <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.delete_modal.title" size="medium">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.delete_modal.title" size="medium">
     <div>
       <div>
         <p class="text-primary text-base">{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}</p>

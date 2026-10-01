@@ -2,7 +2,7 @@
   보여 준다. 바닥글 컴포넌트가 이력을 먼저 받아 전역에 담고 창을 여는데, 받기에 실패해도
   창은 열리므로 본문이 비어 보이는 상태가 정상 갈래에 있다. -->
 <partial description="코어 Changelog 모달" editor_label="$t:admin.modal_label.changelog_modal">
-  <modal data-ref="changelog_modal" title="$t:admin.settings.info.changelog_title" size="large">
+  <modal data-type="composite" data-ref="changelog_modal" title="$t:admin.settings.info.changelog_title" size="large">
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 px-1">
         <pre class="whitespace-pre-wrap text-body font-mono leading-relaxed">{{_global.coreChangelogContent ?? ''}}</pre>

@@ -4,7 +4,7 @@
   때문에 목록 전체가 낡는다.
   진행 깃발이 전역이라 두 버튼이 함께 잠긴다. -->
 <partial description="Common Info Set Default Confirm Modal (View Panel)">
-  <modal data-ref="modal_set_default_confirm" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
+  <modal data-type="composite" data-ref="modal_set_default_confirm" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
     <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message</p>
     <div class="modal-footer-buttons">
       <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">

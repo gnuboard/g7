@@ -122,7 +122,7 @@
         </div>
       </div>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
-      <tab-navigation data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'countries'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'countries'}}" variant="underline">
         <prop name="tabs">
           <item id="countries" label="$t:admin.analytics.regions.tabs.countries"/>
           <item id="regions" label="$t:admin.analytics.regions.tabs.regions"/>

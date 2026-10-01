@@ -409,6 +409,41 @@ class AttachmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 임시 디렉토리 정리가 실패해도 이미 옮긴 첨부의 연결은 끝까지 진행한다.
+     *
+     * 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면(삭제 대기) 디렉토리
+     * 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로 되돌렸다 — 파일은 이미 본경로로
+     * 옮겨졌는데 DB 는 임시 경로를 가리킨 채 남았다(#703 브라우저 실측). 정리 실패로 남는 것은 빈 임시 디렉토리뿐이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_dir_cleanup_failure_does_not_abort_link
+     */
+    #[Test]
+    public function test_link_continues_when_temp_directory_cleanup_fails(): void
+    {
+        $slug = 'notice';
+        $tempKey = '9b7c0f1e-2d3c-4b5a-8e7f-6a5b4c3d2e1f';
+        $postId = 7;
+
+        $attachment = Mockery::mock(Attachment::class)->makePartial();
+        $attachment->path = "{$slug}/temp/{$tempKey}/big.zip";
+        $attachment->stored_filename = 'big.zip';
+        $attachment->id = 3;
+        $attachment->shouldReceive('update')->once()->andReturn(true);
+
+        $this->repository->shouldReceive('getByTempKey')->once()->with($slug, $tempKey)
+            ->andReturn(new EloquentCollection([$attachment]));
+        $this->storage->shouldReceive('get')->once()->andReturn('zip-content');
+        $this->storage->shouldReceive('put')->once()->andReturn(true);
+        $this->storage->shouldReceive('delete')->once()->andReturn(true);
+        $this->storage->shouldReceive('deleteDirectory')->once()
+            ->andThrow(new \RuntimeException('SplFileInfo::getType(): Lstat failed'));
+
+        $this->assertSame(1, $this->service->linkTempAttachmentsWithMove($slug, $tempKey, $postId));
+    }
+
+    /**
      * 옮길 임시 첨부가 없으면 어떤 파일·디렉토리도 건드리지 않고 0 을 반환한다.
      *
      * @return void 반환값 없음

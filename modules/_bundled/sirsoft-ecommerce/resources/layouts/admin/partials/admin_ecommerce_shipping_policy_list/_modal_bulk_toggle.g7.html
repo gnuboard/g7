@@ -5,7 +5,7 @@
   `bulkToggleValue` 는 참·거짓이 아니라 **`'true'` 라는 글자**다(선택칸에서 온 값이라 그렇다).
   성공하면 체크 목록과 함께 그 값도 비운다. -->
 <partial description="Shipping Policy Bulk Toggle Status Modal">
-  <modal data-ref="bulk_toggle_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title" size="medium">
+  <modal data-type="composite" data-ref="bulk_toggle_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title" size="medium">
     <div>
       <div>
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}</p>

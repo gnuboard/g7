@@ -972,6 +972,13 @@ slots.content:
 - `setState` — 폼 상태, 모달 제어
 - `openModal`/`closeModal` — 탈퇴, 주소 편집, 삭제 확인
 
+**프로필 수정 저장**: `_edit.g7.html` 의 [저장]은 `PUT /api/me` **한 번**입니다. 이커머스가 설치된
+사이트의 결제 통화·배송국가 카드도 `name` 바인딩으로 같은 폼(`profileEditForm`)에 실려 이 요청에 함께
+가고, 이커머스 모듈이 코어 훅으로 같은 요청 안에서 검증·저장합니다(이커머스 1.3.0 이상). 그 필드의 검증
+오류는 `_local.profileErrors.{필드}` 로 돌아와 카드 아래에 뜹니다. 저장 성공 뒤에는 모듈 엔드포인트를 다시
+부르지 않고 전역 선호값(`preferredCurrency`·`preferredShippingCountry`)만 맞춥니다 — 저장이 두 요청으로
+갈라지면 한쪽만 실패한 채 저장 완료가 뜨는 상태가 생깁니다.
+
 ---
 
 #### 검색 패턴

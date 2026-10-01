@@ -5,7 +5,7 @@
       <variant when="readonly">opacity-60</variant>
       <variant when="normal"></variant>
     </class-map>
-    <section-layout data-ref="section_attachment" class="admin-card">
+    <section-layout data-type="layout" data-ref="section_attachment" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.attachment</h3>
       <div class="row-stack">
         <div data-ref="field_use_file_upload" class="">
@@ -22,7 +22,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_file_upload</p>
               </div>
             </label>
-            <toggle name="basic_defaults.use_file_upload" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.use_file_upload" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_max_file_size" class="">
@@ -79,7 +79,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions</p>
               </div>
             </label>
-            <tag-input name="basic_defaults.allowed_extensions" placeholder="$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+            <tag-input data-type="composite" name="basic_defaults.allowed_extensions" placeholder="$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
       </div>

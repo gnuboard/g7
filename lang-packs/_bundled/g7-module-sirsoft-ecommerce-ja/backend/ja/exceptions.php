@@ -161,4 +161,5 @@ return [
     'claim_stock_restore_not_eligible' => '復元する在庫がありません。',
     'claim_withdraw_reason_required' => '取り下げ理由を入力してください。',
     'claim_admin_request_not_allowed' => 'この商品は現在のステータス(:status)では受け付けできません。',
+    'no_purchasable_option' => '現在、購入可能なオプションがない商品です。',
 ];

@@ -52,7 +52,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-basic --force` |
-| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `extensions/` | 다른 확장 화면에 주입하는 레이아웃 조각 | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `seo-config.json` | SEO 렌더 설정 | `php artisan template:update sirsoft-basic --force` |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-basic --force` |
@@ -88,6 +88,13 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 조회 화면이 그 토큰으로 API 를 호출하면 서버의 `VerifyGuestOrderToken` 미들웨어가 신원을
 확인합니다. **토큰이 곧 신원**이므로 `clearGuestTokenOnEntry` 가 진입 시점에 남은 토큰을
 정리합니다 — 공용 PC 에서 다음 사용자가 남의 주문을 열지 못하게 하는 방어입니다.
+
+PG 결제는 결제창을 **열기 전에** 토큰을 확보해 둡니다(체크아웃 `_checkout_summary`). 결제창을 닫으면
+PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유자를 증명하기 때문입니다 — 주문자
+연락처는 제3자도 알 수 있어 증명이 되지 못합니다(KVE-2026-2434). 1순위는 주문 생성 응답의
+`guest_order_token` 을 그대로 저장, 응답에 토큰이 없을 때(이전 이커머스 모듈)만 전화번호+조회 비밀번호로
+`guest/orders/verify` 를 부릅니다. 이 순서를 뒤집거나 verify 만 남기면, 전화번호 형식이 달라 verify 가
+실패한 비회원은 결제창을 닫아도 취소가 기록되지 않습니다.
 
 **본인인증(IDV)**: 어떤 API 가 428 을 돌려주면 코어 인터셉터가 그것을 잡아, 부트스트랩에서
 등록한 launcher 로 인증 화면을 엽니다. 인증을 마치면 원래 액션이 재개됩니다 — 각 화면이
@@ -184,9 +191,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 190개 | `vitest.config.ts` |
+| Vitest | 195개 | `vitest.config.ts` |
 | Playwright | 9개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 18개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -1,9 +1,9 @@
+import { buildGuestOwnershipHeaders, isSameOriginUrl } from './guestOrderToken';
+
 export interface PaymentCloseReportContext {
     closeReportUrl?: string;
     oid: string;
     price: number;
-    buyer_email?: string;
-    buyer_phone?: string;
     payment_method?: string;
 }
 
@@ -38,22 +38,32 @@ export async function reportPaymentWindowClosed(
     const payload = {
         oid: context.oid,
         price: Number(context.price),
-        buyer_email: context.buyer_email ?? '',
-        buyer_phone: context.buyer_phone ?? '',
         payment_method: context.payment_method ?? '',
         reason: trimReason(reason) || 'nicepay-window-closed',
     };
 
+    // 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만 받아 준다. 회원 Bearer 는 G7Core.api 가
+    // 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰을 헤더로 싣는다.
+    const ownershipHeaders = buildGuestOwnershipHeaders();
+
     try {
         const apiClient = ((window as any).G7Core)?.api;
         if (typeof apiClient?.post === 'function') {
-            await apiClient.post(context.closeReportUrl, payload);
+            if (Object.keys(ownershipHeaders).length > 0) {
+                await apiClient.post(context.closeReportUrl, payload, { headers: ownershipHeaders });
+            } else {
+                await apiClient.post(context.closeReportUrl, payload);
+            }
             return;
         }
 
-        await fetch(resolveApiUrl(context.closeReportUrl), {
+        const url = resolveApiUrl(context.closeReportUrl);
+        await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(isSameOriginUrl(url) ? ownershipHeaders : {}),
+            },
             body: JSON.stringify(payload),
             keepalive: true,
         });

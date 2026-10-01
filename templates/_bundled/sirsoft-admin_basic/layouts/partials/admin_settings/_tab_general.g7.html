@@ -12,7 +12,7 @@
             <label class="form-label">
               <span>$t:admin.settings.general.site_name</span>
               <span class="text-red-500 ml-1">*</span>
-              <badge data-if="{{_computed.envLocked?.['general.site_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <input type="text" name="general.site_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}" class="input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_name']}}" class="form-error">{{_local.errors?.['general.site_name']?.[0] ?? ''}}</span>
@@ -21,7 +21,7 @@
             <label class="form-label">
               <span>$t:admin.settings.general.site_url</span>
               <span class="text-red-500 ml-1">*</span>
-              <badge data-if="{{_computed.envLocked?.['general.site_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
@@ -42,7 +42,7 @@
         <div data-ref="field_site_logo">
           <label class="form-label">$t:admin.settings.general.site_logo</label>
           <p class="text-tertiary mb-2">$t:admin.settings.general.site_logo_desc</p>
-          <file-uploader data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
+          <file-uploader data-type="composite" data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
             <prop name="imageCompression">
               <field name="maxSizeMB" :value="1"/>
               <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
@@ -90,7 +90,7 @@
             <label class="form-label">
               <span>$t:admin.settings.general.default_language</span>
               <span class="text-red-500 ml-1">*</span>
-              <badge data-if="{{_computed.envLocked?.['general.language'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.language'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="general.language" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.language'] === true}}" placeholder="$t:admin.settings.general.select_language" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" error="{{_local.errors?.['general.language']?.[0] ?? ''}}"/>
             <span data-if="{{_local.errors?.['general.language']}}" class="form-error">{{_local.errors?.['general.language']?.[0] ?? ''}}</span>
@@ -99,7 +99,7 @@
             <label class="form-label">
               <span>$t:admin.settings.general.timezone</span>
               <span class="text-red-500 ml-1">*</span>
-              <badge data-if="{{_computed.envLocked?.['general.timezone'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.timezone'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="general.timezone" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.timezone'] === true}}" placeholder="$t:admin.settings.general.select_timezone" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}" error="{{_local.errors?.['general.timezone']?.[0] ?? ''}}"/>
             <span data-if="{{_local.errors?.['general.timezone']}}" class="form-error">{{_local.errors?.['general.timezone']?.[0] ?? ''}}</span>
@@ -150,15 +150,12 @@
           <div data-ref="static_cache_status_row" class="flex items-center gap-2">
             <span class="text-label">$t:admin.settings.general.static_cache_status</span>
             <span data-ref="static_cache_status_badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
-              <prop name="classMap">
-                <field name="key" value="{{staticCacheStatus?.data?.enabled === false ? 'disabled' : (staticCacheStatus?.data?.publishable !== true ? 'dev_mode' : (staticCacheStatus?.data?.published ? 'published' : 'unpublished'))}}"/>
-                <field name="variants">
-                  <field name="published" value="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"/>
-                  <field name="unpublished" value="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"/>
-                  <field name="disabled" value="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"/>
-                  <field name="dev_mode" value="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"/>
-                </field>
-              </prop>
+              <class-map key="{{staticCacheStatus?.data?.enabled === false ? 'disabled' : (staticCacheStatus?.data?.publishable !== true ? 'dev_mode' : (staticCacheStatus?.data?.published ? 'published' : 'unpublished'))}}">
+                <variant when="published">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300</variant>
+                <variant when="unpublished">bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300</variant>
+                <variant when="disabled">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                <variant when="dev_mode">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+              </class-map>
               <span data-ref="static_cache_status_text_disabled" data-if="{{staticCacheStatus?.data?.enabled === false}}">$t:admin.settings.general.static_cache_status_disabled</span>
               <span data-ref="static_cache_status_text_dev_mode" data-if="{{!!staticCacheStatus?.data &amp;&amp; staticCacheStatus?.data?.enabled !== false &amp;&amp; staticCacheStatus?.data?.publishable !== true}}">$t:admin.settings.general.static_cache_status_dev_mode</span>
               <span data-ref="static_cache_status_text_published" data-if="{{staticCacheStatus?.data?.publishable === true &amp;&amp; !!staticCacheStatus?.data?.published}}">$t:admin.settings.general.static_cache_status_published</span>

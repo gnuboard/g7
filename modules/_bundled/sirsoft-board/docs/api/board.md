@@ -145,7 +145,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글 첨부파일 1건을 업로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::upload()`가 게시판별 동적 첨부 테이블에 저장합니다. `post_id`가 있으면 해당 게시글에 즉시 귀속되고, 없으면 `temp_key`로 임시 업로드되어 게시글 작성/수정 저장 시점에 연결됩니다. 응답은 FileUploader 컴포넌트 호환을 위해 `data.data`로 한 번 더 감싸 파일 메타(hash·url·order 등)를 반환합니다.
+**설명** 게시판 관리자가 게시글 첨부파일 1건을 업로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.upload` 권한이 필요하며, `AttachmentService::upload()`가 게시판별 동적 첨부 테이블에 저장합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며 게시글 저장 검증과 같은 기준입니다. `post_id`가 있으면 해당 게시글에 즉시 귀속되고, 없으면 `temp_key`로 임시 업로드되어 게시글 작성/수정 저장 시점에 연결됩니다. 응답은 FileUploader 컴포넌트 호환을 위해 `data.data`로 한 번 더 감싸 파일 메타(hash·url·order 등)를 반환합니다.
 
 첨부 개수는 게시판 설정 `max_file_count` 를 기준으로 **직접 업로드 · 미리 올려 둔 파일 연결(`attachment_ids`) · 임시 업로드 연결(`temp_key`) · 이미 연결된 첨부** 를 모두 합산해 판정합니다. 상한을 넘으면 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 이 판정은 업로드 엔드포인트뿐 아니라 게시글 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_file_count` 가 0 이면 개수를 제한하지 않습니다.
 
@@ -837,7 +837,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403).
+**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403).
 
 
 ### DELETE /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}

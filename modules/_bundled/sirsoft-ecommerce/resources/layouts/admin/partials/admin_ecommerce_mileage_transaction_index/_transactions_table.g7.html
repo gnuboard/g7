@@ -12,7 +12,8 @@
   `_global.mileageEdit` 에 조립해 넘긴다 — 표시용 문구(부호 붙은 금액 등)를 여기서 만든다. -->
 <partial description="마일리지 내역 DataGrid (셀 인터랙션 + 행 확장 연결 거래)">
   <div data-ref="mileage_transactions_grid_wrap" class="overflow-hidden mb-4">
-    <data-grid data-ref="mileage_transactions_datagrid" data="{{transactions?.data?.data || []}}" loading="{{transactions?.loading}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
+    <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
+      <blur-until-loaded sources="transactions"/>
       <prop name="expandContext">
         <field name="linkedTransactions" value="{{_local.linkedTransactions}}"/>
       </prop>
@@ -28,7 +29,7 @@
       </column>
       <column field="member" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.member" width="160px" :sortable="false">
         <cell>
-          <action-menu data-if="{{!!row.user_uuid}}" position="right">
+          <action-menu data-type="composite" data-if="{{!!row.user_uuid}}" position="right">
             <prop name="items">
               <item id="view_member" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_member" iconName="user"/>
               <item id="search_member" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.search_member" iconName="magnifying-glass"/>
@@ -96,7 +97,7 @@
       </column>
       <column field="granted_by" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.granted_by" width="110px" :sortable="false">
         <cell>
-          <action-menu data-if="{{!!row.granted_by_uuid}}" position="right">
+          <action-menu data-type="composite" data-if="{{!!row.granted_by_uuid}}" position="right">
             <prop name="items">
               <item id="view_admin" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>

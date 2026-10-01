@@ -14,16 +14,10 @@ use App\Enums\LayoutMarkupErrorCode;
  * 개념으로 흡수**한다 — 소유자 종류는 어느 필드가 있는지로 판정한다.
  *
  * 소유자 종류가 정하는 것:
- *  - **이름·태그 좌표**. 템플릿 컴포넌트는 프리픽스 없이 `DataGrid`/`<data-grid>`. 확장
- *    컴포넌트는 `{식별자}.{이름}`/`<{정규화된-식별자}-{kebab}>` — 핸들러의
- *    `{identifier}.{name}` 관례와 같은 키 컨벤션(sirsoft-ecommerce/resources/js/index.ts:38).
+ *  - **이름·태그 좌표**. 템플릿 컴포넌트는 `DataGrid`/`<data-grid>`. 확장 컴포넌트는
+ *    `{식별자}.{이름}`/`<{식별자}.{kebab}>` — 식별자를 그대로 싣으므로 목록 없이 이름을 되돌린다
+ *    (ComponentRegistry::fromTag). 핸들러의 `{identifier}.{name}` 관례와 같은 키 컨벤션이다.
  *  - **선언 권한**. `overrides` 는 템플릿만, `for` 는 확장만(ComponentOwnerKind 참조).
- *
- * 태그 프리픽스는 식별자의 `_` 를 `-` 로 정규화해 만든다 — 번들 확장 14개 중 7개가
- * `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를 품는데, 언더스코어는
- * 마크업 태그명에 올 수 없기 때문이다(S1 `InvalidTagName`). 정규화가 서로 다른 두 확장을
- * 같은 프리픽스로 접을 수 있으므로(`a_b` 와 `a-b`) 그 충돌은 레지스트리 병합 시점에
- * `ExtensionIdTagCollision` 으로 거부한다.
  */
 final class ComponentManifest
 {
@@ -244,9 +238,8 @@ final class ComponentManifest
 
         return new ComponentDefinition(
             name: $kind === ComponentOwnerKind::Extension ? $ownerId.'.'.$shortName : $shortName,
-            tag: $kind === ComponentOwnerKind::Extension
-                ? self::tagPrefix($ownerId).'-'.ComponentRegistry::toTag($shortName)
-                : ComponentRegistry::toTag($shortName),
+            // 태그는 이름의 표기 규칙 하나로 정한다 — 확장이면 `식별자.케밥`(목록 없이 되돌릴 수 있다).
+            tag: ComponentRegistry::toTag($kind === ComponentOwnerKind::Extension ? $ownerId.'.'.$shortName : $shortName),
             type: $entry['type'],
             propTypes: $propTypes,
             skipBindingKeys: array_values(array_unique([
@@ -389,20 +382,5 @@ final class ComponentManifest
         }
 
         return $variants;
-    }
-
-    /**
-     * 확장 식별자를 마크업 태그 프리픽스로 정규화합니다.
-     *
-     * 번들 확장 14개 중 7개가 `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를
-     * 품는데, 마크업 태그명은 소문자와 하이픈만 허용한다(S1 `InvalidTagName`). 정규화 결과가
-     * 겹치는 두 확장(`a_b` 와 `a-b`)은 레지스트리 병합 시점에 거부한다.
-     *
-     * @param  string  $identifier  확장 식별자
-     * @return string 태그 프리픽스 (소문자 kebab)
-     */
-    public static function tagPrefix(string $identifier): string
-    {
-        return strtolower(str_replace('_', '-', $identifier));
     }
 }

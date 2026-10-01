@@ -171,6 +171,7 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 | 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
 | 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
+| 인증 앱(TOTP) 자격증명·현재 코드 | 플러그인 | `plugins/_bundled/sirsoft-totp/src/Console/Commands/PlaywrightSeedTotp.php` | `php artisan playwright:seed-totp --enroll=<email> \| --code=<secret>` (§4.2) |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 코어 커맨드의 `--permissions=` 임의 식별자 | 동일 (Permission::firstOrCreate 자동 생성) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
@@ -226,7 +227,11 @@ Node 기본 `net` 만으로 최소 SMTP 서버를 127.0.0.1 에 잠깐 띄우고
 | `--plant=<uuid>` | 그 challenge 에 알려진 인증번호의 해시를 심고 코드를 출력 |
 | `--code=` | `--plant` 가 심을 인증번호 (기본 `135790`) |
 | `--gc-hours=` | 이 시간보다 오래된 테스트 계정 정리 (기본 6, `0` 이면 정리 안 함) |
-| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다 |
+| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다. 삭제는 운영자 삭제와 같은 경로(`UserService::deleteUser`)를 타서, 확장이 `core.user.before_delete` 에서 자기 행을 치운다 |
+
+인증 앱 자격증명은 그 플러그인 소유라 코어 커맨드가 다루지 않는다 — `playwright:seed-totp --enroll=<email>` 이
+확정된 자격증명과 고정 백업 코드를 심고 시크릿을 출력하며, `--code=<secret>` 이 그 순간의 코드를 계산한다
+(fixture `enrollTotpFor()`·`totpCodeFor()`).
 
 가드는 `playwright:issue-token` 과 동형이다 — CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` + `APP_DEBUG` 강제.
 
@@ -256,7 +261,7 @@ spec 안에 "추가한 노드를 삭제하고 다시 저장" 원복을 넣는 �
 |---|---|
 | 레이아웃 이름 | `e2e_sandbox` |
 | 라우트 | 사용자 템플릿 `/e2e-sandbox`, 관리자 템플릿 `*/admin/e2e-sandbox` |
-| fixture 원본 | `tests/Playwright/fixtures/seed-layouts/{템플릿}.e2e_sandbox.json` |
+| fixture 원본 | `tests/Playwright/fixtures/seed-layouts/{user\|admin}.e2e_sandbox.json` (활성 템플릿 종류별) |
 | 설치 위치 | **활성 템플릿 디렉토리만** (`_bundled` 배포 원본 무변경, 활성 디렉토리는 Git 무시 → 릴리스 미포함) |
 | 설치/제거 | `php artisan playwright:seed-layout [--remove]` (CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드) |
 | 자동 호출 | `globalSetup` 설치 / `globalTeardown` 제거 |

@@ -26,7 +26,7 @@ export interface HelloModuleMemoCardProps {
  * **대체해도 마크업 표면은 그대로다.** 작성자는 여전히 같은 태그를 쓰고 레이아웃도 고치지 않는다:
  *
  * ```html
- * <gnuboard7-hello-module-memo-card title="{{memo.title}}"/>
+ * <gnuboard7-hello_module.memo-card data-type="composite" title="{{memo.title}}"/>
  * ```
  *
  * 갈리는 것은 구현체뿐이다. 그래서 오버라이드를 붙이거나 떼는 것이 레이아웃에 파급되지 않는다.

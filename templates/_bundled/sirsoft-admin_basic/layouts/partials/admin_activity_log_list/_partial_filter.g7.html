@@ -79,12 +79,12 @@
       <div data-ref="actor_filter" class="filter-row">
         <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
         <div class="flex-center gap-2">
-          <searchable-dropdown options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
+          <searchable-dropdown data-type="composite" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
             <on event="onSearch">
               <!-- 행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.
                 타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로
                 바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다. -->
-              <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+              <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
                   <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
                 </success>
@@ -117,7 +117,7 @@
               <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
             </on>
           </input>
-          <span class="text-gray-400">~</span>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
           <input name="dateTo" type="datetime-local" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
             <on type="change">
               <!-- 끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다. -->

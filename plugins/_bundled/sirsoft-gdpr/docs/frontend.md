@@ -58,7 +58,9 @@ iframe·1st-party 저장소 게이팅)은 이 액션 핸들러가 아니라 `dis
 그 저장소 게이팅의 판정 목록(필수 허용목록)은 **인라인 페이로드**로 옵니다. 인터셉터는
 `fetchPublicSettings()` 앞에서 서야 동의 전 첫 저장을 막을 수 있으므로 응답을 기다릴 수 없고,
 그래서 `window.G7Config.plugins['sirsoft-gdpr']` 의 `necessary_storage_allowlist` ·
-`necessary_storage_locked` 를 동기로 읽습니다(`readInlineNecessaryAllowlist()`). 이 경로가
+`necessary_storage_locked` · `necessary_storage_provided`(활성 확장이 계약 훅으로 제공한 키 — 서버가
+요청마다 모은 계산값)를 동기로 읽어 합칩니다(`readInlineNecessaryAllowlist()` →
+`resolveInlineAllowlist()`). 이 경로가
 비면 인터셉터는 잠금 집합만으로 서고, 운영자가 등재한 항목이 그 창에서 파기됩니다 — 예외도
 로그도 남지 않으므로 새 설정 키를 노출할 때는 `config/settings/defaults.json` 의
 `frontend_schema` 에 `expose: true` 를 반드시 함께 넣어야 합니다.

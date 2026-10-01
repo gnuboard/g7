@@ -267,7 +267,7 @@ describe('ExtensionCardGrid — 아이콘', () => {
   // @effects icon_box_is_square
   it('아이콘이 카드 폭을 넘지 않는다', () => {
     // 아주 좁은 카드에서 아이콘이 제 크기를 고집하면 이름·설명이 남는 폭에 밀려
-    // 한 글자씩 끊긴다(PO 실측 2026-09-15). 상한을 두어 카드에 비례해 줄인다.
+    // 한 글자씩 끊긴다(실측 2026-09-15). 상한을 두어 카드에 비례해 줄인다.
     setContainerWidth(1072);
     const { container } = render(<ExtensionCardGrid items={[baseItem()]} viewMode="gallery" />);
     const box = container.querySelector('[data-ref="ext_icon"]') as HTMLElement;
@@ -389,6 +389,57 @@ describe('ExtensionCardGrid — 콜백은 원본 행을 되돌려 준다', () =>
 
     expect(onToggle).toHaveBeenCalled();
     expect(onToggle.mock.calls[0][1]).toBe(item.row);
+  });
+
+  // 스위치를 누르면 먼저 뒤집혀 보이지만, 서버가 거절해(실패·의존 충돌 창 취소) 값이 그대로인 채 화면이
+  // 재동기 신호를 올리면 서버 값으로 돌아와야 한다 — 받은 checked 가 그대로라 스위치가 꺼진 채 남던 문제(#703 실측).
+  // @scenario view=gallery, install_state=active
+  // @effects toggle_resyncs_to_server_value_on_refetch
+  it('서버 값이 그대로인 채 재동기 신호가 오르면 스위치가 서버 값으로 돌아온다', () => {
+    setContainerWidth(1072);
+    const make = () => baseItem({ row: { identifier: 'sirsoft-ckeditor5', status: 'active' }, toggle: { checked: true, label: 'CKEditor 5' } });
+    const { container, rerender } = render(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
+
+    const switchEl = () => container.querySelector('[role="switch"]') as HTMLElement;
+    fireEvent.click(container.querySelector('input[type="checkbox"]') as HTMLInputElement);
+    expect(switchEl().getAttribute('aria-checked')).toBe('false');
+
+    rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={1} />);
+    expect(switchEl().getAttribute('aria-checked')).toBe('true');
+  });
+
+  // 요청이 도는 동안 화면이 다시 그려져도 누른 값이 유지된다 — 엔진은 렌더마다 카드 항목과 원본 행을
+  // 새 객체로 만든다. 그때마다 버려지면 누른 반응이 요청이 끝날 때까지(수 초) 안 보여 두 번 누르게 된다.
+  // @scenario view=gallery, install_state=active
+  // @effects toggle_resyncs_to_server_value_on_refetch
+  it('행 객체가 새로 만들어지는 다시 그리기에서는 누른 값이 유지된다', () => {
+    setContainerWidth(1072);
+    const make = () => baseItem({ row: { identifier: 'sirsoft-ckeditor5', status: 'active' }, toggle: { checked: true, label: 'CKEditor 5' } });
+    const { container, rerender } = render(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
+
+    const switchEl = () => container.querySelector('[role="switch"]') as HTMLElement;
+    fireEvent.click(container.querySelector('input[type="checkbox"]') as HTMLInputElement);
+    rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
+    rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
+    expect(switchEl().getAttribute('aria-checked')).toBe('false');
+  });
+
+  // 서버 값이 바뀌면(요청 성공 후 재조회) 누른 값을 버리고 서버를 따른다 — 이후 다른 곳에서 값이 다시 바뀌어도
+  // 옛 대기 값이 가리지 않는다.
+  // @scenario view=gallery, install_state=active
+  // @effects toggle_resyncs_to_server_value_on_refetch
+  it('서버 값이 바뀌면 대기 값을 버리고 이후 서버 값을 그대로 따른다', () => {
+    setContainerWidth(1072);
+    const make = (checked: boolean) => baseItem({ row: { identifier: 'sirsoft-ckeditor5' }, toggle: { checked, label: 'CKEditor 5' } });
+    const { container, rerender } = render(<ExtensionCardGrid items={[make(true)]} onToggle={vi.fn()} />);
+
+    const switchEl = () => container.querySelector('[role="switch"]') as HTMLElement;
+    fireEvent.click(container.querySelector('input[type="checkbox"]') as HTMLInputElement);
+    rerender(<ExtensionCardGrid items={[make(false)]} onToggle={vi.fn()} />);
+    expect(switchEl().getAttribute('aria-checked')).toBe('false');
+
+    rerender(<ExtensionCardGrid items={[make(true)]} onToggle={vi.fn()} />);
+    expect(switchEl().getAttribute('aria-checked')).toBe('true');
   });
 
   // @scenario view=gallery, install_state=uninstalled

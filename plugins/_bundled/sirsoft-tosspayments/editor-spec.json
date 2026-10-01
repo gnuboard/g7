@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "레이아웃 편집기 스펙 — 토스페이먼츠 플러그인. admin/plugin_settings.g7.html 의 settings 데이터소스 응답 shape(입력칸 name= 전수)와 화면 변종(검수/운영 모드·검증 실패)을 담는다. 자격증명(client/secret key)은 릴리즈 페이로드에 실리므로 빈 값으로 둔다 — 화면에서도 비밀 입력칸이라 점으로만 보인다.",
+  "$comment": "레이아웃 편집기 스펙 — 토스페이먼츠 플러그인. admin/plugin_settings.g7.html 의 settings 데이터소스 응답 shape(입력칸 name= 전수)와 화면 변종(검수/운영 모드·검증 실패)과 webhook_info(입금통보 웹훅 전체 URL) 응답 shape 를 담는다. 자격증명(client/secret key)은 릴리즈 페이로드에 실리므로 빈 값으로 둔다 — 화면에서도 비밀 입력칸이라 점으로만 보인다.",
   "pluginId": "sirsoft-tosspayments",
   "version": "1.0.0",
   "description": "토스페이먼츠 플러그인 레이아웃 편집기 샘플 데이터·화면 상태.",
@@ -21,6 +21,11 @@
           "method_naverpay": false,
           "method_payco": false,
           "method_samsungpay": false
+        }
+      },
+      "webhook_info": {
+        "data": {
+          "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
         }
       }
     }
@@ -57,6 +62,9 @@
                   "method_naverpay": false,
                   "method_payco": false,
                   "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
                 }
               }
             }
@@ -84,6 +92,9 @@
                   "method_naverpay": false,
                   "method_payco": false,
                   "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
                 }
               }
             }
@@ -109,6 +120,9 @@
                   "method_naverpay": false,
                   "method_payco": false,
                   "method_samsungpay": false
+                },
+                "webhookInfo": {
+                  "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
                 }
               }
             },

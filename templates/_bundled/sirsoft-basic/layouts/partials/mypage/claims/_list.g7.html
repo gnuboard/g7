@@ -240,7 +240,7 @@
       <icon data-if="{{_local.claimsLoading === true}}" name="spinner" class="text-sm text-gray-500 dark:text-gray-400 animate-spin"/>
     </div>
     <!-- 총 건수가 상한에 잘렸으면 last_page가 null로 오고 마지막 페이지 점프만 감춘다. -->
-    <pagination data-if="{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
+    <pagination data-type="composite" data-if="{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
       <responsive on="portable" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-3"/>
       <on event="onPageChange">
         <sequence if="{{_local.claimsLoading !== true}}">

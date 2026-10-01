@@ -7,7 +7,7 @@
   실패 알림에 서버가 준 상세 사유를 괄호로 덧붙인다. 메일은 실패 원인이 밖(SMTP·수신 거부)에 있는
   경우가 많아 한 줄 요약만으로는 손쓸 수가 없기 때문이다. -->
 <partial description="Order Detail - Send Email Modal">
-  <modal data-ref="modal_send_email" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title" size="md">
+  <modal data-type="composite" data-ref="modal_send_email" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title" size="md">
     <div>
       <on event="mount">
         <!-- 창이 뜰 때 발송 깃발과 오류만 비운다. 본문과 받는 주소는 건드리지 않는다 — 주소는 여는 쪽이 채워 주고, 본문은 실패 후 다시 열었을 때 살아 있어야 한다. -->
@@ -52,7 +52,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._local.isSending || !$parent._local.emailMessage}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._local.isSending || !$parent._local.emailMessage}}">
         <on type="click">
           <!-- 발송. 성공하면 본문을 비우고 창을 닫는다 — 같은 주문에 같은 글이 두 번 나가는 것을 막는다.
             실패하면 본문을 그대로 두고 창도 닫지 않는다(고쳐서 다시 보낼 수 있게).

@@ -23,7 +23,7 @@
             <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled</span>
             <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled_hint</p>
           </div>
-          <toggle name="privacy_retention.enabled" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="privacy_retention.enabled" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
              되돌릴 수 없는 실행은 채운 강조색을 쓰지 않는다(2026-09-26 결정). -->
@@ -92,7 +92,7 @@
           </div>
           <div data-ref="privacy_retention_mode_field" class="space-y-2">
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.privacy_retention.mode</label>
-            <radio-group name="privacy_retention.mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+            <radio-group data-type="composite" name="privacy_retention.mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
               <prop name="options">
                 <item value="anonymize" label="$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.anonymize"/>
                 <item value="delete" label="$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.delete"/>

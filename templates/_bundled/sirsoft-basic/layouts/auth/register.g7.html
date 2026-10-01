@@ -10,7 +10,7 @@
     <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="{}"/>
   </init>
   <slot name="content">
-    <flex data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
+    <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
       <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
       <!-- 회원가입 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">

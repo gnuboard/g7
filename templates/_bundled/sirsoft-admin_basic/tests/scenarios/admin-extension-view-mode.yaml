@@ -13,7 +13,7 @@ description: |
   2. **저장 성공 여부.** GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버린다 — 저장에
      실패해도 그 세션에서는 보기가 유지되므로, 새로고침 전까지 실패가 보이지 않는다.
   3. **배치와 아이콘의 결합.** 아이콘만 키우고 컨테이너를 가로 배치로 두면 남는 폭이 없어
-     이름·설명이 세로로 한 글자씩 끊긴다(PO 실측 2026-09-15). 카드 하나만 보면 "글자가 좀
+     이름·설명이 세로로 한 글자씩 끊긴다(실측 2026-09-15). 카드 하나만 보면 "글자가 좀
      이상한" 정도라 데이터가 적은 화면에서는 결함으로 읽히지 않는다.
   4. **보기 분기가 카드 안에서는 평가되지 않는다.** CardGrid 의 카드 셀은 반복 렌더
      하위 트리라 렌더 컨텍스트가 `{row, $value, index}` 뿐이고 `_global` 이 없다
@@ -55,6 +55,9 @@ exclusions:
   - { theme: dark, reason: "다크 대비는 렌더 결과가 아니라 CSS 변수 축이라 브라우저 실측 전용(§10 T8-1~24)" }
 
 effects:
+  - toggle_resyncs_to_server_value_on_refetch
+  # 숨김 항목 포함 체크는 바꾼 값으로 곧바로 다시 받는다 — 따로 둔 두 change 처리는 한 박자 늦은 값을 보냈다(#703).
+  - hidden_toggle_refetch_uses_new_value
   - default_is_gallery
   - toggle_persists_to_local_storage
   - persisted_value_read_back_after_write

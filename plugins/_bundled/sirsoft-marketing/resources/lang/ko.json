@@ -91,6 +91,9 @@
       "enabled": "사용 여부",
       "key": "항목 키",
       "key_hint": "영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.",
+      "key_invalid": "항목 키에는 영문 소문자, 숫자, 밑줄(_)만 쓸 수 있습니다.",
+      "key_duplicate": "이미 있는 항목 키입니다. 다른 키를 입력하세요.",
+      "label_required": "지금 화면 언어의 항목명을 입력하세요.",
       "key_placeholder": "예: sms_subscription",
       "label_ko": "항목명 (한국어)",
       "label_en": "항목명 (English)",
@@ -104,7 +107,8 @@
     "channel_deactivate_modal": {
       "title": "채널을 삭제할 수 없습니다",
       "message": "이 채널에 동의한 회원이 있어 삭제할 수 없습니다. 대신 채널을 비활성화하시겠습니까?",
-      "confirm": "비활성화로 전환"
+      "confirm": "비활성화로 전환",
+      "restored": "채널을 사용 안 함 상태로 되돌렸습니다. 저장을 눌러 반영하세요."
     }
   }
 }

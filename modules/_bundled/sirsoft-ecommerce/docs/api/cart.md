@@ -333,7 +333,7 @@ HTTP/1.1 201
 | 400 | Bad Request | 비회원인데 `X-Cart-Key` 헤더가 없거나 형식(`ck_`+32자 영숫자)이 아닌 경우 |
 | 403 | Forbidden | 타인 소유 장바구니 항목 조작 (`CartOperationException: access_denied`) |
 | 404 | Not Found | 대상 장바구니 항목 없음 (`CartOperationException: item_not_found`) |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 (`error.errors`) 또는 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error` 에 `code: cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`), 옵션 없음/타상품 옵션 (`CartOperationException: option_not_found`/`invalid_option`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 (`error.errors`) 또는 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error` 에 `code: cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`), 옵션 없음/타상품 옵션 (`CartOperationException: option_not_found`/`invalid_option`), 옵션을 지정하지 않았는데 판매 중인 옵션이 하나도 없는 상품 (`CartOperationException: no_purchasable_option` — 메시지 `지금은 구매할 수 있는 옵션이 없는 상품입니다.`) |
 | 500 | Internal Server Error | 담기 처리 중 예외 발생 (`messages.cart.add_failed`) |
 
 <!-- @generated:end -->

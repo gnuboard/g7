@@ -88,7 +88,6 @@ return [
         'override_target_component_unknown' => 'The :target extension has no component named :component. Check the name, or fix the targetVersion constraint.',
         'duplicate_override_target' => ':component is overridden twice. Declare only one replacement.',
         'for_variant_component_unknown' => 'for.:template names :component, which this extension does not provide. A template-specific edition needs an original.',
-        'extension_id_tag_collision' => ':first and :second collapse to the same tag prefix (:prefix). Their components cannot be told apart by tag.',
 
         // Tree structure
         'unexpected_end_tag' => 'End tag with no open tag: </:tag>',
@@ -105,8 +104,7 @@ return [
         ],
 
         // Tag resolution
-        'unknown_tag' => '<:tag> is not registered in the :template template.',
-        'unknown_tag_with_suggestion' => '<:tag> is not a registered tag: did you mean <:suggestion>?',
+        'invalid_component_type' => 'data-type must be one of :allowed written literally (got: :value). Omit it for basic.',
         'root_tag_in_node_position' => '<:tag> is only used at the outermost level of a document.',
         'tag_not_yet_supported' => '<:tag> is :owner syntax and is not handled at this stage yet.',
 
@@ -160,6 +158,7 @@ return [
         'duplicate_section' => 'The :tag section is specified twice.',
         'unexpected_document_child' => '<:tag> cannot appear inside <:parent>.',
         'partial_root_not_single_node' => '<partial> has a single root node. Keep exactly one root component for the fragment.',
+        'partial_root_meta_not_allowed' => 'The meta of a fragment is written as <partial> attributes. Move the <meta> inside the root node onto <partial> (e.g. editor_label="...").',
         'modal_src_with_body' => '<modal src="..."> references a fragment, so it cannot also have a body. Write an inline modal as a node without src.',
         'modal_name_with_src' => '<modal src="..."> cannot carry name. name is the layout_name of an inline modal (the name installation attaches when it inlines a fragment), so it is only meaningful on <modal name="..."> with a body.',
         'partial_src_not_authoring' => '<:tag src=":src"> must point at an authoring source: write it as src=":suggestion" with the .g7.html extension. The compiler emits the .json notation in the generated JSON.',
@@ -191,7 +190,6 @@ return [
         'script_src_not_allowed' => 'This external JS cannot be loaded via <script> (host not allowlisted): :src',
 
         // Install integration — target template registry missing when compiling .g7.html at install time
-        'registry_not_found' => 'The target template component manifest (components.json) could not be found.',
     ],
 
     // .g7.html static lint warnings (S6) — non-fatal warnings that do not stop compilation
@@ -199,10 +197,12 @@ return [
         'unregistered_handler' => 'Unregistered handler: :handler — not a core, template, or extension handler.',
         'nesting_violation' => ':parent is not declared to accept :child as a child.',
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
-        'standalone_missing_global_host' => 'A standalone layout fires toast/modal actions but does not mount a Toast/Modal host — nothing appears on screen.',
+        'standalone_missing_global_host' => 'A standalone layout fires :handler but nothing reads its global state (:state) — nothing appears on screen. Extend a base layout or add a component that reads that state.',
         'switch_value_not_consumed' => '<switch value="…"> is not read by the engine — write the branch subject as <switch on="…"> so it reaches params.value.',
         'action_param_misplaced_key' => 'The :key of a :handler action landed in params — :handler never reads that key, so it is silently ignored. Use data-if for conditions, <on event="…"> for triggers, and otherwise the argument name the handler actually reads.',
         'hoist_prop_not_supported_by_template' => ':component in the :template template does not declare :prop — anything authored with <:tag> is dropped instead of rendered.',
+        'component_type_mismatch' => ':component is written as :written but the :template template declares it as :declared — check data-type (omitted means basic).',
+        'extension_component_not_installed' => 'No installed extension provides this component: :name — the :extension extension may have been removed or the name is mistyped. Saving is allowed, but it will not render unless that extension is present.',
     ],
 
     // Settings related exceptions

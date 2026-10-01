@@ -3,7 +3,7 @@
 modals 배열에 등록된 모달의 _local 은 페이지 로컬이다($parent._local 은 없다 — 그렇게 쓰면 조건이 전부 거짓이 되어 제목·푸터만 남은 빈 모달이 열린다). 대상·오류·진행 여부를 여는 핸들러가 페이지 로컬에 세우고 여기서는 그것만 읽는다.
 진입점([철회] 버튼)은 신청내역 목록·상세가 소유한다(S13). 이 파일은 그 두 화면과 비회원 셸이 함께 쓰는 확인 절차이므로 한 벌만 둔다 — 화면마다 복제하면 한 곳만 고쳤을 때 나머지가 조용히 옛 규칙으로 남는다.
 철회 주소의 앞부분은 셸이 _local.claimWithdrawApiBase 로 준다. 회원과 비회원의 철회 라우트 모양이 다르기 때문이다 — 회원 /user/claims (주문 스코프 없음), 비회원 /guest/orders/{orderNumber}/claims (주문 스코프 있음). 신청서 작성이 쓰는 claimApiBase 로 조립하면 회원 경로가 404 가 된다(2026-08-31 실측). 이 모달을 마운트하는 셸은 그 값을 반드시 세운다 — 없으면 철회 요청이 나가지 않는다(잘못된 주소로 보내는 것보다 낫다). -->
-  <modal data-ref="modal_claim_withdraw" title="$t:claim.withdraw.title" size="sm">
+  <modal data-type="composite" data-ref="modal_claim_withdraw" title="$t:claim.withdraw.title" size="sm">
     <div class="p-4 space-y-3">
       <p class="text-sm text-gray-900 dark:text-white">$t:claim.withdraw.confirm_message|number={{_local.withdrawClaimNumber ?? ''}}</p>
       <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900 space-y-1">

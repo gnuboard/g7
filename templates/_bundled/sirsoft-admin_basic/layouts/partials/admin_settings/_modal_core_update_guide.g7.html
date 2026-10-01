@@ -3,7 +3,7 @@
   이 조각은 설정 화면 소유이지만 **모듈·플러그인·템플릿 목록 세 화면이 함께 빌려 쓴다** —
   자동 비활성 배너의 안내 링크가 여는 것이 이것이다(안내 내용이 확장 종류와 무관하다). -->
 <partial description="코어 업데이트 터미널 안내 모달" editor_label="$t:admin.modal_label.admin_settings.core_update_guide_modal">
-  <modal data-ref="core_update_guide_modal" title="$t:admin.settings.info.update_guide_title" size="md">
+  <modal data-type="composite" data-ref="core_update_guide_modal" title="$t:admin.settings.info.update_guide_title" size="md">
     <div class="row-stack">
       <div class="alert-warning">
         <div class="flex gap-2">
@@ -13,8 +13,8 @@
       </div>
       <p class="text-label">$t:admin.settings.info.update_guide_desc</p>
       <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 space-y-1">
-        <p class="text-xs font-mono text-gray-400">$t:admin.settings.info.update_guide_cmd_comment</p>
-        <p class="text-sm font-mono text-green-400">$t:admin.settings.info.update_guide_cmd</p>
+        <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.update_guide_cmd_comment</p>
+        <p class="text-sm font-mono text-green-400 dark:text-green-400">$t:admin.settings.info.update_guide_cmd</p>
       </div>
       <p class="text-tertiary">$t:admin.settings.info.update_guide_note</p>
       <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
@@ -28,9 +28,9 @@
         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.settings.info.manual_update_title</p>
         <p class="text-label mb-3">$t:admin.settings.info.manual_update_desc</p>
         <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 space-y-1">
-          <p class="text-xs font-mono text-gray-400">$t:admin.settings.info.manual_update_step1</p>
-          <p class="text-xs font-mono text-gray-400">$t:admin.settings.info.manual_update_step2</p>
-          <p class="text-sm font-mono text-green-400">$t:admin.settings.info.manual_update_cmd</p>
+          <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.manual_update_step1</p>
+          <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.manual_update_step2</p>
+          <p class="text-sm font-mono text-green-400 dark:text-green-400">$t:admin.settings.info.manual_update_cmd</p>
         </div>
       </div>
     </div>

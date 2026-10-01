@@ -1,5 +1,5 @@
 {
-    "comment": "회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가\n  갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if=\"{{route?.id}}\"`).\n  입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.\n  탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.\n  이커머스가 설치돼 있으면 통화·배송국가 두 값만 저장 뒤에 모듈 엔드포인트로 따로 보낸다\n  (코어 회원 API 가 자기 것이 아닌 키를 버리기 때문이다 — 아래 성공 갈래 참조).",
+    "comment": "회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가\n  갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if=\"{{route?.id}}\"`).\n  입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.\n  탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.\n  저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에\n  실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다.",
     "version": "1.0.0",
     "layout_name": "admin_user_form",
     "extends": "_admin_base",
@@ -654,6 +654,7 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —\n                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면\n                 채울 수 없는 칸을 요구하는 셈이 된다.",
                                                 "id": "field_roles",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -673,6 +674,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "if": "{{!!route?.id}}",
                                                                 "props": {
                                                                     "className": "text-red-500 ml-1"
                                                                 },
@@ -715,6 +717,15 @@
                                                             "className": "text-red-500 text-xs mt-1"
                                                         },
                                                         "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                        },
+                                                        "text": "$t:admin.users.form.fields.role_default_hint"
                                                     }
                                                 ]
                                             },
@@ -1920,42 +1931,6 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
-                                                                    "handler": "apiCall",
-                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
-                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
-                                                                    "auth_required": true,
-                                                                    "params": {
-                                                                        "method": "PATCH",
-                                                                        "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
-                                                                    },
-                                                                    "onError": {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                        }
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
-                                                                    "handler": "apiCall",
-                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
-                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
-                                                                    "auth_required": true,
-                                                                    "params": {
-                                                                        "method": "PATCH",
-                                                                        "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
-                                                                    },
-                                                                    "onError": {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                        }
-                                                                    }
-                                                                },
-                                                                {
                                                                     "handler": "toast",
                                                                     "params": {
                                                                         "type": "success",
@@ -2221,42 +2196,6 @@
                                                         "params": {
                                                             "target": "global",
                                                             "isSaving": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
-                                                        "handler": "apiCall",
-                                                        "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
-                                                        "auth_required": true,
-                                                        "params": {
-                                                            "method": "PATCH",
-                                                            "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
-                                                        },
-                                                        "onError": {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                            }
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
-                                                        "handler": "apiCall",
-                                                        "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
-                                                        "auth_required": true,
-                                                        "params": {
-                                                            "method": "PATCH",
-                                                            "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
-                                                        },
-                                                        "onError": {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                            }
                                                         }
                                                     },
                                                     {

@@ -2,14 +2,14 @@
   코어 환경설정 개인정보 탭의 같은 창과 동작이 같다(`_global.privacyRun` 에 대상 키·이름을 넣고 연 뒤 건수를 받아 온다,
   실행은 코어 직권 실행 API 로 큐에 접수만 하고 닫는다, 결과는 화면의 상태 줄이 주기 조회로 보여 준다).
   문구는 이 확장의 다국어 키를 쓴다 — 확장 화면이 특정 관리자 템플릿의 문구에 기대지 않게 한다. -->
-<partial description="GDPR 플러그인 설정 연간 통지 - 직권 발송 확인 모달">
-  <modal data-ref="privacy_run_modal" title="$t:sirsoft-gdpr.annual_notice.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}" size="md">
+<partial description="GDPR 플러그인 설정 연간 통지 - 직권 발송 확인 모달" editor_label="$t:sirsoft-gdpr.annual_notice.manual_run.editor_label">
+  <modal data-type="composite" data-ref="privacy_run_modal" title="$t:sirsoft-gdpr.annual_notice.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}" size="md">
     <div data-ref="privacy_run_content" class="space-y-3">
       <p class="text-body">$t:sirsoft-gdpr.annual_notice.manual_run.confirm_desc</p>
       <div data-ref="privacy_run_summary" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-gdpr.annual_notice.manual_run.count_label</span>
-          <loading-spinner data-if="{{_global.privacyRun?.loading}}" size="sm" text="$t:sirsoft-gdpr.annual_notice.manual_run.loading" color="text-blue-600 dark:text-blue-400"/>
+          <loading-spinner data-type="composite" data-if="{{_global.privacyRun?.loading}}" size="sm" text="$t:sirsoft-gdpr.annual_notice.manual_run.loading" color="text-blue-600 dark:text-blue-400"/>
           <span data-ref="privacy_run_count" data-if="{{!_global.privacyRun?.loading &amp;&amp; _global.privacyRun?.preview}}" class="text-primary font-medium tabular-nums">$t:sirsoft-gdpr.annual_notice.manual_run.count_value|count={{_global.privacyRun?.preview?.count ?? 0}}</span>
         </div>
       </div>

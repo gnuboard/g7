@@ -4,7 +4,7 @@
      «새 배송지» 버튼이 `editingAddress` 를 `{is_default:false}` 객체로 열기 때문에, 객체 truthy 로
      갈리면 빈 폼인데 제목이 「배송지 수정」으로 뜬다(#599 세션A 실측). -->
 <partial _e2e_allow="e2e:allow SA-D1 — 창 제목을 고르는 **표현식의 판정 키 하나**만 바꿨다(`editingAddress` 객체 truthy → `editingAddress?.id`). 노출 조건·저장 동작·API 는 그대로이고, 이미 그 키로 갈리던 저장 버튼 라벨·target·method 와 기준을 맞춘 것이다. 회귀는 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-checkout-address-modal-title.test.ts (4케이스 · 되돌리면 2 failed 대조 확인). 기존 주문서 spec(checkout-address-manual-entry)은 **배송지가 없는 회원**을 전제로 직접 입력 경로를 재서 이 창의 «목록 → 새 배송지» 경로가 열리지 않는다. 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 빈 폼 제목 「배송지 수정」 → 수정 후 「배송지 추가」(저장 버튼 「새 주소 추가」와 일치) · 기존 배송지 [수정] 경로는 제목 「배송지 수정」 + 버튼 「저장」 + 값 6칸 유지." description="체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제" editor_label="$t:user.modal_label.shop.addressManageModal">
-  <modal data-ref="addressManageModal" title="{{_local.addressModalMode === 'form' ? (_local.editingAddress?.id ? '$t:shop.checkout.address_edit' : '$t:shop.checkout.address_add') : '$t:shop.checkout.address_manage'}}" size="lg">
+  <modal data-type="composite" data-ref="addressManageModal" title="{{_local.addressModalMode === 'form' ? (_local.editingAddress?.id ? '$t:shop.checkout.address_edit' : '$t:shop.checkout.address_add') : '$t:shop.checkout.address_manage'}}" size="lg">
     <!-- 배송지 목록 모드 -->
     <div data-if="{{_local.addressModalMode !== 'form'}}">
       <!-- 목록 헤더 - 새 배송지 추가 버튼 -->
@@ -12,12 +12,19 @@
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.checkout.saved_addresses</span>
         <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <!-- 새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어, 손대지 않은 제출이 빈 문자열을 보낸다. 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다. -->
-            <set-state target="local" addressModalMode="form" :addressErrors="null">
-              <field name="editingAddress">
-                <field name="is_default" :value="false"/>
-              </field>
-            </set-state>
+            <!-- 새로 등록 — 같은 창을 폼 모드로 바꾼다. `editingAddress` 를 id 없는 새 객체로 열어야 수정이 아닌 등록이 되고,
+                 지난 오류 표시도 함께 지운다. 새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어,
+                 손대지 않은 제출이 빈 문자열을 보낸다 — 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다.
+                 이어서 배송국가를 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 비워 두면 선택 칸은 선호 국가를
+                 보이는데 주소 칸은 국내형이고 저장값은 KR 이 된다(#703). -->
+            <sequence>
+              <set-state target="local" addressModalMode="form" :addressErrors="null">
+                <field name="editingAddress">
+                  <field name="is_default" :value="false"/>
+                </field>
+              </set-state>
+              <set-state target="local" editingAddress.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
+            </sequence>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:shop.checkout.address_add_new</span>
@@ -94,20 +101,16 @@
             </button>
             <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
               <on type="click">
-                <!-- 기본 배송지에는 이 버튼이 없다 — 지우면 대체할 기본값이 없어지기 때문. 수정과 같은 이유로 카드 클릭을 막는다 -->
-                <action handler="confirm" :stopPropagation="true" message="$t:shop.checkout.address_delete_confirm">
+                <!-- 기본 배송지에는 이 버튼이 없다(지우면 대체할 기본값이 없어진다). 수정과 같은 이유로 카드 클릭을 막는다. 확인 창은 액션 속성 confirm 이라 취소하면 요청이 나가지 않고, 회원 배송지 API 라 토큰을 싣는다 -->
+                <api-call :stopPropagation="true" confirm="$t:shop.checkout.address_delete_confirm" :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE">
                   <success>
-                    <api-call target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE">
-                      <success>
-                        <refetch-data-source dataSourceId="userAddresses"/>
-                        <toast type="success" message="$t:shop.checkout.address_deleted"/>
-                      </success>
-                      <fail>
-                        <toast type="error" message="{{error.message}}"/>
-                      </fail>
-                    </api-call>
+                    <refetch-data-source dataSourceId="userAddresses"/>
+                    <toast type="success" message="$t:shop.checkout.address_deleted"/>
                   </success>
-                </action>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
               </on>
               $t:common.delete
             </button>
@@ -174,7 +177,7 @@
         <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. name 바인딩으로 editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기.) -->
         <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-          <select name="country_code" value="{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full"/>
+          <select name="country_code" value="{{_local.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full"/>
         </div>
         <!-- 받는 분 + 연락처 -->
         <div class="grid grid-cols-2 gap-4">
@@ -241,7 +244,12 @@
         </div>
         <!-- 기본 배송지 체크박스 -->
         <div class="flex items-center gap-2 pt-2">
-          <checkbox name="is_default" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
+          <checkbox name="is_default" checked="{{!!_local.editingAddress?.is_default}}" :autoBinding="false" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+            <on type="change">
+              <!-- 기본 배송지 여부 — 저장값이 boolean 이 아닐 수 있어(미저장·null) 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다 -->
+              <set-state target="local" editingAddress.is_default="{{$event.target.checked}}"/>
+            </on>
+          </checkbox>
           <label class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:mypage.addresses.form.set_default</label>
         </div>
         <!-- 하단 버튼 -->

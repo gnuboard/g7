@@ -6,7 +6,7 @@
       <variant when="normal"></variant>
     </class-map>
     <!-- ========== 섹션 1: 기본 설정 ========== -->
-    <section-layout data-ref="section_basic" class="admin-card">
+    <section-layout data-type="layout" data-ref="section_basic" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.basic</h3>
       <div class="card-description">$t:sirsoft-board.admin.settings.sections.basic_description</div>
       <!-- ========== 페이지 안내 배너 ========== -->
@@ -92,7 +92,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.show_view_count</p>
               </div>
             </label>
-            <toggle name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_report" class="">
@@ -109,7 +109,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_report</p>
               </div>
             </label>
-            <toggle name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_scrap" class="">
@@ -126,7 +126,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_scrap</p>
               </div>
             </label>
-            <toggle name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_reaction" class="">
@@ -143,7 +143,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reaction</p>
               </div>
             </label>
-            <toggle name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
           <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. 순회 대상은 아래 편집기가
             편집 중인 폼 배열(`form.basic_defaults.reaction_types`)이다. 편집기에서 방금 추가한
@@ -151,7 +151,7 @@
             때문이다(그래서 별도 데이터소스를 쓰지 않는다). 비활성 유형은 고를 수 없다 —
             회원 화면에 어차피 나오지 않는다. 좌측 일괄적용 체크박스(bulkApplyFields)와 형태가
             같아 혼동되기 쉬우므로, 배경 박스 + 좌측 들여쓰기로 '설정값 입력 영역'임을 시각적으로
-            분리한다 (PO 피드백). -->
+            분리한다 (검수 피드백). -->
           <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
             <p class="text-field-hint mb-2">$t:sirsoft-board.admin.settings.fields.active_reaction_types</p>
             <p data-testid="reaction-type-none-hint" data-if="{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0}}" class="text-field-hint">$t:sirsoft-board.admin.settings.reaction_types.none_hint</p>
@@ -167,7 +167,7 @@
                   <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
                   <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                   <span>{{reactionType.name?.[$locale ?? 'ko'] ?? reactionType.name?.ko ?? reactionType.code}}</span>
-                  <badge data-if="{{reactionType.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.settings.reaction_types.badges.inactive</badge>
+                  <badge data-type="composite" data-if="{{reactionType.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.settings.reaction_types.badges.inactive</badge>
                 </label>
               </div>
             </div>
@@ -195,7 +195,7 @@
               </div>
             </label>
             <div data-testid="settings-use-comment-reaction" class="flex-shrink-0">
-              <toggle name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
+              <toggle data-type="composite" name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
             </div>
           </div>
         </div>

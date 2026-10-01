@@ -335,7 +335,7 @@ class PublicTemplateController extends PublicBaseController
      * 편집기 스펙 조회 — 템플릿 editor-spec.json 파일 반환
      *
      * Phase 3 S5a-1 에서 `nesting` 블록이 추가되었다. 본 엔드포인트는
-     * 활성 디렉토리 → _bundled 폴백 순으로 editor-spec.json 을 읽어 반환한다.
+     * 설치본의 editor-spec.json 만 읽어 반환한다(배포 원본 폴백 없음).
      * 파일 미존재 시 spec=null 로 폴백 (편집기는 spec 미제공 안내).
      *
      * @param  string  $identifier  템플릿 식별자

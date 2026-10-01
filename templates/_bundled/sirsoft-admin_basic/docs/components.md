@@ -456,6 +456,21 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 >
 > 저장소 전역 정합은 `resources/js/core/template-engine/__tests__/DataGrid.selectedCountParity.test.ts`
 > 가 모집단을 저작본에서 파생해 강제한다.
+>
+> **`ExtensionCardGrid` 스위치 재동기 — `resyncKey`**
+>
+> 카드 스위치는 누르는 즉시 바뀐 모양(대기 값)을 보여 주고, 서버 값(`toggle.checked`)이 바뀌면 그 값을 따른다.
+> 서버가 토글을 **거절**해 값이 그대로 돌아오는 경로(요청 실패·의존 충돌 409 창 취소·템플릿 확인 창 닫기)에서는
+> `checked` 가 바뀌지 않아 대기 값이 남는다. 엔진은 렌더마다 행 객체를 새로 만들므로 객체 동일성으로는
+> 재조회를 알 수 없다 — 그래서 화면이 그 경로에서 `_global.extensionToggleResync` 를 1 올리고, 격자는
+> `resyncKey="{{_global.extensionToggleResync ?? 0}}"` 로 받아 값이 바뀌면 대기 값을 버린다(#703).
+> 대기 값의 기준을 행 객체로 바꾸지 않는다 — 렌더마다 새 객체라 대기 값이 곧바로 버려져, 요청이 끝날 때까지
+> (수 초) 누른 반응이 보이지 않는다. 격자를 쓰는 화면(모듈·플러그인·템플릿 관리자/사용자 탭·언어팩 목록)은
+> 모두 `resyncKey` 를 넘기고, 스위치 요청의 `fail` 과 409 갈래(템플릿은 확인 창을 여는 시점)에서 신호를 올린다.
+> 열 수 측정의 `ResizeObserver` 미지원 폴백은 `resize` 이벤트 객체를 관찰 항목으로 넘기지 않도록 `measure` 를
+> 인자 없이 감싸 호출한다.
+> 회귀 테스트: `src/components/composite/__tests__/ExtensionCardGrid.test.tsx`,
+> `__tests__/layouts/admin-extension-list-action-gates.test.tsx`.
 | `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
 
 #### 폼/입력
@@ -476,6 +491,18 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `DynamicFieldList` | 동적 필드 목록 (드래그 정렬, 추가/삭제) | items, columns, onChange, onAddItem, onRemoveItem, ... |
 | `FileUploader` | 파일 업로드 (드래그앤드롭, 이미지 압축) | attachmentableType, attachmentableId, collection, maxFiles, maxSize, **size**, ... |
 | `IconSelect` | 아이콘 선택 드롭다운 | value, onChange, options, placeholder, searchPlaceholder, ... |
+
+##### MultilingualInput 기본 언어 칸과 탭 구조
+
+- **기본 언어 칸은 값과 무관하게 항상 맨 앞에 둔다.** 값에 있는 언어로 칸을 꾸리는 `inline`(기본) 레이아웃에서
+  초기 로케일 목록과 `value` 변경 시 재계산 모두 `[기본 언어, …값에 있는 나머지 언어]` 순서다(`tabs`·`compact` 는
+  원래 지원 로케일 전부를 기본 언어부터 나열한다). 종전에는 값에 기본 언어 키가 있을 때만 넣어, 언어팩을 끈 뒤
+  그 언어 번역만 남은 설정처럼 기본 언어 없이 저장된 값을 열면 기본 언어 칸과 그 옆 「언어 추가」 버튼이
+  함께 사라져 기본 언어를 다시 입력할 수 없었다(#703). 이 순서를 「값에 있는 키만」으로 되돌리지 않는다.
+- **탭 방식(`layout="tabs"`)의 한 칸은 `Span` 안에 선택 버튼과 삭제 버튼을 나란히 둔다.** 버튼 안에 버튼을 넣는 것은
+  HTML 규격 위반이라, 삭제 버튼을 선택 버튼 바깥의 형제로 옮겼다(삭제 클릭이 선택으로 번지지 않으므로
+  `stopPropagation` 도 필요 없다). 기본 언어 칸에는 삭제 버튼이 없다.
+- 회귀 테스트: `src/components/composite/__tests__/MultilingualInput.test.tsx`.
 
 ##### FileUploader 크기(`size`)
 

@@ -229,11 +229,20 @@ class ProductImageService
             $linkedCount++;
         }
 
-        // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리
-        foreach ($tempImages->pluck('disk')->filter()->unique() as $tempDisk) {
-            $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
+        // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리.
+        // 부수 작업이라 실패해도 연결을 되돌리지 않는다 — 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면
+        // 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
+        try {
+            foreach ($tempImages->pluck('disk')->filter()->unique() as $tempDisk) {
+                $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
+            }
+            $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
+        } catch (\Throwable $e) {
+            Log::warning('상품 임시 이미지 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                'temp_key' => $tempKey,
+                'error' => $e->getMessage(),
+            ]);
         }
-        $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
 
         return $linkedCount;
     }

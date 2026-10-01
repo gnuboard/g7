@@ -7,7 +7,7 @@
     <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
   </init>
   <slot name="content">
-    <flex data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" align="start" class="min-h-[60vh] py-12">
+    <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" align="start" class="min-h-[60vh] py-12">
       <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
       <!-- 로그인 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">

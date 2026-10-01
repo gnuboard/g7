@@ -2,7 +2,7 @@
      문의 탭이고(모달은 별도 컨텍스트라 부모 `_local` 을 읽지 못한다), 여는 쪽이 대상 상품·게시판 설정·수정
      대상 id 를 미리 세워 주기 때문이다. 새 글과 수정이 같은 창을 쓰고 `qnaEditId` 유무로 갈린다. -->
 <partial description="상품 1:1 문의 작성 모달" editor_label="$t:user.modal_label.shop_detail.qna_write_modal">
-  <modal data-ref="qna_write_modal" title="{{_global.qnaEditId ? $t('shop.qna.edit_title') : $t('shop.product.write_question')}}" size="md" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="qna_write_modal" title="{{_global.qnaEditId ? $t('shop.qna.edit_title') : $t('shop.product.write_question')}}" size="md" :closeOnBackdropClick="false">
     <!-- 상품 정보 헤더 (qnaProductImage 또는 qnaProductName이 있을 때) -->
     <div data-if="{{!!_global.qnaProductImage || !!_global.qnaProductName}}" class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4 border border-gray-100 dark:border-gray-600">
       <!-- 상품 썸네일 -->

@@ -34,9 +34,7 @@ import { cleanupFunctionalArtifacts } from './functionalCleaner';
 import { fetchPublicSettings, fetchConsentSnapshot } from './layouts';
 import {
     LOCKED_FALLBACK,
-    isEmptyAllowlist,
-    mergeAllowlists,
-    normalizeAllowlist,
+    resolveInlineAllowlist,
     type NecessaryAllowlist,
 } from './necessaryAllowlist';
 import {
@@ -89,7 +87,8 @@ function readInlineBlockedDomains(): Record<string, readonly string[]> {
  * 기능의 목적이라 응답을 기다릴 수 없다. 그래서 허용목록은 인라인으로 와야 하고,
  * `defaults.json` 의 `frontend_schema` 에 `expose: true` 가 없으면 여기서 빈 목록이 된다.
  *
- * 판정은 언제나 **운영자 목록 ∪ 잠금 집합**이다. 잠금 집합이 통째로 비어 오면 페이로드가
+ * 판정은 언제나 **운영자 목록 ∪ 잠금 집합 ∪ 확장 제공 집합**이다. 확장 제공 집합은 활성 확장이
+ * 계약 훅으로 덧붙인 키이며 서버가 요청마다 모아 인라인한다. 잠금 집합이 통째로 비어 오면 페이로드가
  * 도달하지 않았다는 뜻이므로 코드 폴백으로 내려간다 — 그러지 않으면 인터셉터가 빈 목록으로
  * 서서 동의 없는 첫 방문자의 로그인 토큰까지 차단한다.
  *
@@ -100,10 +99,7 @@ function readInlineNecessaryAllowlist(): NecessaryAllowlist {
     const config = (window as unknown as { G7Config?: G7Config }).G7Config;
     const pluginConfig = config?.plugins?.[PLUGIN_IDENTIFIER];
 
-    const operator = normalizeAllowlist(pluginConfig?.necessary_storage_allowlist);
-    const locked = normalizeAllowlist(pluginConfig?.necessary_storage_locked);
-
-    return mergeAllowlists(operator, isEmptyAllowlist(locked) ? LOCKED_FALLBACK : locked);
+    return resolveInlineAllowlist(pluginConfig);
 }
 
 /**
@@ -148,6 +144,13 @@ function registerSyncHandler(): void {
         // 방문자 통계 트래커 등)는 알림이 없으면 새로고침 전까지 옛 판정을 그대로 쓴다.
         window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
             detail: { categories: snapshot.categories, needs_renewal: snapshot.needs_renewal },
+        }));
+
+        // 1-2. 코어 방문자 통계 계약 — 코어 이름의 이벤트에 분석 동의 여부를 싣는다. 코어는 이 플러그인의
+        // 이벤트 이름·스냅샷 모양을 모르므로 이 알림이 없으면 새로고침 전까지 옛 판정을 쓴다.
+        window.dispatchEvent(new CustomEvent('g7:analytics-permission-changed', {
+            // 정책이 바뀌어 재동의가 필요한 상태는 서버도 동의 없음으로 판정한다(현재 버전 동의만 센다).
+            detail: { has_consent: !snapshot.needs_renewal && snapshot.categories?.analytics === true },
         }));
 
         // 2. preblocker (1차 라인) 동기화 — 새 차단 판정에 즉시 반영

@@ -84,7 +84,7 @@ class TrackingRequestFactory
      * @param  Request  $request  HTTP 요청
      * @return string|null 동의 조회용 세션 식별자
      */
-    private static function consentSessionId(Request $request): ?string
+    public static function consentSessionId(Request $request): ?string
     {
         $default = $request->hasSession() ? $request->session()->getId() : null;
 

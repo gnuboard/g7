@@ -628,7 +628,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `plugin.json` 이 메타데이터 SSoT — identifier·version 을 코드에 하드코딩하지 않는다.
 - `plugin.php` 는 루트에 두고 `AbstractPlugin` 을 상속한다. `composer.json` autoload 에 `"./"` 를 포함한다.
-- 플러그인은 모듈에만 의존한다. 플러그인 간 직접 의존은 금지이며 통신이 필요하면 API·훅 경로를 골격에 반영한다.
+- 다른 확장과는 훅(코어 계약 훅·상대 확장이 문서화한 훅 키)으로 협력하고, 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하는 확장은 `plugin.json` `dependencies` 에 선언한다 — 책임 경계.
 - 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings`).
 - 설정 UI 와 훅 리스너는 골격의 필수 산출물이다 — 빈 `getHookListeners()` 와 설정 화면 없는 플러그인을 완료로 보고하지 않는다.
 - 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이다. `AbstractPlugin::getSettingsLayout()` 은 `.g7.html` → 짝 `.json` 순으로 실재하는 첫 파일을 읽지만(`layoutSourceCandidates`), 편집기·검증 소비처는 짝 `.json` 을 읽으므로 굽기(`layout:decompile --sync`)를 생략하지 않는다.

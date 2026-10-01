@@ -11,7 +11,7 @@
   폼이 전부 `_global.gdpr_notification_template_form_modal` 아래 있는 것은 창이 별도
   컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다. -->
 <partial description="알림 채널별 템플릿과 수신자 편집">
-  <modal data-ref="modal_gdpr_notification_template_edit" title="$t:sirsoft-gdpr.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_gdpr_notification_template_edit" title="$t:sirsoft-gdpr.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="gdpr_template_form_container" data-blur-until-loaded="{{_global.gdpr_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="gdpr_template_validation_error" data-if="{{_global.gdpr_notification_template_form_modal?.errors}}" class="alert-danger">
@@ -72,7 +72,7 @@
                 <div data-if="{{rcpt.type === 'role'}}">
                   <div>
                     <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
-                    <searchable-dropdown value="{{rcpt.value ?? ''}}" options="{{[...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" class="w-full">
+                    <searchable-dropdown data-type="composite" value="{{rcpt.value ?? ''}}" options="{{[...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" class="w-full">
                       <on event="onSearch">
                         <!-- 역할 검색. 응답을 드롭다운이 읽는 형태로 접고, 실패하면 이전 결과를 비운다 — 남기면 검색어와 맞지 않는 목록이 붙어 있게 된다. -->
                         <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
@@ -95,10 +95,10 @@
                 <div data-if="{{rcpt.type === 'specific_users'}}">
                   <div>
                     <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
-                    <searchable-dropdown data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" class="w-full">
+                    <searchable-dropdown data-type="composite" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" class="w-full">
                       <on event="onSearch">
-                        <!-- 회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다. -->
-                        <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+                        <!-- 회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다. -->
+                        <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                           <success>
                             <set-state target="global" gdpr_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
                           </success>
@@ -116,7 +116,7 @@
                   </div>
                 </div>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="flex-center gap-2">
-                  <toggle label="$t:admin.settings.notification_definitions.recipients.exclude_trigger_user" checked="{{rcpt.exclude_trigger_user ?? false}}">
+                  <toggle data-type="composite" label="$t:admin.settings.notification_definitions.recipients.exclude_trigger_user" checked="{{rcpt.exclude_trigger_user ?? false}}">
                     <on type="change">
                       <!-- 수신자 사용 여부. 끄면 그 줄만 발송 대상에서 빠지고 설정은 남는다. -->
                       <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"/>
@@ -165,7 +165,7 @@
               <span>$t:sirsoft-gdpr.notification_definitions.edit_modal.body</span>
               <span class="text-required">*</span>
             </label>
-            <html-editor placeholder="$t:sirsoft-gdpr.notification_definitions.edit_modal.body" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+            <html-editor data-type="composite" placeholder="$t:sirsoft-gdpr.notification_definitions.edit_modal.body" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
               <on type="change">
                 <!-- 본문(현재 언어). 위지윅이라 값이 HTML 문자열로 들어온다. -->
                 <set-state target="global" gdpr_notification_template_form_modal.template.body="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.body, {[_global.gdpr_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

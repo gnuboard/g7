@@ -5,7 +5,7 @@
   (같은 언어 자리를 다른 팩이 이미 쓰고 있을 수 있기 때문이다).
   깔 수 없는 사정이 있으면 그 사유를 창 안에 적고 설치 버튼을 잠근다. -->
 <partial description="번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 운영자가 확인 후 진행." editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_bundled_modal">
-  <modal data-ref="language_pack_install_bundled_modal" title="$t:admin.language_packs.modals.install_bundled_title" size="sm">
+  <modal data-type="composite" data-ref="language_pack_install_bundled_modal" title="$t:admin.language_packs.modals.install_bundled_title" size="sm">
     <div class="py-2 space-y-3">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="lp_install_bundled_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
         <img data-if="{{_global.selectedBundledLanguagePack?.icon_url}}" src="{{_global.selectedBundledLanguagePack.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>

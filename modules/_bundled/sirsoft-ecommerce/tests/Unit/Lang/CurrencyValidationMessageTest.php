@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateAdminUserCurrencyRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateUserCurrencyRequest;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -22,6 +21,10 @@ class CurrencyValidationMessageTest extends ModuleTestCase
 {
     /**
      * base 통화 잠금 메시지(custom 경로)가 ko/en 모두 실제 문자열로 해석되어야 한다.
+     *
+     * @effects validation_messages_resolve_in_ko_en
+     *
+     * @return void 반환값 없음
      */
     public function test_base_locked_message_resolves(): void
     {
@@ -36,18 +39,26 @@ class CurrencyValidationMessageTest extends ModuleTestCase
     }
 
     /**
-     * 유저 통화 검증 메시지(custom 경로)가 ko/en 모두 실제 문자열로 해석되어야 한다.
+     * 유저 통화·배송국가 검증 메시지(custom 경로)가 ko/en 모두 실제 문자열로 해석되어야 한다.
+     *
+     * 코어 회원 저장 경로의 권한 거부 메시지(`forbidden`)도 함께 확인한다.
+     *
+     * @effects validation_messages_resolve_in_ko_en
+     *
+     * @return void 반환값 없음
      */
     public function test_user_currency_messages_resolve(): void
     {
         foreach (['ko', 'en'] as $locale) {
             $this->app->setLocale($locale);
-            foreach (['required', 'invalid'] as $rule) {
-                $key = "sirsoft-ecommerce::validation.custom.user_currency.{$rule}";
-                $resolved = __($key);
+            foreach (['user_currency', 'user_shipping_country'] as $group) {
+                foreach (['required', 'invalid', 'forbidden'] as $rule) {
+                    $key = "sirsoft-ecommerce::validation.custom.{$group}.{$rule}";
+                    $resolved = __($key);
 
-                $this->assertNotSame($key, $resolved, "[{$locale}] user_currency.{$rule} 가 해석되지 않았습니다.");
-                $this->assertNotEmpty($resolved);
+                    $this->assertNotSame($key, $resolved, "[{$locale}] {$group}.{$rule} 가 해석되지 않았습니다.");
+                    $this->assertNotEmpty($resolved);
+                }
             }
         }
     }
@@ -55,12 +66,16 @@ class CurrencyValidationMessageTest extends ModuleTestCase
     /**
      * 유저 통화 FormRequest 의 messages() 가 raw 키가 아닌 번역 문자열을 반환해야 한다.
      * (참조 지점이 custom 세그먼트를 누락하면 이 단언이 raw 키를 잡아낸다.)
+     *
+     * @effects validation_messages_resolve_in_ko_en
+     *
+     * @return void 반환값 없음
      */
     public function test_user_currency_request_messages_are_translated(): void
     {
         $this->app->setLocale('ko');
 
-        foreach ([new UpdateUserCurrencyRequest, new UpdateAdminUserCurrencyRequest] as $request) {
+        foreach ([new UpdateUserCurrencyRequest] as $request) {
             $messages = $request->messages();
             foreach (['currency.required', 'currency.in'] as $field) {
                 $this->assertArrayHasKey($field, $messages);

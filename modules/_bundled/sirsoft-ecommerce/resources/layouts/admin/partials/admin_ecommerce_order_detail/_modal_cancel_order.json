@@ -703,7 +703,7 @@
                             "name": "Span",
                             "if": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 block mb-2"
+                                "className": "text-tertiary block mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint"
                         },

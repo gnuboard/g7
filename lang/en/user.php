@@ -75,6 +75,9 @@ return [
     'withdraw_admin_forbidden' => 'Administrator account cannot be withdrawn.',
     'withdraw_failed_unknown' => 'Withdrawal failed due to an unknown error.',
 
+    // Reason for targets excluded from a bulk status change
+    'bulk_status_out_of_scope' => 'Members outside your management scope cannot be changed.',
+
     // Validation messages
     'validation' => [
         'page_integer' => 'Page number must be an integer.',

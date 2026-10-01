@@ -149,12 +149,12 @@
             `_partial_status_alerts` 는 「설정에서 켜세요」가 순환 안내가 되어 여기 없으므로
             같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
             조회 권한이 없으면 진단 API 가 403 이고 fallback 이 false 라 뜨지 않는다. -->
-          <badge data-ref="site_timezone_badge" data-if="{{_computed.siteTimezoneDiffers}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{_computed.siteTimezoneName}}"/>
+          <badge data-type="composite" data-ref="site_timezone_badge" data-if="{{_computed.siteTimezoneDiffers}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{_computed.siteTimezoneName}}"/>
           <!-- 큐 적체도 같은 자리에서 보인다. 공통 조각 `_partial_status_alerts` 가 띄우는 Alert 3종 중
             「수집 꺼짐」만 여기서 순환 안내가 되고, 큐 적체는 그렇지 않다 — 그런데 이 화면은 진단 API 의
             `queue.backlogged` 를 fallback 에 선언해 받아 두고도 읽는 자리가 없어, 잡이 밀린 사이트에서
             설정만 연 운영자가 그 사실을 못 봤다(#682 S3 라운드 9). 진단 화면의 배지와 같은 값을 본다. -->
-          <badge data-ref="queue_backlog_badge" data-if="{{_computed.queueBacklogged}}" color="red" size="sm" text="$t:admin.analytics.common.queue_backlog_badge|count={{(_computed.canReadAnalytics === true ? (analytics_status?.data?.queue?.pending_jobs ?? 0) : 0) | number}}"/>
+          <badge data-type="composite" data-ref="queue_backlog_badge" data-if="{{_computed.queueBacklogged}}" color="red" size="sm" text="$t:admin.analytics.common.queue_backlog_badge|count={{(_computed.canReadAnalytics === true ? (analytics_status?.data?.queue?.pending_jobs ?? 0) : 0) | number}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
               <!-- 새로고침 — 고친 값을 버리고 서버 값으로 다시 채운다. 변경 표시와 검증 오류를 먼저 걷어야 저장 버튼이 잠기고
@@ -169,7 +169,7 @@
         </div>
       </div>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation data-ref="settings_tabs" class="sticky-tab-nav-responsive" activeTabId="{{query.tab || 'collection'}}" variant="default">
+        <tab-navigation data-type="composite" data-ref="settings_tabs" class="sticky-tab-nav-responsive" activeTabId="{{query.tab || 'collection'}}" variant="default">
           <prop name="tabs">
             <item id="collection" label="$t:admin.analytics.settings.tabs.collection"/>
             <item id="privacy" label="$t:admin.analytics.settings.tabs.privacy"/>
@@ -217,7 +217,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.collection.enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.enabled_hint</span>
               </div>
-              <toggle name="settings.enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div class="admin-card space-y-4">
@@ -237,7 +237,7 @@
               </div>
               <div data-ref="field_excluded_url_patterns">
                 <label class="form-label">$t:admin.analytics.settings.collection.excluded_url_patterns</label>
-                <tag-input name="settings.excluded_url_patterns" :creatable="true" placeholder="$t:admin.analytics.settings.collection.excluded_url_patterns_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+                <tag-input data-type="composite" name="settings.excluded_url_patterns" :creatable="true" placeholder="$t:admin.analytics.settings.collection.excluded_url_patterns_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
                 <span class="form-hint">$t:admin.analytics.settings.collection.excluded_url_patterns_hint</span>
               </div>
             </div>
@@ -248,30 +248,30 @@
                 <span class="form-label-block">$t:admin.analytics.settings.collection.site_search</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.site_search_hint</span>
               </div>
-              <toggle name="settings.site_search_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.site_search_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.collection.track_downloads</span>
               </div>
-              <toggle name="settings.track_downloads" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.track_downloads" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.collection.track_outlinks</span>
               </div>
-              <toggle name="settings.track_outlinks" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.track_outlinks" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div data-ref="field_download_extensions">
               <label class="form-label">$t:admin.analytics.settings.collection.download_extensions</label>
-              <tag-input name="settings.download_extensions" :creatable="true" placeholder="pdf" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || !_local.form?.settings?.track_downloads}}"/>
+              <tag-input data-type="composite" name="settings.download_extensions" :creatable="true" placeholder="pdf" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || !_local.form?.settings?.track_downloads}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.collection.public_summary</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.public_summary_hint</span>
               </div>
-              <toggle name="settings.public_summary_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.public_summary_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div data-ref="opt_out_card" class="admin-card">
@@ -281,7 +281,7 @@
                 <span class="form-hint">$t:admin.analytics.settings.opt_out.hint</span>
               </div>
               <div class="flex-center gap-3">
-                <badge data-ref="opt_out_badge" color="{{analytics_opt_out?.data?.opted_out === true ? 'gray' : 'green'}}" text="{{analytics_opt_out?.data?.opted_out === true ? $t('admin.analytics.settings.opt_out.badge_off') : $t('admin.analytics.settings.opt_out.badge_on')}}" size="sm"/>
+                <badge data-type="composite" data-ref="opt_out_badge" color="{{analytics_opt_out?.data?.opted_out === true ? 'gray' : 'green'}}" text="{{analytics_opt_out?.data?.opted_out === true ? $t('admin.analytics.settings.opt_out.badge_off') : $t('admin.analytics.settings.opt_out.badge_on')}}" size="sm"/>
                 <button data-ref="opt_out_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{_local.optOutBusy}}">
                   <on type="click">
                     <!-- 제외 켜기/끄기 — 쿠키는 서버가 심고 지운다(동의 플러그인이 브라우저 쪽 쓰기를 가로챈다). 끝나면 상태를 다시 읽는다. -->
@@ -311,9 +311,9 @@
           </div>
         </div>
         <div data-ref="tab_privacy" data-if="{{(query.tab || 'collection') === 'privacy'}}" class="space-y-4">
-          <div data-ref="gdpr_status_row" class="flex-center gap-2 flex-wrap">
+          <div data-ref="consent_source_row" class="flex-center gap-2 flex-wrap">
             <span class="text-label-subtle">$t:admin.analytics.settings.privacy.consent_source_label</span>
-            <badge color="{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? (['gdpr', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}" size="sm"/>
+            <badge data-type="composite" color="{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? (['provider', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}" size="sm"/>
           </div>
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는
             모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면
@@ -353,7 +353,7 @@
             </button>
           </div>
           <!-- 이 화면의 권한은 update 다. 조회 권한이 없으면 analytics_status 가 403 이고 fallback 의
-            consent_source 가 "none" 으로 남는다 — 그 값으로 이 경고를 띄우면 GDPR 연동이 멀쩡한
+            consent_source 가 "none" 으로 남는다 — 그 값으로 이 경고를 띄우면 동의 연동이 멀쩡한
             사이트에도 「익명 모드로 동작 중」이 거짓으로 뜬다(#682 S3 라운드 5). 그래서
             consentFallback 은 조회 권한이 있을 때만 판정한다 — 모르는 것을 고장으로 말하지 않는다.
 
@@ -378,7 +378,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.respect_dnt</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.respect_dnt_hint</span>
               </div>
-              <toggle name="settings.respect_dnt" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.respect_dnt" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-ref="field_ip_mask">
@@ -416,14 +416,14 @@
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.geo_before_mask</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.geo_before_mask_hint</span>
               </div>
-              <toggle name="settings.geo_before_mask" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.geo_before_mask" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.pseudonymize_user_id</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.pseudonymize_user_id_hint</span>
               </div>
-              <toggle name="settings.pseudonymize_user_id" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.pseudonymize_user_id" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -434,43 +434,43 @@
                 <span class="form-label-block">$t:admin.analytics.settings.bots.bot_detector_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.bot_detector_enabled_hint</span>
               </div>
-              <toggle name="settings.bot_detector_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.bot_detector_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.bot_tracking_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.bot_tracking_enabled_hint</span>
               </div>
-              <toggle name="settings.bot_tracking_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.bot_tracking_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.block_headless</span>
               </div>
-              <toggle name="settings.block_headless" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.block_headless" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.exclude_prefetch</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.exclude_prefetch_hint</span>
               </div>
-              <toggle name="settings.exclude_prefetch" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.exclude_prefetch" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div class="admin-card space-y-4">
             <div data-ref="field_excluded_ips">
               <label class="form-label">$t:admin.analytics.settings.bots.excluded_ips</label>
-              <tag-input name="settings.excluded_ips" :creatable="true" placeholder="203.0.113.0/24" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input data-type="composite" name="settings.excluded_ips" :creatable="true" placeholder="203.0.113.0/24" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
               <span class="form-hint">$t:admin.analytics.settings.bots.excluded_ips_hint</span>
             </div>
             <div data-ref="field_ip_allowlist">
               <label class="form-label">$t:admin.analytics.settings.bots.ip_allowlist</label>
-              <tag-input name="settings.ip_allowlist" :creatable="true" placeholder="198.51.100.7" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input data-type="composite" name="settings.ip_allowlist" :creatable="true" placeholder="198.51.100.7" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}"/>
               <span class="form-hint">$t:admin.analytics.settings.bots.ip_allowlist_hint</span>
             </div>
             <div data-ref="field_excluded_user_agents">
               <label class="form-label">$t:admin.analytics.settings.bots.excluded_user_agents</label>
-              <tag-input name="settings.excluded_user_agents" :creatable="true" placeholder="UptimeRobot" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input data-type="composite" name="settings.excluded_user_agents" :creatable="true" placeholder="UptimeRobot" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div class="admin-card space-y-4">
@@ -501,7 +501,7 @@
                   <icon data-if="{{_local.cloudRefreshing}}" name="spinner" :spin="true" class="text-sm"/>
                   <span>$t:admin.analytics.settings.bots.cloud_ranges_refresh</span>
                 </button>
-                <toggle name="settings.block_cloud_ip_ranges" size="md" disabled="{{_computed.isReadOnly}}"/>
+                <toggle data-type="composite" name="settings.block_cloud_ip_ranges" size="md" disabled="{{_computed.isReadOnly}}"/>
               </div>
             </div>
             <!-- GeoIP 상태는 조회 권한 API 에서 온다 — 조회 권한이 없는 계정(설정 전용)에서는 403 이라 fallback 이
@@ -521,7 +521,7 @@
               </div>
               <div data-ref="field_country_filter_codes">
                 <label class="form-label">$t:admin.analytics.settings.bots.country_filter_codes</label>
-                <tag-input name="settings.country_filter_codes" :creatable="true" placeholder="KR" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || (_computed.canReadAnalytics &amp;&amp; analytics_status?.data?.geoip?.enabled !== true) || (_local.form?.settings?.country_filter_mode ?? 'none') === 'none'}}"/>
+                <tag-input data-type="composite" name="settings.country_filter_codes" :creatable="true" placeholder="KR" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || (_computed.canReadAnalytics &amp;&amp; analytics_status?.data?.geoip?.enabled !== true) || (_local.form?.settings?.country_filter_mode ?? 'none') === 'none'}}"/>
               </div>
             </div>
           </div>
@@ -598,7 +598,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.retention.archive_on_view_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.retention.archive_on_view_enabled_hint</span>
               </div>
-              <toggle name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-ref="field_archive_on_view_max_visits">
@@ -640,11 +640,11 @@
             <div data-if="{{_computed.canReadAnalytics}}" class="flex flex-wrap items-center gap-2 mb-3">
               <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.visits_rows|count={{(analytics_storage?.data?.exact?.analytics_visits ?? 0) | number}}</span>
               <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.actions_rows|count={{(analytics_storage?.data?.exact?.analytics_actions ?? 0) | number}}</span>
-              <badge data-if="{{analytics_storage?.data?.over_limit === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.over_limit" size="sm"/>
+              <badge data-type="composite" data-if="{{analytics_storage?.data?.over_limit === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.over_limit" size="sm"/>
             </div>
             <p data-if="{{_computed.canReadAnalytics &amp;&amp; analytics_storage?.data?.driver_supported === false}}" class="text-hint">$t:admin.analytics.settings.retention.storage_unsupported</p>
             <div class="overflow-x-auto" data-if="{{_computed.canReadAnalytics &amp;&amp; (analytics_storage?.data?.tables ?? []).length > 0}}">
-              <data-grid data-ref="storage_grid" data="{{analytics_storage?.data?.tables ?? []}}" :pagination="false" idField="table" :selectable="false" :sortable="false">
+              <data-grid data-type="composite" data-ref="storage_grid" data="{{analytics_storage?.data?.tables ?? []}}" :pagination="false" idField="table" :selectable="false" :sortable="false">
                 <column field="table" header="$t:admin.analytics.settings.retention.storage_columns.table">
                   <cell>
                     <span class="text-body block">{{row.label ?? row.table}}</span>
@@ -672,14 +672,14 @@
                 <span class="form-label-block">$t:admin.analytics.settings.reports.weekly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.weekly_hint</span>
               </div>
-              <toggle name="settings.report_weekly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.report_weekly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.reports.monthly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.monthly_hint</span>
               </div>
-              <toggle name="settings.report_monthly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.report_monthly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <include src="partials/admin_analytics/_partial_notification_definitions.g7.html"/>

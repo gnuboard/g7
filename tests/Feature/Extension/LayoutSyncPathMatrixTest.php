@@ -957,12 +957,9 @@ HTML);
             }
         };
 
-        try {
-            $reader->read($dir, $this->fixtureTemplate);
-            $this->fail('강제 지정 없이 템플릿 백업 마크업이 컴파일되면 이 칸은 compileContextOverride 를 재지 못한다');
-        } catch (\Exception $e) {
-            $this->assertStringContainsString(__('exceptions.layout_markup.registry_not_found'), $e->getMessage());
-        }
+        // 마크업 컴파일은 템플릿과 무관하다 — 레지스트리 없이도 백업이 컴파일된다.
+        // 강제 지정이 남기는 몫은 경로에서 뽑을 수 없는 소유 식별자(`{id}_{Ymd_His}`)뿐이고, 병합 결과는 위 단언이 잰다.
+        $this->assertNotEmpty($reader->read($dir, $this->fixtureTemplate), '템플릿 백업 마크업은 강제 지정 없이도 컴파일돼야 한다(템플릿 무관 컴파일)');
     }
 
     /**

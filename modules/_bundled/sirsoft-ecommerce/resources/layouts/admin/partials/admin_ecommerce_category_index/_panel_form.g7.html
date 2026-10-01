@@ -85,20 +85,20 @@
               <span>$t:sirsoft-ecommerce.admin.category.form.name</span>
               <span class="text-required">*</span>
             </label>
-            <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.category.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.category.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
           </div>
         </div>
         <div data-ref="form_description_field">
           <div>
             <label data-ref="form_description_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.description</label>
-            <multilingual-input data-ref="form_description_input" name="description" placeholder="$t:sirsoft-ecommerce.admin.category.form.description_placeholder" :multiline="true" :rows="4" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <multilingual-input data-type="composite" data-ref="form_description_input" name="description" placeholder="$t:sirsoft-ecommerce.admin.category.form.description_placeholder" :multiline="true" :rows="4" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
           </div>
         </div>
         <div data-ref="form_image_field">
           <div>
             <label data-ref="form_image_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.image</label>
-            <file-uploader data-ref="form_image_uploader" collection="category_image" :maxFiles="1" :maxSize="5" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{_local.form?.images ?? []}}" :autoUpload="true" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}">
+            <file-uploader data-type="composite" data-ref="form_image_uploader" collection="category_image" :maxFiles="1" :maxSize="5" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{_local.form?.images ?? []}}" :autoUpload="true" size="sm" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}">
               <prop name="apiEndpoints">
                 <field name="upload" value="/api/modules/sirsoft-ecommerce/admin/categories/images{{_global.tempKey ? '?temp_key=' + _global.tempKey : (_global.selectedCategoryId ? '?category_id=' + _global.selectedCategoryId : '')}}"/>
                 <field name="delete" value="/api/modules/sirsoft-ecommerce/admin/categories/images/:id"/>
@@ -136,7 +136,7 @@
         <div data-ref="form_parent_field">
           <div>
             <label data-ref="form_parent_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.parent_category</label>
-            <tag-input data-ref="form_parent_taginput" name="parent_id" placeholder="$t:sirsoft-ecommerce.admin.category.form.parent_category_placeholder" options="{{(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, $localized(item.name)]; result.push({ value: item.id, label: currentPath.join(' > '), id: item.id }); if (item.children &amp;&amp; Array.isArray(item.children) &amp;&amp; item.children.length > 0 &amp;&amp; depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories?.data?.data); const filtered = result.filter(c => c &amp;&amp; c.id &amp;&amp; (_global.panelMode === 'create' || c.id !== _global.selectedCategoryId)); return [{ value: '', label: $t('sirsoft-ecommerce.admin.category.form.parent_top_level') }, ...filtered]; })() ?? []}}" :isMulti="false" :isClearable="false" :isSearchable="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <tag-input data-type="composite" data-ref="form_parent_taginput" name="parent_id" placeholder="$t:sirsoft-ecommerce.admin.category.form.parent_category_placeholder" options="{{(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, $localized(item.name)]; result.push({ value: item.id, label: currentPath.join(' > '), id: item.id }); if (item.children &amp;&amp; Array.isArray(item.children) &amp;&amp; item.children.length > 0 &amp;&amp; depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories?.data?.data); const filtered = result.filter(c => c &amp;&amp; c.id &amp;&amp; (_global.panelMode === 'create' || c.id !== _global.selectedCategoryId)); return [{ value: '', label: $t('sirsoft-ecommerce.admin.category.form.parent_top_level') }, ...filtered]; })() ?? []}}" :isMulti="false" :isClearable="false" :isSearchable="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.parent_id}}" class="form-error-xs">{{_local.errors?.parent_id?.[0] ?? ''}}</span>
             <span data-if="{{!_local.errors?.parent_id}}" class="text-tertiary">$t:sirsoft-ecommerce.admin.category.form.parent_category_hint</span>
           </div>
@@ -161,7 +161,7 @@
       <div class="border-t border-gray-200 dark:border-gray-700"/>
       <div data-ref="form_status_section" class="space-y-4 pt-6">
         <h4 data-ref="form_status_title" class="text-table-header">$t:sirsoft-ecommerce.admin.category.info.status</h4>
-        <toggle data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.category.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+        <toggle data-type="composite" data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.category.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
       </div>
       <div data-ref="form_timestamps_section" data-if="{{_global.panelMode === 'edit'}}" class="pt-4 border-t border-gray-200 dark:border-gray-700">
         <div class="grid-2col-responsive">

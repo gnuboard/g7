@@ -2,9 +2,8 @@
   쓴다 — 지울 기준은 `_global.analyticsSubject` 에 담아 온다. 액션·전환을 먼저 지우고 방문을 지우며
   집계는 건드리지 않는다. 되돌릴 수 없어 체크 없이는 버튼이 잠긴다. 끝난 뒤 갈 곳은 부르는 쪽이
   `analyticsSubjectAfter` 로 정한다(`visitors` 면 목록으로, 아니면 검색 결과를 다시 받는다). -->
-<partial description="방문자 통계 — 정보주체 기록 삭제 확인 창">
-  <modal data-ref="analytics_subject_delete_modal" title="$t:admin.analytics.modals.subject_delete.title" size="sm">
-    <meta editor_label="$t:admin.modal_label.analytics.subject_delete_modal"/>
+<partial description="방문자 통계 — 정보주체 기록 삭제 확인 창" editor_label="$t:admin.modal_label.analytics.subject_delete_modal">
+  <modal data-type="composite" data-ref="analytics_subject_delete_modal" title="$t:admin.analytics.modals.subject_delete.title" size="sm">
     <div class="py-2 space-y-3">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.analytics.modals.subject_delete.body</p>
       <!-- 정보주체 요청 화면은 쓰지 않는 칸을 '' 로 채운다 — `??` 는 빈 문자열에서 멈춰 대상이 공란이 되므로 `||` 로 건너뛴다. -->

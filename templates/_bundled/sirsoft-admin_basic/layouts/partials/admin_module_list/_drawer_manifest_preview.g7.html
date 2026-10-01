@@ -3,7 +3,7 @@
   결과는 셋으로 갈려 보인다 — 정상 / 오류 목록 / 이미 설치됨(그 버전까지).
   판정은 전부 서버가 하고 여기서는 응답을 그대로 늘어놓는다. -->
 <partial description="모듈 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 module.json 검증 결과 조회 (POST /manifest-preview)" editor_label="$t:admin.modal_label.admin_module_list.module_manifest_preview_drawer">
-  <modal data-ref="module_manifest_preview_drawer" title="$t:admin.modules.modal.preview.title" size="large">
+  <modal data-type="composite" data-ref="module_manifest_preview_drawer" title="$t:admin.modules.modal.preview.title" size="large">
     <p class="text-label mb-4">$t:admin.modules.modal.preview.description</p>
     <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.modules.tabs.no_file_selected" class="w-full">
       <on type="change">

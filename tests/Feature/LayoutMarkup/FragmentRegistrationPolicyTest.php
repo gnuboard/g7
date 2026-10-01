@@ -131,17 +131,20 @@ class FragmentRegistrationPolicyTest extends TestCase
     }
 
     /**
-     * ⓒ 사용자 화면 조각이 관리자 전용 컴포넌트를 쓰면 사용자 템플릿 표로 컴파일할 때 실패해 등록되지 않는다.
+     * ⓒ 조각 컴파일은 붙을 템플릿과 무관하다 — 어느 템플릿의 컴포넌트 목록에 있든 없든 같은 결과로 등록된다.
      *
-     * 종전엔 경로에 `/user/` 가 없어 관리자 표로 검사됐고, 그래서 통과했다.
+     * 종전(C10)에는 붙을 템플릿의 컴포넌트 목록으로 컴파일해, 그 템플릿에 없는 컴포넌트를 쓴 조각을 등록하지
+     * 않았다. 그 규칙이 템플릿 교체·요청마다 도는 리스너·업데이트 복원 경로를 템플릿에 묶었다(합의 없는
+     * 중대 설계 결함). 2026-09-28 결정으로 HTML 컴파일은 JSON 과 같이 템플릿을 보지 않는다 — 컴포넌트가
+     * 실제로 있는지는 런타임(활성 템플릿)이 판정한다.
      *
-     * @scenario compile_unit=install,source_health=invalid
+     * @scenario compile_unit=install,source_health=valid
      *
-     * @effects fragment_is_compiled_with_the_target_templates_registry
+     * @effects fragment_compile_does_not_depend_on_the_target_template
      *
      * @return void 반환값 없음
      */
-    public function test_user_fragment_using_admin_only_component_fails_user_template_compile(): void
+    public function test_fragment_using_a_component_absent_from_the_target_template_still_registers(): void
     {
         $adminOnly = $this->adminOnlyComponentTag();
 
@@ -151,8 +154,8 @@ class FragmentRegistrationPolicyTest extends TestCase
 
         $stats = app(LayoutExtensionService::class)->registerAllActiveExtensionsToTemplate($this->user->id);
 
-        $this->assertSame(0, $stats['modules'], "관리자 전용 <{$adminOnly}> 를 쓴 사용자 조각이 사용자 표 컴파일을 통과하면 안 된다");
-        $this->assertSame(0, LayoutExtension::where('template_id', $this->user->id)->count());
+        $this->assertSame(1, $stats['modules'], "사용자 템플릿에 없는 <{$adminOnly}> 를 써도 컴파일은 템플릿과 무관하게 선다");
+        $this->assertSame(1, LayoutExtension::where('template_id', $this->user->id)->count());
     }
 
     /**

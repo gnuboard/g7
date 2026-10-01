@@ -6,10 +6,13 @@ use App\Enums\ConsentType;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
+use App\Models\User;
 use App\Services\MemberNotificationService;
+use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends BaseApiResource
 {
@@ -189,10 +192,30 @@ class UserResource extends BaseApiResource
      */
     public function toAuthArray(?Request $request = null): array
     {
-        $data = $this->toArray($request ?? request());
+        // resolve() 로 받는다 — toArray() 를 직접 부르면 when()/whenLoaded() 의 빈 값 객체가 걸러지지 않고
+        // JSON 에 `{}` 로 나갔다(modules_count·consents·terms_consent 등 9개, #703).
+        $data = $this->resolve($request ?? request());
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합 (toProfileArray 와 동일)
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
+    }
+
+    /**
+     * 관리자 화면의 로그인 사용자 응답용 배열을 반환합니다.
+     *
+     * 기본 응답에 본인의 최고관리자 여부(is_super)를 더한다. 목록 화면의 최고관리자 전용 제어
+     * (모듈·플러그인·템플릿의 「숨김 포함」)가 이 값을 읽는다 — 주지 않으면 최고관리자에게도 제어가
+     * 나타나지 않는다(#703). 남의 계정이 담기는 목록 응답(toArray)에는 싣지 않는다.
+     *
+     * @param  Request|null  $request  HTTP 요청
+     * @return array<string, mixed> 최고관리자 여부가 포함된 로그인 사용자 데이터
+     */
+    public function toAdminAuthArray(?Request $request = null): array
+    {
+        // resolve() 는 when()/whenLoaded() 로 빠진 값을 걸러 준다 — toArray() 를 직접 부르면 빈 값 객체가 남는다.
+        return array_merge($this->resolve($request ?? request()), [
+            'is_super' => $this->resource->isSuperAdmin(),
+        ]);
     }
 
     /**
@@ -232,6 +255,25 @@ class UserResource extends BaseApiResource
             $abilities['can_delete'] = false;
         }
 
+        // 등급 상한(UserGradeGuard): 비-슈퍼 운영자는 슈퍼 관리자 계정을 수정할 수 없다.
+        // 서버의 모든 쓰기 경로가 이 판정으로 403 을 내므로, 화면의 수정 버튼·저장 버튼·역할 칸도
+        // 같은 판정으로 잠가야 한다 — 권한 보유만 보고 켜 두면 폼은 열리는데 저장이 403 이다.
+        // 목록(UserCollection)은 컬렉션이 이미 UserResource 로 감싼 항목을 다시 감싸므로, 모델까지
+        // 벗겨서 판정한다 — 감싼 채로 보면 모델 검사가 거짓이 되어 목록 행만 판정을 건너뛴다(#703 실측).
+        $target = $this->resource;
+        while ($target instanceof JsonResource) {
+            $target = $target->resource;
+        }
+
+        if ($target instanceof User) {
+            $actor = $request->user();
+
+            if (! UserGradeGuard::mayModify($target, $actor instanceof User ? $actor : null)) {
+                $abilities['can_update'] = false;
+                $abilities['can_assign_roles'] = false;
+            }
+        }
+
         return $abilities;
     }
 
@@ -257,7 +299,8 @@ class UserResource extends BaseApiResource
      */
     public function withAdminInfo(): array
     {
-        $data = array_merge($this->toArray(request()), [
+        // resolve() 로 받는다 — toArray() 를 직접 부르면 빈 값 객체가 `{}` 로 나갔다(toAuthArray 와 같은 이유, #703).
+        $data = array_merge($this->resolve(request()), [
             'admin_memo' => $this->getValue('admin_memo'),
             'ip_address' => $this->getValue('ip_address'),
             'withdrawn_at' => $this->getValue('withdrawn_at')
