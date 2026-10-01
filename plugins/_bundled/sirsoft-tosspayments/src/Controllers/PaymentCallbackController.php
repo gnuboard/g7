@@ -18,7 +18,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInter
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
+use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\Tosspayments\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\Tosspayments\Concerns\VerifiesTossApprovedAmount;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\FailCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\SuccessCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
@@ -32,7 +34,9 @@ use Plugins\Sirsoft\Tosspayments\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use RecordsPaymentWindowClosure;
     use SerializesPaymentCallbacks;
+    use VerifiesTossApprovedAmount;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -93,12 +97,16 @@ class PaymentCallbackController
         $validated = $request->validated();
         $paymentKey = $validated['paymentKey'];
         $orderId = $validated['orderId'];
-        $pgAmount = $validated['amount'];
+        // 브라우저가 쿼리스트링으로 보낸 금액 — 승인 전 대조에만 쓰고 승인·결제완료의 근거로는 쓰지 않는다.
+        $callbackAmount = (int) $validated['amount'];
 
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
         if (ClaimPayment::isClaimPaymentNumber($orderId)) {
             return $this->handleClaimPaymentSuccess($orderId, $validated);
         }
+
+        // 토스 승인이 성립했는지 — 승인 뒤의 거절은 토스 취소로 되돌려야 한다.
+        $confirmed = false;
 
         try {
             // 1. 주문 조회 (주문번호 기반)
@@ -110,23 +118,110 @@ class PaymentCallbackController
                 return redirect($this->resolveFailUrl(['error' => 'order_not_found', 'orderId' => $orderId]));
             }
 
-            // 2. TossPayments Confirm API 호출
-            HookManager::doAction('sirsoft-tosspayments.payment.before_confirm', $order, $paymentKey, $pgAmount);
-
-            $pgResponse = $this->apiService->confirmPayment($paymentKey, $orderId, $pgAmount);
-
-            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $order, $pgResponse);
-
-            // 3-a. 가상계좌 발급 — 아직 입금 전이므로 completePayment 하지 않고 계좌 정보만 저장한다.
-            //      실제 결제완료는 입금통보 웹훅(DEPOSIT_CALLBACK, status=DONE)에서 처리한다.
-            //      웹훅 secret 은 이 confirm 응답에만 내려오므로 payment_meta 에 저장해 대조에 쓴다.
-            if (($pgResponse['status'] ?? null) === 'WAITING_FOR_DEPOSIT') {
-                $this->handleVirtualAccountIssued($order, $pgResponse, $paymentKey, $request);
+            // 같은 결제 키로 이미 반영된 주문의 새로고침·재전송은 승인을 다시 부르지 않고 결과 화면으로 보낸다.
+            if ($this->isAlreadyRecordedWith($order, $paymentKey)) {
+                Log::info('TossPayments: success callback for an already recorded payment', [
+                    'orderId' => $orderId,
+                ]);
 
                 return redirect($this->resolveSuccessUrl($orderId));
             }
 
-            // 3-b. 즉시 결제완료(카드/계좌이체/휴대폰/간편결제) — 기존 경로
+            // 2. 승인 전 대조 — 여기서 거절하면 승인도 상태 변경도 일어나지 않는다.
+            //
+            // 결제 가능 상태가 아닌 주문(이미 결제완료·취소)은 승인 자체를 부르지 않는다. 승인한 뒤
+            // completePayment 가 조용히 되돌아가면 토스 승인만 남아 고객 돈이 빠져나간 채가 된다.
+            if (! $this->isOrderPayable($order)) {
+                Log::warning('TossPayments: order is not payable — confirm skipped', [
+                    'orderId' => $orderId,
+                    'order_status' => $order->order_status?->value,
+                    'payment_status' => $order->payment?->payment_status?->value,
+                ]);
+
+                return redirect($this->resolveFailUrl([
+                    'error' => 'confirm_failed',
+                    'message' => __('sirsoft-tosspayments::messages.errors.payment_failed'),
+                    'orderId' => $orderId,
+                ]));
+            }
+
+            // 승인 금액의 기준은 주문에 저장된 청구액(결제 통화)이다. 콜백 금액이 그와 다르면
+            // 결제창 요청이 변조됐거나 결제창을 연 사이 청구액이 바뀐 것이므로 승인하지 않는다.
+            $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'success', [
+                'orderId' => $orderId,
+                'callback_amount' => $callbackAmount,
+            ]);
+
+            if ($expectedAmount === null || $callbackAmount !== $expectedAmount) {
+                Log::warning('TossPayments: callback amount does not match the order charge — confirm skipped', [
+                    'orderId' => $orderId,
+                    'callback_amount' => $callbackAmount,
+                    'expected' => $expectedAmount,
+                ]);
+
+                return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $orderId]));
+            }
+
+            // 3. TossPayments Confirm API 호출 — 청구액으로 승인을 요청한다.
+            HookManager::doAction('sirsoft-tosspayments.payment.before_confirm', $order, $paymentKey, $expectedAmount);
+
+            $pgResponse = $this->apiService->confirmPayment($paymentKey, $orderId, $expectedAmount);
+            $confirmed = true;
+
+            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $order, $pgResponse);
+
+            // 4. 승인 후 대조 — 토스가 실제로 승인(가상계좌는 발급)한 금액이 청구액과 같아야 한다.
+            //    응답에 금액이 없으면 검증할 수 없으므로 불일치와 같게 취소한다.
+            $approvedAmount = $this->tossApprovedAmount($pgResponse);
+            $responseOrderId = (string) ($pgResponse['orderId'] ?? '');
+
+            if ($approvedAmount !== $expectedAmount || ($responseOrderId !== '' && $responseOrderId !== $orderId)) {
+                Log::error('TossPayments: approved amount does not match the order charge — cancelling approval', [
+                    'orderId' => $orderId,
+                    'expected' => $expectedAmount,
+                    'approved_amount' => $approvedAmount,
+                    'response_order_id' => $responseOrderId,
+                    'pg_status' => $pgResponse['status'] ?? null,
+                ]);
+
+                $this->cancelApprovalQuietly($paymentKey, $orderId);
+
+                return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $orderId]));
+            }
+
+            // 승인 왕복 사이에 주문이 결제 불가 상태가 됐으면(관리자 취소 등) 결과를 쓰지 않고 되돌린다.
+            // 결제행은 여기서 다시 읽은 상태로만 갱신한다 — 결제완료·취소된 행을 덮어쓰지 않는다.
+            $order = $order->fresh(['payment']) ?? $order;
+
+            if (! $this->isOrderPayable($order)) {
+                if ($this->isAlreadyRecordedWith($order, $paymentKey)) {
+                    return redirect($this->resolveSuccessUrl($orderId));
+                }
+
+                Log::error('TossPayments: order became not payable during confirm — cancelling approval', [
+                    'orderId' => $orderId,
+                    'order_status' => $order->order_status?->value,
+                ]);
+
+                $this->cancelApprovalQuietly($paymentKey, $orderId);
+
+                return redirect($this->resolveFailUrl([
+                    'error' => 'confirm_failed',
+                    'message' => __('sirsoft-tosspayments::messages.errors.payment_failed'),
+                    'orderId' => $orderId,
+                ]));
+            }
+
+            // 5-a. 가상계좌 발급 — 아직 입금 전이므로 completePayment 하지 않고 계좌 정보만 저장한다.
+            //      실제 결제완료는 입금통보 웹훅(DEPOSIT_CALLBACK, status=DONE)에서 처리한다.
+            //      웹훅 secret 은 이 confirm 응답에만 내려오므로 payment_meta 에 저장해 대조에 쓴다.
+            if (($pgResponse['status'] ?? null) === 'WAITING_FOR_DEPOSIT') {
+                $this->handleVirtualAccountIssued($order, $pgResponse, $paymentKey, $approvedAmount, $request);
+
+                return redirect($this->resolveSuccessUrl($orderId));
+            }
+
+            // 5-b. 즉시 결제완료(카드/계좌이체/휴대폰/간편결제) — 금액 근거는 대조를 마친 청구액이다.
             $this->orderService->completePayment($order, [
                 'transaction_id' => $pgResponse['paymentKey'] ?? null,
                 'card_approval_number' => $pgResponse['card']['approveNo'] ?? null,
@@ -138,12 +233,13 @@ class PaymentCallbackController
                 'receipt_url' => $pgResponse['receipt']['url'] ?? null,
                 'payment_meta' => [
                     'method' => $pgResponse['method'] ?? null,
+                    'toss_approved_amount' => $approvedAmount,
                     'pg_raw_response' => $pgResponse,
                 ],
                 'payment_device' => DeviceDetector::detect($request),
-            ], $pgAmount);
+            ], $expectedAmount);
 
-            // 4. SPA 주문 완료 페이지로 redirect
+            // 6. SPA 주문 완료 페이지로 redirect
             return redirect($this->resolveSuccessUrl($orderId));
 
         } catch (PaymentAmountMismatchException $e) {
@@ -153,6 +249,11 @@ class PaymentCallbackController
                 'actual' => $e->getActualAmount(),
                 'context' => $e->getContext(),
             ]);
+
+            // 모듈이 승인 뒤에 금액을 거절했다 — 결제완료로 가지 않으므로 토스 승인도 되돌린다.
+            if ($confirmed) {
+                $this->cancelApprovalQuietly($paymentKey, $orderId);
+            }
 
             return redirect($this->resolveFailUrl([
                 'error' => 'amount_mismatch',
@@ -171,6 +272,70 @@ class PaymentCallbackController
                 'message' => __('sirsoft-tosspayments::messages.errors.payment_failed'),
                 'orderId' => $orderId,
             ]));
+        }
+    }
+
+    /**
+     * 주문이 결제를 받을 수 있는 상태인지 확인합니다.
+     *
+     * 결제 전 주문 상태이고 결제행이 아직 결제완료가 아니어야 한다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return bool 결제 가능 여부
+     */
+    private function isOrderPayable(Order $order): bool
+    {
+        if (! $order->order_status?->isBeforePayment()) {
+            return false;
+        }
+
+        return ! ($order->payment?->isPaid() ?? false);
+    }
+
+    /**
+     * 같은 결제 키로 결제완료 또는 가상계좌 발급이 이미 반영됐는지 확인합니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  string  $paymentKey  토스 결제 키
+     * @return bool 이미 반영됐으면 true
+     */
+    private function isAlreadyRecordedWith(Order $order, string $paymentKey): bool
+    {
+        $payment = $order->payment;
+
+        if (! $payment || $paymentKey === '' || $payment->transaction_id !== $paymentKey) {
+            return false;
+        }
+
+        return $payment->isPaid() || $payment->isWaitingDeposit();
+    }
+
+    /**
+     * 확정된 토스 승인을 조용히 취소합니다. (보상 — 실패해도 흐름은 지속, 운영자 대사용 로그를 남긴다)
+     *
+     * 카드 등은 전액 취소가 되고, 입금 전 가상계좌는 발급이 취소된다.
+     *
+     * @param  string  $paymentKey  토스 결제 키
+     * @param  string  $orderId  주문번호 (로그 문맥)
+     * @return bool 취소 요청이 성공했으면 true
+     */
+    private function cancelApprovalQuietly(string $paymentKey, string $orderId): bool
+    {
+        try {
+            $this->apiService->cancelPayment(
+                $paymentKey,
+                __('sirsoft-tosspayments::messages.errors.approval_verification_cancel_reason'),
+            );
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('TossPayments: compensating cancel failed — manual cancel required', [
+                'orderId' => $orderId,
+                'paymentKey' => $paymentKey,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
         }
     }
 
@@ -301,10 +466,11 @@ class PaymentCallbackController
      * @param  Order  $order  대상 주문
      * @param  array<string, mixed>  $pgResponse  토스 confirm 응답
      * @param  string  $paymentKey  토스 결제 키
+     * @param  int  $approvedAmount  청구액과 대조를 마친 발급 금액 (입금통보 반영의 근거)
      * @param  Request  $request  HTTP 요청 (디바이스 판별용)
      * @return void 반환값 없음
      */
-    private function handleVirtualAccountIssued(Order $order, array $pgResponse, string $paymentKey, Request $request): void
+    private function handleVirtualAccountIssued(Order $order, array $pgResponse, string $paymentKey, int $approvedAmount, Request $request): void
     {
         $vbank = $pgResponse['virtualAccount'] ?? [];
 
@@ -338,6 +504,8 @@ class PaymentCallbackController
                 'method' => $pgResponse['method'] ?? null,
                 // 웹훅 secret — DEPOSIT_CALLBACK 대조용 (이 응답에만 존재)
                 'toss_secret' => $pgResponse['secret'] ?? null,
+                // 발급 시점에 청구액과 대조한 금액 — 입금통보 웹훅이 결제완료 금액 근거로 쓴다.
+                'toss_approved_amount' => $approvedAmount,
                 'pg_raw_response' => $pgResponse,
             ],
         ], fn ($v) => $v !== null));

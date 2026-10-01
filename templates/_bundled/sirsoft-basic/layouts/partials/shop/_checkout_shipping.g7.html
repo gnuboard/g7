@@ -216,6 +216,7 @@
         <input type="text" name="address_detail" value="{{_local.shipping?.address_detail ?? ''}}" placeholder="$t:shop.checkout.detail_address_placeholder" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
+            <!-- 입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다 -->
             <set-state target="local" shipping.address_detail="{{$event.target.value}}"/>
           </on>
         </input>

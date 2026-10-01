@@ -834,6 +834,7 @@
     "context_load_failed": "Could not load whether claims can be filed. Please refresh.",
     "title_exchange": "File exchange (on behalf of customer)",
     "title_return": "File return (on behalf of customer)",
+    "editor_label": "Exchange / return on behalf of customer dialog",
     "description": "Filed on behalf of the customer. The request period and requestable-status settings do not apply.",
     "same_option": "Same option",
     "sold_out": "Sold out",

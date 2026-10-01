@@ -77,7 +77,7 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };
@@ -355,7 +355,7 @@ describe('관리자 주문 상세 — 레이아웃 데이터 소스 재사용', 
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };

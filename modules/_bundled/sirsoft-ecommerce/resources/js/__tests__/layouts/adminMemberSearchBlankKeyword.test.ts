@@ -122,11 +122,12 @@ describe('이커머스 관리자 회원 검색 — 빈 검색어 요청 차단',
       expect(evaluate(clear.if, '홍')).toBe(false);
     }
 
-    // 수동 지급/차감 창: 결과 목록은 검색어가 공백뿐이면 보이지 않는다
+    // 수동 지급/차감 창: 결과 목록은 검색어가 공백뿐이면 보이지 않는다. 목록에는 응답이 실어 온 검색어가
+    // 도장돼 있어야 그려지므로(adminMemberSearchKeywordGuard) 그 도장이 지금 검색어와 같은 상태로 잰다
     const [results] = collect(manualTransactionModal, (n) => n.id === 'member_search_results');
     expect(results?.if).toBeDefined();
     const shown = (keyword: string) => new Function('_global', `return (${String(results.if).replace(/^\{\{/, '').replace(/\}\}$/, '')});`)(
-      { mileageManual: { memberSearchKeyword: keyword } },
+      { mileageManual: { memberSearchKeyword: keyword, memberSearchResultsKeyword: keyword.trim() } },
     );
     expect(shown('   ')).toBe(false);
     expect(shown('홍')).toBe(true);

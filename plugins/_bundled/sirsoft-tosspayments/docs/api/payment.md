@@ -208,24 +208,26 @@ JSON 을 반환하지 않고 브라우저를 **302 리다이렉트**한다. 에�
 | --- | --- | --- |
 | 주문완료 페이지 | — | 결제 승인 성공 (기본 `/shop/orders/{orderId}/complete`) |
 | 실패 페이지 | `order_not_found` | `orderId` 로 주문을 찾지 못한 경우 |
-| 실패 페이지 | `amount_mismatch` | 콜백 `amount` 가 주문의 결제요청 금액과 다른 경우 (위변조 방어) |
-| 실패 페이지 | `confirm_failed` | 토스 Confirm API 호출이 실패한 경우 (`message` query 에 사유) |
+| 실패 페이지 | `amount_mismatch` | 콜백 `amount` 가 주문 청구액과 다른 경우(승인 전 거절), 또는 토스 승인·발급 금액(`totalAmount`)이 청구액과 다르거나 없는 경우(승인 취소 후 거절) |
+| 실패 페이지 | `confirm_failed` | 토스 Confirm API 호출이 실패한 경우, 또는 주문이 결제 가능 상태가 아닌 경우 (`message` query 에 사유) |
 | 실패 페이지 | (검증 실패) | 필수 query 파라미터 누락/형식 오류 — 422 대신 실패 페이지로 리다이렉트한다 |
 
 처리 순서:
 
-1. `orderId` 로 주문을 조회한다.
-2. 토스 **Confirm API** 를 호출해 결제를 확정한다 (`sirsoft-tosspayments.payment.before_confirm` / `after_confirm` 훅 발화).
-3. 응답 `status` 로 분기한다:
-   - **`WAITING_FOR_DEPOSIT`(가상계좌)** — 아직 입금 전이므로 결제완료 처리하지 않고 계좌 정보만 저장한다. 실제 결제완료는 입금통보 웹훅(`/webhook/deposit`)이 담당한다. 웹훅 secret 은 **이 Confirm 응답에만** 내려오므로 `payment_meta.toss_secret` 에 저장해 웹훅 대조에 사용한다.
-   - **그 외(카드·계좌이체·휴대폰·간편결제)** — 즉시 결제완료(`completePayment`) 처리하고 카드 승인번호·영수증 URL 등을 기록한다.
-4. SPA 주문완료 페이지로 리다이렉트한다.
+1. `orderId` 로 주문을 조회한다. 같은 `paymentKey` 로 이미 결제완료·가상계좌 발급이 반영된 주문(새로고침·재전송)이면 승인을 다시 부르지 않고 주문완료 페이지로 보낸다.
+2. **승인 전 대조** — 주문이 결제 가능 상태(결제 전 주문 상태이고 결제행이 결제완료가 아님)인지, 콜백 `amount` 가 주문 청구액(결제 통화 기준)과 같은지 확인한다. 어긋나면 Confirm 을 부르지 않고 주문·결제행을 바꾸지 않은 채 실패 페이지로 보낸다.
+3. 토스 **Confirm API** 를 **주문 청구액으로** 호출해 결제를 확정한다 (`sirsoft-tosspayments.payment.before_confirm` / `after_confirm` 훅 발화).
+4. **승인 후 대조** — 응답 `totalAmount` 가 청구액과 같아야 한다. 다르거나 없으면, 또는 승인 사이에 주문이 결제 불가 상태가 됐으면 토스 결제취소로 승인(가상계좌는 발급)을 되돌리고 실패 페이지로 보낸다.
+5. 응답 `status` 로 분기한다:
+   - **`WAITING_FOR_DEPOSIT`(가상계좌)** — 아직 입금 전이므로 결제완료 처리하지 않고 계좌 정보만 저장한다. 실제 결제완료는 입금통보 웹훅(`/webhook/deposit`)이 담당한다. 웹훅 secret 은 **이 Confirm 응답에만** 내려오므로 `payment_meta.toss_secret` 에 저장해 웹훅 대조에 사용하고, 대조를 마친 발급 금액은 `payment_meta.toss_approved_amount` 에 저장해 입금 반영의 금액 근거로 쓴다.
+   - **그 외(카드·계좌이체·휴대폰·간편결제)** — 대조를 마친 청구액으로 즉시 결제완료(`completePayment`) 처리하고 카드 승인번호·영수증 URL 등을 기록한다. 모듈이 금액을 거절하면(`PaymentAmountMismatchException`) 토스 승인도 취소한다.
+6. SPA 주문완료 페이지로 리다이렉트한다.
 
 주문번호 자리(`orderId`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 위 주문 조회·Confirm 분기를 타지 않고 클레임 결제 건으로 처리한다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고, 완료 후 주문완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed` + `claim_number`)로 리다이렉트한다. 콜백 `amount` 는 **Confirm 을 부르기 전에** 결제 건의 현재 청구액(`resolvePaymentCharge()`)과 대조하며, 다르면(결제창을 연 사이 청구액이 바뀐 경우) Confirm 없이 `error=AMOUNT_MISMATCH` 로 되돌린다 — 청구 기준을 세울 수 없을 때도 같다. 토스가 승인을 거절하면 응답의 `code`(예: `REJECT_CARD_COMPANY`)가 결제 건 `pg_error_code` 와 `error=` 로 그대로 실리고, 응답을 받지 못한 통신 실패만 `PG_API_ERROR` 다. 승인이 확정된 뒤 모듈이 거절하면 토스 결제취소로 보상하며, 그 결제번호의 클레임 결제 건을 찾지 못하면 `error=claim_payment_not_found` 로 실패 URL 에 되돌린다.
 
 주의사항:
 
-- **금액 대조가 위변조 방어의 핵심**이다. query 의 `amount` 를 그대로 신뢰하지 않고 주문의 결제요청 금액과 대조하며, 불일치 시 `PaymentAmountMismatchException` 으로 승인을 중단한다.
+- **금액 대조가 위변조 방어의 핵심**이다. query 의 `amount` 는 브라우저가 보낸 값이라 승인 요청 금액으로도, 결제완료 대조 금액으로도 쓰지 않는다 — 승인 요청과 대조의 기준은 주문 청구액이고, 결제 성립 여부는 토스 응답의 `totalAmount` 로 판정한다.
 - 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`).
 
 

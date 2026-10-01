@@ -598,7 +598,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.retention.archive_on_view_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.retention.archive_on_view_enabled_hint</span>
               </div>
-              <toggle name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-ref="field_archive_on_view_max_visits">

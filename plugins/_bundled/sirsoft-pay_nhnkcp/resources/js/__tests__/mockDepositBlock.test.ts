@@ -8,6 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { installMypageOrderShowInjector } from '../mypageOrderShowInjector';
+import { resetOrderScreenPollingForTests } from '../orderScreenPolling';
 
 const EN: Record<string, string> = {
     'sirsoft-pay_nhnkcp.user.mock_title': 'Mock Deposit',
@@ -47,6 +48,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    // 주문 화면 한 번 조회 캐시와 폴러는 모듈 상태다 — 같은 주문 번호를 쓰는 다음 테스트가 앞 응답을 받지 않게 비운다
+    resetOrderScreenPollingForTests();
     vi.useRealTimers();
     vi.restoreAllMocks();
     delete (window as any).__kcpMpShowInjectorInstalled;

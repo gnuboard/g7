@@ -138,6 +138,28 @@ effects:
   - other_member_cannot_report_close_of_member_order
   - order_without_address_is_rejected_without_ownership
   - unauthenticated_request_with_matching_buyer_contact_is_rejected
+  # PG 승인 금액 기준 결제 반영 — 브라우저 콜백 금액은 반영 근거가 아니다
+  - auth_callback_net_cancels_when_authorize_response_has_no_approved_amount
+  - auth_callback_hands_pg_approved_amount_to_complete_payment
+  - vbank_issue_net_cancels_when_issued_amount_differs_from_order_charge
+  - vbank_issue_net_cancels_for_order_not_paid_by_virtual_account
+  - vbank_notify_rejects_deposit_not_confirmed_by_transaction_query
+  - vbank_notify_transaction_query_uses_issue_time_mid
+  # API 서비스 기본 계약 — MID 선택·콜백 서명·승인·취소·망취소·거래 조회
+  - nice_api_uses_the_test_mid_in_test_mode
+  - nice_api_live_mid_gets_the_sr_prefix
+  - nice_api_live_mid_is_empty_when_not_configured
+  - nice_callback_signature_accepts_a_valid_signature
+  - nice_callback_signature_rejects_an_invalid_signature
+  - nice_callback_signature_rejects_a_tampered_amount
+  - nice_pg_amount_is_read_only_from_plain_digits
+  - nice_authorize_posts_signed_params_to_the_next_app_url
+  - nice_authorize_throws_on_http_error
+  - nice_cancel_returns_the_pg_response_on_success
+  - nice_cancel_throws_on_a_failure_result_code
+  - nice_net_cancel_swallows_http_errors
+  - nice_transaction_query_posts_signed_params
+  - nice_transaction_query_throws_on_http_error
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php

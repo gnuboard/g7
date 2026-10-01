@@ -834,6 +834,7 @@
     "context_load_failed": "접수 가능 여부를 불러오지 못했습니다. 새로고침해 주세요.",
     "title_exchange": "교환 접수 (고객 대신)",
     "title_return": "반품 접수 (고객 대신)",
+    "editor_label": "고객 대신 교환·반품 접수 창",
     "description": "고객을 대신해 접수합니다. 신청 기간·신청 가능 상태 설정은 적용되지 않습니다.",
     "same_option": "같은 옵션으로 교환",
     "sold_out": "품절",

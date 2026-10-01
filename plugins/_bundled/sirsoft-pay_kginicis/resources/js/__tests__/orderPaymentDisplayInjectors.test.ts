@@ -283,7 +283,7 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };
@@ -291,7 +291,7 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
         document.body.innerHTML = `
             <section id="order_payment_info_panel">
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between">
+                    <div id="order_payment_method_row" class="flex items-center justify-between">
                         <span>결제 방법</span>
                         <span>신용카드</span>
                     </div>
@@ -422,13 +422,13 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: '영수증',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '신용카드',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -541,7 +541,7 @@ describe('관리자 주문 상세 — 레이아웃 데이터 소스 재사용', 
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };

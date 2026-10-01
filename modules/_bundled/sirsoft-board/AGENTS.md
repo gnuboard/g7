@@ -120,7 +120,7 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 102개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 86개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 88개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |

@@ -75,8 +75,9 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
 
         // Brand(4) + UserPreference(2) + Label(4) + CommonInfo(3) + NoticeTemplate(5) + ExtraFee(7)
         // + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(3) + Settings(1)
-        // + 회원 데이터 일괄 삭제(4: 찜·장바구니·배송지·상품 문의, #524) = 45
-        $this->assertCount(45, $hooks);
+        // + 회원 데이터 일괄 삭제(4: 찜·장바구니·배송지·상품 문의, #524)
+        // + 클레임 사유(4: 생성·수정·삭제·사용 여부 전환) = 49
+        $this->assertCount(49, $hooks);
         foreach (['wishlist', 'cart', 'user_address', 'product_inquiry'] as $domain) {
             $this->assertArrayHasKey("sirsoft-ecommerce.{$domain}.after_bulk_delete", $hooks);
         }

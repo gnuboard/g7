@@ -174,7 +174,7 @@ class ClaimApproveDepositMethodGuardTest extends PluginTestCase
      */
     public function test_a_card_approval_is_unchanged(): void
     {
-        $this->kcp(['res_cd' => '0000', 'tno' => 'TNO-C', 'use_pay_method' => 'CARD']);
+        $this->kcp(['res_cd' => '0000', 'tno' => 'TNO-C', 'use_pay_method' => 'CARD', 'amount' => '3000']);
         $payment = $this->pendingKrwPayment(['payment_method' => 'card']);
 
         $result = $this->approve($payment, $this->windowCallback(['use_pay_method' => 'CARD']));

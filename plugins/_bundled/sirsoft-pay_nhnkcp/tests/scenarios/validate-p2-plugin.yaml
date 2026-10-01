@@ -4,14 +4,14 @@
 feature: nhnkcp_validate_p2_claim_payment_hardening
 
 description: |
-  #599 `/validate branch` 07-core-plugins 가 찾은 결제 플러그인 결함 중 NHN KCP 몫.
+  #599 브랜치 검증 07-core-plugins 가 찾은 결제 플러그인 결함 중 NHN KCP 몫.
 
   - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
     `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(취소)은 서버 콜백의 클로저에만 있었다.
     리스너가 ① 결제창 금액(good_mny)을 승인 **전에** 청구액과 대조하고(낡은 결제창 거절, PG 호출 없음)
     ② KCP 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을 취소한 뒤 거절한다 — 어느 경로로
-    들어와도 같다. (응답에 금액이 없으면 ①에서 대조한 good_mny 를 넘긴다 — 승인 요청에 주문 금액을
-    싣는 KCP 서버 측 대조는 이 묶음 밖의 선행 과제다.)
+    들어와도 같다. (응답에 금액이 없을 때의 거절과 승인 요청의 ordr_mony 는
+    approval-amount-verification.yaml 이 소유한다.)
   - CP 분기의 콜백 락 획득이 try 밖이라 대기 초과(`LockTimeoutException`)가 500 이 됐다. 이제 신청서 상세
     복귀(이미 결제됐으면 성공, 아니면 `callback_locked`)다.
   - 콜백·승인키 컨트롤러의 `app()` Repository 로케이터를 생성자 주입으로 바꿨다.

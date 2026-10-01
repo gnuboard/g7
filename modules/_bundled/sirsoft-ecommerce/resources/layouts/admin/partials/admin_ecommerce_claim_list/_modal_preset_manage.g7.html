@@ -1,6 +1,6 @@
 <!-- 클레임 목록 — 검색 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지우고 새 프리셋 저장 창을 여는데, 그 창들은 이 창을 닫지 않고 위에 겹쳐 떴다가 닫히면 이 창으로 돌아온다. -->
 <partial description="Claim List - Preset Management Modal">
-  <modal data-ref="modal_claim_preset_manage" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.description" size="md">
+  <modal data-type="composite" data-ref="modal_claim_preset_manage" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.description" size="md">
     <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.empty</div>
     <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
       <div data-each="presetItem in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">

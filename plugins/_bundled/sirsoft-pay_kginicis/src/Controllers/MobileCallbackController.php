@@ -282,12 +282,16 @@ class MobileCallbackController
             if (strcasecmp($payType, 'VBank') === 0) {
                 // 결제대기 주문에만 발급을 기록한다 — 이미 결제됐거나 다른 가상계좌가 붙은 결제 레코드를
                 // 덮어쓰면 환불 대상 거래번호가 오염된다. 같은 발급의 중복 콜백은 성공으로만 처리한다.
-                $issueDecision = $this->vbankIssueDecision($order, $totPrice > 0 ? $totPrice : null, (string) $tid);
+                // 발급 금액은 승인 응답의 P_AMT 로만 판정한다 — 응답에 없으면 null 로 넘겨 발급을 거절한다
+                // (0 을 "금액 없음" 으로 바꾸지 않는다. 0 원 발급도 청구액과의 불일치로 거절된다).
+                $issuedAmount = is_numeric($result['P_AMT'] ?? null) ? (int) $result['P_AMT'] : null;
+                $issueDecision = $this->vbankIssueDecision($order, $issuedAmount, (string) $tid);
                 if ($issueDecision === 'reject') {
-                    Log::warning('KG Inicis mobile: vbank issue rejected for non-payable order; cancelling', [
+                    Log::warning('KG Inicis mobile: vbank issue rejected (order not payable or amount mismatch); cancelling', [
                         'P_OID' => $moid,
                         'P_TID' => $tid,
                         'order_status' => $order->order_status->value,
+                        'pg_amount' => $result['P_AMT'] ?? null,
                     ]);
 
                     $this->autoCancelIfApproved((string) $tid, $moid, $totPrice, 'vbank_not_payable');
@@ -339,7 +343,8 @@ class MobileCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'invalid_payment_currency', 'orderId' => $moid]));
             }
-            if ($expectedAmount > 0 && $totPrice !== $expectedAmount) {
+            // 청구액이 0 이어도 대조를 건너뛰지 않는다 — PG 결제가 필요 없는 주문에 승인이 들어온 것 자체가 불일치다.
+            if ($totPrice !== $expectedAmount) {
                 $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'amount_mismatch');
 
                 return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));

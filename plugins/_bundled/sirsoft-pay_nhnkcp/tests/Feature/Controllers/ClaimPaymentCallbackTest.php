@@ -112,6 +112,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
             'res_cd' => '0000',
             'res_msg' => 'OK',
             'tno' => 'KCP-CB-TNO-1',
+            'amount' => '3000',
         ]);
         $this->app->instance(NhnKcpApiService::class, $mock);
 

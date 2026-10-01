@@ -76,7 +76,7 @@ SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onS
         <!-- 떠난 화면의 미리보기 응답이 다음 화면의 로컬 상태에 쓰이지 않도록 debounce 타이머와 세대 번호를 정리한다. -->
         <action handler="sirsoft-ecommerce.clearClaimApplyTimers"/>
       </on>
-      <container class="py-8">
+      <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 들어온 곳으로. 작성은 주문 상세, 수정은 그 신청서의 상세다. 비회원에게는 신청내역 목록이 없으므로 작성의 복귀지는 주문 상세이며 그 화면의 '이 주문의 클레임' 섹션이 곧 비회원의 목록이다. -->
         <div class="flex items-center gap-2 mb-4">

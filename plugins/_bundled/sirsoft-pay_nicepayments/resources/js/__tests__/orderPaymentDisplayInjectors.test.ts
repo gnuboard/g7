@@ -78,7 +78,7 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };
@@ -193,7 +193,7 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
         expect(callsTo(fetchMock, RECEIPT_API('ORD-MP-SLOW'))).toBe(1);
     });
 
-    it('마이페이지 주문 상세: 영수증 조회가 502 로 실패해도 한 번만 부르고 입금 안내는 그대로 붙인다', async () => {
+    it('마이페이지 주문 상세: 영수증 조회가 502 로 실패해도 한 번만 부른다', async () => {
         history.replaceState(null, '', '/mypage/orders/ORD-MP-502');
         setOrderState(vbankOrder('ORD-MP-502'));
         setMypagePanel();
@@ -204,7 +204,8 @@ describe('결제 조회 폴링 — 한 화면 진입당 1회', () => {
         await vi.advanceTimersByTimeAsync(20000);
 
         expect(callsTo(fetchMock, RECEIPT_API('ORD-MP-502'))).toBe(1);
-        expect(document.querySelectorAll('#nicepay-mp-vbank-info')).toHaveLength(1);
+        // 가상계좌 입금 안내는 레이아웃 조각이 그린다 — 스크립트가 따로 그리면 두 번 나온다
+        expect(document.querySelectorAll('#nicepay-mp-vbank-info')).toHaveLength(0);
         expect(document.getElementById('nicepay-mp-receipt-row')).toBeNull();
     });
 });
@@ -235,7 +236,7 @@ describe('관리자 주문 상세 — 레이아웃 데이터 소스 재사용', 
     const setAdminRoot = () => {
         document.body.innerHTML = `
             <div id="section_payment_info">
-                <div><span>결제수단</span><span>신용카드</span></div>
+                <div id="payment_method_block_0"><span>결제수단</span><span>신용카드</span></div>
             </div>
         `;
     };

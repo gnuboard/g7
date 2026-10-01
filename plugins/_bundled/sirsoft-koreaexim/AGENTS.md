@@ -99,7 +99,7 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 9개 | `plugins/_bundled/sirsoft-koreaexim/tests` |
-| Vitest | 2개 | `vitest.config.ts` |
+| Vitest | 3개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 

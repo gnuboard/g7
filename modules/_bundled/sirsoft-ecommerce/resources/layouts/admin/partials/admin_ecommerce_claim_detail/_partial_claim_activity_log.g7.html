@@ -53,7 +53,7 @@
             <span class="w-40 shrink-0 text-label">{{log.created_at ?? ''}}</span>
             <div class="w-40 shrink-0">
               <!-- 행위자 이름을 누르면 그 회원 상세를 새 창으로 연다 — 보던 신청서를 잃지 않고 누가 처리했는지 확인하게 한다. 행위자가 없는 시스템 기록에는 메뉴 대신 글자만 선다. -->
-              <action-menu data-if="{{!!log.user?.uuid}}" position="left">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
@@ -113,7 +113,7 @@
           <div class="flex-between gap-2">
             <div class="flex-center gap-2">
               <!-- 좁은 화면 카드의 행위자 메뉴 — 넓은 화면 행의 메뉴와 같은 동작이므로 한쪽을 고치면 다른 쪽도 함께 고친다. -->
-              <action-menu data-if="{{!!log.user?.uuid}}" position="left">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
@@ -171,7 +171,7 @@
       </div>
       <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <!-- 쪽 이동 — 정렬과 쪽당 건수는 그대로 두고 쪽 번호만 바꿔 다시 받는다. 전체 쪽 수와 다음 쪽 유무는 응답의 meta 가 알려 준다. -->
-        <pagination currentPage="{{claim_logs.data?.meta?.current_page ?? 1}}" totalPages="{{claim_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{claim_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
+        <pagination data-type="composite" currentPage="{{claim_logs.data?.meta?.current_page ?? 1}}" totalPages="{{claim_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{claim_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <sequence>
               <set-state target="local" logsPage="{{$args[0]}}"/>

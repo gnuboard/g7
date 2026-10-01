@@ -688,7 +688,7 @@
                         ]
                     },
                     {
-                        "comment": "첨부 업로더 — 개수·용량·형식은 리터럴이 아니라 모듈 설정(attachment.*, frontend_schema 로 노출)을 읽는다.\n        서버 검증(UploadPageAttachmentRequest·PageAttachmentService)과 같은 값이어야 화면이 서버가 받는 파일을\n        먼저 거절하거나 서버가 거절할 파일을 받는 어긋남이 없다. 설정은 MIME 목록이고 업로더는 확장자로 거르므로\n        MIME → 확장자로 옮기고(모르는 MIME 은 하위 형식 이름), 빈 목록은 형식 제한 없음, 개수 0 은 무제한이다.",
+                        "comment": "첨부 업로더 — 개수·용량·형식은 리터럴이 아니라 서버 검증(UploadPageAttachmentRequest)과 같은 값을 읽는다.\n        같은 값이어야 화면이 서버가 받는 파일을 먼저 거절하거나 서버가 거절할 파일을 받는 어긋남이 없다.",
                         "id": "section_attachments",
                         "type": "basic",
                         "name": "Div",

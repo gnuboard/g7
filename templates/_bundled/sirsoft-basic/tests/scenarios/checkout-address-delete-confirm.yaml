@@ -28,5 +28,5 @@ test_files:
 validation:
   browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — 실브라우저 확인은 Chrome MCP 로 대체
   note: |
-    레이아웃 원문(_modal_address_manage.json)의 삭제 액션 구조를 검증한다. 확인 창 취소 시 요청이 나가지 않는
+    레이아웃 소스(_modal_address_manage.g7.html)를 구운 산출의 삭제 액션 구조를 검증한다. 확인 창 취소 시 요청이 나가지 않는
     동작은 코어 ActionDispatcher 의 confirm 속성 처리이며, 브라우저 실측으로 확인·취소 두 갈래를 본다.

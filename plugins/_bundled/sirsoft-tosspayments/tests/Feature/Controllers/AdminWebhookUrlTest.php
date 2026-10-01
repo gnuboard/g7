@@ -20,7 +20,7 @@ class AdminWebhookUrlTest extends PluginTestCase
 {
     private const ENDPOINT = '/api/plugins/sirsoft-tosspayments/admin/webhook-url';
 
-    private const ROUTE_NAME = 'api.plugins.sirsoft-tosspayments.admin.webhook.url';
+    private const ROUTE_NAME = 'api.plugins.sirsoft-tosspayments.admin.webhook-url';
 
     private const DEPOSIT_ROUTE_NAME = 'web.plugins.sirsoft-tosspayments.webhook.deposit';
 

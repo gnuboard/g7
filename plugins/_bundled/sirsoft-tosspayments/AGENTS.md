@@ -70,16 +70,18 @@
 
 <!-- @intent START -->
 **결제 승인**: 통합결제창이 브라우저를 `/payment/callback?paymentKey&orderId&amount`로
-리다이렉트 → `PaymentCallbackController`가 주문 조회 →
-`sirsoft-tosspayments.payment.before_confirm` 훅 → `TossPaymentsApiService::confirmPayment()`
-가 토스 승인 확인 API 호출 → 응답 금액과 서버 재계산 금액 대조(불일치 시 실패 처리) →
-`sirsoft-tosspayments.payment.after_confirm` 훅 → 이커머스 주문 결제 완료 처리. 가상계좌가
-발급된 경우 응답에 실린 `secret`을 `payment_meta.toss_secret`에 저장해 이후 웹훅 대조에
-씁니다.
+리다이렉트 → `PaymentCallbackController`가 주문 조회 → 결제 가능 상태와 콜백 금액을 주문
+청구액과 대조(어긋나면 승인 없이 실패) → `sirsoft-tosspayments.payment.before_confirm` 훅 →
+`TossPaymentsApiService::confirmPayment()`가 **청구액으로** 토스 승인 확인 API 호출 →
+`sirsoft-tosspayments.payment.after_confirm` 훅 → 응답 `totalAmount`와 청구액 대조(어긋나거나
+없으면 토스 승인을 취소하고 실패) → 이커머스 주문 결제 완료 처리. 가상계좌가 발급된 경우 같은
+대조를 거친 뒤 응답에 실린 `secret`을 `payment_meta.toss_secret`에, 대조한 발급 금액을
+`payment_meta.toss_approved_amount`에 저장해 이후 웹훅 대조에 씁니다.
 
 **가상계좌 입금 웹훅**: 토스가 `/webhook/deposit`으로 POST → 저장된 `toss_secret`과 웹훅
 본문의 `secret`을 대조(`webhook_secret_verify` 설정이 꺼져 있지 않은 한 강제) → 일치하면
-결제 완료 처리, 불일치하면 경고 로그만 남기고 처리하지 않습니다.
+발급 때 저장한 `toss_approved_amount`(없는 옛 결제행은 토스 결제 조회 결과)를 현재 청구액과
+대조한 뒤 결제 완료 처리합니다. secret 불일치·금액 불일치는 처리하지 않습니다.
 
 **결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`가 토스 취소 API 호출
@@ -108,8 +110,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -162,10 +164,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 20개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| PHPUnit | 24개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

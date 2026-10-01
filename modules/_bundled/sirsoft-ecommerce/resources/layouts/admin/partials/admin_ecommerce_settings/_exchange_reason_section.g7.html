@@ -33,7 +33,7 @@
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name</label>
           <!-- 새 교환 사유 문구. 설치된 언어마다 칸이 열리지만 [추가]는 지금 화면 언어의 문구만 필수로 본다. -->
-          <multilingual-input value="{{_local.exchangeReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.exchangeReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.exchangeReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.exchangeReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" exchangeReasonForm.name="{{$event.target.value}}"/>
             </on>
@@ -119,7 +119,7 @@
             </td>
             <td class="px-4 py-2">
               <!-- 등록된 교환 사유의 문구. 과거 교환 건도 사유 표시를 이 문구에서 빌려 오므로, 저장하면 지난 건의 사유 표시까지 새 문구로 바뀐다. -->
-              <multilingual-input value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.exchange_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.exchange_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <set-state target="local" form.claim.exchange_reasons="{{(_local.form?.claim?.exchange_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
                 </on>
@@ -148,7 +148,7 @@
             </td>
             <td class="px-4 py-2 text-center">
               <!-- 교환 사유 사용 여부. 꺼도 줄은 지워지지 않아 지난 교환 건의 사유 표시는 유지되고, 새 교환 신청에서만 빠진다. -->
-              <toggle checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+              <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <set-state target="local" form.claim.exchange_reasons="{{(_local.form?.claim?.exchange_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
                 </on>

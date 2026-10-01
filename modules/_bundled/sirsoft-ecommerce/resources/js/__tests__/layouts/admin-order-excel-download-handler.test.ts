@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 
 import excelModal from '../../../layouts/admin/partials/admin_ecommerce_order_list/_modal_excel_download.json';
+import orderDatagrid from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_order_datagrid.json';
 import { handlerMap } from '../../handlers';
 import { downloadFileHandler } from '../../handlers/downloadFile';
 
@@ -55,8 +56,9 @@ describe('관리자 주문 목록 — 엑셀 내려받기 창', () => {
         expect(params.url).toBe('/api/modules/sirsoft-ecommerce/admin/orders/export-excel');
         expect(params.method).toBe('POST');
         expect(params.filename).toMatch(/^orders_\{\{\$date\.format\('YYYYMMDD_HHmmss'\)\}\}\.xlsx$/);
-        // 본문 한 식에 두 갈래(검색결과 / 선택 주문) 구성이 모두 있다
-        expect(params.body).toContain('type: _local.excelDownloadType');
+        // 본문 한 식에 두 갈래(검색결과 / 선택 주문) 구성이 모두 있다. 범위는 창을 열 때 목록이 넘긴
+        // _global.excelDownloadContext 에서 읽는다(모달은 부모의 _local 을 보지 못한다)
+        expect(params.body).toContain('type: _global.excelDownloadContext?.type');
         expect(params.body).toContain('order_ids:');
         expect(params.body).toContain('filters:');
     });
@@ -120,8 +122,12 @@ describe('관리자 주문 목록 — 엑셀 내려받기 창', () => {
 
         const hints = texts.filter((t) => /option_(search|selected)_desc/.test(t));
         expect(hints).toHaveLength(2);
-        // 목록 응답의 전체 건수는 data.pagination.total 이다 (주문 표 머리의 total_count 와 같은 경로) — data.total 은 없어 늘 0 이었다.
-        expect(hints.find((t) => t.includes('option_search_desc'))).toContain('orders?.data?.pagination?.total');
+        // 안내는 창을 열 때 목록이 넘긴 건수를 읽는다.
+        expect(hints.find((t) => t.includes('option_search_desc'))).toContain('_global.excelDownloadContext?.total');
+        // 그 건수는 목록 응답의 data.pagination.total 이다 (주문 표 머리의 total_count 와 같은 경로) — data.total 은 없어 늘 0 이었다.
+        const seeds = JSON.stringify(orderDatagrid).match(/"excelDownloadContext":"[^"]*"/g) ?? [];
+        expect(seeds.length).toBeGreaterThan(0);
+        seeds.forEach((seed) => expect(seed).toContain('total: (orders?.data?.pagination?.total ?? 0)'));
         hints.forEach((t) => {
             expect(t).toMatch(/^\$t:sirsoft-ecommerce\.admin\.order\.excel\.option_(search|selected)_desc\|count=\{\{.+\}\}$/);
         });

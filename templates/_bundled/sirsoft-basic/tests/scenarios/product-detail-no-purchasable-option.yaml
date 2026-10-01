@@ -27,5 +27,5 @@ test_files:
 validation:
   browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — 실브라우저 확인은 Chrome MCP 로 대체
   note: |
-    레이아웃 원문(_purchase_card.json)의 disabled 표현식을 문맥별로 평가해 버튼 잠금을 판정한다.
+    레이아웃 소스(_purchase_card.g7.html)를 구운 산출의 disabled 표현식을 문맥별로 평가해 버튼 잠금을 판정한다.
     서버 쪽 422 거절은 이커머스 모듈 시나리오(no-purchasable-option-rejection.yaml)가 담당한다.

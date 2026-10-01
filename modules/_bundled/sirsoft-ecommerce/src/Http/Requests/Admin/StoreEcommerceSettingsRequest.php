@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: develop-7.1.0 리베이스 후속 — 주석의 메서드 위치 참조만 바꿨다. 검증 규칙·요청 계약 불변
+
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
@@ -81,7 +83,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $changed = $this->fillOmittedManagedExchangeRates($data) || $changed;
 
         // 쓸 수 없게 된 공개 자산 디스크 안내는 설정 응답이 화면에 싣는 표시용 값이라 저장하지 않는다
-        // (EcommerceSettingsController::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
+        // (EcommerceSettingsAdminService::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
         if (is_array($data['basic_info'] ?? null) && array_key_exists('public_asset_disk_unavailable', $data['basic_info'])) {
             unset($data['basic_info']['public_asset_disk_unavailable']);
             $changed = true;

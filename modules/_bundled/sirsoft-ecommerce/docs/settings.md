@@ -137,7 +137,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 **공개 자산 디스크(`basic_info.public_asset_disk`)가 사라진 경우**: 선택지는 코어
 `DriverRegistryService::getAvailableDrivers('public_asset')` 카탈로그이고, 설정 조회·저장 응답 모두
-`EcommerceSettingsController::withPublicAssetCatalog()` 로 `available_public_asset_disks` 를 붙입니다.
+`EcommerceSettingsAdminService::withPublicAssetCatalog()` 로 `available_public_asset_disks` 를 붙입니다.
 저장된 디스크가 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 응답은 값을 실제 동작인
 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을 표시용 키 `basic_info.public_asset_disk_unavailable`
 로 알립니다. 기본정보 탭은 이 키가 있으면 「저장했던 디스크를 쓸 수 없게 됐다」는 안내를 보이고, 저장

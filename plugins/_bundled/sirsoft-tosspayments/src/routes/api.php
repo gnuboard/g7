@@ -33,5 +33,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
             ],
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')
-        ->name('webhook.url');
+        // 이름에 `.webhook.` 마디를 두지 않는다 — 코어 IP 제한 검사가 그 이름을 외부 인바운드 콜백으로 분류한다(관리자 조회라 콜백이 아니다)
+        ->name('webhook-url');
 });

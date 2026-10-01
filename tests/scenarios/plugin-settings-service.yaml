@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 기존 서비스 단위 테스트의 소유권을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트의 효과를 명시하는 것이 목적이다.
+# audit:allow test-scenario-coverage[cross_product] reason: 기존 서비스 단위 테스트의 소유권을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트의 효과를 명시하는 것이 목적이다.
 
 feature: 플러그인 설정 서비스 (설정 조회·저장·레이아웃 해석)
 

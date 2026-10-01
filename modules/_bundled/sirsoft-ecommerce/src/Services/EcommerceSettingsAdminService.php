@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\HookManager;
 use App\Services\DriverRegistryService;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationDefinitionService;
@@ -101,9 +100,35 @@ class EcommerceSettingsAdminService
         // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
         // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
         $settings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
+
         // 공개 자산 디스크 선택지 — 카탈로그 SSoT 는 코어 DriverRegistryService 게터 한 곳.
         // 저장 응답에도 같은 목록을 붙인다 (관리자 UI 상태 갱신용).
-        $settings['available_public_asset_disks'] = $this->driverRegistry->getAvailableDrivers('public_asset');
+        return $this->withPublicAssetCatalog($settings);
+    }
+
+    /**
+     * 설정 응답에 공개 자산 디스크 카탈로그(available_public_asset_disks)를 붙입니다.
+     *
+     * 저장된 basic_info.public_asset_disk 가 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우)
+     * 실제 동작인 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을
+     * `basic_info.public_asset_disk_unavailable` 로 알립니다. 저장값을 그대로 실으면 화면의 선택 칸이
+     * 어떤 선택지와도 맞지 않은 채 보이고, 기본정보 탭 저장이 다른 항목만 고쳐도 매번 카탈로그 검증(422)에
+     * 막힙니다. 런타임도 이미 고아 디스크를 스트리밍으로 폴백하므로 표시가 동작과 같아집니다.
+     * 안내 키는 저장 요청에서 제외되어 설정에 남지 않습니다(StoreEcommerceSettingsRequest).
+     *
+     * @param  array<string, mixed>  $settings  응답에 실을 설정
+     * @return array<string, mixed> 카탈로그를 붙이고 쓸 수 없게 된 디스크를 정리한 설정
+     */
+    private function withPublicAssetCatalog(array $settings): array
+    {
+        $catalog = $this->driverRegistry->getAvailableDrivers('public_asset');
+        $settings['available_public_asset_disks'] = $catalog;
+
+        $stored = $settings['basic_info']['public_asset_disk'] ?? '';
+        if (is_string($stored) && $stored !== '' && ! in_array($stored, array_column($catalog, 'id'), true)) {
+            $settings['basic_info']['public_asset_disk'] = 'none';
+            $settings['basic_info']['public_asset_disk_unavailable'] = $stored;
+        }
 
         return $settings;
     }
@@ -478,11 +503,9 @@ class EcommerceSettingsAdminService
             $definition = $this->notificationDefinitionService->resolve($type);
             $channels = $definition?->channels ?? ['mail', 'database'];
 
-            $channels = HookManager::applyFilters(
-                'sirsoft-ecommerce.notification.channels',
-                $channels,
-                $type
-            );
+            // 채널 후보는 코어 진입점에서 받는다 — 채널 제공 확장(문자 등)이 코어 훅에 더한 후보와
+            // 이커머스 자기 훅(sirsoft-ecommerce.notification.channels)을 발송 경로와 같은 순서로 거친다.
+            $channels = $this->notificationChannelService->resolveChannelCandidates('sirsoft-ecommerce', $channels, $type);
 
             $active = array_values(array_filter(
                 $channels,

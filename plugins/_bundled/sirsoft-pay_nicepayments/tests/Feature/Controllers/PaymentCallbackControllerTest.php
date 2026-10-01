@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 class PaymentCallbackControllerTest extends PluginTestCase
@@ -243,6 +244,27 @@ class PaymentCallbackControllerTest extends PluginTestCase
                 'vbank_name' => $overrides['vbank_name'] ?? '국민은행',
                 'is_test_mode' => true,
             ], $overrides['payment_meta'] ?? []),
+        ]);
+    }
+
+    /**
+     * 나이스페이 거래 조회 API 응답을 가짜로 세웁니다. (기본값: 입금이 끝나 승인으로 조회되는 거래)
+     *
+     * @param  string  $tid  거래번호
+     * @param  array  $overrides  기본값 대신 쓸 항목
+     * @return void 반환값 없음
+     */
+    private function fakeTransactionQuery(string $tid, array $overrides = []): void
+    {
+        Http::fake([
+            'webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp' => Http::response(array_merge([
+                'ResultCode' => '0000',
+                'ResultMsg' => '정상처리',
+                'TID' => $tid,
+                'Status' => '0',
+                'AuthCode' => 'AUTH12345',
+                'AuthDate' => now()->format('ymdHis'),
+            ], $overrides), 200),
         ]);
     }
 
@@ -976,6 +998,104 @@ class PaymentCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 가상계좌 발급 승인 응답을 흉내 낸 배열을 만듭니다.
+     *
+     * @param  string  $tid  거래번호
+     * @param  string  $moid  주문번호
+     * @param  int  $amount  발급 금액
+     * @return array 구성한 배열
+     */
+    private function makeVbankIssueResponse(string $tid, string $moid, int $amount): array
+    {
+        return array_merge($this->makeAuthorizeResponse($tid, $moid, $amount, '4100'), [
+            'PayMethod' => 'VBANK',
+            'VbankBankCode' => '004',
+            'VbankBankName' => '국민은행',
+            'VbankNum' => '1234567890',
+            'VbankExpDate' => '20260521',
+            'VbankExpTime' => '235959',
+        ]);
+    }
+
+    /**
+     * 발급 금액이 주문 청구액과 다른 가상계좌는 기록하지 않고 발급 승인을 망취소한다.
+     *
+     * 수정 전: 발급 응답 금액을 주문 청구액과 대조하지 않아, 청구액보다 적은 금액의 계좌가 주문에 붙고
+     * 그 금액을 입금하면 결제완료 경로로 이어질 수 있었다.
+     *
+     * @effects vbank_issue_net_cancels_when_issued_amount_differs_from_order_charge
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_net_cancels_when_issued_amount_differs_from_order_charge(): void
+    {
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($order->order_number, 1000, [
+            'PayMethod' => 'VBANK',
+        ]);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(
+                $this->makeVbankIssueResponse('VBANK_ISSUE_LOW_AMOUNT', $order->order_number, 1000),
+                200
+            ),
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=amount_mismatch', $response->headers->get('Location'));
+
+        $order->refresh();
+        $payment = $order->payment->fresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
+        $this->assertEquals(PaymentStatusEnum::READY, $payment->payment_status);
+        $this->assertNull($payment->vbank_number);
+        $this->assertArrayNotHasKey('vbank_tid', $payment->payment_meta ?? []);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/netcancel'));
+    }
+
+    /**
+     * 가상계좌로 주문하지 않은 결제 건에는 발급을 기록하지 않고 발급 승인을 망취소한다.
+     *
+     * @effects vbank_issue_net_cancels_for_order_not_paid_by_virtual_account
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_net_cancels_for_order_not_paid_by_virtual_account(): void
+    {
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::CARD);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($order->order_number, 30000, [
+            'PayMethod' => 'VBANK',
+        ]);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(
+                $this->makeVbankIssueResponse('VBANK_ISSUE_CARD_ORDER', $order->order_number, 30000),
+                200
+            ),
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+
+        $order->refresh();
+        $payment = $order->payment->fresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
+        $this->assertEquals(PaymentStatusEnum::READY, $payment->payment_status);
+        $this->assertNull($payment->vbank_number);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/netcancel'));
+    }
+
+    /**
      * 인증 단계(AuthResultCode != '0000') 실패는 사용자가 아직 결제를 끝내지 않은 상태로
      * 어떤 코드/메시지가 오든 generic 에러 toast 없이 체크아웃으로 깨끗하게 복귀해야 한다.
      *
@@ -1301,6 +1421,103 @@ class PaymentCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 승인 응답에 승인 금액이 없거나 숫자가 아니면 승인을 망취소하고 주문을 결제완료로 만들지 않는다.
+     *
+     * 수정 전: 응답 금액이 비면 대조를 건너뛰고 브라우저가 보낸 콜백 금액으로 결제를 완료했다.
+     *
+     * @effects auth_callback_net_cancels_when_authorize_response_has_no_approved_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_net_cancels_when_authorize_response_has_no_approved_amount(): void
+    {
+        $this->mockPluginSettings();
+
+        $cases = [
+            'missing' => null,
+            'empty' => '',
+            'non_numeric' => 'N/A',
+            'decimal' => '50000.0',
+        ];
+
+        // 가짜 응답은 한 번만 등록한다 — Http::fake 를 거듭 부르면 먼저 등록한 응답이 이긴다.
+        $pgResponse = [];
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => function () use (&$pgResponse) {
+                return Http::response($pgResponse, 200);
+            },
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        foreach ($cases as $label => $pgAmt) {
+            $order = $this->createTestOrder(50000);
+            $params = $this->makeCallbackParams($order->order_number, 50000);
+
+            $pgResponse = $this->makeAuthorizeResponse('TID_NO_AMT_'.$label, $order->order_number, 50000);
+            if ($pgAmt === null) {
+                unset($pgResponse['Amt']);
+            } else {
+                $pgResponse['Amt'] = $pgAmt;
+            }
+
+            $response = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+
+            $response->assertRedirect();
+            $this->assertStringContainsString('error=authorize_failed', $response->headers->get('Location'), "case={$label}");
+
+            $order->refresh();
+            $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status, "case={$label}");
+            $this->assertEquals(PaymentStatusEnum::READY, $order->payment->payment_status, "case={$label}");
+            $this->assertNull($order->payment->transaction_id, "case={$label}");
+            Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/netcancel')
+                && $request['TID'] === $params['TxTid']);
+        }
+    }
+
+    /**
+     * 결제완료 반영에 넘기는 금액은 PG 승인 응답의 금액이다. (0 으로 채운 숫자 문자열도 정수로 읽는다)
+     *
+     * @effects auth_callback_hands_pg_approved_amount_to_complete_payment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_hands_pg_approved_amount_to_complete_payment(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+        $pgResponse = array_merge(
+            $this->makeAuthorizeResponse('TID_PG_AMOUNT', $order->order_number, 50000),
+            ['Amt' => '000000050000'],
+        );
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response($pgResponse, 200),
+            'pay.nicepay.co.kr/v1/netcancel' => Http::response('OK', 200),
+        ]);
+
+        $receivedAmounts = [];
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')
+            ->andReturnUsing(fn (string $orderNumber) => Order::query()->where('order_number', $orderNumber)->first());
+        $orderService->shouldReceive('completePayment')
+            ->once()
+            ->andReturnUsing(function (Order $lockedOrder, array $paymentData, ?int $pgAmount) use (&$receivedAmounts): Order {
+                $receivedAmounts[] = $pgAmount;
+
+                return $lockedOrder;
+            });
+        $this->app->instance(OrderProcessingService::class, $orderService);
+
+        $response = $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params);
+
+        $response->assertRedirect("/shop/orders/{$order->order_number}/complete");
+        $this->assertSame([50000], $receivedAmounts);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/v1/netcancel'));
+    }
+
+    /**
      * 필수 파라미터가 빠진 콜백은 실패 화면으로 보낸다.
      *
      * @effects auth_callback_redirects_to_fail_url_on_missing_params
@@ -1429,6 +1646,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $tid = 'VBANK_TID_001';
         $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
         $this->markVbankIssued($order, $tid, 30000);
+        $this->fakeTransactionQuery($tid);
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',
@@ -1440,6 +1658,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+
+        // 결제완료 전에 거래 조회로 입금을 PG 에 직접 확인했다.
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'trans_status.jsp')
+            && $request['TID'] === $tid);
     }
 
     /**
@@ -1454,6 +1676,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $tid = 'VBANK_TID_SANITIZED';
         $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
         $this->markVbankIssued($order, $tid, 30000);
+        $this->fakeTransactionQuery($tid);
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',
@@ -1625,6 +1848,90 @@ class PaymentCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 거래 조회로 입금이 확인되지 않는 입금통보는 주문을 결제완료로 만들지 않고 실패를 응답한다.
+     *
+     * 입금통보에는 서명이 없어, 발급 정보(거래번호·계좌·금액)를 아는 쪽이 보낸 위조 통보를 통보 내용만으로는
+     * 가려낼 수 없다. 수정 전: 발급 정보와 맞기만 하면 PG 확인 없이 결제완료로 바꿨다.
+     *
+     * @effects vbank_notify_rejects_deposit_not_confirmed_by_transaction_query
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_notify_rejects_deposit_not_confirmed_by_transaction_query(): void
+    {
+        $cases = [
+            'not_deposited' => ['body' => ['ResultCode' => '0000', 'Status' => '9'], 'status' => 200],
+            'cancelled' => ['body' => ['ResultCode' => '0000', 'Status' => '1'], 'status' => 200],
+            'query_failed' => ['body' => ['ResultCode' => 'A118', 'ResultMsg' => '조회 실패'], 'status' => 200],
+            'other_tid' => ['body' => ['ResultCode' => '0000', 'Status' => '0', 'TID' => 'VBANK_TID_OTHER'], 'status' => 200],
+            'amount_differs' => ['body' => ['ResultCode' => '0000', 'Status' => '0', 'Amt' => '1000'], 'status' => 200],
+            'http_error' => ['body' => [], 'status' => 500],
+        ];
+
+        // 가짜 응답은 한 번만 등록한다 — Http::fake 를 거듭 부르면 먼저 등록한 응답이 이긴다.
+        $queryResponse = ['body' => null, 'status' => 200];
+        Http::fake([
+            'webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp' => function () use (&$queryResponse) {
+                return Http::response($queryResponse['body'], $queryResponse['status']);
+            },
+        ]);
+
+        foreach ($cases as $label => $case) {
+            $tid = 'VBANK_UNCONF_'.$label; // 입금통보 TID 는 30자 이하만 받는다
+            $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+            $this->markVbankIssued($order, $tid, 30000);
+
+            $queryResponse = [
+                'body' => $case['status'] === 200 ? array_merge(['TID' => $tid], $case['body']) : null,
+                'status' => $case['status'],
+            ];
+
+            $response = $this->post(
+                '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',
+                $this->makeVbankNotifyPayload($order->order_number, 30000, ['TID' => $tid])
+            );
+
+            $response->assertOk();
+            $this->assertEquals('FAIL', $response->getContent(), "case={$label}");
+
+            $order->refresh();
+            $payment = $order->payment->fresh();
+            $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status, "case={$label}");
+            $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status, "case={$label}");
+            $this->assertNull($payment->transaction_id, "case={$label}");
+            Http::assertSent(fn ($request) => str_contains($request->url(), 'trans_status.jsp')
+                && $request['TID'] === $tid);
+        }
+    }
+
+    /**
+     * 입금 확인 거래 조회는 계좌를 발급한 당시의 MID 로 서명해 보낸다.
+     *
+     * @effects vbank_notify_transaction_query_uses_issue_time_mid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_notify_transaction_query_uses_issue_time_mid(): void
+    {
+        $this->mockPluginSettings(['test_mid' => 'othermid0m']);
+
+        $tid = 'VBANK_TID_ISSUE_MID';
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+        $this->markVbankIssued($order, $tid, 30000);
+        $this->fakeTransactionQuery($tid);
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',
+            $this->makeVbankNotifyPayload($order->order_number, 30000, ['TID' => $tid])
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'trans_status.jsp')
+            && $request['MID'] === self::TEST_MID);
+    }
+
+    /**
      * 입금 성공 로그에 입금자명·전체 계좌번호를 남기지 않는다.
      *
      * @effects vbank_notify_success_log_does_not_include_depositor_or_full_account
@@ -1638,6 +1945,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $tid = 'VBANK_TID_LOG_SAFE';
         $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
         $this->markVbankIssued($order, $tid, 30000);
+        $this->fakeTransactionQuery($tid);
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify',

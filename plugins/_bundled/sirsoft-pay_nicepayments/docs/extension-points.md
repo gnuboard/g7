@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:319` |
-| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:312` |
-| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:314` |
-| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:289` |
+| `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:324` |
+| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:347` |
+| `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:319` |
+| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:324` |
 | `sirsoft-pay_nicepayments.payment.refund_failed` | action | — | `src/Listeners/PaymentRefundListener.php:166` |
 <!-- @generated:hooks-published END -->
 
@@ -30,11 +30,11 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 40 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -59,7 +59,8 @@
 
 승인 리스너는 서명 금액(`Amt`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
 `AMOUNT_MISMATCH`), 콜백·응답의 주문번호(`Moid`)가 이 결제 건이 아니면 거절하며, 응답 금액이 서명
-금액과 다르면 망취소한 뒤 실패로 돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+금액과 다르거나 응답에 승인 금액이 없으면(숫자가 아닌 값 포함) 망취소한 뒤 실패로 돌려줍니다. 모듈에 넘기는
+`paid_amount` 는 브라우저 콜백 금액이 아니라 승인 응답의 금액입니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
 `sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
 콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
 한 구현입니다.
@@ -108,8 +109,8 @@
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
-| `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
 | `PaymentRefundListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |

@@ -56,7 +56,6 @@ HookManager::addAction(
 | `core.notification_log.after_log_sent` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.plugin_settings.after_save` | action | `InvalidateTokenOnSettingsSaveListener` | `invalidateToken` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateBizppurioSettingsListener` | `addLiveModeRules` | 10 |
-| `sirsoft-ecommerce.notification.extract_data` | filter | `GuestPhoneExtractListener` | `injectGuestPhone` | 20 |
 | `sirsoft-message_bizppurio.notification.extract_data` | filter | `BalanceLowNotificationDataListener` | `injectBalanceLowData` | 10 |
 <!-- @generated:hooks-subscribed END -->
 

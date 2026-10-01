@@ -2276,6 +2276,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_replaces_only_the_named_item(): void
     {
@@ -2359,6 +2361,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_merges_into_the_item_instead_of_replacing_it(): void
     {
@@ -2425,6 +2429,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_appends_when_the_key_is_new(): void
     {
@@ -2486,6 +2492,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects malformed_patch_leaves_the_host_list_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_keeps_the_list_when_the_definition_is_malformed(): void
     {
@@ -2551,6 +2559,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects appending_into_a_patched_item_keeps_every_extensions_contribution
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_append_keeps_every_extension_contribution(): void
     {
@@ -2677,6 +2687,8 @@ class LayoutExtensionServiceTest extends TestCase
      * @scenario layout_extension=patch_list_item
      *
      * @effects appending_into_a_patched_item_keeps_every_extensions_contribution
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_patch_append_creates_the_key_when_absent(): void
     {

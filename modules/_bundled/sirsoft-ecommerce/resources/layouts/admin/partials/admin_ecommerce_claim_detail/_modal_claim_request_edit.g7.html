@@ -1,6 +1,6 @@
 <partial description="Claim Request Edit Modal (S15 — reason / detail)">
   <!-- 신청 내용 수정 모달 (S15). 고객이 사유를 잘못 골라 귀책·배송비가 틀렸을 때 운영자가 고친다 — 금액만 고치면 사유와 금액이 어긋난 채 남는다. 운영자는 판매자 귀책(고객 비노출) 사유도 고른다. 사유 선택지는 상세 응답(`reason_options`)이 나른다 — 사유 카탈로그 조회는 `settings.read` 게이트다. 문맥은 `_global.claimRequestEditContext`(신청서 식별·사유 선택지)와 입력값 `_global.claimRequestEditReasonCode`·`claimRequestEditReasonDetail` 이다. -->
-  <modal data-ref="modal_claim_request_edit" title="$t:sirsoft-ecommerce.admin.claim.detail.request_edit.title" size="md">
+  <modal data-type="composite" data-ref="modal_claim_request_edit" title="$t:sirsoft-ecommerce.admin.claim.detail.request_edit.title" size="md">
     <div class="space-y-4">
       <p data-ref="cre_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.request_edit.description</p>
       <select data-ref="cre_002_reason" name="reasonCode" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_global.claimRequestEditReasonCode ?? ''}}" options="{{_global.claimRequestEditContext?.reasonOptions ?? []}}">

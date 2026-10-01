@@ -188,7 +188,7 @@
         </button>
       </div>
       <!-- 유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 "그 탭으로 넘어가면 몇 건이 보이는가" 를 답한다. -->
-      <tab-navigation data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="mb-4">
+      <tab-navigation data-type="composite" data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="mb-4">
         <prop name="tabs">
           <item id="exchange" label="$t:sirsoft-ecommerce.admin.claim.subtab.exchange" badge="{{claims?.data?.counts?.exchange ?? 0}}"/>
           <item id="return" label="$t:sirsoft-ecommerce.admin.claim.subtab.return" badge="{{claims?.data?.counts?.return ?? 0}}"/>

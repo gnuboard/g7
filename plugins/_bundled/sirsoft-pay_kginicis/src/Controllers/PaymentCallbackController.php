@@ -338,12 +338,14 @@ class PaymentCallbackController
             if (($pgResponse['payMethod'] ?? '') === 'VBank') {
                 // 결제대기 주문에만 발급을 기록한다 — 이미 결제됐거나 다른 가상계좌가 붙은 결제 레코드를
                 // 덮어쓰면 환불 대상 거래번호가 오염된다. 같은 발급의 중복 콜백은 성공으로만 처리한다.
+                // 승인 응답에 금액이 없거나 청구액과 다르면 발급을 기록하지 않는다.
                 $issueDecision = $this->vbankIssueDecision($order, $pgApprovedAmount, $tid);
                 if ($issueDecision === 'reject') {
-                    Log::warning('KG Inicis: vbank issue rejected for non-payable order; net cancelling', [
+                    Log::warning('KG Inicis: vbank issue rejected (order not payable or amount mismatch); net cancelling', [
                         'moid' => $moid,
                         'tid' => $tid,
                         'order_status' => $order->order_status->value,
+                        'pg_price' => $pgTotPrice,
                     ]);
 
                     $this->apiService->sendNetCancel($netCancelUrl, $authToken);
@@ -369,6 +371,23 @@ class PaymentCallbackController
                 return redirect($this->resolveSuccessUrl($moid));
             }
 
+            // 결제 전 주문에만 승인을 반영한다 (모바일 콜백·가상계좌 발급과 같은 판정).
+            //
+            // 같은 거래번호의 재전송은 바로 위에서 성공으로 돌려보냈으므로, 여기까지 온 승인은 이 주문에
+            // 처음 도착한 새 승인이다. 이미 결제완료됐거나 취소된 주문이면 결제완료 처리가 조용히 건너뛰어져
+            // 승인된 돈이 PG 에 남고, 결제 레코드의 PG 사 표기만 바뀐다. 주문은 건드리지 않고 망취소로 돌려준다.
+            if (! $order->order_status->isBeforePayment()) {
+                Log::warning('KG Inicis: approval arrived for non-payable order; net cancelling', [
+                    'moid' => $moid,
+                    'tid' => $tid,
+                    'order_status' => $order->order_status->value,
+                ]);
+
+                $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+            }
+
             // 승인액은 **PG 승인 응답**의 TotPrice 만 쓴다. 콜백 TotPrice 를 먼저 쓰면 결제창 금액을 바꾼
             // 요청이 청구액을 적어 보내는 것만으로 대조를 통과한다(대조가 항등식이 된다). 응답에 금액이
             // 없으면 0 이 되어 아래 대조에서 망취소 + 실패로 끝난다 (#599 validate P2, 클레임 경로와 같은 규칙).
@@ -385,7 +404,8 @@ class PaymentCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'invalid_payment_currency', 'orderId' => $moid]));
             }
-            if ($expectedAmount > 0 && $totPrice !== $expectedAmount) {
+            // 청구액이 0 이어도 대조를 건너뛰지 않는다 — PG 결제가 필요 없는 주문에 승인이 들어온 것 자체가 불일치다.
+            if ($totPrice !== $expectedAmount) {
                 $this->apiService->sendNetCancel($netCancelUrl, $authToken);
 
                 return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
@@ -751,7 +771,8 @@ class PaymentCallbackController
             return false;
         }
 
-        if ($expectedAmount > 0 && $notify['amount'] !== $expectedAmount) {
+        // 청구액이 0 이어도 대조를 건너뛰지 않는다 — 승인 콜백·가상계좌 발급과 같은 규칙.
+        if ($notify['amount'] !== $expectedAmount) {
             Log::warning('KG Inicis: vbank notify rejected - amount mismatch', [
                 'source' => $source,
                 'moid' => $order->order_number,

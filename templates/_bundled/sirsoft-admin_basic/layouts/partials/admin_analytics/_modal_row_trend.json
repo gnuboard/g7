@@ -2,7 +2,8 @@
     "comment": "한 항목 추이 창. 리포트 목록 행 끝의 추이 아이콘이 그 행의 리포트 이름·저장 라벨을 `_global.analyticsRowTrend` 에\n  담고 연다. 화면의 데이터소스 `analytics_row_trend` 가 그 값에 매여 따라 받는다(기간·제외는 지금 주소 그대로).\n  차원 집계는 일 단위뿐이라 92일까지는 일, 그 뒤는 주 단위로 온다. 다른 행을 열면 창 제목·요청 라벨이 그 행으로\n  바뀌고, 받는 동안은 옛 차트를 흐려 잔상이 새 행의 값으로 읽히지 않게 한다.\n  엔진은 실패한 요청에 오류 표식을 싣지 않고 마지막 성공 값(다른 행의 것일 수 있다)이나 fallback 을 성공처럼 준다 —\n  그래서 응답의 report·label 이 고른 행과 같을 때만 차트·빈 상태를 그리고, 아니면 오류 카드를 띄운다.",
     "meta": {
         "is_partial": true,
-        "description": "방문자 통계 — 한 항목 추이 창"
+        "description": "방문자 통계 — 한 항목 추이 창",
+        "editor_label": "$t:admin.modal_label.analytics.row_trend_modal"
     },
     "id": "analytics_row_trend_modal",
     "type": "composite",

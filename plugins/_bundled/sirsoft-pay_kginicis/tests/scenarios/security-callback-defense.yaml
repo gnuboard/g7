@@ -106,6 +106,13 @@ effects:
   - vbank_issue_callback_does_not_overwrite_paid_order
   - auth_callback_uses_pg_approved_amount_not_browser_amount
   - auth_callback_rejects_approval_issued_for_another_order
+  # 결제 전 주문에만 승인 반영 + 승인 응답 금액 필수 대조 (PC 카드·가상계좌 발급, 모바일 가상계좌 발급)
+  - auth_callback_net_cancels_approval_for_already_paid_order
+  - auth_callback_net_cancels_approval_for_cancelled_order
+  - auth_callback_replay_of_same_tid_still_succeeds_without_net_cancel
+  - vbank_issue_callback_rejects_missing_approved_amount
+  - vbank_issue_callback_rejects_mismatched_approved_amount
+  - mobile_vbank_issue_callback_rejects_missing_approved_amount
   - vbank_notify_returns_fail_on_order_not_found
   - vbank_notify_is_idempotent_on_duplicate_tid
   - mobile_vbank_notify_does_not_write_depositor_name_to_application_log

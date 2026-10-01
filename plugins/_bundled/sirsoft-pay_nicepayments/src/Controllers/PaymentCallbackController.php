@@ -351,7 +351,8 @@ class PaymentCallbackController
 
             // 승인 응답이 돌려준 주문번호·금액이 이 콜백의 주문과 같아야 반영한다 (KVE-2026-2434).
             // 서명이 주문번호를 묶지 않으므로, 다른 주문의 인증값으로 받은 승인을 이 주문에 붙이지 못하게
-            // PG 가 확인해 준 값과 대조한다. 어긋나면 그 승인을 망취소하고 주문은 건드리지 않는다.
+            // PG 가 확인해 준 값과 대조한다. 어긋나거나 승인 금액이 없으면 그 승인을 망취소하고 주문은
+            // 건드리지 않는다.
             if (! $this->authorizeResponseMatchesOrder($pgResponse, $moid, $amt)) {
                 Log::warning('NicePayments: authorize response does not match callback order; net cancelling', [
                     'moid' => $moid,
@@ -366,13 +367,17 @@ class PaymentCallbackController
                 return redirect($this->resolveFailUrl(['error' => 'authorize_failed', 'orderId' => $moid]));
             }
 
+            // 이후 반영의 금액 근거는 PG 가 승인해 준 금액이다 — 브라우저가 보낸 콜백 Amt 가 아니다.
+            // 위 대조로 승인 금액이 있고 콜백 금액과 같음을 확인했다.
+            $approvedAmt = (int) NicePaymentsApiService::parseAmount($pgResponse['Amt'] ?? null);
+
             // 5단계: 결제 수단별 처리
             $payMethod = $pgResponse['PayMethod'] ?? '';
             $isEscrow = ($pgResponse['EscrowYN'] ?? 'N') === 'Y'
                 || $this->apiService->isEscrowEnabled();
 
             if ($payMethod === 'VBANK') {
-                $issueStatus = $this->recordVbankIssueWithLock($moid, $pgResponse, $resultCode, $payMethod, $isEscrow, $txTid);
+                $issueStatus = $this->recordVbankIssueWithLock($moid, $pgResponse, $resultCode, $payMethod, $isEscrow, $txTid, $approvedAmt);
                 if ($issueStatus === 'already_waiting') {
                     $this->logReplayDetected((string) ($pgResponse['TID'] ?? $txTid), $moid, 'authCallback (vbank issue)');
                     $this->queueReceiptCookie($moid);
@@ -388,7 +393,13 @@ class PaymentCallbackController
 
                     $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
 
-                    return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+                    // 금액·통화 사유는 사유 그대로 안내하고, 그 밖의 사유(결제수단 불일치·결제 불가 상태)는
+                    // 결제 불가로 안내한다.
+                    $issueError = in_array($issueStatus, ['amount_mismatch', 'invalid_payment_currency'], true)
+                        ? $issueStatus
+                        : 'order_not_payable';
+
+                    return redirect($this->resolveFailUrl(['error' => $issueError, 'orderId' => $moid]));
                 }
 
                 Log::info('NicePayments: vbank account issued', [
@@ -398,7 +409,7 @@ class PaymentCallbackController
                 ]);
             } else {
                 $effectiveTid = (string) ($pgResponse['TID'] ?? $txTid);
-                $completionStatus = $this->completeAuthorizedPaymentWithLock($moid, $pgResponse, $txTid, $amt, $isEscrow, $request, $validated);
+                $completionStatus = $this->completeAuthorizedPaymentWithLock($moid, $pgResponse, $txTid, $approvedAmt, $isEscrow, $request, $validated);
 
                 if ($completionStatus === 'already_paid') {
                     $this->logReplayDetected($effectiveTid, $moid, 'authCallback (card)');
@@ -492,8 +503,9 @@ class PaymentCallbackController
      * 승인 응답이 돌려준 주문번호·금액이 콜백의 주문번호·금액과 같은지 확인합니다.
      *
      * 나이스페이 승인 응답은 주문번호(Moid)와 금액(Amt)을 돌려준다. 콜백 서명은 주문번호를 묶지 않으므로
-     * 이 대조가 "승인된 결제가 바로 이 주문의 것"임을 보장하는 근거다. 응답에 값이 없으면(구버전 응답 등)
-     * 그 항목은 대조하지 않는다 — 금액은 completePayment 가 주문 청구액과 다시 대조한다.
+     * 이 대조가 "승인된 결제가 바로 이 주문의 것"임을 보장하는 근거다. 주문번호가 응답에 없으면(구버전 응답 등)
+     * 그 항목은 대조하지 않는다. 금액은 결제 반영의 근거이므로 응답에 없거나 숫자가 아니면 불일치로 본다 —
+     * 확인된 승인 금액은 이후 completePayment·가상계좌 발급 기록이 주문 청구액과 다시 대조한다.
      *
      * @param  array<string, mixed>  $pgResponse  승인 API 응답
      * @param  string  $moid  콜백 주문번호
@@ -507,16 +519,16 @@ class PaymentCallbackController
             return false;
         }
 
-        $pgAmt = $pgResponse['Amt'] ?? null;
-        if ($pgAmt !== null && $pgAmt !== '' && (int) $pgAmt !== $amt) {
-            return false;
-        }
+        $pgAmt = NicePaymentsApiService::parseAmount($pgResponse['Amt'] ?? null);
 
-        return true;
+        return $pgAmt !== null && $pgAmt === $amt;
     }
 
     /**
      * 주문·결제 행을 잠근 채 가상계좌 발급을 기록합니다. (결제 전 상태에서만)
+     *
+     * 주문의 결제수단이 가상계좌이고, PG 가 발급해 준 금액이 주문 청구액과 같을 때만 기록한다. 그렇지 않으면
+     * 무시 사유를 돌려주고, 호출 측이 발급 승인을 망취소한다.
      *
      * @param  string  $moid  주문번호
      * @param  array  $pgResponse  PG 승인 응답
@@ -524,6 +536,7 @@ class PaymentCallbackController
      * @param  string  $payMethod  PG 결제수단
      * @param  bool  $isEscrow  에스크로 결제 여부
      * @param  string  $txTid  PG 임시 거래번호
+     * @param  int  $approvedAmt  PG 승인 응답의 발급 금액
      * @return string 처리 결과 코드 (recorded / 무시 사유)
      */
     private function recordVbankIssueWithLock(
@@ -533,8 +546,9 @@ class PaymentCallbackController
         string $payMethod,
         bool $isEscrow,
         string $txTid,
+        int $approvedAmt,
     ): string {
-        return DB::transaction(function () use ($moid, $pgResponse, $resultCode, $payMethod, $isEscrow, $txTid): string {
+        return DB::transaction(function () use ($moid, $pgResponse, $resultCode, $payMethod, $isEscrow, $txTid, $approvedAmt): string {
             // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $moid)
@@ -562,6 +576,32 @@ class PaymentCallbackController
 
             if ($payment->payment_status !== PaymentStatusEnum::READY) {
                 return 'not_payable';
+            }
+
+            // 가상계좌로 주문하지 않은 결제 건에는 계좌 발급을 붙이지 않는다 — 입금통보도 결제수단이
+            // 가상계좌인 건만 받으므로, 붙여 두면 입금을 확정할 경로가 없는 계좌가 남는다.
+            if (! $payment->isVirtualAccount()) {
+                return 'payment_method_not_vbank';
+            }
+
+            // 발급 금액은 PG 승인 응답의 금액으로 주문 청구액과 대조한다. 계좌는 이 금액으로 발급되므로
+            // 청구액과 다르면 입금이 끝나도 주문 금액을 받은 것이 아니다.
+            $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($lockedOrder, 'vbank_issue', [
+                'moid' => $moid,
+                'approved_amt' => $approvedAmt,
+            ]);
+            if ($expectedAmount === null) {
+                return 'invalid_payment_currency';
+            }
+
+            if ($approvedAmt !== $expectedAmount) {
+                Log::warning('NicePayments: vbank issue amount does not match order charge', [
+                    'moid' => $moid,
+                    'approved_amt' => $approvedAmt,
+                    'expected_amt' => $expectedAmount,
+                ]);
+
+                return 'amount_mismatch';
             }
 
             $vbankDueAt = null;
@@ -605,7 +645,7 @@ class PaymentCallbackController
      * @param  string  $moid  주문번호
      * @param  array  $pgResponse  PG 승인 응답
      * @param  string  $txTid  PG 임시 거래번호
-     * @param  int  $amt  금액
+     * @param  int  $approvedAmt  PG 승인 응답의 승인 금액 (completePayment 가 주문 청구액과 대조하는 값)
      * @param  bool  $isEscrow  에스크로 결제 여부
      * @param  Request  $request  HTTP 요청
      * @param  array  $callbackPayload  검증된 콜백 파라미터 (결제 메타 보관용)
@@ -615,12 +655,12 @@ class PaymentCallbackController
         string $moid,
         array $pgResponse,
         string $txTid,
-        int $amt,
+        int $approvedAmt,
         bool $isEscrow,
         Request $request,
         array $callbackPayload,
     ): string {
-        return DB::transaction(function () use ($moid, $pgResponse, $txTid, $amt, $isEscrow, $request, $callbackPayload): string {
+        return DB::transaction(function () use ($moid, $pgResponse, $txTid, $approvedAmt, $isEscrow, $request, $callbackPayload): string {
             // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $moid)
@@ -680,7 +720,7 @@ class PaymentCallbackController
                     'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::AUTH_RESPONSE_KEYS),
                 ],
                 'payment_device' => DeviceDetector::detect($request),
-            ], $amt);
+            ], $approvedAmt);
 
             $lockedOrder->refresh();
             $pgUpdates = ['pg_provider' => 'nicepayments'];
@@ -877,11 +917,12 @@ class PaymentCallbackController
      *   - 어떤 결과든 200 + 정확히 "OK" (text/plain) 를 돌려줘야 NicePay 가 재시도하지 않음
      *   - 한글 인코딩(EUC-KR) 은 VbankNotifyRequest::prepareForValidation 에서 UTF-8 로 변환됨
      *
-     * 공식 spec 에 입금통보 Signature 가 없어 위변조 검증은 하지 않으며, 대신:
-     *   - 발송 IP 화이트리스트 (VbankNotifyRequest::authorize)
-     *   - TID/MOID/Amt 가 우리 DB 의 임시 발급 정보와 일치하는지 비교
+     * 공식 spec 에 입금통보 Signature 가 없어 통보 자체의 서명 검증은 할 수 없으며, 대신:
+     *   - 발송 IP 화이트리스트 (VbankNotifyIpWhitelist 미들웨어)
+     *   - TID/MID/계좌번호/Amt 가 우리 DB 의 발급 정보·주문 청구액과 일치하는지 비교
+     *   - 가맹점 키로 서명한 거래 조회로 PG 에 입금(승인) 여부를 직접 확인
      *   - 동일 TID 중복 처리 방지 (행 잠금)
-     *   세 단계로 위변조/재처리 방어.
+     *   네 단계로 위변조/재처리 방어.
      */
     /**
      * 가상계좌 입금 통보 처리
@@ -938,6 +979,46 @@ class PaymentCallbackController
                 Log::error('NicePayments: vbank notify - order not found', ['moid' => $moid, 'tid' => $tid]);
 
                 return response('FAIL', 200)->header('Content-Type', 'text/plain');
+            }
+
+            // 입금통보에는 위변조를 확인할 서명이 없다(나이스페이 통보 규격). 결제완료로 바꾸기 전에 이 통보가
+            // 가리키는 거래가 실제로 입금됐는지 가맹점 키로 서명한 거래 조회로 PG 에 직접 확인한다. 같은
+            // 거래번호로 이미 반영된 재통보와, 발급 정보와 어긋나 어차피 거절될 통보는 PG 를 부르지 않는다.
+            // 조회는 잠금 밖에서 한다 — 외부 호출 동안 결제 행을 잡아 두지 않는다. 잠금 안에서 같은 대조를
+            // 한 번 더 한다.
+            $currentPayment = $order->payment()->first();
+            $isReplay = $currentPayment !== null
+                && $currentPayment->isPaid()
+                && hash_equals((string) $currentPayment->transaction_id, $tid);
+
+            if (! $isReplay) {
+                $precheckError = $currentPayment === null
+                    ? 'payment_not_found'
+                    : $this->validateVbankNotifyContext($order, $currentPayment, $validated, $tid, $amt);
+
+                if ($precheckError !== null) {
+                    Log::warning('NicePayments: vbank notify context mismatch', [
+                        'reason' => $precheckError,
+                        'tid' => $tid,
+                        'moid' => $moid,
+                        'amt' => $amt,
+                    ]);
+
+                    return response('FAIL', 200)->header('Content-Type', 'text/plain');
+                }
+
+                $confirmError = $this->confirmVbankDepositWithPg($currentPayment, $tid, $amt);
+
+                if ($confirmError !== null) {
+                    Log::warning('NicePayments: vbank notify not confirmed by transaction query', [
+                        'reason' => $confirmError,
+                        'tid' => $tid,
+                        'moid' => $moid,
+                        'amt' => $amt,
+                    ]);
+
+                    return response('FAIL', 200)->header('Content-Type', 'text/plain');
+                }
             }
 
             $alreadyProcessed = false;
@@ -1099,6 +1180,63 @@ class PaymentCallbackController
 
         if ($amount !== $expectedAmount) {
             return 'amount_mismatch';
+        }
+
+        return null;
+    }
+
+    /**
+     * 입금통보가 가리키는 거래가 PG 에서 실제로 입금(승인)됐는지 거래 조회로 확인합니다.
+     *
+     * 입금통보는 서명이 없어 통보 내용만으로는 PG 가 보낸 것인지 알 수 없다. 가맹점 키로 서명한 거래
+     * 조회는 우리가 PG 에 직접 묻는 것이므로, 그 응답이 "이 거래번호가 승인됐다" 고 답할 때만 입금을
+     * 인정한다. 가상계좌는 입금이 끝나야 승인으로 조회되고, 입금 전에는 거래 없음으로 조회된다.
+     * 조회는 계좌를 발급한 당시의 MID·모드로 서명한다 (운영자가 이후 설정을 바꿔도 같은 거래를 찾도록).
+     *
+     * @param  OrderPayment  $payment  주문 결제 레코드 (발급 당시 MID·모드 보관)
+     * @param  string  $tid  통보 거래번호
+     * @param  int  $amount  통보 금액 (주문 청구액과 대조를 마친 값)
+     * @return string|null 거절 사유 코드 (확인되면 null)
+     */
+    private function confirmVbankDepositWithPg(OrderPayment $payment, string $tid, int $amount): ?string
+    {
+        $meta = $payment->payment_meta ?? [];
+        $storedMid = trim((string) ($meta['mid'] ?? ''));
+        if ($storedMid !== '' && array_key_exists('is_test_mode', $meta)) {
+            $this->apiService->useStoredCredentials((bool) $meta['is_test_mode'], $storedMid);
+        }
+
+        try {
+            $result = $this->apiService->queryTransaction($tid);
+        } catch (\Throwable $e) {
+            // 조회 실패는 입금을 확인하지 못한 것이다 — FAIL 로 응답하면 PG 가 통보를 다시 보낸다.
+            Log::warning('NicePayments: vbank deposit transaction query failed', [
+                'tid' => $tid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 'pg_query_failed';
+        }
+
+        if ((string) ($result['ResultCode'] ?? '') !== '0000') {
+            return 'pg_query_failed';
+        }
+
+        $queriedTid = trim((string) ($result['TID'] ?? ''));
+        if ($queriedTid !== '' && ! hash_equals($queriedTid, $tid)) {
+            return 'pg_tid_mismatch';
+        }
+
+        if ((string) ($result['Status'] ?? '') !== '0') {
+            return 'pg_not_deposited';
+        }
+
+        // 조회 응답이 금액을 실어 오면 그 금액도 통보 금액(= 주문 청구액)과 같아야 한다.
+        if (array_key_exists('Amt', $result)) {
+            $queriedAmount = NicePaymentsApiService::parseAmount($result['Amt']);
+            if ($queriedAmount === null || $queriedAmount !== $amount) {
+                return 'pg_amount_mismatch';
+            }
         }
 
         return null;

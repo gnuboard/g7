@@ -1035,6 +1035,272 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertNull($order->payment->transaction_id);
     }
 
+    // ===== 결제 전 주문에만 승인 반영 =====
+
+    /**
+     * 주문 처리 서비스를 대체해 주문 조회는 주어진 주문을 돌려주고 결제완료 처리는 한 번도 불리지 않게 합니다.
+     *
+     * @param  Order  $order  조회 결과로 돌려줄 주문
+     * @return void 반환값 없음
+     */
+    private function mockOrderServiceExpectingNoCompletion(Order $order): void
+    {
+        $orderService = $this->createMock(OrderProcessingService::class);
+        $orderService->method('findByOrderNumber')
+            ->with($order->order_number)
+            ->willReturn($order);
+        $orderService->expects($this->never())->method('completePayment');
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+    }
+
+    /**
+     * 이미 결제완료된 주문에 새 카드 승인이 도착하면 망취소하고 주문·결제 레코드를 바꾸지 않는다.
+     *
+     * 종전에는 주문 상태를 보지 않고 결제완료 처리로 넘겨, 결제완료 처리는 조용히 건너뛰어지고 승인된 돈은
+     * PG 에 남은 채 결제 레코드의 PG 사 표기만 이 플러그인으로 바뀌었다.
+     *
+     * @effects auth_callback_net_cancels_approval_for_already_paid_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_net_cancels_approval_for_already_paid_order(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+        $order->payment()->update([
+            'payment_status' => PaymentStatusEnum::PAID,
+            'transaction_id' => 'TID_ORIGINAL_PAID',
+            'pg_provider' => 'nhnkcp',
+            'paid_at' => now(),
+        ]);
+        $this->mockPluginSettings();
+        $this->mockOrderServiceExpectingNoCompletion($order);
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_NEW_'.uniqid(), $order->order_number, 50000),
+                200
+            ),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+        Http::assertSent(static fn ($request): bool => str_contains((string) $request->url(), 'netCancel'));
+
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame('TID_ORIGINAL_PAID', $payment->transaction_id);
+        $this->assertSame('nhnkcp', $payment->pg_provider);
+    }
+
+    /**
+     * 취소된 주문에 카드 승인이 도착하면 망취소하고 주문을 결제완료로 되살리지 않는다.
+     *
+     * @effects auth_callback_net_cancels_approval_for_cancelled_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_net_cancels_approval_for_cancelled_order(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $order->update(['order_status' => OrderStatusEnum::CANCELLED]);
+        $order->payment()->update([
+            'payment_status' => PaymentStatusEnum::CANCELLED,
+            'pg_provider' => 'nhnkcp',
+        ]);
+        $this->mockPluginSettings();
+        $this->mockOrderServiceExpectingNoCompletion($order);
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_LATE_'.uniqid(), $order->order_number, 50000),
+                200
+            ),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+        Http::assertSent(static fn ($request): bool => str_contains((string) $request->url(), 'netCancel'));
+
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $payment->payment_status);
+        $this->assertNull($payment->transaction_id);
+        $this->assertSame('nhnkcp', $payment->pg_provider);
+    }
+
+    /**
+     * 같은 거래번호의 승인 콜백이 다시 도착하면 망취소하지 않고 성공 화면으로 보낸다 (재전송 방어 유지).
+     *
+     * 결제 전 주문 판정보다 재전송 판정이 먼저여야 한다 — 첫 콜백으로 결제완료된 주문을 "결제 불가" 로 보고
+     * 망취소하면 정상 결제가 PG 에서 취소된다.
+     *
+     * @effects auth_callback_replay_of_same_tid_still_succeeds_without_net_cancel
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_replay_of_same_tid_still_succeeds_without_net_cancel(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $tid = 'TID_REPLAY_'.uniqid();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse($tid, $order->order_number, 50000),
+                200
+            ),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        Http::assertNotSent(static fn ($request): bool => str_contains((string) $request->url(), 'netCancel'));
+
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame($tid, $payment->transaction_id);
+    }
+
+    /**
+     * 가상계좌 발급 승인 응답에 금액이 없으면 발급을 기록하지 않고 망취소한다.
+     *
+     * 종전에는 응답 금액이 없으면 대조 자체를 건너뛰어, 청구액과 무관한 발급이 결제대기 주문에 기록됐다.
+     *
+     * @effects vbank_issue_callback_rejects_missing_approved_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_callback_rejects_missing_approved_amount(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_VBANK_NOAMT_'.uniqid(), $order->order_number, 50000, '0000', [
+                    'payMethod' => 'VBank',
+                    'TotPrice' => null,
+                    'VACT_Num' => '12345678901',
+                    'vactBankName' => '국민은행',
+                ]),
+                200
+            ),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+        Http::assertSent(static fn ($request): bool => str_contains((string) $request->url(), 'netCancel'));
+
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::READY, $payment->payment_status);
+        $this->assertNull($payment->transaction_id);
+        $this->assertNull($payment->vbank_number);
+    }
+
+    /**
+     * 가상계좌 발급 승인 금액이 주문 청구액과 다르면 발급을 기록하지 않고 망취소한다.
+     *
+     * @effects vbank_issue_callback_rejects_mismatched_approved_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_callback_rejects_mismatched_approved_amount(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_VBANK_LOW_'.uniqid(), $order->order_number, 1000, '0000', [
+                    'payMethod' => 'VBank',
+                    'VACT_Num' => '12345678901',
+                    'vactBankName' => '국민은행',
+                ]),
+                200
+            ),
+            '*' => Http::response('OK', 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+        Http::assertSent(static fn ($request): bool => str_contains((string) $request->url(), 'netCancel'));
+
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::READY, $payment->payment_status);
+        $this->assertNull($payment->transaction_id);
+        $this->assertNull($payment->vbank_number);
+    }
+
+    /**
+     * 모바일 가상계좌 발급 승인 결과에 `P_AMT` 가 없으면 콜백 금액으로 채우지 않고 발급을 거절한 뒤 취소한다.
+     *
+     * @effects mobile_vbank_issue_callback_rejects_missing_approved_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mobile_vbank_issue_callback_rejects_missing_approved_amount(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $tid = 'MOBILE_VBANK_NOAMT_'.uniqid();
+
+        Http::fake([
+            'fcmobile.inicis.com/smart/payReq.ini' => Http::response(http_build_query([
+                'P_STATUS' => '00',
+                'P_RMESG1' => '성공',
+                'P_TID' => $tid,
+                'P_OID' => $order->order_number,
+                'P_TYPE' => 'VBank',
+                'P_VACT_NUM' => '12345678901',
+                'P_VACT_BANK_NAME' => '국민은행',
+            ]), 200),
+            '*' => Http::response(['resultCode' => '00'], 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/callback?'.http_build_query([
+            'orderId' => $order->order_number,
+        ]), [
+            'P_STATUS' => '00',
+            'P_TID' => $tid,
+            'P_REQ_URL' => 'https://fcmobile.inicis.com/smart/payReq.ini',
+            'P_AMT' => '50000',
+            'P_OID' => $order->order_number,
+            'idc_name' => 'fc',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+        Http::assertSent(static fn ($request): bool => str_contains((string) $request->url(), '/v2/pg/refund'));
+
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::READY, $payment->payment_status);
+        $this->assertNull($payment->transaction_id);
+        $this->assertNull($payment->vbank_number);
+    }
+
     /**
      * 가상계좌 발급 콜백은 이미 결제된 주문의 결제 레코드를 덮어쓰지 않는다.
      *

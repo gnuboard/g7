@@ -802,6 +802,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Plugins\Sirsoft\PayNicepayments\Controllers\PaymentCallbackController;
@@ -215,6 +216,108 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
     }
 
     /**
+     * 승인 응답에 승인 금액이 없거나 숫자가 아니면 망취소하고 거절한다. (클라이언트 승인 API 경로 포함)
+     *
+     * 수정 전: 응답 금액이 숫자가 아니면 대조를 건너뛰고, 브라우저가 보낸 콜백 금액을 `paid_amount` 로 넘겨
+     * 결제 건이 결제완료로 확정됐다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approved_amount_source
+     *
+     * @effects nice_claim_approval_without_a_pg_amount_is_net_cancelled
+     */
+    public function test_a_response_without_an_approved_amount_is_net_cancelled_and_refused(): void
+    {
+        // 가짜 응답은 한 번만 등록한다 — Http::fake 를 거듭 부르면 먼저 등록한 응답이 이긴다.
+        $approveResponse = [];
+        Http::fake([
+            self::NEXT_APP_URL => function () use (&$approveResponse) {
+                return Http::response(json_encode($approveResponse), 200);
+            },
+            self::NET_CANCEL_URL => Http::response('OK', 200),
+        ]);
+
+        foreach (['missing' => null, 'empty' => '', 'non_numeric' => 'N/A'] as $label => $responseAmt) {
+            // 승인 리스너 직접 호출 경로
+            ['payment' => $payment] = $this->makeClaimPayment();
+            $approveResponse = $this->approveResponseWithAmount($payment, 'NICE-P2-NOAMT-'.$label, $responseAmt);
+
+            $result = $this->approve($payment, $this->signedCallback($payment));
+
+            $this->assertFalse($result['success'], "case={$label}");
+            $this->assertSame('AMOUNT_MISMATCH', $result['error_code'], "case={$label}");
+            Http::assertSent($this->isNetCancelFor($payment));
+
+            // 클라이언트 승인 API 경로도 같은 판정으로 거절되고 결제 건은 결제 대기 그대로다.
+            ['payment' => $apiPayment] = $this->makeClaimPayment();
+            $approveResponse = $this->approveResponseWithAmount($apiPayment, 'NICE-P2-NOAMT-API-'.$label, $responseAmt);
+
+            try {
+                app(UserClaimService::class)->approve($apiPayment, $this->signedCallback($apiPayment));
+                $this->fail("승인 금액이 없는 승인이 확정됐다. case={$label}");
+            } catch (OrderClaimException) {
+                // 거절이 기대 동작이다.
+            }
+
+            Http::assertSent($this->isNetCancelFor($apiPayment));
+            $this->assertSame(ClaimPaymentStatusEnum::PENDING, $apiPayment->fresh()->payment_status, "case={$label}");
+        }
+    }
+
+    /**
+     * 승인 금액 칸만 바꾼 승인 성공 응답을 만듭니다.
+     *
+     * @param  ClaimPayment  $payment  결제 건 (Moid)
+     * @param  string  $tid  거래번호
+     * @param  string|null  $amount  승인 금액 (null 이면 칸을 뺀다)
+     * @return array 승인 응답
+     */
+    private function approveResponseWithAmount(ClaimPayment $payment, string $tid, ?string $amount): array
+    {
+        $response = ['ResultCode' => '3001', 'TID' => $tid, 'PayMethod' => 'CARD', 'Moid' => $payment->payment_number];
+
+        if ($amount !== null) {
+            $response['Amt'] = $amount;
+        }
+
+        return $response;
+    }
+
+    /**
+     * 이 결제 건의 인증 재료로 망취소가 불렸는지 판정하는 조건입니다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return \Closure(HttpRequest): bool 조건
+     */
+    private function isNetCancelFor(ClaimPayment $payment): \Closure
+    {
+        return fn (HttpRequest $request) => str_contains($request->url(), 'cancel_process')
+            && ($request->data()['AuthToken'] ?? null) === 'nice-auth-token-'.$payment->payment_number;
+    }
+
+    /**
+     * 모듈에 넘기는 결제 금액은 PG 승인 응답의 금액이다. (0 으로 채운 숫자 문자열도 정수로 읽는다)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approved_amount_source
+     *
+     * @effects nice_claim_paid_amount_comes_from_the_pg_response
+     */
+    public function test_the_paid_amount_handed_to_the_module_is_the_pg_approved_amount(): void
+    {
+        ['payment' => $payment] = $this->makeClaimPayment();
+        $this->fakeNice(['ResultCode' => '3001', 'TID' => 'NICE-P2-PADDED', 'PayMethod' => 'CARD', 'Amt' => '000000003000', 'Moid' => $payment->payment_number]);
+
+        $result = $this->approve($payment, $this->signedCallback($payment));
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(3000, $result['paid_amount']);
+        Http::assertNotSent($this->isNetCancel());
+    }
+
+    /**
      * 서명 금액이 청구액과 다르면(낡은 결제창) 승인을 부르기 전에 거절한다.
      *
      * 수정 전: 서명 검증만 하고 청구액과 대조하지 않아 옛 금액으로 승인을 불렀다.
@@ -299,7 +402,7 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
         ['return' => $return, 'payment' => $payment] = $this->makeClaimPayment();
         $this->fakeNice(['ResultCode' => '3001', 'TID' => 'NICE-P2-3', 'PayMethod' => 'CARD', 'Amt' => '3000']);
 
-        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(OrderProcessingService::class), $app->make(PluginSettingsService::class), $app->make(NicePaymentsApiService::class), $app->make(CacheInterface::class), $app->make(ClaimPaymentRepositoryInterface::class)) extends PaymentCallbackController
+        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(OrderProcessingService::class), $app->make(PluginSettingsService::class), $app->make(NicePaymentsApiService::class), $app->make(CacheInterface::class), $app->make(ClaimPaymentRepositoryInterface::class), $app->make(GuestOrderAuthService::class)) extends PaymentCallbackController
         {
             /**
              * 락 대기 시간을 0초로 줄여 대기 초과를 즉시 재현합니다.

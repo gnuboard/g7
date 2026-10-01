@@ -30,8 +30,10 @@ _`getSettingsSchema()` 선언이 없습니다._
 설정 화면은 없지만 **관리자 페이지 폼의 첨부 업로더**가 서버 검증과 같은 개수·용량·형식을 쓰도록
 `frontend_schema` 로 `attachment.*` 세 값을 프론트엔드 전역(`_global.modules['sirsoft-page']`)에
 노출합니다 — 업로더에 리터럴을 박으면 설정을 바꿨을 때 화면이 서버가 허용하는 파일을 먼저
-거절하거나, 서버가 거절할 파일을 받아 저장 단계에서야 실패합니다. 서버 설정은 MIME 목록이고
-업로더는 확장자로 거르므로 폼이 MIME → 확장자로 옮겨 씁니다. 읽기는
+거절하거나, 서버가 거절할 파일을 받아 저장 단계에서야 실패합니다. 업로더 자체는 공개 설정 API
+(`/api/modules/sirsoft-page/admin/attachments/settings`, 데이터 소스 `attachmentSettings`)가 돌려주는
+`PageAttachmentService::publicLimits()` 값을 읽습니다 — MIME → 확장자 변환(`accept`)과 「0 이하 = 제한 없음」
+해석은 서버가 합니다. 읽기는
 `g7_module_settings('sirsoft-page', 'attachment.…')` 로 하고, `PageSettingsService` 가 설정이 아직
 동기화되지 않은 환경을 위해 파일 직접 읽기를 폴백으로 갖습니다(평평한 값 트리 형식도 계속 읽습니다).
 

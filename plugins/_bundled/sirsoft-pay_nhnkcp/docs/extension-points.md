@@ -13,10 +13,10 @@
 | `sirsoft-pay_nhnkcp.escrow.denial_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:98` |
 | `sirsoft-pay_nhnkcp.escrow.purchase_cancelled` | action | — | `src/Controllers/EscrowCommonNotifyController.php:97` |
 | `sirsoft-pay_nhnkcp.escrow.purchase_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:96` |
-| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:262` |
-| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:322` |
-| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:241` |
-| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:317` |
+| `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:280` |
+| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:327` |
+| `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:259` |
+| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:321` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -35,11 +35,11 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 30 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | `ProvidePaymentMethodDisplayLabelListener` | `provideDisplayLabel` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -70,8 +70,10 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
 
 승인 리스너는 결제창 금액(`good_mny`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
-`AMOUNT_MISMATCH`), KCP 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을 직접 취소한 뒤 실패로
-돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`AMOUNT_MISMATCH`), 승인 요청에 청구액을 `ordr_mony` 로 실어 KCP 가 결제창 금액과 대조하게 합니다.
+승인 뒤에는 KCP 응답 금액(`amount`)만 근거로 삼아, 청구액과 다르거나 응답에 금액이 없으면 승인분을
+직접 취소한 뒤 실패로 돌려줍니다 — 브라우저가 보낸 `good_mny` 는 승인액의 대체값으로 쓰지 않습니다.
+거래번호도 응답의 `tno` 만 씁니다(없으면 `MISSING_TNO` 로 거절). 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
 `sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
 콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
 한 구현입니다.

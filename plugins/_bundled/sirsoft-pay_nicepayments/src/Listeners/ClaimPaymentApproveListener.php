@@ -183,12 +183,14 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             }
 
             // 승인 응답이 이 결제 건·이 금액의 것인지 확인하고, 아니면 **여기서** 망취소한다 — 모듈
-            // 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다(#599 validate 07 #8). 응답에 없는 필드는
-            // 판정하지 않는다(금액은 위에서 서명 금액으로 이미 대조했다).
+            // 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다(#599 validate 07 #8). 주문번호는 응답에
+            // 없으면 판정하지 않는다. 금액은 결제 확정의 근거이므로 응답에 없거나 숫자가 아니면 불일치로
+            // 본다 — 브라우저가 보낸 콜백 금액만으로 결제를 확정하지 않는다.
             $responseMoid = trim((string) ($pgResponse['Moid'] ?? ''));
             $responseAmt = $pgResponse['Amt'] ?? null;
+            $approvedAmt = NicePaymentsApiService::parseAmount($responseAmt);
             $orderIdMismatch = $responseMoid !== '' && $responseMoid !== (string) $payment->payment_number;
-            $amountMismatch = is_numeric($responseAmt) && (int) $responseAmt !== $amt;
+            $amountMismatch = $approvedAmt === null || $approvedAmt !== $amt;
 
             if ($orderIdMismatch || $amountMismatch) {
                 Log::error('NicePayments: claim approve response does not match the payment — net cancel', [
@@ -210,16 +212,16 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             Log::info('NicePayments: claim payment approved', [
                 'payment_number' => $payment->payment_number,
                 'tid' => $tid,
-                'amt' => $amt,
+                'amt' => $approvedAmt,
             ]);
 
             return [
                 'handled' => true,
                 'success' => true,
                 'transaction_id' => $tid !== '' ? $tid : null,
-                // 서명이 덮는 승인 금액 — 위에서 청구액과 같음을 확인했다. 모듈이 스냅샷 환산
-                // 청구액과 한 번 더 정수 비교한다.
-                'paid_amount' => $amt,
+                // PG 승인 응답의 승인 금액 — 위에서 서명 금액·청구액과 같음을 확인했다. 모듈이 스냅샷
+                // 환산 청구액과 한 번 더 정수 비교한다.
+                'paid_amount' => $approvedAmt,
                 // 환급은 결제 당시의 MID/모드로 호출해야 한다 — 주문 결제는 payment_meta 에 이
                 // 메타를 남기지만 클레임 결제행에는 raw_response 뿐이므로 여기에 함께 싣는다.
                 'raw_response' => $this->sanitizePgResponse($pgResponse, self::CLAIM_AUTH_RESPONSE_KEYS) + [

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\ReadsKcpApprovedAmount;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
@@ -24,6 +25,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
  */
 class ClaimPaymentApproveListener implements HookListenerInterface
 {
+    use ReadsKcpApprovedAmount;
     use SanitizesPgResponse;
 
     private const PG_PROVIDER_ID = 'nhnkcp';
@@ -39,6 +41,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         'tno',
         'ordr_idxx',
         'good_mny',
+        'amount',
         'use_pay_method',
         'app_time',
         'app_no',
@@ -135,7 +138,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // 바뀌면(신청서 수정·관리자 재산정) 낡은 창의 금액이 들어온다 — 그대로 승인하면 모듈이 승인
         // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(취소)은 서버 콜백 경로에만 있어 클라이언트
         // 승인 API 경로에서는 청구된 채 남는다(#599 validate 07 #8). 이 값은 브라우저가 보낸 것이라
-        // 통과 근거로는 부족하다 — 승인 뒤 KCP 응답 금액으로 한 번 더 판정한다.
+        // **거절 쪽으로만** 쓴다 — 통과 근거는 승인 요청의 ordr_mony 와 승인 뒤 KCP 응답 금액이다.
         $expectedAmount = (int) $charge['minor_unit_amount'];
         $callbackAmount = is_numeric($callback['good_mny'] ?? null) ? (int) $callback['good_mny'] : null;
 
@@ -152,11 +155,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         $apiService = $this->getApiService();
 
         try {
+            // 청구액을 ordr_mony 로 실어 KCP 가 결제창 금액과 다르면 승인 자체를 거절하게 한다.
             $pgResponse = $apiService->approvePayment(
                 $encData,
                 $encInfo,
                 $payment->payment_number,
                 (string) ($callback['cust_ip'] ?? '127.0.0.1'),
+                $expectedAmount,
             );
 
             $pgResCd = (string) ($pgResponse['res_cd'] ?? '');
@@ -169,7 +174,23 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 );
             }
 
-            $tno = (string) ($pgResponse['tno'] ?? ($callback['tno'] ?? ''));
+            // 거래번호는 PG 승인 응답의 값만 쓴다 — 브라우저 콜백의 tno 로 대신 채우지 않는다.
+            $tno = trim((string) ($pgResponse['tno'] ?? ''));
+
+            if ($tno === '') {
+                // 승인 성공 응답에 거래번호가 없으면 취소할 거래를 특정할 수 없다. 확정하지 않고
+                // 거절하며, PG 관리자에서 대사하도록 로그를 남긴다.
+                Log::error('KCP: claim approve succeeded without tno — MANUAL CANCEL REQUIRED', [
+                    'payment_number' => $payment->payment_number,
+                    'res_cd' => $pgResCd,
+                ]);
+
+                return $this->failure(
+                    'MISSING_TNO',
+                    __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
+                    $this->claimRawResponse($apiService, $pgResponse),
+                );
+            }
 
             // 승인 뒤 재판정 — 콜백이 결제수단을 숨겨 사전 거절을 지나쳤어도 KCP 응답이 가상계좌를
             // 말하면 계좌만 발급된 상태다(입금 전). 발급분을 취소하고 거절한다.
@@ -183,14 +204,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 );
             }
 
-            // 대조 금액은 KCP 응답 금액이 권위다. 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을
-            // **여기서** 취소하고 거절한다 — 모듈 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다.
-            // 응답에 없을 때만(CLI 응답에 금액이 빠지는 경우가 많다) 위에서 청구액과 대조한 브라우저
-            // 콜백의 good_mny 를 쓴다 — 그 값은 결제창 금액을 바꾼 요청이 청구액으로 맞춰 보낼 수
-            // 있으므로 응답 금액보다 앞세우지 않는다.
-            $responseMny = $pgResponse['amount'] ?? ($pgResponse['good_mny'] ?? null);
+            // 대조 금액은 KCP 응답 금액(amount)만 근거로 삼는다. 청구액과 다르거나 응답에 금액이
+            // 없으면(비었거나 숫자가 아니거나 0 이하) 승인분을 **여기서** 취소하고 거절한다 — 모듈 쪽
+            // 대조의 거절은 보상이 서버 콜백 경로에만 있다. 브라우저 콜백의 good_mny 는 결제창 금액을
+            // 바꾼 요청이 청구액으로 맞춰 보낼 수 있으므로 대체값으로 쓰지 않는다.
+            $responseMny = $this->kcpApprovedAmount($pgResponse);
 
-            if (is_numeric($responseMny) && (int) $responseMny > 0 && (int) $responseMny !== $expectedAmount) {
+            if ($responseMny !== $expectedAmount) {
                 Log::error('KCP: claim approve response amount does not match the charge — cancelling', [
                     'payment_number' => $payment->payment_number,
                     'tno' => $tno,
@@ -202,7 +222,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                     $apiService,
                     $tno,
                     $payment,
-                    (int) $responseMny,
+                    $responseMny ?? $expectedAmount,
                     __('sirsoft-pay_nhnkcp::messages.claim.compensation_cancel_reason'),
                 );
 
@@ -213,23 +233,18 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 );
             }
 
-            $goodMny = is_numeric($responseMny) && (int) $responseMny > 0
-                ? (int) $responseMny
-                : $callbackAmount;
-
             Log::info('KCP: claim payment approved', [
                 'payment_number' => $payment->payment_number,
                 'tno' => $tno,
-                'good_mny' => $goodMny,
+                'amount' => $responseMny,
             ]);
 
             return [
                 'handled' => true,
                 'success' => true,
-                'transaction_id' => $tno !== '' ? $tno : null,
-                // 응답 금액(없으면 승인 전에 청구액과 대조한 콜백 good_mny) — 모듈이 스냅샷 환산
-                // 청구액과 한 번 더 정수 비교한다.
-                'paid_amount' => $goodMny,
+                'transaction_id' => $tno,
+                // KCP 응답 금액(= 청구액) — 모듈이 스냅샷 환산 청구액과 한 번 더 정수 비교한다.
+                'paid_amount' => $responseMny,
                 'raw_response' => $this->claimRawResponse($apiService, $pgResponse),
                 'error_code' => null,
                 'error_message' => null,

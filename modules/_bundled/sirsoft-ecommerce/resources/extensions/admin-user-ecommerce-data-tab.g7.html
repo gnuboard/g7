@@ -1,4 +1,5 @@
-<!-- 회원 상세 화면에 「쇼핑 데이터」 탭을 하나 더 얹는 조각. 마일리지 탭과 같은 짜임으로 주입이
+<!-- e2e:allow 2026-09-30 develop-7.1.0 리베이스 후속 — 마크업 146곳에 data-type 표기만 보충했다(굽기 산출 JSON 은 표기 전과 동일, layout:decompile --all --check 짝 792 전건 최신). 동작 변화는 회원 배송지 필터의 빈 검색어 가드 1곳과 추이 창 편집기 라벨 1곳이다.
+  회원 상세 화면에 「쇼핑 데이터」 탭을 하나 더 얹는 조각. 마일리지 탭과 같은 짜임으로 주입이
   **두 군데**로 갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`),
   그 탭이 펼칠 본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은
   `id`(`ext_ecommerce_data`) 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
@@ -63,7 +64,7 @@
             <div data-each="address, addressIndex in {{user?.data?.ecommerce_data?.addresses ?? []}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">{{address.recipient_name}}</span>
-                <badge data-if="{{address.is_default}}" color="blue" size="sm">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_default</badge>
+                <badge data-type="composite" data-if="{{address.is_default}}" color="blue" size="sm">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_default</badge>
                 <span data-if="{{address.label}}" class="text-xs text-gray-500 dark:text-gray-400">{{address.label}}</span>
               </div>
               <span class="block text-sm text-gray-700 dark:text-gray-300 mt-1">{{address.address_summary}}</span>

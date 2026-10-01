@@ -4,7 +4,7 @@
 feature: nicepayments_validate_p2_claim_payment_hardening
 
 description: |
-  #599 `/validate branch` 07-core-plugins 가 찾은 결제 플러그인 결함 중 나이스페이먼츠 몫.
+  #599 브랜치 검증 07-core-plugins 가 찾은 결제 플러그인 결함 중 나이스페이먼츠 몫.
 
   - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
     `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(망취소)은 서버 콜백의 클로저에만 있었다.
@@ -17,6 +17,8 @@ description: |
   - 모듈이 승인 **뒤**에 따로 거절한 건(승인 금액 대조 실패·승인액 미보고)은 모듈의
     `claim_payment.void_approval` 필터로 되돌린다 — 승인 리스너가 그 필터도 구현하고, 콜백 컨트롤러는
     보상 클로저를 넘기지 않아 서버 콜백·API 승인 두 경로의 보상이 한 구현이다.
+  - 결제 확정의 금액 근거는 PG 승인 응답의 금액이다. 응답에 금액이 없거나 숫자가 아니면 불일치로 보고
+    망취소한 뒤 거절하며, 모듈에 넘기는 `paid_amount` 도 브라우저 콜백 금액이 아니라 응답 금액이다.
 
 axes:
   concern:
@@ -26,6 +28,7 @@ axes:
     - callback_serialization
     - repository_injection
     - void_approval
+    - approved_amount_source
 
 effects:
   - nice_claim_approval_is_reverted_on_either_path_when_the_response_disagrees  # 응답 금액이 다르면 망취소 + 거절 (API 경로 포함)
@@ -34,6 +37,8 @@ effects:
   - nice_claim_callback_is_serialized_per_payment_number                        # CP 콜백 락, 대기 초과는 정상 리다이렉트
   - nice_repositories_are_constructor_injected                                  # Repository 생성자 주입
   - nice_claim_void_approval_cancels_the_authorization                           # void_approval 필터 → 거래번호 취소 API
+  - nice_claim_approval_without_a_pg_amount_is_net_cancelled                     # 승인 응답에 금액이 없거나 숫자가 아니면 망취소 + 거절 (API 경로 포함)
+  - nice_claim_paid_amount_comes_from_the_pg_response                            # 모듈에 넘기는 결제 금액은 승인 응답 금액
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/ValidateP2ClaimPaymentHardeningTest.php

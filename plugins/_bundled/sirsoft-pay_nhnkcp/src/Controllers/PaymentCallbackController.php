@@ -23,6 +23,7 @@ use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\PreventsReplayCallback;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\ReadsKcpApprovedAmount;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
@@ -46,6 +47,7 @@ class PaymentCallbackController
     use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
+    use ReadsKcpApprovedAmount;
     use RecordsPaymentWindowClosure;
     use ResolvesEasyPayDisplay;
     use SanitizesPgResponse;
@@ -75,6 +77,7 @@ class PaymentCallbackController
         'tno',
         'ordr_idxx',
         'good_mny',
+        'amount',
         'use_pay_method',
         'app_time',
         'app_no',
@@ -105,6 +108,7 @@ class PaymentCallbackController
         'res_cd',
         'res_msg',
         'tno',
+        'amount',
         'bankname',
         'bank_name',
         'bankcode',
@@ -311,13 +315,14 @@ class PaymentCallbackController
             // 결제창은 결제수단을 확정한 뒤 열리므로 정상 흐름은 주문 값만으로 판정된다.
             $isVbank = (bool) $order->payment?->isVirtualAccount();
             if ($isVbank) {
-                return $this->handleVbankIssued($validated, $order, $encData, $encInfo, $ordrIdxx, $custIp, $request);
+                return $this->handleVbankIssued($validated, $order, $encData, $encInfo, $ordrIdxx, $custIp, $request, $expectedAmount);
             }
 
             HookManager::doAction('sirsoft-pay_nhnkcp.payment.before_confirm', $order, $validated);
 
-            // 3단계: KCP CLI로 최종 승인 확인
-            $pgResponse = $this->apiService->approvePayment($encData, $encInfo, $ordrIdxx, $custIp);
+            // 3단계: KCP CLI로 최종 승인 확인. 청구액(ordr_mony)은 주문 저장값에서 산정한 금액을 싣는다 —
+            // KCP 가 결제창에서 인증된 금액과 대조해 다르면 승인 자체를 거절한다.
+            $pgResponse = $this->apiService->approvePayment($encData, $encInfo, $ordrIdxx, $custIp, $expectedAmount);
 
             HookManager::doAction('sirsoft-pay_nhnkcp.payment.after_confirm', $order, $pgResponse);
 
@@ -342,7 +347,24 @@ class PaymentCallbackController
                 ]));
             }
 
-            $tno = $pgResponse['tno'] ?? ($validated['tno'] ?? '');
+            // 거래번호는 PG 승인 응답의 값만 쓴다. 브라우저가 보낸 tno 로 대신 채우면 결제 기록과
+            // 이후 취소·환불이 요청자가 고른 거래번호를 향하게 된다.
+            $tno = trim((string) ($pgResponse['tno'] ?? ''));
+
+            if ($tno === '') {
+                // 승인 성공 응답에 거래번호가 없으면 취소할 거래도 특정할 수 없다. 결제완료로 확정하지
+                // 않고 주문 상태도 바꾸지 않은 채 실패로 돌려보낸다 — PG 관리자에서 대사해야 한다.
+                Log::error('KCP: CLI approval succeeded without tno — manual reconciliation required', [
+                    'ordr_idxx' => $ordrIdxx,
+                    'res_cd' => $pgResCd,
+                ]);
+
+                return redirect($this->resolveFailUrl([
+                    'error' => 'confirm_failed',
+                    'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
+                    'orderId' => $ordrIdxx,
+                ]));
+            }
 
             // Replay 가드: 동일 tno 가 이미 paid 상태면 중복 처리하지 않고 성공 페이지로 복귀
             if ($this->wasAlreadyPaid($tno)) {
@@ -352,17 +374,31 @@ class PaymentCallbackController
                 return redirect($this->resolveSuccessUrl($ordrIdxx));
             }
 
-            // KCP는 CLI 응답에 good_mny가 없는 경우가 많으므로 주문 금액으로 검증.
-            // 결제 청구액 SSoT = 결제 통화(order_currency) 환산액 (마일리지/예치금 차감 후 실청구액) —
-            // 클라이언트 결제 요청액(buildPgPaymentData)·코어 최종 승인 검증과 동일 기준.
-            // base≠결제 통화(예: base JPY, 결제 KRW)에서도 PG 청구 통화와 단위가 일치한다.
-            $approvedAmt = $goodMny > 0
-                ? $goodMny
-                : $expectedAmount;
+            // 승인 금액은 PG 승인 응답의 amount 만 근거로 삼는다. 결제 청구액 SSoT(= 결제 통화
+            // 환산 실청구액, 마일리지/예치금 차감 후)와 정확히 같아야 결제완료로 확정한다.
+            // 브라우저 콜백의 good_mny 는 요청자가 고른 값이라 대체값으로도 쓰지 않는다 — 응답에
+            // 금액이 없으면 확인할 수 없는 승인이므로 불일치와 같이 취소한다.
+            $pgApprovedAmount = $this->kcpApprovedAmount($pgResponse);
 
             // PG 측 승인이 확정된 시점 — 후속 처리 실패 시 cancel 필요. catch 에서 참조.
             $approvedTno = $tno;
-            $approvedAmtForCancel = $approvedAmt;
+            $approvedAmtForCancel = $pgApprovedAmount ?? $expectedAmount;
+
+            if ($pgApprovedAmount !== $expectedAmount) {
+                // 아래 PaymentAmountMismatchException catch 가 승인분을 자동 취소한다.
+                throw new PaymentAmountMismatchException(
+                    (float) $expectedAmount,
+                    (float) ($pgApprovedAmount ?? 0),
+                    [
+                        'ordr_idxx' => $ordrIdxx,
+                        'tno' => $tno,
+                        'source' => 'kcp_approval_response',
+                        'response_amount_present' => $pgApprovedAmount !== null,
+                    ],
+                );
+            }
+
+            $approvedAmt = $pgApprovedAmount;
 
             // 승인이 확정된 뒤에만 취소 주문을 되살린다. 실패하면 예외로 아래 catch 에 넘겨
             // PG 잔존 승인을 자동 취소한다(사용자 환불 보장).
@@ -637,6 +673,9 @@ class PaymentCallbackController
      * 근거로 실패 처리하면 주문번호만 아는 제3자가 남의 주문을 취소시킬 수 있다
      * (KVE-2026-2018 과 동일 기준). 정당한 실패는 소유권을 검증하는 close-report 가 기록한다.
      *
+     * PC 분기는 CLI 발급 응답의 금액(`amount`)과 거래번호가 주문 청구액·응답에 맞을 때만 계좌를
+     * 기록한다. 금액이 다르거나 비어 있으면 발급된 계좌를 취소하고 아무것도 기록하지 않는다.
+     *
      * @param  array  $validated  검증된 콜백·통보 파라미터
      * @param  Order  $order  대상 주문
      * @param  string  $encData  KCP 암호화 결제 데이터
@@ -644,6 +683,7 @@ class PaymentCallbackController
      * @param  string  $ordrIdxx  주문번호
      * @param  string  $custIp  고객 IP
      * @param  Request  $request  HTTP 요청
+     * @param  int  $expectedAmount  주문 저장값에서 산정한 결제 청구액
      * @return RedirectResponse 성공/실패 URL 로 리다이렉트
      */
     private function handleVbankIssued(
@@ -654,6 +694,7 @@ class PaymentCallbackController
         string $ordrIdxx,
         string $custIp,
         Request $request,
+        int $expectedAmount,
     ): RedirectResponse {
         $tno = $validated['tno'] ?? '';
         $pgResponse = [];
@@ -691,8 +732,9 @@ class PaymentCallbackController
             ];
         } else {
             // PC: CLI 호출. 호출 자체 실패(권한 누락 / pub.key 부재 등)는 발급 여부 미확정이므로 안전하게 실패 처리.
+            // 발급 요청에도 청구액(ordr_mony)을 실어 KCP 가 결제창 금액과 다르면 발급을 거절하게 한다.
             try {
-                $pgResponse = $this->apiService->approvePayment($encData, $encInfo, $ordrIdxx, $custIp);
+                $pgResponse = $this->apiService->approvePayment($encData, $encInfo, $ordrIdxx, $custIp, $expectedAmount);
             } catch (\Exception $e) {
                 Log::error('KCP: vbank CLI exception — treating as issuance failure', [
                     'ordr_idxx' => $ordrIdxx,
@@ -754,6 +796,10 @@ class PaymentCallbackController
         }
 
         if ($isMobile) {
+            // 모바일 분기에는 발급 금액을 대조할 서버 측 출처가 없다(CLI 호출이 없고 콜백은 평문이다).
+            // 금액은 소유자 인증을 거친 승인키 발급 시점에 주문 청구액과 대조한 값으로 KCP 에
+            // 등록되고, 이 분기는 결제완료가 아니라 계좌 정보만 기록한다. 결제완료 전이는 입금통보
+            // (vbankNotify)가 통보 금액을 주문 청구액과 대조한 뒤에만 일어난다.
             Log::info('KCP: vbank account issued via mobile callback (no CLI)', [
                 'ordr_idxx' => $ordrIdxx,
                 'tno' => $tno,
@@ -762,7 +808,36 @@ class PaymentCallbackController
                 'va_date' => $pgResponse['va_date'] ?? null,
             ]);
         } else {
-            $tno = $pgResponse['tno'] ?? $tno;
+            // 거래번호와 발급 금액은 CLI 발급 응답의 값만 쓴다 — 브라우저가 보낸 tno·good_mny 는
+            // 근거로도 대체값으로도 쓰지 않는다. 금액이 청구액과 다르거나 응답에 없으면 발급된 계좌를
+            // 취소하고, 계좌 정보도 주문 상태도 기록하지 않은 채 실패로 돌려보낸다.
+            $pgTno = trim((string) ($pgResponse['tno'] ?? ''));
+            $pgIssuedAmount = $this->kcpApprovedAmount($pgResponse);
+
+            if ($pgTno === '' || $pgIssuedAmount !== $expectedAmount) {
+                Log::error('KCP: vbank issuance rejected — response amount or tno does not match the order', [
+                    'ordr_idxx' => $ordrIdxx,
+                    'tno' => $pgTno !== '' ? $pgTno : null,
+                    'expected' => $expectedAmount,
+                    'response_amount' => $pgIssuedAmount,
+                ]);
+
+                // 거래번호가 없으면 취소할 대상을 특정할 수 없다 — autoCancelIfApproved 가 건너뛰고,
+                // 계좌를 기록하지 않았으므로 입금통보도 이 주문에 매칭되지 않는다.
+                $this->autoCancelIfApproved(
+                    $pgTno !== '' ? $pgTno : null,
+                    $ordrIdxx,
+                    $pgIssuedAmount ?? $expectedAmount,
+                    'vbank_amount_mismatch',
+                );
+
+                return redirect($this->resolveFailUrl([
+                    'error' => $pgTno === '' ? 'vbank_issuance_incomplete' : 'amount_mismatch',
+                    'orderId' => $ordrIdxx,
+                ]));
+            }
+
+            $tno = $pgTno;
             Log::info('KCP: vbank account issued via CLI', [
                 'ordr_idxx' => $ordrIdxx,
                 'tno' => $tno,

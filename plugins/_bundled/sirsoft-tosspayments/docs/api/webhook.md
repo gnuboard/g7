@@ -81,7 +81,8 @@ OK
 | --- | --- | --- |
 | 200 | `OK` | 입금 반영 성공 / 이미 결제완료된 거래(리플레이) / 입금대기 상태가 아닌 주문 — 토스의 재전송을 멈추기 위해 200 을 반환한다 |
 | 401 | `UNAUTHORIZED` | `webhook_secret_verify` 가 켜진 상태에서 본문 `secret` 이 저장된 `payment_meta.toss_secret` 과 다른 경우 |
-| 200 | `FAIL` | 주문/결제 레코드를 찾지 못하거나 처리 중 예외 발생 (토스는 본문 `FAIL` 을 실패로 간주해 재전송한다) |
+| 200 | `FAIL` | 주문/결제 레코드를 찾지 못하거나, 입금 금액을 청구액과 대조할 수 없거나 어긋나거나, 처리 중 예외 발생 (토스는 본문 `FAIL` 을 실패로 간주해 재전송한다) |
+| 500 | `FAIL` | 발급 금액 기록이 없는 결제행의 토스 결제 조회 호출이 실패한 경우 — 대조를 건너뛰지 않고 재전송을 받는다 |
 | 422 | JSON | 요청 파라미터 검증 실패 |
 
 처리 순서:
@@ -90,7 +91,8 @@ OK
 2. **secret 대조** — 플러그인 설정 `webhook_secret_verify` 가 켜져 있으면, 본문의 `secret` 을 결제 승인 시 저장해 둔 `payment_meta.toss_secret` 과 대조한다 (`hash_equals`). 불일치 시 401.
 3. **취소 주문 가드** — 주문이 이미 `cancelled` 면 처리하지 않고 `OK` 를 반환한다. 고객이 취소한 뒤에 입금해도 통보는 도착하는데, 통과시키면 취소된 주문이 결제완료로 되살아나 재고와 마일리지가 다시 차감된다. 아래 결제상태 가드만으로는 막히지 않는다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 그 가드를 통과하기 때문이다.
 4. **상태 가드** — 결제가 입금대기(`waiting_deposit`) 상태가 아니면 처리하지 않고 `OK` 를 반환한다.
-5. **상태별 처리** — `status=DONE` 이면 결제완료(`completePayment`), `status=CANCELED` 이면 결제실패(`failPayment`) 처리한다.
+5. **입금 금액 대조** (`status=DONE`) — 가상계좌 발급 때 청구액과 대조해 저장한 `payment_meta.toss_approved_amount` 를 현재 청구액과 대조한다. 그 기록이 없는 결제행(이 대조가 생기기 전에 발급된 건)은 토스 결제 조회(`GET /v1/payments/{paymentKey}`)로 상태가 `DONE` 이고 `totalAmount` 가 청구액과 같은지 확인한다. 어긋나거나 확인할 수 없으면 결제완료로 전이하지 않는다 — 결제행에 저장해 둔 예정액(`paid_amount_base`)은 금액 근거로 쓰지 않는다.
+6. **상태별 처리** — `status=DONE` 이면 대조를 마친 금액으로 결제완료(`completePayment`), `status=CANCELED` 이면 결제실패(`failPayment`) 처리한다.
 
 주의사항:
 
@@ -178,8 +180,8 @@ OK
 
 
 ### GET /api/plugins/sirsoft-tosspayments/admin/webhook-url
-<!-- @generated:start:api.plugins.sirsoft-tosspayments.admin.webhook.url -->
-- **라우트명**: `api.plugins.sirsoft-tosspayments.admin.webhook.url`
+<!-- @generated:start:api.plugins.sirsoft-tosspayments.admin.webhook-url -->
+- **라우트명**: `api.plugins.sirsoft-tosspayments.admin.webhook-url`
 - **컨트롤러**: 라우트 클로저 (`src/routes/api.php`)
 - **인증/권한**: `auth:sanctum`, `permission:admin,sirsoft-ecommerce.settings.read`
 

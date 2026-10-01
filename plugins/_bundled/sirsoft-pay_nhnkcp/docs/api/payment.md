@@ -28,7 +28,18 @@
 | --- | --- | --- |
 | 금액 불일치 (승인 전) | 브라우저가 보낸 `good_mny` | **변경 없음** — 실패 URL 리다이렉트 |
 | 승인 실패 (`res_cd` 비정상) | 브라우저가 보낸 결과코드 | **변경 없음** — 실패 URL 리다이렉트 |
-| 승인 이후의 예외 (금액 불일치·후속 처리 실패) | KCP 승인 응답의 `tno` 존재 | **실패 처리 + 자동 취소** |
+| 승인 이후의 예외 (승인 금액 불일치·금액 누락·후속 처리 실패) | KCP 승인 응답의 `tno` 존재 | **실패 처리 + 자동 취소** |
+
+### 승인 금액은 서버-서버 응답으로만 확정한다
+
+결제완료와 가상계좌 발급 기록의 금액 근거는 브라우저 값이 아니라 KCP 서버 승인이다.
+
+1. 승인(발급) 요청에 주문 저장값에서 산정한 청구액을 `ordr_mony` 로 싣는다. KCP 는 결제창에서 인증된 금액과 다르면 승인을 거절한다.
+2. 승인 응답의 `amount` 가 청구액과 정확히 같을 때만 결제완료로 확정한다. 다르거나 비어 있거나 숫자가 아니면 승인분을 취소하고 `amount_mismatch` 로 되돌린다.
+3. 거래번호는 승인 응답의 `tno` 만 쓴다. 승인 성공 응답에 `tno` 가 없으면 확정하지 않는다.
+4. 브라우저가 보낸 `good_mny` 는 승인 **전** 거절 판정에만 쓰고, 승인·기록 금액의 근거나 대체값으로 쓰지 않는다.
+
+PC 가상계좌 발급도 같다 — 발급 응답의 `amount` 가 청구액과 다르거나 비어 있으면 발급된 계좌를 취소하고 계좌 정보를 기록하지 않는다. 모바일 가상계좌 콜백은 서버-서버 응답이 없어 발급 시점에 금액을 대조할 출처가 없다. 금액은 승인키 발급(소유자 인증 + 청구액 대조) 때 KCP 에 등록되고, 결제완료 전이는 입금통보가 통보 금액을 청구액과 대조한 뒤에만 일어난다. 클레임 추가결제 승인(`ClaimPaymentApproveListener`)도 같은 규칙이다.
 
 승인 여부는 `PaymentCallbackController::hasApproval()` 이 `tno`(승인 확정 시에만 채워지는 거래번호) 로 판정한다. `tno` 가 비어 있으면 승인 전에 흐름이 끊긴 것이므로 그 시점까지의 입력은 주문 상태 변경의 근거가 될 수 없다.
 
@@ -172,8 +183,8 @@ PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫�
 | res_cd | string | 예(nullable 허용) | KCP 인증 결과코드 |
 | res_msg | string | 아니오 | KCP 결과 메시지 |
 | enc_data / enc_info | string | 아니오 | 승인 요청에 쓰는 암호화 데이터·정보 |
-| tno | string | 아니오 | 거래번호. **승인이 확정된 뒤에만 채워진다** — 주문 상태 변경 가부의 판정 기준 |
-| good_mny | numeric | 아니오 | 결제 금액 (min 1) |
+| tno | string | 아니오 | 거래번호. 브라우저가 보낸 값은 기록·취소에 쓰지 않는다 — 결제 기록의 거래번호는 KCP 승인 응답의 `tno` 다 |
+| good_mny | numeric | 아니오 | 결제창 금액 (min 1). 승인 전 거절 판정에만 쓰고 승인 금액의 근거로 쓰지 않는다 |
 | use_pay_method | string | 아니오 | 사용된 결제수단 |
 | nhnkcp_easy_pay_method | string | 아니오 | 간편결제 수단 식별값 (max 50) |
 | param_opt_2 | string | 아니오 | 모바일 가상계좌 세션 확인값 (max 50). 승인키 발급 시점에 실어 보낸 일회성 값을 KCP 가 그대로 되돌려준다 — 모바일 가상계좌 분기는 이 값이 주문에 저장된 값과 일치할 때만 계좌를 저장한다 |
@@ -183,7 +194,7 @@ PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫�
 
 JSON 이 아니라 **리다이렉트**다. 성공 시 상점 성공 페이지로, 실패 시 실패 페이지로 이동하며 실패 사유를 쿼리스트링(`error` · `message` · `orderId`)으로 전달한다. 쿼리 규약과 예외 원문 비노출 원칙은 [vbank.md "결제 실패 리다이렉트 규약"](vbank.md) 에 있다.
 
-고정 `error` 값: `amount_mismatch` · `callback_locked` · `cli_exception` · `confirm_failed` · `currency_not_supported` · `invalid_payment_currency` · `order_not_found` · `order_not_retryable` · `vbank_save_failed` · `vbank_session_mismatch`.
+고정 `error` 값: `amount_mismatch` · `callback_locked` · `cli_exception` · `confirm_failed` · `currency_not_supported` · `invalid_payment_currency` · `order_not_found` · `order_not_retryable` · `vbank_issuance_incomplete` · `vbank_save_failed` · `vbank_session_mismatch`.
 
 이 밖에 KCP 가 돌려준 결과코드(`res_cd`)가 그대로 실리는 분기가 있다. 화면이 `error` 로 분기할 때는 위 고정값만 신뢰하고, 그 밖의 값은 미확정 실패로 다룬다.
 
