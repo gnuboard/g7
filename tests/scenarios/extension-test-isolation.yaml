@@ -68,6 +68,8 @@ effects:
   - selfExtension_returns_null_for_core_tests
   - production_env_keeps_full_extension_loading
   - tests_do_not_boot_with_production_route_cache
+  # 테스트 캐시는 프로세스 전용(array) — 개발 사이트 파일 캐시의 확장 활성 목록이 새지 않는다 (tests/bootstrap.php 캐시 스토어 격리)
+  - tests_use_process_local_cache_store_not_shared_with_dev
 
 test_files:
   - tests/Unit/Extension/ExtensionTestAllowlistTest.php

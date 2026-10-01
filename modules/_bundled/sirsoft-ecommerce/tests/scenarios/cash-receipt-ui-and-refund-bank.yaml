@@ -240,6 +240,10 @@ effects:
 
   # 자진발급 설정 안내 (감사 지적 W-5)
   - self_issue_links_to_nts_mandatory_industry_guide  # 의무발행 업종 판단 경로 제공
+  # 자진발급 동작 — 미신청 주문도 입금완료 시 국세청 지정번호(0100001234)로 소득공제 발급
+  - self_issue_on_auto_issues_income_receipt_with_nts_number
+  # 관리자 발급 경로도 체크아웃과 같은 용도×식별번호 규칙을 따른다 (지출증빙+자진발급번호 · 소득공제+사업자번호 거부)
+  - admin_issue_rejects_invalid_purpose_identifier_combination_422
 
   # 부수 복구
   - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여 (R1)
@@ -266,3 +270,5 @@ test_files:
 
   # E2E (S2 이월분)
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-cash-receipt.spec.ts
+  # E2E 발급 생애주기 — 카드 상태머신(입금 전·발급 가능)·유저 사후 발급·자진발급을 실 PG 로 밟는다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts

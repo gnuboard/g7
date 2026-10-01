@@ -19,6 +19,8 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
   # 공용 발급/취소/재발급 서비스 (금액 변동 → 전액취소 후 재발급)
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
+  # 실 PG 왕복 E2E — 발급 응답 매핑·금액 변동 시 전액취소 후 재발급을 관리자 화면에서 끝까지 밟는다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts
   # 활동 로그 실패가 결제 콜백을 죽이지 않는지 (본 세션 코어 결함 수정)
   - tests/Unit/ActivityLog/ResolvesActivityLogTypeTest.php
   # 레거시 KG 전용 발행 경로가 되살아나지 않는지 (이중 발행 경로 회귀 차단)
