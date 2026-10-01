@@ -315,6 +315,9 @@
     "permission_tree": {
       "label": "권한 트리"
     },
+    "menu_access_tree": {
+      "label": "메뉴 접근 트리"
+    },
     "category_tree": {
       "label": "카테고리 트리",
       "sample_node1": "카테고리",

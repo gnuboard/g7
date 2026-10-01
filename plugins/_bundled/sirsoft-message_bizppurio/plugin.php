@@ -98,17 +98,25 @@ class Plugin extends AbstractPlugin
             }
         }
 
+        // 이 플러그인은 관리자 메뉴를 만들지 않는다(화면 배치 결정 2026-07-14 — 진입은 코어
+        // 소유 설정 페이지 하나로 통일). 이전 버전(getAdminMenus 사용 시기)이 심은 메뉴 행이
+        // 남아 있을 수 있어 활성화 때 청소한다 — 켜져 있는 동안 죽은 메뉴가 보이지 않게.
+        // 자식 메뉴 + role_menus 피벗은 helper 가 cascade 처리. 멱등.
+        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
+            ExtensionOwnerType::Plugin,
+            $this->getIdentifier(),
+            currentSlugs: [],
+        );
+
         return true;
     }
 
     /**
-     * 플러그인 비활성화 — 이 플러그인 소속 관리자 메뉴 잔재 정리.
+     * 플러그인 비활성화 — 관리자 메뉴 행은 건드리지 않는다.
      *
-     * 이 플러그인은 관리자 메뉴를 만들지 않는다(화면 배치 결정 2026-07-14 — 진입은 코어
-     * 소유 설정 페이지 하나로 통일). 다만 이전 버전(getAdminMenus 사용 시기)에 생성된
-     * 메뉴 row 가 DB 에 남아 있을 수 있어, 비활성화 시 currentSlugs=[] 로 cleanupStaleMenus
-     * 를 호출해 잔재를 청소한다. 재활성화 시 아무 메뉴도 만들지 않으므로 정상 무메뉴 상태로
-     * 수렴한다(멱등). 자식 메뉴 + role_menus 피벗은 helper 가 cascade 처리.
+     * 번들 플러그인 공통 관례: 비활성 플러그인의 메뉴는 사이드바·메뉴 관리 목록에서 자동으로
+     * 빠지므로 비활성화는 메뉴 행을 지우지 않는다(운영자가 붙인 메뉴 역할 보존). 이 플러그인은
+     * 메뉴를 만들지 않으며, 옛 판본 잔재 청소는 activate() 가, 전체 삭제는 uninstall() 이 맡는다.
      *
      * SeedChannelTemplatesListener 의 HookListenerRegistrar 등록 이력 캐시를 함께 지운다 —
      * activate() 가 register() 로 등록한 뒤(process-wide idempotency 캐시, source::class 키),
@@ -122,12 +130,6 @@ class Plugin extends AbstractPlugin
      */
     public function deactivate(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
         $this->forgetSeedChannelTemplatesListenerRegistration();
 
         return true;
@@ -160,7 +162,7 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 제거 — 메뉴 잔재 안전망(정상 흐름은 deactivate 가 먼저 처리) + sms·alimtalk 채널 잔재 정리.
+     * 플러그인 제거 — 메뉴 잔재 삭제(비활성화는 메뉴를 보존하므로 여기서 지운다) + sms·alimtalk 채널 잔재 정리.
      *
      * SeedChannelTemplatesListener 가 코어/게시판/이커머스 소유 알림 정의에 필터 훅으로 끼워넣은
      * sms·alimtalk template 은, 그 정의가 우리 소유가 아니므로 PluginManager 의 범용 알림 정의
@@ -181,6 +183,14 @@ class Plugin extends AbstractPlugin
     public function uninstall(): bool
     {
         $this->deactivate();
+
+        // 메뉴 잔재 삭제 — 비활성화는 메뉴 행을 지우지 않으므로 제거가 직접 지운다.
+        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
+            ExtensionOwnerType::Plugin,
+            $this->getIdentifier(),
+            currentSlugs: [],
+        );
+
         $this->cleanupChannelContributions();
 
         return true;

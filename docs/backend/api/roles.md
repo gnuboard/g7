@@ -184,6 +184,7 @@ HTTP/1.1 200
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
+| menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.store_validation_rules`).
 
@@ -514,6 +515,7 @@ _단건 응답: `data` 객체의 필드._
 | permission_ids | array | `[2,3,4,5,6,1470,1471,1472,1473,1475,1476,1478,1479,1481,1…` | permission 식별자 배열 (연관 리소스 참조) |
 | permission_values | array | `[{"id":2,"scope_type":null},{"id":3,"scope_type":null},{"…` | 할당된 각 권한의 id와 적용 범위만 담은 경량 목록 (원소 id/scope_type — 역할-권한 pivot 파생). scope_type: null=전체, role=역할 범위, self=본인 범위 |
 | permissions | array | `[{"id":1468,"parent_id":null,"identifier":"sirsoft-board"…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
+| menu_ids | array\<integer\> | `[1,13,15]` | 이 역할이 접근할 수 있는 관리자 메뉴 ID (역할 폼의 「접근 가능 메뉴」 초기값 — 단건 조회에만 실린다) |
 | created_at | string | `2026-07-30 17:36:00` | 생성 일시 |
 | updated_at | string | `2026-08-01 11:46:14` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -574,6 +576,7 @@ HTTP/1.1 200
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
+| menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.update_validation_rules`).
 

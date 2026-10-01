@@ -9,6 +9,7 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Models\Module;
+use App\Models\Template;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
@@ -479,6 +480,10 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $this->assertFiredOnce('core.templates.after_activate', ['array']);
         $this->assertActivateFilterRanOnceAfterBeforeHook($id);
 
+        // 어드민 UI 는 유형의 마지막 활성 템플릿을 끄거나 지우지 못한다 — 같은 유형에 다른 활성 템플릿이
+        // 남을 때만 받는다. 그 전제를 레코드 대역으로 만들어 직전 훅 계약을 본다(파일 없는 대역 — 이 경로만 읽는다).
+        $standIn = Template::factory()->create(['type' => 'admin', 'status' => 'active']);
+
         // 비활성화 직전 훅도 어드민 UI 경로에서 1회 — 확인 뒤 다시 켜 이후 단계를 잇는다
         $this->resetFired();
         $this->assertNotNull($service->deactivateTemplate($id));
@@ -494,6 +499,9 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $this->assertFiredOnce('core.templates.after_version_update', ['string', 'array', 'array'], $id);
 
         // 어드민이 "데이터도 삭제" 를 고르면 훅 인자에도 true 가 실려야 한다
+        // (다시 켠 활성화가 같은 유형의 대역을 꺼 두었다 — 마지막 활성 템플릿 삭제 거절을 피하려고 대역을 다시 켠다.
+        //  메모리의 모델은 여전히 active 라 $standIn->update() 는 바뀐 값이 없다며 쿼리를 내지 않으므로 쿼리로 바꾼다)
+        Template::whereKey($standIn->getKey())->update(['status' => 'active']);
         $this->resetFired();
         $this->assertNotNull($service->uninstallTemplate($id, true));
         $args = $this->assertFiredOnce('core.templates.after_uninstall', ['string', 'array', 'bool'], $id);

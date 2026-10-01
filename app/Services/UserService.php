@@ -885,6 +885,151 @@ class UserService
     }
 
     /**
+     * 여러 회원에게 역할을 한꺼번에 더하거나 뺍니다 (회원 목록 「역할 추가·제거」).
+     *
+     * 정적 라우트(`PATCH users/bulk-roles`)라 미들웨어의 범위 검사가 빠지므로, 일괄 상태 변경과
+     * 같은 두 축(등급·범위)을 여기서 다시 건다. 역할 상한은 단건 수정과 같이 **요청 전체**를
+     * 거부하고(액터가 부여할 수 없는 역할은 붙이지도 떼지도 못한다), 등급·범위·자기 잠금·마지막 역할로
+     * 걸러진 회원은 사유와 함께 돌려준다.
+     *
+     * @param  array<int, string>  $uuids  대상 회원 UUID
+     * @param  array<int, int|string>  $roleIds  더하거나 뺄 역할 ID
+     * @param  string  $mode  'add' | 'remove'
+     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{uuid: string, reason: string}>} 처리 결과
+     *
+     * @throws PermissionEscalationException 액터 상한을 넘는 역할이 포함된 경우
+     */
+    public function bulkUpdateRoles(array $uuids, array $roleIds, string $mode): array
+    {
+        $roleIds = array_values(array_unique(array_map('intval', $roleIds)));
+
+        HookManager::doAction('core.user.before_bulk_update_roles', $uuids, $roleIds, $mode);
+
+        // ① 상한: 붙이든 떼든 액터가 부여할 수 없는 역할이면 요청 전체를 거부한다.
+        $this->escalationGuard->assertRoleAssignmentWithinActorCeiling($roleIds);
+
+        $targets = $this->userRepository->findManyByUuids($uuids);
+        $skipped = [];
+
+        // ② 등급 축 → ③ 범위 축 (일괄 상태 변경과 같은 순서·같은 SSoT)
+        $gradeAllowed = UserGradeGuard::filterModifiable($targets);
+        foreach ($this->excludedUsers($targets, $gradeAllowed) as $user) {
+            $skipped[] = ['uuid' => $user->uuid, 'reason' => 'grade'];
+        }
+
+        $modifiable = PermissionHelper::filterByScope($gradeAllowed, 'core.users.update');
+        foreach ($this->excludedUsers($gradeAllowed, $modifiable) as $user) {
+            $skipped[] = ['uuid' => $user->uuid, 'reason' => 'scope'];
+        }
+
+        // ④ 자기 잠금: 이번 제거로 admin 이 한 명도 남지 않게 되면 액터 자신은 빼 둔다
+        // (단건 수정의 「마지막 admin 은 자기 admin 을 못 뗀다」 와 같은 규칙).
+        $actor = Auth::user();
+        $adminRole = $this->roleRepository->findByIdentifier('admin');
+        if ($mode === 'remove' && $actor instanceof User && $adminRole && in_array((int) $adminRole->id, $roleIds, true)) {
+            $targetIds = array_map(static fn (User $u): int => $u->id, $modifiable);
+            $actorTargeted = in_array($actor->id, $targetIds, true);
+            $remainingAdmins = $adminRole->users()->whereNotIn('users.id', $targetIds)->count();
+
+            if ($actorTargeted && $remainingAdmins === 0 && $actor->roles()->where('roles.id', $adminRole->id)->exists()) {
+                $modifiable = array_values(array_filter($modifiable, static fn (User $u): bool => $u->id !== $actor->id));
+                $skipped[] = ['uuid' => $actor->uuid, 'reason' => 'last_admin'];
+            }
+        }
+
+        // ⑤ 마지막 역할: 빼고 나면 역할이 하나도 남지 않는 회원은 건너뛴다
+        // (단건 수정의 「역할을 하나 이상 선택」 규칙과 같다 — 일괄 제거가 단건 폼이 막는 상태를 만들지 않게).
+        if ($mode === 'remove') {
+            $modifiable = array_values(array_filter($modifiable, function (User $user) use ($roleIds, &$skipped): bool {
+                $current = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
+                if ($current !== [] && array_diff($current, $roleIds) === []) {
+                    $skipped[] = ['uuid' => $user->uuid, 'reason' => 'last_role'];
+
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+
+        $changedUsers = DB::transaction(function () use ($modifiable, $roleIds, $mode, $actor) {
+            $changed = [];
+            foreach ($modifiable as $user) {
+                $before = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
+
+                if ($mode === 'add') {
+                    $attach = array_values(array_diff($roleIds, $before));
+                    if ($attach === []) {
+                        continue;
+                    }
+                    $pivot = ['assigned_by' => $actor instanceof User ? $actor->id : null, 'assigned_at' => now()];
+                    $user->roles()->syncWithoutDetaching(array_fill_keys($attach, $pivot));
+                    $changed[] = ['user' => $user, 'added' => $attach, 'removed' => []];
+                } else {
+                    $detach = array_values(array_intersect($roleIds, $before));
+                    if ($detach === []) {
+                        continue;
+                    }
+                    $user->roles()->detach($detach);
+                    $changed[] = ['user' => $user, 'added' => [], 'removed' => $detach];
+                }
+            }
+
+            return $changed;
+        });
+
+        // 커밋 후 부수효과 (캐시는 롤백 대상이 아니다). 액터가 자기 역할을 바꿨으면 이 요청이
+        // 들고 있는 액터 인스턴스의 판정 캐시도 비운다 — 이어지는 훅이 옛 권한으로 판정하지 않게.
+        foreach ($changedUsers as $entry) {
+            $entry['user']->flushPermissionCaches();
+            if ($actor instanceof User && $entry['user']->id === $actor->id) {
+                $actor->unsetRelation('roles');
+                $actor->flushPermissionCaches();
+            }
+        }
+
+        $result = [
+            'updated_count' => count($changedUsers),
+            'skipped_count' => count($skipped),
+            'skipped' => $skipped,
+        ];
+
+        HookManager::doAction(
+            'core.user.after_bulk_update_roles',
+            array_map(static fn (array $entry): int => $entry['user']->id, $changedUsers),
+            $roleIds,
+            $mode,
+            array_map(static fn (array $entry): array => [
+                'user_id' => $entry['user']->id,
+                'added' => $entry['added'],
+                'removed' => $entry['removed'],
+            ], $changedUsers),
+        );
+
+        return $result;
+    }
+
+    /**
+     * 앞 목록에는 있고 뒤 목록에는 없는 회원을 돌려줍니다.
+     *
+     * @param  iterable<User>  $from  전체 목록
+     * @param  array<int, User>  $kept  남은 목록
+     * @return array<int, User> 빠진 회원
+     */
+    private function excludedUsers(iterable $from, array $kept): array
+    {
+        $keptIds = array_map(static fn (User $u): int => $u->id, $kept);
+        $excluded = [];
+        foreach ($from as $user) {
+            if (! in_array($user->id, $keptIds, true)) {
+                $excluded[] = $user;
+            }
+        }
+
+        return $excluded;
+    }
+
+    /**
      * 탈퇴 실패 예외를 운영자에게 보여줄 한 줄 사유로 바꿉니다.
      *
      * @param  Exception  $e  탈퇴 시도에서 발생한 예외

@@ -429,6 +429,25 @@
     "action": {
       "reset": "リセット",
       "edit_search": "検索編集"
+    },
+    "bulk_roles": {
+      "add_button": "ロール追加",
+      "remove_button": "ロール削除",
+      "add_title": "ロール一括追加",
+      "remove_title": "ロール一括削除",
+      "add_desc": "選択した会員{{count}}名にロールを追加します。",
+      "remove_desc": "選択した会員{{count}}名からロールを削除します。",
+      "roles_label": "ロール",
+      "roles_placeholder": "ロールを選択してください...",
+      "hint": "権限範囲外の会員と最高管理者は自動的に除外されます。自分が付与できない権限を含むロールが1つでも混ざっていると、何も変更せずに拒否されます。",
+      "apply": "適用",
+      "result_title": "処理結果",
+      "result_summary": "{{updated}}名変更、{{skipped}}名除外",
+      "reason_grade": "最高管理者",
+      "reason_scope": "管理権限の範囲外",
+      "reason_last_admin": "最後の管理者(本人)",
+      "close": "閉じる",
+      "reason_last_role": "ロールが一つも残らない"
     }
   },
   "language_packs": {
@@ -1088,13 +1107,13 @@
       "access_permission": "アクセス権限",
       "permission": "アクセス権限",
       "admin_only": "管理者",
-      "all_roles": "すべてのロール",
       "creator": "作成者",
       "creator_info": "作成者情報",
       "created_by": "作成者",
       "created_at": "作成日",
       "updated_at": "編集日",
-      "meta": "メタ情報"
+      "meta": "メタ情報",
+      "no_roles": "ロール未指定 — 管理者のみ復旧可能"
     },
     "form": {
       "name": "メニュー名",
@@ -1120,7 +1139,7 @@
       "roles": "アクセスロール",
       "roles_placeholder": "ロールを選択してください...",
       "roles_no_options": "選択可能なロールがありません",
-      "roles_hint": "このメニューにアクセスできるロールを選択します。選択しない場合、すべてのロールがアクセスできます。"
+      "roles_hint": "このメニューにアクセスできるロールを選択します。管理者ロールは常に含まれます。"
     },
     "modals": {
       "delete_title": "メニュー削除",
@@ -1135,6 +1154,30 @@
       "updated": "メニューが編集されました。",
       "deleted": "メニューが削除されました。",
       "status_changed": "メニューのステータスが変更されました。"
+    },
+    "list_roles_label": "付与されたロール",
+    "list_roles_more": "他{{count}}件",
+    "list_roles_none": "ロールなし",
+    "bulk": {
+      "enter": "複数選択",
+      "exit": "選択モードを終了",
+      "panel_title": "選択したメニューにロールを一括適用",
+      "selected_count": "選択したメニュー {{count}}件",
+      "more_count": "他{{count}}件",
+      "empty_selection": "左の一覧でロールを適用するメニューにチェックしてください。",
+      "roles_label": "ロール",
+      "roles_placeholder": "ロールを選択してください...",
+      "action_label": "操作",
+      "action_add": "ロール追加",
+      "action_remove": "ロール削除",
+      "rule_hint": "下位メニューを選ぶと上位メニューにも追加されます。上位メニューから外すと下位メニューからも外れます。管理者ロールは外せません。",
+      "apply": "適用",
+      "clear": "選択解除",
+      "confirm_title": "メニューのロール一括適用",
+      "confirm_add": "メニュー{{count}}件にロール「{{roles}}」を追加します。",
+      "confirm_remove": "メニュー{{count}}件からロール「{{roles}}」を削除します。",
+      "confirm_auto_parent": "下位メニューだけを選んだ上位メニュー{{count}}件にも併せて追加されます。",
+      "confirm_auto_child": "選んだ上位メニューの下位メニュー{{count}}件からも併せて外れます。"
     }
   },
   "roles": {
@@ -1188,7 +1231,14 @@
       "permissions_section": "権限設定",
       "permissions_selected_suffix": "個選択されました",
       "permissions_hint": "このロールに付与する権限を選択してください。グループをクリックして展開または折りたたむことができます。",
-      "no_permissions_in_type": "登録された権限がありません。"
+      "no_permissions_in_type": "登録された権限がありません。",
+      "menus_section": "アクセス可能なメニュー",
+      "menus_hint": "チェックしたメニューがこのロールの管理メニューに表示されます。下位メニューを選ぶと上位メニューも併せて選択され、上位メニューを外すと下位メニューも併せて外れます。",
+      "menus_readonly_hint": "メニューの編集権限がないため、閲覧のみ可能です。",
+      "menus_admin_locked_hint": "管理者ロールは常にすべてのメニューにアクセスできます。",
+      "menus_select_all": "すべて選択",
+      "menus_clear_all": "すべて解除",
+      "menus_inactive_badge": "無効"
     },
     "modals": {
       "delete_title": "ロール削除",
@@ -3184,7 +3234,8 @@
       "delete_confirm_modal": "会員削除確認",
       "error_modal": "エラーお知らせ",
       "bulk_block_confirm_modal": "会員一括ブロック",
-      "bulk_withdraw_confirm_modal": "会員一括退会"
+      "bulk_withdraw_confirm_modal": "会員一括退会",
+      "bulk_roles_modal": "会員のロール一括変更"
     },
     "admin_identity_logs": {
       "identity_log_detail_modal": "本人認証ログ詳細",
@@ -3215,7 +3266,8 @@
     },
     "identity_challenge_modal": "本人認証",
     "admin_menu_list": {
-      "delete_confirm_modal": "メニュー削除確認"
+      "delete_confirm_modal": "メニュー削除確認",
+      "bulk_roles_confirm_modal": "メニューのロール一括適用の確認"
     },
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "プレビューレイアウト選択",

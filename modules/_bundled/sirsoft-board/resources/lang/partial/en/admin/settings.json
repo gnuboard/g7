@@ -27,7 +27,8 @@
     "comment": "Comment",
     "attachment": "Attachment",
     "notification": "Notification",
-    "bulk_apply": "Bulk Apply"
+    "bulk_apply": "Bulk Apply",
+    "bulk_members": "Bulk Managers/Staff"
   },
   "sections": {
     "general": "General",
@@ -574,5 +575,31 @@
       "preview_failed": "Could not load the target count.",
       "editor_label": "Board retention manual run"
     }
+  },
+  "bulk_members": {
+    "title": "Bulk Assign Board Managers/Staff",
+    "description": "Add or remove members as managers or staff of multiple boards at once.",
+    "target_label": "Target boards",
+    "target_all": "All boards",
+    "target_selected": "Selected boards",
+    "boards_count": "{{count}} boards",
+    "type_label": "Type",
+    "type_manager": "Manager",
+    "type_step": "Staff",
+    "users_label": "Members",
+    "mode_label": "Action",
+    "mode_add": "Add",
+    "mode_remove": "Remove",
+    "hint": "Boards that would be left with no manager are skipped when removing.",
+    "apply": "Apply",
+    "confirm_title": "Bulk Assign Board Managers/Staff",
+    "confirm_add_manager": "Add the selected members as board managers.",
+    "confirm_add_step": "Add the selected members as board staff.",
+    "confirm_remove_manager": "Remove the selected members from board managers.",
+    "confirm_remove_step": "Remove the selected members from board staff.",
+    "result_summary": "{{updated}} boards changed, {{skipped}} skipped",
+    "reason_last_manager": "Would leave no manager",
+    "reason_scope": "Outside your scope",
+    "failed": "Failed to assign board managers/staff in bulk."
   }
 }

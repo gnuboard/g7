@@ -659,6 +659,12 @@ return [
         'description' => [
             'max' => 'ロール説明は :max文字を超えることはできません。',
         ],
+        'menu_ids' => [
+            'array' => 'アクセス可能なメニューは配列である必要があります。',
+            'integer' => 'メニューIDは数値である必要があります。',
+            'exists' => '選択したメニューが見つかりません。',
+            'unmanageable' => '管理できないメニューは追加できません。',
+        ],
     ],
     'module' => [
         'status' => [
@@ -1254,6 +1260,10 @@ return [
         'since' => '基準時刻',
         'skip_waiting' => '待機期間省略',
         'targets' => '照会対象',
+        'menu_ids' => 'メニュー一覧',
+        'role_ids' => 'ロール一覧',
+        'mode' => '操作',
+        'uuids' => '会員一覧',
     ],
     'layout_version' => [
         'limit' => [

@@ -27,6 +27,8 @@ export interface MenuItem {
         name: string | Record<string, string>;
         permission_type?: string | null;
     }[];
+    /** 관리 목록이 싣는 부여 역할 ID (이름은 roleOptions 에서 찾는다) */
+    role_ids?: number[];
     created_at?: string;
     updated_at?: string;
 }
@@ -60,6 +62,23 @@ export interface SortableMenuListProps {
     titleClassName?: string;
     enableDrag?: boolean;
     toggleDisabled?: boolean;
+    /**
+     * 여러 개 선택 모드 (기본값: false). 켜면 항목 앞에 체크박스가 보이고, 끌어 옮기기와 상태
+     * 토글이 꺼지며, 항목 클릭은 상세 선택(onSelect) 대신 체크를 토글한다. 자식은 모두 펼친다.
+     */
+    selectionMode?: boolean;
+    /** 선택 모드에서 체크된 메뉴 ID */
+    selectedIds?: number[];
+    /** 선택 모드에서 체크가 바뀔 때 — 새 ID 배열 */
+    onSelectionChange?: (ids: number[]) => void;
+    /**
+     * 역할 이름표 — 항목의 role_ids 를 이름으로 바꿔 행마다 배지로 보인다. 주지 않으면 배지를 그리지 않는다.
+     * 목록에 없는 ID(비활성 역할 등)는 건너뛴다.
+     */
+    roleOptions?: {
+        id: number;
+        name: string | Record<string, string>;
+    }[];
     /**
      * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
      */

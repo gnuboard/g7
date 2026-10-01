@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 102종 / 호출 지점 108곳. 이 중 102종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 105종 / 호출 지점 111곳. 이 중 105종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -24,16 +24,19 @@
 | `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
 | `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:130` |
 | `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1133` |
+| `sirsoft-board.board.after_bulk_members` | action | — | `src/Services/BoardService.php:1530` |
 | `sirsoft-board.board.after_create` | action | — | `src/Services/BoardService.php:420` |
 | `sirsoft-board.board.after_delete` | action | — | `src/Services/BoardService.php:666` |
 | `sirsoft-board.board.after_remove_from_menu` | action | — | `src/Services/BoardService.php:1178` |
 | `sirsoft-board.board.after_update` | action | — | `src/Services/BoardService.php:583` |
 | `sirsoft-board.board.before_add_to_menu` | action | — | `src/Services/BoardService.php:1097` |
+| `sirsoft-board.board.before_bulk_members` | action | — | `src/Services/BoardService.php:1472` |
 | `sirsoft-board.board.before_copy` | action | — | `src/Services/BoardService.php:689` |
 | `sirsoft-board.board.before_create` | action | — | `src/Services/BoardService.php:389` |
 | `sirsoft-board.board.before_delete` | action | — | `src/Services/BoardService.php:615` |
 | `sirsoft-board.board.before_remove_from_menu` | action | — | `src/Services/BoardService.php:1164` |
 | `sirsoft-board.board.before_update` | action | — | `src/Services/BoardService.php:525` |
+| `sirsoft-board.board.bulk_members_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkBoardMembersRequest.php:50` |
 | `sirsoft-board.board.filter_copy_data` | filter | — | `src/Services/BoardService.php:746` |
 | `sirsoft-board.board.filter_create_data` | filter | — | `src/Services/BoardService.php:392` |
 | `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1127` |

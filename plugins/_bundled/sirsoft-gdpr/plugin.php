@@ -319,14 +319,27 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 비활성화 — 관리자 메뉴 일괄 제거.
+     * 플러그인 비활성화 — 관리자 메뉴 행은 보존한다.
      *
-     * cleanupStaleMenus 에 currentSlugs=[] 를 넘겨 본 플러그인 소속 메뉴 전체를 삭제한다.
-     * 자식 메뉴 + role_menus 피벗 정리는 helper 가 cascade 처리.
+     * 비활성 플러그인의 메뉴는 사이드바·메뉴 관리 목록에서 자동으로 빠지므로 행을 지울
+     * 필요가 없다. 지우면 운영자가 붙여 둔 메뉴 역할이 사라져, 다시 켰을 때 관리자·privacy
+     * 역할만 남는다. 재활성화까지 그대로 두고, 메뉴 삭제는 제거(uninstall) 때만 한다.
      *
      * @return bool 비활성화 성공 여부
      */
     public function deactivate(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 플러그인 제거 — 관리자 메뉴를 삭제한다.
+     *
+     * 비활성화가 메뉴를 보존하므로 제거가 직접 지운다(자식 메뉴·role_menus 피벗은 helper 가 처리).
+     *
+     * @return bool 제거 성공 여부
+     */
+    public function uninstall(): bool
     {
         app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
             ExtensionOwnerType::Plugin,
@@ -338,23 +351,14 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 제거 — 메뉴 잔존 안전망 (정상 흐름은 deactivate 가 먼저 처리).
-     *
-     * @return bool 제거 성공 여부
-     */
-    public function uninstall(): bool
-    {
-        $this->deactivate();
-
-        return true;
-    }
-
-    /**
      * 메뉴 트리에 sirsoft-gdpr.privacy 역할의 read 권한을 재귀 부여한다.
      *
      * helper.grantDefaultRoles 는 admin 역할만 자동 부여하므로 privacy 역할은 별도 처리 필요.
+     * 운영자가 메뉴 관리에서 privacy 역할을 붙이거나 뗀 메뉴(user_overrides 에 그 역할 식별자가
+     * 기록됨)는 운영자의 결정이므로 다시 붙이지 않는다 — 켤 때마다 뺀 역할이 되살아나지 않게.
      *
      * @param  Menu  $menu  대상 메뉴 (자식 포함)
+     * @return void 반환값 없음
      */
     private function grantPrivacyRoleToMenuTree(Menu $menu): void
     {
@@ -364,9 +368,11 @@ class Plugin extends AbstractPlugin
             return;
         }
 
-        $menu->roles()->syncWithoutDetaching([
-            $role->id => ['permission_type' => MenuPermissionType::Read->value],
-        ]);
+        if (! in_array($role->identifier, $menu->user_overrides ?? [], true)) {
+            $menu->roles()->syncWithoutDetaching([
+                $role->id => ['permission_type' => MenuPermissionType::Read->value],
+            ]);
+        }
 
         foreach ($menu->children as $child) {
             $this->grantPrivacyRoleToMenuTree($child);

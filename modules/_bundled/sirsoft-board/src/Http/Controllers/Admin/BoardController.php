@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
+use Modules\Sirsoft\Board\Http\Requests\Admin\BulkBoardMembersRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\StoreBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateBoardRequest;
@@ -354,6 +355,40 @@ class BoardController extends AdminBaseController
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.menu_add_failed');
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.boards.menu_add_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 여러 게시판의 관리자·스텝에 회원을 한꺼번에 더하거나 뺍니다.
+     *
+     * @param  BulkBoardMembersRequest  $request  대상 게시판·회원·구분·작업 요청
+     * @return JsonResponse 변경 게시판 수·제외 수·제외 사유
+     */
+    public function bulkMembers(BulkBoardMembersRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $result = $this->boardService->bulkUpdateBoardMembers(
+                (bool) $validated['apply_all'],
+                $validated['board_ids'] ?? [],
+                $validated['user_uuids'],
+                $validated['member_type'],
+                $validated['mode'],
+            );
+
+            return $this->success(
+                'sirsoft-board::messages.boards.bulk_members_success',
+                $result,
+                200,
+                ['count' => $result['updated_count'], 'skipped' => $result['skipped_count']]
+            );
+        } catch (PermissionEscalationException $e) {
+            // 액터가 부여할 수 없는 게시판 역할 — 전체 롤백됨
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.bulk_members_failed');
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.boards.bulk_members_failed', 500, $e->getMessage());
         }
     }
 }

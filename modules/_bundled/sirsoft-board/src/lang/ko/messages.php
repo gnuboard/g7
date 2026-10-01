@@ -18,6 +18,8 @@ return [
         'update_success' => '게시판이 수정되었습니다.',
         'delete_success' => '게시판이 삭제되었습니다.',
         'copy_success' => '게시판이 복사되었습니다.',
+        'bulk_members_success' => '게시판 :count개의 명단을 변경했습니다. (제외 :skipped개)',
+        'bulk_members_failed' => '게시판 관리자·스텝 일괄 지정에 실패했습니다.',
         'config_retrieved' => '게시판 설정을 조회했습니다.',
         'types_retrieved' => '게시판 타입 목록을 조회했습니다.',
         'form_data_retrieved' => '게시판 폼 데이터를 조회했습니다.',

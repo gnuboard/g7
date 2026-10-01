@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Menu\BulkUpdateMenuRolesRequest;
 use App\Http\Requests\Menu\CreateMenuRequest;
 use App\Http\Requests\Menu\MenuListRequest;
 use App\Http\Requests\Menu\UpdateMenuOrderRequest;
@@ -24,6 +25,11 @@ use Illuminate\Validation\ValidationException;
  */
 class MenuController extends AdminBaseController
 {
+    /**
+     * 메뉴 컨트롤러를 생성합니다.
+     *
+     * @param  MenuService  $menuService  메뉴 서비스
+     */
     public function __construct(
         private MenuService $menuService
     ) {
@@ -229,6 +235,33 @@ class MenuController extends AdminBaseController
             return $this->error('auth.scope_denied', 403, $e->getMessage());
         } catch (\Exception $e) {
             return $this->error('menu.update_error', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 여러 메뉴에 역할을 한꺼번에 더하거나 뺍니다.
+     *
+     * @param  BulkUpdateMenuRolesRequest  $request  메뉴·역할·작업(add|remove) 요청
+     * @return JsonResponse 변경 메뉴 수와 자동으로 함께 처리된 부모·자식 메뉴 ID
+     */
+    public function bulkUpdateRoles(BulkUpdateMenuRolesRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $result = $this->menuService->bulkUpdateRoles(
+                $validated['menu_ids'],
+                $validated['role_ids'],
+                $validated['mode'],
+            );
+
+            return $this->success('menu.bulk_roles_success', $result, 200, ['count' => $result['updated_count']]);
+        } catch (ValidationException $e) {
+            return $this->error('menu.bulk_roles_failed', 422, $e->errors());
+        } catch (AuthorizationException $e) {
+            // 범위 밖 메뉴가 섞인 경우 — 순서 변경과 같은 이유로 제네릭 catch 보다 앞에 둔다.
+            return $this->error('auth.scope_denied', 403, $e->getMessage());
+        } catch (\Exception $e) {
+            return $this->error('menu.bulk_roles_failed', 500, $e->getMessage());
         }
     }
 

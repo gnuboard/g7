@@ -200,7 +200,7 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 38개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| PHPUnit | 39개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 10개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 6개 | `tests/scenarios` |

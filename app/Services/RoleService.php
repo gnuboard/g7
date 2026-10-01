@@ -23,10 +23,12 @@ class RoleService
      *
      * @param  RoleRepositoryInterface  $roleRepository  역할 리포지토리
      * @param  PermissionEscalationGuard  $escalationGuard  권한 상승 방지 가드 (행위자 보유 범위 밖 권한 부여 차단)
+     * @param  MenuService  $menuService  메뉴 서비스 (역할 폼 「접근 가능 메뉴」 동기화)
      */
     public function __construct(
         private RoleRepositoryInterface $roleRepository,
-        private PermissionEscalationGuard $escalationGuard
+        private PermissionEscalationGuard $escalationGuard,
+        private MenuService $menuService
     ) {}
 
     /**
@@ -91,7 +93,7 @@ class RoleService
      */
     public function getRoleWithPermissions(Role $role): Role
     {
-        $role->load(['permissions' => fn ($q) => $q->withPivot('scope_type'), 'users']);
+        $role->load(['permissions' => fn ($q) => $q->withPivot('scope_type'), 'users', 'menus' => fn ($q) => $q->select('menus.id')]);
         $role->loadCount('users');
 
         return $role;
@@ -114,6 +116,10 @@ class RoleService
         $permissions = $data['permissions'] ?? [];
         unset($data['permissions']);
 
+        // 접근 가능 메뉴 분리 (보내지 않았으면 메뉴를 건드리지 않는다)
+        $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
+        unset($data['menu_ids']);
+
         // 권한 상승 상한을 **역할 생성 전에** 검사한다. 생성 뒤에 검사하면 거부된 요청이
         // 권한 0개짜리 고아 역할 행을 남긴다(사용자 경로와 동일한 "가드 → 쓰기" 순서).
         if (! empty($permissions)) {
@@ -126,13 +132,20 @@ class RoleService
         // 훅: 생성 데이터 필터
         $data = HookManager::applyFilters('core.role.filter_create_data', $data);
 
-        // 역할 생성
-        $role = $this->roleRepository->create($data);
+        // 역할 생성·권한·메뉴를 한 번에 — 메뉴 지정이 거부되면 역할 행도 남기지 않는다.
+        $role = DB::transaction(function () use ($data, $permissions, $menuIds) {
+            $role = $this->roleRepository->create($data);
 
-        // 권한 할당
-        if (! empty($permissions)) {
-            $this->syncPermissions($role, $permissions);
-        }
+            if (! empty($permissions)) {
+                $this->syncPermissions($role, $permissions);
+            }
+
+            if ($menuIds !== null) {
+                $this->menuService->syncRoleMenus($role, $menuIds);
+            }
+
+            return $role;
+        });
 
         // 훅: 생성 후
         HookManager::doAction('core.role.after_create', $role);
@@ -157,6 +170,10 @@ class RoleService
         $permissions = $data['permissions'] ?? null;
         unset($data['permissions']);
 
+        // 접근 가능 메뉴 분리 (보내지 않았으면 메뉴를 건드리지 않는다)
+        $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
+        unset($data['menu_ids']);
+
         // 권한 상승 상한을 **속성 업데이트 전에** 검사한다. update 뒤에 검사하면
         // 403 을 받은 요청이 name/is_active 변경만 반영된 상태를 남긴다.
         if ($permissions !== null) {
@@ -172,13 +189,19 @@ class RoleService
         // 훅: 업데이트 데이터 필터
         $data = HookManager::applyFilters('core.role.filter_update_data', $data, $role);
 
-        // 역할 정보 업데이트
-        $this->roleRepository->update($role, $data);
+        // 속성·권한·메뉴를 한 트랜잭션으로 — 메뉴 지정이 거부(422)되면 이름·권한 변경도 남기지 않는다.
+        DB::transaction(function () use ($role, $data, $permissions, $menuIds) {
+            $this->roleRepository->update($role, $data);
 
-        // 권한 동기화 (null이 아닌 경우에만)
-        if ($permissions !== null) {
-            $this->syncPermissions($role, $permissions);
-        }
+            // 권한 동기화 (null이 아닌 경우에만)
+            if ($permissions !== null) {
+                $this->syncPermissions($role, $permissions);
+            }
+
+            if ($menuIds !== null) {
+                $this->menuService->syncRoleMenus($role, $menuIds);
+            }
+        });
 
         $role->refresh();
 

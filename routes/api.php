@@ -796,6 +796,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('active', [AdminMenuController::class, 'active'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.active');
         Route::post('/', [AdminMenuController::class, 'store'])->middleware('permission:admin,core.menus.create')->name('api.admin.menus.store');
         Route::put('order', [AdminMenuController::class, 'updateOrder'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update-order');
+        Route::patch('bulk-roles', [AdminMenuController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.bulk-roles');
         Route::get('extension/{type}/{identifier}', [AdminMenuController::class, 'getByExtension'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.by-extension');
         Route::get('{menu}', [AdminMenuController::class, 'show'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.show');
         Route::put('{menu}', [AdminMenuController::class, 'update'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update');
@@ -852,6 +853,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('search', [AdminUserController::class, 'search'])->middleware('permission:admin,core.users.read')->name('api.admin.users.search');
         Route::post('check-email', [AdminUserController::class, 'checkEmail'])->middleware('permission:admin,core.users.read')->name('api.admin.users.check-email');
         Route::patch('bulk-status', [AdminUserController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-status');
+        Route::patch('bulk-roles', [AdminUserController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-roles');
         Route::get('{user}', [AdminUserController::class, 'show'])->middleware('permission:admin,core.users.read')->name('api.admin.users.show');
         Route::put('{user}', [AdminUserController::class, 'update'])->middleware('permission:admin,core.users.update')->name('api.admin.users.update');
         Route::delete('{user}', [AdminUserController::class, 'destroy'])->middleware('permission:admin,core.users.delete')->name('api.admin.users.destroy');

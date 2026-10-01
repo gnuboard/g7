@@ -405,7 +405,7 @@ class HookManager implements HookManagerInterface
      * 구 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화하며 개명 경고를 한 번 남긴다.
      *
      * 공개 배포본에서 한 번도 발화된 적 없는 옛 이름은 이 헬퍼로 되살리지 않는다 — 한 번도 돈 적 없는
-     * 서드파티 코드가 갑자기 돌게 된다(data/deprecated.php 의 published=false).
+     * 서드파티 코드가 갑자기 돌게 된다(docs/extension/hooks.md 「사용 중단 훅」 의 공개 배포 발화 이력 「없음」).
      *
      * @param  string  $hookName  표준 훅 이름
      * @param  string  $legacyHookName  구 훅 이름 (하위호환용)

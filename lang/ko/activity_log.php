@@ -61,6 +61,7 @@ return [
         'bulk_update' => '일괄 수정',
         'bulk_delete' => '일괄 삭제',
         'bulk_update_status' => '일괄 상태 변경',
+        'bulk_roles' => '역할 일괄 변경',
         'refund' => '환불',
         'publish' => '발행',
         'register' => '회원가입',
@@ -127,6 +128,7 @@ return [
         'user_check_email' => '이메일 중복 확인',
         'user_update_language' => '사용자 언어 설정 변경',
         'user_bulk_update_status' => '사용자 일괄 상태 변경 (:count건)',
+        'user_bulk_roles' => '사용자 역할 일괄 변경 (ID: :user_id)',
 
         // 회원 알림함 (관리자가 회원 수신함을 지우는 행위)
         'member_notification_bulk_delete' => '회원 알림함 일괄 삭제 (:count건)',

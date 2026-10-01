@@ -193,7 +193,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 36개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 37개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 6개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 11개 | `tests/scenarios` |

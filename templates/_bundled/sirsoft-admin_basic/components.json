@@ -930,6 +930,28 @@
             "required": false,
             "description": "목록 제목"
           },
+          "selectionMode": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "여러 개 선택 모드 — 체크박스 표시, 끌어 옮기기·상태 토글 끔, 항목 클릭이 체크 토글"
+          },
+          "selectedIds": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택 모드에서 체크된 메뉴 ID 배열"
+          },
+          "onSelectionChange": {
+            "type": "function",
+            "required": false,
+            "description": "선택 모드에서 체크가 바뀔 때 콜백 (ids: number[]) => void"
+          },
+          "roleOptions": {
+            "type": "array",
+            "required": false,
+            "description": "역할 이름표 [{id, name}] — 항목의 role_ids 를 이름 배지로 보인다(최대 3개 + 외 n개). 주지 않으면 배지를 그리지 않는다"
+          },
           "className": {
             "type": "string",
             "required": false,
@@ -4045,6 +4067,61 @@
             "required": false,
             "default": 2,
             "description": "PC에서 권한 목록 열 수 (1 | 2 | 3)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 클래스명"
+          }
+        }
+      },
+      {
+        "name": "MenuAccessTree",
+        "type": "composite",
+        "description": "관리자 메뉴 트리를 체크박스로 골라 역할이 접근할 메뉴를 지정하는 컴포넌트 (부모·자식 자동 정규화)",
+        "path": "src/components/composite/MenuAccessTree.tsx",
+        "props": {
+          "data": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "메뉴 트리 (관리 목록 응답의 최상위 메뉴 + children)"
+          },
+          "value": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택된 메뉴 ID 배열"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "선택 변경 콜백 (e: { target: { value: number[] } }) => void"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 (볼 수만 있음)"
+          },
+          "lockedAll": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "전부 체크된 읽기 전용 (관리자 역할)"
+          },
+          "installedModules": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "설치된 모듈 목록 (확장 배지 이름 조회)"
+          },
+          "installedPlugins": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "설치된 플러그인 목록 (확장 배지 이름 조회)"
           },
           "className": {
             "type": "string",

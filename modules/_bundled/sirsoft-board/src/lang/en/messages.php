@@ -18,6 +18,8 @@ return [
         'update_success' => 'Board has been updated.',
         'delete_success' => 'Board has been deleted.',
         'copy_success' => 'Board has been copied.',
+        'bulk_members_success' => 'Updated member lists of :count board(s). (:skipped skipped)',
+        'bulk_members_failed' => 'Failed to assign board managers/staff in bulk.',
         'config_retrieved' => 'Board configuration retrieved.',
         'types_retrieved' => 'Board types retrieved.',
         'form_data_retrieved' => 'Board form data retrieved.',

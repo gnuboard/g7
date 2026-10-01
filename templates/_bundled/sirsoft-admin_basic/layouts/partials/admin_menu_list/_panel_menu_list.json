@@ -1,5 +1,5 @@
 {
-    "comment": "메뉴 관리 화면 왼쪽의 트리 목록. 고르기·순서 바꾸기·켜고 끄기 셋을 여기서 하고, 오른쪽\n  패널은 여기서 고른 것을 따라간다.\n  **끌어 옮기기와 스위치는 수정 권한이 있을 때만 열린다** — 권한이 없으면 목록은 보이되 손댈 수 없다.\n  화면에 붙을 때 주소의 메뉴 값을 읽어 그 항목을 골라 두므로, 특정 메뉴를 가리키는 주소를\n  주고받으면 상대도 같은 항목을 편 채로 연다.",
+    "comment": "메뉴 관리 화면 왼쪽의 트리 목록. 고르기·순서 바꾸기·켜고 끄기 셋을 여기서 하고, 오른쪽\n  패널은 여기서 고른 것을 따라간다.\n  **끌어 옮기기와 스위치는 수정 권한이 있을 때만 열린다** — 권한이 없으면 목록은 보이되 손댈 수 없다.\n  화면에 붙을 때 주소의 메뉴 값을 읽어 그 항목을 골라 두므로, 특정 메뉴를 가리키는 주소를\n  주고받으면 상대도 같은 항목을 편 채로 연다.\n  행마다 그 메뉴에 부여된 역할을 배지로 보인다 — 목록 응답은 역할 ID(role_ids)만 싣고, 이름은 이 화면의 활성 역할 목록에서 찾는다.",
     "meta": {
         "is_partial": true
     },
@@ -135,7 +135,7 @@
                     }
                 },
                 {
-                    "comment": "**실패 갈래가 없다** — 서버가 거절해도 알림이 없고 목록도 다시 받지 않아, 스위치가 눌린 모양 그대로 남고 서버와 어긋난다(순서 바꾸기 쪽에는 그 되돌림이 있다).",
+                    "comment": "켜고 끄기. 실패하면 서버 메시지를 띄우지만 목록은 다시 받지 않는다 — 스위치는 눌린 모양 그대로 남아 서버와 어긋날 수 있다(순서 바꾸기 쪽에는 목록 재조회로 되돌리는 갈래가 있다).",
                     "type": "action",
                     "event": "onToggleStatus",
                     "handler": "apiCall",
@@ -176,12 +176,25 @@
                             "message": "{{error.message}}"
                         }
                     }
+                },
+                {
+                    "comment": "여러 개 선택 모드의 체크 — 목록이 부모·자손을 함께 토글한 결과 배열을 주므로 그대로 담는다. 오른쪽 일괄 판이 읽는다.",
+                    "type": "action",
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "menuBulkSelectedIds": "{{$args[0]}}"
+                    }
                 }
             ],
             "props": {
                 "items": "{{menus?.data?.data ?? []}}",
                 "selectedId": "{{_global.selectedMenuId}}",
                 "enableDrag": "{{menus?.data?.abilities?.can_update ?? false}}",
+                "selectionMode": "{{_global.menuBulkMode === true}}",
+                "selectedIds": "{{_global.menuBulkSelectedIds ?? []}}",
+                "roleOptions": "{{roles?.data?.data ?? []}}",
                 "toggleDisabled": "{{menus?.data?.abilities?.can_update !== true}}",
                 "className": "py-2",
                 "itemClassName": "py-2.5 px-3 mx-4 my-2 rounded-lg border",

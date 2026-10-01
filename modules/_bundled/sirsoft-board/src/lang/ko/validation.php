@@ -312,6 +312,13 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'bulk_members' => [
+            'apply_all' => '대상 게시판 범위',
+            'board_ids' => '대상 게시판',
+            'user_uuids' => '회원',
+            'member_type' => '구분',
+            'mode' => '작업',
+        ],
         'report_my' => [
             'search_field' => '검색 대상',
             'target_type' => '대상 구분',

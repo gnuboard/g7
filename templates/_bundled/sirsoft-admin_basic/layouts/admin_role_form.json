@@ -111,6 +111,28 @@
                 "data": []
             },
             "comment": "선택 가능한 권한 전체(종류·기본 종류·범위 옵션 포함). 두 모드 모두에서 돈다.\n       탭 목록도 이 응답의 `types` 에서 만들므로, 확장이 권한을 새로 실으면 탭이 저절로 늘어난다."
+        },
+        {
+            "id": "role_menus_tree",
+            "label_key": "$t:editor.data_source.role_menus_tree",
+            "type": "api",
+            "endpoint": "/api/admin/menus",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "params": {
+                "with_children": true,
+                "hierarchical": true
+            },
+            "fallback": {
+                "data": []
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "「접근 가능 메뉴」 트리 — 메뉴 관리 화면과 같은 관리 목록이라 **액터가 관리할 수 있는 메뉴만** 온다\n       (비활성 확장 메뉴·자기 역할로 접근할 수 없는 메뉴는 빠진다). 메뉴 조회 권한이 없는 운영자에게는 403 이\n       정상이라 상위 오류 처리로 넘기지 않고 빈 트리로 둔다 — 그때 카드는 읽기 전용 안내만 보인다."
         }
     ],
     "initLocal": {
@@ -125,7 +147,8 @@
         "wait_for": [
             "role_check",
             "clone_source",
-            "permissions"
+            "permissions",
+            "role_menus_tree"
         ]
     },
     "init_actions": [
@@ -249,7 +272,7 @@
                         "trackChanges": true,
                         "actions": [
                             {
-                                "comment": "저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.\n               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만\n               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).",
+                                "comment": "저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.\n               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만\n               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).\n               접근 가능 메뉴(menu_ids)는 메뉴 수정 권한이 있고 관리자 역할이 아닐 때만 싣는다 — 안 실으면 서버는 메뉴를\n               건드리지 않는다. 트리에 보이는 메뉴(관리할 수 있는 메뉴)로만 거른다: 관리 밖 메뉴의 기존 할당은 서버가\n               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다.",
                                 "type": "submit",
                                 "handler": "sequence",
                                 "actions": [
@@ -272,7 +295,8 @@
                                                 "name": "{{_local.form.name_raw ?? form.name}}",
                                                 "description": "{{_local.form.description_raw ?? form.description}}",
                                                 "is_active": "{{_local.form.is_active === true}}",
-                                                "permissions": "{{_local.form.permission_values ?? []}}"
+                                                "permissions": "{{_local.form.permission_values ?? []}}",
+                                                "menu_ids": "{{role_menus_tree?.data?.abilities?.can_update === true && _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"
                                             }
                                         },
                                         "onSuccess": {
@@ -716,6 +740,79 @@
                                                 ]
                                             }
                                         ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "menus_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.roles.form.menus_section"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "card-description"
+                                        },
+                                        "text": "$t:admin.roles.form.menus_hint"
+                                    },
+                                    {
+                                        "id": "menus_admin_locked_hint",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.form?.identifier === 'admin'}}",
+                                        "props": {
+                                            "className": "text-tertiary mb-3"
+                                        },
+                                        "text": "$t:admin.roles.form.menus_admin_locked_hint"
+                                    },
+                                    {
+                                        "id": "menus_readonly_hint",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.form?.identifier !== 'admin' && role_menus_tree?.data?.abilities?.can_update !== true}}",
+                                        "props": {
+                                            "className": "text-tertiary mb-3"
+                                        },
+                                        "text": "$t:admin.roles.form.menus_readonly_hint"
+                                    },
+                                    {
+                                        "id": "menus_tree",
+                                        "type": "composite",
+                                        "name": "MenuAccessTree",
+                                        "actions": [
+                                            {
+                                                "comment": "메뉴 선택. 트리가 부모·자식을 맞춘 전체 목록을 주므로 그대로 담는다 — 저장 때 트리에 보이는 메뉴로만 걸러 보낸다.",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form": {
+                                                        "menu_ids": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "data": "{{role_menus_tree?.data?.data ?? []}}",
+                                            "value": "{{_local.form?.menu_ids ?? []}}",
+                                            "disabled": "{{role_menus_tree?.data?.abilities?.can_update !== true}}",
+                                            "lockedAll": "{{_local.form?.identifier === 'admin'}}",
+                                            "installedModules": "{{_global.installedModules}}",
+                                            "installedPlugins": "{{_global.installedPlugins}}",
+                                            "className": "max-h-[560px] overflow-y-auto"
+                                        }
                                     }
                                 ]
                             }

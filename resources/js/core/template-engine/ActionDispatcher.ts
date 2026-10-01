@@ -2091,7 +2091,7 @@ export class ActionDispatcher {
     const capturedLocalState = componentContext?.state ? { ...componentContext.state } : null;
     const handlerId = `handler_${action.handler}_${handlerCreatedAt}`;
 
-    return async (event: Event) => {
+    const run = async (event: Event) => {
       logger.log('Handler invoked for:', action.handler, 'event:', event.type);
 
       // DevTools: 핸들러 실행 시점에 stale closure 감지
@@ -2256,6 +2256,57 @@ export class ActionDispatcher {
         }
       }
     };
+
+    return (event: Event) => this.runGuardingFormSubmit(event, run);
+  }
+
+  /**
+   * 제출이 진행 중인 폼과 그 제출 이벤트 (폼별 1건).
+   *
+   * 저장 버튼의 `disabled="{{_global.isSaving}}"` 는 첫 제출의 상태 변경이 렌더된 뒤에야 걸려
+   * 같은 틱의 두 번째 submit 을 막지 못한다(더블클릭에 저장 요청 2건). `sequence :debounce` 는
+   * submit 의 기본 동작 차단과 폼 요소를 잃어 대안이 되지 못하므로 엔진이 폼 단위로 막는다.
+   *
+   * @since engine-v1.75.0
+   */
+  private static readonly submitsInFlight: WeakMap<HTMLFormElement, { event: Event; running: number }> = new WeakMap();
+
+  /**
+   * 폼 submit 이면 같은 폼의 제출이 끝나기 전에 들어온 **새** submit 을 기본 동작만 막고 무시합니다.
+   *
+   * 한 submit 이벤트에 묶인 액션 여럿은 같은 이벤트 객체를 받으므로 모두 실행한다. 잠금은 그
+   * 이벤트의 액션이 성공하든 실패하든 모두 끝나면 풀린다. submit 이 아니면 그대로 실행한다.
+   *
+   * @param event 원본 이벤트
+   * @param run 실제 핸들러
+   * @returns 핸들러 완료 Promise
+   */
+  private async runGuardingFormSubmit(event: Event, run: (event: Event) => Promise<void>): Promise<void> {
+    const form = event?.type === 'submit' && event.target instanceof HTMLFormElement ? event.target : null;
+    if (!form) {
+      return run(event);
+    }
+
+    const inFlight = ActionDispatcher.submitsInFlight.get(form);
+    if (inFlight && inFlight.event !== event) {
+      event.preventDefault();
+      logger.log('Duplicate form submit ignored while the previous submit is in flight');
+
+      return;
+    }
+
+    const entry = inFlight ?? { event, running: 0 };
+    entry.running += 1;
+    ActionDispatcher.submitsInFlight.set(form, entry);
+
+    try {
+      await run(event);
+    } finally {
+      entry.running -= 1;
+      if (entry.running === 0 && ActionDispatcher.submitsInFlight.get(form) === entry) {
+        ActionDispatcher.submitsInFlight.delete(form);
+      }
+    }
   }
 
   /**

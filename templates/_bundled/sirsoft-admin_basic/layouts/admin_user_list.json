@@ -602,6 +602,44 @@
                                                     "withdraw": {
                                                         "handler": "openModal",
                                                         "target": "bulk_withdraw_confirm_modal"
+                                                    },
+                                                    "role_add": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "userBulkRoleMode": "add",
+                                                                    "userBulkRoleIds": [],
+                                                                    "userBulkRoleResult": null,
+                                                                    "userBulkRoleError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "bulk_roles_modal"
+                                                            }
+                                                        ]
+                                                    },
+                                                    "role_remove": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "userBulkRoleMode": "remove",
+                                                                    "userBulkRoleIds": [],
+                                                                    "userBulkRoleResult": null,
+                                                                    "userBulkRoleError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "bulk_roles_modal"
+                                                            }
+                                                        ]
                                                     }
                                                 }
                                             }
@@ -629,6 +667,16 @@
                                                 {
                                                     "value": "withdraw",
                                                     "label": "$t:admin.users.bulk_withdraw",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "role_add",
+                                                    "label": "$t:admin.users.bulk_roles.add_button",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "role_remove",
+                                                    "label": "$t:admin.users.bulk_roles.remove_button",
                                                     "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
                                                 }
                                             ]
@@ -756,6 +804,86 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "text": "$t:admin.users.bulk_withdraw"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_role_add",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작)",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "userBulkRoleMode": "add",
+                                                            "userBulkRoleIds": [],
+                                                            "userBulkRoleResult": null,
+                                                            "userBulkRoleError": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_roles_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-sm btn-secondary",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_roles.add_button"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_role_remove",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "userBulkRoleMode": "remove",
+                                                            "userBulkRoleIds": [],
+                                                            "userBulkRoleResult": null,
+                                                            "userBulkRoleError": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_roles_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-sm btn-secondary",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_roles.remove_button"
                                             }
                                         ]
                                     }
@@ -2051,6 +2179,10 @@
             "meta": {
                 "editor_label": "$t:admin.modal_label.user_list.bulk_withdraw_confirm_modal"
             }
+        },
+        {
+            "comment": "회원 역할 일괄 추가·제거 창 — 일괄 작업 바의 「역할 추가」「역할 제거」(모바일은 드롭다운)가 연다.",
+            "partial": "partials/admin_user_list/_modal_bulk_roles.json"
         }
     ]
 }

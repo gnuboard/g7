@@ -85,6 +85,7 @@
         "DonutChart",
         "ImageGallery",
         "PermissionTree",
+        "MenuAccessTree",
         "CategoryTree",
         "ExtensionBadge",
         "UserProfile",
@@ -1313,6 +1314,18 @@
       "defaultNode": {
         "type": "composite",
         "name": "PermissionTree",
+        "props": {
+          "data": [],
+          "value": []
+        }
+      }
+    },
+    "MenuAccessTree": {
+      "label": "$t:layout_editor.palette.menu_access_tree.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MenuAccessTree",
         "props": {
           "data": [],
           "value": []

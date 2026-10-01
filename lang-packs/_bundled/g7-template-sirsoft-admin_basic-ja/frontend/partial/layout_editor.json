@@ -340,6 +340,9 @@
       "default_label1": "1日",
       "default_label2": "2日",
       "default_label3": "3日"
+    },
+    "menu_access_tree": {
+      "label": "メニューアクセスツリー"
     }
   }
 }

@@ -106,6 +106,7 @@
   「21ページ以上」 등)·검색 탭 이름, 설정 항목명 4개와 구간 경계 오류 문구(`validation.analytics.bucket_bounds`),
   추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
 - 관리 범위 밖의 회원이 섞인 일괄 상태 변경의 제외 사유(`user.bulk_status_out_of_scope`)와, 유형별 마지막 활성 템플릿의 비활성화·삭제 거절 문구(`templates.errors.last_active_deactivate`·`last_active_uninstall`) 일본어 번역을 추가했습니다.
+- 역할↔메뉴 일괄 지정·회원 역할 일괄 변경의 코어 문구 일본어 번역을 추가했습니다 — 메뉴 역할 일괄 변경 결과·실패 안내(`menu.bulk_roles_*`·`menu.admin_role_required`), 회원 역할 일괄 변경 결과·권한 상한 거부 안내(`user.bulk_roles_*`), 활동 로그 「ロール一括変更」(`activity_log.action.bulk_roles`·`activity_log.description.user_bulk_roles`), 요청 검증 문구와 항목명(`validation.role.menu_ids.*`·`validation.attributes.menu_ids`·`role_ids`·`mode`·`uuids`).
 
 ### Changed
 

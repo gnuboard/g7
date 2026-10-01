@@ -7,6 +7,7 @@
     "id": "detail_panel",
     "type": "basic",
     "name": "Div",
+    "if": "{{_global.menuBulkMode !== true}}",
     "props": {
         "className": "admin-card"
     },

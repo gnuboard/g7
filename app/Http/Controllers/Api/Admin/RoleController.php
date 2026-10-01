@@ -28,6 +28,11 @@ use Illuminate\Validation\ValidationException;
  */
 class RoleController extends AdminBaseController
 {
+    /**
+     * 역할 컨트롤러를 생성합니다.
+     *
+     * @param  RoleService  $roleService  역할 서비스
+     */
     public function __construct(
         private RoleService $roleService
     ) {
@@ -120,6 +125,10 @@ class RoleController extends AdminBaseController
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
+        if ($this->deniesMenuAssignment($request->validated())) {
+            return $this->error('auth.permission_denied', 403);
+        }
+
         try {
             $role = $this->roleService->createRole($request->validated());
 
@@ -146,6 +155,10 @@ class RoleController extends AdminBaseController
      */
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
+        if ($this->deniesMenuAssignment($request->validated())) {
+            return $this->error('auth.permission_denied', 403);
+        }
+
         try {
             $updatedRole = $this->roleService->updateRole($role, $request->validated());
 
@@ -162,6 +175,20 @@ class RoleController extends AdminBaseController
         } catch (Exception $e) {
             return $this->error('role.update_failed', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 역할 폼이 보낸 접근 가능 메뉴를 액터가 지정할 수 없는지 판정합니다.
+     *
+     * 메뉴의 접근 역할을 바꾸는 일은 메뉴 관리 화면과 같은 권한(`core.menus.update`)이 필요하다.
+     * 역할 수정 권한만으로 메뉴 할당을 바꿀 수 있으면 역할 폼이 메뉴 권한의 우회로가 된다.
+     *
+     * @param  array<string, mixed>  $validated  검증된 요청 데이터
+     * @return bool 거부해야 하면 true
+     */
+    private function deniesMenuAssignment(array $validated): bool
+    {
+        return array_key_exists('menu_ids', $validated) && ! PermissionHelper::check('core.menus.update');
     }
 
     /**

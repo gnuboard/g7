@@ -62,6 +62,12 @@ class RoleResource extends BaseApiResource
                 $this->resource->relationLoaded('permissions'),
                 fn () => $this->buildHierarchicalPermissions($this->resource->permissions)
             ),
+            // 역할 폼 「접근 가능 메뉴」 초기값. 상세 조회가 메뉴 관계를 로드할 때만 싣는다 —
+            // 목록 응답에는 넣지 않는다(목록 페이로드 축소 규약).
+            'menu_ids' => $this->when(
+                $this->resource->relationLoaded('menus'),
+                fn () => $this->resource->menus->pluck('id')->map(fn ($id) => (int) $id)->values()->toArray()
+            ),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),

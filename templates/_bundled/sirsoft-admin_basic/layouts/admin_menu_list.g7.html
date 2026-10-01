@@ -50,6 +50,12 @@
       <field name="roles" :value="[]"/>
     </field>
   </init-local>
+  <init>
+    <!-- 「여러 개 선택」 상태는 두 판이 함께 읽어야 해서 전역에 두는데, 전역은 다른 화면에 다녀와도 남는다.
+         그래서 화면에 들어올 때마다 선택 모드를 끄고 고른 메뉴·역할을 비운 채로 시작한다 — 돌아왔을 때
+         지난 선택과 일괄 판이 그대로 떠 있지 않게. -->
+    <set-state target="global" :menuBulkMode="false" :menuBulkSelectedIds="[]" :menuBulkRoleIds="[]" menuBulkAction="add" :menuBulkError="null"/>
+  </init>
   <permissions>
     <permission>core.menus.read</permission>
   </permissions>
@@ -66,7 +72,16 @@
             <refetch-data-source dataSourceId="menus"/>
           </on>
         </icon-button>
-        <button data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_mode_button" type="button" disabled="{{menus?.data?.abilities?.can_update !== true}}" aria-pressed="{{_global.menuBulkMode === true}}" class="{{_global.menuBulkMode === true ? 'flex-center gap-2 px-4 h-10 rounded-lg border border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed' : 'flex-center gap-2 px-4 h-10 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed'}}">
+          <on type="click">
+            <!-- 여러 개 선택 모드 켜기/끄기. 켤 때는 오른쪽 판을 일괄 적용 판으로 돌리면서 상세 선택을 비운다 — 상세 판의
+                 단건 편집과 일괄 적용이 같은 화면에 겹치지 않게. 끌 때는 고른 것을 비워, 다시 켰을 때 지난 선택이 남지 않게 한다. -->
+            <set-state target="global" menuBulkMode="{{_global.menuBulkMode !== true}}" :menuBulkSelectedIds="[]" :menuBulkRoleIds="[]" menuBulkAction="add" :menuBulkError="null" :selectedMenuId="null" :selectedMenu="null" panelMode="view"/>
+          </on>
+          <icon name="{{_global.menuBulkMode === true ? 'check' : 'list'}}" size="md"/>
+          <span>{{_global.menuBulkMode === true ? $t:admin.menus.bulk.exit : $t:admin.menus.bulk.enter}}</span>
+        </button>
+        <button data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 메뉴 — 오른쪽 판을 등록 모드로 돌리면서 **선택을 비우고 입력값을 전부 초기화한다**.
                  한 벌뿐인 폼을 수정과 함께 쓰므로, 안 비우면 직전에 보던 메뉴의 값이 새 메뉴에 실린다. -->
@@ -95,9 +110,12 @@
       <div data-ref="main_grid" :data-blur-until-loaded="true" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <include src="partials/admin_menu_list/_panel_menu_list.g7.html"/>
         <include src="partials/admin_menu_list/_panel_detail.g7.html"/>
+        <include src="partials/admin_menu_list/_panel_bulk_roles.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 메뉴 삭제 확인 창 — 오른쪽 상세 판이 연다. 자식 메뉴가 딸린 경우를 창이 함께 알린다. -->
   <modal src="partials/admin_menu_list/_modal_delete.g7.html"/>
+  <!-- 메뉴 역할 일괄 적용 확인 창 — 오른쪽 일괄 판의 「적용」 이 연다. 부모·자식이 자동으로 함께 처리되는 수를 미리 알린다. -->
+  <modal src="partials/admin_menu_list/_modal_bulk_roles_confirm.g7.html"/>
 </layout>

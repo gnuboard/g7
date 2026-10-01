@@ -27,7 +27,8 @@
     "comment": "댓글",
     "attachment": "첨부파일",
     "notification": "알림",
-    "bulk_apply": "일괄 적용"
+    "bulk_apply": "일괄 적용",
+    "bulk_members": "관리자·스텝 일괄 지정"
   },
   "sections": {
     "general": "기본 설정",
@@ -574,5 +575,31 @@
       "preview_failed": "대상 건수를 불러오지 못했습니다.",
       "editor_label": "게시판 개인정보 보유기간 직권 실행"
     }
+  },
+  "bulk_members": {
+    "title": "게시판 관리자·스텝 일괄 지정",
+    "description": "여러 게시판의 관리자 또는 스텝에 회원을 한 번에 추가하거나 제거합니다.",
+    "target_label": "대상 게시판",
+    "target_all": "모든 게시판",
+    "target_selected": "고른 게시판",
+    "boards_count": "게시판 {{count}}개",
+    "type_label": "구분",
+    "type_manager": "관리자",
+    "type_step": "스텝",
+    "users_label": "회원",
+    "mode_label": "작업",
+    "mode_add": "추가",
+    "mode_remove": "제거",
+    "hint": "관리자가 0명이 되는 게시판은 제거에서 제외됩니다.",
+    "apply": "적용",
+    "confirm_title": "게시판 관리자·스텝 일괄 지정",
+    "confirm_add_manager": "선택한 회원을 게시판 관리자로 추가합니다.",
+    "confirm_add_step": "선택한 회원을 게시판 스텝으로 추가합니다.",
+    "confirm_remove_manager": "선택한 회원을 게시판 관리자에서 제거합니다.",
+    "confirm_remove_step": "선택한 회원을 게시판 스텝에서 제거합니다.",
+    "result_summary": "게시판 {{updated}}개 변경, {{skipped}}개 제외",
+    "reason_last_manager": "관리자가 0명이 됨",
+    "reason_scope": "관리 권한 범위 밖",
+    "failed": "게시판 관리자·스텝 일괄 지정에 실패했습니다."
   }
 }

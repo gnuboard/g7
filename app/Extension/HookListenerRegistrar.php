@@ -2,7 +2,6 @@
 
 namespace App\Extension;
 
-use App\Extension\HookContract\HookContractGuard;
 use App\Jobs\DispatchHookListenerJob;
 use Illuminate\Support\Facades\Log;
 
@@ -108,9 +107,6 @@ class HookListenerRegistrar
         self::$registered[$key] = true;
 
         foreach ($subscribedHooks as $hookName => $config) {
-            // 사용 중단·발화처 없는 훅 구독을 확장 개발자가 알 수 있게 경고 (배열 조회만 — 문제일 때만 기록)
-            HookContractGuard::checkSubscription($listenerClass, $hookName);
-
             $method = $config['method'] ?? 'handle';
             $priority = $config['priority'] ?? 10;
             $type = $config['type'] ?? 'action';

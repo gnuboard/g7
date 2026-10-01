@@ -49,6 +49,9 @@ return [
     'activity_log_failed' => '활동 기록을 가져오는데 실패했습니다.',
     'bulk_status_updated' => ':count명의 사용자 상태가 변경되었습니다.',
     'bulk_update_status_failed' => '사용자 상태 일괄 변경에 실패했습니다.',
+    'bulk_roles_updated' => ':count명의 역할을 변경했습니다. (제외 :skipped명)',
+    'bulk_roles_failed' => '회원 역할 일괄 변경에 실패했습니다.',
+    'bulk_roles_ceiling' => '내가 부여할 수 없는 권한이 담긴 역할이 포함되어 있어 처리하지 않았습니다.',
     'last_admin_role_cannot_remove' => '시스템에 관리자 역할을 가진 사용자가 본인뿐이므로 관리자 역할을 제거할 수 없습니다.',
 
     // 아바타 관련 메시지

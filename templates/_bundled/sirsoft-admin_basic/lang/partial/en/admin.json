@@ -195,6 +195,25 @@
     "bulk_withdraw": "Withdraw",
     "bulk_action_select": "Select Bulk Action",
     "bulk_status_change": "Status Change",
+    "bulk_roles": {
+      "add_button": "Add roles",
+      "remove_button": "Remove roles",
+      "add_title": "Add Roles in Bulk",
+      "remove_title": "Remove Roles in Bulk",
+      "add_desc": "Add roles to the {{count}} selected members.",
+      "remove_desc": "Remove roles from the {{count}} selected members.",
+      "roles_label": "Roles",
+      "roles_placeholder": "Select roles...",
+      "hint": "Members outside your management scope and super administrators are skipped automatically. If any selected role carries permissions you cannot grant, the whole request is rejected and nothing changes.",
+      "apply": "Apply",
+      "result_title": "Result",
+      "result_summary": "{{updated}} changed, {{skipped}} skipped",
+      "reason_grade": "Super administrator",
+      "reason_scope": "Outside your scope",
+      "reason_last_admin": "Last administrator (you)",
+      "reason_last_role": "Would be left with no role",
+      "close": "Close"
+    },
     "pagination_info": "Showing {{from}}-{{to}} of {{total}} users",
     "total_count": "Total {{count}}",
     "per_page": "{{count}}",
@@ -1060,6 +1079,9 @@
     "description": "Manage admin sidebar menu structure and change order.",
     "add_menu": "Add Menu",
     "select_menu_hint": "Select a menu from the left",
+    "list_roles_label": "Assigned roles",
+    "list_roles_more": "+{{count}} more",
+    "list_roles_none": "No roles",
     "menu_list_title": "Admin Menu List",
     "menu_info_title": "Menu Information",
     "new_menu_title": "Add New Menu",
@@ -1088,7 +1110,7 @@
       "access_permission": "Access Permission",
       "permission": "Access Permission",
       "admin_only": "Admin",
-      "all_roles": "All Roles",
+      "no_roles": "No roles assigned — only administrators can restore",
       "creator": "Creator",
       "creator_info": "Creator Information",
       "created_by": "Created By",
@@ -1120,7 +1142,7 @@
       "roles": "Access Roles",
       "roles_placeholder": "Select roles...",
       "roles_no_options": "No roles available",
-      "roles_hint": "Select roles that can access this menu. If none selected, all roles can access."
+      "roles_hint": "Choose the roles that can access this menu. The administrator role is always included."
     },
     "modals": {
       "delete_title": "Delete Menu",
@@ -1135,6 +1157,27 @@
       "updated": "Menu has been updated.",
       "deleted": "Menu has been deleted.",
       "status_changed": "Menu status has been changed."
+    },
+    "bulk": {
+      "enter": "Select multiple",
+      "exit": "Exit selection",
+      "panel_title": "Apply roles to selected menus",
+      "selected_count": "{{count}} menus selected",
+      "more_count": "+{{count}} more",
+      "empty_selection": "Check the menus to apply roles to in the list on the left.",
+      "roles_label": "Roles",
+      "roles_placeholder": "Select roles...",
+      "action_label": "Action",
+      "action_add": "Add roles",
+      "action_remove": "Remove roles",
+      "rule_hint": "Choosing a submenu also adds the role to its parent. Removing from a parent also removes it from its submenus. The administrator role cannot be removed.",
+      "apply": "Apply",
+      "clear": "Clear selection",
+      "confirm_title": "Apply Menu Roles",
+      "confirm_add": "Add roles {{roles}} to {{count}} menus.",
+      "confirm_remove": "Remove roles {{roles}} from {{count}} menus.",
+      "confirm_auto_parent": "They will also be added to {{count}} parent menus whose submenus you chose.",
+      "confirm_auto_child": "They will also be removed from {{count}} submenus of the parent menus you chose."
     }
   },
   "roles": {
@@ -1190,7 +1233,14 @@
       "permissions_section": "Permission Settings",
       "permissions_selected_suffix": " selected",
       "permissions_hint": "Select permissions to grant to this role. Click a group to expand or collapse.",
-      "no_permissions_in_type": "No permissions registered."
+      "no_permissions_in_type": "No permissions registered.",
+      "menus_section": "Accessible Menus",
+      "menus_hint": "Checked menus appear in the admin menu for this role. Choosing a submenu also selects its parent; unchecking a parent also clears its submenus.",
+      "menus_readonly_hint": "You can only view this because you do not have permission to update menus.",
+      "menus_admin_locked_hint": "The administrator role always has access to every menu.",
+      "menus_select_all": "Select all",
+      "menus_clear_all": "Clear all",
+      "menus_inactive_badge": "Inactive"
     },
     "modals": {
       "delete_title": "Delete Role",
@@ -3956,7 +4006,8 @@
       "delete_confirm_modal": "Delete Member",
       "error_modal": "Error",
       "bulk_block_confirm_modal": "Bulk Block Members",
-      "bulk_withdraw_confirm_modal": "Bulk Withdraw Members"
+      "bulk_withdraw_confirm_modal": "Bulk Withdraw Members",
+      "bulk_roles_modal": "Bulk Member Roles"
     },
     "admin_identity_logs": {
       "identity_log_detail_modal": "Identity Verification Log Details",
@@ -3987,7 +4038,8 @@
     },
     "identity_challenge_modal": "Identity Verification",
     "admin_menu_list": {
-      "delete_confirm_modal": "Delete Menu"
+      "delete_confirm_modal": "Delete Menu",
+      "bulk_roles_confirm_modal": "Confirm Bulk Menu Roles"
     },
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "Select Preview Layout",

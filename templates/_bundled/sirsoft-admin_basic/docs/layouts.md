@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 181개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 133개 |
+| `partials` | 136개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -97,7 +97,9 @@
 | `_modal_update` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
+| `_modal_bulk_roles_confirm` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_panel_bulk_roles` | `partials` | partial | - |
 | `_panel_detail` | `partials` | partial | - |
 | `_panel_form` | `partials` | partial | - |
 | `_panel_menu_list` | `partials` | partial | - |
@@ -192,6 +194,7 @@
 | `_modal_update` | `partials` | partial | - |
 | `_tab_admin` | `partials` | partial | - |
 | `_tab_user` | `partials` | partial | - |
+| `_modal_bulk_roles` | `partials` | partial | - |
 | `_partial_filter_section` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
 | `_header_section` | `partials` | partial | - |
@@ -476,7 +479,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── admin_user_form.g7.html (생성/수정)
 │   ├── admin_user_detail.g7.html (상세)
 │   └── partials/admin_user_list/
-│       └── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
+│       ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
+│       └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
 │
 ├── 역할 관리
 │   ├── admin_role_list.g7.html (목록)
@@ -490,6 +494,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _panel_form.g7.html (중앙: 편집 폼)
 │           ├── _panel_detail.g7.html (중앙: 상세 보기)
 │           ├── _panel_view.g7.html (우측: 미리보기)
+│           ├── _panel_bulk_roles.g7.html (여러 개 선택 모드: 고른 메뉴에 역할 일괄 추가·제거)
+│           ├── _modal_bulk_roles_confirm.g7.html (역할 일괄 적용 확인)
 │           └── _modal_delete.g7.html
 │
 ├── 환경 설정

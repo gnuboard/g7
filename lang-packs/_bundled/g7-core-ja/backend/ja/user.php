@@ -124,7 +124,6 @@ return [
         'search_keyword_required' => '検索キーワードを入力してください。',
         'exclude_user_id_uuid' => '除外するユーザーIDは有効なUUIDである必要があります。',
         'exclude_user_id_exists' => '存在しないユーザーです。',
-        // 会員一覧フィルター (#705)
         'list_status_array' => 'アカウント状態の条件はリスト形式である必要があります。',
         'list_status_invalid' => '無効なアカウント状態です。',
         'list_role_ids_array' => '権限グループの条件はリスト形式である必要があります。',
@@ -138,7 +137,6 @@ return [
         'list_ext_filters_invalid' => '拡張フィルター条件の形式が正しくありません。',
         'list_ext_filters_max' => '拡張フィルター条件は最大20件までです。',
     ],
-    // 会員一覧フィルターの検証項目名 — UserListRequest::attributes() が参照 (#705)
     'list_filter_attributes' => [
         'status' => 'アカウント状態',
         'role_ids' => '権限グループ',
@@ -169,4 +167,7 @@ return [
     ],
     'withdraw_failed_unknown' => '不明なエラーにより退会処理に失敗しました。',
     'bulk_status_out_of_scope' => '管理範囲外の会員は変更できません。',
+    'bulk_roles_updated' => ':count名のロールを変更しました。(除外 :skipped名)',
+    'bulk_roles_failed' => '会員のロール一括変更に失敗しました。',
+    'bulk_roles_ceiling' => '自分が付与できない権限を含むロールが含まれているため、処理しませんでした。',
 ];

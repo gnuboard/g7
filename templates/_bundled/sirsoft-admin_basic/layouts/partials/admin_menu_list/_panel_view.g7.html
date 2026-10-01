@@ -77,7 +77,7 @@
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.form.roles</span>
             <span data-each="role in {{_global.selectedMenu?.roles ?? []}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded mr-1">{{$localized(role.name)}}</span>
-            <span data-if="{{!_global.selectedMenu?.roles || _global.selectedMenu?.roles?.length < 1}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.menus.info.all_roles</span>
+            <span data-if="{{Array.isArray(_global.selectedMenu?.roles) &amp;&amp; _global.selectedMenu.roles.length < 1}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.menus.info.no_roles</span>
           </div>
         </div>
       </div>
@@ -94,14 +94,14 @@
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.created_at</span>
             <div class="flex-center text-primary gap-1.5 text-sm">
-              <icon name="calendar" class="text-base text-gray-400"/>
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
               <span>{{_global.selectedMenu?.created_at}}</span>
             </div>
           </div>
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.updated_at</span>
             <div class="flex-center text-primary gap-1.5 text-sm">
-              <icon name="clock" class="text-base text-gray-400"/>
+              <icon name="clock" class="text-base text-gray-400 dark:text-gray-500"/>
               <span>{{_global.selectedMenu?.updated_at}}</span>
             </div>
           </div>

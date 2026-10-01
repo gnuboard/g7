@@ -13841,6 +13841,60 @@
         ]
       }
     },
+    "role_menus_tree": {
+      "data": {
+        "data": [
+          {
+            "id": 1,
+            "name": {
+              "ko": "대시보드",
+              "en": "Dashboard"
+            },
+            "is_active": true,
+            "extension_type": "core",
+            "extension_identifier": "core",
+            "children": []
+          },
+          {
+            "id": 2,
+            "name": {
+              "ko": "회원 관리",
+              "en": "Users"
+            },
+            "is_active": true,
+            "extension_type": "core",
+            "extension_identifier": "core",
+            "children": [
+              {
+                "id": 3,
+                "name": {
+                  "ko": "회원 목록",
+                  "en": "User List"
+                },
+                "is_active": true,
+                "extension_type": "core",
+                "extension_identifier": "core"
+              },
+              {
+                "id": 4,
+                "name": {
+                  "ko": "역할 관리",
+                  "en": "Roles"
+                },
+                "is_active": true,
+                "extension_type": "core",
+                "extension_identifier": "core"
+              }
+            ]
+          }
+        ],
+        "abilities": {
+          "can_create": true,
+          "can_update": true,
+          "can_delete": true
+        }
+      }
+    },
     "role_check": {
       "data": {
         "data": [

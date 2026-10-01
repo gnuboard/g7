@@ -312,6 +312,13 @@ return [
 
     // Field attributes
     'attributes' => [
+        'bulk_members' => [
+            'apply_all' => 'Target Boards Scope',
+            'board_ids' => 'Target Boards',
+            'user_uuids' => 'Members',
+            'member_type' => 'Type',
+            'mode' => 'Action',
+        ],
         'report_my' => [
             'search_field' => 'Search Field',
             'target_type' => 'Target Type',

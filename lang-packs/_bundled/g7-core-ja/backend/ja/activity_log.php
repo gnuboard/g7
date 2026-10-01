@@ -78,8 +78,6 @@ return [
         'dormant_withdrawn' => '休眠アカウント退会処理',
         'manual_run_queued' => '個人情報措置職権実行受付',
         'manual_run_finished' => '個人情報措置職権実行終了',
-
-        // 訪問者統計の運用操作 (analytics.*)
         'analytics' => [
             'settings_updated' => '統計設定の変更',
             'privacy_mode_changed' => '統計プライバシーモード変更',
@@ -91,6 +89,7 @@ return [
             'archive_requested' => '統計手動集計',
             'extension_purged' => '拡張統計データ整理',
         ],
+        'bulk_roles' => 'ロール一括変更',
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',
@@ -245,6 +244,7 @@ return [
         'privacy_manual_run_queued_skip_waiting' => '個人情報措置職権実行受付 — 待機期間スキップ (:target)',
         'privacy_manual_run_completed' => '個人情報措置職権実行完了 (:target, :count件)',
         'privacy_manual_run_failed' => '個人情報措置職権実行失敗 (:target)',
+        'user_bulk_roles' => 'ユーザーのロール一括変更 (ID: :user_id)',
     ],
     'fields' => [
         'name' => '名前',

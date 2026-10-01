@@ -224,6 +224,11 @@ Route::prefix('admin/boards')->middleware(['auth:sanctum', 'admin', 'throttle:60
         ->middleware('permission:admin,sirsoft-board.boards.read')
         ->name('show-by-slug');
 
+    // 게시판 관리자·스텝 일괄 지정 (와일드카드 라우트보다 먼저 등록)
+    Route::post('/bulk-members', [BoardController::class, 'bulkMembers'])
+        ->middleware('permission:admin,sirsoft-board.boards.update')
+        ->name('bulk-members');
+
     // 게시판 단건 조회 (ID)
     Route::get('/{board}', [BoardController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.boards.read')

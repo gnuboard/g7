@@ -27,6 +27,8 @@ return [
         'menu_name_suffix' => '掲示板',
         'module_not_found' => '掲示板モジュールが見つかりません。',
         'error_404' => '掲示板が見つかりません: :slug',
+        'bulk_members_success' => '掲示板:count件のメンバーを変更しました。(除外 :skipped件)',
+        'bulk_members_failed' => '掲示板管理者・スタッフの一括指定に失敗しました。',
     ],
     'post' => [
         'not_found' => '投稿が見つかりません。',

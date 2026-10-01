@@ -189,7 +189,7 @@
               <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
               <sequence>
                 <set-state target="local" :errors="null"/>
-                <set-state target="global" activeBoardSettingsTab="{{$args[0]}}"/>
+                <set-state target="global" activeBoardSettingsTab="{{$args[0]}}" :boardBulkMembers="null"/>
                 <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
                 <navigate path="/admin/boards/settings" :replace="true">
                   <query tab="{{$args[0]}}"/>
@@ -210,6 +210,7 @@
             <item id="attachment" label="$t:sirsoft-board.admin.settings.board_settings_tabs.attachment"/>
             <item id="notification" label="$t:sirsoft-board.admin.settings.board_settings_tabs.notification"/>
             <item id="bulk_apply" label="$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"/>
+            <item id="bulk_members" label="$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_members"/>
           </prop>
         </tab-navigation-scroll>
       </div>
@@ -236,6 +237,7 @@
         <include src="partials/admin_board_settings/_tab_board_settings_attachment.g7.html"/>
         <include src="partials/admin_board_settings/_tab_board_settings_notification.g7.html"/>
         <include src="partials/admin_board_settings/_tab_board_settings_bulk_apply.g7.html"/>
+        <include src="partials/admin_board_settings/_section_bulk_members.g7.html"/>
         <include src="partials/admin_board_settings/_tab_report_policy.g7.html"/>
         <include src="partials/admin_board_settings/_tab_spam_security.g7.html"/>
         <include src="partials/admin_board_settings/_tab_seo.g7.html"/>
@@ -285,6 +287,8 @@
   </slot>
   <!-- 여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창 -->
   <modal src="partials/admin_board_settings/_bulk_apply_modal.g7.html"/>
+  <!-- 게시판 관리자·스텝 일괄 지정 확인 창 — 「기본값」 탭 맨 아래 카드의 「적용」 이 연다 -->
+  <modal src="partials/admin_board_settings/_modal_bulk_members_confirm.g7.html"/>
   <!-- 게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다) -->
   <modal src="partials/admin_board_form/_board_type_manage_modal.g7.html"/>
   <!-- 알림 문안 편집 — 채널·언어별 제목과 본문을 고친다 -->
