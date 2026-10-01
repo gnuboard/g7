@@ -88,12 +88,6 @@ class GateTestPopulation
         // green 인 채로 미리보기 응답에는 주석이 실려 있었다). 그 표본을 매니페스트에 올린
         // 이상 게이트에서도 돌아야 한다.
         'LayoutPreviewController',
-        // ── #703 리베이스 후속: 오버라이드 출처 표식 업그레이드 스텝 ──
-        //
-        // `Tests\Feature\Upgrades\Upgrade710OverrideLayoutOriginTest` 는 템플릿 갱신의 고아 오버라이드 정리가
-        // 기대는 원본 해시 표식을 7.0.x 행에 채우는 스텝을 단언하고 `layout-markup.yaml` 이 이 트랙 산출물로
-        // 선언했는데, 네임스페이스가 위 어느 대안에도 걸리지 않아 게이트에서 돌지 않았다(39·41차와 같은 형태).
-        'Upgrade710OverrideLayoutOrigin',
     ];
 
     /**

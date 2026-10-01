@@ -203,7 +203,7 @@
   <slot name="content">
     <div data-ref="user_list_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <filter-visibility-selector data-ref="filter_visibility_selector" id="admin_user_filters" visibleFilters="{{_local.visibleFilters}}">
+      <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_user_filters" visibleFilters="{{_local.visibleFilters}}">
         <prop name="defaultFilters">
           <item>searchField</item>
           <item>searchKeyword</item>

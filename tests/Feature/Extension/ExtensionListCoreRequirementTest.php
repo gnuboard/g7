@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Extension;
 
+use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -10,6 +11,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\ExtensionManager;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -157,6 +159,8 @@ class ExtensionListCoreRequirementTest extends TestCase
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
         $manager->loadModules();
 
@@ -187,6 +191,8 @@ class ExtensionListCoreRequirementTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
         $manager->loadPlugins();
 
@@ -227,6 +233,8 @@ class ExtensionListCoreRequirementTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
         $manager->loadTemplates();
 

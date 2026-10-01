@@ -200,9 +200,9 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 585개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 208개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 42개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 587개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 213개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 44개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -322,10 +322,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 575개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 188개 | `vitest.config.ts` |
+| PHPUnit | 590개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 195개 | `vitest.config.ts` |
 | Playwright | 66개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 216개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 240개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

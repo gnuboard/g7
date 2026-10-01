@@ -6,10 +6,12 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Extension\Traits\RefreshesLayoutExtensions;
+use App\Extension\Traits\SynchronizesLayoutRows;
 use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -234,16 +236,22 @@ class FragmentRowConvergenceTest extends TestCase
         $edited['injections'][0]['components'][0]['text'] = 'admin edited';
         $legacy = $this->putRow('vendor-conva', $data, $edited);
 
-        $harness = new class(app(LayoutExtensionService::class))
+        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다(#727) — 관리자와 같이 생성자로 받는다.
+        $harness = new class(app(LayoutExtensionService::class), app(LayoutRowSynchronizer::class))
         {
             use RefreshesLayoutExtensions;
+            use SynchronizesLayoutRows;
 
             /**
              * 갱신 트레이트를 부를 대역을 만듭니다.
              *
              * @param  LayoutExtensionService  $layoutExtensionService  확장 서비스
+             * @param  LayoutRowSynchronizer  $layoutRowSynchronizer  레이아웃·확장 조각 행 동기화기
              */
-            public function __construct(protected LayoutExtensionService $layoutExtensionService) {}
+            public function __construct(
+                protected LayoutExtensionService $layoutExtensionService,
+                protected LayoutRowSynchronizer $layoutRowSynchronizer,
+            ) {}
 
             /**
              * 모듈 조각을 keep 전략으로 갱신합니다.
