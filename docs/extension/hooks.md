@@ -1296,27 +1296,48 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 - 직전 훅도 Manager 가 CLI·어드민 UI 공통으로 한 번 발화한다(7.1.0~). 인자는 종전 Service 발화와 같다 — 모듈 `before_install(id)`·`before_activate(id, force)`·`before_deactivate(id, force)`·`before_update(id)`·`before_uninstall(id, deleteData)`, 플러그인 `before_install|activate|deactivate|update(id)`·`before_uninstall(id, deleteData)`, 템플릿 `before_install|activate|deactivate|version_update(id)`·`before_uninstall(id, deleteData)`.
 - 직전 훅은 "시도" 시점에 발화하므로 없는 식별자처럼 실패할 호출에서도 발화한다. 직전 훅 리스너가 예외를 던지면 그 작업이 멈춘다 — 이제 CLI 설치·업데이트에도 똑같이 적용된다.
 
-**구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 코어·번들 확장은 모두 정규 훅으로 옮겼고, 사외 확장 호환을 위해 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다(구훅을 구독하면 등록 시 경고가 남는다 — 아래 「공개 훅 호환 원칙」). 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
+**구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 코어·번들 확장은 모두 정규 훅으로 옮겼고, 사외 확장 호환을 위해 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다(구훅 목록은 아래 「사용 중단 훅」). 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
 
 ### 공개 훅 호환 원칙
 
 공개 훅(코어·번들 확장이 발화하는 훅)의 **이름과 인자 위치는 서드파티 확장이 코드에 박아 쓰는 계약**이다. 바꾸면 업데이트한 사이트에서 서드파티 리스너가 조용히 멈추거나 오류를 낸다.
 
 - 마이너 버전에서는 공개 훅의 이름을 바꾸거나 지우지 않고, 인자를 빼거나 순서를 바꾸지 않는다. 뒤에 선택 인자를 더하는 것만 허용된다.
-- 바꿔야 하면 **새 이름의 훅을 더하고 옛 훅은 지금 모양 그대로 계속 발화**한다. 옛 훅은 `app/Extension/HookContract/data/deprecated.php` 에 대체 이름과 함께 적는다. 제거는 메이저 버전에서만 한다.
+- 바꿔야 하면 **새 이름의 훅을 더하고 옛 훅은 지금 모양 그대로 계속 발화**한다. 옛 훅은 아래 「사용 중단 훅」 표(기본 제공 확장의 훅은 그 확장 문서)와 CHANGELOG 에 대체 이름과 함께 적는다. 제거는 메이저 버전에서만 한다.
 - 같은 훅이 발화처마다 다른 모양으로 나가고 있으면 기존 훅을 "정리" 하지 않는다 — 모양을 이름에 드러낸 새 훅(예: `core.templates.after_list_paginated`, `core.menu.after_update_order_flat`)을 나란히 발화한다.
-- 문서·선언에는 있는데 발화처가 없는 훅은 문서에서 지우기보다 **발화를 만든다**(그 문서를 보고 구독한 확장이 있다). 발화가 불가능하면(예: 브라우저에서 일어나는 흐름) 선언·문서에서 빼고 deprecated 목록에 `replacement: null` 로 적는다.
+- 문서·선언에는 있는데 발화처가 없는 훅은 문서에서 지우기보다 **발화를 만든다**(그 문서를 보고 구독한 확장이 있다). 발화가 불가능하면(예: 브라우저에서 일어나는 흐름) 선언·문서에서 빼고 CHANGELOG 에 확장 개발자 영향으로 적는다.
 - 이름을 옮길 때 액션은 `HookManager::doActionWithLegacyName($new, $old, ...$args)`, 필터는 `applyFiltersWithLegacyName()` 을 쓴다. 옛 이름은 구독자가 있을 때만 발화하고 개명 경고를 한 번 남긴다. **공개 배포본에서 한 번도 발화된 적 없는 옛 이름은 되살리지 않는다**(한 번도 돈 적 없는 코드가 갑자기 돈다).
 
 **장치**
 
 | 장치 | 위치 | 하는 일 |
 |------|------|---------|
-| 발화 목록 | `app/Extension/HookContract/data/catalog.php` (`php artisan hooks:catalog` 로 생성) | 코어·번들 확장의 발화 훅 이름·유형·인자 개수. 훅을 더하거나 바꾸면 재생성해 변화를 리뷰에 드러낸다 |
-| 계약 위반 거부 | `hooks:catalog` | 옛 목록에서 사라진 훅·인자 개수가 줄어든 훅이 deprecated 목록에 없으면 쓰기를 거부한다(메이저의 의도된 제거만 `--allow-break`) |
-| 동적 발화처 목록 | `app/Extension/HookContract/data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
-| 구독 시 경고 | `HookContractGuard` (등록기가 호출) | 사용 중단된 훅, 또는 코어·번들 확장 이름공간인데 발화처가 없는 훅을 구독하면 `Log::warning` (리스너×훅 단위 하루 1회) |
-| 계약 테스트 | `tests/Feature/Extension/HookContractTest.php` | 목록 최신성 · 동적 발화처 매핑 · 코어·번들 리스너가 deprecated·미발화 훅을 구독하지 않음 · 위반 거부 · 가드 · 액션 옛 이름 병행 발화 |
+| 공개 훅 목록 | [hook-catalog.md](hook-catalog.md) (자동 생성) | 코어가 발화하는 훅 이름·유형·인자 개수. 기본 제공 확장의 훅은 각 확장의 확장 지점 문서(`docs/extension-points.md` 「발행 훅」)에 있다 |
+| 옛 이름 병행 발화 | `HookManager::doActionWithLegacyName()` · `applyFiltersWithLegacyName()` | 표준 이름을 먼저 발화하고, 옛 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화한다 |
+| 변경 검사 | G7 개발 과정(공개판에는 포함하지 않는다) | 직전 공개 릴리스와 현재 코드를 각각 훑어, 공개 훅의 이름 삭제·인자 개수 감소를 막는다. 아직 배포되지 않은 훅은 개발 중에 바꿀 수 있다 |
+
+### 사용 중단 훅
+
+새 구독에 쓰지 않는다. 대체 훅이 있으면 그쪽으로 옮긴다. 「공개 배포 발화 이력」 이 「있음」 인 훅은 다음 메이저까지 계속 발화한다. 「없음」 인 이름은 공개 배포본에서 한 번도 발화된 적이 없어 되살리지 않는다.
+
+| 훅 | 대체 | 공개 배포 발화 이력 | 사유 |
+|----|------|--------------------|------|
+| `core.modules.installed` | `core.modules.after_install` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.modules.activated` | `core.modules.after_activate` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.modules.updated` | `core.modules.after_update` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.plugins.installed` | `core.plugins.after_install` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.plugins.activated` | `core.plugins.after_activate` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.plugins.updated` | `core.plugins.after_update` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.templates.installed` | `core.templates.after_install` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.templates.activated` | `core.templates.after_activate` | 있음 | 식별자 1개만 전달하는 구훅 |
+| `core.templates.updated` | `core.templates.after_version_update` | 있음 | 식별자 1개만 전달하는 구훅 (레코드 수정용 after_update 와 다르다) |
+| `core.auth.register` | `core.auth.after_register` | 없음 | 발화 이름은 처음부터 after_register 였다 |
+| `core.auth.forgot_password` | `core.auth.after_reset_password_request` | 없음 | 발화 이름은 after_reset_password_request 다 |
+| `core.auth.reset_password` | `core.auth.after_password_changed` | 없음 | 발화 이름은 after_password_changed 다 |
+| `core.module.after_activate` | `core.modules.after_activate` | 없음 | 생명주기 훅은 복수형(core.modules.*)이다 |
+| `core.module.after_deactivate` | `core.modules.after_deactivate` | 없음 | 생명주기 훅은 복수형(core.modules.*)이다 |
+| `core.plugin.after_activate` | `core.plugins.after_activate` | 없음 | 생명주기 훅은 복수형(core.plugins.*)이다 |
+| `core.plugin.after_deactivate` | `core.plugins.after_deactivate` | 없음 | 생명주기 훅은 복수형(core.plugins.*)이다 |
 
 ---
 

@@ -31,6 +31,7 @@ effects:
   - permission_cache_flushed
   - activity_log_per_user
   - bulk_role_entry_from_pc_and_mobile
+  - bulk_role_entry_locked_without_selection
   - last_role_skipped
 
 test_files:

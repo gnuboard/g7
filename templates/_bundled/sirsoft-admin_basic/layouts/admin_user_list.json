@@ -813,11 +813,11 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작)",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
-                                                        "comment": "역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작)",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
@@ -853,11 +853,11 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
-                                                        "comment": "역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",

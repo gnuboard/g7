@@ -262,11 +262,11 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "적용 — 확인 창을 연다. 지난 실패 문구는 비운다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "적용 — 확인 창을 연다. 지난 실패 문구는 비운다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",

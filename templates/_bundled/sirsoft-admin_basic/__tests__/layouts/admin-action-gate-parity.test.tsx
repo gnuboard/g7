@@ -100,7 +100,8 @@ describe('회원 목록 — 선택 0건 일괄 처리', () => {
   it('모바일 일괄 처리 드롭다운 항목은 선택이 없으면 비활성이다', () => {
     const dropdown = byId(userListLayout, 'mobile_bulk_action_dropdown');
     const items: Json[] = dropdown.props.items;
-    expect(items.length).toBe(4);
+    // 상태 4종 + 역할 일괄 추가·제거 — 새 항목도 같은 잠금 규칙을 따라야 한다.
+    expect(items.map((i) => i.value)).toEqual(['activate', 'deactivate', 'block', 'withdraw', 'role_add', 'role_remove']);
 
     for (const item of items) {
       expect(item.disabled, `${item.value} 항목에 비활성 조건이 없습니다.`).toBeDefined();

@@ -36,8 +36,8 @@
 
 ### Added
 
-- **확장 개발자용 훅 목록과 호환 규칙**을 추가했습니다. 코어와 기본 제공 확장이 발화하는 훅 전체를 `docs/extension/hook-catalog.md`
-  에서 볼 수 있고(`php artisan hooks:catalog` 로 다시 만듭니다), 공개 훅의 이름·인자 모양은 마이너 버전에서 바꾸지 않는다는 규칙을
+- **확장 개발자용 훅 목록과 호환 규칙**을 추가했습니다. 코어가 발화하는 훅 전체를 `docs/extension/hook-catalog.md` 에서 볼 수
+  있고(기본 제공 확장의 훅은 각 확장의 확장 지점 문서), 공개 훅의 이름·인자 모양은 마이너 버전에서 바꾸지 않는다는 규칙을
   `docs/extension/hooks.md` 에 적었습니다 — 바꿔야 하면 새 훅을 더하고 옛 훅은 사용 중단으로 두었다가 메이저 버전에서만 뺍니다.
 - `php artisan template:uninstall` 에 `--force`(확인 없이 제거)와 `--delete-data`(「데이터도 삭제」를 고른 것으로 제거) 옵션을
   추가했습니다. 모듈·플러그인 제거 명령과 같은 옵션입니다.
@@ -434,9 +434,8 @@
 - 확장 생명주기 구훅 `core.{modules,plugins,templates}.installed`·`activated`·`updated`(식별자 1개만 전달)를 사용 중단 예정으로
   표시했습니다. 지금은 종전대로 발화하지만 다음 메이저에서 제거할 예정이니, 새 구독은 정규 훅 `after_install`·`after_activate`·
   `after_update`(템플릿은 `after_version_update`)를 쓰세요.
-- 사용 중단 예정인 훅이나 공개 배포본에서 한 번도 발화한 적이 없는 훅 이름(`core.auth.register`, 단수형 `core.module.*` 등)을
-  구독하면, 대체 이름을 알려 주는 경고가 로그에 하루 한 번 남습니다. 전체 목록은 `docs/extension/hook-catalog.md` 의 사용 중단 절에
-  있습니다.
+- 사용 중단 예정인 훅과 공개 배포본에서 한 번도 발화한 적이 없는 훅 이름(`core.auth.register`, 단수형 `core.module.*` 등)의
+  대체 이름을 `docs/extension/hooks.md` 의 「사용 중단 훅」 표에 정리했습니다. 새 구독은 대체 이름을 쓰세요.
 - `core.templates.after_list`·`core.menu.after_update_order` 는 인자 모양이 호출 경로마다 달라, 모양이 하나로 정해진 새 훅
   `core.templates.after_list_paginated`·`core.menu.after_update_order_flat` 을 함께 발화합니다. 옛 훅은 종전대로 발화합니다.
 

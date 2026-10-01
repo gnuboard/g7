@@ -308,16 +308,20 @@
           <button data-ref="bulk_role_add" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <!-- 역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작) -->
-              <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
-              <open-modal target="bulk_roles_modal"/>
+              <sequence>
+                <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                <open-modal target="bulk_roles_modal"/>
+              </sequence>
             </on>
             <span>$t:admin.users.bulk_roles.add_button</span>
           </button>
           <button data-ref="bulk_role_remove" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <!-- 역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다 -->
-              <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
-              <open-modal target="bulk_roles_modal"/>
+              <sequence>
+                <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                <open-modal target="bulk_roles_modal"/>
+              </sequence>
             </on>
             <span>$t:admin.users.bulk_roles.remove_button</span>
           </button>

@@ -123,4 +123,35 @@ test.describe('회원 목록 역할 일괄 변경 (#708)', () => {
     await expect(page.getByRole('dialog')).toContainText('역할 일괄 제거');
     await expect(page.getByRole('dialog')).toContainText('선택한 회원 1명에게서 역할을 제거합니다.');
   });
+
+  // 모바일 「일괄 작업 선택」 은 상태 4종과 같은 잠금 규칙을 역할 항목에도 건다 — 고른 회원이 없을 때
+  // 눌리면 빈 대상(uuids=[])으로 요청해 422 로 끝난다.
+  // @scenario mode=add, target=normal, role=within_ceiling
+  // @effects bulk_role_entry_from_pc_and_mobile, bulk_role_entry_locked_without_selection
+  test('모바일 「일괄 작업 선택」 의 역할 추가·제거는 고른 회원이 없으면 잠기고, 고르면 추가 창을 연다', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/admin/users?filters[0][field]=all&filters[0][value]=${prefix}&filters[0][operator]=like`);
+    await expect(page.getByText(`${prefix}u1`).first()).toBeVisible({ timeout: 30_000 });
+
+    const trigger = page.getByRole('button', { name: '일괄 작업 선택' });
+    await trigger.click();
+    for (const name of ['역할 추가', '역할 제거']) {
+      await expect(page.getByRole('menuitem', { name, exact: true })).toHaveAttribute('aria-disabled', 'true');
+    }
+    await page.keyboard.press('Escape');
+
+    // 모바일은 행이 카드로 그려진다 — 필터 영역에도 체크박스(상태 전체 등)가 있으므로 그 회원 이름이 든
+    // 가장 안쪽 카드의 체크박스를 고른다(조상 → 자손 순이라 마지막 일치가 카드).
+    const card = page.locator('div').filter({ hasText: `${prefix}u1` }).filter({ has: page.getByRole('checkbox') }).last();
+    const box = card.getByRole('checkbox');
+    await box.click();
+    await expect(box).toBeChecked();
+    await expect(page.getByText('1개 선택됨').first()).toBeVisible();
+
+    await trigger.click();
+    const addItem = page.getByRole('menuitem', { name: '역할 추가', exact: true });
+    await expect(addItem).not.toHaveAttribute('aria-disabled', 'true');
+    await addItem.click();
+    await expect(page.getByRole('dialog')).toContainText('선택한 회원 1명에게 역할을 추가합니다.');
+  });
 });

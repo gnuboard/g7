@@ -2,13 +2,13 @@
   서버가 최고관리자·권한 범위 밖·마지막 관리자(본인)를 걸러 내고 그 사유를 돌려주므로, 제외된 회원이 있으면 창을 닫지 않고
   결과(변경 수·제외 수·사유 최대 5행)를 보여 준다. 내가 부여할 수 없는 역할이 섞이면 요청 전체가 거부(403)되고 창 안에 문구가 남는다. -->
 <partial description="회원 역할 일괄 변경 모달" editor_label="$t:admin.modal_label.user_list.bulk_roles_modal">
-  <modal data-ref="bulk_roles_modal" title="{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}" size="md">
+  <modal data-type="composite" data-ref="bulk_roles_modal" title="{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}" size="md">
     <div class="space-y-4">
       <p data-if="{{_global.userBulkRoleMode !== 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.add_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
       <p data-if="{{_global.userBulkRoleMode === 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.remove_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
       <div data-ref="bulk_roles_field" data-if="{{!_global.userBulkRoleResult}}">
         <label class="form-label">$t:admin.users.bulk_roles.roles_label</label>
-        <tag-input data-ref="bulk_roles_input" value="{{_global.userBulkRoleIds ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}" placeholder="$t:admin.users.bulk_roles.roles_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue">
+        <tag-input data-type="composite" data-ref="bulk_roles_input" value="{{_global.userBulkRoleIds ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}" placeholder="$t:admin.users.bulk_roles.roles_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue">
           <on type="change">
             <!-- 적용할 역할 — 태그 입력이 준 배열을 통째로 담는다 -->
             <set-state target="global" userBulkRoleIds="{{$event.target.value}}"/>

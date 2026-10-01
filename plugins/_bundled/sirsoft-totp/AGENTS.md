@@ -216,7 +216,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 5개 | `plugins/_bundled/sirsoft-totp/tests` |
+| PHPUnit | 6개 | `plugins/_bundled/sirsoft-totp/tests` |
 | Vitest | 5개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |

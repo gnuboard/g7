@@ -2,7 +2,7 @@
   메뉴 수를 미리 알린다(추가: 자식만 고른 부모 / 제거: 고른 부모의 자식). 실패는 창 안에 문구로 남기고 선택은 그대로 둔다 —
   고친 뒤 다시 적용할 수 있게. 성공하면 선택을 비우고 목록과 사이드바 메뉴를 다시 받는다. -->
 <partial description="메뉴 역할 일괄 적용 확인 모달" editor_label="$t:admin.modal_label.admin_menu_list.bulk_roles_confirm_modal">
-  <modal data-ref="bulk_roles_confirm_modal" title="$t:admin.menus.bulk.confirm_title" size="sm">
+  <modal data-type="composite" data-ref="bulk_roles_confirm_modal" title="$t:admin.menus.bulk.confirm_title" size="sm">
     <div>
       <p data-if="{{_global.menuBulkAction !== 'remove'}}" class="text-label">$t:admin.menus.bulk.confirm_add|count={{(_global.menuBulkSelectedIds ?? []).length}}|roles={{(roles?.data?.data ?? []).filter(r => (_global.menuBulkRoleIds ?? []).includes(r.id)).map(r => $localized(r.name)).join(', ')}}</p>
       <p data-if="{{_global.menuBulkAction === 'remove'}}" class="text-label">$t:admin.menus.bulk.confirm_remove|count={{(_global.menuBulkSelectedIds ?? []).length}}|roles={{(roles?.data?.data ?? []).filter(r => (_global.menuBulkRoleIds ?? []).includes(r.id)).map(r => $localized(r.name)).join(', ')}}</p>
