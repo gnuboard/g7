@@ -5,6 +5,12 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.75.0] - 2026-10-01
+
+### Fixed
+
+- 저장 버튼을 빠르게 두 번 누르면 폼 제출이 두 번 실행돼 같은 저장 요청이 2건 나가던 문제. 같은 폼의 submit 액션이 끝나기 전에 들어온 새 submit 은 기본 동작만 막고 무시한다 — 한 submit 이벤트에 묶인 액션 여럿은 종전대로 모두 실행되고, 잠금은 액션이 성공하든 실패하든 끝나면 풀린다. 버튼의 `disabled="{{_global.isSaving}}"` 는 첫 제출의 상태 변경이 렌더된 뒤에야 걸려 같은 틱의 두 번째 클릭을 막지 못했고, submit 에는 `debounce` 를 쓸 수 없다(트러블슈팅 state-advanced 사례 1) (ActionDispatcher.ts `runGuardingFormSubmit`)
+
 ## [engine-v1.74.0] - 2026-09-29
 
 > 레이아웃 `computed` 가 렌더되는 컴포넌트 수만큼, 재렌더마다 전량 재평가되던 성능 문제를 고친 버전이다.

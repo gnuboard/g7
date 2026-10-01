@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 55개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 57개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 55개 |
+| `admin` | 57개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -42,6 +42,7 @@
 | `_card_report_info` | `admin` | partial | - |
 | `_partial_filter` | `admin` | partial | - |
 | `_bulk_apply_modal` | `admin` | partial | - |
+| `_modal_bulk_members_confirm` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
 | `_modal_mail_template_edit` | `admin` | partial | - |
@@ -52,6 +53,7 @@
 | `_modal_privacy_targets` | `admin` | partial | - |
 | `_reaction_type_cards` | `admin` | partial | - |
 | `_reaction_type_editor` | `admin` | partial | - |
+| `_section_bulk_members` | `admin` | partial | - |
 | `_tab_board_settings_attachment` | `admin` | partial | - |
 | `_tab_board_settings_basic` | `admin` | partial | - |
 | `_tab_board_settings_bulk_apply` | `admin` | partial | - |

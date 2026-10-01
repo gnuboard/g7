@@ -33,11 +33,11 @@
 <!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
-| `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 80 | `editor-spec/componentPalette.json` |
+| `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 81 | `editor-spec/componentPalette.json` |
 | `componentPalette.groups` | 팔레트 좌측 목록의 묶음 | 2 | `editor-spec/componentPalette.json` |
 | `controls` | 재사용 스타일 컨트롤 정의 | 307 | `editor-spec/controls.json` |
-| `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 88 | `editor-spec/componentCapabilities.json` |
-| `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 86 | `editor-spec/nesting.json` |
+| `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 89 | `editor-spec/componentCapabilities.json` |
+| `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 87 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 20 | `editor-spec/nesting.json` |
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 100 | `editor-spec/sampleData.json` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 29 | `editor-spec/sampleGlobal.json` |
@@ -66,7 +66,7 @@
 | 그룹 | 종류 | 컴포넌트 수 |
 |---|---|---|
 | 디자인 요소 | `design` | 62 |
-| DB 요소 | `data` | 18 |
+| DB 요소 | `data` | 19 |
 <!-- @generated:editor-spec-palette END -->
 
 <!-- @intent START -->

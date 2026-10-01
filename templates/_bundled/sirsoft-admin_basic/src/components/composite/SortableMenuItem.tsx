@@ -10,6 +10,13 @@ import { Toggle } from './Toggle';
 // G7Core 전역 객체의 스타일 헬퍼 접근
 const G7Core = () => (window as any).G7Core;
 
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>) =>
+  G7Core()?.t?.(key, params) ?? key;
+
+/** 행에 바로 보이는 역할 배지 수 — 나머지는 「외 n개」 로 접고 전체는 title 로 보인다 */
+const MAX_ROLE_BADGES = 3;
+
 export interface MenuItemData {
   id: number;
   name: string;
@@ -20,6 +27,8 @@ export interface MenuItemData {
   isModuleMenu: boolean;
   moduleName?: string;
   hasChildren?: boolean;
+  /** 부여된 역할 이름 — undefined 면 배지 줄을 그리지 않는다, 빈 배열이면 「역할 없음」 */
+  roleNames?: string[];
 }
 
 export interface SortableMenuItemProps {
@@ -46,6 +55,12 @@ export interface SortableMenuItemProps {
   enableDrag?: boolean;
   /** 토글 비활성화 여부 (기본값: false) */
   toggleDisabled?: boolean;
+  /** 선택 모드 — 체크박스를 보이고 상태 토글을 숨긴다 (기본값: false) */
+  selectable?: boolean;
+  /** 선택 모드의 체크 상태 */
+  checked?: boolean;
+  /** 선택 모드의 일부 선택(indeterminate) 상태 */
+  indeterminate?: boolean;
 }
 
 /**
@@ -68,6 +83,9 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
   contentClassName = '',
   enableDrag = true,
   toggleDisabled = false,
+  selectable = false,
+  checked = false,
+  indeterminate = false,
 }) => {
   const {
     attributes,
@@ -141,6 +159,21 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
         </>
       )}
 
+      {/* 선택 모드 체크박스 — 행 클릭과 같은 토글이라 클릭 전파는 막는다 */}
+      {selectable && (
+        <input
+          type="checkbox"
+          checked={checked}
+          ref={(el: HTMLInputElement | null) => {
+            if (el) el.indeterminate = indeterminate;
+          }}
+          onChange={() => onClick?.()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          aria-label={item.name}
+          className="flex-shrink-0 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+        />
+      )}
+
       {/* 아이콘 */}
       <Div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded ${iconContainerClassName}`}>
         <Icon name={item.icon || 'file'} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -159,17 +192,48 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
         <Span className="text-xs text-gray-500 dark:text-gray-400 truncate block">
           {item.url}
         </Span>
+        {Array.isArray(item.roleNames) && (
+          <Div
+            className="flex flex-wrap items-center gap-1 mt-1"
+            data-testid="menu-item-roles"
+            title={`${t('admin.menus.list_roles_label')}: ${item.roleNames.join(', ') || t('admin.menus.list_roles_none')}`}
+          >
+            {item.roleNames.length === 0 ? (
+              <Span className="px-1.5 py-0.5 text-[11px] leading-none rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                {t('admin.menus.list_roles_none')}
+              </Span>
+            ) : (
+              <>
+                {item.roleNames.slice(0, MAX_ROLE_BADGES).map((roleName) => (
+                  <Span
+                    key={roleName}
+                    className="px-1.5 py-0.5 text-[11px] leading-none rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 truncate max-w-[8rem]"
+                  >
+                    {roleName}
+                  </Span>
+                ))}
+                {item.roleNames.length > MAX_ROLE_BADGES && (
+                  <Span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
+                    {t('admin.menus.list_roles_more', { count: item.roleNames.length - MAX_ROLE_BADGES })}
+                  </Span>
+                )}
+              </>
+            )}
+          </Div>
+        )}
       </Div>
 
-      {/* 토글 스위치 */}
-      <Div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <Toggle
-          checked={item.isActive}
-          onChange={() => onToggle?.(new MouseEvent('click') as unknown as React.MouseEvent)}
-          size="sm"
-          disabled={toggleDisabled}
-        />
-      </Div>
+      {/* 토글 스위치 — 선택 모드에서는 숨긴다(행 클릭이 선택 토글이라 상태 전환과 섞이지 않게) */}
+      {!selectable && (
+        <Div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Toggle
+            checked={item.isActive}
+            onChange={() => onToggle?.(new MouseEvent('click') as unknown as React.MouseEvent)}
+            size="sm"
+            disabled={toggleDisabled}
+          />
+        </Div>
+      )}
     </Div>
   );
 };

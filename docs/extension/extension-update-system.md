@@ -859,7 +859,7 @@ Body: { "layout_strategy": "keep" }
 - **항상 확장 정의값**: parent_id, is_active (사용자 보존 대상 아님)
 - **syncMenuRecursive()**: 재귀 구조 처리 + 다국어 name 역호환
 - **cleanupStaleMenus()**: 자식 포함 cascade 삭제 (**자동 호출 폐기 #135** — UpgradeStep에서 명시적 호출 전용)
-- **메뉴-역할 할당**: `user_overrides`에 기록된 **개별 역할 식별자**만 보호
+- **메뉴-역할 할당**: 확장 동기화는 **기존 메뉴의 역할을 건드리지 않는다** — 역할은 메뉴를 새로 만들 때만 붙인다(관리자 역할 + 설치자 역할). 활성화·업데이트 때 기본 역할을 다시 붙이는 확장 코드는 메뉴 `user_overrides` 에 그 역할 식별자가 있으면(운영자가 그 역할을 바꾼 이력) 건너뛰어야 한다 — 번들 `sirsoft-gdpr` 의 개인정보 역할 부여가 이 규칙을 따른다
 
 ```text
 예시: 유저가 name과 editor 역할을 변경
@@ -869,8 +869,7 @@ Body: { "layout_strategy": "keep" }
   → name: user_overrides에 있음 → 보존
   → order: user_overrides에 없음 → 새 값 반영
   → icon: user_overrides에 없음 → 새 값 반영
-  → 역할 editor: 보호 → 유저 설정 유지
-  → 역할 admin: 비보호 → 정상 동기화
+  → 역할: 기존 메뉴의 역할은 동기화 대상이 아님 → 유저가 바꾼 editor 포함 그대로 유지
 ```
 
 ### user_overrides 기록 리스너

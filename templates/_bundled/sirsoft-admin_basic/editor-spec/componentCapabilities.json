@@ -2471,6 +2471,35 @@
       }
     ]
   },
+  "MenuAccessTree": {
+    "label": "$t:editor.component.menu_access_tree",
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.tree_data",
+        "itemFields": [
+          "id",
+          "name",
+          "children"
+        ]
+      },
+      {
+        "propKey": "value",
+        "shape": "array",
+        "label": "$t:editor.data_prop.selected_menus",
+        "itemFieldsReason": "항목이 메뉴 ID 숫자라 필드가 없다"
+      }
+    ]
+  },
   "CategoryTree": {
     "label": "$t:editor.component.category_tree",
     "propControls": [
@@ -2602,6 +2631,16 @@
           "children"
         ],
         "required": true
+      },
+      {
+        "propKey": "roleOptions",
+        "shape": "array",
+        "label": "$t:editor.data_prop.role_options",
+        "itemFields": [
+          "id",
+          "name"
+        ],
+        "required": false
       }
     ]
   },

@@ -65,11 +65,16 @@ class MenuResource extends BaseApiResource
                         })->values();
                     }
 
+                    // 관리 목록은 행마다 부여된 역할을 ID 만으로 보인다(이름은 화면이 역할 목록에서 찾는다).
+                    if ($child->getAttribute('assigned_role_ids') !== null) {
+                        $data['role_ids'] = $child->getAttribute('assigned_role_ids');
+                    }
+
                     return $data;
                 })->sortBy('order')->values();
             }),
 
-            'creator' => $this->whenLoaded('creator', function () {
+            'creator' => $this->whenLoaded('creator', function () use ($request) {
                 return $this->creator ? [
                     'uuid' => $this->creator->uuid,
                     'name' => $this->creator->name,
@@ -86,6 +91,12 @@ class MenuResource extends BaseApiResource
                     ];
                 });
             }),
+
+            // 관리 목록 전용 — 이 메뉴에 부여된 역할 ID (MenuService::getFilteredMenusForManagement 가 붙인다)
+            'role_ids' => $this->when(
+                $this->getValue('assigned_role_ids') !== null,
+                fn () => $this->getValue('assigned_role_ids')
+            ),
 
             // 통계 정보
             'children_count' => $this->when(

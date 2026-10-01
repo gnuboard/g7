@@ -246,6 +246,8 @@
               <item value="deactivate" label="$t:admin.users.bulk_deactivate" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
               <item value="block" label="$t:admin.users.bulk_block" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
               <item value="withdraw" label="$t:admin.users.bulk_withdraw" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="role_add" label="$t:admin.users.bulk_roles.add_button" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="role_remove" label="$t:admin.users.bulk_roles.remove_button" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
             </prop>
             <on type="action" event="onItemClick">
               <!-- 모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.
@@ -263,6 +265,14 @@
                 </case>
                 <case when="withdraw">
                   <open-modal target="bulk_withdraw_confirm_modal"/>
+                </case>
+                <case when="role_add">
+                  <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                  <open-modal target="bulk_roles_modal"/>
+                </case>
+                <case when="role_remove">
+                  <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                  <open-modal target="bulk_roles_modal"/>
                 </case>
               </switch>
             </on>
@@ -294,6 +304,22 @@
               <open-modal target="bulk_withdraw_confirm_modal"/>
             </on>
             <span>$t:admin.users.bulk_withdraw</span>
+          </button>
+          <button data-ref="bulk_role_add" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <!-- 역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작) -->
+              <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+              <open-modal target="bulk_roles_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_roles.add_button</span>
+          </button>
+          <button data-ref="bulk_role_remove" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <!-- 역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다 -->
+              <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+              <open-modal target="bulk_roles_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_roles.remove_button</span>
           </button>
         </div>
       </div>
@@ -681,4 +707,6 @@
       </div>
     </modal>
   </modal>
+  <!-- 회원 역할 일괄 추가·제거 창 — 일괄 작업 바의 「역할 추가」「역할 제거」(모바일은 드롭다운)가 연다. -->
+  <modal src="partials/admin_user_list/_modal_bulk_roles.g7.html"/>
 </layout>

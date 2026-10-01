@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 181개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 133개 |
+| `partials` | 136개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -97,7 +97,9 @@
 | `_modal_update` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
+| `_modal_bulk_roles_confirm` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_panel_bulk_roles` | `partials` | partial | - |
 | `_panel_detail` | `partials` | partial | - |
 | `_panel_form` | `partials` | partial | - |
 | `_panel_menu_list` | `partials` | partial | - |
@@ -192,6 +194,7 @@
 | `_modal_update` | `partials` | partial | - |
 | `_tab_admin` | `partials` | partial | - |
 | `_tab_user` | `partials` | partial | - |
+| `_modal_bulk_roles` | `partials` | partial | - |
 | `_partial_filter_section` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
 | `_header_section` | `partials` | partial | - |

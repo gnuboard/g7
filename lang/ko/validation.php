@@ -701,6 +701,12 @@ return [
         'description' => [
             'max' => '역할 설명은 :max자를 초과할 수 없습니다.',
         ],
+        'menu_ids' => [
+            'array' => '접근 가능 메뉴는 배열이어야 합니다.',
+            'integer' => '메뉴 ID는 숫자여야 합니다.',
+            'exists' => '선택한 메뉴를 찾을 수 없습니다.',
+            'unmanageable' => '관리할 수 없는 메뉴는 추가할 수 없습니다.',
+        ],
     ],
 
     // 템플릿 검증 메시지
@@ -1249,6 +1255,10 @@ return [
         'user_ids' => '사용자 ID 목록',
         'user_id' => '사용자 ID',
         'status' => '상태',
+        'menu_ids' => '메뉴 목록',
+        'role_ids' => '역할 목록',
+        'mode' => '작업',
+        'uuids' => '회원 목록',
         // 일반 설정 필드
         'site_name' => '사이트 이름',
         'site_url' => '사이트 URL',

@@ -1,0 +1,110 @@
+<!-- 「기본값」 탭 맨 아래의 게시판 관리자·스텝 일괄 지정 구획. 한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을
+  하나씩 저장해야 했던 것을 한 번에 한다. 여기서는 대상 게시판(전체/고른 것)·구분(관리자/스텝)·회원·작업(추가/제거)만 정하고,
+  실행은 확인 창이 맡는다. 입력은 전역 `boardBulkMembers` 한 묶음에 담아 확인 창과 나눠 쓰고, 탭을 옮기면 비운다.
+  관리자가 0명이 되는 게시판은 서버가 건너뛰고 그 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다).
+  이 카드는 설정 화면의 자동 바인딩 폼 안에 있으므로 이름을 가진 입력은 :autoBinding="false" 로 폼에서 떼어 낸다 —
+  붙여 두면 값이 _local.form 으로 들어가 전역을 비워도 라디오가 옛 값으로 남고 설정 저장 본문에도 섞인다. -->
+<partial description="게시판 설정 > 관리자·스텝 일괄 지정 섹션">
+  <div data-ref="bulk_members" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div data-ref="section_bulk_members" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.bulk_members.title</h3>
+      <p class="card-description">$t:sirsoft-board.admin.settings.bulk_members.description</p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+        <div data-ref="bulk_members_target">
+          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.target_label</label>
+          <radio-group name="board_bulk_members_target" :autoBinding="false" value="{{_global.boardBulkMembers?.all === false ? 'selected' : 'all'}}" :inline="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.target_all" value="all"/>
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.target_selected" value="selected"/>
+            </prop>
+            <on type="change">
+              <!-- 대상 게시판 범위 — 「고른 게시판」 일 때만 아래 게시판 칸이 보인다 -->
+              <set-state target="global" boardBulkMembers.all="{{$event.target.value !== 'selected'}}"/>
+            </on>
+          </radio-group>
+          <tag-input data-ref="bulk_members_boards" data-if="{{_global.boardBulkMembers?.all === false}}" value="{{_global.boardBulkMembers?.boardIds ?? []}}" options="{{_computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full mt-2" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 고른 게시판 — 태그 입력이 준 배열을 통째로 담는다 -->
+              <set-state target="global" boardBulkMembers.boardIds="{{$event.target.value ?? []}}"/>
+            </on>
+          </tag-input>
+        </div>
+        <div data-ref="bulk_members_type">
+          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.type_label</label>
+          <radio-group name="board_bulk_members_type" :autoBinding="false" value="{{_global.boardBulkMembers?.type ?? 'manager'}}" :inline="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.type_manager" value="manager"/>
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.type_step" value="step"/>
+            </prop>
+            <on type="change">
+              <!-- 관리자/스텝 구분 -->
+              <set-state target="global" boardBulkMembers.type="{{$event.target.value}}"/>
+            </on>
+          </radio-group>
+        </div>
+        <div data-ref="bulk_members_users">
+          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.users_label</label>
+          <tag-input data-ref="bulk_members_users_input" value="{{_global.boardBulkMembers?.userUuids ?? []}}" options="{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <on event="onInputChange">
+              <!-- 회원 찾기 — 게시판 폼의 관리자 칸과 같이 300ms 쉬었다 보내고, 결과는 이미 고른 사람과 합쳐 선택지를 만든다 -->
+              <api-call :debounce="300" :auth_required="true" target="/api/admin/users" method="GET">
+                <success>
+                  <set-state target="global" boardBulkMembers.searchResults="{{result.data?.data ?? []}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :boardBulkMembers.searchResults="[]"/>
+                </fail>
+                <body filters[0][field]="all" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :per_page="20"/>
+              </api-call>
+            </on>
+            <on type="change">
+              <!-- 회원 확정 — uuid 목록과 「사람 정보」 목록을 함께 갱신해 다음 검색에도 고른 사람의 이름표가 남게 한다 -->
+              <set-state target="global" boardBulkMembers.userUuids="{{$event.target.value ?? []}}" boardBulkMembers.users="{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}" :boardBulkMembers.searchResults="[]"/>
+            </on>
+          </tag-input>
+        </div>
+        <div data-ref="bulk_members_mode">
+          <label class="form-label">$t:sirsoft-board.admin.settings.bulk_members.mode_label</label>
+          <radio-group name="board_bulk_members_mode" :autoBinding="false" value="{{_global.boardBulkMembers?.mode ?? 'add'}}" :inline="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.mode_add" value="add"/>
+              <item label="$t:sirsoft-board.admin.settings.bulk_members.mode_remove" value="remove"/>
+            </prop>
+            <on type="change">
+              <!-- 추가/제거 -->
+              <set-state target="global" boardBulkMembers.mode="{{$event.target.value}}"/>
+            </on>
+          </radio-group>
+        </div>
+      </div>
+      <div data-ref="bulk_members_hint" class="flex gap-2 text-tertiary mt-4">
+        <icon name="circle-info" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:sirsoft-board.admin.settings.bulk_members.hint</span>
+      </div>
+      <div data-ref="bulk_members_result" data-if="{{!!_global.boardBulkMembers?.result}}" class="mt-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <p class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-board.admin.settings.bulk_members.result_summary|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}</p>
+        <ul class="mt-2 text-sm space-y-1">
+          <li data-each="skip in {{(_global.boardBulkMembers?.result?.skipped ?? []).slice(0, 5)}}" class="flex justify-between gap-3 text-gray-600 dark:text-gray-400">
+            <span class="truncate">{{(_computed.boardOptions ?? []).find(o => o.value == skip.board_id)?.label ?? skip.board_id}}</span>
+            <span class="flex-shrink-0">{{skip.reason === 'last_manager' ? $t:sirsoft-board.admin.settings.bulk_members.reason_last_manager : $t:sirsoft-board.admin.settings.bulk_members.reason_scope}}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button data-ref="bulk_members_apply_button" type="button" disabled="{{_computed.isReadOnly || (_global.boardBulkMembers?.userUuids ?? []).length === 0 || (_global.boardBulkMembers?.all === false &amp;&amp; (_global.boardBulkMembers?.boardIds ?? []).length === 0)}}" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 적용 — 확인 창을 연다. 지난 결과·실패 문구는 비운다 -->
+            <set-state target="global" :boardBulkMembers.result="null" :boardBulkMembers.error="null"/>
+            <open-modal target="bulk_members_confirm_modal"/>
+          </on>
+          <icon name="users" size="sm"/>
+          <span>$t:sirsoft-board.admin.settings.bulk_members.apply</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

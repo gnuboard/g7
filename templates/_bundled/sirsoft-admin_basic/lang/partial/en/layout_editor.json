@@ -315,6 +315,9 @@
     "permission_tree": {
       "label": "Permission Tree"
     },
+    "menu_access_tree": {
+      "label": "Menu Access Tree"
+    },
     "category_tree": {
       "label": "Category Tree",
       "sample_node1": "Category",

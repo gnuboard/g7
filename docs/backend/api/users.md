@@ -489,6 +489,81 @@ HTTP/1.1 200
 전건이 차단되어도 응답은 200 이다. 소비자는 `updated_count` 와 `failed_count` 를 함께 읽어 결과를 판정해야 한다 — 200 만 보고 성공으로 안내하면 아무 일도 일어나지 않은 요청이 처리된 것으로 표시된다. 사유는 `failed_reasons` 로 전달되므로 그대로 노출하면 된다.
 
 
+### PATCH /api/admin/users/bulk-roles
+<!-- @generated:start:api.admin.users.bulk-roles -->
+- **라우트명**: `api.admin.users.bulk-roles`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserController@bulkUpdateRoles`
+- **인증/권한**: `auth:sanctum` + `permission:core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| uuids | body | array\<string\> | 예 | min 1, max 500, 존재하는 회원 UUID | 역할을 더하거나 뺄 회원 |
+| role_ids | body | array\<integer\> | 예 | min 1, 존재하는 역할 ID | 더하거나 뺄 역할 ID 목록 |
+| mode | body | string | 예 | `add`, `remove` | 추가 또는 제거 |
+
+**요청 예시**
+
+```http
+PATCH /api/admin/users/bulk-roles HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "uuids": ["b89e33f8-0000-0000-0000-000000000001", "65fbba33-0000-0000-0000-000000000002"],
+    "role_ids": [7],
+    "mode": "add"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `1` | 역할 구성이 실제로 바뀐 회원 수 (이미 같은 상태인 회원은 제외) |
+| skipped_count | integer | `2` | 건너뛴 회원 수 |
+| skipped | array | `[{"uuid":"…","reason":"grade"},{"uuid":"…","reason":"scope"}]` | 건너뛴 회원과 사유 — `grade`(최고관리자 등 등급 상한), `scope`(권한 범위 밖), `last_admin`(마지막 관리자인 본인에게서 관리자 역할 제거), `last_role`(빼고 나면 역할이 하나도 남지 않는 회원) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "1명의 역할을 변경했습니다. (제외 2명)",
+    "data": {
+        "updated_count": 1,
+        "skipped_count": 2,
+        "skipped": [
+            { "uuid": "f672c40a-0000-0000-0000-000000000003", "reason": "grade" },
+            { "uuid": "9d1d7a07-0000-0000-0000-000000000004", "reason": "scope" }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.update`)이 없거나, 요청자가 가지지 않은 권한이 담긴 역할이 하나라도 섞인 경우 (`user.bulk_roles_ceiling`, 요청 전체 거부) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 일괄 변경 중 예외 발생 (`user.bulk_roles_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+회원 목록의 선택 일괄 작업 「역할 추가」「역할 제거」. 일괄 상태 변경과 같은 두 축으로 판정한다 — ① 권한 상승 상한: 고른 역할 중 하나라도 요청자가 부여할 수 없으면 아무것도 바꾸지 않고 403, ② 대상 필터: 등급 가드(최고관리자) → 권한 범위(scope) 순으로 걸러진 회원은 `skipped` 에 사유와 함께 돌려준다. 제거 모드에서 이번 요청으로 관리자가 한 명도 남지 않게 되면 요청자 본인은 `last_admin` 으로 건너뛰고, 빼고 나면 역할이 하나도 남지 않는 회원은 `last_role` 로 건너뛴다(회원 수정의 「역할을 하나 이상 선택」 규칙과 같다). 추가한 역할에는 `assigned_by`(요청자)·`assigned_at` 이 기록되고, 바뀐 회원마다 권한 캐시를 비우며 활동 로그 `user.bulk_roles` 를 남긴다. 요청 앞뒤로 `core.user.before_bulk_update_roles`·`core.user.after_bulk_update_roles` 가 발화한다. 같은 요청을 다시 보내도 행이 겹치지 않는다(`updated_count` 0). 제외가 있어도 응답은 200 이므로 `skipped_count` 를 함께 읽어야 한다.
+
+
 ### POST /api/admin/users/check-email
 <!-- @generated:start:api.admin.users.check-email -->
 - **라우트명**: `api.admin.users.check-email`

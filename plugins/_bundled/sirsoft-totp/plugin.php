@@ -225,14 +225,14 @@ class Plugin extends AbstractPlugin
     /**
      * 관리자 메뉴 정의 — **비운다**.
      *
-     * 등록 화면은 코어「플러그인 관리 → 설정」 자동 경로가 연다(PO 확정 2026-09-18).
+     * 등록 화면은 코어「플러그인 관리 → 설정」 자동 경로가 연다.
      * 이 화면은 플러그인 환경설정이지 별도 메뉴로 세울 사항이 아니다 — 형제 13종이
      * 전부 `resources/layouts/admin/plugin_settings` 규약을 쓰고, 그 경로는
      * `AbstractPlugin::getSettingsLayoutSource()` 가 해석한다. gdpr 도 같은 이유로
      * 「설정」을 메뉴에서 빼고(주석: "코어 자동 경로 사용 (중복 제거)") 이력 화면만 남겼다.
      *
-     * 빈 배열을 유지하는 이유는 activate()/deactivate() 가 이 값을 그대로 sync 하기
-     * 때문이다 — 여기가 비면 재활성화 시 잔여 메뉴도 함께 회수된다.
+     * 빈 배열을 유지하는 이유는 activate() 가 이 값을 그대로 sync 하기 때문이다 —
+     * 여기가 비면 재활성화 시 잔여 메뉴도 함께 회수된다.
      *
      * @return array<int, array<string, mixed>> 메뉴 정의 배열 (빈 배열)
      */
@@ -264,8 +264,8 @@ class Plugin extends AbstractPlugin
 
         // 선언에서 빠진 메뉴를 회수한다 — upsert 만 돌리면 이전 판본이 심은 행이 남는다.
         // 1.0.0 이 등록하던 `sirsoft-totp-security` 가 실제로 그렇게 남아 있었다:
-        // 설정 화면을 코어「플러그인 관리 → 설정」으로 옮기며 선언을 비웠는데(PO 확정
-        // 2026-09-18), 이미 활성인 사이트는 deactivate 를 거치지 않으므로 메뉴만 남아
+        // 설정 화면을 코어「플러그인 관리 → 설정」으로 옮기며 선언을 비웠는데,
+        // 이미 활성인 사이트는 deactivate 를 거치지 않으므로 메뉴만 남아
         // 죽은 경로(/admin/plugins/sirsoft-totp/security)를 가리켰다.
         $helper->cleanupStaleMenus(
             ExtensionOwnerType::Plugin,
@@ -277,21 +277,16 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 비활성화 — 관리자 메뉴를 일괄 제거합니다.
+     * 플러그인 비활성화 — 관리자 메뉴 행은 보존합니다.
      *
-     * currentSlugs=[] 로 본 플러그인 소속 메뉴 전체를 지운다. 자식 메뉴와 role_menus
-     * 피벗 정리는 helper 가 맡는다.
+     * 비활성 플러그인의 메뉴는 사이드바·메뉴 관리 목록에서 자동으로 빠지므로 행을 지울
+     * 필요가 없고, 지우면 운영자가 붙인 메뉴 역할이 사라진다(번들 플러그인 공통 관례).
+     * 선언에서 빠진 잔재는 activate() 가, 전체 삭제는 uninstall() 이 맡는다.
      *
      * @return bool 비활성화 성공 여부
      */
     public function deactivate(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
         return true;
     }
 
@@ -341,7 +336,7 @@ class Plugin extends AbstractPlugin
             $settings->setSetting($key, null);
         }
 
-        // 메뉴 잔존 안전망 — 정상 흐름은 deactivate() 가 먼저 처리한다.
+        // 메뉴 삭제 — 비활성화는 메뉴 행을 보존하므로 제거가 직접 지운다.
         app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
             ExtensionOwnerType::Plugin,
             $this->getIdentifier(),

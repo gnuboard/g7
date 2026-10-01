@@ -62,6 +62,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_list' => ['method' => 'handleUserAfterList', 'priority' => 20],
             'core.user.after_search' => ['method' => 'handleUserAfterSearch', 'priority' => 20],
             'sirsoft-core.user.after_bulk_update' => ['method' => 'handleUserAfterBulkUpdate', 'priority' => 20],
+            'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
 
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
@@ -341,6 +342,38 @@ class CoreActivityLogListener implements HookListenerInterface
                 'description_params' => ['count' => 1],
                 'properties' => ['uuid' => $uuid, 'status' => $status],
                 'changes' => $changes,
+            ]);
+        }
+    }
+
+    /**
+     * 회원 역할 일괄 변경 후 회원마다 로그 기록
+     *
+     * @param  array<int, int>  $userIds  실제로 바뀐 회원 ID
+     * @param  array<int, int>  $roleIds  요청한 역할 ID
+     * @param  string  $mode  'add' | 'remove'
+     * @param  array<int, array{user_id: int, added: array<int, int>, removed: array<int, int>}>  $changes  회원별 변경분
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterBulkUpdateRoles(array $userIds, array $roleIds, string $mode, array $changes = []): void
+    {
+        $users = $this->userRepository->findManyByIdsKeyed($userIds);
+
+        foreach ($changes as $change) {
+            $user = $users->get($change['user_id']);
+            if (! $user) {
+                continue;
+            }
+
+            $this->logActivity('user.bulk_roles', [
+                'loggable' => $user,
+                'description_key' => 'activity_log.description.user_bulk_roles',
+                'description_params' => ['user_id' => $user->id],
+                'properties' => [
+                    'mode' => $mode,
+                    'added' => array_values($change['added']),
+                    'removed' => array_values($change['removed']),
+                ],
             ]);
         }
     }

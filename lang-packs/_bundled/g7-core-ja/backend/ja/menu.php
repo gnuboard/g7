@@ -31,4 +31,8 @@ return [
         'filter_value_max' => 'フィルター値は最大255文字まで入力できます。',
         'filter_operator_invalid' => '無効なフィルター演算子です。',
     ],
+    'admin_role_required' => '管理者ロールは常にすべてのメニューにアクセスできます。管理者ロールは外せません。',
+    'bulk_roles_success' => 'メニュー:count件のロールを変更しました。',
+    'bulk_roles_failed' => 'メニューのロール一括変更に失敗しました。',
+    'bulk_roles_unmanageable' => '管理できないメニューが含まれています。',
 ];

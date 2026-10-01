@@ -23,6 +23,14 @@ interface MenuRepositoryInterface
      */
     public function getTopLevelMenus(): Collection;
 
+    /**
+     * 관리 화면용 최상위 메뉴(자식 포함)를 조회합니다.
+     *
+     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
+     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
+     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
+     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
+     */
     public function getTopLevelMenusForManagement(array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection;
 
     /**
@@ -176,5 +184,22 @@ interface MenuRepositoryInterface
      */
     public function getMaxOrder(?int $parentId = null): int;
 
+    /**
+     * 필터 조건이 적용된 최상위 메뉴 목록을 조회합니다.
+     *
+     * @param  array  $filters  필터 조건 배열 (sort_by/sort_order/검색 필드)
+     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
+     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
+     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
+     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
+     */
     public function getFilteredTopLevelMenus(array $filters, array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection;
+
+    /**
+     * 메뉴별로 부여된 역할 ID 를 한 번에 조회합니다(목록 역할 배지용, 역할 객체 없이 ID 만).
+     *
+     * @param  array<int>  $menuIds  조회할 메뉴 ID 목록
+     * @return array<int, array<int>> 메뉴 ID => 역할 ID 목록 (역할이 없는 메뉴는 빈 배열)
+     */
+    public function getRoleIdsByMenuIds(array $menuIds): array;
 }

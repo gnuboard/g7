@@ -415,6 +415,30 @@ class MenuRepository implements MenuRepositoryInterface
     }
 
     /**
+     * 메뉴별로 부여된 역할 ID 를 한 번에 조회합니다(목록 역할 배지용, 역할 객체 없이 ID 만).
+     *
+     * @param  array<int>  $menuIds  조회할 메뉴 ID 목록
+     * @return array<int, array<int>> 메뉴 ID => 역할 ID 목록 (역할이 없는 메뉴는 빈 배열)
+     */
+    public function getRoleIdsByMenuIds(array $menuIds): array
+    {
+        $map = array_fill_keys(array_map('intval', $menuIds), []);
+        if ($map === []) {
+            return [];
+        }
+
+        DB::table('role_menus')
+            ->whereIn('menu_id', array_keys($map))
+            ->orderBy('role_id')
+            ->get(['menu_id', 'role_id'])
+            ->each(function ($row) use (&$map) {
+                $map[(int) $row->menu_id][] = (int) $row->role_id;
+            });
+
+        return $map;
+    }
+
+    /**
      * 필터 조건이 적용된 최상위 메뉴 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열 (sort_by/sort_order/검색 필드)
@@ -530,6 +554,7 @@ class MenuRepository implements MenuRepositoryInterface
      * @param  string  $field  필드명
      * @param  string  $value  검색 값
      * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
+     * @return void 반환값 없음
      */
     private function applySearchableField($query, string $field, string $value, string $operator): void
     {
@@ -581,6 +606,15 @@ class MenuRepository implements MenuRepositoryInterface
         return empty($locales) ? [app()->getLocale()] : array_values($locales);
     }
 
+    /**
+     * 필터 연산자를 일반 컬럼에 적용합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $field  필드명
+     * @param  string  $value  검색 값
+     * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
+     * @return void 반환값 없음
+     */
     private function applyFilterOperator($query, string $field, string $value, string $operator): void
     {
         switch ($operator) {

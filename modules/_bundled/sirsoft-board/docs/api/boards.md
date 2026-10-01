@@ -372,6 +372,84 @@ HTTP/1.1 201
 **설명** 새 게시판을 생성합니다. `auth:sanctum` + `sirsoft-board.boards.create` 권한이 필요하며, `StoreBoardRequest` 로 검증된 이름/슬러그/타입/권한/제한값 등을 받아 게시판과 전용 데이터를 초기화합니다. 슬러그는 게시글 테이블명·권한 키·URL의 기준이 되므로 생성 후 변경할 수 없다는 점에 주의하고, 성공 시 생성된 게시판 리소스를 201로 반환합니다.
 
 
+### POST /api/modules/sirsoft-board/admin/boards/bulk-members
+<!-- @generated:start:api.modules.sirsoft-board.admin.boards.bulk-members -->
+- **라우트명**: `api.modules.sirsoft-board.admin.boards.bulk-members`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController@bulkMembers`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.boards.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| apply_all | body | boolean | 예 | — | `true` 면 전체 게시판, `false` 면 `board_ids` 의 게시판만 |
+| board_ids | body | array\<integer\> | `apply_all=false` 일 때 예 | min 1, 존재하는 게시판 ID | 대상 게시판 (`apply_all=true` 면 무시) |
+| user_uuids | body | array\<string\> | 예 | min 1, max 100, 존재하는 회원 UUID | 지정하거나 뺄 회원 |
+| member_type | body | string | 예 | `manager`, `step` | 게시판 관리자 또는 스텝 |
+| mode | body | string | 예 | `add`, `remove` | 추가 또는 제거 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/admin/boards/bulk-members HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "apply_all": false,
+    "board_ids": [3, 5],
+    "user_uuids": ["b89e33f8-0000-0000-0000-000000000001"],
+    "member_type": "manager",
+    "mode": "add"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `2` | 명단이 실제로 바뀐 게시판 수 |
+| skipped_count | integer | `1` | 건너뛴 게시판 수 |
+| skipped | array | `[{"board_id":5,"reason":"last_manager"}]` | 건너뛴 게시판과 사유 — `scope`(권한 범위 밖 게시판), `last_manager`(제거하면 관리자가 0명이 되는 게시판) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "게시판 2개의 명단을 변경했습니다. (제외 1개)",
+    "data": {
+        "updated_count": 2,
+        "skipped_count": 1,
+        "skipped": [
+            { "board_id": 5, "reason": "last_manager" }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.boards.update`)이 없거나, 요청자가 가지지 않은 권한을 부여하게 되는 경우 (`exceptions.cannot_grant_unheld_permission`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 일괄 처리 중 예외 발생 (`sirsoft-board::messages.boards.bulk_members_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+게시판 환경설정 「기본값」 탭의 「관리자·스텝 일괄 지정」. 한 회원(또는 여러 회원)을 전체 또는 고른 게시판들의 관리자·스텝으로 한 번에 지정하거나 뺀다. 게시판 폼에서 관리자·스텝을 저장할 때와 같은 경로(게시판별 역할 동기화)를 쓰므로 회원의 게시판 역할·권한 캐시가 같은 방식으로 갱신된다. 권한 범위 밖 게시판과, 관리자를 빼면 0명이 되는 게시판은 건너뛰고 `skipped` 에 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다). 한 트랜잭션으로 처리하며 앞뒤로 `sirsoft-board.board.before_bulk_members`·`sirsoft-board.board.after_bulk_members` 가 발화한다. 제외가 있어도 응답은 200 이다.
+
+
 ### GET /api/modules/sirsoft-board/admin/boards/form-data
 <!-- @generated:start:api.modules.sirsoft-board.admin.boards.form-data -->
 - **라우트명**: `api.modules.sirsoft-board.admin.boards.form-data`

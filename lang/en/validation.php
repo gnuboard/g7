@@ -700,6 +700,12 @@ return [
         'description' => [
             'max' => 'The role description may not be greater than :max characters.',
         ],
+        'menu_ids' => [
+            'array' => 'Accessible menus must be an array.',
+            'integer' => 'Menu IDs must be numbers.',
+            'exists' => 'The selected menu could not be found.',
+            'unmanageable' => 'You cannot add menus you are not allowed to manage.',
+        ],
     ],
 
     // Template validation messages
@@ -1256,6 +1262,10 @@ return [
         'user_ids' => 'user ID list',
         'user_id' => 'user ID',
         'status' => 'status',
+        'menu_ids' => 'menu list',
+        'role_ids' => 'role list',
+        'mode' => 'action',
+        'uuids' => 'member list',
         // Settings fields
         'site_name' => 'site name',
         'site_url' => 'site URL',

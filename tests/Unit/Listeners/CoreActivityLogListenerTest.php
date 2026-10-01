@@ -149,7 +149,7 @@ class CoreActivityLogListenerTest extends TestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 구독 훅 목록이 현재 등록된 로깅·스냅샷 훅 수(81)와 일치하는지 확인합니다.
+     * 구독 훅 목록이 현재 등록된 로깅·스냅샷 훅 수(82)와 일치하는지 확인합니다.
      *
      * @effects subscribed_hook_count_matches_registry
      *
@@ -167,7 +167,8 @@ class CoreActivityLogListenerTest extends TestCase
         // 65 에서 멈춰 있던 동안 방문자 통계(core.analytics.* 9)·개인정보 보유기간(core.privacy.* 2)·
         // 회원 알림함·커스텀 자산·설정 등이 더해졌다 — 2026-09-26 실측 81(접두어별: auth 9 · analytics 9 ·
         // user 7 · menu 6 · schedule 6 · modules 6 · templates 6 · role 5 · plugins 5 · layout 5 · 그 외 17).
-        $this->assertCount(81, $hooks);
+        // #708 회원 역할 일괄 변경(core.user.after_bulk_update_roles) +1 → 82.
+        $this->assertCount(82, $hooks);
     }
 
     /**

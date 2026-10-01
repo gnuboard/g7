@@ -404,6 +404,13 @@ return [
             'icon' => 'アイコン画像',
         ],
         'use_comment_reaction' => 'コメント反応使用',
+        'bulk_members' => [
+            'apply_all' => '対象掲示板の範囲',
+            'board_ids' => '対象掲示板',
+            'user_uuids' => '会員',
+            'member_type' => '区分',
+            'mode' => '操作',
+        ],
     ],
     'blind' => [
         'reason' => [

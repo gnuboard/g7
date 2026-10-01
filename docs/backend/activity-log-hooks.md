@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 70훅 + 확장 167훅 = 총 237훅 (확장별 목록은 그 확장이 소유)
+1. 코어 71훅 + 확장 167훅 = 총 238훅 (확장별 목록은 그 확장이 소유)
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -41,9 +41,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 70훅**
+**총 71훅**
 
-### User (8훅)
+### User (9훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -55,6 +55,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.user.after_list` | `handleUserAfterList` | `user.list` | Admin | - |
 | `core.user.after_search` | `handleUserAfterSearch` | `user.search` | Admin | - |
 | `sirsoft-core.user.after_bulk_update` | `handleUserAfterBulkUpdate` | `user.bulk_update` | Admin | - |
+| `core.user.after_bulk_update_roles` | `handleUserAfterBulkUpdateRoles` | `user.bulk_roles` | Admin | User |
 
 ### Auth (9훅)
 
@@ -222,7 +223,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
 | **합계** | **167** | |
 
-코어 70훅 + 확장 167훅 = **총 237훅**입니다.
+코어 71훅 + 확장 167훅 = **총 238훅**입니다.
 
 확장에 새 활동 로그 항목을 추가할 때는 **그 확장의 lang 파일**(`src/lang/{ko,en}/activity_log.php`)에
 action 라벨과 description 본문을 정의합니다. description 은 리스너가 `{확장}::activity_log.description.*`

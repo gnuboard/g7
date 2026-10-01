@@ -9,6 +9,8 @@ export interface MenuItemData {
     isModuleMenu: boolean;
     moduleName?: string;
     hasChildren?: boolean;
+    /** 부여된 역할 이름 — undefined 면 배지 줄을 그리지 않는다, 빈 배열이면 「역할 없음」 */
+    roleNames?: string[];
 }
 export interface SortableMenuItemProps {
     item: MenuItemData;
@@ -34,6 +36,12 @@ export interface SortableMenuItemProps {
     enableDrag?: boolean;
     /** 토글 비활성화 여부 (기본값: false) */
     toggleDisabled?: boolean;
+    /** 선택 모드 — 체크박스를 보이고 상태 토글을 숨긴다 (기본값: false) */
+    selectable?: boolean;
+    /** 선택 모드의 체크 상태 */
+    checked?: boolean;
+    /** 선택 모드의 일부 선택(indeterminate) 상태 */
+    indeterminate?: boolean;
 }
 /**
  * SortableMenuItem 컴포넌트

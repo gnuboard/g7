@@ -424,7 +424,8 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "activeBoardSettingsTab": "{{$args[0]}}"
+                                                            "activeBoardSettingsTab": "{{$args[0]}}",
+                                                            "boardBulkMembers": null
                                                         }
                                                     },
                                                     {
@@ -540,6 +541,10 @@
                                         {
                                             "id": "bulk_apply",
                                             "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"
+                                        },
+                                        {
+                                            "id": "bulk_members",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_members"
                                         }
                                     ]
                                 }
@@ -656,6 +661,9 @@
                             },
                             {
                                 "partial": "partials/admin_board_settings/_tab_board_settings_bulk_apply.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_section_bulk_members.json"
                             },
                             {
                                 "partial": "partials/admin_board_settings/_tab_report_policy.json"
@@ -868,6 +876,10 @@
         {
             "comment": "여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창",
             "partial": "partials/admin_board_settings/_bulk_apply_modal.json"
+        },
+        {
+            "comment": "게시판 관리자·스텝 일괄 지정 확인 창 — 「기본값」 탭 맨 아래 카드의 「적용」 이 연다",
+            "partial": "partials/admin_board_settings/_modal_bulk_members_confirm.json"
         },
         {
             "comment": "게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다)",

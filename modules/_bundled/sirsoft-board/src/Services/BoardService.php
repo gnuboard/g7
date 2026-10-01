@@ -1449,6 +1449,90 @@ class BoardService
     }
 
     /**
+     * 여러 게시판의 관리자·스텝에 회원을 한꺼번에 더하거나 뺍니다 (환경설정 「관리자·스텝 일괄 지정」).
+     *
+     * 게시판마다 지금 명단(역할 `sirsoft-board.{slug}.{manager|step}` 의 회원)에 합집합·차집합을
+     * 적용한 **새 전체 명단**을 게시판 폼 저장과 같은 `syncBoardRoleUsers()` 로 넘긴다 — 역할 멤버십과
+     * 권한 상한 판정이 단건 저장과 같아진다. 정적 경로라 미들웨어의 범위 검사가 빠지므로 범위 밖
+     * 게시판은 건너뛰고(skipped: scope), 관리자가 0명이 되는 게시판도 건너뛴다(skipped: last_manager —
+     * 게시판 폼의 「관리자 최소 1명」 규칙과 같다). 전체를 한 트랜잭션으로 묶어 한 곳이라도 실패하면
+     * 모두 되돌린다.
+     *
+     * @param  bool  $applyAll  전체 게시판 대상 여부
+     * @param  array<int, int>  $boardIds  대상 게시판 ID (applyAll=false 일 때)
+     * @param  array<int, string>  $userUuids  더하거나 뺄 회원 UUID
+     * @param  string  $memberType  'manager' | 'step'
+     * @param  string  $mode  'add' | 'remove'
+     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{board_id: int, reason: string}>} 처리 결과
+     *
+     * @throws PermissionEscalationException 액터가 부여할 수 없는 게시판 역할을 바꾸려 할 때 (전체 롤백)
+     */
+    public function bulkUpdateBoardMembers(bool $applyAll, array $boardIds, array $userUuids, string $memberType, string $mode): array
+    {
+        HookManager::doAction('sirsoft-board.board.before_bulk_members', $applyAll, $boardIds, $userUuids, $memberType, $mode);
+
+        $query = $this->boardRepository->query();
+        if (! $applyAll) {
+            $query->whereIn('id', array_map('intval', $boardIds));
+        }
+        $boards = $query->get();
+
+        $skipped = [];
+        $permitted = PermissionHelper::filterByScope($boards, 'sirsoft-board.boards.update');
+        $permittedIds = array_map(static fn (Board $b): int => (int) $b->id, $permitted);
+        foreach ($boards as $board) {
+            if (! in_array((int) $board->id, $permittedIds, true)) {
+                $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'scope'];
+            }
+        }
+
+        $dataKey = $memberType === 'manager' ? 'board_manager_ids' : 'board_step_ids';
+        $userUuids = array_values(array_unique($userUuids));
+
+        $updatedBoards = DB::transaction(function () use ($permitted, $memberType, $mode, $dataKey, $userUuids, &$skipped) {
+            $updated = [];
+            foreach ($permitted as $board) {
+                $role = $this->roleRepository->findByIdentifier("sirsoft-board.{$board->slug}.{$memberType}");
+                $current = $role ? $role->users()->pluck('users.uuid')->all() : [];
+
+                $next = $mode === 'add'
+                    ? array_values(array_unique(array_merge($current, $userUuids)))
+                    : array_values(array_diff($current, $userUuids));
+
+                if ($memberType === 'manager' && $next === []) {
+                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'last_manager'];
+
+                    continue;
+                }
+
+                if (array_diff($next, $current) === [] && array_diff($current, $next) === []) {
+                    continue;
+                }
+
+                $this->syncBoardRoleUsers($board, [$dataKey => $next]);
+                $updated[] = $board;
+            }
+
+            return $updated;
+        });
+
+        // 캐시 초기화 — 성공 후에만
+        foreach ($updatedBoards as $board) {
+            $this->clearBoardCaches($board->slug, $board->id);
+        }
+
+        $result = [
+            'updated_count' => count($updatedBoards),
+            'skipped_count' => count($skipped),
+            'skipped' => $skipped,
+        ];
+
+        HookManager::doAction('sirsoft-board.board.after_bulk_members', array_map(static fn (Board $b): int => (int) $b->id, $updatedBoards), $userUuids, $memberType, $mode, $result);
+
+        return $result;
+    }
+
+    /**
      * 환경설정 권한 형식을 게시판 권한 업데이트 형식으로 변환합니다.
      *
      * 환경설정의 default_board_permissions 구조를 updateBoardPermissions()에 맞게 변환합니다.

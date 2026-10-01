@@ -118,6 +118,8 @@ export { Accordion } from './Accordion';
 export type { AccordionProps } from './Accordion';
 export { PermissionTree } from './PermissionTree';
 export type { PermissionTreeProps, PermissionNode } from './PermissionTree';
+export { MenuAccessTree } from './MenuAccessTree';
+export type { MenuAccessTreeProps, MenuAccessNode } from './MenuAccessTree';
 export { CategoryTree } from './CategoryTree';
 export type { CategoryTreeProps, CategoryNode } from './CategoryTree';
 export { FileUploader } from './FileUploader';

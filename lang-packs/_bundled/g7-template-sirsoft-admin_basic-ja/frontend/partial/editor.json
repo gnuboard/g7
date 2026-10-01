@@ -1229,7 +1229,8 @@
     "column_selector": "列セレクター",
     "section_header": "セクションヘッダー",
     "extension_card_grid": "拡張カードグリッド",
-    "line_chart": "折れ線グラフ"
+    "line_chart": "折れ線グラフ",
+    "menu_access_tree": "メニューアクセスツリー"
   },
   "action": {
     "go_to_page": {
@@ -1577,7 +1578,9 @@
     "admin_footer_quick_links": "クイックリンク",
     "notification_items": "通知項目",
     "notification_unread_count": "未読通知数",
-    "column_items": "列項目"
+    "column_items": "列項目",
+    "role_options": "ロール名ラベル",
+    "selected_menus": "選択されたメニュー"
   },
   "state_label": {
     "current_user": "現在のユーザー",
@@ -1681,7 +1684,8 @@
     "privacyTargets": "個人情報対策対象リスト",
     "privacyManualRuns": "個人情報措置職権実行ステータス",
     "analytics_row_trend": "訪問者統計の項目推移",
-    "identityMessagePolicyScopes": "メッセージが定義された本人認証ポリシー"
+    "identityMessagePolicyScopes": "メッセージが定義された本人認証ポリシー",
+    "role_menus_tree": "アクセス可能なメニューツリー"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

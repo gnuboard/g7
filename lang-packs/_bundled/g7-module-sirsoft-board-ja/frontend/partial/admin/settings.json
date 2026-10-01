@@ -27,7 +27,8 @@
     "comment": "コメント",
     "attachment": "添付ファイル",
     "notification": "通知",
-    "bulk_apply": "一括適用"
+    "bulk_apply": "一括適用",
+    "bulk_members": "管理者・スタッフ一括指定"
   },
   "sections": {
     "general": "基本設定",
@@ -574,5 +575,31 @@
       "preview_failed": "対象件数を読み込めませんでした。",
       "editor_label": "掲示板の個人情報保有期間の職権実行"
     }
+  },
+  "bulk_members": {
+    "title": "掲示板管理者・スタッフ一括指定",
+    "description": "複数の掲示板の管理者またはスタッフに会員をまとめて追加・削除します。",
+    "target_label": "対象掲示板",
+    "target_all": "すべての掲示板",
+    "target_selected": "選択した掲示板",
+    "boards_count": "掲示板{{count}}件",
+    "type_label": "区分",
+    "type_manager": "管理者",
+    "type_step": "スタッフ",
+    "users_label": "会員",
+    "mode_label": "操作",
+    "mode_add": "追加",
+    "mode_remove": "削除",
+    "hint": "管理者が0名になる掲示板は削除の対象から除外されます。",
+    "apply": "適用",
+    "confirm_title": "掲示板管理者・スタッフ一括指定",
+    "confirm_add_manager": "選択した会員を掲示板管理者に追加します。",
+    "confirm_add_step": "選択した会員を掲示板スタッフに追加します。",
+    "confirm_remove_manager": "選択した会員を掲示板管理者から削除します。",
+    "confirm_remove_step": "選択した会員を掲示板スタッフから削除します。",
+    "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外",
+    "reason_last_manager": "管理者が0名になる",
+    "reason_scope": "管理権限の範囲外",
+    "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
   }
 }

@@ -195,6 +195,25 @@
     "bulk_withdraw": "탈퇴 처리",
     "bulk_action_select": "일괄 작업 선택",
     "bulk_status_change": "상태 변경",
+    "bulk_roles": {
+      "add_button": "역할 추가",
+      "remove_button": "역할 제거",
+      "add_title": "역할 일괄 추가",
+      "remove_title": "역할 일괄 제거",
+      "add_desc": "선택한 회원 {{count}}명에게 역할을 추가합니다.",
+      "remove_desc": "선택한 회원 {{count}}명에게서 역할을 제거합니다.",
+      "roles_label": "역할",
+      "roles_placeholder": "역할을 선택하세요...",
+      "hint": "권한 범위 밖 회원과 최고관리자는 자동으로 제외됩니다. 내가 부여할 수 없는 권한이 담긴 역할이 하나라도 섞이면 아무것도 바꾸지 않고 거부됩니다.",
+      "apply": "적용",
+      "result_title": "처리 결과",
+      "result_summary": "{{updated}}명 변경, {{skipped}}명 제외",
+      "reason_grade": "최고관리자",
+      "reason_scope": "관리 권한 범위 밖",
+      "reason_last_admin": "마지막 관리자(본인)",
+      "reason_last_role": "역할이 하나도 남지 않음",
+      "close": "닫기"
+    },
     "pagination_info": "총 {{total}}명 중 {{from}}-{{to}}명 표시",
     "total_count": "총 {{count}}개",
     "per_page": "{{count}}개",
@@ -1060,6 +1079,9 @@
     "description": "관리자 사이드바 메뉴 구조를 관리하고 순서를 변경할 수 있습니다.",
     "add_menu": "메뉴 추가",
     "select_menu_hint": "왼쪽 목록에서 메뉴를 선택하세요",
+    "list_roles_label": "부여된 역할",
+    "list_roles_more": "외 {{count}}개",
+    "list_roles_none": "역할 없음",
     "menu_list_title": "관리자 메뉴 목록",
     "menu_info_title": "메뉴 정보",
     "new_menu_title": "새 메뉴 추가",
@@ -1088,7 +1110,7 @@
       "access_permission": "접근 권한",
       "permission": "접근 권한",
       "admin_only": "관리자",
-      "all_roles": "모든 역할",
+      "no_roles": "지정된 역할 없음 — 관리자만 복구 가능",
       "creator": "생성자",
       "creator_info": "생성자 정보",
       "created_by": "생성자",
@@ -1120,7 +1142,7 @@
       "roles": "접근 역할",
       "roles_placeholder": "역할을 선택하세요...",
       "roles_no_options": "선택 가능한 역할이 없습니다",
-      "roles_hint": "이 메뉴에 접근할 수 있는 역할을 선택합니다. 선택하지 않으면 모든 역할이 접근할 수 있습니다."
+      "roles_hint": "이 메뉴에 접근할 역할을 고릅니다. 관리자 역할은 항상 포함됩니다."
     },
     "modals": {
       "delete_title": "메뉴 삭제",
@@ -1135,6 +1157,27 @@
       "updated": "메뉴가 수정되었습니다.",
       "deleted": "메뉴가 삭제되었습니다.",
       "status_changed": "메뉴 상태가 변경되었습니다."
+    },
+    "bulk": {
+      "enter": "여러 개 선택",
+      "exit": "선택 모드 끝내기",
+      "panel_title": "선택한 메뉴에 역할 일괄 적용",
+      "selected_count": "선택한 메뉴 {{count}}개",
+      "more_count": "외 {{count}}개",
+      "empty_selection": "왼쪽 목록에서 역할을 적용할 메뉴를 체크하세요.",
+      "roles_label": "역할",
+      "roles_placeholder": "역할을 선택하세요...",
+      "action_label": "작업",
+      "action_add": "역할 추가",
+      "action_remove": "역할 제거",
+      "rule_hint": "하위 메뉴를 고르면 상위 메뉴에도 추가됩니다. 상위 메뉴에서 빼면 하위 메뉴에서도 빠집니다. 관리자 역할은 뺄 수 없습니다.",
+      "apply": "적용",
+      "clear": "선택 해제",
+      "confirm_title": "메뉴 역할 일괄 적용",
+      "confirm_add": "메뉴 {{count}}개에 역할 {{roles}} 을(를) 추가합니다.",
+      "confirm_remove": "메뉴 {{count}}개에서 역할 {{roles}} 을(를) 제거합니다.",
+      "confirm_auto_parent": "하위 메뉴만 고른 상위 메뉴 {{count}}개에도 함께 추가됩니다.",
+      "confirm_auto_child": "고른 상위 메뉴의 하위 메뉴 {{count}}개에서도 함께 빠집니다."
     }
   },
   "roles": {
@@ -1190,7 +1233,14 @@
       "permissions_section": "권한 설정",
       "permissions_selected_suffix": "개 선택됨",
       "permissions_hint": "이 역할에 부여할 권한을 선택하세요. 그룹을 클릭하여 펼치거나 접을 수 있습니다.",
-      "no_permissions_in_type": "등록된 권한이 없습니다."
+      "no_permissions_in_type": "등록된 권한이 없습니다.",
+      "menus_section": "접근 가능 메뉴",
+      "menus_hint": "체크한 메뉴가 이 역할의 관리자 메뉴에 보입니다. 하위 메뉴를 고르면 상위 메뉴도 함께 선택되고, 상위 메뉴를 빼면 하위 메뉴도 함께 빠집니다.",
+      "menus_readonly_hint": "메뉴 수정 권한이 없어 볼 수만 있습니다.",
+      "menus_admin_locked_hint": "관리자 역할은 모든 메뉴에 항상 접근합니다.",
+      "menus_select_all": "전체 선택",
+      "menus_clear_all": "전체 해제",
+      "menus_inactive_badge": "비활성"
     },
     "modals": {
       "delete_title": "역할 삭제",
@@ -3956,7 +4006,8 @@
       "delete_confirm_modal": "회원 삭제 확인",
       "error_modal": "오류 안내",
       "bulk_block_confirm_modal": "회원 일괄 차단",
-      "bulk_withdraw_confirm_modal": "회원 일괄 탈퇴"
+      "bulk_withdraw_confirm_modal": "회원 일괄 탈퇴",
+      "bulk_roles_modal": "회원 역할 일괄 변경"
     },
     "admin_identity_logs": {
       "identity_log_detail_modal": "본인인증 로그 상세",
@@ -3987,7 +4038,8 @@
     },
     "identity_challenge_modal": "본인인증",
     "admin_menu_list": {
-      "delete_confirm_modal": "메뉴 삭제 확인"
+      "delete_confirm_modal": "메뉴 삭제 확인",
+      "bulk_roles_confirm_modal": "메뉴 역할 일괄 적용 확인"
     },
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "미리보기 레이아웃 선택",

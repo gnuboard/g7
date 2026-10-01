@@ -1,0 +1,34 @@
+feature: 게시판 관리자·스텝 일괄 지정
+
+description: |
+  한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을 하나씩 저장해야 했다.
+  게시판 환경설정 「기본값」 탭에 일괄 지정 카드를 둔다.
+
+  경로: POST /api/modules/sirsoft-board/admin/boards/bulk-members
+        {apply_all, board_ids, user_uuids, member_type, mode} → BoardService::bulkUpdateBoardMembers()
+
+  규칙:
+    - 대상 게시판은 전체 또는 고른 목록, 범위(scope) 밖 게시판은 skipped(scope)
+    - 관리자가 0명이 되는 게시판은 skipped(last_manager) — 게시판 폼의 min:1 규칙과 같다
+    - 바뀐 게시판마다 기존 syncBoardRoleUsers() 를 타 역할 멤버십·캐시·훅이 단건 저장과 같다
+    - 전체를 한 트랜잭션으로 묶어 실패 시 모두 되돌린다
+
+axes:
+  member_type: [manager, step]
+  mode: [add, remove]
+  target: [all, selected]
+
+effects:
+  - last_manager_board_skipped
+  - scope_filtered
+  - role_membership_synced
+  - rollback_on_failure
+  - bulk_members_labels_resolve_in_both_locales
+  - bulk_members_inputs_do_not_pollute_settings_form
+  - bulk_members_card_renders_on_defaults_tab
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardBulkMembersTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-i18n.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-section.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-render.test.tsx

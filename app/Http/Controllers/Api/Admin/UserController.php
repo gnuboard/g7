@@ -8,6 +8,7 @@ use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\User\BulkUpdateUserRolesRequest;
 use App\Http\Requests\User\BulkUpdateUserStatusRequest;
 use App\Http\Requests\User\CheckEmailRequest;
 use App\Http\Requests\User\CreateUserRequest;
@@ -359,6 +360,34 @@ class UserController extends AdminBaseController
             return $this->error('user.bulk_update_status_failed', 422, $e->errors());
         } catch (Exception $e) {
             return $this->error('user.bulk_update_status_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 여러 회원에게 역할을 한꺼번에 더하거나 뺍니다.
+     *
+     * @param  BulkUpdateUserRolesRequest  $request  회원 UUID·역할 ID·작업(add|remove) 요청
+     * @return JsonResponse 변경 수·제외 수·제외 사유
+     */
+    public function bulkUpdateRoles(BulkUpdateUserRolesRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $result = $this->userService->bulkUpdateRoles($validated['uuids'], $validated['role_ids'], $validated['mode']);
+
+            return $this->success(
+                'user.bulk_roles_updated',
+                $result,
+                200,
+                ['count' => $result['updated_count'], 'skipped' => $result['skipped_count']]
+            );
+        } catch (PermissionEscalationException $e) {
+            // 상한 밖 역할 — 요청 전체 거부 (단건 수정과 같은 403)
+            return $this->error('user.bulk_roles_ceiling', 403);
+        } catch (ValidationException $e) {
+            return $this->error('user.bulk_roles_failed', 422, $e->errors());
+        } catch (Exception $e) {
+            return $this->error('user.bulk_roles_failed', 500, $e->getMessage());
         }
     }
 }

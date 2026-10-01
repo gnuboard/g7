@@ -47,6 +47,9 @@ return [
     'activity_log_failed' => 'Failed to retrieve activity log.',
     'bulk_status_updated' => ':count user(s) status updated successfully.',
     'bulk_update_status_failed' => 'Failed to update user status in bulk.',
+    'bulk_roles_updated' => 'Changed roles of :count user(s). (:skipped skipped)',
+    'bulk_roles_failed' => 'Failed to change user roles in bulk.',
+    'bulk_roles_ceiling' => 'Nothing was changed because the selection includes a role with permissions you cannot grant.',
     'last_admin_role_cannot_remove' => 'Cannot remove the admin role because you are the only user with the admin role in the system.',
 
     // Avatar messages

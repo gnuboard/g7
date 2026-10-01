@@ -8,10 +8,10 @@
 
 ## 목차
 
-- [코어](#코어) (583)
+- [코어](#코어) (589)
 - [gnuboard7-hello_module](#gnuboard7-hello_module) (2)
 - [gnuboard7-hello_plugin](#gnuboard7-hello_plugin) (1)
-- [sirsoft-board](#sirsoft-board) (101)
+- [sirsoft-board](#sirsoft-board) (104)
 - [sirsoft-ckeditor5](#sirsoft-ckeditor5) (4)
 - [sirsoft-ecommerce](#sirsoft-ecommerce) (604)
 - [sirsoft-gdpr](#sirsoft-gdpr) (11)
@@ -300,6 +300,7 @@
 | `core.member_notification.before_bulk_delete` | action | 1 |  |
 | `core.member_notification.bulk_delete_validation_rules` | filter | 2 |  |
 | `core.member_notification.index_validation_rules` | filter | 1 |  |
+| `core.menu.after_bulk_update_roles` | action | 4 |  |
 | `core.menu.after_create` | action | 1 |  |
 | `core.menu.after_delete` | action | 1 |  |
 | `core.menu.after_sync_roles` | action | 3 |  |
@@ -307,11 +308,13 @@
 | `core.menu.after_update` | action | 2 |  |
 | `core.menu.after_update_order` | action | 1 |  |
 | `core.menu.after_update_order_flat` | action | 1 |  |
+| `core.menu.before_bulk_update_roles` | action | 3 |  |
 | `core.menu.before_create` | action | 1 |  |
 | `core.menu.before_delete` | action | 1 |  |
 | `core.menu.before_toggle_status` | action | 2 |  |
 | `core.menu.before_update` | action | 2 |  |
 | `core.menu.before_update_order` | action | 1 |  |
+| `core.menu.bulk_roles_validation_rules` | filter | 2 |  |
 | `core.menu.create_validation_rules` | filter | 2 |  |
 | `core.menu.filter_create_data` | filter | 1 |  |
 | `core.menu.filter_update_data` | filter | 2 |  |
@@ -578,6 +581,7 @@
 | `core.templates.updated` | action | 1 | deprecated → `core.templates.after_version_update` |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
+| `core.user.after_bulk_update_roles` | action | 4 |  |
 | `core.user.after_create` | action | 2 |  |
 | `core.user.after_delete` | action | 1 |  |
 | `core.user.after_list` | action | 1 |  |
@@ -585,11 +589,13 @@
 | `core.user.after_show` | action | 1 |  |
 | `core.user.after_update` | action | 3 |  |
 | `core.user.after_withdraw` | action | 1 |  |
+| `core.user.before_bulk_update_roles` | action | 3 |  |
 | `core.user.before_create` | action | 1 |  |
 | `core.user.before_delete` | action | 1 |  |
 | `core.user.before_unlock` | action | 1 |  |
 | `core.user.before_update` | action | 2 |  |
 | `core.user.before_withdraw` | action | 1 |  |
+| `core.user.bulk_update_roles_validation_rules` | filter | 2 |  |
 | `core.user.bulk_update_status_validation_rules` | filter | 2 |  |
 | `core.user.change_password_validation_rules` | filter | 2 |  |
 | `core.user.check_email_validation_rules` | filter | 2 |  |
@@ -646,16 +652,19 @@
 | `sirsoft-board.author_ip.after_prune` | action | 2 |  |
 | `sirsoft-board.author_ip.before_prune` | action | 1 |  |
 | `sirsoft-board.board.after_add_to_menu` | action | 2 |  |
+| `sirsoft-board.board.after_bulk_members` | action | 5 |  |
 | `sirsoft-board.board.after_create` | action | 2 |  |
 | `sirsoft-board.board.after_delete` | action | 1 |  |
 | `sirsoft-board.board.after_remove_from_menu` | action | 2 |  |
 | `sirsoft-board.board.after_update` | action | 3 |  |
 | `sirsoft-board.board.before_add_to_menu` | action | 1 |  |
+| `sirsoft-board.board.before_bulk_members` | action | 5 |  |
 | `sirsoft-board.board.before_copy` | action | 1 |  |
 | `sirsoft-board.board.before_create` | action | 1 |  |
 | `sirsoft-board.board.before_delete` | action | 1 |  |
 | `sirsoft-board.board.before_remove_from_menu` | action | 1 |  |
 | `sirsoft-board.board.before_update` | action | 2 |  |
+| `sirsoft-board.board.bulk_members_validation_rules` | filter | 2 |  |
 | `sirsoft-board.board.filter_copy_data` | filter | 2 |  |
 | `sirsoft-board.board.filter_create_data` | filter | 1 |  |
 | `sirsoft-board.board.filter_menu_data` | filter | 2 |  |
