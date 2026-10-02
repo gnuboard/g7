@@ -8,6 +8,7 @@ import { CodeEditor, CodeEditorCommand, CodeEditorMarker, CodeEditorReveal } fro
 import { FileTabs, FileTabItem } from './FileTabs';
 import { useCodeEditorShortcuts, CodeShortcutHandlers } from '../../hooks/useCodeEditorShortcuts';
 import { useFileDrafts } from '../../hooks/useFileDrafts';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
 import {
   CODE_EDITOR_SHORTCUTS,
   CODE_SHORTCUT_GROUP_LABEL,
@@ -64,8 +65,8 @@ export interface CodeWorkspaceProps {
    * 지금 서버에 **실제로 있는** 파일 키 전체.
    *
    * 초안은 파일보다 오래 산다 — 지우거나 이름을 바꾼 뒤에도, 남이 지운 뒤에도 남는다.
-   * 그래서 복원이 «없는 파일» 의 탭을 세우고, 그 탭을 누르면 404 가 났다(실측 2026-09-12,
-   * PO 제보). 이 목록으로 그런 키를 가려 **서버를 부르지 않고** 복원한 편집분을 읽기 전용으로
+   * 그래서 복원이 «없는 파일» 의 탭을 세우고, 그 탭을 누르면 404 가 났다(실측 2026-09-12).
+   * 이 목록으로 그런 키를 가려 **서버를 부르지 않고** 복원한 편집분을 읽기 전용으로
    * 보여 준 뒤, 새 이름으로 살리거나 버리게 한다.
    *
    * 비어 있으면(목록을 아직 못 받았으면) 아무것도 «없는 파일» 로 판정하지 않는다 — 로딩
@@ -106,7 +107,7 @@ export interface CodeWorkspaceProps {
    * 없는 파일의 복원분을 **새 이름으로** 살릴 때 — `(본문)` 을 들고 생성 흐름으로 넘긴다.
    *
    * 조용히 버리면 사용자가 쓴 글이 사라지고, 그대로 두면 저장할 수 없는 탭이 남는다.
-   * 그래서 원본이 없어졌다는 사실을 알리고 내용은 지키는 쪽으로 연다(PO 결정 2026-09-12).
+   * 그래서 원본이 없어졌다는 사실을 알리고 내용은 지키는 쪽으로 연다.
    */
   onSaveAs?: (event: { target: { value: string } }) => void;
   onSaveAll?: () => void;
@@ -135,9 +136,16 @@ const FONT_SIZE_SUFFIX = '.fontSize';
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 20;
 
-/** 기기 기본 글자 크기 — 데스크톱 14 / 모바일 13 (§7.6) */
-const deviceDefaultFontSize = (): number =>
-  typeof window !== 'undefined' && window.innerWidth < 768 ? 13 : 14;
+/** 모바일 경계 — 이 폭 미만이면 글자를 줄이고 줄바꿈을 기본으로 켠다 */
+const MOBILE_MAX_WIDTH_EXCLUSIVE = 768;
+
+/**
+ * 기기 기본 글자 크기 — 데스크톱 14 / 모바일 13 (§7.6)
+ *
+ * @param width 렌더 폭(`useRenderWidth` — Provider 폭 우선, 편집기 미리보기에서는 기기 폭, #141)
+ * @returns 글자 크기(px)
+ */
+const deviceDefaultFontSize = (width: number): number => (width < MOBILE_MAX_WIDTH_EXCLUSIVE ? 13 : 14);
 
 /** 문서가 다크 테마인지 — 차이 보기 창은 여는 순간의 테마를 따른다. */
 const isDarkDocument = (): boolean =>
@@ -213,6 +221,8 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   editorAttrs,
   children,
 }) => {
+  // 렌더 폭 — 기기 기본값(글자 크기·줄바꿈)을 고른다. 창 폭이 아니라 Provider 폭이 우선이다(#141).
+  const renderWidth = useRenderWidth();
   const [buffers, setBuffers] = useState<Record<string, Buffer>>({});
 
   /**
@@ -232,7 +242,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   // 을 주지 않으면 기기 폭으로 정한다 — 엔진 표현식에는 `window` 가 없어 그 판정을 레이아웃에 둘 수 없다.
   // 사용자가 한 번이라도 토글했으면 그 값이 기기 기본값을 이긴다.
   const [wordWrap, setWordWrap] = useState<boolean>(() =>
-    readWordWrap(draftNamespace, defaultWordWrap ?? (typeof window !== 'undefined' && window.innerWidth < 768))
+    readWordWrap(draftNamespace, defaultWordWrap ?? renderWidth < MOBILE_MAX_WIDTH_EXCLUSIVE)
   );
   const [draftBannerOpen, setDraftBannerOpen] = useState(true);
 
@@ -246,22 +256,11 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   /** 충돌 바의 [차이 보기] — 내 편집분과 서버 본문을 나란히 보여 주는 창 (계획서 §7.7 표 7행) */
   const [diffOpen, setDiffOpen] = useState(false);
 
-  // 모바일은 글자를 한 단계 줄인다(§7.6 — 데스크톱 14 / 모바일 13). 창 폭이 바뀌면 따라간다.
-  const [deviceFontSize, setDeviceFontSize] = useState<number>(deviceDefaultFontSize);
+  // 모바일은 글자를 한 단계 줄인다(§7.6 — 데스크톱 14 / 모바일 13). 렌더 폭이 바뀌면 따라간다.
+  const deviceFontSize = deviceDefaultFontSize(renderWidth);
   // 사용자가 `Ctrl+ +/-` 로 고른 크기(§7.6 — 12~20px). 적혀 있으면 기기 기본값보다 우선한다.
   const [fontSizeOverride, setFontSizeOverride] = useState<number | null>(() => readFontSize(draftNamespace));
   const editorFontSize = fontSizeOverride ?? deviceFontSize;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const onResize = (): void => setDeviceFontSize(deviceDefaultFontSize());
-    window.addEventListener('resize', onResize);
-
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   const adjustFontSize = useCallback(
     (delta: number) => {
@@ -444,7 +443,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
        * 편집기는 제어 컴포넌트라 `value` prop 이 바뀌면 그대로 change 를 올려 준다. 파일을 열어
        * 서버 본문이 도착하기 전에는 이 파일의 버퍼가 아직 없어 빈 값이 들어오는데, 그것을 편집으로
        * 치면 **빈 본문으로 `markup-compile` 이 돌아** 탭을 열 때마다 «변환할 마크업(.g7.html)이
-       * 필요합니다» 오류 배너가 떴다(PO 제보 2026-09-12). 다른 탭에 갔다 오면 제대로 된 본문으로
+       * 필요합니다» 오류 배너가 떴다(2026-09-12 확인). 다른 탭에 갔다 오면 제대로 된 본문으로
        * 다시 돌아 사라지는 것도 같은 이유다.
        *
        * 버퍼가 없거나 값이 그대로면 편집이 아니다 — 초안도 적지 않고 `onUserEdit` 도 올리지 않는다.

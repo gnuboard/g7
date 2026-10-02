@@ -65,6 +65,7 @@ import { useEditorRoutes } from './hooks/useEditorRoutes';
 import { useEditorUrlSync } from './hooks/useEditorUrlSync';
 import { usePreviewDarkIsolation } from './hooks/usePreviewDarkIsolation';
 import { usePreviewBodyScrollIsolation } from './hooks/usePreviewBodyScrollIsolation';
+import { usePreviewMediaIsolation } from './hooks/usePreviewMediaIsolation';
 import { useLayoutDocument } from './hooks/useLayoutDocument';
 import { useExtensionDocument } from './hooks/useExtensionDocument';
 import { adaptExtensionToLayoutDocument } from './hooks/adaptExtensionToLayoutDocument';
@@ -441,6 +442,11 @@ function LayoutEditorChromeBody({
   // Modal composite(isOpen=true 강제)가 `document.body.style.overflow='hidden'` 락을 걸어
   // 캔버스(브라우저 단일 스크롤) 스크롤바가 사라진다. 편집기 생존 동안 인라인 락을 무력화.
   usePreviewBodyScrollIsolation();
+
+  // CSS 매체 격리 — 프리뷰가 동일 문서의 div 라 폭 `@media`·`vw` 가 브라우저 창 폭으로 판정된다.
+  // 편집기 생존 동안 폭 조건을 프리뷰 프레임 컨테이너 기준으로 나눠 두고 언마운트 때 되돌린다(#141).
+  // usePreviewMediaIsolation 참조.
+  usePreviewMediaIsolation();
 
   // 라우트 매칭 — selectedNode 의 navigate.path/A.href 가 라우트 트리에 있는지 판정
   const resolveRouteMatch = useCallback(

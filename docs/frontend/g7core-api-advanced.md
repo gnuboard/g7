@@ -328,14 +328,27 @@ G7Core.renderItemChildren(
 | `itemContext` | object | 현재 아이템 컨텍스트 (row, item 등) |
 | `componentMap` | object | 컴포넌트 이름 → 컴포넌트 매핑 |
 | `keyPrefix` | string | React key 접두사 (선택) |
-| `options` | object | 추가 옵션 (선택) |
+| `options` | object | 추가 옵션 (선택) — `componentContext`·`renderEnv`·`responsiveWidth`·`isEditMode`·엔진·`actionDispatcher` |
+
+#### 렌더 환경 (engine-v1.75.2+)
+
+래퍼는 번역 컨텍스트·엔진·액션 처리기·컴포넌트 목록을 **명시 `options` > 렌더 환경 > 호스트 값** 순서로 고른다.
+렌더 환경은 `options.renderEnv` 또는 `options.componentContext.renderEnvRef.current` 다. 엔진이 컴포넌트에
+자동으로 넘기는 `__componentContext.renderEnvRef` 가 그 컴포넌트를 그린 렌더러의 환경(폭·콘텐츠 언어·액션
+처리기·컴포넌트 레지스트리·편집 모드)을 담는다. 렌더 환경에 레지스트리가 있으면 그 컴포넌트가 `componentMap`
+의 같은 이름보다 우선한다.
+
+레이아웃 편집기 미리보기는 같은 문서 안에서 그려지므로, 렌더 환경을 넘기지 않으면 셀이 미리보기 기기 폭 대신
+브라우저 창 폭으로 `responsive` 분기를 고르고 관리자 화면 언어로 번역된다. 일반 화면에서는 결과가 같다.
 
 ### 사용 예시
 
 ```tsx
 // CardGrid 컴포넌트에서 사용
-const CardGrid: React.FC<Props> = ({ items, cellChildren }) => {
+const CardGrid: React.FC<Props> = ({ items, cellChildren, __componentContext }) => {
   const componentMap = G7Core.getComponentMap();
+  // 셀의 _local 을 병합할 필요가 없으므로 상태를 병합하지 않는 renderEnv 만 넘긴다
+  const renderEnv = __componentContext?.renderEnvRef?.current;
 
   return (
     <Div className="grid">
@@ -345,7 +358,8 @@ const CardGrid: React.FC<Props> = ({ items, cellChildren }) => {
             cellChildren,
             { row: item, index },
             componentMap,
-            `card_${index}`
+            `card_${index}`,
+            { renderEnv }
           )}
         </Div>
       ))}
@@ -373,7 +387,14 @@ const componentMap = G7Core.getComponentMap();
 G7Core.renderComponentLayout(
   layoutDefs: ComponentDef[] | undefined,
   itemContext: Record<string, any>,
-  keyPrefix?: string
+  keyPrefix?: string,
+  options?: {
+    renderEnv?: RenderEnvironment | null;
+    componentContext?: { renderEnvRef?: { current: RenderEnvironment | null } };
+    responsiveWidth?: number;
+    translationContext?: TranslationContext;
+    actionDispatcher?: any;
+  }
 ): React.ReactNode
 ```
 
@@ -384,12 +405,14 @@ G7Core.renderComponentLayout(
 | `layoutDefs` | array | component_layout 정의 배열 |
 | `itemContext` | object | 항목별 컨텍스트 (item, index, isSelected 등) |
 | `keyPrefix` | string | React key prefix (선택) |
+| `options` | object | 렌더 환경과 명시값 (선택, engine-v1.75.2+) — 우선순위는 위 「렌더 환경」 절과 같다 |
 
 #### 사용 예시
 
 ```tsx
 // RichSelect 컴포넌트에서 사용
-const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs }) => {
+const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs, __componentContext }) => {
+  const renderEnv = __componentContext?.renderEnvRef?.current;
   return (
     <Div>
       {options.map((option, index) => (
@@ -397,7 +420,8 @@ const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs }) => {
           {G7Core.renderComponentLayout(
             __componentLayoutDefs?.item,
             { item: option, index, isSelected: selectedValue === option.value },
-            `item-${index}`
+            `item-${index}`,
+            { renderEnv }
           )}
         </Div>
       ))}
@@ -417,9 +441,17 @@ G7Core.renderExpandContent(config: {
   children: ComponentDef[];
   row: any;
   expandContext?: Record<string, any>;
-  componentContext?: { state?: Record<string, any>; setState?: Function };
+  componentContext?: {
+    state?: Record<string, any>;
+    setState?: Function;
+    stateRef?: { current: Record<string, any> };
+    computedRef?: { current: Record<string, any> };
+    renderEnvRef?: { current: RenderEnvironment | null };
+  };
   componentMap?: Record<string, React.ComponentType>;
   keyPrefix: string;
+  renderEnv?: RenderEnvironment | null;
+  responsiveWidth?: number;
 }): React.ReactNode
 ```
 
@@ -430,9 +462,11 @@ G7Core.renderExpandContent(config: {
 | `children` | array | 렌더링할 expandChildren 컴포넌트 정의 |
 | `row` | object | 현재 행 데이터 |
 | `expandContext` | object | 확장 컨텍스트 (바인딩 표현식 자동 평가) |
-| `componentContext` | object | 부모 컴포넌트 컨텍스트 (state, setState) |
+| `componentContext` | object | 부모 컴포넌트 컨텍스트 (state, setState). `renderEnvRef` 가 있으면 렌더 환경으로 쓴다 |
 | `componentMap` | object | 컴포넌트 맵 (없으면 자동 조회) |
 | `keyPrefix` | string | React key prefix |
+| `renderEnv` | object | 렌더 환경 명시값 (선택, engine-v1.75.2+) |
+| `responsiveWidth` | number | `responsive` 분기 폭 명시값 (선택, engine-v1.75.2+) |
 
 #### 동작 원리
 
@@ -592,19 +626,27 @@ useEffect(() => {
 > 상세 내용: [responsive-layout.md](responsive-layout.md)
 
 ```typescript
-// 현재 브레이크포인트 조회
-const breakpoint = G7Core.ResponsiveManager.getCurrentBreakpoint();
-// 'sm', 'md', 'lg', 'xl', '2xl'
+// 현재 브라우저 창 폭 (전역 싱글톤)
+const width = G7Core.ResponsiveManager.getWidth();
 
-// 모바일 여부
-const isMobile = G7Core.ResponsiveManager.isMobile();
+// responsive 키 중 주어진 폭에 맞는 것 (프리셋·커스텀 범위 키)
+const key = G7Core.ResponsiveManager.getMatchingKey({ mobile: {}, desktop: {} }, width); // 'mobile' | 'desktop' | null
+
+// 창 폭 변화 구독
+const unsubscribe = G7Core.ResponsiveManager.subscribe((w) => { /* ... */ });
 ```
+
+> `ResponsiveManager` 는 **브라우저 창 폭**이다. 컴포넌트가 화면 폭으로 형태를 고를 때는 아래 `useResponsive()`
+> 를 쓴다 — 레이아웃 편집기 미리보기에서는 창 폭과 미리보기 기기 폭이 다르다.
 
 ### G7Core.useResponsive (React Hook)
 
 ```tsx
-const { breakpoint, isMobile, isTablet, isDesktop } = G7Core.useResponsive();
+const { width, isMobile, isTablet, isDesktop, matchedPreset } = G7Core.useResponsive();
+// matchedPreset: 'mobile' | 'tablet' | 'desktop'
 ```
+
+렌더 폭(Provider 폭)을 돌려준다. 일반 화면에서는 창 폭과 같고, 레이아웃 편집기 미리보기에서는 고른 기기 폭이다.
 
 ### G7Core.TransitionManager
 
@@ -987,8 +1029,8 @@ declare global {
 
       // 렌더링 헬퍼
       renderItemChildren: (children: any[], itemContext: Record<string, any>, componentMap: Record<string, any>, keyPrefix?: string, options?: any) => React.ReactNode[];
-      renderComponentLayout: (layoutDefs: any[] | undefined, itemContext: Record<string, any>, keyPrefix?: string) => React.ReactNode;
-      renderExpandContent: (config: { children: any[]; row: any; expandContext?: Record<string, any>; componentContext?: any; componentMap?: Record<string, any>; keyPrefix: string }) => React.ReactNode;
+      renderComponentLayout: (layoutDefs: any[] | undefined, itemContext: Record<string, any>, keyPrefix?: string, options?: { renderEnv?: any; componentContext?: any; responsiveWidth?: number; translationContext?: any; actionDispatcher?: any }) => React.ReactNode;
+      renderExpandContent: (config: { children: any[]; row: any; expandContext?: Record<string, any>; componentContext?: any; componentMap?: Record<string, any>; keyPrefix: string; renderEnv?: any; responsiveWidth?: number }) => React.ReactNode;
       getComponentMap: () => Record<string, React.ComponentType>;
 
       // 스타일 헬퍼
@@ -1031,7 +1073,7 @@ declare global {
       ) => [T, (value: T | ((prev: T) => T)) => void];
       shallowArrayEqual: <T>(a: T[], b: T[]) => boolean;
       shallowObjectEqual: <T extends Record<string, any>>(a: T, b: T) => boolean;
-      useResponsive: () => ResponsiveState;
+      useResponsive: () => { width: number; isMobile: boolean; isTablet: boolean; isDesktop: boolean; matchedPreset: 'mobile' | 'tablet' | 'desktop' };
       useTransitionState: () => TransitionState;
       useTranslation: () => { t: TranslationFunction };
 

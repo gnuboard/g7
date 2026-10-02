@@ -281,6 +281,12 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
 
+**화면 폭 조건은 선언하지 않는다.** 다크와 달리 화면 폭은 편집기가 자동으로 격리한다 — 편집기가 떠 있는 동안
+문서의 스타일시트에서 폭 `@media` 와 `vw` 를 프리뷰 영역 폭 기준으로 나눠 두고, 편집기를 벗어나면 원래대로
+돌린다. 설정 키는 없고 CSS 제작 방식(일반 CSS·Bootstrap·Tailwind·CSS-in-JS)과 무관하다. 특정 시트를 빼려면
+그 `<style>`·`<link>` 에 `data-g7le-no-media-isolation` 속성을 단다. 컴포넌트 코드의 폭 분기와 바뀌지 않는 경우는
+[responsive-layout.md 「레이아웃 편집기 미리보기에서의 화면 폭」](../frontend/responsive-layout.md#레이아웃-편집기-미리보기에서의-화면-폭) 을 본다.
+
 ## 편집기 확장점 — `G7Core.layoutEditor`
 
 템플릿은 커스텀 속성 위젯·노드 에디터·캔버스 인플레이스 오버레이를 코어 레지스트리에 등록해, 코어 수정 없이 자기 컴포넌트의 편집 UI 를 확장한다. 코어는 위젯명/kind 만 디스패치하고(메커니즘만 제공), 등록된 핸들러를 찾아 렌더한다.
