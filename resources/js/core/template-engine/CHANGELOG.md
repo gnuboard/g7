@@ -5,6 +5,19 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.75.2] - 2026-10-02
+
+### Fixed
+
+- 같은 동작 순서(`sequence`, API 성공 분기) 안에서 창을 닫고 바로 다른 창을 열면 방금 닫은 창이 다시 나타나던 문제를 고쳤습니다. `closeModal`·`openModal` 이 순서 시작 시점에 복사해 둔 `_global.modalStack` 을 읽어, 닫기는 `[]` 를 쓰고 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 썼습니다(관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창, #712 실측). 두 핸들러가 `G7Core.state.get()` 의 최신 스택을 읽습니다(`ActionDispatcher::latestModalStack()`). 문맥에 전역 사본이 없는 호출(액션 문맥 없이 `G7Core.dispatch()` 를 부른 확장 JS)은 종전대로 빈 스택에서 시작합니다.
+- `G7Core.modal.isOpen()`·`getStack()` 이 실제 화면에서 늘 `false`·`[]` 를 돌려주던 문제를 고쳤습니다. `G7Core.state.get()` 은 `_global` 의 내용물을 바로 돌려주는데 두 함수는 `state._global.modalStack` 을 읽었습니다.
+
+## [engine-v1.75.1] - 2026-10-01
+
+### Fixed
+
+- 확장자를 가로채는 서버에서 정적 게시본이 없을 때(정적 게시를 끈 운영·개발 환경·버전이 바뀐 직후 첫 방문) 템플릿 자산 디렉토리 URL(`G7Core.asset.templateDir`)이 경로 형태라 404 가 나, 코드 편집기가 늘 일반 입력창으로 떨어지던 문제. 확장자 없는 모드에서는 경로를 인코딩하지 않은 `?file=` 디렉토리를 돌려주고, 쿼리가 있는 URL 에 `.js` 를 붙이지 않는 AMD 로더의 모듈 요청은 템플릿 자산 서빙이 같은 이름의 `.js` 파일로 찾는다 (assetUrl.ts)
+
 ## [engine-v1.75.0] - 2026-10-01
 
 ### Fixed

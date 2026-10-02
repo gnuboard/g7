@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Models\Plugin;
 use App\Services\PluginService;
 use Illuminate\Console\Command;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
  */
 class RefreshPluginLayoutCommand extends Command
 {
+    use RendersLayoutSyncResult;
     use SelectsLayoutInstallSource;
 
     /**
@@ -32,6 +34,11 @@ class RefreshPluginLayoutCommand extends Command
      */
     protected $description = '플러그인 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
+    /**
+     * 커맨드를 생성합니다.
+     *
+     * @param  PluginService  $pluginService  레이아웃 갱신을 수행하는 서비스
+     */
     public function __construct(
         private PluginService $pluginService
     ) {
@@ -40,6 +47,8 @@ class RefreshPluginLayoutCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -69,6 +78,9 @@ class RefreshPluginLayoutCommand extends Command
 
     /**
      * 특정 플러그인의 레이아웃을 갱신합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return int 종료 코드
      */
     private function refreshSingle(string $identifier): int
     {
@@ -78,6 +90,7 @@ class RefreshPluginLayoutCommand extends Command
 
         if ($result['success'] ?? false) {
             $this->info("✅ 플러그인 '{$identifier}' 레이아웃 갱신 완료");
+            $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
             $this->line("   생성: {$result['created']}, 수정: {$result['updated']}, 삭제: {$result['deleted']}");
             Log::info('플러그인 레이아웃 갱신 완료', [
                 'plugin' => $identifier,
@@ -94,6 +107,8 @@ class RefreshPluginLayoutCommand extends Command
 
     /**
      * 모든 활성 플러그인의 레이아웃을 갱신합니다.
+     *
+     * @return int 종료 코드
      */
     private function refreshAll(): int
     {
@@ -118,6 +133,7 @@ class RefreshPluginLayoutCommand extends Command
 
                 if ($result['success'] ?? false) {
                     $this->info("  ✅ {$pluginIdentifier} 완료");
+                    $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
                     $this->warn("  ⚠️ {$pluginIdentifier} 실패");

@@ -719,10 +719,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function getTrashedByModule(string $moduleIdentifier): Collection
     {
-        return TemplateLayout::onlyTrashed()
-            ->where('source_type', LayoutSourceType::Module)
-            ->where('source_identifier', $moduleIdentifier)
-            ->get();
+        return $this->getTrashedBySource($moduleIdentifier, LayoutSourceType::Module);
     }
 
     /**
@@ -733,8 +730,71 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function softDeleteByModule(string $moduleIdentifier): int
     {
-        $layouts = TemplateLayout::where('source_type', LayoutSourceType::Module)
-            ->where('source_identifier', $moduleIdentifier)
+        return $this->softDeleteBySource($moduleIdentifier, LayoutSourceType::Module);
+    }
+
+    /**
+     * 특정 모듈의 레이아웃을 영구 삭제합니다 (soft delete 포함).
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return int 삭제된 레코드 수
+     */
+    public function forceDeleteByModule(string $moduleIdentifier): int
+    {
+        return $this->forceDeleteBySource($moduleIdentifier, LayoutSourceType::Module);
+    }
+
+    /**
+     * 특정 모듈의 레이아웃 개수를 반환합니다 (soft delete 포함).
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return int 레이아웃 개수
+     */
+    public function countByModule(string $moduleIdentifier): int
+    {
+        return $this->countBySource($moduleIdentifier, LayoutSourceType::Module);
+    }
+
+    /**
+     * 특정 모듈의 soft delete된 레이아웃을 복원합니다.
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return int 복원된 레코드 수
+     */
+    public function restoreByModule(string $moduleIdentifier): int
+    {
+        return $this->restoreBySource($moduleIdentifier, LayoutSourceType::Module);
+    }
+
+    /**
+     * 출처(모듈·플러그인)의 soft delete 된 레이아웃을 조회합니다.
+     *
+     * 모듈 전용이던 `*ByModule` 을 플러그인 생명주기도 써서, 플러그인 레이아웃은 정리되지 않고 같은 식별자의
+     * 모듈 행이 대신 지워질 수 있었다(#712) — 출처 타입을 반드시 받는다.
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return Collection soft delete 된 레이아웃 컬렉션
+     */
+    public function getTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection
+    {
+        return TemplateLayout::onlyTrashed()
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
+            ->get();
+    }
+
+    /**
+     * 출처의 레이아웃을 soft delete 합니다 (모델 이벤트가 돌도록 행 단위로 지운다).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int soft delete 된 레코드 수
+     */
+    public function softDeleteBySource(string $identifier, LayoutSourceType $sourceType): int
+    {
+        $layouts = TemplateLayout::where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
             ->get();
 
         $deletedCount = 0;
@@ -747,50 +807,51 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 특정 모듈의 레이아웃을 영구 삭제합니다 (soft delete 포함).
+     * 출처의 soft delete 된 레이아웃을 복원합니다.
      *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return int 삭제된 레코드 수
-     */
-    public function forceDeleteByModule(string $moduleIdentifier): int
-    {
-        return TemplateLayout::withTrashed()
-            ->where('source_type', LayoutSourceType::Module)
-            ->where('source_identifier', $moduleIdentifier)
-            ->forceDelete();
-    }
-
-    /**
-     * 특정 모듈의 레이아웃 개수를 반환합니다 (soft delete 포함).
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return int 레이아웃 개수
-     */
-    public function countByModule(string $moduleIdentifier): int
-    {
-        return TemplateLayout::withTrashed()
-            ->where('source_type', LayoutSourceType::Module)
-            ->where('source_identifier', $moduleIdentifier)
-            ->count();
-    }
-
-    /**
-     * 특정 모듈의 soft delete된 레이아웃을 복원합니다.
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
      * @return int 복원된 레코드 수
      */
-    public function restoreByModule(string $moduleIdentifier): int
+    public function restoreBySource(string $identifier, LayoutSourceType $sourceType): int
     {
-        $layouts = $this->getTrashedByModule($moduleIdentifier);
-
         $restoredCount = 0;
-        foreach ($layouts as $layout) {
+        foreach ($this->getTrashedBySource($identifier, $sourceType) as $layout) {
             $layout->restore();
             $restoredCount++;
         }
 
         return $restoredCount;
+    }
+
+    /**
+     * 출처의 레이아웃을 영구 삭제합니다 (soft delete 포함).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 삭제된 레코드 수
+     */
+    public function forceDeleteBySource(string $identifier, LayoutSourceType $sourceType): int
+    {
+        return TemplateLayout::withTrashed()
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
+            ->forceDelete();
+    }
+
+    /**
+     * 출처의 레이아웃 개수를 반환합니다 (soft delete 포함).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 레이아웃 개수
+     */
+    public function countBySource(string $identifier, LayoutSourceType $sourceType): int
+    {
+        return TemplateLayout::withTrashed()
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
+            ->count();
     }
 
     /**

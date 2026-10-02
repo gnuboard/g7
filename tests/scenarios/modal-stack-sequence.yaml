@@ -1,0 +1,29 @@
+feature: modal_stack_sequence
+
+description: >
+  같은 동작 순서(`sequence`, API 성공 분기) 안의 closeModal → openModal 이 sequence 시작 시점의
+  `_global.modalStack` 사본을 읽어 방금 닫은 창을 되살리던 결함(engine-v1.75.2, #712 실측 —
+  관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창)과, 같은 조사에서 드러난
+  `G7Core.modal.isOpen()`·`getStack()` 의 상태 모양 오독을 커버한다.
+
+  두 핸들러는 `G7Core.state.get()` 의 최신 스택을 읽는다. 문맥에 전역 사본이 없는 호출(액션 문맥 없이
+  `G7Core.dispatch()` 를 부른 확장 JS)은 범위 밖이라 종전대로 빈 스택에서 시작한다 — 그 고정도 효과로 둔다.
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.modalStack.test.ts
+
+axes:
+  # 순서와 문맥 사본 상태는 서로 독립이 아니다 — 결함은 sequence 안(낡은 사본)에서만, 범위 고정은 사본 없는 문맥에서만 뜻이 있다
+  case: [close_then_open_stale, open_then_close_stale, single_open_no_snapshot, single_open_close_fresh]
+
+effects:
+  - close_then_open_keeps_only_new_modal              # 결함 축 — 닫힌 창이 되살아나지 않는다
+  - open_then_close_removes_the_opened_modal          # 대칭 축 — 낡은 사본의 맨 위(처음 창)를 빼지 않는다
+  - no_snapshot_context_keeps_legacy_empty_stack_start  # 범위 고정 — 문맥 없는 dispatch 경로는 종전 그대로
+  - single_open_close_unchanged                       # 회귀 축 — 단일 액션의 쌓기·중복 무시·빼기
+
+notes: |
+  브라우저 실측(2026-10-02, 이력 `20261001_1624_legacy_json_extension_compat.md` 「엔진 회귀 검사 3회차」):
+  수정 전 스택 `[force]` → `[force, lp]`(언어팩 창을 닫으면 끝난 강제 활성 창이 다시 보임),
+  수정 후 `[force]` → `[lp]` → `[]`. `G7Core.modal.isOpen()`·`getStack()` 은
+  `resources/js/core/__tests__/G7CoreGlobals.test.ts` 와 `g7core-globals-surface.yaml` 이 잠근다.

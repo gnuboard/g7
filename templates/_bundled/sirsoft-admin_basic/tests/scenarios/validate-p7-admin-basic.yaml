@@ -13,7 +13,7 @@ description: |
   ⑤ components.json 에 Badge icon·variant, SearchableDropdown selectedCountLabel 을 싣는다.
 
 axes:
-  case: [specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, prime_timeout, primed, non_korean, en, Badge, SearchableDropdown, status_badge_regression]
+  case: [specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, prime_timeout, primed, prime_slow_after_loader, marker_beyond_model_lines, non_korean, en, Badge, SearchableDropdown, status_badge_regression]
 
 effects:
   - recipient_rule_type_switch_clears_previous_value
@@ -23,6 +23,8 @@ effects:
   - recipient_relation_outside_declaration_warns
   - recipient_multi_select_count_label_is_translated
   - vendored_amd_loader_is_not_injected_twice_after_prime_timeout
+  - prime_waits_for_editor_main_once_loader_script_loaded
+  - marker_beyond_model_lines_is_deferred_not_thrown
   - vendored_amd_loader_runs_exactly_once
   - component_default_texts_come_from_translation_keys
   - component_manifest_lists_every_source_prop
@@ -31,6 +33,7 @@ effects:
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-template-recipient-rule-reset.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.primeTimeout.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.markerRange.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/components/StatusBadgeCodeEditor.i18n.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/components/componentsManifestBadgeDropdownProps.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/StatusBadge.test.tsx

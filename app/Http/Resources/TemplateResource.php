@@ -58,6 +58,9 @@ class TemplateResource extends BaseApiResource
             'core_compatible' => CoreVersionChecker::isCompatible(
                 is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
             ),
+            // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712).
+            // `when()` 대신 펼침으로 둔다 — 리소스를 `toArray()` 로 직접 부르는 경로에서 MissingValue 가 새지 않게.
+            ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
         ];
     }

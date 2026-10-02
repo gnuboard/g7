@@ -928,6 +928,8 @@ class TemplateControllerTest extends TestCase
             'type' => 'admin',
             'status' => 'inactive',
         ]);
+        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 응답 `data.layout_warnings` 에 싣는다 (#712)
+        $mock->shouldReceive('takeLastLayoutWarnings')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
 
         // Act

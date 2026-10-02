@@ -52,6 +52,8 @@ effects:
   - expand_context_mixed_expression_is_interpolated
   - expand_context_single_binding_keeps_its_type
   - extension_asset_urls_are_same_origin_and_composable
+  # #712 후속: 확장자를 가로채는 서버 + 정적 게시본 없음 — AMD 디렉토리도 file 쿼리 형태(서버가 .js 를 메운다)
+  - amd_directory_url_uses_file_query_in_extensionless_mode
   - g7core_namespace_is_created_with_react_globals
   - helper_apis_are_exposed
   - isolated_state_is_read_from_registry_or_action_context

@@ -62,6 +62,8 @@
                   <reload-extensions pluginInfo="{{result.data?.plugin ?? result}}" action="add"/>
                 </parallel>
                 <toast type="success" message="$t:admin.plugins.activate_success"/>
+                <!-- 토글과 같은 활성화 API 다 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록했으면 몇 건인지 경고로 알린다. -->
+                <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                 <close-modal/>
                 <!-- 확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —
                      서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은

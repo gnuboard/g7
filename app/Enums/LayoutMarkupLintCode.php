@@ -103,6 +103,15 @@ enum LayoutMarkupLintCode: string
     case ExtensionComponentNotInstalled = 'extension_component_not_installed';
 
     /**
+     * 편집 대상 템플릿의 컴포넌트 목록에 없는 템플릿 컴포넌트가 저장본에 이미 있었음 (#712).
+     *
+     * 7.0 이 확장 조각을 모든 활성 템플릿에 등록해 그 템플릿에 없는 컴포넌트를 쓴 행이 남아 있다. 편집기는 그런
+     * 행도 저장할 수 있게 저장본에 있던 개수까지 허용하고, 이 템플릿에서는 그려지지 않을 수 있다는 사실만 알린다.
+     * 새로 쓴 미등록 컴포넌트는 종전대로 `component_not_in_registry` 오류다.
+     */
+    case TemplateComponentKept = 'template_component_kept';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

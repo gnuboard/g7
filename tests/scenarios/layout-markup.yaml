@@ -426,6 +426,11 @@ effects:
   - component_name_not_in_registry_is_rejected
   # C3(2026-09-28 결정): 목록에 없는 확장 컴포넌트는 경고일 뿐 저장을 막지 않는다 — 점 없는 템플릿 오타만 오류.
   - missing_extension_component_is_not_a_strong_validation_error
+  # #712 후속: slot 키는 슬롯 래퍼 컴포넌트에 붙는다 — 참조로 보고 건너뛸 것은 partial 뿐.
+  - slot_wrapper_subtree_is_checked_for_registry
+  # 미등록 컴포넌트 오류에 소스 줄·칸 — 편집기 마커가 그 줄에 찍힌다(2026-10-01 실측: 1행에 찍힘)
+  - unregistered_component_error_carries_source_position
+  - include_check_reports_skipped_sources
   - fragment_structure_violation_is_rejected
   - wait_for_pointing_at_never_resolving_source_is_rejected
   - wait_for_pointing_at_missing_id_is_ignored
@@ -1022,6 +1027,16 @@ effects:
   # 소스 파일에는 없고 DB 행에만 있어 코퍼스 게이트가 구조적으로 보지 못했다(설치본 점검이 잡았다).
   - inline_modal_data_sources_round_trip_as_body_data_source_children
   - inlined_node_layout_name_round_trips_as_data_layout_name
+  # #712 — 7.0 JSON 조각 참조 관용과 템플릿 활성화 조각 순서. 조합 축은 `legacy-json-extension-compat.yaml`
+  # 이 소유하고, 두 파일이 게이트 필터 `LayoutMarkup` 에 걸려 여기서도 돌기 때문에 그 마킹을 함께 선언한다.
+  - json_circular_partial_is_tolerated
+  - json_host_invalid_partial_json_is_tolerated
+  - json_host_missing_partial_is_tolerated_and_removed
+  - json_host_outside_layouts_still_fails
+  - json_non_list_slot_missing_partial_becomes_empty_array
+  - markup_partial_inside_json_host_stays_strict
+  - nested_json_partial_missing_reference_is_tolerated
+  - module_fragment_is_registered_on_fresh_template_activation
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1220,3 +1235,7 @@ test_files:
   - tests/Feature/LayoutMarkup/LayoutCheckInstalledCommandTest.php
   - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php
   - tests/Feature/LayoutMarkup/LayoutCompileSelfCheckTest.php
+  # #712 — 네임스페이스 `Tests\Feature\LayoutMarkup` 이라 게이트에서 돌지만 `legacy-json-extension-compat.yaml`
+  # 에만 등재돼 있었다(#712 리베이스 뒤 종료 게이트에서 `test_every_gate_resident_test_is_declared_in_manifest` 가 red).
+  - tests/Feature/LayoutMarkup/LegacyJsonPartialToleranceTest.php
+  - tests/Feature/LayoutMarkup/TemplateActivationFragmentOrderTest.php

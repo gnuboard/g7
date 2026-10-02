@@ -886,6 +886,15 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "7.0 JSON 레이아웃의 깨진 조각 참조는 활성화를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다.",
+                                                        "handler": "toast",
+                                                        "if": "{{(response?.data?.layout_warnings?.length ?? 0) > 0}}",
+                                                        "params": {
+                                                            "type": "warning",
+                                                            "message": "$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"
+                                                        }
+                                                    },
+                                                    {
                                                         "handler": "refetchDataSource",
                                                         "params": {
                                                             "dataSourceId": "plugins"

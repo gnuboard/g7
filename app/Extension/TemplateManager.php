@@ -96,6 +96,13 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected array $bundledTemplates = [];
 
+    /**
+     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고 (#712 — {@see takeLastLayoutWarnings()})
+     *
+     * @var array<int, array{file: string, partial: string, reason: string, message: string}>
+     */
+    protected array $lastLayoutWarnings = [];
+
     protected string $templatesPath;
 
     protected string $pendingTemplatesPath;
@@ -502,8 +509,10 @@ class TemplateManager implements TemplateManagerInterface
                 // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
                 $this->validateSeoConfig($templateName);
 
-                // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사)
+                // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사) — 7.0 JSON 의 깨진 조각 참조는 경고로 모은다 (#712)
+                $this->lastLayoutWarnings = [];
                 $this->validateLayouts($templateName);
+                $this->rememberLayoutWarnings();
 
                 // name과 description 다국어 변환 (역호환성)
                 $name = $this->convertToMultilingual($template['name']);
@@ -709,14 +718,16 @@ class TemplateManager implements TemplateManagerInterface
                 Log::error('템플릿 활성화 중 레이아웃 갱신 실패', ['template' => $templateName, 'error' => $e->getMessage()]);
             }
 
-            // 활성 모듈/플러그인의 레이아웃 확장을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
-            $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
-
-            // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록
+            // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 **먼저** 등록한다 — 아래 조각 등록의 적용 필터(C10)가 호스트
+            // 레이아웃·확장점이 이 템플릿에 실재하는지 보므로, 호스트가 없는 채로 조각을 먼저 등록하면 모듈 화면에 붙는
+            // 조각이 통째로 빠진다(#712 — 새 관리자 템플릿 활성화 시 38 → 27행).
             // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
             // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (keep 규칙 — 템플릿을 바꿨다 돌아와도 운영자 수정 보존, D3)
             app(ModuleManager::class)->registerLayoutsForAllActiveModules();
             app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+
+            // 그 뒤에 활성 모듈/플러그인의 레이아웃 확장(조각)을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
+            $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
 
             // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
             $this->incrementExtensionCacheVersion();
@@ -1609,6 +1620,36 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고를 꺼내고 비웁니다 (#712).
+     *
+     * 템플릿 설치는 레이아웃 검증을 여러 번 돈다(사전 검증·등록·오버라이드 디렉토리마다). 검증 한 번이 끝날 때마다
+     * {@see rememberLayoutWarnings()} 가 경고를 이 보관소에 모으고, 설치를 부른 서비스가 결과를 만들 때 꺼낸다.
+     *
+     * @return array<int, array{file: string, partial: string, reason: string, message: string}> 경고 목록
+     */
+    public function takeLastLayoutWarnings(): array
+    {
+        $warnings = $this->lastLayoutWarnings;
+        $this->lastLayoutWarnings = [];
+
+        return $warnings;
+    }
+
+    /**
+     * 방금 끝난 레이아웃 검증의 경고를 보관소에 합칩니다 (같은 경고는 한 번만).
+     *
+     * @return void 반환값 없음
+     */
+    private function rememberLayoutWarnings(): void
+    {
+        foreach ($this->takeLayoutIncludeWarnings() as $warning) {
+            if (! in_array($warning, $this->lastLayoutWarnings, true)) {
+                $this->lastLayoutWarnings[] = $warning;
+            }
+        }
+    }
+
+    /**
      * 템플릿 설치 전 모든 레이아웃 JSON 파일을 검증합니다.
      *
      * 설치 전에 모든 레이아웃 파일의 유효성을 검사하여
@@ -1651,6 +1692,7 @@ class TemplateManager implements TemplateManagerInterface
         // 여기서 다시 검증하여 데이터를 가져옴
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $templateName, 'template', true);
+            $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
             Log::error(__('templates.errors.layout_registration_failed'), [
                 'template' => $templateName,
@@ -1777,6 +1819,7 @@ class TemplateManager implements TemplateManagerInterface
             // 공통 Trait 메서드 사용하여 오버라이드 레이아웃 검증
             try {
                 $validatedLayouts = $this->validateLayoutFiles($moduleDirectory, $moduleIdentifier, 'template', true);
+                $this->rememberLayoutWarnings();
             } catch (\Exception $e) {
                 Log::error(__('templates.errors.override_layout_registration_failed'), [
                     'template' => $templateName,
@@ -2254,7 +2297,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $identifier  템플릿 식별자
      * @param  bool  $preserveModified  운영자가 고친 화면을 보존(병합)할지 여부 (keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
-     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed: int, layout_sync: array<string, mixed>} 갱신 결과
+     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed: int, layout_sync: array<string, mixed>, layout_warnings: array<int, array<string, string>>} 갱신 결과 (빈 자리로 등록한 조각 참조 경고 포함)
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
@@ -2275,16 +2318,18 @@ class TemplateManager implements TemplateManagerInterface
         $mode = LayoutSyncMode::fromPreserve($preserveModified);
         $report = new LayoutSyncReport($mode);
         $layoutsPath = base_path("templates/{$identifier}/layouts");
+        $this->lastLayoutWarnings = [];
 
         if (! File::exists($layoutsPath)) {
             Log::info(__('templates.info.no_layouts_directory'), ['template' => $identifier]);
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray()];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => []];
         }
 
-        // 레이아웃 검증
+        // 레이아웃 검증 — 7.0 JSON 의 깨진 조각 참조는 빈 자리로 등록하고 경고로 모은다 (#712)
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'template', true);
+            $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
             Log::error(__('templates.errors.layout_registration_failed'), [
                 'template' => $identifier,
@@ -2383,6 +2428,7 @@ class TemplateManager implements TemplateManagerInterface
             'skipped' => $stats['skipped'],
             'extensions_refreshed' => $extensionStats['registered'] ?? 0,
             'layout_sync' => $report->toArray(),
+            'layout_warnings' => $this->takeLastLayoutWarnings(),
         ];
     }
 
@@ -3206,6 +3252,7 @@ class TemplateManager implements TemplateManagerInterface
 
         $backupPath = null;
         $layoutSync = null;
+        $layoutWarnings = [];
         $recordedColumns = [];
         $filesRestored = false;
 
@@ -3326,7 +3373,9 @@ class TemplateManager implements TemplateManagerInterface
             $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
             if ($previousStatus === ExtensionStatus::Active->value) {
                 $preserveModified = ($layoutStrategy === 'keep');
-                $layoutSync = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath)['layout_sync'] ?? null;
+                $refreshed = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath);
+                $layoutSync = $refreshed['layout_sync'] ?? null;
+                $layoutWarnings = $refreshed['layout_warnings'] ?? [];
             } elseif ($backupPath !== null) {
                 // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
                 $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
@@ -3375,6 +3424,7 @@ class TemplateManager implements TemplateManagerInterface
                 'to_version' => $toVersion,
                 'layout_strategy' => $layoutStrategy,
                 'layout_sync' => $layoutSync,
+                'layout_warnings' => $layoutWarnings,
                 'message' => __('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,

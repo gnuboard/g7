@@ -190,14 +190,10 @@ await (window as any).G7Core?.locale.change('en');
 // 모달 열기
 (window as any).G7Core?.modal.open('confirm_modal');
 
-// 모달 닫기 (특정 모달)
-(window as any).G7Core?.modal.close('confirm_modal');
-
-// 최상위 모달 닫기
+// 최상위 모달 닫기 — ID 인자는 무시된다. 액션 밖(타이머·외부 콜백)에서 부르면 열린 창 전체가 닫힌다
 (window as any).G7Core?.modal.close();
 
-// 모든 모달 닫기
-(window as any).G7Core?.modal.closeAll();
+// closeAll() 은 처리 핸들러가 없어 동작하지 않는다 — g7core-api.md 「알려진 제약」
 
 // 모달 열림 상태 확인
 const isOpen = (window as any).G7Core?.modal.isOpen('confirm_modal');

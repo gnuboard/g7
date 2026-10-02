@@ -2755,6 +2755,23 @@ function initToastAPI(G7Core: any): void {
 }
 
 /**
+ * 모달 상태(activeModal·modalStack)를 담은 전역 상태를 읽습니다.
+ *
+ * `G7Core.state.get()` 은 `_global` 의 **내용물**을 바로 돌려준다(`TemplateApp.getGlobalState()`). 예전 구현은
+ * `state._global?.modalStack` 을 읽어 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측). 감싼 모양을
+ * 돌려주는 호스트도 읽도록 `_global` 이 있으면 그쪽을 쓴다.
+ *
+ * @param G7Core G7Core 전역 객체
+ * @returns activeModal·modalStack 을 담은 전역 상태
+ * @since engine-v1.75.2
+ */
+function modalGlobalState(G7Core: any): { activeModal?: string | null; modalStack?: string[] } {
+  const state = G7Core.state?.get?.() || {};
+
+  return state._global && typeof state._global === 'object' ? state._global : state;
+}
+
+/**
  * 모달 관리 API 초기화
  */
 function initModalAPI(G7Core: any): void {
@@ -2792,17 +2809,16 @@ function initModalAPI(G7Core: any): void {
      * @param modalId 확인할 모달의 ID
      */
     isOpen: (modalId: string) => {
-      const state = G7Core.state.get();
-      return state._global?.activeModal === modalId ||
-             state._global?.modalStack?.includes(modalId) ||
+      const global = modalGlobalState(G7Core);
+      return global.activeModal === modalId ||
+             global.modalStack?.includes(modalId) ||
              false;
     },
     /**
      * 현재 열린 모달 스택을 반환합니다.
      */
     getStack: () => {
-      const state = G7Core.state.get();
-      return state._global?.modalStack || [];
+      return modalGlobalState(G7Core).modalStack || [];
     },
   };
 

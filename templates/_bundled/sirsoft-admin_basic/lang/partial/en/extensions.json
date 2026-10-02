@@ -14,7 +14,8 @@
     "auto_deactivated_listed": "List of auto-deactivated extensions.",
     "recover_action": "Re-activate",
     "dismiss_action": "Dismiss",
-    "open_action": "Open"
+    "open_action": "Open",
+    "layout_include_skipped": "{{count}} missing partial reference(s) in layouts were left empty. Check the server log or run php artisan layout:check-installed."
   },
   "badges": {
     "incompatible": "Core upgrade required",

@@ -13,6 +13,7 @@ use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
+use App\Support\LayoutMarkup\LayoutValidator;
 use App\Support\LayoutMarkup\LintWarning;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use Illuminate\Support\Facades\Log;
@@ -164,16 +165,23 @@ class LayoutMarkupService
      * @param  string|null  $sourceKind  행의 `source_type` (`template`·`module`·`plugin`·null)
      * @param  string|null  $identifier  행의 `source_identifier` (없으면 템플릿 식별자)
      * @param  string  $label  오류·경고 메시지의 파일명 자리에 들어갈 표시용 이름 (`{layout_name}.g7.html`). 실제 파일은 없다
+     * @param  array<string, mixed>|null  $baseline  편집 중인 행의 저장본 — 주면 그 안에 이미 있던 미등록 템플릿 컴포넌트를
+     *                                               그 개수까지 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게, #712). 새 파일은 null
      * @return CompileResult 산출 JSON + lint 경고
      *
      * @throws CompileError 토큰화·트리·문서·강검증 어느 단계든 위반 시
      */
-    public function toJson(string $markup, string $templateId, ?string $sourceKind, ?string $identifier, string $label): CompileResult
+    public function toJson(string $markup, string $templateId, ?string $sourceKind, ?string $identifier, string $label, ?array $baseline = null): CompileResult
     {
-        return (new LayoutMarkupCompiler($this->registry($templateId)))->compile(
+        $registry = $this->registry($templateId);
+        $tolerated = $baseline !== null && $registry !== null
+            ? (new LayoutValidator)->unregisteredComponentCounts($baseline, $registry)
+            : [];
+
+        return (new LayoutMarkupCompiler($registry))->compile(
             $markup,
             $label,
-            $this->resolver->contextForInstalled($templateId, $sourceKind, $identifier ?? $templateId),
+            $this->resolver->contextForInstalled($templateId, $sourceKind, $identifier ?? $templateId, $tolerated),
         );
     }
 

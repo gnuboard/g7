@@ -47,6 +47,27 @@ trait RendersLayoutSyncResult
     }
 
     /**
+     * 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고를 건별로 출력합니다 (#712).
+     *
+     * 설치·활성화·업데이트·갱신은 그 조각 참조 때문에 멈추지 않는다 — 대신 어느 파일의 어느 조각이 빠졌는지 알린다.
+     *
+     * @param  mixed  $warnings  경고 목록 (`layout_warnings` — `{file, partial, reason, message}` 원소)
+     * @return void 반환값 없음
+     */
+    protected function renderLayoutIncludeWarnings(mixed $warnings): void
+    {
+        if (! is_array($warnings) || $warnings === []) {
+            return;
+        }
+
+        $this->newLine();
+
+        foreach ($warnings as $warning) {
+            $this->warn('⚠️  '.(is_array($warning) ? ($warning['message'] ?? '') : (string) $warning));
+        }
+    }
+
+    /**
      * 덮어쓰기 전략일 때 덮어쓰일 운영자 수정본(레이아웃 + 확장 조각)을 경고합니다.
      *
      * @param  array{modified_count?: int, modified_layouts?: list<array{name: string, updated_at?: string|null}>}  $modified  `hasModifiedLayouts()` 응답

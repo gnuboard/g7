@@ -4,6 +4,7 @@ namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use App\Rules\ValidExtensionIdentifier;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Validator;
 class InstallTemplateCommand extends Command
 {
     use HasProgressBar;
+    use RendersLayoutSyncResult;
     use SelectsLayoutInstallSource;
 
     /**
@@ -31,6 +33,9 @@ class InstallTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
+     *
+     * @param  TemplateManager  $templateManager  템플릿 설치를 수행하는 매니저
+     * @param  TemplateRepositoryInterface  $templateRepository  설치 결과 조회 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -41,6 +46,8 @@ class InstallTemplateCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -94,6 +101,7 @@ class InstallTemplateCommand extends Command
                 $this->info('   - '.__('templates.commands.install.type', ['type' => __('templates.types.'.$template->type)]));
                 $this->info('   - '.__('templates.commands.install.version', ['version' => $template->version]));
                 $this->info('   - '.__('templates.commands.install.layouts_created', ['count' => $template->layouts()->count()]));
+                $this->renderLayoutIncludeWarnings($this->templateManager->takeLastLayoutWarnings());
 
                 Log::info(__('templates.commands.install.success', ['template' => $identifier]));
 

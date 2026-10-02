@@ -48,6 +48,8 @@ effects:
   - stylesheet_failure_retries_then_surfaces
   - address_fields_editable_when_sdk_missing
   - notice_renders_without_host_component_on_standalone_layout
+  # AMD 로더는 URL 에 쿼리가 있으면 모듈 id 에 .js 를 붙이지 않는다 — 템플릿 자산 서빙이 같은 이름의 .js 를 찾아 준다(#712 후속)
+  - amd_module_id_without_js_suffix_resolves_to_js_file
 
 test_files:
   - tests/Unit/Support/TemplateExternalsTest.php

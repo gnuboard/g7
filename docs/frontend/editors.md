@@ -286,7 +286,7 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 | `height` | `string` | ❌ | `'100%'` | 에디터 높이 |
 | `readOnly` | `boolean` | ❌ | `false` | 읽기 전용 모드 |
 | `theme` | `'auto'` \| `'vs-dark'` \| `'vs-light'` | ❌ | `'auto'` | 에디터 테마. `auto` 는 `<html class="dark">` 를 따라간다 |
-| `markers` | `Array<{line, column, endLine?, endColumn?, message, severity: 'error' \| 'warning'}>` | ❌ | - | 서버 컴파일 오류·경고 마커 — 해당 줄에 빨간/노란 물결로 표시. 값이 바뀌면 통째로 다시 찍고, 빈 배열이면 지운다 |
+| `markers` | `Array<{line, column, endLine?, endColumn?, message, severity: 'error' \| 'warning'}>` | ❌ | - | 서버 컴파일 오류·경고 마커 — 해당 줄에 빨간/노란 물결로 표시. 값이 바뀌면 통째로 다시 찍고, 빈 배열이면 지운다. 모델 줄 수를 넘는 마커는 새 내용이 모델에 들어올 때까지 보류했다가 찍고, 이미 `value` 를 담은 모델에서도 넘는 마커(파일 끝 다음 줄 등)는 마지막 줄로 접는다 |
 | `wordWrap` | `boolean` | ❌ | `false` | 자동 줄바꿈. 폴백 textarea 의 `wrap` 도 함께 따른다 |
 | `fontSize` | `number` | ❌ | `14` | 글자 크기 (12~20) |
 | `modelKey` | `string` | ❌ | - | 파일별 모델 키. 주면 커서·스크롤·되돌리기 스택·접힘 상태가 **파일별로 보존**된다 |

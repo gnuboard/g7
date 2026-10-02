@@ -5217,8 +5217,8 @@ export class ActionDispatcher {
       return;
     }
 
-    // 현재 모달 스택 가져오기
-    const currentStack = context.data?._global?.modalStack || [];
+    // 현재 모달 스택 가져오기 — sequence 안에서도 최신값 (engine-v1.75.2)
+    const currentStack = this.latestModalStack(context);
 
     // 이미 열려있는 모달이면 스택에 추가하지 않음
     if (currentStack.includes(target)) {
@@ -5298,6 +5298,39 @@ export class ActionDispatcher {
   }
 
   /**
+   * 지금의 모달 스택을 읽습니다 (sequence 안에서도 최신값).
+   *
+   * sequence 는 단계마다 `data` 를 `...context.data` 로 다시 만들어 `_global` 이 sequence 시작 시점의 사본이다.
+   * 그 사본을 읽으면 같은 sequence 안의 closeModal → openModal 이 방금 닫은 창을 되살린다 — 닫기는 `[]` 를 쓰고
+   * 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 쓴다(#712 실측: 강제 활성 창 → 언어팩 다시 켜기 창). setState 의 같은
+   * 뿌리(troubleshooting-state-setstate 사례 12)처럼 `G7Core.state.get()` 을 먼저 읽는다 — globalStateUpdater 호출
+   * 직후의 `_global` 내용을 돌려준다. 전역 상태 접근이 없을 때(부트 전·단위 테스트)는 문맥 사본으로 물러선다.
+   *
+   * 문맥에 전역 사본(`data._global`)이 없는 호출 — `G7Core.dispatch()` 를 액션 문맥 없이 부른 확장 JS(본인인증
+   * launcher 등)·DataSourceManager 콜백 — 은 종전대로 빈 스택에서 시작한다. 그 경로의 의미(열기는 스택 교체, 닫기는
+   * 전부 닫기)를 바꾸면 다른 창 안에서 띄운 본인인증 창의 동작이 달라지므로 이번 수정 범위에 넣지 않는다.
+   *
+   * @param context 액션 컨텍스트 (선택적)
+   * @returns 모달 ID 스택 (바닥 → 맨 위)
+   * @since engine-v1.75.2
+   */
+  private latestModalStack(context?: ActionContext): string[] {
+    const snapshot = context?.data?._global;
+
+    if (!snapshot) {
+      return [];
+    }
+
+    const latest = (window as any).G7Core?.state?.get?.()?.modalStack;
+
+    if (Array.isArray(latest)) {
+      return latest;
+    }
+
+    return snapshot.modalStack || [];
+  }
+
+  /**
    * closeModal 액션을 처리합니다.
    *
    * 모달 스택에서 최상위 모달을 제거합니다.
@@ -5311,8 +5344,8 @@ export class ActionDispatcher {
       return;
     }
 
-    // 현재 모달 스택 가져오기
-    const currentStack = context?.data?._global?.modalStack || [];
+    // 현재 모달 스택 가져오기 — sequence 안에서도 최신값 (engine-v1.75.2)
+    const currentStack = this.latestModalStack(context);
 
     // 닫히는 모달 ID (스택의 마지막 항목)
     const closingModalId = currentStack.length > 0 ? currentStack[currentStack.length - 1] : null;

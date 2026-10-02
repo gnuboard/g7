@@ -25,6 +25,7 @@ return [
         'max_include_depth_exceeded' => 'include最大深度を超過しました (最大: :max段階)',
         'include_outside_directory' => 'includeパスが許可されたディレクトリ外です: :path (許可: :allowed_dir)',
         'invalid_include_markup' => 'includeのソース(.g7.html)のコンパイルに失敗しました: :path (エラー: :error)',
+        'include_skipped' => 'JSON レイアウト :file のフラグメント :partial を読み込めなかったため、空のまま登録しました (:reason)',
     ],
     'layout_version' => [
         'save_failed_after_retries' => 'レイアウトバージョンの保存に失敗しました。:attempts回の再試行後も失敗しました。',
@@ -195,6 +196,7 @@ return [
         'hoist_prop_not_supported_by_template' => ':template テンプレートの :component は :prop を宣言していません — <:tag> で記述した内容はレンダリングされずに失われます。',
         'component_type_mismatch' => ':component の種類を :written と記述しましたが、:template テンプレートでは :declared として宣言されています — data-type を確認してください(省略すると basic)。',
         'extension_component_not_installed' => 'インストール済みのどの拡張機能にも存在しないコンポーネントです: :name — :extension 拡張機能が削除されたか、名前が誤っている可能性があります。保存はできますが、その拡張機能がないと画面に表示されません。',
+        'template_component_kept' => 'このテンプレートのコンポーネント一覧にないコンポーネントです: :name — 保存済みの内容にすでにあったため保存はできますが、このテンプレートでは画面に表示されない場合があります。',
     ],
     'storage' => [
         'unsafe_path' => '許可されていない保存パスです。',

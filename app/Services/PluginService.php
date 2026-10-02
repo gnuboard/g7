@@ -167,7 +167,7 @@ class PluginService
      *
      * @param  string  $pluginName  플러그인 식별자
      * @param  bool  $force  의존성 경고를 무시하고 강제 활성화 여부
-     * @return array{success: bool, plugin_info?: array, warning?: bool} 활성화 결과
+     * @return array{success: bool, plugin_info?: array, layout_warnings?: array, warning?: bool} 활성화 결과 (빈 자리로 등록한 조각 참조 경고 포함)
      *
      * @throws ValidationException 활성화 실패 시
      */
@@ -193,6 +193,8 @@ class PluginService
                 return [
                     'success' => true,
                     'plugin_info' => $pluginInfo,
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    'layout_warnings' => $result['layout_warnings'] ?? [],
                 ];
             }
 

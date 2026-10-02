@@ -545,6 +545,8 @@ class TemplateController extends AdminBaseController
                 if ($layoutSync !== null) {
                     $data['layout_sync'] = $layoutSync;
                 }
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
                 return $this->successWithResource(
                     $messageKey,

@@ -545,6 +545,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계에서 설치 실패한 동반 번들 언어팩 목록 (각 항목: identifier, reason). best-effort 이므로 실패해도 설치 자체는 성공 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -659,6 +660,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -769,6 +771,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -1009,6 +1012,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -96531,8 +96535,8 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | current_version | integer\|null | `null` | 현재 저장 버전 번호 (상세 응답에서는 null) |
 | content_markup | string | `"<layout name=\"main\" version=\"1.0.0\">\n  <div/>\n</layout>\n"` | (`with_markup=1`) content 를 역변환한 `.g7.html` 소스 — 코드 편집기 HTML 탭의 정본 |
 | markup_escapes | array | `[]` | (`with_markup=1`) 첫 급부 문법이 표현하지 못해 `<json>` 탈출구로 나간 키 목록 |
-| markup_warnings | array | `[{"code":"unregistered_handler","message":"…","line":12,"column":3}]` | (`with_markup=1`) 역변환 소스를 되컴파일했을 때의 lint 경고 (편집기 노란 마커) |
-| markup_compile_error | object\|null | `null` | (`with_markup=1`) 되컴파일이 거부되면 `{code,message,line,column}` — 이 행은 HTML 탭에서 고치기 전엔 저장이 막힌다 |
+| markup_warnings | array | `[{"code":"unregistered_handler","message":"…","line":12,"column":3}]` | (`with_markup=1`) 역변환 소스를 되컴파일했을 때의 lint 경고 (편집기 노란 마커). 편집 중인 템플릿의 컴포넌트 목록에 없는 컴포넌트가 저장본에 이미 있으면 `template_component_kept` 로 알리고 그 개수까지는 저장을 막지 않는다(새로 적은 목록 밖 컴포넌트는 `component_not_in_registry` 422) |
+| markup_compile_error | object\|null | `null` | (`with_markup=1`) 되컴파일이 거부되면 `{code,message,line,column}` — 이 행은 HTML 탭에서 고치기 전엔 저장이 막힌다. 템플릿 `components.json` 이 스키마를 어겨 역변환 자체가 안 되면 500 대신 200 + `content_markup` 빈 문자열 + 이 필드에 `manifest_*` 코드 |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 생성 일시 |
 | updated_at | string | `2026-07-14T10:00:00+09:00` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true}` | 현재 사용자의 수행 가능 작업 맵 |
@@ -97384,6 +97388,7 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 경우에는 리소스 대신 결과 요약(`success`, `from_version`, `to_version`, `message`)이 `data` 로 반환됩니다._
 
@@ -97494,7 +97499,7 @@ Content-Type: text/javascript
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 확장자 없는 자산 URL 모드의 템플릿 자산 서빙 엔드포인트입니다. 파일 경로를 `?file=` 쿼리로 받으며(경로에 확장자가 남지 않아 확장자를 가로채는 웹서버를 피한다), 그 밖의 동작은 `GET /api/templates/assets/{identifier}/{path}` 와 같습니다. AMD 로더(코드 편집기의 Monaco)는 쿼리가 있는 URL 의 모듈 id 에 `.js` 를 붙이지 않으므로, 요청한 파일이 없고 같은 이름의 `.js` 파일이 있으면 그 파일을 줍니다(`..` 가 든 경로는 보완하지 않음). 인증이 필요 없습니다.
 
 
 ### GET /api/templates/assets/{identifier}/{path}
@@ -97544,7 +97549,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 정적 자산 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. FormRequest에서 경로 보안 검증을 마친 뒤 파일을 조회하며(TemplateService::getAssetFilePath), ETag 및 장기 캐싱 헤더와 함께 반환합니다. 허용되지 않은 파일 유형은 403, 파일 부재 시 404입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 정적 자산 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. FormRequest에서 경로 보안 검증을 마친 뒤 파일을 조회하며(TemplateService::getAssetFilePath), ETag 및 장기 캐싱 헤더와 함께 반환합니다. 허용되지 않은 파일 유형은 403, 파일 부재 시 404입니다. 인증이 필요 없습니다. 요청한 파일이 없고 같은 이름의 `.js` 파일이 있으면 그 파일을 준다(AMD 모듈 id, `..` 가 든 경로 제외).
 
 
 ### GET /api/templates/{identifier}/components

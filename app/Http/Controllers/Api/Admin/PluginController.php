@@ -266,11 +266,14 @@ class PluginController extends AdminBaseController
                     return $this->success('plugins.activate_success', [
                         'plugin' => (new PluginResource($pluginInfo))->resolve(),
                         'pending_language_packs' => $pendingLanguagePacks,
+                        // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 — 화면이 경고 토스트로 알린다 (#712)
+                        'layout_warnings' => $result['layout_warnings'] ?? [],
                     ]);
                 }
 
                 return $this->success('plugins.activate_success', array_merge($result, [
                     'pending_language_packs' => $pendingLanguagePacks,
+                    'layout_warnings' => $result['layout_warnings'] ?? [],
                 ]));
             } else {
                 return $this->error('plugins.activate_failed', 400, null, [
@@ -609,6 +612,8 @@ class PluginController extends AdminBaseController
                 if ($layoutSync !== null) {
                     $data['layout_sync'] = $layoutSync;
                 }
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
                 return $this->successWithResource(
                     $messageKey,
@@ -664,6 +669,8 @@ class PluginController extends AdminBaseController
                     'updated' => $result['updated'],
                     'deleted' => $result['deleted'],
                     'unchanged' => $result['unchanged'],
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    'layout_warnings' => $result['layout_warnings'] ?? [],
                 ]);
             } else {
                 return $this->error('plugins.refresh_layouts_failed', 400, null, [

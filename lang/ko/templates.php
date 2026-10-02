@@ -30,6 +30,7 @@ return [
         'missing_layout_name' => '레이아웃 JSON에 layout_name 필드가 누락되었습니다.',
         'layout_registration_failed' => '레이아웃 등록에 실패했습니다: :error',
         'layout_validation_failed' => ':template 템플릿의 레이아웃 검증에 실패했습니다. (:count개 오류)',
+        'layout_validation_validation_failed' => ':identifier 템플릿의 레이아웃 검증에 실패했습니다. (:count개 오류)',
         'layout_validation_json_error' => ':file - JSON 파싱 오류: :error',
         'layout_validation_missing_name' => ':file - layout_name 필드가 누락되었습니다.',
         'layout_validation_partial_error' => ':file - Partial 처리 오류 (:partial): :error',

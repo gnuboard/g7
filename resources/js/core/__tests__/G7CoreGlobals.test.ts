@@ -661,6 +661,22 @@ describe('G7CoreGlobals - modal API', () => {
 
     expect(stack).toEqual(['modal-1', 'modal-2']);
   });
+
+  // 실제 `TemplateApp.getGlobalState()` 는 `_global` 의 **내용물**을 바로 돌려준다(감싸는 `_global` 키 없음).
+  // 위 목은 `{ _global: {...} }` 로 감싸 실제와 달라, 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측).
+  // @scenario surface=ui
+  // @effects modal_api_reports_open_state_and_stack
+  it('실제 전역 상태 모양(_global 내용물)에서도 열린 창과 스택을 돌려준다', () => {
+    (window as any).__templateApp.getGlobalState = vi.fn(() => ({
+      sidebarOpen: true,
+      activeModal: 'module_force_activate_modal',
+      modalStack: ['module_force_activate_modal'],
+    }));
+
+    expect(G7Core.modal.isOpen('module_force_activate_modal')).toBe(true);
+    expect(G7Core.modal.isOpen('other_modal')).toBe(false);
+    expect(G7Core.modal.getStack()).toEqual(['module_force_activate_modal']);
+  });
 });
 
 describe('G7CoreGlobals - locale API', () => {
@@ -1842,6 +1858,33 @@ describe('G7CoreGlobals - 자산 API', () => {
     const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs');
 
     expect(dir.endsWith('/vs')).toBe(true);
+    expect(dir).not.toContain('?file=');
+  });
+
+  // 확장자를 가로채는 서버(정적 게시본 없음)에서는 경로 형식이 404 다 — Monaco 가 영영 textarea 로 떨어진다.
+  // file 쿼리 뒤에 AMD 로더가 `/editor/editor.main` 을 이어 붙이면 그대로 한 파일의 file 값이 되고,
+  // 경로부에는 확장자가 남지 않는다. 로더는 쿼리가 있으면 `.js` 를 붙이지 않으므로 서버가 그것을 메운다.
+  // @scenario surface=assets
+  // @effects amd_directory_url_uses_file_query_in_extensionless_mode
+  it('확장자 없는 모드에서 정적 게시본이 없으면 디렉토리 URL 도 file 쿼리 형태다', () => {
+    (window as any).G7Config = { assetUrlMode: 'extensionless' };
+
+    const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.56.0/vs');
+
+    expect(dir).toBe('/api/templates/assets/sirsoft-admin_basic?file=vendor/monaco-editor/0.56.0/vs');
+    expect(`${dir}/loader.js`.split('?')[0]).not.toMatch(/\.js$/);
+  });
+
+  // 정적 게시본은 웹서버가 직접 서빙하는 실제 디렉토리라 상대 경로 해석까지 성립한다 — 확장자 없는 모드여도
+  // `?file=` 디렉토리보다 먼저 고른다(순서가 뒤집히면 정적 게시본이 있는 사이트도 PHP 를 거친다).
+  // @scenario surface=assets
+  // @effects amd_directory_url_uses_file_query_in_extensionless_mode
+  it('확장자 없는 모드여도 정적 게시본이 있으면 디렉토리 URL 은 정적 게시 경로다', () => {
+    (window as any).G7Config = { assetUrlMode: 'extensionless', staticBase: '/build/ext/7' };
+
+    const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.56.0/vs');
+
+    expect(dir).toBe('/build/ext/7/templates/sirsoft-admin_basic/assets/vendor/monaco-editor/0.56.0/vs');
     expect(dir).not.toContain('?file=');
   });
 

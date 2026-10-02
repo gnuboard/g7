@@ -234,11 +234,11 @@ class CoreServiceProvider extends ServiceProvider
             $loader->addClassMap($absoluteClassmap);
         }
 
-        // Classmap 파일 로드 (module.php, plugin.php)
+        // Classmap 파일 로드 (module.php, plugin.php) — 다른 경로 사본에서 이미 선언된 진입 클래스는 건너뛴다.
         if (! empty($extensionAutoloads['classmap'])) {
             foreach ($extensionAutoloads['classmap'] as $file) {
                 $absolutePath = base_path($file);
-                if (file_exists($absolutePath)) {
+                if (file_exists($absolutePath) && ! ExtensionManager::isEntryClassDeclared($file)) {
                     require_once $absolutePath;
                 }
             }

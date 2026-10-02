@@ -224,6 +224,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 | --- | --- | --- | --- |
 | module | object | `{"identifier":"sirsoft-board", ...}` | 활성화된 모듈 정보 (`ModuleResource` — 목록 응답 항목과 동일 필드 구성) |
 | pending_language_packs | array | `[]` | 이전 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 안내 모달용). 각 항목: `id`, `identifier`, `locale`, `locale_native_name`. 없으면 빈 배열 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -275,7 +276,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 
 <!-- @generated:end -->
 
-**설명** 설치된 모듈을 활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다.
+**설명** 설치된 모듈을 활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
 
 
 ### POST /api/admin/modules/check-updates
@@ -1067,6 +1068,7 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -1910,6 +1912,7 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 

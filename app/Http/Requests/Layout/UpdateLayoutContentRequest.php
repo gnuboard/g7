@@ -15,6 +15,7 @@ use App\Rules\ValidParentLayout;
 use App\Rules\ValidPermissionStructure;
 use App\Rules\ValidSlotStructure;
 use App\Rules\WhitelistedEndpoint;
+use App\Services\LayoutMarkupService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -705,6 +706,9 @@ class UpdateLayoutContentRequest extends FormRequest
         $layout = app(LayoutRepositoryInterface::class)->findByName($template->id, $name);
         $sourceKind = $layout?->source_type instanceof LayoutSourceType ? $layout->source_type->value : null;
 
-        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html"];
+        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
+        $baseline = $layout !== null ? app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')) : null;
+
+        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html", $baseline];
     }
 }

@@ -36,6 +36,8 @@ return [
         'circular_include' => 'include 순환 참조가 감지되었습니다: :trace',
         'max_include_depth_exceeded' => 'include 최대 깊이를 초과했습니다 (최대: :max단계)',
         'include_outside_directory' => 'include 경로가 허용된 디렉토리 외부입니다: :path (허용: :allowed_dir)',
+        // 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록한다 (경고)
+        'include_skipped' => 'JSON 레이아웃 :file 의 조각 :partial 을(를) 불러오지 못해 빈 자리로 등록했습니다 (:reason)',
     ],
 
     // 레이아웃 버전 관련 예외
@@ -202,6 +204,7 @@ return [
         'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 작성한 내용이 렌더되지 않고 사라집니다.',
         'component_type_mismatch' => ':component 의 종류를 :written 으로 적었지만 :template 템플릿은 :declared 로 선언합니다 — data-type 을 확인하세요(생략하면 basic).',
         'extension_component_not_installed' => '설치된 확장 어디에도 없는 컴포넌트입니다: :name — :extension 확장이 삭제됐거나 이름이 틀렸을 수 있습니다. 저장은 되지만 그 확장이 없으면 화면에 그려지지 않습니다.',
+        'template_component_kept' => '이 템플릿의 컴포넌트 목록에 없는 컴포넌트입니다: :name — 저장본에 이미 있던 것이라 저장은 되지만, 이 템플릿에서는 화면에 그려지지 않을 수 있습니다.',
     ],
 
     // 설정 관련 예외

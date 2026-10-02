@@ -166,7 +166,7 @@ return [
         'layout_validation_json_error' => 'レイアウトファイル :file の JSON パースに失敗しました: :error',
         'layout_validation_missing_name' => 'レイアウトファイル :file に layout_name がありません。',
         'layout_validation_partial_error' => 'レイアウトファイル :file の partial 処理に失敗しました: :error (partial: :partial)',
-        'layout_validation_validation_failed' => 'モジュール :identifier のレイアウト検証に失敗しました。:count 個のエラーが見つかりました: :error',
+        'layout_validation_validation_failed' => 'モジュール :identifier のレイアウト検証に失敗しました。:count 個のエラーが見つかりました。',
         'operation_in_progress' => 'モジュール ":name"は現在 :status 状態です。処理が完了するまでお待ちください。',
         'github_api_failed' => 'GitHub API 呼び出しに失敗しました: :error',
         'invalid_github_url' => '無効な GitHub URL です。',

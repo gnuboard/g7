@@ -2,11 +2,14 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Traits\CollectsFragmentSources;
+use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -27,10 +30,14 @@ use Illuminate\Console\Command;
  * (출처, 템플릿) 별 **소스 조각 키 집합 vs DB `fragment_key` 집합**(소실·고아).
  *
  * 실패·불일치·부적합·소실·고아 중 하나라도 있으면 exit 1. `--json` 은 기계 판독용이다.
+ *
+ * 「JSON 조각 참조 누락」 절(#712): 활성 모듈·플러그인과 점검 대상 템플릿의 레이아웃 소스를 등록 없이 다시 검증해, 7.0 JSON
+ * 레이아웃의 깨진 조각 참조가 빈 자리로 등록된 곳을 표로 보여 준다. 설치를 막지 않은 경고라 종료 코드에는 반영하지 않는다.
  */
 class LayoutCheckInstalledCommand extends Command
 {
     use CollectsFragmentSources;
+    use ValidatesLayoutFiles;
 
     /**
      * @var string
@@ -66,16 +73,36 @@ class LayoutCheckInstalledCommand extends Command
     private array $registration = [];
 
     /**
+     * JSON 레이아웃에서 빈 자리로 등록된 조각 참조 (`{source, identifier, file, partial, reason, message}`).
+     *
+     * @var array<int, array<string, string>>
+     */
+    private array $includeWarnings = [];
+
+    /**
+     * 엄격한 검증 실패로 「JSON 조각 참조 누락」 점검을 건너뛴 출처 (`{source, identifier, error}`).
+     *
+     * 설치 자체가 거부되는 레이아웃이라 이 절의 대상은 아니지만, 조용히 넘기면 0건으로 읽힌다 — 건너뛴 사실을 보고한다.
+     *
+     * @var array<int, array<string, string>>
+     */
+    private array $includeSkipped = [];
+
+    /**
      * 커맨드를 생성합니다.
      *
      * @param  LayoutMarkupService  $markup  설치본 JSON ↔ 마크업 변환 서비스
      * @param  LayoutExtensionService  $extensions  조각 적용 가능 판정
      * @param  TemplateRepositoryInterface  $templates  점검 대상 템플릿 조회
+     * @param  ModuleRepositoryInterface  $modules  활성 모듈 조회 (조각 참조 누락 절)
+     * @param  PluginRepositoryInterface  $plugins  활성 플러그인 조회 (조각 참조 누락 절)
      */
     public function __construct(
         private readonly LayoutMarkupService $markup,
         private readonly LayoutExtensionService $extensions,
         private readonly TemplateRepositoryInterface $templates,
+        private readonly ModuleRepositoryInterface $modules,
+        private readonly PluginRepositoryInterface $plugins,
     ) {
         parent::__construct();
     }
@@ -90,7 +117,7 @@ class LayoutCheckInstalledCommand extends Command
         $templates = $this->targetTemplates();
 
         if ($templates === []) {
-            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'ok' => true]) : '점검할 템플릿이 없습니다.');
+            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'ok' => true]) : '점검할 템플릿이 없습니다.');
 
             return self::SUCCESS;
         }
@@ -100,6 +127,8 @@ class LayoutCheckInstalledCommand extends Command
             $this->checkExtensions($template);
             $this->checkRegistration($template);
         }
+
+        $this->checkIncludeWarnings($templates);
 
         return $this->report(array_map(static fn (Template $t): string => (string) $t->identifier, $templates));
     }
@@ -298,6 +327,49 @@ class LayoutCheckInstalledCommand extends Command
     }
 
     /**
+     * 「JSON 조각 참조 누락」 — 레이아웃 소스를 등록 없이 다시 검증해 빈 자리로 등록된 조각 참조를 모읍니다 (#712).
+     *
+     * 대상은 활성 모듈·플러그인 전부와 점검 대상 템플릿이다. 설치 경로와 같은 검증({@see validateLayoutFiles()})을 돌리므로
+     * 판정 규칙이 갈리지 않는다. 엄격 갈래 실패(설치 자체가 거부되는 레이아웃)는 이 절의 대상이 아니라 건너뛴다.
+     *
+     * @param  array<int, Template>  $templates  점검 대상 템플릿
+     * @return void 반환값 없음
+     */
+    private function checkIncludeWarnings(array $templates): void
+    {
+        $sources = [];
+
+        foreach ($this->modules->getActiveModuleIdentifiers() as $identifier) {
+            $sources[] = ['module', (string) $identifier, base_path("modules/{$identifier}/resources/layouts")];
+        }
+
+        foreach ($this->plugins->getActivePluginIdentifiers() as $identifier) {
+            $sources[] = ['plugin', (string) $identifier, base_path("plugins/{$identifier}/resources/layouts")];
+        }
+
+        foreach ($templates as $template) {
+            $sources[] = ['template', (string) $template->identifier, base_path("templates/{$template->identifier}/layouts")];
+        }
+
+        foreach ($sources as [$type, $identifier, $path]) {
+            try {
+                $this->validateLayoutFiles($path, $identifier, $type, true);
+            } catch (\Exception $e) {
+                // 엄격한 검증 실패(설치가 거부되는 레이아웃) — 이 절의 대상이 아니지만 건너뛴 사실은 남긴다.
+                // 코드 결함(TypeError 등 Error)은 잡지 않는다 — 점검 결과를 0건으로 위장하지 않게.
+                $this->takeLayoutIncludeWarnings();
+                $this->includeSkipped[] = ['source' => $type, 'identifier' => $identifier, 'error' => strtok($e->getMessage(), "\n") ?: ''];
+
+                continue;
+            }
+
+            foreach ($this->takeLayoutIncludeWarnings() as $warning) {
+                $this->includeWarnings[] = ['source' => $type, 'identifier' => $identifier] + $warning;
+            }
+        }
+    }
+
+    /**
      * 결과를 보고하고 종료 코드를 정합니다.
      *
      * @param  array<int, string>  $templates  점검한 템플릿 식별자
@@ -314,6 +386,8 @@ class LayoutCheckInstalledCommand extends Command
                 'rows' => $this->rows,
                 'budget' => $this->budget,
                 'registration' => $this->registration,
+                'include_warnings' => $this->includeWarnings,
+                'include_skipped' => $this->includeSkipped,
                 'ok' => $ok,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
@@ -342,13 +416,14 @@ class LayoutCheckInstalledCommand extends Command
         }
 
         $this->reportBudget();
+        $this->reportIncludeWarnings();
 
         $counts = array_count_values(array_column($this->rows, 'verdict'));
         $registrationCounts = array_count_values(array_column($this->registration, 'kind'));
 
         $this->newLine();
         $this->info(sprintf(
-            '설치본 점검 — 템플릿 %d개, 행 %d개 (ok %d · fail %d · mismatch %d), 등록 정합성 — 부적합 %d · 소실 %d · 고아 %d.',
+            '설치본 점검 — 템플릿 %d개, 행 %d개 (ok %d · fail %d · mismatch %d), 등록 정합성 — 부적합 %d · 소실 %d · 고아 %d, JSON 조각 참조 누락 %d.',
             count($templates),
             count($this->rows),
             $counts['ok'] ?? 0,
@@ -357,9 +432,33 @@ class LayoutCheckInstalledCommand extends Command
             $registrationCounts['inapplicable'] ?? 0,
             $registrationCounts['missing'] ?? 0,
             $registrationCounts['orphan'] ?? 0,
+            count($this->includeWarnings),
         ));
 
         return $ok ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * 「JSON 조각 참조 누락」 절을 표로 보고합니다 (경고 — 종료 코드에 반영하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
+    private function reportIncludeWarnings(): void
+    {
+        foreach ($this->includeSkipped as $skipped) {
+            $this->warn(sprintf('조각 참조 점검 건너뜀 — %s %s: %s', $skipped['source'], $skipped['identifier'], $skipped['error']));
+        }
+
+        if ($this->includeWarnings === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->line('<comment>=== JSON 조각 참조 누락 (빈 자리로 등록됨) ===</comment>');
+        $this->table(
+            ['출처', '식별자', '파일', '조각', '사유'],
+            array_map(static fn (array $w): array => [$w['source'], $w['identifier'], $w['file'], $w['partial'], $w['reason']], $this->includeWarnings),
+        );
     }
 
     /**

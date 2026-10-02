@@ -30,6 +30,7 @@ final class CompileContext
      * @param  array<int, string>|null  $scriptSrcAllowlist  외부 JS 로더 허용 호스트 고정값 (null 이면 선언 집계 ∪ 운영자 설정)
      * @param  array<int, string>  $declaredScriptHosts  문서 소유 확장(과 오버라이드 대상 확장)이 매니페스트로 선언한 호스트
      * @param  bool  $checksScriptSrc  외부 JS 로더 호스트를 검사하는지 (설치 경로는 false)
+     * @param  array<string, int>  $toleratedComponents  편집기 전용 — 저장본에 이미 있던 미등록 템플릿 컴포넌트 이름 → 허용 개수 (#712)
      */
     public function __construct(
         public readonly ?string $sourceKind = null,
@@ -39,6 +40,7 @@ final class CompileContext
         public readonly ?array $scriptSrcAllowlist = null,
         public readonly array $declaredScriptHosts = [],
         public readonly bool $checksScriptSrc = true,
+        public readonly array $toleratedComponents = [],
     ) {}
 
     /**
