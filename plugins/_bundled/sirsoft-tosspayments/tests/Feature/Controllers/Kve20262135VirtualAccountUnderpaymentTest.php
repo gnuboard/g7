@@ -24,7 +24,10 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * @scenario path=vbank_issue, check=callback_amount
  *
  * @effects tampered_callback_amount_is_rejected_before_confirm,
- *          legacy_deposit_is_verified_by_payment_lookup
+ *          legacy_deposit_is_verified_by_payment_lookup,
+ *          vbank_issue_stores_the_verified_amount,
+ *          deposit_webhook_completes_with_the_issuance_verified_amount,
+ *          deposit_webhook_rejects_a_zero_stored_amount_without_lookup
  */
 class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
 {
@@ -100,14 +103,14 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
     }
 
     /**
-     * 과소금액 가상계좌 발급 응답을 만듭니다.
+     * 가상계좌 발급 confirm 응답을 만듭니다.
      *
      * @param  string  $paymentKey  결제 키
      * @param  string  $orderId  주문번호
-     * @param  int  $totalAmount  발급 금액
+     * @param  int  $totalAmount  토스가 발급한 금액
      * @return array<string, mixed> 발급 응답
      */
-    private function underAmountVaConfirm(string $paymentKey, string $orderId, int $totalAmount): array
+    private function vaConfirm(string $paymentKey, string $orderId, int $totalAmount): array
     {
         return [
             'paymentKey' => $paymentKey,
@@ -144,7 +147,7 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
 
         Http::fake([
             'api.tosspayments.com/v1/payments/confirm' => Http::response(
-                $this->underAmountVaConfirm($paymentKey, $order->order_number, 1000), 200
+                $this->vaConfirm($paymentKey, $order->order_number, 1000), 200
             ),
         ]);
 
@@ -160,6 +163,7 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
         $payment = $order->payment->refresh();
         $this->assertSame(PaymentStatusEnum::READY->value, $payment->payment_status->value, '과소금액 가상계좌가 입금대기로 저장됨');
         $this->assertNull($payment->vbank_number);
+        $this->assertSame(OrderStatusEnum::PENDING_ORDER, $order->refresh()->order_status);
     }
 
     /**
@@ -214,5 +218,113 @@ class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
 
         $this->assertSame(OrderStatusEnum::PENDING_ORDER, $order->order_status, '과소입금인데 주문이 결제완료로 전이됨');
         $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value, '과소입금인데 결제 PAID');
+    }
+
+    /**
+     * 단계 2-b — 입금통보 DONE: 발급 금액 기록이 0 이면 결제 조회로 넘기지 않고 바로 거절한다.
+     *
+     * 0 은 「기록 없음」이 아니라 대조된 값이 청구액과 다른 것이다. 0 을 기록 없음으로 다루면 결제
+     * 조회로 빠져, 발급 단계 대조가 남긴 근거 대신 조회 결과로 결제완료가 정해진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=deposit_webhook, check=stored_amount
+     *
+     * @effects deposit_webhook_rejects_a_zero_stored_amount_without_lookup
+     */
+    public function test_step2b_zero_stored_amount_is_rejected_without_lookup(): void
+    {
+        $this->mockPluginSettings();
+
+        $order = $this->createOrder(50000, [
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+            'transaction_id' => 'pk_test_kve_2135_zero',
+            'payment_meta' => [
+                'toss_secret' => self::SECRET,
+                'toss_approved_amount' => 0,
+            ],
+        ]);
+
+        // 결제 조회가 불리면 청구액 그대로 입금 완료를 돌려준다 — 0 을 기록 없음으로 다루면 결제완료가 된다.
+        Http::fake([
+            'api.tosspayments.com/v1/payments/pk_test_kve_2135_zero' => Http::response([
+                'paymentKey' => 'pk_test_kve_2135_zero',
+                'orderId' => $order->order_number,
+                'status' => 'DONE',
+                'totalAmount' => 50000,
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/plugins/sirsoft-tosspayments/webhook/deposit', [
+            'orderId' => $order->order_number,
+            'status' => 'DONE',
+            'secret' => self::SECRET,
+            'transactionKey' => 'txrd_kve_2135_zero',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('FAIL', $response->getContent());
+        Http::assertNothingSent();
+
+        $order->refresh();
+        $payment = $order->payment->refresh();
+
+        $this->assertSame(OrderStatusEnum::PENDING_ORDER, $order->order_status);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value);
+        $this->assertNull($payment->paid_at);
+    }
+
+    /**
+     * 단계 3 — 정상 금액(발급액 = 청구액)은 발급 때 대조한 금액을 저장하고, 입금통보가 그 금액으로 결제완료한다.
+     *
+     * 발급이 쓰는 금액 기록과 입금통보가 읽는 금액 기록이 같은 키(`toss_approved_amount`)인지를 한 흐름으로
+     * 지킨다. 두 단계를 따로 검증하면 한쪽 키 이름만 바뀌어도 둘 다 통과하고, 실제 입금은 결제 조회로 빠진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=vbank_issue, check=approved_amount
+     *
+     * @effects vbank_issue_stores_the_verified_amount,
+     *          deposit_webhook_completes_with_the_issuance_verified_amount
+     */
+    public function test_step3_normal_amount_virtual_account_issues_and_completes(): void
+    {
+        $this->mockPluginSettings();
+        $order = $this->createOrder(50000);
+        $paymentKey = 'pk_test_kve_2135_ok';
+
+        // 승인 외의 호출(취소·결제 조회)이 생기면 실제 네트워크로 나가지 않고 기록만 되도록 전부 가짜로 둔다.
+        Http::fake([
+            'api.tosspayments.com/v1/payments/confirm' => Http::response(
+                $this->vaConfirm($paymentKey, $order->order_number, 50000), 200
+            ),
+            'api.tosspayments.com/*' => Http::response([], 200),
+        ]);
+
+        $callback = $this->get('/plugins/sirsoft-tosspayments/payment/success?'.http_build_query([
+            'paymentKey' => $paymentKey,
+            'orderId' => $order->order_number,
+            'amount' => 50000,
+        ]));
+
+        $this->assertStringNotContainsString('amount_mismatch', (string) $callback->headers->get('Location'));
+        $payment = $order->payment->refresh();
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value);
+        $this->assertSame(50000, $payment->payment_meta['toss_approved_amount'] ?? null);
+
+        $response = $this->postJson('/plugins/sirsoft-tosspayments/webhook/deposit', [
+            'orderId' => $order->order_number,
+            'status' => 'DONE',
+            'secret' => self::SECRET,
+            'transactionKey' => 'txrd_kve_2135',
+        ]);
+
+        $order->refresh();
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+        // 승인 1건뿐이다 — 발급 취소도, 금액 기록을 못 찾은 결제 조회도 부르지 않았다.
+        Http::assertSentCount(1);
+        $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+        $this->assertSame(PaymentStatusEnum::PAID->value, $order->payment->refresh()->payment_status->value);
     }
 }

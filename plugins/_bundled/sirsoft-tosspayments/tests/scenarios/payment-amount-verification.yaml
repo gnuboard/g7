@@ -59,6 +59,7 @@ effects:
   # 입금통보
   - deposit_webhook_completes_with_the_issuance_verified_amount
   - deposit_webhook_rejects_a_stored_amount_that_differs_from_the_charge
+  - deposit_webhook_rejects_a_zero_stored_amount_without_lookup
   - legacy_deposit_is_verified_by_payment_lookup
   - legacy_deposit_is_rejected_when_lookup_is_not_done
   - legacy_deposit_lookup_failure_asks_for_a_retry

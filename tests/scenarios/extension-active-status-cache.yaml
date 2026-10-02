@@ -1,0 +1,32 @@
+feature: extension-active-status-cache
+
+description: |
+  모듈·플러그인 활성 목록 캐시(`g7:core:ext.{modules,plugins}.active_identifiers`).
+
+  라우트·서비스 프로바이더·미들웨어 인덱스가 이 목록으로 활성 확장을 고른다. 목록이 틀리면
+  확장 화면·API 가 통째로 404 가 된다.
+
+  핵심 동작:
+    - 활성 확장이 있으면 목록을 캐시하고, 상태 변경 시 명시적으로 무효화한다
+    - 빈 결과는 캐시하지 않는다 — 확장 작업 중 잠시 활성이 0 인 순간을 읽어도 하루(TTL)
+      동안 모든 확장이 꺼진 것으로 굳지 않고, 상태가 돌아오면 즉시 회복한다
+
+  테스트는 활성 확장 행을 스스로 심는다. 설치된 확장이 없는 테스트 DB 에서 건너뛰던(skip)
+  시절에는 이 캐시를 아무 테스트도 재지 않았다.
+
+axes:
+  extension_kind: [module, plugin]
+  active_state: [has_active, none_active]
+
+axis_notes:
+  active_state: >-
+    has_active = 테스트가 임시 활성 행을 심은 상태. none_active = 확장 작업 중 상태 창 재현
+    (모든 행을 잠시 inactive 로 바꾼 상태).
+
+effects:
+  - non_empty_active_list_is_cached
+  - status_change_invalidates_active_list_cache
+  - empty_active_list_is_not_cached_and_recovers_immediately
+
+test_files:
+  - tests/Feature/Extension/ModuleCacheTest.php

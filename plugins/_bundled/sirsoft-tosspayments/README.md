@@ -158,7 +158,8 @@ https://your-domain.com/plugins/sirsoft-tosspayments/webhook/deposit
 토스페이먼츠 취소 API를 호출합니다. `after_cancel`은 취소 API 가 **성공했을 때만**
 발화합니다 — 실패하면 `TossPaymentsApiException`이 던져지고 코어가 이를 받아 취소 요청
 자체를 실패로 응답합니다(이 플러그인에는 나이스페이먼츠의 `refund_failed` 같은 별도
-실패 훅이 없습니다).
+실패 훅이 없습니다). `after_cancel`·`after_confirm` 이 넘기는 토스 응답에는 가상계좌 입금 알림
+검증값(`secret`)이 빠져 있습니다.
 
 **환불이 이 플러그인까지 오는 시점**: 코어는 환불신청서가 **승인**된 뒤에야 위 훅을 발화합니다.
 이커머스 환경설정 「클레임」 탭의 *환불 자동 승인 결제수단* 목록에 든 수단(기본값 신용카드·
