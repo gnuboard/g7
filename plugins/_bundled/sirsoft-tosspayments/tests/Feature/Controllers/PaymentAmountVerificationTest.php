@@ -568,8 +568,10 @@ class PaymentAmountVerificationTest extends PluginTestCase
         $this->assertSame('FAIL', $response->getContent());
 
         $order->refresh();
+        $payment = $order->payment->refresh();
         $this->assertSame(OrderStatusEnum::PENDING_ORDER, $order->order_status);
-        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $order->payment->refresh()->payment_status->value);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT->value, $payment->payment_status->value);
+        $this->assertNull($payment->paid_at);
     }
 
     /**
