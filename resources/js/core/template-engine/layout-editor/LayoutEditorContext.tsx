@@ -15,6 +15,9 @@ import { trackEditorState } from './devtools/editorTrackers';
 import type { EditorAccessError } from './types/editorErrors';
 import type { EditorStateItemSpec } from './spec/specTypes';
 import { resolveNextActiveStateId } from './utils/matchStateScope';
+import { DEFAULT_PREVIEW_CUSTOM_WIDTH } from './spec/deviceList';
+
+export { DEFAULT_PREVIEW_CUSTOM_WIDTH };
 
 /**
  * 라우트 트리 접힘 상태 영속화 키 (localStorage). 편집 세션/새로고침/템플릿 전환
@@ -258,7 +261,7 @@ function createInitialState(templateIdentifier: string, locale: string): LayoutE
     locale,
     previewDevice: 'desktop',
     previewZoom: 1,
-    previewCustomWidth: 1024,
+    previewCustomWidth: DEFAULT_PREVIEW_CUSTOM_WIDTH,
     previewColorScheme: 'light',
     history: { canUndo: false, canRedo: false },
     isPaletteOpen: false,

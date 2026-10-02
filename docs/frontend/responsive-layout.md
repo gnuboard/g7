@@ -91,6 +91,56 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 경계값 자체도 상수로 두고 SSoT(`ResponsiveManager` 의 `portable` 정의)를 주석에 밝힌다 —
 프리셋 범위가 바뀌면 확장도 함께 고쳐야 한다는 신호가 코드에 남는다.
 
+이 판정은 **실제 기기에서 일어나는 동작**(팝업 대신 페이지 이동, 결제창 형태 등)에 쓴다. 컴포넌트가 화면에
+그릴 모양을 폭으로 고를 때는 아래 「레이아웃 편집기 미리보기에서의 화면 폭」을 따른다.
+
+### 레이아웃 편집기 미리보기에서의 화면 폭
+
+레이아웃 편집기의 미리보기는 iframe 이 아니라 관리자 화면 안의 영역이다. 브라우저 창은 하나뿐이라,
+창 폭(`window.innerWidth`)과 미리보기 기기 폭(모바일 390·태블릿 820·데스크톱 1280·사용자 지정)이 다르다.
+미리보기가 기기 폭대로 보이려면 컴포넌트가 다음을 지킨다.
+
+```text
+✅ 컴포넌트 코드의 폭 분기: G7Core.useResponsive() 의 width·isMobile 등 사용 (미리보기에서는 기기 폭)
+❌ 컴포넌트 코드의 폭 분기: window.innerWidth · window.matchMedia (언제나 브라우저 창 폭)
+✅ 자식을 직접 그리는 컴포넌트: 받은 __componentContext 를 넘기거나 { renderEnv: __componentContext?.renderEnvRef?.current } 를 넘긴다
+❌ 자식을 직접 그리면서 아무것도 넘기지 않음 (셀의 responsive 분기가 창 폭으로, 문구가 관리자 언어로 그려진다)
+```
+
+```tsx
+// 폭으로 형태를 고르는 컴포넌트
+const responsive = G7Core?.useResponsive?.();
+const isNarrow = (responsive?.width ?? window.innerWidth) < 768; // 훅이 없을 때만 창 폭으로 폴백
+
+// 셀을 직접 그리는 컴포넌트 (G7Core.renderItemChildren·renderComponentLayout·renderExpandContent)
+G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, {
+  renderEnv: __componentContext?.renderEnvRef?.current,
+});
+```
+
+렌더 환경(`renderEnv`)에는 폭·콘텐츠 언어·액션 처리기·컴포넌트 목록·편집 모드가 들어 있다. 편집 모드에서는
+셀 안 버튼의 동작이 실행되지 않는다. 일반 화면에서는 이 값이 곧 화면의 값이라 결과가 같다.
+
+다른 컴포넌트가 직접 그린 셀 안에 들어간 컴포넌트는 `__componentContext` 를 받지 못한다. 그런 컴포넌트도 폭은
+`G7Core.useResponsive()` 로 미리보기 기기 폭을 따르지만, 그 안에서 다시 자식을 그릴 때의 콘텐츠 언어·액션 처리기는
+관리자 화면 값으로 돌아간다.
+
+**CSS 는 자동으로 맞춰진다.** 편집기가 떠 있는 동안 화면 폭 조건 `@media`(`min-width`·`max-width`·`width`
+범위식, rem/em 포함)와 화면 폭 단위 `vw` 는 미리보기 영역 폭으로 판정되도록 바뀌고, 편집기를 벗어나면
+원래대로 돌아온다. 선택자 이름이 아니라 조건식만 보므로 일반 CSS·Bootstrap·Tailwind·CSS-in-JS 모두 같다.
+설정할 것은 없다. 다음은 바뀌지 않는다.
+
+| 바뀌지 않는 것 | 이유 · 대안 |
+|---|---|
+| `document.body` 로 띄우는 드롭다운·라이트박스 | 미리보기 영역 밖에 그려진다 — 창 기준 |
+| `:root`·`html` 선택자의 폭 `@media`(루트 글꼴 크기 등) | 미리보기 영역의 자손이 아니다 |
+| 높이·`aspect-ratio`·`orientation` 조건, `vh` | 폭 판정이 아니다 |
+| `<picture media>`·`sizes`, JS `matchMedia`·`window.innerWidth` | 브라우저가 창 기준으로 판정한다 — JS 는 `G7Core.useResponsive()` 사용 |
+| 다른 사이트에서 불러온 스타일시트, `<link media>`·`<style media>` 로 시트 전체에 조건이 걸린 경우 | 규칙을 읽거나 나눌 수 없다 |
+| 이름 없는 `@container` 쿼리 | 미리보기에서는 미리보기 영역에 반응할 수 있다 — 컨테이너를 직접 지정해 쓴다 |
+
+특정 스타일시트를 이 처리에서 빼려면 그 `<style>`·`<link>` 에 `data-g7le-no-media-isolation` 속성을 단다.
+
 ### portable 프리셋 사용 규칙
 
 `portable` 프리셋은 `mobile`과 `tablet`을 합친 범위입니다. 다음 규칙을 준수하세요:

@@ -6,6 +6,7 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { FileTree, FileTreeContentMatch, FileTreeNode, FileTreeReveal } from './FileTree';
 import type { EditorAttrs } from '../../types';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -69,24 +70,23 @@ const TREE_WIDTH_MIN = 240;
 const TREE_WIDTH_MAX = 480;
 
 /**
- * 창 폭으로 표시 형태를 고릅니다.
+ * 렌더 폭으로 표시 형태를 고릅니다.
  *
- * `window.innerWidth` 를 쓰는 이유는 저장소 문서(`docs/frontend/responsive-layout.md`)에 적힌
- * 실측 때문이다 — `matchMedia` 는 devicePixelRatio 가 정수가 아닌 환경에서 경계 1px 이 어긋나
- * 1023/1024 에서 형태가 뒤집힌다.
+ * 폭은 Provider 폭(`G7Core.useResponsive().width`)이 우선이다 — 레이아웃 편집기 미리보기는 같은
+ * 문서의 div 라서 창 폭이 미리보기 기기 폭과 다르다(#141). 훅이 없을 때만 `window.innerWidth`
+ * 로 폴백한다. `matchMedia` 를 쓰지 않는 이유는 저장소 문서(`docs/frontend/responsive-layout.md`)에
+ * 적힌 실측 때문이다 — devicePixelRatio 가 정수가 아닌 환경에서 경계 1px 이 어긋나 1023/1024 에서
+ * 형태가 뒤집힌다.
  *
+ * @param width 렌더 폭
  * @returns 표시 형태
  */
-function resolveMode(): Exclude<FileTreePickerMode, 'auto'> {
-  if (typeof window === 'undefined') {
+function resolveMode(width: number): Exclude<FileTreePickerMode, 'auto'> {
+  if (width >= DESKTOP_MIN_WIDTH) {
     return 'inline';
   }
 
-  if (window.innerWidth >= DESKTOP_MIN_WIDTH) {
-    return 'inline';
-  }
-
-  return window.innerWidth >= TABLET_MIN_WIDTH ? 'drawer' : 'sheet';
+  return width >= TABLET_MIN_WIDTH ? 'drawer' : 'sheet';
 }
 
 /**
@@ -122,8 +122,9 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
   id,
   editorAttrs,
 }) => {
+  const renderWidth = useRenderWidth();
   const [resolved, setResolved] = useState<Exclude<FileTreePickerMode, 'auto'>>(() =>
-    mode === 'auto' ? resolveMode() : mode
+    mode === 'auto' ? resolveMode(renderWidth) : mode
   );
   const [open, setOpen] = useState(false);
   const [width, setWidth] = useState<number>(() => readWidth(storageKey));
@@ -131,20 +132,10 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
   const openerRef = useRef<HTMLElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
+  // 렌더 폭이 바뀌면 형태를 다시 고른다(창 resize 는 useRenderWidth 의 폴백이 처리한다)
   useEffect(() => {
-    if (mode !== 'auto' || typeof window === 'undefined') {
-      setResolved(mode === 'auto' ? resolveMode() : mode);
-
-      return;
-    }
-
-    const onResize = (): void => setResolved(resolveMode());
-
-    window.addEventListener('resize', onResize);
-    onResize();
-
-    return () => window.removeEventListener('resize', onResize);
-  }, [mode]);
+    setResolved(mode === 'auto' ? resolveMode(renderWidth) : mode);
+  }, [mode, renderWidth]);
 
   // 인라인으로 넓어지면 열려 있던 오버레이는 의미가 없다 — 백드롭만 남아 화면을 덮는 것을 막는다.
   useEffect(() => {

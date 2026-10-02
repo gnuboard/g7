@@ -57,6 +57,23 @@ export interface ModalProps {
   __dataContext?: Record<string, any>;
   /** DynamicRenderer용 번역 컨텍스트 (내부 사용) */
   __translationContext?: any;
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용)
+   *
+   * `renderEnvRef.current` 의 레지스트리·엔진·dispatcher·편집 모드로 titlePrefix/titleSuffix/footer 를
+   * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(#141).
+   */
+  __componentContext?: {
+    renderEnvRef?: {
+      current: {
+        componentRegistry?: any;
+        bindingEngine?: any;
+        translationEngine?: any;
+        actionDispatcher?: any;
+        isEditMode?: boolean;
+      } | null;
+    };
+  };
 }
 
 /**
@@ -113,6 +130,7 @@ export const Modal: React.FC<ModalProps> = ({
   style,
   __dataContext,
   __translationContext,
+  __componentContext,
 }) => {
   // closeOnOverlayClick 별칭 지원 (레이아웃 JSON 호환)
   // 너비 결정 순서: 명시 width > size 단계 > 종전 기본값.
@@ -210,17 +228,22 @@ export const Modal: React.FC<ModalProps> = ({
     const DynamicRenderer = g7Core.getDynamicRenderer?.();
     if (!DynamicRenderer) return null;
 
+    // 렌더 환경(이 Modal 을 그린 렌더러) > 호스트 값. 편집 모드면 액션을 바인딩하지 않는다.
+    // componentPath 는 넘기지 않는다 — `footer` 배열은 편집기 경로 문법(children/iteration/responsive) 밖이다(#141).
+    const env = __componentContext?.renderEnvRef?.current ?? null;
+
     return components.map((componentDef, index) => (
       <DynamicRenderer
         key={`${keyPrefix}-${index}`}
         componentDef={componentDef}
         dataContext={__dataContext || {}}
         translationContext={__translationContext}
-        registry={g7Core.getComponentRegistry()}
-        bindingEngine={g7Core.getDataBindingEngine()}
-        translationEngine={g7Core.getTranslationEngine()}
-        actionDispatcher={g7Core.getActionDispatcher()}
+        registry={env?.componentRegistry ?? g7Core.getComponentRegistry()}
+        bindingEngine={env?.bindingEngine ?? g7Core.getDataBindingEngine()}
+        translationEngine={env?.translationEngine ?? g7Core.getTranslationEngine()}
+        actionDispatcher={env?.actionDispatcher ?? g7Core.getActionDispatcher()}
         isRootRenderer={false}
+        isEditMode={env?.isEditMode}
       />
     ));
   };

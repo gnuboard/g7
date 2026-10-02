@@ -23,6 +23,7 @@ import { hasPipes } from './PipeRegistry';
 import { extractSingleBinding } from './BindingShape';
 import { evaluateStringCondition } from './helpers/ConditionEvaluator';
 import { addMissingLeafKeys } from './helpers/StateMerge';
+import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
@@ -1053,9 +1054,55 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
   G7Core.createLogger = createLogger;
   logger.log('전역 객체 window.G7Core.createLogger에 노출됨');
 
+  /**
+   * 셀 렌더 래퍼가 쓸 렌더 환경을 고른다 — `renderEnv` 우선, 없으면 `componentContext.renderEnvRef.current`.
+   *
+   * 레이아웃 편집기 미리보기에서는 이 값이 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 대상 템플릿
+   * 레지스트리·편집 모드를 담는다. 편집기 밖에서는 루트 렌더러의 값(=호스트 값)이다(#141).
+   *
+   * @param renderEnv 호출자가 명시한 렌더 환경
+   * @param componentContext 호출자가 넘긴 부모 컴포넌트 컨텍스트
+   * @returns 렌더 환경, 없으면 null
+   * @since engine-v1.75.2
+   */
+  const pickRenderEnv = (renderEnv: RenderEnvironment | null | undefined, componentContext: any): RenderEnvironment | null =>
+    renderEnv ?? componentContext?.renderEnvRef?.current ?? null;
+
+  /**
+   * 렌더 환경에서 renderItemChildren 옵션으로 옮길 값만 뽑는다(빈 필드는 빼서 호스트 기본값을 덮지 않는다).
+   *
+   * @param env 렌더 환경
+   * @returns 옵션 조각
+   * @since engine-v1.75.2
+   */
+  const renderEnvToOptions = (env: RenderEnvironment | null): Record<string, any> => {
+    if (!env) return {};
+    const picked: Record<string, any> = {};
+    for (const key of ['responsiveWidth', 'translationContext', 'translationEngine', 'bindingEngine', 'actionDispatcher', 'isEditMode'] as const) {
+      if (env[key] !== undefined && env[key] !== null) picked[key] = env[key];
+    }
+    return picked;
+  };
+
+  /**
+   * 컴포넌트 맵에 렌더 환경 레지스트리를 덮는다 — 환경 레지스트리가 이기고, 기본 맵에만 있는 항목은 남긴다.
+   *
+   * @param baseMap 호출자 맵 또는 호스트 맵
+   * @param env 렌더 환경
+   * @returns 합친 맵
+   * @since engine-v1.75.2
+   */
+  const withEnvComponents = (baseMap: Record<string, any>, env: RenderEnvironment | null): Record<string, any> => {
+    const envMap = env?.componentRegistry?.getComponentMap?.();
+    return envMap ? { ...baseMap, ...envMap } : baseMap;
+  };
+
   // renderItemChildren 노출 (반복 아이템의 자식 컴포넌트 렌더링용)
   // CardGrid 등에서 호출 시 translationContext, translationEngine, bindingEngine, actionDispatcher를 자동 주입
   // 전역 상태(_global, _local, _computed)도 컨텍스트에 자동 병합하여 cellChildren에서 접근 가능
+  //
+  // 값 우선순위: 명시 options > 렌더 환경(options.renderEnv 또는 options.componentContext.renderEnvRef.current)
+  // > 호스트 state. 렌더 환경에 레지스트리가 있으면 컴포넌트 맵도 그것을 우선한다. @since engine-v1.75.2 (#141)
   G7Core.renderItemChildren = (
     children: any[],
     itemContext: Record<string, any>,
@@ -1093,16 +1140,18 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return componentId || fallbackKey;
     };
 
-    // options가 없거나 필요한 엔진이 없으면 현재 state에서 자동 주입
+    // options가 없거나 필요한 엔진이 없으면 렌더 환경 → 현재 state 순으로 자동 주입
+    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
     const mergedOptions = {
       translationContext: state.translationContext,
       translationEngine: state.translationEngine,
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
+      ...renderEnvToOptions(env),
       getRemountKey, // remount 지원 추가
       ...options,
     };
-    return renderItemChildren(children, mergedContext, componentMap, keyPrefix, mergedOptions);
+    return renderItemChildren(children, mergedContext, withEnvComponents(componentMap, env), keyPrefix, mergedOptions);
   };
 
   /**
@@ -1152,6 +1201,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param layoutDefs component_layout 정의 배열
    * @param itemContext 항목별 컨텍스트 (예: { item: option, index: 0, isSelected: true })
    * @param keyPrefix React key prefix
+   * @param options 선택. 렌더 환경과 명시 값 — 우선순위는 명시 값 > `renderEnv` >
+   *   `componentContext.renderEnvRef.current` > 호스트 값 (@since engine-v1.75.2, #141)
    * @returns React 요소 배열
    *
    * @example
@@ -1160,20 +1211,29 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * const itemElements = G7Core.renderComponentLayout(
    *   __componentLayoutDefs?.item,
    *   { item: option, index, isSelected },
-   *   `item-${index}`
+   *   `item-${index}`,
+   *   { renderEnv: __componentContext?.renderEnvRef?.current }
    * );
    * ```
    */
   G7Core.renderComponentLayout = (
     layoutDefs: any[] | undefined,
     itemContext: Record<string, any>,
-    keyPrefix?: string
+    keyPrefix?: string,
+    options?: {
+      renderEnv?: RenderEnvironment | null;
+      componentContext?: { renderEnvRef?: { current: RenderEnvironment | null } };
+      responsiveWidth?: number;
+      translationContext?: TranslationContext;
+      actionDispatcher?: any;
+    }
   ): React.ReactNode => {
     if (!layoutDefs || !Array.isArray(layoutDefs) || layoutDefs.length === 0) {
       return null;
     }
 
-    const componentMap = ComponentRegistry.getInstance().getComponentMap();
+    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
+    const componentMap = withEnvComponents(ComponentRegistry.getInstance().getComponentMap(), env);
     const state = deps.getState();
 
     // 전역 상태 가져오기 (remount 지원을 위해)
@@ -1209,9 +1269,13 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       keyPrefix,
       {
         translationContext: state.translationContext,
-        translationEngine: state.translationEngine,
-        bindingEngine: state.bindingEngine,
+        translationEngine: state.translationEngine ?? undefined,
+        bindingEngine: state.bindingEngine ?? undefined,
         actionDispatcher: state.actionDispatcher,
+        ...renderEnvToOptions(env),
+        ...(options?.responsiveWidth !== undefined ? { responsiveWidth: options.responsiveWidth } : {}),
+        ...(options?.translationContext ? { translationContext: options.translationContext } : {}),
+        ...(options?.actionDispatcher ? { actionDispatcher: options.actionDispatcher } : {}),
         getRemountKey,
       }
     );
@@ -1229,6 +1293,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param config.componentContext 부모 컴포넌트 컨텍스트 (state, setState)
    * @param config.componentMap 컴포넌트 맵 (선택, 없으면 자동 조회)
    * @param config.keyPrefix React key prefix
+   * @param config.renderEnv 렌더 환경 (선택). 없으면 `componentContext.renderEnvRef.current` 를 쓴다.
+   *   폭·번역·엔진·dispatcher·레지스트리·편집 모드가 호스트 값보다 우선한다 (@since engine-v1.75.2, #141)
+   * @param config.responsiveWidth responsive 분기 폭 명시값 (선택, @since engine-v1.75.2)
    * @returns React 요소 배열
    *
    * @example
@@ -1258,9 +1325,15 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       setState?: (updates: Record<string, any>) => void;
       stateRef?: { current: Record<string, any> };
       computedRef?: { current: Record<string, any> };
+      /** @since engine-v1.75.2 */
+      renderEnvRef?: { current: RenderEnvironment | null };
     };
     componentMap?: Record<string, React.ComponentType<any>>;
     keyPrefix: string;
+    /** @since engine-v1.75.2 */
+    renderEnv?: RenderEnvironment | null;
+    /** @since engine-v1.75.2 */
+    responsiveWidth?: number;
   }): React.ReactNode => {
     const { children, row, expandContext, componentContext, keyPrefix } = config;
 
@@ -1268,8 +1341,11 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return null;
     }
 
+    // 렌더 환경 (미리보기 값) — 명시 renderEnv > componentContext.renderEnvRef.current > 호스트 (#141)
+    const env = pickRenderEnv(config.renderEnv, componentContext);
+
     // 컴포넌트 맵 조회 (없으면 자동)
-    const componentMap = config.componentMap || ComponentRegistry.getInstance().getComponentMap();
+    const componentMap = withEnvComponents(config.componentMap || ComponentRegistry.getInstance().getComponentMap(), env);
     const state = deps.getState();
 
     // 1. 전역 상태 가져오기
@@ -1291,7 +1367,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const latestComputed = componentContext?.computedRef?.current ?? globalState._computed ?? {};
 
     // 4. expandContext 바인딩 표현식 자동 평가
-    const bindingEngine = state.bindingEngine ?? G7Core.getDataBindingEngine?.();
+    const bindingEngine = env?.bindingEngine ?? state.bindingEngine ?? G7Core.getDataBindingEngine?.();
     const evalContext = {
       ...globalState,
       _local: mergedLocal,
@@ -1368,6 +1444,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       translationEngine: state.translationEngine ?? undefined,
       bindingEngine: state.bindingEngine ?? undefined,
       actionDispatcher: state.actionDispatcher,
+      ...renderEnvToOptions(env),
+      ...(config.responsiveWidth !== undefined ? { responsiveWidth: config.responsiveWidth } : {}),
       componentContext,
       getRemountKey,
     });

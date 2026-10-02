@@ -37,6 +37,7 @@ import {
 } from './BindingShape';
 import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from './rawMarkers';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
+import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { useTransitionState } from './TransitionContext';
 import { getLocalInitTracking, markLocalInitConsumed, resolveLocalInitAction } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
@@ -1418,6 +1419,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // useCallback으로 캐싱된 componentContext에서도 최신 상태에 접근 가능하도록 함
     const latestLocalStateRef = useRef<Record<string, any>>({});
 
+    // 이 렌더러의 렌더 환경(폭·번역·엔진·dispatcher·레지스트리·편집 모드)을 가리키는 안정 ref.
+    // 셀 렌더 함수(renderItemChildren)·G7Core 래퍼·SlotContainer 는 React Context 를 못 읽으므로
+    // `__componentContext.renderEnvRef` 로 이 값을 받아 호스트 전역값 대신 쓴다(#141).
+    // ref 라서 identity 가 불변이다 — componentContext 를 deps 로 쓰는 곳을 폭 변화로 다시 돌리지 않는다.
+    // @since engine-v1.75.2
+    const renderEnvRef = useRef<RenderEnvironment | null>(null);
+
     // 최신 _computed 상태를 참조하는 ref (expandChildren 상태 동기화용)
     // _computed는 _local 기반으로 계산되므로 _local 변경 시 함께 업데이트
     const latestComputedRef = useRef<Record<string, any>>({});
@@ -2039,6 +2047,17 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // useCallback으로 캐싱된 componentContext에서도 stateRef.current로 최신 상태 접근 가능
     latestLocalStateRef.current = extendedDataContext._local;
 
+    // 매 렌더링마다 렌더 환경을 기록 — 셀·슬롯이 호출 시점에 `.current` 를 읽는다(#141)
+    renderEnvRef.current = {
+      responsiveWidth,
+      translationContext,
+      translationEngine,
+      bindingEngine,
+      actionDispatcher,
+      componentRegistry: registry,
+      isEditMode,
+    };
+
     // 매 렌더링마다 최신 _computed 상태를 ref에 업데이트
     // expandChildren에서 _computed 기반 표현식 평가 시 최신 값 접근 가능
     latestComputedRef.current = (extendedDataContext as any)._computed || {};
@@ -2140,6 +2159,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       setState: handleSetState,
       stateRef: latestLocalStateRef,
       computedRef: latestComputedRef,
+      // 렌더 환경 ref (engine-v1.75.2, #141) — identity 불변이라 deps 에 넣지 않는다
+      renderEnvRef,
       // 격리된 상태 컨텍스트 (target: "isolated" setState 지원)
       isolatedContext,
       // 부모 데이터 컨텍스트 전달 (engine-v1.19.1)
@@ -2321,6 +2342,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         getParentComponentContext: () => componentContext,
         translationContext: translationContext,
         registrationKey: slotRegistrationKey,
+        // 등록 렌더러의 렌더 환경 — SlotContainer 가 호스트 값 대신 이것으로 슬롯 내용을 그린다(#141)
+        // @since engine-v1.75.2
+        getRenderEnv: () => renderEnvRef.current,
+        // 슬롯 노드의 원본 편집 경로 — 편집 캔버스에서 슬롯 내용에 편집 마커가 원본 경로로 붙는다
+        // @since engine-v1.75.2
+        componentPath,
       });
 
       prevSlotIdRef.current = resolvedSlotId;
@@ -2343,6 +2370,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       componentContext,
       translationContext,
       slotRegistrationKey,
+      componentPath,
     ]);
 
     /**

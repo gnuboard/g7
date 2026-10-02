@@ -55,6 +55,8 @@ import {
 import { trackPageState } from '../devtools/editorTrackers';
 import type { EditorStateItemSpec } from '../spec/specTypes';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
+import { rescanPreviewMediaIsolation } from '../hooks/usePreviewMediaIsolation';
+import { PREVIEW_FRAME_CLASS, PREVIEW_VW_VAR } from '../utils/previewMediaIsolation/constants';
 
 export interface PreviewCanvasProps {
   /** components.json 매니페스트 — Chrome 에서 fetch 해 주입 */
@@ -215,6 +217,12 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     isReady: assetsReady,
     error: assetsError,
   } = useEditorTemplateAssets(state.templateIdentifier, state.locale);
+
+  // 편집 대상 템플릿 CSS 가 들어오거나 기기 폭이 바뀌면 CSS 매체 격리가 새 시트를 다시 훑게 한다(#141).
+  // 이미 처리한 규칙은 건너뛰므로 반복 호출해도 결과가 같다.
+  useEffect(() => {
+    rescanPreviewMediaIsolation();
+  }, [assetsReady, deviceWidth]);
 
   // 편집기 캔버스 전용 코어 엔진 인스턴스 — 일반 사이트 렌더와 격리
   const bindingEngineRef = useRef<DataBindingEngine | null>(null);
@@ -1075,7 +1083,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           // 가 편집기용 CSS 의 `.dark` 셀렉터를 이 마커로 치환해 서빙하므로, 프리뷰 프레임의 이
           // 마커만으로 다크가 켜지고 조상 html.dark 와 독립된다(라이트 토글 시 확실히 라이트).
           // document.documentElement 가 아니라 프리뷰 프레임에만 적용 → 편집기 chrome 비다크.
-          className={colorScheme === 'dark' ? 'g7le-preview-frame g7le-preview-dark' : 'g7le-preview-frame'}
+          className={colorScheme === 'dark' ? `${PREVIEW_FRAME_CLASS} g7le-preview-dark` : PREVIEW_FRAME_CLASS}
           data-testid="g7le-preview-frame"
           data-color-scheme={colorScheme}
           ref={(el) => {
@@ -1085,8 +1093,12 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           style={{
             width: deviceWidth,
             background: '#fff',
-            border: '1px solid #cbd5e1',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            // 테두리는 border 가 아니라 box-shadow 로 그린다. 전역 `*{box-sizing:border-box}` 아래서
+            // border 는 내용 폭을 기기 폭보다 좁게 만든다(실측 390 → 389). CSS 매체 격리의 컨테이너
+            // 조건이 내용 폭으로 판정되므로, JS responsive 판정(기기 폭)과 경계에서 1~2px 어긋났다(#141).
+            boxShadow: '0 0 0 1px #cbd5e1, 0 1px 3px rgba(0,0,0,0.05)',
+            // 프레임 폭/100 — 미리보기 안 `vw` 를 이 값으로 바꿔 판정한다(usePreviewMediaIsolation)
+            [PREVIEW_VW_VAR as string]: `${deviceWidth / 100}px`,
             minHeight: 400,
             position: 'relative',
             // frame 자체에 identity transform 을 부여해 `position: fixed` 자손

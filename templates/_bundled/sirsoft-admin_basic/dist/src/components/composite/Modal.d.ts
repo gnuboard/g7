@@ -50,6 +50,23 @@ export interface ModalProps {
     __dataContext?: Record<string, any>;
     /** DynamicRenderer용 번역 컨텍스트 (내부 사용) */
     __translationContext?: any;
+    /**
+     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용)
+     *
+     * `renderEnvRef.current` 의 레지스트리·엔진·dispatcher·편집 모드로 titlePrefix/titleSuffix/footer 를
+     * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(#141).
+     */
+    __componentContext?: {
+        renderEnvRef?: {
+            current: {
+                componentRegistry?: any;
+                bindingEngine?: any;
+                translationEngine?: any;
+                actionDispatcher?: any;
+                isEditMode?: boolean;
+            } | null;
+        };
+    };
 }
 /**
  * Modal 집합 컴포넌트
