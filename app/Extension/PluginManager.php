@@ -603,7 +603,7 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $pluginName  활성화할 플러그인명
      * @param  bool  $force  필요 의존성이 충족되지 않아도 강제 활성화 여부
-     * @return array{success: bool, layouts_registered: int, warning?: bool, missing_modules?: array, missing_plugins?: array, message?: string} 활성화 결과 및 등록된 레이아웃 개수
+     * @return array{success: bool, layouts_registered: int, layout_warnings?: array<int, array{file: string, partial: string, reason: string, message: string}>, warning?: bool, missing_modules?: array, missing_plugins?: array, message?: string} 활성화 결과·등록된 레이아웃 개수·빈 자리로 등록한 조각 참조 경고
      */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
@@ -696,8 +696,14 @@ class PluginManager implements PluginManagerInterface
             ];
         }
 
+        // 레이아웃 파일 검증을 상태 쓰기보다 먼저 한다 — 엄격한 검증 실패(데이터 소스 id 중복·layouts 밖 참조·
+        // .g7.html 컴파일 오류)면 여기서 예외가 올라가 상태·soft delete 행이 그대로 남는다. 예전에는 active 로 쓴 뒤
+        // 등록 단계에서 실패해, 레이아웃이 하나도 없는 활성 플러그인이 남았다(#712 실측). 결과는 등록 단계가 그대로 쓴다.
+        $validatedLayouts = $this->validatePluginLayoutFiles($pluginName);
+
         $result = $plugin->activate();
         $layoutsRegistered = 0;
+        $layoutWarnings = [];
 
         if ($result) {
             $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), [
@@ -720,7 +726,14 @@ class PluginManager implements PluginManagerInterface
             $this->restorePluginLayouts($plugin->getIdentifier());
 
             // 플러그인 레이아웃 등록 (새로운 레이아웃 또는 업데이트)
-            $layoutsRegistered = $this->registerPluginLayouts($pluginName);
+            $layoutsRegistered = $this->registerPluginLayouts($pluginName, $validatedLayouts);
+
+            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록됐다 — 결과에 실어 화면·CLI 가 알린다 (#712).
+            // 검증이 돌지 않았으면(레이아웃 디렉토리 없음) 보관소에 남은 다른 확장의 경고를 싣지 않는다.
+            $layoutWarnings = $this->takeLayoutIncludeWarnings();
+            if ($validatedLayouts === null) {
+                $layoutWarnings = [];
+            }
 
             // 플러그인 레이아웃 확장 복원 (재활성화 시)
             $this->restoreLayoutExtensions($plugin);
@@ -766,11 +779,12 @@ class PluginManager implements PluginManagerInterface
             return [
                 'success' => false,
                 'layouts_registered' => $layoutsRegistered,
+                'layout_warnings' => $layoutWarnings,
                 'reason' => $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error'),
             ];
         }
 
-        return ['success' => true, 'layouts_registered' => $layoutsRegistered];
+        return ['success' => true, 'layouts_registered' => $layoutsRegistered, 'layout_warnings' => $layoutWarnings];
     }
 
     /**
@@ -784,7 +798,7 @@ class PluginManager implements PluginManagerInterface
     protected function restorePluginLayouts(string $pluginIdentifier): void
     {
         try {
-            $restoredCount = $this->layoutRepository->restoreByModule($pluginIdentifier);
+            $restoredCount = $this->layoutRepository->restoreBySource($pluginIdentifier, LayoutSourceType::Plugin);
 
             if ($restoredCount > 0) {
                 Log::info('플러그인 레이아웃 복원 완료', [
@@ -990,7 +1004,7 @@ class PluginManager implements PluginManagerInterface
     protected function softDeletePluginLayouts(string $pluginIdentifier): int
     {
         try {
-            $deletedCount = $this->layoutRepository->softDeleteByModule($pluginIdentifier);
+            $deletedCount = $this->layoutRepository->softDeleteBySource($pluginIdentifier, LayoutSourceType::Plugin);
 
             if ($deletedCount === 0) {
                 Log::info("플러그인에 삭제할 레이아웃이 없습니다: {$pluginIdentifier}");
@@ -3012,7 +3026,7 @@ class PluginManager implements PluginManagerInterface
      */
     public function getPluginLayoutsCount(string $pluginIdentifier): int
     {
-        return $this->layoutRepository->countByModule($pluginIdentifier);
+        return $this->layoutRepository->countBySource($pluginIdentifier, LayoutSourceType::Plugin);
     }
 
     /**
@@ -3025,7 +3039,7 @@ class PluginManager implements PluginManagerInterface
     {
         try {
             // soft deleted 포함 모든 플러그인 레이아웃 영구 삭제
-            $deletedCount = $this->layoutRepository->forceDeleteByModule($pluginIdentifier);
+            $deletedCount = $this->layoutRepository->forceDeleteBySource($pluginIdentifier, LayoutSourceType::Plugin);
 
             // 레이아웃 캐시 무효화
             $this->invalidateLayoutCache($pluginIdentifier);
@@ -3352,6 +3366,29 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 플러그인 레이아웃 파일을 등록 없이 검증합니다.
+     *
+     * 활성화가 상태를 쓰기 전에 부른다 — 등록 단계와 같은 검증({@see validateLayoutFiles()})이라 결과를
+     * {@see registerPluginLayouts()} 에 넘겨 다시 검증하지 않는다. 빈 자리로 등록할 조각 참조 경고도 여기서 쌓인다.
+     *
+     * @param  string  $pluginName  플러그인 디렉토리명 (vendor-name 형식)
+     * @return array<int, array{file: string, data: array<string, mixed>, original: array<string, mixed>, layout_name: string}>|null 검증된 레이아웃, 플러그인이 없거나 레이아웃 디렉토리가 없으면 null
+     *
+     * @throws \Exception 레이아웃 검증 실패 시
+     */
+    protected function validatePluginLayoutFiles(string $pluginName): ?array
+    {
+        $plugin = $this->getPlugin($pluginName);
+        $layoutsPath = base_path("plugins/{$pluginName}/resources/layouts");
+
+        if (! $plugin || ! File::exists($layoutsPath)) {
+            return null;
+        }
+
+        return $this->validateLayoutFiles($layoutsPath, $plugin->getIdentifier(), 'plugin', true);
+    }
+
+    /**
      * 플러그인의 레이아웃을 활성화된 admin/user 템플릿에 등록합니다.
      *
      * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다:
@@ -3363,9 +3400,12 @@ class PluginManager implements PluginManagerInterface
      * - layouts/*.{g7.html,json} (루트) → 스킵 (경고 로그 출력)
      *
      * @param  string  $pluginName  플러그인 디렉토리명 (vendor-plugin 형식)
+     * @param  array<int, array{file: string, data: array<string, mixed>, original: array<string, mixed>, layout_name: string}>|null  $validatedLayouts  미리 검증한 결과 ({@see validatePluginLayoutFiles()}) — null 이면 여기서 검증
      * @return int 등록된 레이아웃 개수
+     *
+     * @throws \Exception 레이아웃 검증 실패 시
      */
-    protected function registerPluginLayouts(string $pluginName): int
+    protected function registerPluginLayouts(string $pluginName, ?array $validatedLayouts = null): int
     {
         $plugin = $this->getPlugin($pluginName);
         if (! $plugin) {
@@ -3394,7 +3434,7 @@ class PluginManager implements PluginManagerInterface
 
         // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사)
         // 공통 Trait 메서드 사용 (recursive=true: 하위 디렉토리 전체 스캔)
-        $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
+        $validatedLayouts ??= $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
 
         if (empty($validatedLayouts)) {
             Log::info("플러그인에 등록할 레이아웃 파일이 없습니다: {$pluginName}");
@@ -3747,7 +3787,7 @@ class PluginManager implements PluginManagerInterface
      * @param  bool  $preserveModified  운영자가 고친 화면을 보존(병합)할지 여부 (keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
      * @param  LayoutSyncReport|null  $report  결과를 모을 보고 (업데이트 경로가 조각 사전 재등록 결과와 합칠 때)
-     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed?: int, layout_sync: array<string, mixed>} 갱신 결과
+     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed?: int, layout_sync: array<string, mixed>, layout_warnings: array<int, array<string, string>>} 갱신 결과 (빈 자리로 등록한 조각 참조 경고 포함)
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
@@ -3777,7 +3817,7 @@ class PluginManager implements PluginManagerInterface
         if ($adminTemplates->isEmpty() && $userTemplates->isEmpty()) {
             Log::warning("활성화된 admin/user 템플릿이 없어 플러그인 레이아웃을 갱신할 수 없습니다: {$pluginName}");
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray()];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => []];
         }
 
         $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
@@ -3787,9 +3827,16 @@ class PluginManager implements PluginManagerInterface
 
         // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사). 디렉토리째 사라진 새 버전이면 빈 목록 —
         // 모든 행이 "새 버전에서 빠진 행" 규칙을 탄다(L17, 종전엔 수정본까지 전부 영구 삭제).
-        $validatedLayouts = File::exists($layoutsPath)
-            ? $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true)
-            : [];
+        $validatedLayouts = [];
+        $layoutWarnings = [];
+
+        if (File::exists($layoutsPath)) {
+            $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
+
+            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록된다 — 결과에 실어 알린다 (#712).
+            // 검증이 돈 경우에만 꺼낸다 — 디렉토리가 없을 때 꺼내면 다른 확장이 남긴 경고가 섞인다.
+            $layoutWarnings = $this->takeLayoutIncludeWarnings();
+        }
 
         // 레이아웃을 타입별로 그룹화
         $layoutsByType = ['admin' => [], 'user' => []];
@@ -3885,6 +3932,7 @@ class PluginManager implements PluginManagerInterface
             'skipped' => $stats['skipped'] + ($extensionStats['skipped'] ?? 0),
             'extensions_refreshed' => $extensionStats['refreshed'] ?? 0,
             'layout_sync' => $report->toArray(),
+            'layout_warnings' => $layoutWarnings,
         ];
     }
 
@@ -4526,6 +4574,7 @@ class PluginManager implements PluginManagerInterface
 
         $backupPath = null;
         $layoutSync = null;
+        $layoutWarnings = [];
         $recordedColumns = [];
         $filesRestored = false;
 
@@ -4717,7 +4766,9 @@ class PluginManager implements PluginManagerInterface
                 $layoutReport = new LayoutSyncReport(LayoutSyncMode::fromPreserve($preserveModified));
                 $this->registerLayoutExtensions($plugin, $preserveModified, $backupPath, $layoutReport);
                 $this->reregisterActiveExtensionsToAllTemplates();
-                $layoutSync = $this->refreshPluginLayouts($identifier, $preserveModified, $backupPath, $layoutReport)['layout_sync'] ?? null;
+                $refreshed = $this->refreshPluginLayouts($identifier, $preserveModified, $backupPath, $layoutReport);
+                $layoutSync = $refreshed['layout_sync'] ?? null;
+                $layoutWarnings = $refreshed['layout_warnings'] ?? [];
             } elseif ($backupPath !== null) {
                 // 꺼 둔 채 업데이트(D11) — 레이아웃은 켤 때 갱신되므로, 백업을 지우기 전에 이전 판 원본을 미리 저장해
                 // 켤 때 운영자 수정은 두고 새 판을 병합할 수 있게 한다.
@@ -4762,6 +4813,7 @@ class PluginManager implements PluginManagerInterface
                 'to_version' => $toVersion,
                 'layout_strategy' => $layoutStrategy,
                 'layout_sync' => $layoutSync,
+                'layout_warnings' => $layoutWarnings,
                 'message' => __('plugins.update_success', [
                     'plugin' => $identifier,
                     'version' => $toVersion,

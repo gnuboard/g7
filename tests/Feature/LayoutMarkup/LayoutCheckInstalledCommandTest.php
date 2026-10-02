@@ -88,6 +88,36 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 엄격한 검증 실패로 「JSON 조각 참조 누락」 점검을 건너뛴 출처는 0건으로 위장하지 않고 보고한다.
+     *
+     * 예전에는 `catch (\Throwable)` 이 출력 없이 넘겨, 점검하지 못한 출처가 「누락 0」 으로 읽혔다.
+     *
+     * @scenario compile_unit=command,source_health=invalid
+     *
+     * @effects include_check_reports_skipped_sources
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sources_skipped_by_strict_validation_are_reported(): void
+    {
+        Template::factory()->create(['identifier' => 'probe-check-skip', 'type' => 'user', 'status' => ExtensionStatus::Active->value]);
+        $dir = base_path('templates/probe-check-skip/layouts');
+        File::ensureDirectoryExists($dir);
+        // 템플릿 레이아웃에 layout_name 이 없다 — 설치가 거부되는 엄격한 실패.
+        File::put($dir.'/broken.json', json_encode(['version' => '1.0.0', 'components' => []]));
+
+        try {
+            $this->artisan('layout:check-installed', ['--template' => 'probe-check-skip', '--json' => true])
+                ->expectsOutputToContain('"include_skipped":[{"source":"template","identifier":"probe-check-skip"');
+
+            $this->artisan('layout:check-installed', ['--template' => 'probe-check-skip'])
+                ->expectsOutputToContain('조각 참조 점검 건너뜀 — template probe-check-skip');
+        } finally {
+            File::deleteDirectory(base_path('templates/probe-check-skip'));
+        }
+    }
+
+    /**
      * 옵션 없이 돌리면 번들 여부와 무관하게 설치된 템플릿 전부를 점검한다.
      *
      * @scenario compile_unit=command,source_health=invalid

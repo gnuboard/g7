@@ -33,12 +33,14 @@ class LayoutController extends AdminBaseController
      * @param  TemplateService  $templateService  템플릿 식별자 → 템플릿 해석
      * @param  LayoutPreviewService  $layoutPreviewService  저장하지 않은 본문의 일회용 미리보기 발급
      * @param  LayoutFileService  $layoutFileService  파일 단위 조작 (생성·삭제·이름변경·검색)
+     * @param  LayoutMarkupService  $layoutMarkupService  마크업 역변환·컴파일·저장본 해석
      */
     public function __construct(
         private LayoutService $layoutService,
         private TemplateService $templateService,
         private LayoutPreviewService $layoutPreviewService,
-        private LayoutFileService $layoutFileService
+        private LayoutFileService $layoutFileService,
+        private LayoutMarkupService $layoutMarkupService
     ) {
         parent::__construct();
     }
@@ -113,7 +115,7 @@ class LayoutController extends AdminBaseController
             // PHP `[]` 로 만들어, 그대로 역변환하면 작성자가 적은 `{}` 가 편집기에 `[]` 로 틀리게 보이고
             // 그 상태로 저장하면 DB 의 `{}` 가 실제로 `[]` 가 된다.
             $resource->withMarkup($this->buildMarkupPayload(
-                app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')),
+                $this->layoutMarkupService->decodeStoredContent((string) $layout->getRawOriginal('content')),
                 $templateName,
                 $sourceKind,
                 $layout->source_identifier ?? $templateName,
@@ -377,6 +379,8 @@ class LayoutController extends AdminBaseController
             $layout->source_type?->value ?? null,
             $layout->source_identifier ?? $templateName,
             "{$name}.g7.html",
+            // 저장본 — 그 안에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 (#712)
+            $this->layoutMarkupService->decodeStoredContent((string) $layout->getRawOriginal('content')),
         );
     }
 
@@ -388,14 +392,15 @@ class LayoutController extends AdminBaseController
      * @param  string|null  $sourceKind  행 source_type
      * @param  string|null  $identifier  행 source_identifier
      * @param  string  $label  표시용 파일명
+     * @param  array<string, mixed>|null  $baseline  편집 중인 행의 저장본 (미등록 템플릿 컴포넌트 허용 기준, #712)
      * @return JsonResponse 변환 응답
      */
-    private function compileMarkupResponse(string $markup, string $templateName, ?string $sourceKind, ?string $identifier, string $label): JsonResponse
+    private function compileMarkupResponse(string $markup, string $templateName, ?string $sourceKind, ?string $identifier, string $label, ?array $baseline = null): JsonResponse
     {
-        $service = app(LayoutMarkupService::class);
+        $service = $this->layoutMarkupService;
 
         try {
-            $result = $service->toJson($markup, $templateName, $sourceKind, $identifier, $label);
+            $result = $service->toJson($markup, $templateName, $sourceKind, $identifier, $label, $baseline);
         } catch (CompileError $error) {
             $described = $service->describeError($error);
 
@@ -445,13 +450,26 @@ class LayoutController extends AdminBaseController
      */
     private function buildMarkupPayload(array $json, string $templateName, ?string $sourceKind, ?string $identifier, string $label): array
     {
-        $service = app(LayoutMarkupService::class);
-        ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($json, $templateName);
+        $service = $this->layoutMarkupService;
+
+        // 템플릿 `components.json` 이 스키마를 어기면 검사 목록을 만들 수 없다 — 500 이 아니라 빈 마크업 + 오류로 연다(#712).
+        try {
+            ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($json, $templateName);
+        } catch (CompileError $error) {
+            return [
+                'content_markup' => '',
+                'markup_escapes' => [],
+                'markup_warnings' => [],
+                'markup_compile_error' => $service->describeError($error),
+            ];
+        }
+
         $warnings = [];
         $compileError = null;
 
         try {
-            $warnings = $service->describeWarnings($service->toJson($markup, $templateName, $sourceKind, $identifier, $label)->warnings);
+            // 저장본(이 행)에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 — 7.0 이 무차별 등록한 행 (#712)
+            $warnings = $service->describeWarnings($service->toJson($markup, $templateName, $sourceKind, $identifier, $label, $json)->warnings);
         } catch (CompileError $error) {
             $compileError = $service->describeError($error);
         }

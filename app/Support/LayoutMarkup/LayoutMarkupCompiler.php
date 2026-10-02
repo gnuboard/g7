@@ -68,7 +68,12 @@ final class LayoutMarkupCompiler
         // DocumentCompiler 가 단일 루트를 이미 보장했으므로 roots[0] 은 존재한다.
         $rootKind = $roots[0]->name;
 
-        $this->validator->validate($json, $rootKind, $this->registry, $context, $path);
+        try {
+            $this->validator->validate($json, $rootKind, $this->registry, $context, $path);
+        } catch (CompileError $error) {
+            throw $this->locateError($roots, $error, $context);
+        }
+
         $warnings = $this->locateWarnings($roots, $this->linter->lint($json, $rootKind, $context, $path));
 
         return new CompileResult($json, $warnings);
@@ -90,7 +95,9 @@ final class LayoutMarkupCompiler
         return array_map(function (LintWarning $warning) use ($roots): LintWarning {
             $name = $warning->getParams()['name'] ?? null;
 
-            if ($warning->getLine() !== 0 || $warning->getCode() !== LayoutMarkupLintCode::ExtensionComponentNotInstalled || ! is_string($name)) {
+            $locatable = [LayoutMarkupLintCode::ExtensionComponentNotInstalled, LayoutMarkupLintCode::TemplateComponentKept];
+
+            if ($warning->getLine() !== 0 || ! in_array($warning->getCode(), $locatable, true) || ! is_string($name)) {
                 return $warning;
             }
 
@@ -98,6 +105,56 @@ final class LayoutMarkupCompiler
 
             return $element === null ? $warning : $warning->withPosition($element->line, $element->column);
         }, $warnings);
+    }
+
+    /**
+     * 강검증의 레지스트리 오류에 소스 줄·칸을 채웁니다.
+     *
+     * 강검증은 산출 JSON 을 보므로 위치를 모른다(0:0). 그대로 두면 편집기 마커가 1행에 찍혀 작성자가 고칠 자리를
+     * 찾지 못한다. 미등록 컴포넌트 오류만 그 태그를 소스에서 찾는다 — 저장본 허용 개수(`toleratedComponents`)가
+     * 있으면 문서 순서로 허용분을 건너뛴 첫 초과 태그를 가리킨다(검사기가 실패시킨 것과 같은 태그).
+     *
+     * @param  array<int, MarkupElement>  $roots  소스 트리 루트
+     * @param  CompileError  $error  강검증 오류
+     * @param  CompileContext  $context  컴파일 문맥
+     * @return CompileError 위치를 채운 오류(찾지 못하거나 대상 코드가 아니면 원래 오류)
+     */
+    private function locateError(array $roots, CompileError $error, CompileContext $context): CompileError
+    {
+        $name = $error->getParams()['name'] ?? null;
+
+        if ($error->getErrorCode() !== LayoutMarkupErrorCode::ComponentNotInRegistry || $error->getSourceLine() !== 0 || ! is_string($name)) {
+            return $error;
+        }
+
+        $matches = [];
+        $this->collectElementsByTag($roots, strtolower(ComponentRegistry::toTag($name)), $matches);
+        $element = $matches[$context->toleratedComponents[$name] ?? 0] ?? $matches[0] ?? null;
+
+        if ($element === null) {
+            return $error;
+        }
+
+        return new CompileError($error->getErrorCode(), $element->line, $element->column, $error->getParams(), $error->getSourcePath());
+    }
+
+    /**
+     * 소스 트리에서 주어진 태그명의 요소를 문서 순서로 모두 모읍니다.
+     *
+     * @param  array<int, MarkupElement>  $elements  탐색할 요소 목록
+     * @param  string  $tag  소문자 태그명
+     * @param  array<int, MarkupElement>  $found  모은 요소 (참조)
+     * @return void 반환값 없음
+     */
+    private function collectElementsByTag(array $elements, string $tag, array &$found): void
+    {
+        foreach ($elements as $element) {
+            if (strtolower($element->name) === $tag) {
+                $found[] = $element;
+            }
+
+            $this->collectElementsByTag($element->children, $tag, $found);
+        }
     }
 
     /**

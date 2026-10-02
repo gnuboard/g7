@@ -201,13 +201,30 @@ public function activateModule(string $moduleName): array
         // 4. 레이아웃 등록 (새로운 레이아웃 또는 업데이트)
         $layoutsRegistered = $this->registerModuleLayouts($moduleName);
 
-        // 5. 캐시 무효화
+        // 5. 빈 자리로 등록한 조각 참조 경고 (7.0 JSON 호환 — 아래 「7.0 JSON 레이아웃 호환」)
+        $layoutWarnings = $this->takeLayoutIncludeWarnings();
+
+        // 6. 캐시 무효화
         $this->invalidateLayoutCache($module->getIdentifier());
     }
 
-    return ['success' => $result, 'layouts_registered' => $layoutsRegistered];
+    return ['success' => $result, 'layouts_registered' => $layoutsRegistered, 'layout_warnings' => $layoutWarnings];
 }
 ```
+
+#### 7.0 JSON 레이아웃 호환 — 깨진 조각 참조
+
+레이아웃이 `{"partial": "…"}` 로 조각을 참조하는데 그 조각을 읽을 수 없을 때, 참조를 **담고 있는 문서의 형식**에 따라 다르게 처리합니다.
+
+| 참조를 담은 문서 | 조각 파일 없음 · 조각 JSON 파싱 실패 · 순환 참조 | `layouts/` 밖 경로 · 최대 깊이 초과 · `.g7.html` 조각 컴파일 실패 |
+| --- | --- | --- |
+| `.json` (7.0 방식) | 설치·활성화·업데이트를 막지 않고 **그 자리를 비운 채** 등록 (부모가 배열이면 원소를 빼고, 아니면 `[]`) + 경고 | 오류 (설치 거부) |
+| `.g7.html` | 오류 (설치 거부) | 오류 (설치 거부) |
+
+- 판정 단위는 문서입니다 — JSON 레이아웃이 부른 `.g7.html` 조각 안의 깨진 참조는 엄격, JSON 조각 안의 깨진 참조는 관용합니다.
+- 경고는 활성화·업데이트·레이아웃 갱신·템플릿 설치 결과의 `layout_warnings`(`{file, partial, reason, message}` 목록)로 돌아오고, CLI 는 건별로 출력하며, 관리자 화면은 건수를 경고 알림으로 보여 줍니다. 설치된 확장 전체를 다시 훑어 보려면 `php artisan layout:check-installed` 의 「JSON 조각 참조 누락」 표를 봅니다.
+- `layouts/` 안의 JSON 조각 파일 자체가 깨져 있으면, 그 파일은 재귀 스캔에서 단독 레이아웃으로도 읽혀 파싱 오류로 설치가 실패합니다(7.0.11 과 같은 동작).
+- 새로 만드는 확장은 `.g7.html` 로 작성하세요 — 깨진 참조를 설치 시점에 오류로 알려 줍니다.
 
 ### 2. 모듈 비활성화 (deactivateModule)
 
@@ -246,12 +263,12 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
     // 2. 상태 업데이트
     $this->templateRepository->updateByIdentifier($templateName, [...]);
 
-    // 3. 레이아웃 확장(layout_extensions) 등록
-    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
-
-    // 4. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록
+    // 3. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록 (호스트 먼저)
     app(ModuleManager::class)->registerLayoutsForAllActiveModules();
     app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+
+    // 4. 레이아웃 확장(layout_extensions) 등록 — 붙을 자리(호스트 레이아웃·확장점)가 실재할 때만 행을 만든다
+    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
 
     // 5. 캐시 워밍
     $this->warmTemplateCache($templateName);
@@ -259,6 +276,8 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
 ```
 
 **중요**: `registerModuleLayouts()`는 `updateOrCreate` 패턴을 사용하므로 중복 호출에 안전합니다.
+
+**순서**: 조각 등록은 붙을 자리가 그 템플릿에 실재하는지 보고 행을 만듭니다. 모듈 화면에 붙는 조각은 그 모듈 레이아웃이 호스트이므로, 새로 켠 템플릿에 모듈 레이아웃을 먼저 등록하고 조각을 그 뒤에 등록해야 빠지지 않습니다.
 
 ### 4. Soft Delete/Restore 이유
 

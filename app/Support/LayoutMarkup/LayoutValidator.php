@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Validator;
  *    외부 JS 로더의 호스트·스킴을 config 허용 목록으로 잡는다(Q4).
  *  - **컴포넌트 존재 검사** — 검사용 레지스트리가 주어졌을 때만(편집기·템플릿 자신의 레이아웃) 산출 name 이
  *    그 템플릿에 있는지 본다. 설치 경로에는 레지스트리가 없다 — JSON 과 같이 컴포넌트 존재는 런타임이 판정한다.
+ *    편집기는 **저장본에 이미 있던** 미등록 템플릿 컴포넌트를 그 개수까지 허용한다(`CompileContext::$toleratedComponents`
+ *    — 7.0 이 무차별 등록한 조각 행을 저장할 수 있게, #712). 그보다 늘어난 것은 사용자가 새로 쓴 것이라 오류다.
  *    확장 컴포넌트(`식별자.이름`)는 여기서 세우지 않는다 — 설치된 확장 목록에 없으면 lint 경고
  *    (`extension_component_not_installed`)로 알리고 저장은 허용한다(2026-09-28 결정).
  *
@@ -86,9 +88,9 @@ final class LayoutValidator
         // 명시 차단한 뒤 `/api/(admin|auth|public)/` 화이트리스트와 path traversal 까지 건다.
         // 즉 두 문자열 경로의 `NoExternalUrls` 는 더 강한 규칙에 흡수된 중복 선언이다(S11 이전부터).
 
-        // ④ 컴포넌트 존재 그물
+        // ④ 컴포넌트 존재 그물 — 저장본에 이미 있던 미등록 컴포넌트는 그 개수까지 허용 (편집기 전용, #712)
         if ($registry !== null) {
-            $this->assertComponentsExist($view['components'], $registry, $path);
+            $this->assertComponentsExist($view['components'], $registry, $path, $context->toleratedComponents);
         }
 
         // ⑤ wait_for cross-field
@@ -178,22 +180,71 @@ final class LayoutValidator
      * 템플릿 컴포넌트(점 없는 이름)만 세운다. 확장 컴포넌트(`식별자.이름`)는 확장이 지워졌거나 편집 도중
      * 꺼졌을 수 있어 막지 않고, `LayoutLinter` ⑩ 이 경고한다.
      *
+     * 미등록 이름을 문서 순서로 모은 뒤, 허용 개수(`$tolerated` — 편집기가 넘기는 저장본 기준)를 넘는 첫 이름에서
+     * 실패한다. 허용 목록이 비면 종전과 같이 문서 순서로 처음 만난 미등록 이름에서 실패한다.
+     *
      * @param  array<int, mixed>  $components  노드 목록
      * @param  ComponentRegistry  $registry  레지스트리
      * @param  string|null  $path  소스 파일 경로
+     * @param  array<string, int>  $tolerated  허용 개수 (이름 → 개수)
      * @return void
      *
-     * @throws CompileError 미등록 컴포넌트 name 발견 시
+     * @throws CompileError 허용을 넘는 미등록 컴포넌트 name 발견 시
      */
-    private function assertComponentsExist(array $components, ComponentRegistry $registry, ?string $path): void
+    private function assertComponentsExist(array $components, ComponentRegistry $registry, ?string $path, array $tolerated = []): void
+    {
+        $found = [];
+        $this->collectUnregisteredComponents($components, $registry, $found);
+
+        if ($found === []) {
+            return;
+        }
+
+        $counts = array_count_values($found);
+
+        foreach (array_unique($found) as $name) {
+            if ($counts[$name] > ($tolerated[$name] ?? 0)) {
+                throw CompileError::inFile(LayoutMarkupErrorCode::ComponentNotInRegistry, $path, ['name' => $name]);
+            }
+        }
+    }
+
+    /**
+     * 문서(저장본)에 들어 있는 미등록 템플릿 컴포넌트를 이름별로 셉니다 (#712).
+     *
+     * 편집기가 저장본을 기준선으로 삼을 때 쓴다 — 저장·변환·열기 재컴파일은 이 개수까지 같은 이름을 허용한다.
+     * 순회 규칙은 {@see assertComponentsExist()} 와 같다(같은 함수를 쓴다).
+     *
+     * @param  array<string, mixed>  $json  저장본 JSON (레이아웃 또는 조각)
+     * @param  ComponentRegistry  $registry  편집 대상 템플릿의 검사용 레지스트리
+     * @return array<string, int> 이름 → 개수
+     */
+    public function unregisteredComponentCounts(array $json, ComponentRegistry $registry): array
+    {
+        $found = [];
+        $this->collectUnregisteredComponents($this->buildTraversalView($json, 'layout')['components'], $registry, $found);
+
+        return array_count_values($found);
+    }
+
+    /**
+     * 노드 트리를 문서 순서로 돌며 레지스트리에 없는 템플릿 컴포넌트 이름을 모읍니다.
+     *
+     * @param  array<int, mixed>  $components  노드 목록
+     * @param  ComponentRegistry  $registry  레지스트리
+     * @param  array<int, string>  $found  모은 이름 (참조, 문서 순서)
+     * @return void 반환값 없음
+     */
+    private function collectUnregisteredComponents(array $components, ComponentRegistry $registry, array &$found): void
     {
         foreach ($components as $node) {
             if (! is_array($node)) {
                 continue;
             }
 
-            // slot·partial 참조는 컴포넌트가 아니다.
-            if (isset($node['slot']) || isset($node['partial'])) {
+            // partial 참조는 컴포넌트가 아니다. `slot` 은 슬롯 래퍼 컴포넌트(extends 의 슬롯 자리·data-slot 등록 노드)에
+            // 붙고 이름·props 를 그대로 가지므로 그 노드와 하위 트리를 검사한다(LayoutService::replaceSlots 참고).
+            if (isset($node['partial'])) {
                 continue;
             }
 
@@ -202,12 +253,12 @@ final class LayoutValidator
 
             if (is_string($type) && in_array($type, self::REGISTRY_BACKED_TYPES, true) && is_string($name)
                 && ! str_contains($name, '.') && $registry->findByName($name) === null) {
-                throw CompileError::inFile(LayoutMarkupErrorCode::ComponentNotInRegistry, $path, ['name' => $name]);
+                $found[] = $name;
             }
 
             foreach (['children', 'cellChildren', 'expandChildren', 'subRowChildren'] as $childKey) {
                 if (isset($node[$childKey]) && is_array($node[$childKey])) {
-                    $this->assertComponentsExist($node[$childKey], $registry, $path);
+                    $this->collectUnregisteredComponents($node[$childKey], $registry, $found);
                 }
             }
         }

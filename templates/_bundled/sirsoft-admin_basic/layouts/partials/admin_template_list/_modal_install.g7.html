@@ -74,6 +74,8 @@
                 <set-state target="global" :isTemplateInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
                 <set-state target="global" :selectedTemplate="null"/>
                 <toast type="success" message="$t:admin.templates.install_success"/>
+                <!-- 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다. -->
+                <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
                 <close-modal/>

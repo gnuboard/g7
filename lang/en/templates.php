@@ -30,6 +30,7 @@ return [
         'missing_layout_name' => 'Missing layout_name field in layout JSON.',
         'layout_registration_failed' => 'Failed to register layout: :error',
         'layout_validation_failed' => 'Layout validation failed for :template template. (:count errors)',
+        'layout_validation_validation_failed' => 'Layout validation failed for :identifier template. (:count errors)',
         'layout_validation_json_error' => ':file - JSON parsing error: :error',
         'layout_validation_missing_name' => ':file - Missing layout_name field.',
         'layout_validation_partial_error' => ':file - Partial processing error (:partial): :error',

@@ -304,12 +304,20 @@ class TemplateServiceInstallationTest extends TestCase
             ->with($identifier)
             ->andReturn($templateInfo);
 
+        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 결과에 싣는다 (#712)
+        $warning = ['file' => 'templates/test-template/layouts/home.json', 'partial' => 'partials/x.json', 'reason' => 'include_file_not_found', 'message' => 'm'];
+        $this->templateManager
+            ->shouldReceive('takeLastLayoutWarnings')
+            ->once()
+            ->andReturn([$warning]);
+
         // Act
         $result = $this->templateService->installTemplate($identifier);
 
-        // Assert: installTemplate은 배열을 반환함 (templateInfo)
+        // Assert: installTemplate은 배열을 반환함 (templateInfo + layout_warnings)
         $this->assertIsArray($result);
         $this->assertEquals($identifier, $result['identifier']);
+        $this->assertSame([$warning], $result['layout_warnings']);
     }
 
     /**

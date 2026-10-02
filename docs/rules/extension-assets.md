@@ -80,7 +80,7 @@
 | 구동 자산(js/css/웹폰트)을 외부 CDN 에서 실시간 로드 | 확장이 `dist/vendor/{lib}/{version}/` 에 동봉하고 same-origin 서빙 |
 | `trusted_script_hosts` 만 선언하고 사유는 생략 | `trusted_script_hosts_reason` 에 호스트별 사유 동반 — 자체 제공이 원칙이고 예외는 근거가 코드에 남는다 |
 | 자산 URL 을 문자열로 조립 (`'/api/plugins/assets/'+id+'/…'`) | `G7Core.asset.{template,module,plugin}` — 확장자를 정적 location 이 가로채는 서버에서 조립 URL 만 404 가 된다 |
-| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춘다** |
+| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — `template()` 의 쿼리 형태는 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드의 `templateDir()` 은 인코딩하지 않은 `?file=` 디렉토리이고 서빙이 `.js` 없는 AMD 모듈 id 를 메운다. 그래도 받지 못하는 환경이 있으므로 **소비자가 폴백을 갖춘다** |
 | CSS 로드에 `onerror` 미설치 또는 `resolve()` 로 삼킴 | `loadStylesheetWithRetry` — 아이콘만으로 조작하는 버튼이 있는 화면에서 스타일 소실은 곧 조작 불능이다 |
 | 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
 | 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |

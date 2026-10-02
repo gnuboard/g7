@@ -439,7 +439,7 @@ class TemplateService
                 // after_install 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
                 // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
-                return $templateInfo;
+                return $this->withLayoutWarnings($templateInfo);
             }
 
             return null;
@@ -2182,7 +2182,29 @@ class TemplateService
             ]);
         }
 
-        return $this->templateManager->getTemplateInfo($identifier);
+        return $this->withLayoutWarnings($this->templateManager->getTemplateInfo($identifier));
+    }
+
+    /**
+     * 설치 결과 템플릿 정보에 방금 설치가 빈 자리로 등록한 조각 참조 경고를 싣습니다 (#712).
+     *
+     * 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록되며, 그 사실을 응답 `data.layout_warnings`
+     * 로 알린다(관리자 화면이 경고 토스트로 보여 준다).
+     *
+     * @param  array|null  $templateInfo  템플릿 정보
+     * @return array|null 경고(`layout_warnings`)를 실은 템플릿 정보
+     */
+    private function withLayoutWarnings(?array $templateInfo): ?array
+    {
+        $warnings = $this->templateManager->takeLastLayoutWarnings();
+
+        if ($templateInfo === null) {
+            return null;
+        }
+
+        $templateInfo['layout_warnings'] = $warnings;
+
+        return $templateInfo;
     }
 
     /**
@@ -2246,6 +2268,11 @@ class TemplateService
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
                 HookManager::doAction('core.templates.after_refresh_layouts', $identifier, $result);
+
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                if (is_array($templateInfo)) {
+                    $templateInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                }
 
                 return $templateInfo;
             }

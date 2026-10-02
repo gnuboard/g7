@@ -36,6 +36,8 @@ return [
         'circular_include' => 'Circular include detected: :trace',
         'max_include_depth_exceeded' => 'Maximum include depth exceeded (max: :max)',
         'include_outside_directory' => 'Include path outside allowed directory: :path (allowed: :allowed_dir)',
+        // A broken partial reference in a 7.0 JSON layout no longer blocks installation — the slot is left empty (warning)
+        'include_skipped' => 'Could not load partial :partial in JSON layout :file; it was registered as an empty slot (:reason)',
     ],
 
     // Layout version related exceptions
@@ -203,6 +205,7 @@ return [
         'hoist_prop_not_supported_by_template' => ':component in the :template template does not declare :prop — anything authored with <:tag> is dropped instead of rendered.',
         'component_type_mismatch' => ':component is written as :written but the :template template declares it as :declared — check data-type (omitted means basic).',
         'extension_component_not_installed' => 'No installed extension provides this component: :name — the :extension extension may have been removed or the name is mistyped. Saving is allowed, but it will not render unless that extension is present.',
+        'template_component_kept' => 'This template does not list the component :name — it was already in the saved content, so saving is allowed, but it may not render with this template.',
     ],
 
     // Settings related exceptions

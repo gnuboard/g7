@@ -154,10 +154,18 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
 돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
 
-심기에는 3초 제한 시간이 있다(자산이 영영 오지 않을 때 화면이 굳지 않게). 제한 시간이 지났는데
-심기가 넣은 로더(`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면
-`loader.init()` 을 **부르지 않고** 평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor`
-가 없으면 자기 `loader.js` 를 또 넣기 때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다.
+심기의 제한 시간은 두 단계다. 로더 스크립트를 받기 전까지는 3초(`PRIME_SCRIPT_TIMEOUT_MS` — 자산이 영영
+오지 않을 때 화면이 굳지 않게), 로더가 `vs/editor/editor.main` 을 요청한 뒤에는 60초 안전 제한
+(`PRIME_LOADING_TIMEOUT_MS`)과 AMD errback 이 끝을 정한다. 확장자를 가로채는 서버에서는 자산이 PHP 를 거쳐
+청크 하나에 1초 가까이 걸려 3초 안에 끝나지 않는다(#712 실측). 제한 시간이 지났는데 심기가 넣은 로더
+(`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면 `loader.init()` 을 **부르지 않고**
+평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor` 가 없으면 자기 `loader.js` 를 또 넣기
+때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다. errback 으로 끝난 심기(청크를 하나라도 받지
+못함)는 그 페이지에서 실패로 굳어 [다시 시도]도 폴백으로 간다 — 다시 받으려면 새로고침해야 한다.
+
+서버가 주는 오류 표시(`markers`)가 모델 줄 수를 넘으면, 새 내용이 모델에 들어올 때까지 보류했다가 다시 찍는다
+(이전 내용 위에 새 좌표를 찍으면 `Illegal value for lineNumber` 로 코드 작업 영역 전체가 내려간다). 새 내용이
+들어온 뒤에도 넘는 마커(파일 끝 다음 줄을 가리키는 오류 등)는 마지막 줄로 접어 찍는다.
 
 ### 알림 템플릿 편집 창 사본 (코어·게시판·이커머스·환율 플러그인)
 
@@ -173,7 +181,7 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 278개 | `vitest.config.ts` |
+| Vitest | 280개 | `vitest.config.ts` |
 | Playwright | 18개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 16개 | `tests/scenarios` |
 

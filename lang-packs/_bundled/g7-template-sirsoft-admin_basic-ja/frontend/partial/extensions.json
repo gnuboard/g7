@@ -14,7 +14,8 @@
     "auto_deactivated_listed": "自動的に無効化された拡張のリストです。",
     "recover_action": "再度有効化",
     "dismiss_action": "通知を閉じる",
-    "open_action": "開く"
+    "open_action": "開く",
+    "layout_include_skipped": "見つからないフラグメント参照 {{count}} 件を空のまま登録しました。サーバーログまたは php artisan layout:check-installed で確認してください。"
   },
   "badges": {
     "incompatible": "コアのアップグレードが必要です",

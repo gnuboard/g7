@@ -10,6 +10,7 @@ use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
 use App\Rules\ValidLayoutExtensionStructure;
 use App\Rules\WhitelistedEndpoint;
+use App\Services\LayoutMarkupService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -143,7 +144,10 @@ class UpdateLayoutExtensionContentRequest extends FormRequest
             return [null, null, null, 'extension.g7.html'];
         }
 
-        return [$templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html"];
+        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
+        $baseline = app(LayoutMarkupService::class)->decodeStoredContent((string) $extension->getRawOriginal('content'));
+
+        return [$templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html", $baseline];
     }
 
     /**

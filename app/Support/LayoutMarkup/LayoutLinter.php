@@ -104,6 +104,7 @@ final class LayoutLinter
         $this->lintUnsupportedHoistProps($json, $path, $warnings);
         $this->lintComponentTypeMismatch($json, $path, $warnings);
         $this->lintMissingExtensionComponents($json, $path, $warnings);
+        $this->lintKeptTemplateComponents($json, $context, $path, $warnings);
 
         return $warnings;
     }
@@ -298,6 +299,39 @@ final class LayoutLinter
                 'name' => $name,
                 'extension' => strstr($name, '.', true),
             ], $path);
+        }
+    }
+
+    /**
+     * ⑪ 저장본에 이미 있던 미등록 템플릿 컴포넌트를 경고합니다 (편집기 전용, #712).
+     *
+     * 검사기가 그 개수까지 허용해 저장은 되지만, 이 템플릿의 컴포넌트 목록에 없으므로 화면에 그려지지 않을 수 있다.
+     * 이름마다 한 번만 낸다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  CompileContext  $context  검증 문맥 (허용 목록)
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintKeptTemplateComponents(array $json, CompileContext $context, ?string $path, array &$warnings): void
+    {
+        if ($this->registry === null || $context->toleratedComponents === []) {
+            return;
+        }
+
+        $seen = [];
+
+        foreach ($this->collectNodes($json) as $node) {
+            $name = $node['name'];
+
+            if (str_contains($name, '.') || ! in_array($node['type'], NodeCompiler::COMPONENT_TYPES, true)
+                || isset($seen[$name]) || ! isset($context->toleratedComponents[$name]) || $this->registry->findByName($name) !== null) {
+                continue;
+            }
+
+            $seen[$name] = true;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::TemplateComponentKept, 0, 0, ['name' => $name], $path);
         }
     }
 

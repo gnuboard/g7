@@ -1,9 +1,3 @@
-// audit:allow extension-doc-coverage reason: 같은 작업 단위(S3-D12)에서 AGENTS.md 에 「Monaco 편집기
-// 확보 계약」절과 금지 패턴 2줄을 추가했다. 이 줄은 그 뒤 상수 docblock 에 상호참조 한 줄을 덧댄
-// 후속 편집이라, phase 단위 감사에는 이 파일만 잡혀 동반 문서가 보이지 않는다.
-// e2e:allow 같은 작업 단위에서 code-editor-monaco-vendored-version.spec.ts 에 「AMD 로더 스크립트가
-// 한 번만 실행된다」 축을 신설하고(매니페스트 effect: vendored_amd_loader_runs_exactly_once) 기존
-// 테스트 2건에 per-test @scenario/@effects 를 붙였다. 3 passed · red 대조 성립.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
@@ -152,6 +146,12 @@ function monacoNeedsPriming(): boolean {
 /** 선심기가 넣은 AMD 로더 스크립트 표식 — 라이브러리·다른 확장이 넣은 로더와 가른다 */
 const PRIME_SCRIPT_ATTR = 'data-g7-monaco-loader';
 
+/** 선심기 제한 — 로더 스크립트를 받기 전(이벤트가 오지 않는 환경 대비) */
+const PRIME_SCRIPT_TIMEOUT_MS = 3_000;
+
+/** 선심기 제한 — 로더가 받아져 `editor.main` 을 적재하는 중(느린 자산 서빙 대비 안전망) */
+const PRIME_LOADING_TIMEOUT_MS = 60_000;
+
 /**
  * 지금 `loader.init()` 을 부르면 AMD 로더가 두 번 실행되는지 판정합니다.
  *
@@ -196,14 +196,21 @@ function primeMonaco(): Promise<void> {
         // (jsdom·폐쇄망 실패)에서도 제한 시간 뒤 통과시키고, 그 뒤 판정은 `<Editor>` 의
         // 실패 경로(폴백 textarea)가 맡는다.
         let settled = false;
+        let deadline: number | undefined;
         const done = () => {
             if (!settled) {
                 settled = true;
+                // 끝난 심기의 제한 타이머는 남길 이유가 없다 — 성공·errback 으로 끝나도 60초 타이머가 남았다.
+                window.clearTimeout(deadline);
                 resolve();
             }
         };
 
-        window.setTimeout(done, 3_000);
+        // 3초 제한은 로더 스크립트조차 받지 못하는(이벤트가 오지 않는) 환경용이다. 로더가 받아져
+        // `editor.main` 을 요청한 뒤에는 적재가 진행 중이므로 긴 안전 제한으로 바꾸고, 적재 실패는
+        // AMD errback 으로 바로 끝낸다 — 확장자를 가로채는 서버에서 정적 게시본이 없으면 청크가 PHP 를
+        // 거쳐 개당 약 0.7초씩 와 3초를 넘기는데, 그때 끊으면 다 받은 Monaco 를 버리고 폴백으로 떨어진다.
+        deadline = window.setTimeout(done, PRIME_SCRIPT_TIMEOUT_MS);
 
         const adopt = (): boolean => {
             const amdRequire = (window as any)?.require;
@@ -211,6 +218,9 @@ function primeMonaco(): Promise<void> {
             if (typeof amdRequire !== 'function' || typeof amdRequire.config !== 'function') {
                 return false;
             }
+
+            window.clearTimeout(deadline);
+            deadline = window.setTimeout(done, PRIME_LOADING_TIMEOUT_MS);
 
             amdRequire.config({ paths: { vs: paths } });
 
@@ -232,6 +242,9 @@ function primeMonaco(): Promise<void> {
                     }
                 }
 
+                done();
+            }, () => {
+                // 적재 실패 — 긴 안전 제한을 기다리지 않고 끝낸다(판정은 `<Editor>` 실패 경로가 맡는다).
                 done();
             });
 
@@ -286,43 +299,77 @@ let loaderConfigured = false;
  * 좌표는 1-base 라인·컬럼이다. 끝 좌표가 없으면 그 줄 끝까지 물결을 긋는다 — 서버는 태그의 시작
  * 좌표만 알고, 한 글자짜리 물결은 눈에 띄지 않는다. 좌표가 0 이면(문서 전체 경고) 1행 1열로 접는다.
  *
+ * 모델 줄 수를 넘는 마커는 찍지 않고 `false` 를 돌려준다 — 마커가 모델에 내용이 들어오기 전에 도착하면(빈 모델·
+ * 직전 문서) `getLineMaxColumn()` 이 「Illegal value for lineNumber」 를 던지고, 그 예외가 렌더 경계까지 올라가
+ * 코드 작업 영역 전체가 그려지지 않았다(2026-10-01 실측). 보류분은 모델 내용이 바뀔 때 다시 찍는다.
+ * 모델이 이미 지금 받은 값을 담고 있으면(`clampOverflow`) 넘는 마커는 이 문서의 좌표다 — 파일 끝 다음 줄을
+ * 가리키는 오류처럼 — 그래서 보류하지 않고 마지막 줄 첫 칸으로 접어 찍는다. 보류하면 끝내 보이지 않고, 타이핑마다
+ * 다시 찍혀 편집을 따라 옮긴 다른 마커까지 서버 좌표로 되돌아간다.
+ *
  * @param editor 편집기 인스턴스 (미마운트면 아무것도 하지 않는다)
  * @param monacoInstance Monaco 네임스페이스
  * @param markers 찍을 마커
+ * @param clampOverflow 모델 줄 수를 넘는 마커를 보류하지 않고 마지막 줄로 접을지
+ * @returns 마커를 전부 찍었으면 true, 모델 줄 수를 넘어 보류한 마커가 있으면 false
  */
 function applyMarkers(
   editor: monaco.editor.IStandaloneCodeEditor | null,
   monacoInstance: Monaco | null,
   markers: CodeEditorMarker[] | undefined,
-): void {
+  clampOverflow = false,
+): boolean {
   const model = editor?.getModel?.();
 
   if (!editor || !monacoInstance?.editor?.setModelMarkers || !model) {
-    return;
+    return true;
   }
 
   const severity = monacoInstance.MarkerSeverity ?? { Error: 8, Warning: 4 };
+  const lastLine = typeof model.getLineCount === 'function' ? model.getLineCount() : Number.MAX_SAFE_INTEGER;
+  const inRange = clampOverflow
+    ? (markers ?? [])
+    : (markers ?? []).filter((marker) => Math.max(1, marker.line || 1) <= lastLine);
 
   monacoInstance.editor.setModelMarkers(
     model,
     MARKER_OWNER,
-    (markers ?? []).map((marker) => {
-      const line = Math.max(1, marker.line || 1);
-      const column = Math.max(1, marker.column || 1);
-      const endLine = marker.endLine ?? line;
+    inRange.map((marker) => {
+      const overflow = Math.max(1, marker.line || 1) > lastLine;
+      const line = Math.min(Math.max(1, marker.line || 1), lastLine);
+      const column = overflow ? 1 : Math.max(1, marker.column || 1);
+      const endLine = Math.min(Math.max(line, marker.endLine ?? line), lastLine);
       const lineLength = typeof model.getLineMaxColumn === 'function' ? model.getLineMaxColumn(endLine) : column + 1;
 
       return {
         startLineNumber: line,
         startColumn: column,
         endLineNumber: endLine,
-        endColumn: marker.endColumn ?? Math.max(column + 1, lineLength),
+        endColumn: overflow ? Math.max(column + 1, lineLength) : (marker.endColumn ?? Math.max(column + 1, lineLength)),
         message: marker.message,
         severity: marker.severity === 'error' ? severity.Error : severity.Warning,
         source: MARKER_OWNER,
       };
     }),
   );
+
+  return inRange.length === (markers ?? []).length;
+}
+
+/**
+ * 모델이 지금 받은 값을 이미 담고 있는지 판정합니다 (줄바꿈 표기 차이는 무시).
+ *
+ * @param editor 편집기 인스턴스
+ * @param value 컴포넌트가 받은 값
+ * @returns 모델 내용이 받은 값과 같으면 true, 판정할 수 없으면 false
+ */
+function modelHoldsValue(editor: monaco.editor.IStandaloneCodeEditor | null, value: string | undefined): boolean {
+  const model = editor?.getModel?.();
+
+  if (!model || typeof model.getValue !== 'function' || typeof value !== 'string') {
+    return false;
+  }
+
+  return model.getValue().replace(/\r\n/g, '\n') === value.replace(/\r\n/g, '\n');
 }
 
 /**
@@ -456,6 +503,30 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  // 모델 줄 수를 넘어 보류한 마커가 있는지 — 모델 내용이 바뀌면 그때 다시 찍는다(평소 타이핑에는 다시 찍지 않는다:
+  // Monaco 가 편집을 따라 옮긴 마커 위치를 서버 좌표로 되돌리지 않기 위해서다).
+  const markersRef = useRef(markers);
+  markersRef.current = markers;
+  const markersDeferredRef = useRef(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  /**
+   * 마커를 찍고 보류 여부를 기억합니다.
+   *
+   * 모델이 이미 지금 받은 값을 담고 있으면 넘는 마커는 이 문서의 좌표라 보류하지 않고 마지막 줄로 접는다.
+   *
+   * @returns void
+   */
+  const placeMarkers = (): void => {
+    markersDeferredRef.current = !applyMarkers(
+      editorRef.current,
+      monacoRef.current,
+      markersRef.current,
+      modelHoldsValue(editorRef.current, valueRef.current),
+    );
+  };
+
   const resolvedTheme = theme === 'auto' ? documentTheme : theme;
 
   if (!loaderConfigured) {
@@ -503,7 +574,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     editor.updateOptions(editorOptions);
     applyLineFeed(editor.getModel?.(), monacoInstance);
     registerCommands(editor, monacoInstance);
-    applyMarkers(editor, monacoInstance, markers);
+    placeMarkers();
+    editor.onDidChangeModelContent?.(() => {
+      if (markersDeferredRef.current) {
+        placeMarkers();
+      }
+    });
     setEditorReady(true);
     onReady?.();
   };
@@ -585,7 +661,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // 마커는 모델에 붙는 값이라 교체 직후 한 번 다시 올려야 한다.
   // 줄바꿈 고정도 여기서 함께 한다 — 모델은 파일마다 새로 생기므로 마운트 때 한 번으로는 모자란다.
   useEffect(() => {
-    applyMarkers(editorRef.current, monacoRef.current, markers);
+    placeMarkers();
 
     applyLineFeed(editorRef.current?.getModel?.(), monacoRef.current);
     // 마커 배열 자체의 변경은 아래 전용 effect 가 본다 — 여기서는 모델이 바뀐 시점만 다룬다.
@@ -594,7 +670,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // 마커는 값이 바뀔 때마다 통째로 다시 찍는다 — 지난 컴파일의 물결이 고친 줄에 남지 않게.
   useEffect(() => {
-    applyMarkers(editorRef.current, monacoRef.current, markers);
+    placeMarkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markers]);
 
   /**

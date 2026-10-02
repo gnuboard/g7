@@ -33,11 +33,13 @@ class LayoutExtensionController extends AdminBaseController
      * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 조회·저장·주입 해석
      * @param  TemplateService  $templateService  템플릿 식별자 → 템플릿 해석
      * @param  LayoutPreviewService  $layoutPreviewService  저장하지 않은 조각의 일회용 미리보기 발급
+     * @param  LayoutMarkupService  $layoutMarkupService  마크업 역변환·컴파일·저장본 해석
      */
     public function __construct(
         private LayoutExtensionService $layoutExtensionService,
         private TemplateService $templateService,
-        private LayoutPreviewService $layoutPreviewService
+        private LayoutPreviewService $layoutPreviewService,
+        private LayoutMarkupService $layoutMarkupService
     ) {
         parent::__construct();
     }
@@ -128,7 +130,7 @@ class LayoutExtensionController extends AdminBaseController
             return $this->notFound('common.not_found');
         }
 
-        $service = app(LayoutMarkupService::class);
+        $service = $this->layoutMarkupService;
 
         try {
             $result = $service->toJson(
@@ -137,6 +139,8 @@ class LayoutExtensionController extends AdminBaseController
                 $extension->source_type?->value,
                 $extension->source_identifier,
                 "{$extension->target_name}.g7.html",
+                // 저장본 — 그 안에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 (#712)
+                $service->decodeStoredContent((string) $extension->getRawOriginal('content')),
             );
         } catch (CompileError $error) {
             $described = $service->describeError($error);
@@ -180,16 +184,29 @@ class LayoutExtensionController extends AdminBaseController
      */
     private function buildMarkupPayload(LayoutExtension $extension, string $templateName): array
     {
-        $service = app(LayoutMarkupService::class);
+        $service = $this->layoutMarkupService;
         // 레이아웃 갈래와 같은 이유로 원본 JSON 문자열에서 디코드한다 — `array` 캐스트는 `{}` 와 `[]` 를
         // 구분하지 못해, 그대로 역변환하면 `{}` 가 편집기에 `[]` 로 보이고 저장 시 실제로 바뀐다.
         $content = $service->decodeStoredContent((string) $extension->getRawOriginal('content'));
-        ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($content, $templateName);
+
+        // 템플릿 `components.json` 이 스키마를 어기면 검사 목록을 만들 수 없다 — 500 이 아니라 빈 마크업 + 오류로 연다(#712).
+        try {
+            ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($content, $templateName);
+        } catch (CompileError $error) {
+            return [
+                'content_markup' => '',
+                'markup_escapes' => [],
+                'markup_warnings' => [],
+                'markup_compile_error' => $service->describeError($error),
+            ];
+        }
+
         $warnings = [];
         $compileError = null;
 
         try {
-            $result = $service->toJson($markup, $templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html");
+            // 저장본에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 — 7.0 이 무차별 등록한 조각 행 (#712)
+            $result = $service->toJson($markup, $templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html", $content);
             $warnings = $service->describeWarnings($result->warnings);
         } catch (CompileError $error) {
             $compileError = $service->describeError($error);

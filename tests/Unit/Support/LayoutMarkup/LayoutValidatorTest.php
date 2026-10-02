@@ -4,6 +4,7 @@ namespace Tests\Unit\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupErrorCode;
 use App\Rules\NoExternalUrls;
+use App\Services\LayoutService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
@@ -177,6 +178,38 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
 
         $json['components'][0]['children'][] = ['type' => 'basic', 'name' => 'Dvi'];
         $this->assertSame(LayoutMarkupErrorCode::ComponentNotInRegistry, $this->error($json));
+    }
+
+    /**
+     * `slot` 키가 붙은 노드도 컴포넌트다 — 그 노드와 하위 트리의 미등록 이름을 거부한다.
+     *
+     * G7 에서 `slot` 은 슬롯 래퍼 컴포넌트(`extends` 의 슬롯 자리, `data-slot` 등록 노드)에 붙고 이름·props 를
+     * 그대로 가진다({@see LayoutService::replaceSlots()}). 예전 검사는 `slot` 키를 참조로 보고
+     * 하위 트리를 통째로 건너뛰어, 슬롯 래퍼 아래의 오타가 저장·설치를 통과했다. 참조라서 건너뛸 것은
+     * `partial` 뿐이다.
+     *
+     * @scenario compile_unit=validator,source_health=invalid
+     *
+     * @effects slot_wrapper_subtree_is_checked_for_registry
+     *
+     * @return void 반환값 없음
+     */
+    public function test_slot_wrapper_subtree_is_checked_for_registry(): void
+    {
+        $json = $this->layout();
+        $json['components'] = [['type' => 'basic', 'name' => 'Div', 'slot' => 'content', 'children' => [
+            ['type' => 'basic', 'name' => 'Dvi'],
+        ]]];
+
+        $this->assertSame(LayoutMarkupErrorCode::ComponentNotInRegistry, $this->error($json), '슬롯 래퍼 하위의 오타');
+
+        $json['components'] = [['type' => 'basic', 'name' => 'Dvi', 'slot' => 'content']];
+        $this->assertSame(LayoutMarkupErrorCode::ComponentNotInRegistry, $this->error($json), '슬롯 래퍼 자신의 오타');
+
+        $json['components'] = [['type' => 'basic', 'name' => 'Div', 'slot' => 'content', 'children' => [
+            ['type' => 'basic', 'name' => 'Span'],
+        ]]];
+        $this->assertNull($this->errorOrNull($json), '등록된 이름만 있으면 통과');
     }
 
     /**

@@ -300,6 +300,8 @@
               <success>
                 <parallel>
                   <toast type="success" message="{{$args[0] ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"/>
+                  <!-- 7.0 JSON 레이아웃의 깨진 조각 참조는 활성화를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다. -->
+                  <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                   <refetch-data-source dataSourceId="plugins"/>
                   <refetch-data-source dataSourceId="admin_menu"/>
                   <reload-extensions pluginInfo="{{result.data?.plugin ?? result}}" action="{{$args[0] ? 'add' : 'remove'}}"/>

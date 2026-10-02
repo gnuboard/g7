@@ -5,6 +5,8 @@
  * 심는다. 네트워크가 느려 3초 안에 끝나지 않으면 게이트를 풀고 `loader.init()` 을 부르는데,
  * 라이브러리 `init()` 은 `window.monaco.editor` 가 아직 없으면 **자기 `loader.js` 를 또 넣는다** —
  * 그러면 AMD 로더가 두 번 실행돼 `_amdLoaderGlobal` 재선언으로 그 판의 require 가 통째로 죽는다.
+ *
+ * 적재가 진행 중일 때는 3초에 끊지 않는다 — 트러블슈팅 `[case:components-misc-codeeditor-prime-timeout]`.
  */
 
 import React from 'react';
@@ -100,5 +102,78 @@ describe('CodeEditor Monaco 선심기 제한 시간', () => {
         expect(loaderInit).toHaveBeenCalledTimes(1);
         expect(loaderScripts()).toHaveLength(1);
         expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+    });
+
+    /**
+     * 로더 스크립트가 받아져 `editor.main` 을 요청한 뒤에는 3초가 지나도 끊지 않고 끝까지 기다린다.
+     *
+     * 확장자를 가로채는 서버에서 정적 게시본이 없으면 Monaco 청크가 PHP 를 거쳐 개당 약 0.7초씩 와서
+     * 전부 받는 데 3초를 넘긴다(2026-10-01 실측). 3초 제한은 이벤트가 아예 오지 않는 환경을 위한 것이라,
+     * 적재가 진행 중일 때 끊으면 다 받은 Monaco 를 버리고 평문 폴백으로 떨어진다.
+     *
+     * @scenario case=prime_slow_after_loader
+     * @effects prime_waits_for_editor_main_once_loader_script_loaded
+     */
+    it('로더가 받아진 뒤에는 3초가 지나도 editor.main 을 기다려 편집기를 그린다', async () => {
+        render(<CodeEditor value="{ }" />);
+
+        const [script] = loaderScripts();
+        let finish: ((main: unknown) => void) | null = null;
+        const amdRequire: any = vi.fn((_deps: string[], cb: (main: unknown) => void) => {
+            finish = cb;
+        });
+        amdRequire.config = vi.fn();
+        (window as any).require = amdRequire;
+
+        await act(async () => {
+            script.dispatchEvent(new Event('load'));
+            await vi.advanceTimersByTimeAsync(8_000);
+        });
+
+        expect(screen.queryByTestId('code-editor-fallback'), '적재 진행 중에 폴백으로 떨어졌다').toBeNull();
+        expect(loaderInit).not.toHaveBeenCalled();
+
+        await act(async () => {
+            finish?.({ editor: { create: vi.fn() } });
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(loaderInit).toHaveBeenCalledTimes(1);
+        expect(loaderScripts()).toHaveLength(1);
+        expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+    });
+
+    /**
+     * `editor.main` 적재가 실패하면(AMD errback) 긴 안전 제한을 기다리지 않고 바로 평문 폴백으로 넘어간다.
+     *
+     * @scenario case=prime_slow_after_loader
+     * @effects prime_waits_for_editor_main_once_loader_script_loaded
+     */
+    it('editor.main 적재가 실패하면 바로 평문 폴백으로 넘어간다', async () => {
+        render(<CodeEditor value="{ }" />);
+
+        const [script] = loaderScripts();
+        let fail: ((error: unknown) => void) | null = null;
+        const amdRequire: any = vi.fn((_deps: string[], _cb: unknown, errback: (error: unknown) => void) => {
+            fail = errback;
+        });
+        amdRequire.config = vi.fn();
+        (window as any).require = amdRequire;
+
+        await act(async () => {
+            script.dispatchEvent(new Event('load'));
+            await vi.advanceTimersByTimeAsync(100);
+        });
+
+        await act(async () => {
+            fail?.(new Error('Script error for "vs/editor/editor.main"'));
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(loaderInit).not.toHaveBeenCalled();
+        expect(loaderScripts()).toHaveLength(1);
+        expect(screen.getByTestId('code-editor-fallback')).toBeInTheDocument();
+        // 끝난 심기의 60초 안전 제한 타이머는 남지 않는다.
+        expect(vi.getTimerCount()).toBe(0);
     });
 });

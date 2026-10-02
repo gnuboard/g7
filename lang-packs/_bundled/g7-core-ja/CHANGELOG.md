@@ -107,6 +107,7 @@
   추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
 - 관리 범위 밖의 회원이 섞인 일괄 상태 변경의 제외 사유(`user.bulk_status_out_of_scope`)와, 유형별 마지막 활성 템플릿의 비활성화·삭제 거절 문구(`templates.errors.last_active_deactivate`·`last_active_uninstall`) 일본어 번역을 추가했습니다.
 - 역할↔메뉴 일괄 지정·회원 역할 일괄 변경의 코어 문구 일본어 번역을 추가했습니다 — 메뉴 역할 일괄 변경 결과·실패 안내(`menu.bulk_roles_*`·`menu.admin_role_required`), 회원 역할 일괄 변경 결과·권한 상한 거부 안내(`user.bulk_roles_*`), 활동 로그 「ロール一括変更」(`activity_log.action.bulk_roles`·`activity_log.description.user_bulk_roles`), 요청 검증 문구와 항목명(`validation.role.menu_ids.*`·`validation.attributes.menu_ids`·`role_ids`·`mode`·`uuids`).
+- 7.0 에서 만든 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록할 때 남기는 경고(`exceptions.layout.include_skipped`), 레이아웃 편집기가 저장본에 이미 있던 목록 밖 컴포넌트를 알리는 경고(`exceptions.layout_markup_lint.template_component_kept`), 플러그인 레이아웃 마크업 컴파일 실패(`plugins.errors.layout_validation_markup_error`), 템플릿 레이아웃 검증 실패 요약(`templates.errors.layout_validation_validation_failed`)의 일본어 문구를 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재).
 
 ### Changed
 
@@ -135,6 +136,7 @@
 ### Fixed
 
 - 모듈 비활성화 경고(`modules.deactivate_warning`)의 일본어 문구가 의존하는 것이 템플릿뿐인 것처럼 「アクティブなテンプレート」라고 하던 것을 「有効化された拡張」로 바로잡았습니다(코어 원문과 같은 수정).
+- 모듈·플러그인 레이아웃 검증 실패 요약(`modules.errors.layout_validation_validation_failed`, `plugins.errors.layout_validation_validation_failed`) 끝의 `: :error` 를 ko 원문에 맞춰 뺐습니다. 호출부가 더 이상 오류 문구를 넘기지 않아 일본어 화면에 `:error` 가 글자 그대로 보였습니다.
 
 ## [1.0.10] - 2026-09-09
 

@@ -56,6 +56,27 @@ trait ValidatesLayoutFiles
     protected ?array $compileContextOverride = null;
 
     /**
+     * JSON 문서 안에서 관용한 조각 참조 실패 종류 (#712 D1).
+     *
+     * 7.0.11 은 이 셋을 `app.debug=false` 에서 빈 자리로 바꿔 설치를 통과시켰다. `layouts/` 밖 참조(보안 경계)·최대 깊이
+     * 초과·마크업 조각 컴파일 실패는 7.0 에서 만들 수 없던(또는 막아야 하는) 실패라 JSON 문서 안이어도 엄격하다.
+     */
+    private const TOLERATED_INCLUDE_FAILURES = ['include_file_not_found', 'invalid_include_json', 'circular_include'];
+
+    /** 관용한 조각 자리를 표시하는 값 — 부모가 리스트면 원소를 빼고, 아니면 `[]` 로 바꾼다 (#712 D3). */
+    private const SKIPPED_PARTIAL = ['__g7_skipped_partial' => true];
+
+    /**
+     * JSON 문서에서 관용한 조각 참조 실패 목록 — {@see takeLayoutIncludeWarnings()} 로 꺼낸다.
+     *
+     * @var array<int, array{file: string, partial: string, reason: string, message: string}>
+     */
+    protected array $layoutIncludeWarnings = [];
+
+    /** 지금 검증 중인 최상위 레이아웃 파일 (조각 밖 참조의 소속 문서). */
+    private ?string $currentLayoutFile = null;
+
+    /**
      * 레이아웃 파일들을 검증합니다.
      *
      * @param  string  $layoutsPath  레이아웃 디렉토리 경로
@@ -68,6 +89,9 @@ trait ValidatesLayoutFiles
      */
     protected function validateLayoutFiles(string $layoutsPath, string $identifier, string $sourceType, bool $recursive = false): array
     {
+        // 경고는 검증 한 번 단위다 — 직전 검증의 경고가 다음 결과에 섞이지 않게 비운다.
+        $this->layoutIncludeWarnings = [];
+
         if (! File::exists($layoutsPath)) {
             return [];
         }
@@ -168,20 +192,28 @@ trait ValidatesLayoutFiles
             // 레이아웃 이름 결정
             $layoutName = $layoutData['layout_name'] ?? $this->generateLayoutNameFromPath($layoutsPath, $layoutFile, $identifier);
 
-            // partial 병합 검증
+            // partial 병합 검증 — `.json` 문서의 조각 참조 실패는 관용하고(7.0 JSON 확장 호환, #712), `.g7.html` 은 엄격하다.
             $basePath = dirname($layoutFile);
             $mainDataSources = $layoutData['data_sources'] ?? [];
+            $this->currentLayoutFile = $layoutFile;
 
             try {
-                $layoutData = $this->resolveAllPartials($layoutData, $basePath, 0, $mainDataSources);
+                $layoutData = $this->resolveAllPartials($layoutData, $basePath, 0, $mainDataSources, ! $source['markup']);
             } catch (LayoutIncludeException $e) {
                 $errors[] = $this->formatLayoutValidationError($sourceType, 'partial_error', [
                     'file' => $relativePath,
-                    'error' => $e->getMessage(),
+                    'error' => $this->withoutBasePath($e->getMessage()),
                     'partial' => $e->getIncludePath(),
                 ]);
 
                 continue;
+            } finally {
+                $this->currentLayoutFile = null;
+            }
+
+            // 레이아웃 전체가 관용한 조각 참조 하나였던 경우 — 빈 문서로 둔다.
+            if ($layoutData === self::SKIPPED_PARTIAL) {
+                $layoutData = [];
             }
 
             // 조각 출처 표식이 있는 판(병합 기준 원본)과 걷어낸 판(서비스·해시)을 가른다.
@@ -333,11 +365,106 @@ trait ValidatesLayoutFiles
      */
     protected function formatLayoutValidationError(string $sourceType, string $errorType, array $params): string
     {
-        $translationKey = $sourceType === 'template'
-            ? "templates.errors.layout_validation_{$errorType}"
-            : "modules.errors.layout_validation_{$errorType}";
+        // 소스 타입마다 자기 문구 파일을 쓴다 — 종전엔 플러그인도 모듈 문구를 빌려 "모듈 … 검증 실패" 로 표기됐다(#712).
+        $translationKey = match ($sourceType) {
+            'template' => "templates.errors.layout_validation_{$errorType}",
+            'plugin' => "plugins.errors.layout_validation_{$errorType}",
+            default => "modules.errors.layout_validation_{$errorType}",
+        };
 
         return __($translationKey, $params);
+    }
+
+    /**
+     * JSON 문서에서 관용한 조각 참조 실패 목록을 꺼내고 비웁니다 (#712).
+     *
+     * 등록 경로(활성화·업데이트·갱신·설치)가 {@see validateLayoutFiles()} 직후 불러 결과의 `layout_warnings` 로 싣는다.
+     * 같은 실패가 호스트 레이아웃과 조각 파일 단독 스캔에서 두 번 잡혀도 한 건으로 센다.
+     *
+     * @return array<int, array{file: string, partial: string, reason: string, message: string}> 경고 목록
+     */
+    public function takeLayoutIncludeWarnings(): array
+    {
+        $warnings = $this->layoutIncludeWarnings;
+        $this->layoutIncludeWarnings = [];
+
+        return $warnings;
+    }
+
+    /**
+     * 문구에 든 서버 절대 경로(저장소 루트)를 걷어내 저장소 기준 상대 경로로 만듭니다.
+     *
+     * 조각 해석 예외 문구는 해석된 절대 경로를 싣는다. 검증 실패 문구와 관용 경고는 관리자 API 응답·토스트로
+     * 나가므로 서버 디렉토리 구조를 드러내지 않는다.
+     *
+     * @param  string  $text  원문
+     * @return string 저장소 루트를 걷어낸 문구
+     */
+    private function withoutBasePath(string $text): string
+    {
+        $root = base_path().DIRECTORY_SEPARATOR;
+
+        return str_replace([$root, str_replace('\\', '/', $root)], '', $text);
+    }
+
+    /**
+     * 이 조각 참조 실패를 빈 자리로 관용하는지 판정합니다.
+     *
+     * 참조를 담은 문서가 `.json` 이고(`$lenient`) 실패 종류가 관용 목록({@see TOLERATED_INCLUDE_FAILURES})에 있을 때만
+     * 관용한다 — 갈래마다 따로 판정하면 목록과 실제 동작이 갈라진다.
+     *
+     * @param  bool  $lenient  참조를 담은 문서가 `.json` 인지
+     * @param  string  $reason  실패 종류
+     * @return bool 관용하면 true
+     */
+    private function tolerates(bool $lenient, string $reason): bool
+    {
+        return $lenient && in_array($reason, self::TOLERATED_INCLUDE_FAILURES, true);
+    }
+
+    /**
+     * 관용한 조각 참조 실패를 경고로 남기고 빈 자리 표식을 돌려줍니다.
+     *
+     * @param  LayoutIncludeException  $e  관용하지 않았다면 던졌을 예외 (사유 문구로 쓴다)
+     * @param  string  $reason  실패 종류 (`exceptions.layout.*` 키 이름)
+     * @param  string  $partialPath  조각 참조 값
+     * @return array<string, bool> 빈 자리 표식 ({@see SKIPPED_PARTIAL})
+     */
+    private function skipPartial(LayoutIncludeException $e, string $reason, string $partialPath): array
+    {
+        // 실패한 참조를 담은 문서 — 조각 안이면 그 조각, 아니면 지금 검증 중인 레이아웃 파일.
+        $document = end($this->partialStack) ?: ($this->currentLayoutFile ?? '');
+        $file = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', (string) $document));
+
+        foreach ($this->layoutIncludeWarnings as $warning) {
+            if ($warning['file'] === $file && $warning['partial'] === $partialPath && $warning['reason'] === $reason) {
+                return self::SKIPPED_PARTIAL;
+            }
+        }
+
+        // 경고는 관리자 API 응답으로 나간다 — 조각 해석 예외 문구의 서버 절대 경로를 저장소 기준 상대 경로로 바꾼다.
+        $reasonText = $this->withoutBasePath($e->getMessage());
+
+        $message = __('exceptions.layout.include_skipped', [
+            'file' => $file,
+            'partial' => $partialPath,
+            'reason' => $reasonText,
+        ]);
+
+        $this->layoutIncludeWarnings[] = [
+            'file' => $file,
+            'partial' => $partialPath,
+            'reason' => $reason,
+            'message' => $message,
+        ];
+
+        Log::warning('JSON 레이아웃 조각 참조 실패 — 빈 자리로 등록', [
+            'file' => $file,
+            'partial' => $partialPath,
+            'reason' => $reason,
+        ]);
+
+        return self::SKIPPED_PARTIAL;
     }
 
     /**
@@ -599,11 +726,12 @@ trait ValidatesLayoutFiles
      * @param  string  $basePath  기준 경로 (현재 레이아웃 파일의 디렉토리)
      * @param  int  $depth  현재 partial 깊이
      * @param  array  $dataSources  메인 레이아웃의 data_sources (partial 파일에서 참조 가능)
-     * @return array partial이 모두 해석된 데이터
+     * @param  bool  $lenient  이 데이터를 담은 문서가 `.json` 인지 — 참이면 관용 갈래({@see TOLERATED_INCLUDE_FAILURES})를 빈 자리로 둔다 (#712)
+     * @return array partial이 모두 해석된 데이터 (관용한 자리 자체였다면 {@see SKIPPED_PARTIAL})
      *
      * @throws LayoutIncludeException
      */
-    protected function resolveAllPartials(array $data, string $basePath, int $depth = 0, array $dataSources = []): array
+    protected function resolveAllPartials(array $data, string $basePath, int $depth = 0, array $dataSources = [], bool $lenient = false): array
     {
         // 1. 깊이 제한 검증
         $maxDepth = config('template.layout.max_inheritance_depth', 10);
@@ -617,14 +745,31 @@ trait ValidatesLayoutFiles
 
         // 2. partial 키가 있으면 처리 (배열 항목 치환)
         if (isset($data['partial']) && is_string($data['partial'])) {
-            return $this->resolvePartial($data['partial'], $basePath, $depth, $dataSources);
+            return $this->resolvePartial($data['partial'], $basePath, $depth, $dataSources, $lenient);
         }
 
-        // 3. 배열의 각 요소를 재귀적으로 처리
+        // 3. 배열의 각 요소를 재귀적으로 처리 — 관용한 자리는 리스트면 빼고(재색인), 아니면 `[]` 로 비운다 (#712 D3).
+        $skipped = false;
+
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $data[$key] = $this->resolveAllPartials($value, $basePath, $depth, $dataSources);
+                $resolved = $this->resolveAllPartials($value, $basePath, $depth, $dataSources, $lenient);
+
+                if ($resolved === self::SKIPPED_PARTIAL) {
+                    $skipped = true;
+                    $data[$key] = self::SKIPPED_PARTIAL;
+
+                    continue;
+                }
+
+                $data[$key] = $resolved;
             }
+        }
+
+        if ($skipped) {
+            $data = array_is_list($data)
+                ? array_values(array_filter($data, static fn (mixed $value): bool => $value !== self::SKIPPED_PARTIAL))
+                : array_map(static fn (mixed $value): mixed => $value === self::SKIPPED_PARTIAL ? [] : $value, $data);
         }
 
         return $data;
@@ -642,17 +787,22 @@ trait ValidatesLayoutFiles
      * 설치는 성공한 채 DB content 에 구멍이 굽히고 화면 일부가 흔적 없이 사라졌다. 조각을 소스로
      * 읽게 만들면서 이 침묵을 함께 걷어낸다 — 남겨 두면 다음 결함도 같은 방식으로 숨는다.
      *
+     * **예외 — 7.0 JSON 호환(#712)**: 실패한 참조를 담은 문서가 `.json` 이면(`$lenient`) 파일 부재·조각 JSON 파싱
+     * 실패·순환 참조는 예외 대신 빈 자리 표식을 돌려주고 경고를 남긴다(7.0.11 이 설치를 통과시키던 세 갈래). 7.0 JSON
+     * 확장이 조각 하나 때문에 설치·활성화·업데이트 전부에서 거부되던 회귀를 막는 것이고, `.g7.html` 문서는 그대로 엄격하다.
+     *
      * @param  string  $partialPath  partial 경로
      * @param  string  $basePath  기준 경로
      * @param  int  $depth  현재 깊이
      * @param  array  $dataSources  메인 레이아웃의 data_sources
-     * @return array 로드된 데이터
+     * @param  bool  $lenient  참조를 담은 문서가 `.json` 인지 (관용 갈래 적용 여부)
+     * @return array 로드된 데이터 (관용한 실패면 {@see SKIPPED_PARTIAL})
      *
-     * @throws LayoutIncludeException 경로 해석·순환 참조·파일 부재·컴파일/파싱 실패 시
+     * @throws LayoutIncludeException 경로 해석·순환 참조·파일 부재·컴파일/파싱 실패 시 (관용 갈래 제외)
      */
-    protected function resolvePartial(string $partialPath, string $basePath, int $depth, array $dataSources = []): array
+    protected function resolvePartial(string $partialPath, string $basePath, int $depth, array $dataSources = [], bool $lenient = false): array
     {
-        // 1. 소스 SSoT 우선으로 소스를 고르고 절대 경로로 변환 (layouts 디렉토리 이탈은 여기서 예외).
+        // 1. 소스 SSoT 우선으로 소스를 고르고 절대 경로로 변환 (layouts 디렉토리 이탈은 여기서 예외 — 관용하지 않는다).
         $source = $this->resolvePartialSource($partialPath, $basePath);
         $absolutePath = $source['path'];
 
@@ -665,11 +815,17 @@ trait ValidatesLayoutFiles
         if (in_array($absolutePath, $this->partialStack, true) && ! $isRecursiveSelfReference) {
             $trace = implode(' → ', $this->partialStack)." → {$absolutePath}";
 
-            throw new LayoutIncludeException(
+            $e = new LayoutIncludeException(
                 __('exceptions.layout.circular_include', ['trace' => $trace]),
                 $partialPath,
                 $this->partialStack
             );
+
+            if ($this->tolerates($lenient, 'circular_include')) {
+                return $this->skipPartial($e, 'circular_include', $partialPath);
+            }
+
+            throw $e;
         }
 
         // 자기 자신 재귀 참조인 경우: 더 이상 재귀하지 않고 partial 참조 그대로 반환
@@ -683,7 +839,7 @@ trait ValidatesLayoutFiles
 
         // 3. 파일 존재 여부 확인 (두 확장자 후보 모두 부재)
         if (! $source['exists']) {
-            throw new LayoutIncludeException(
+            $e = new LayoutIncludeException(
                 __('exceptions.layout.include_file_not_found', [
                     'path' => $partialPath,
                     'resolved' => $absolutePath,
@@ -691,20 +847,44 @@ trait ValidatesLayoutFiles
                 $partialPath,
                 $this->partialStack
             );
+
+            if ($this->tolerates($lenient, 'include_file_not_found')) {
+                return $this->skipPartial($e, 'include_file_not_found', $partialPath);
+            }
+
+            throw $e;
+        }
+
+        // 조각 JSON 파싱 실패는 스택에 올리기 전에 판정한다 — 관용하면 그 조각 안으로 들어가지 않는다.
+        if (! $source['markup']) {
+            try {
+                $data = $this->decodePartialJsonFile($absolutePath, $partialPath);
+            } catch (LayoutIncludeException $e) {
+                if ($this->tolerates($lenient, 'invalid_include_json')) {
+                    return $this->skipPartial($e, 'invalid_include_json', $partialPath);
+                }
+
+                throw $e;
+            }
         }
 
         // 4. 스택에 추가
         $this->partialStack[] = $absolutePath;
 
         try {
-            // 5. 소스 로드 — 마크업은 메모리 컴파일(디스크 미기록), `.json` 은 직접 파싱.
-            $data = $source['markup']
-                ? $this->compilePartialMarkupFile($absolutePath, $partialPath)
-                : $this->decodePartialJsonFile($absolutePath, $partialPath);
+            // 5. 소스 로드 — 마크업은 메모리 컴파일(디스크 미기록, 실패는 관용하지 않는다), `.json` 은 위에서 파싱했다.
+            if ($source['markup']) {
+                $data = $this->compilePartialMarkupFile($absolutePath, $partialPath);
+            }
 
-            // 6. 로드된 데이터 내부의 partial도 재귀적으로 처리
+            // 6. 로드된 데이터 내부의 partial도 재귀적으로 처리 — 관용 여부는 그 참조를 담은 문서(이 조각)의 형식이 정한다(D2).
             $newBasePath = dirname($absolutePath);
-            $resolved = $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
+            $resolved = $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources, ! $source['markup']);
+
+            // 조각 전체가 관용한 참조 하나였다면 이 자리도 빈 자리다.
+            if ($resolved === self::SKIPPED_PARTIAL) {
+                return self::SKIPPED_PARTIAL;
+            }
 
             // 7. 조각 출처 표식 — 객체 루트 조각에만. 리스트 루트 조각은 부모 몸통의 일부로 취급한다.
             if ($this->partialOriginRoot !== null && $resolved !== [] && ! array_is_list($resolved)) {

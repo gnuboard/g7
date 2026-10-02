@@ -160,6 +160,15 @@ interface TemplateManagerInterface
     public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array;
 
     /**
+     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고를 꺼내고 비웁니다.
+     *
+     * 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 설치를 부른 쪽이 이 목록으로 알린다.
+     *
+     * @return array<int, array{file: string, partial: string, reason: string, message: string}> 경고 목록
+     */
+    public function takeLastLayoutWarnings(): array;
+
+    /**
      * 템플릿의 의존성 충족 상태를 확인합니다.
      *
      * template.json의 dependencies를 기반으로 모든 모듈/플러그인의

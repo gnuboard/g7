@@ -395,6 +395,51 @@ interface LayoutRepositoryInterface
     public function getBySourceIdentifier(string $sourceIdentifier, LayoutSourceType $sourceType): Collection;
 
     /**
+     * 출처(모듈·플러그인)의 soft delete 된 레이아웃을 조회합니다.
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입 — 같은 식별자의 다른 출처 행을 건드리지 않도록 반드시 가른다
+     * @return Collection soft delete 된 레이아웃 컬렉션
+     */
+    public function getTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection;
+
+    /**
+     * 출처의 레이아웃을 soft delete 합니다 (확장 비활성화).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int soft delete 된 레코드 수
+     */
+    public function softDeleteBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 soft delete 된 레이아웃을 복원합니다 (확장 재활성화).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 복원된 레코드 수
+     */
+    public function restoreBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 레이아웃을 영구 삭제합니다 (soft delete 포함, 확장 삭제).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 삭제된 레코드 수
+     */
+    public function forceDeleteBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 레이아웃 개수를 반환합니다 (soft delete 포함).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 레이아웃 개수
+     */
+    public function countBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
      * 특정 템플릿의 모든 레이아웃을 삭제합니다.
      *
      * @param  int  $templateId  템플릿 ID

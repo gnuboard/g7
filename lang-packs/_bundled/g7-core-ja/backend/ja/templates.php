@@ -27,6 +27,7 @@ return [
         'missing_layout_name' => 'レイアウト JSON に layout_name フィールドが不足しています。',
         'layout_registration_failed' => 'レイアウト登録に失敗しました: :error',
         'layout_validation_failed' => ':template テンプレートのレイアウト検証に失敗しました。(:count 件のエラー)',
+        'layout_validation_validation_failed' => ':identifier テンプレートのレイアウト検証に失敗しました。(:count 件のエラー)',
         'layout_validation_json_error' => ':file - JSON パース エラー: :error',
         'layout_validation_missing_name' => ':file - layout_name フィールドが不足しています。',
         'layout_validation_partial_error' => ':file - Partial 処理エラー (:partial): :error',

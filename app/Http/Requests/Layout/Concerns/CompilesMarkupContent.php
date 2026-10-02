@@ -12,7 +12,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 /**
  * `format=markup` 요청의 `content`(`.g7.html` 문자열)를 프로덕션 컴파일해 JSON 배열로 바꾸는 FormRequest 공용 트레이트.
  *
- * 코드 편집기의 정본은 HTML 버퍼다(PO 결정 C1·C2). 저장·미리보기 요청은 `format=markup` 으로 마크업을
+ * 코드 편집기의 정본은 HTML 버퍼다. 저장·미리보기 요청은 `format=markup` 으로 마크업을
  * 보내고, 이 트레이트가 `prepareForValidation()` 첫 줄에서 그것을 JSON 으로 컴파일해 `content` 에 `merge` 한다.
  * 그 뒤는 **기존 규칙 그대로**다 — 강검증·`ValidLayoutStructure` 등은 손대지 않는다(JSON 으로 보내는 경로와
  * 같은 검증을 같은 순서로 지난다).
@@ -37,9 +37,12 @@ trait CompilesMarkupContent
     private array $markupLintWarnings = [];
 
     /**
-     * 컴파일 문맥 — `[템플릿 식별자, source_kind, identifier, 표시용 파일명]`. 템플릿을 찾지 못하면 첫 원소가 null.
+     * 컴파일 문맥 — `[템플릿 식별자, source_kind, identifier, 표시용 파일명, 저장본?]`. 템플릿을 찾지 못하면 첫 원소가 null.
      *
-     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string}
+     * 다섯째 원소(선택)는 편집 중인 행의 저장본이다. 주면 그 안에 이미 있던 미등록 템플릿 컴포넌트를 그 개수까지
+     * 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게, #712). 새 파일 만들기는 저장본이 없으므로 주지 않는다.
+     *
+     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string, 4?: array<string, mixed>|null}
      */
     abstract protected function markupCompileTarget(): array;
 
@@ -60,7 +63,9 @@ trait CompilesMarkupContent
             return;
         }
 
-        [$templateId, $sourceKind, $identifier, $label] = $this->markupCompileTarget();
+        $target = $this->markupCompileTarget();
+        [$templateId, $sourceKind, $identifier, $label] = $target;
+        $baseline = isset($target[4]) && is_array($target[4]) ? $target[4] : null;
 
         // 템플릿·행이 없으면 컨트롤러가 404 를 내야 한다 — 여기서는 content 를 문자열로 두어 검증이 막게 한다.
         if ($templateId === null) {
@@ -68,7 +73,7 @@ trait CompilesMarkupContent
         }
 
         try {
-            $result = app(LayoutMarkupService::class)->toJson($markup, $templateId, $sourceKind, $identifier, $label);
+            $result = app(LayoutMarkupService::class)->toJson($markup, $templateId, $sourceKind, $identifier, $label, $baseline);
         } catch (CompileError $error) {
             $this->markupCompileError = $error;
 

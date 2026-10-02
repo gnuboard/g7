@@ -835,9 +835,8 @@ G7Core.toast.show('메시지', { type: 'info', duration: 5000 });
 ```typescript
 // 모달 열기/닫기
 G7Core.modal.open('confirm_modal');
-G7Core.modal.close();  // 최상위 모달 닫기
-G7Core.modal.close('confirm_modal');  // 특정 모달 닫기
-G7Core.modal.closeAll();  // 모든 모달 닫기
+G7Core.modal.close();  // 최상위 모달 닫기 (ID 인자는 무시된다)
+// closeAll() 은 동작하지 않는다 — g7core-api.md 「알려진 제약」
 
 // 상태 확인
 G7Core.modal.isOpen('confirm_modal');  // boolean

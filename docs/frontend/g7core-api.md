@@ -511,10 +511,16 @@ G7Core.dispatch({
 | 메서드 | 설명 | 파라미터 |
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
-| `close(modalId?)` | 모달 닫기 | modalId?: string (생략 시 최상위) |
-| `closeAll()` | 모든 모달 닫기 | - |
+| `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
+| `closeAll()` | **동작하지 않음** — 쓰지 않는다 | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
+
+#### 알려진 제약 (engine-v1.75.2 기준)
+
+- `closeAll()` 은 엔진에 없는 `closeAllModals` 액션을 보낸다. 창은 하나도 닫히지 않고, 반환값은 `{ success: false }`, 콘솔에는 `Unknown action handler: closeAllModals` 오류가 남는다. 여러 창을 닫으려면 열린 창 수만큼 `closeModal` 을 `sequence` 로 보낸다 — engine-v1.75.2 부터 같은 sequence 안의 `closeModal` 은 매번 최신 스택을 읽는다.
+- `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
+- 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 
 ### 사용 예시
 
@@ -522,14 +528,8 @@ G7Core.dispatch({
 // 모달 열기
 G7Core.modal.open('confirm_modal');
 
-// 특정 모달 닫기
-G7Core.modal.close('confirm_modal');
-
-// 최상위 모달 닫기 (스택에서 pop)
+// 최상위 모달 닫기 (스택에서 pop) — 인자로 ID 를 줘도 맨 위 창이 닫힌다
 G7Core.modal.close();
-
-// 모든 모달 닫기
-G7Core.modal.closeAll();
 
 // 모달 열림 상태 확인
 if (G7Core.modal.isOpen('confirm_modal')) {
@@ -869,8 +869,17 @@ location 이 확장자를 먼저 가로채는 서버에서 그 자산만 조용�
 ### templateDir — 디렉토리 접두가 필요한 소비자
 
 AMD 로더나 워커처럼 **디렉토리 접두 뒤에 파일명을 이어 붙이는** 소비자는 `template()` 대신
-`templateDir()` 을 씁니다. 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
-확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춰야 합니다.**
+`templateDir()` 을 씁니다. `template()` 의 쿼리 형태는 파일 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
+
+`templateDir()` 은 정적 게시본이 있으면 그 디렉토리, 확장자 없는 모드면 경로를 인코딩하지 않은
+`?file=` 디렉토리(`/api/templates/assets/{id}?file=vendor/.../vs`), 그 밖에는 경로 형태를 돌려줍니다.
+`?file=` 디렉토리 뒤에 `/loader.js` 를 이어 붙이면 그대로 한 파일의 file 값이 됩니다. AMD 로더는 쿼리가 있는
+URL 의 모듈 id 에 `.js` 를 붙이지 않으므로(`…/editor/editor.main`) 템플릿 자산 서빙이 같은 이름의 `.js` 파일을
+찾아 줍니다. 그래도 자산을 끝내 받지 못하는 환경이 있으므로 **소비자는 폴백을 갖춰야 합니다.**
+
+`?file=` 디렉토리는 **이어 붙이기만** 성립합니다. 상대 경로 해석(CSS 의 `url(../x)`, 워커 안 `importScripts('./x')`,
+`new URL(rel, dir + '/')`)은 쿼리 기준으로 풀려 깨지고, 이어 붙인 뒤 `?v=1` 같은 쿼리를 덧붙여도 깨집니다. 상대
+경로로 다른 파일을 찾는 자산은 정적 게시본이 있을 때만 `templateDir()` 로 넘기세요.
 
 ```javascript
 loader.config({

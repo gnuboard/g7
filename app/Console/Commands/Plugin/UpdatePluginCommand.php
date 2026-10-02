@@ -195,6 +195,7 @@ class UpdatePluginCommand extends Command
 
                 // 레이아웃 처리 결과 (D2) — 운영자가 고친 화면이 있을 때만 표 + 요약 한 줄
                 $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
+                $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,

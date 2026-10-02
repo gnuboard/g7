@@ -8,6 +8,7 @@ use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
 use App\Rules\LayoutContentGate;
+use App\Services\LayoutMarkupService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -106,6 +107,9 @@ class StoreLayoutPreviewRequest extends FormRequest
         $layout = app(LayoutRepositoryInterface::class)->findByName($template->id, $name);
         $sourceKind = $layout?->source_type instanceof LayoutSourceType ? $layout->source_type->value : null;
 
-        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html"];
+        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
+        $baseline = $layout !== null ? app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')) : null;
+
+        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html", $baseline];
     }
 }

@@ -245,6 +245,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성) |
 | pending_language_packs | array | `[]` | 이 플러그인 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 대기 후보) |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -310,7 +311,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다.
+**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
 
 
 ### POST /api/admin/plugins/check-updates
@@ -1113,6 +1114,7 @@ _단건 응답: `data` 객체의 필드._
 | updated | integer | `2` | 내용이 변경되어 갱신된 레이아웃 건수 |
 | deleted | integer | `0` | 파일에서 사라져 DB 에서도 삭제된 레이아웃 건수 |
 | unchanged | integer | `0` | 변경 없이 그대로 유지된 레이아웃 건수 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -2158,6 +2160,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | update_available | boolean | `false` | 업데이트 후 재계산된 업데이트 가능 여부 |
 | latest_version | string\|null | `1.1.0` | 감지된 최신 배포 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의). 업데이트할 내용이 없고 `force` 도 없는 경우에는 `{"success": false, "from_version": …, "to_version": …, "message": "업데이트할 내용이 없습니다."}` 형태가 `data` 로 반환됩니다.
 
