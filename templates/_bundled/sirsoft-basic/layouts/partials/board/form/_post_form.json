@@ -560,9 +560,10 @@
             ]
         },
         {
-            "comment": "내용 에디터 래퍼 (에러 테두리용)",
+            "comment": "내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다.",
             "type": "basic",
             "name": "Div",
+            "if": "{{!(_local.form?.is_secret && _local.passwordVerified && !_local.form?.verification_token)}}",
             "props": {
                 "className": "{{_local.errors?.content ? '[&_textarea]:!border-red-500 [&_textarea]:dark:!border-red-500 [&_textarea]:focus:!ring-red-500' : ''}}"
             },

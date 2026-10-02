@@ -2825,6 +2825,7 @@ HTTP/1.1 201
 
 **설명** 특정 댓글을 신고합니다. 신고는 회원 전용이라 컨트롤러가 `AuthBaseController` 를 상속해 로그인 사용자만 호출할 수 있으며, 게시판의 신고 기능이 꺼져 있으면 403을 반환합니다. 본인 댓글 신고, 블라인드/삭제된 대상 신고는 차단되고, 이미 신고한 대상이면 409(중복)로 응답합니다. 신고 사유 유형(`reason_type`)과 상세(`reason_detail`)를 받아 신고를 접수하며 사용자 활동 로그를 남깁니다.
 
+**응답 본문** 댓글 신고 생성 응답에도 대상 댓글 본문(`content` · `content_preview`)이 실리지 않습니다(`null`). 본문 미리보기는 관리자 신고 목록·상세에서만 제공합니다.
 
 ### POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/verify-password
 <!-- @generated:start:api.modules.sirsoft-board.boards.comments.verify-password -->
@@ -3309,6 +3310,7 @@ HTTP/1.1 200
 
 비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
 
+**비밀글 원문** 수정 모드의 `content` 는 상세 조회와 같은 비밀 게이트를 거칩니다. 비밀글이면 작성자 본인 · 비밀번호(`password`)나 수정 확인 토큰을 맞힌 비회원 · 비밀글 읽기 권한자 · 게시판 관리 권한자(`admin.manage` / `manager`)만 원문을 받고, 그 밖에는 빈 문자열입니다. 답변 모드는 원글이 열람할 수 없는 비밀글이면 404 로 막습니다.
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts/form-meta
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.form-meta -->
@@ -3436,6 +3438,7 @@ HTTP/1.1 200
 
 비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
 
+**비밀글 원문** 답글 모드(`parent_id`)는 원글이 비밀글이고 요청자가 그 원문을 열 수 없으면 존재를 숨긴 404 를 돌려줍니다(제출 단계 검증과 같은 판정). `parent_post.content` 와 수정 모드의 원글 정보도 같은 비밀 게이트를 거쳐, 권한이 없으면 `null` 입니다. 수정 모드의 `attachments` 도 같은 판정이라, 비회원 비밀글을 비밀번호(수정 확인 토큰) 없이 열면 빈 배열입니다 — 토큰을 실어 다시 부르면 작성자는 첨부 목록을 받습니다.
 
 ### DELETE /api/modules/sirsoft-board/boards/{slug}/posts/{id}
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.destroy -->
@@ -4359,6 +4362,7 @@ HTTP/1.1 200
 
 **설명** 게시글의 댓글 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.read` 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 대댓글 계층(`depth`, `replies_count`)을 포함하며, 각 항목에 현재 사용자의 작성자 여부·소유 여부·신고 이력 등이 메타로 담깁니다.
 
+**비밀 댓글** `is_secret=true` 인 댓글의 `content` 는 댓글 작성자 · 대댓글이면 부모 댓글 작성자 · 원글을 열 수 있는 사람(원글 작성자 · 비밀번호를 맞혀 `X-Board-Secret-View-Token` 을 받은 사람 · 비밀글 읽기 권한자 · 게시판 관리자)에게만 실립니다. 그 밖에는 `content=null` 이고 `is_secret` 은 그대로 내려가 화면이 "비밀 댓글입니다" 를 표시합니다. 게시글 상세 응답의 `comments` 도 같은 규칙입니다.
 
 ### POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/comments
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.comments.store -->
@@ -4795,4 +4799,5 @@ HTTP/1.1 201
 
 **설명** 특정 게시글을 신고합니다. 신고는 회원 전용이라 컨트롤러가 `AuthBaseController` 를 상속해 로그인 사용자만 호출할 수 있으며, 게시판의 신고 기능이 꺼져 있으면 403을 반환합니다. 본인 글 신고, 블라인드/삭제된 대상 신고는 차단되고, 이미 신고한 대상이면 409(중복)로 응답합니다. 신고 사유 유형(`reason_type`)과 상세(`reason_detail`)를 받아 신고를 접수하며 사용자 활동 로그를 남깁니다.
 
+**응답 본문** 신고 생성 응답에는 대상 본문(`content` · `content_preview`)이 실리지 않습니다(`null`). 대상 본문 미리보기는 관리자 신고 목록·상세에서만 제공합니다. 열람할 수 없는 비밀글은 신고 자체가 403 입니다.
 

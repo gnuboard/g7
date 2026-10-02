@@ -101,6 +101,7 @@
     "blinded_comment": "ブロック処理されたコメントです。",
     "deleted_comment_content": "削除されたコメントです",
     "blinded_comment_content": "ブロック処理されたコメントです",
+    "secret_comment": "秘密のコメントです。",
     "view_original": "原文を表示",
     "hide_original": "原文を非表示"
   },

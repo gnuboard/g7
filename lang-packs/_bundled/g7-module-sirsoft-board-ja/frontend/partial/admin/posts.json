@@ -78,6 +78,7 @@
     "blinded_comment_notice": "ブラインド処理されたコメントです",
     "blinded_comment_description": "運営ポリシーに基づいて、コメントが非表示にされました",
     "deleted_comment_notice": "削除されたコメントです",
+    "secret_comment_notice": "非公開コメントです",
     "blind_reason_label": "理由:",
     "blinded_at": "ブラインド処理日: {{date}}",
     "view_original_content": "元の内容を表示",

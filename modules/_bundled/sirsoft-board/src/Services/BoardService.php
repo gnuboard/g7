@@ -226,6 +226,29 @@ class BoardService
     }
 
     /**
+     * 활성 게시판 중 호출자가 읽을 수 없는 게시판의 ID 목록을 반환합니다.
+     *
+     * 여러 게시판을 가로지르는 사용자 활동 목록(공개 프로필의 작성글, 내가 댓글 단 글)은
+     * 게시판별 읽기 권한을 거치지 않아, 게시판 목록에서는 401/403 인 회원전용 게시판의 글이
+     * 제목·본문 미리보기째 나가던 결함(KVE-2026-2371 동반)을 막는 데 씁니다. 저장소는 이 ID 를
+     * 쿼리 단계에서 제외해 페이지 건수와 실제 행이 어긋나지 않게 합니다.
+     * 판정 기준은 최근글·통합검색과 같은 `sirsoft-board.{slug}.posts.read` 입니다.
+     *
+     * @return array<int, int> 호출자가 읽을 수 없는 활성 게시판 ID 배열 (비로그인은 guest 기준)
+     */
+    public function getUnreadableActiveBoardIds(): array
+    {
+        $user = Auth::user();
+
+        return $this->boardRepository->getActiveBoardsList()
+            ->reject(fn ($board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * 메뉴용 경량 게시판 목록을 조회합니다.
      *
      * id, name, slug만 조회하며 posts COUNT 쿼리를 실행하지 않습니다.

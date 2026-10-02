@@ -135,7 +135,12 @@
         </div>
         <div data-if="{{_local.showBlindedCommentId === comment?.id}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-label whitespace-pre-line leading-relaxed">{{comment.content}}</div>
       </div>
-      <div data-ref="normal_comment_content" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted)}}" class="mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed">{{comment.content}}</div>
+      <!-- 비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다 -->
+      <div data-ref="secret_comment_content" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.is_secret &amp;&amp; comment?.content === null}}" class="mt-1.5 px-4 flex-center gap-2 text-label-subtle">
+        <icon name="lock" class="text-sm text-gray-400 dark:text-gray-500"/>
+        <span>$t:sirsoft-board.admin.posts.detail.secret_comment_notice</span>
+      </div>
+      <div data-ref="normal_comment_content" data-if="{{comment?.status !== 'blinded' &amp;&amp; (!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null)}}" class="mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed">{{comment.content}}</div>
       <!-- 댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다 -->
       <div data-testid="comment_reaction_counts" data-if="{{post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at}}" class="mt-2 px-4 flex flex-wrap items-center gap-3">
         <span data-each="rt in {{post?.data?.board?.reaction_type_options ?? []}}" class="text-tertiary inline-flex items-center gap-1 text-xs">

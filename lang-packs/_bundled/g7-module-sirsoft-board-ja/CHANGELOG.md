@@ -8,6 +8,7 @@
 
 ### Added
 
+- 관리자 게시글 상세에서 비밀글 조회 권한이 없는 관리자에게 비밀 댓글 자리에 뜨는 안내(`admin/posts.detail.secret_comment_notice` — 「非公開コメントです」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내만 한국어로 보입니다.
 - 관리자 게시글·답변 카드의 첨부파일 내려받기 실패 안내(`admin/posts.detail.download_failed`)의 일본어 번역을 추가했습니다.
 - 상품 문의 연동 실패 문구(문의·답변 수정·삭제 실패, 답변 없음, 게시판 설정 변경으로 글을 찾을 수 없음)와 활동 이력의 비밀글 표기 일본어 번역을 추가했습니다.
 - 레이아웃 편집기에 쓰이는 개인정보 보유기간 대상·직권 실행 창 이름(`privacy_retention.targets.editor_label`·`manual_run.editor_label`)의 일본어 번역을 추가했습니다.

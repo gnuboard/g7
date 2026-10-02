@@ -154,8 +154,13 @@
           <p class="text-sm text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
         </div>
       </div>
+      <!-- 비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다(비밀글과 같은 규칙) -->
+      <div data-if="{{(!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.is_secret &amp;&amp; comment?.content === null &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+        <icon name="lock" size="sm"/>
+        <span class="text-sm">$t:board.comment.secret_comment</span>
+      </div>
       <!-- 댓글 내용 (읽기 모드) — cascade 댓글은 삭제되었어도 원문 노출 -->
-      <p data-if="{{(!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
+      <p data-if="{{(!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null) &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
       <!-- 댓글 반응 — 게시판이 「반응 사용」과 「댓글 반응 사용」을 모두 켰을 때만 나온다. 삭제·블라인드
         댓글에는 새 반응을 달 수 없으므로 그 갈래에서는 이 줄 자체를 내지 않는다(이미 남긴 반응의 해제는
         마이페이지 「내 반응」이 맡는다).
@@ -165,7 +170,7 @@
         하이라이트를 건드리지 않는다.
 
         비회원 댓글(user_id 없음)에는 본인 판정이 불가능해 서버가 허용한다 — 화면도 막지 않는다. -->
-      <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="mt-2 flex flex-wrap items-center gap-1.5">
+      <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null) &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="mt-2 flex flex-wrap items-center gap-1.5">
         <div data-each="commentReactionType, commentReactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
           <button data-testid="comment-react-{{comment?.id}}-{{commentReactionType.id}}" type="button" title="{{commentReactionType.name ?? ''}}" disabled="{{(_local?.commentReacting?.[comment?.id] ?? null) !== null}}" aria-pressed="{{(_local?.commentReactionApplied?.[comment?.id] ? _local?.commentMyReaction?.[comment?.id] : comment?.my_reaction_type_id) === commentReactionType.id}}" class="{{(_local?.commentReactionApplied?.[comment?.id] ? _local?.commentMyReaction?.[comment?.id] : comment?.my_reaction_type_id) === commentReactionType.id ? 'px-2 py-1 text-xs border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md flex items-center gap-1 font-medium active:scale-95 transition-transform duration-150 ease-out' : 'px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1 active:scale-95 transition-transform duration-150 ease-out'}}{{(comment?.is_author || (_local?.commentReacting?.[comment?.id] ?? null) !== null) ? ' cursor-not-allowed opacity-60' : ' cursor-pointer'}}">
             <on type="click">

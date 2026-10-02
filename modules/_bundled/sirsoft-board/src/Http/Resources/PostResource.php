@@ -146,11 +146,12 @@ class PostResource extends BaseApiResource
     {
         $request = $request ?? request();
         $slug = $this->getSlug($request);
+        $canReceiveContent = $this->canReceiveFormContent($request, $slug);
 
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'content' => $this->content,
+            'content' => $canReceiveContent ? $this->content : null,
             'content_mode' => $this->content_mode ?? 'text',
             'category' => $this->category,
             'is_notice' => (bool) $this->is_notice,
@@ -167,14 +168,43 @@ class PostResource extends BaseApiResource
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
             ),
 
-            // 첨부파일 (권한 체크 없이 직접 반환 — 폼 진입 시 이미 본인/관리자 검증 완료)
+            // 첨부파일 — 비밀글이면 본문과 같은 판정. 비회원 글 수정 폼은 소유 확인 없이 열리므로,
+            // 비밀번호를 맞히기 전에는 상세 조회처럼 빈 목록을 준다(파일 이름·크기 비노출)
             'attachments' => $this->relationLoaded('attachments')
-                ? AttachmentResource::collection($this->attachments)
+                ? ($canReceiveContent ? AttachmentResource::collection($this->attachments) : [])
                 : null,
 
             // 원글 정보 (답변글 수정 시)
             'parent' => $this->relationLoaded('parent') ? $this->getParentInfoForForm() : null,
         ];
+    }
+
+    /**
+     * 폼 응답에 본문 원문(과 첨부 목록)을 실어도 되는지 판정합니다.
+     *
+     * 폼 응답은 상세 조회의 비밀 게이트를 거치지 않아, 비밀번호 없이 비회원 비밀글 수정 폼을
+     * 부르거나 남의 비밀글에 답글 폼을 열면 원문이 그대로 나가던 결함(KVE-2026-2375)을 막습니다.
+     * 비밀글이 아니면 그대로 싣고, 비밀글이면 상세와 같은 SecretContentGate 를 거칩니다.
+     *
+     * 게시판 관리 권한자(Admin: admin.manage / User: manager)는 남의 글 수정 폼을 열 수 있는
+     * 사람이므로 원문을 받습니다 — 본문이 빈 채 열린 폼을 저장해 원문이 지워지지 않게 합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return bool 원문 제공 여부
+     */
+    private function canReceiveFormContent(Request $request, ?string $slug): bool
+    {
+        if (! $this->is_secret || self::canViewSecretForPost($this->resource, $request)) {
+            return true;
+        }
+
+        if (! $slug) {
+            return false;
+        }
+
+        return $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
     }
 
     // =========================================================================

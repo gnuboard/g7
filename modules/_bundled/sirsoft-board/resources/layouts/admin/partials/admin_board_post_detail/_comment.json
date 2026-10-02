@@ -516,10 +516,35 @@
                     ]
                 },
                 {
+                    "comment": "비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다",
+                    "id": "secret_comment_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.is_secret && comment?.content === null}}",
+                    "props": {
+                        "className": "mt-1.5 px-4 flex-center gap-2 text-label-subtle"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.posts.detail.secret_comment_notice"
+                        }
+                    ]
+                },
+                {
                     "id": "normal_comment_content",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted)}}",
+                    "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && !(comment?.is_secret && comment?.content === null)}}",
                     "props": {
                         "className": "mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed"
                     },
