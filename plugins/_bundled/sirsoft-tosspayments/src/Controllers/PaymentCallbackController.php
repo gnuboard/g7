@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
@@ -168,7 +169,9 @@ class PaymentCallbackController
             $pgResponse = $this->apiService->confirmPayment($paymentKey, $orderId, $expectedAmount);
             $confirmed = true;
 
-            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $order, $pgResponse);
+            // 가상계좌 웹훅 검증값(secret)은 훅 인자에서 뺀다 — 큐 구독자가 있으면 작업 표에 사본이 남는다.
+            // 웹훅 대조는 결제행 payment_meta.toss_secret 으로 한다.
+            HookManager::doAction('sirsoft-tosspayments.payment.after_confirm', $order, Arr::except($pgResponse, ['secret']));
 
             // 4. 승인 후 대조 — 토스가 실제로 승인(가상계좌는 발급)한 금액이 청구액과 같아야 한다.
             //    응답에 금액이 없으면 검증할 수 없으므로 불일치와 같게 취소한다.

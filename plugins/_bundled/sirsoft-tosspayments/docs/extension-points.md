@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:117` |
-| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:171` |
-| `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:113` |
-| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:166` |
+| `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:119` |
+| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:174` |
+| `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:114` |
+| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:167` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -21,7 +21,9 @@
 발화하므로, 이 시점에는 아직 승인 금액 대조가 끝나지 않았습니다 — 대조에 실패하면 이 훅이
 발화한 뒤 토스 승인이 취소될 수 있으므로, 구독하는 확장은 이커머스가 최종 완료 처리를 마쳤는지
 별도로 확인해야 합니다. `before_confirm` 의 금액 인자는 브라우저 콜백 금액이 아니라 대조를 마친
-주문 청구액입니다.
+주문 청구액입니다. `after_confirm`·`after_cancel` 이 넘기는 토스 응답에는 가상계좌 입금통보 검증값
+(`secret`)이 빠져 있습니다 — 큐로 실행되는 구독자의 작업 기록에 남지 않게 하기 위해서이고, 그 밖의
+응답 필드는 그대로입니다.
 <!-- @intent END -->
 
 ## 구독 훅

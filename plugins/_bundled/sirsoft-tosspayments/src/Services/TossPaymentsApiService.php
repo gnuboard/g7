@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Tosspayments\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
@@ -114,7 +115,8 @@ class TossPaymentsApiService
 
         $response = $this->request('POST', "/v1/payments/{$paymentKey}/cancel", $body, $idempotencyKey);
 
-        HookManager::doAction('sirsoft-tosspayments.payment.after_cancel', $paymentKey, $response);
+        // 가상계좌 웹훅 검증값(secret)은 훅 인자에서 뺀다 — 큐 구독자가 있으면 작업 표에 사본이 남는다.
+        HookManager::doAction('sirsoft-tosspayments.payment.after_cancel', $paymentKey, Arr::except($response, ['secret']));
 
         return $response;
     }

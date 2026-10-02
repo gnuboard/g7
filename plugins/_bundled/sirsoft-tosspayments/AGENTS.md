@@ -153,6 +153,7 @@
 | 가상계좌 웹훅의 secret 대조를 생략하거나 항상 통과 | `payment_meta.toss_secret`과 웹훅 본문의 secret을 항상 대조 | 토스는 notify IP 목록·서명을 제공하지 않아 secret 대조가 유일한 위조 방지 수단이다 — 생략하면 제3자가 임의 주문에 대해 위조 입금통보를 보낼 수 있다 |
 | `core.plugin_settings.before_save` 리스너에 `sync: true` 없이 등록 | 저장을 막아야 하는 검증 훅은 반드시 `sync: true` | 기본값(비동기 큐)이면 `ValidationException`이 워커 안에서 죽고 저장이 그대로 진행되어 검증이 무력화된다 |
 | 라이브 시크릿 키를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 서버측 API를 위조 호출할 수 있다 |
+| 토스 응답(Payment 객체)을 훅 인자로 통째로 넘김 | `Arr::except($response, ['secret'])` 로 가상계좌 웹훅 검증값을 빼고 넘긴다 (`after_confirm`·`after_cancel`) | 큐로 실행되는 구독자가 있으면 인자 사본이 작업 표(실패 시 실패 작업 표)에 남는다. `secret` 이 새면 위조 입금통보의 대조를 통과시킬 수 있다 — 웹훅 대조는 결제행 `payment_meta.toss_secret` 으로 한다 |
 | `fail()` 에서 `failPayment()` 등 주문 상태를 바꾸는 호출 | 로그 + `resolveFailUrl()` 만 | 이 엔드포인트는 인증도 서명도 없는 GET 이고 `orderId`·`code` 가 전부 쿼리스트링에서 온다. 실패 처리를 수행하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있다 |
 | 결제 실패를 `fail()` 이 기록해 줄 것으로 가정 | 주문 소유자(회원 본인 로그인 / 비회원 `X-Guest-Order-Token`)를 확인하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 기록한다 — 주문자 연락처 대조는 소유 증명이 아니다 (KVE-2026-2434) | 결제 성립은 `success()` 의 서버 `confirmPayment`, 결제완료 후 취소는 secret 대조를 통과한 웹훅이 담당한다. 주문을 실패로 전이시키는 결제창 경로는 close-report 하나뿐이다 |
 | 결제창 컨텍스트(주문 정보)를 `window` 전역에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남긴다 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 전역에만 두면 실패 화면에서 보고할 근거가 사라져 결제 실패가 어디에도 기록되지 않는다 |
@@ -164,10 +165,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 24개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| PHPUnit | 25개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
