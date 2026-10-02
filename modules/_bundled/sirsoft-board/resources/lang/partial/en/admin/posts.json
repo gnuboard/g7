@@ -77,6 +77,7 @@
     "blinded_comment_notice": "This comment has been blinded",
     "blinded_comment_description": "This comment has been hidden according to our policy",
     "deleted_comment_notice": "This comment has been deleted",
+    "secret_comment_notice": "This is a secret comment",
     "blind_reason_label": "Reason:",
     "blinded_at": "Blinded at: {{date}}",
     "view_original_content": "View Original Content",

@@ -1097,7 +1097,7 @@ class PostRepository implements PostRepositoryInterface
      * 사용자가 작성한 게시글, 댓글을 단 게시글을 통합하여 반환합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs)
+     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs, exclude_board_ids)
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 게시글 활동 목록
      */
@@ -1133,6 +1133,10 @@ class PostRepository implements PostRepositoryInterface
         if (! empty($excludeBoardSlugs)) {
             $excludeBoardIds = Board::whereIn('slug', $excludeBoardSlugs)->pluck('id')->all();
         }
+
+        // 열람자가 읽을 수 없는 게시판(서비스가 posts.read 로 판정해 넘김) — 행째 뺀다.
+        // 결과 페이지를 거르면 total 과 행 수가 어긋나므로 쿼리 단계 whereNotIn 에 합류시킨다.
+        $excludeBoardIds = array_merge($excludeBoardIds, array_map('intval', $filters['exclude_board_ids'] ?? []));
 
         // DB 레벨 정렬 컬럼 결정
         $orderColumn = match ($sort) {

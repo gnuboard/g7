@@ -35,6 +35,7 @@ use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -668,6 +669,8 @@ class PostController extends PublicBaseController
                 $token = $this->verificationTokenFrom($request);
                 if ($requiresPassword && $token !== '' && $this->verificationTokenMatches($slug, $postId, $token)) {
                     $requiresPassword = false;
+                    // 비밀번호를 맞힌 작성자 — 비밀글 첨부 목록을 받게 form-data 와 같이 검증 완료로 표시
+                    $post->password_verified = true;
                 }
 
                 $metaData['requires_password'] = $requiresPassword;
@@ -875,17 +878,25 @@ class PostController extends PublicBaseController
      * 차단은 PostNotFoundException(404)으로 처리하여 부모글의 존재 자체를 숨깁니다.
      * (제출 단계 차단은 ParentPostValidationRule 이 별도로 수행)
      *
+     * 부모글이 비밀글이면 열람 권한(SecretContentGate::canWriteChild)이 있는 요청만 통과합니다.
+     * 답글 폼은 부모 원문을 함께 싣기 때문에, 폼 진입이 곧 비밀글 읽기가 되던 결함(KVE-2026-2375)을
+     * 막습니다. 제출 단계 ParentPostValidationRule 과 같은 판정입니다.
+     *
      * @param  Post  $parentPost  부모 게시글 모델
      * @param  int  $parentId  부모 게시글 ID (예외 메시지용)
      * @return void
      *
-     * @throws PostNotFoundException 부모글이 블라인드/삭제 상태인 경우
+     * @throws PostNotFoundException 부모글이 블라인드/삭제 상태이거나, 열람할 수 없는 비밀글인 경우
      */
     private function assertParentReplyable(Post $parentPost, int $parentId): void
     {
         if ($parentPost->status === PostStatus::Blinded
             || $parentPost->status === PostStatus::Deleted
             || $parentPost->deleted_at !== null) {
+            throw new PostNotFoundException($parentId);
+        }
+
+        if (! app(SecretContentGate::class)->canWriteChild($parentPost)) {
             throw new PostNotFoundException($parentId);
         }
     }
@@ -1180,6 +1191,9 @@ class PostController extends PublicBaseController
                 $comment->setRelation('post', $post);
             }
         }
+
+        // 비밀 대댓글 판정에 쓰는 부모 댓글 작성자 — 댓글마다 조회하지 않게 목록에서 미리 싣는다
+        SecretContentGate::preloadParentCommentOwners($comments);
 
         // 정렬된 댓글을 post에 설정
         $post->setRelation('comments', $comments);

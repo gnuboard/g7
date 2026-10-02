@@ -101,6 +101,7 @@
     "blinded_comment": "블라인드 처리된 댓글입니다.",
     "deleted_comment_content": "삭제된 댓글입니다",
     "blinded_comment_content": "블라인드 처리된 댓글입니다",
+    "secret_comment": "비밀 댓글입니다.",
     "view_original": "원문 보기",
     "hide_original": "원문 숨기기"
   },

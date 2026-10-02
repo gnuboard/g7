@@ -108,8 +108,8 @@
       <input type="text" name="title" placeholder="$t:board.form.title_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
       <p data-if="{{_local.errors?.title}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.title?.[0] ?? _local.errors?.title}}</p>
     </div>
-    <!-- 내용 에디터 래퍼 (에러 테두리용) -->
-    <div class="{{_local.errors?.content ? '[&amp;_textarea]:!border-red-500 [&amp;_textarea]:dark:!border-red-500 [&amp;_textarea]:focus:!ring-red-500' : ''}}">
+    <!-- 내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다. -->
+    <div data-if="{{!(_local.form?.is_secret &amp;&amp; _local.passwordVerified &amp;&amp; !_local.form?.verification_token)}}" class="{{_local.errors?.content ? '[&amp;_textarea]:!border-red-500 [&amp;_textarea]:dark:!border-red-500 [&amp;_textarea]:focus:!ring-red-500' : ''}}">
       <!-- 내용 에디터 -->
       <extension-point name="html_editor" data-ref="content_section" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
         <prop name="name">"content"</prop>

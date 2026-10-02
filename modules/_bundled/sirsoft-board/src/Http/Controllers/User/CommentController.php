@@ -21,6 +21,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 
 /**
  * 사용자용 댓글 컨트롤러
@@ -106,6 +107,9 @@ class CommentController extends PublicBaseController
             foreach ($comments as $comment) {
                 $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
             }
+
+            // 비밀 대댓글 판정에 쓰는 부모 댓글 작성자 — 댓글마다 조회하지 않게 목록에서 미리 싣는다
+            SecretContentGate::preloadParentCommentOwners($comments);
 
             return $this->success(
                 'sirsoft-board::messages.comments.index_success',

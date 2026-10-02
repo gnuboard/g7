@@ -1315,9 +1315,20 @@ class PostService
         $boardSlug = $filters['board_slug'] ?? '';
         $search = $filters['search'] ?? '';
 
-        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용
+        // 「내가 댓글 단 글」의 행은 **남이 쓴 글**이다. 댓글을 단 뒤 그 게시판의 읽기 권한을
+        // 잃었으면(회원전용으로 바뀜 등) 게시판 목록은 403 인데 이 목록이 제목·본문 미리보기를
+        // 계속 내주던 우회로였다 — 읽을 수 없는 게시판의 행은 뺀다. 작성글(authored)은 본인 글이라
+        // 권한 변화로 내 활동 기록이 사라지지 않게 그대로 둔다.
+        $unreadableBoardIds = $activityType === 'commented'
+            ? $this->boardService->getUnreadableActiveBoardIds()
+            : [];
+        $filters['exclude_board_ids'] = $unreadableBoardIds;
+
+        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용.
+        // 제외 게시판 집합이 바뀌면 건수도 바뀌므로 그 집합을 키에 싣는다.
         if (empty($boardSlug) && empty($search)) {
-            $cacheKey = "user_activities_total_{$userId}_{$activityType}";
+            $cacheKey = "user_activities_total_{$userId}_{$activityType}"
+                .($unreadableBoardIds === [] ? '' : '_x'.md5(implode(',', $unreadableBoardIds)));
             $cachedTotal = $this->cache->get($cacheKey);
 
             if ($cachedTotal !== null) {
@@ -1371,6 +1382,10 @@ class PostService
      * 필요한 범위를 넘어 기능이 깎인다.
      * 판정은 저장소가 `viewer_id` 로 수행한다(fail-closed — 값이 없으면 타인 관점).
      *
+     * 단, 열람자가 **읽을 수 없는 게시판**의 글은 행째 뺀다(KVE-2026-2371 동반). 이 목록은 비로그인에게도
+     * 열려 있어, 게시판 목록에서는 401 인 회원전용 게시판의 일반글이 제목·본문 미리보기째 나가던
+     * 우회로였다. 본인 프로필은 본인 글이라 제외하지 않는다.
+     *
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 옵션 (board_slug, sort 등)
      * @param  int  $perPage  페이지당 항목 수
@@ -1378,9 +1393,14 @@ class PostService
      */
     public function getUserPublicPosts(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $viewerId = Auth::id();
+
         return $this->postRepository->getUserActivities($userId, array_merge($filters, [
             'activity_type' => 'authored',  // 작성글만
-            'viewer_id' => Auth::id(),      // 비로그인은 null → 타인 관점
+            'viewer_id' => $viewerId,       // 비로그인은 null → 타인 관점
+            'exclude_board_ids' => $viewerId !== null && $viewerId === $userId
+                ? []
+                : $this->boardService->getUnreadableActiveBoardIds(),
         ]), $perPage);
     }
 

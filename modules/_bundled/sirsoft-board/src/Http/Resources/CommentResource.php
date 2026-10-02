@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -373,6 +374,14 @@ class CommentResource extends BaseApiResource
         // 컨트롤러가 넘긴 부모 post(요청 속성)를 재사용해 댓글당 lazy-load 없이 재확인한다.
         $parentPost = $this->resolveParentPost($request);
         if ($parentPost && $parentPost->is_secret && ! PostResource::canViewSecretForPost($parentPost, $request)) {
+            return null;
+        }
+
+        // 댓글 자신이 비밀이면 댓글 작성자·부모글을 열 수 있는 사람에게만 원문을 준다
+        // (KVE-2026-2371). 비밀글과 같은 모양 — content=null + is_secret 플래그로 화면이 안내한다.
+        // 부모 게시글을 해석하지 못하면 게이트가 fail-closed 로 가린다.
+        if ($this->is_secret
+            && ! app(SecretContentGate::class)->canViewSecretComment($this->resource, $parentPost, $request)) {
             return null;
         }
 

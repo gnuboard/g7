@@ -101,6 +101,7 @@
     "blinded_comment": "This comment has been blinded.",
     "deleted_comment_content": "This comment has been deleted.",
     "blinded_comment_content": "This comment has been blinded.",
+    "secret_comment": "This is a secret comment.",
     "view_original": "View Original",
     "hide_original": "Hide Original"
   },

@@ -80,6 +80,7 @@
     "blinded_comment_notice": "블라인드 처리된 댓글입니다",
     "blinded_comment_description": "운영 정책에 따라 댓글이 숨김 처리되었습니다",
     "deleted_comment_notice": "삭제된 댓글입니다",
+    "secret_comment_notice": "비밀 댓글입니다",
     "blind_reason_label": "사유:",
     "blinded_at": "블라인드 처리일: {{date}}",
     "view_original_content": "원본 내용 보기",
