@@ -343,7 +343,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
-| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
+| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
 
 <!-- @generated:end -->
 
@@ -355,6 +355,174 @@ HTTP/1.1 200
 
 **2단계 인증이 켜져 있는 경우**: 사용자 로그인과 동일하게 `200` + `two_factor_required` / `challenge_id` / `provider_id` / `expires_at` 을 반환한다(필드 정의·수단별 `message` 분기·수단 해석 순서는 `POST /api/auth/login` 의 같은 절 참조). 쓸 수 있는 수단이 없고 운영자가 메일 폴백을 껐으면 `401 auth.two_factor_enrollment_required` 로 차단한다. 이 단계에서는 아직 사용자도 토큰도 없으므로 **관리자 판정을 하지 않는다** — 판정은 `POST /api/auth/admin/login/two-factor` 가 코드 확인에 성공한 뒤에 수행한다.
 
+**비밀번호를 바꿔야 하는 관리자 (#736)**: 사용자 로그인과 같은 변경 단계 응답(`password_change_required: true` — 필드 정의는 `POST /api/auth/login` 의 같은 절)을 돌려주고, 식별자는 관리자 경로에 묶여 `POST /api/auth/admin/login/password-change` 로만 완료된다. **비관리자가 관리자 로그인으로 오면 변경 단계를 열지 않는다** — 종전대로 토큰 발급 → 회수 + `403` 이라, 비관리자의 비밀번호가 관리자 경로로 바뀌지 않는다. 식별자를 저장하지 못하면 `503 auth.password_change_unavailable` 이다.
+
+
+### POST /api/auth/admin/login/password-change
+<!-- @generated:start:api.auth.admin.login.password-change -->
+- **라우트명**: `api.auth.admin.login.password-change`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@completePasswordChange`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 변경 단계 식별자가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 (지금 비밀번호와 같으면 거부, 재사용 금지가 켜져 있으면 최근 N개도 거부) |
+| password_confirmation | body | string | 예 | — | 새 비밀번호 확인 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/admin/login/password-change HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40",
+    "password": "N3w-Passw0rd!",
+    "password_confirmation": "N3w-Passw0rd!"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 발급 — `user` 만 `UserResource` 로 감싼다). 형태는 로그인 성공 응답과 같다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "비밀번호를 바꾸고 로그인했습니다.",
+    "data": {
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자"
+        },
+        "token": "{MASKED}",
+        "token_type": "Bearer"
+    }
+}
+```
+
+> `user` 객체는 지면 절약을 위해 축약했습니다. 실제로는 `UserResource` 필드 전수가 내려옵니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) — 비밀번호는 바뀌지 않는다 |
+| 422 | Unprocessable Entity | 새 비밀번호 규칙 위반(`errors.password`), 식별자 형식 위반·무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`) |
+| 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+비밀번호·2단계 인증을 통과했지만 비밀번호가 만료됐거나(`reason=expired`) 관리자가 정해 준 비밀번호(`reason=admin_assigned`)인 회원이 로그인 응답의 변경 단계 식별자와 새 비밀번호를 보내 로그인을 마친다. 성공 응답은 로그인 성공과 같은 모양이다.
+
+- 식별자는 10분 유효하고 한 번만 쓸 수 있으며, 발급 경로(사용자·관리자)와 발급 시점의 비밀번호에 묶인다 — 다른 경로로 쓰거나 그 사이 비밀번호가 바뀌었으면 무효다. 2단계 인증 코드는 이미 소비됐으므로 식별자가 만료되면 처음부터 다시 로그인해야 한다.
+- 새 비밀번호는 지금 비밀번호와 같으면 재사용 설정과 무관하게 거부한다(같은 값으로 '변경' 하면 만료·임시 비밀번호 강제가 무력화된다). 재사용 금지 비교는 식별자가 유효할 때만 평가한다.
+- 성공하면 변경일을 기록하고 **모든 기기를 로그아웃**시킨 뒤 새 토큰을 하나 발급한다. 휴면 회원이면 이 자리에서 휴면이 풀리고 `dormancy_restored: true` 가 실린다. 규칙 위반은 로그인 실패 횟수에 넣지 않는다.
+
+관리자 경로는 비밀번호를 쓰기 **전에** 관리자 여부를 확인한다 — 관리자 로그인에 비관리자가 오면 로그인 단계가 이 단계를 열지 않지만(종전처럼 `403`), 위조·재사용된 식별자로 이 엔드포인트를 직접 부르면 비밀번호를 바꾸지 않고 `403 auth.admin_required` 로 끊는다.
+
+### POST /api/auth/admin/login/password-change/postpone
+<!-- @generated:start:api.auth.admin.login.password-change.postpone -->
+- **라우트명**: `api.auth.admin.login.password-change.postpone`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@postponePasswordChange`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 변경 단계 식별자가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_postpone_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/admin/login/password-change/postpone HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 발급 — `user` 만 `UserResource` 로 감싼다). 형태는 로그인 성공 응답과 같다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
+| postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "비밀번호 변경을 미뤘습니다. 기한 안에 비밀번호를 바꿔 주세요.",
+    "data": {
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자"
+        },
+        "token": "{MASKED}",
+        "token_type": "Bearer",
+        "postponed_until": "2026-10-16T05:15:00+00:00"
+    }
+}
+```
+
+> `user` 객체는 지면 절약을 위해 축약했습니다. 실제로는 `UserResource` 필드 전수가 내려옵니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) |
+| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`) |
+| 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+'다음에 변경 허용' 모드(`security.password_expiry_action=remind`)에서 만료된 회원이 변경을 미루고 로그인을 마친다. 연기 일수는 `security.password_expiry_remind_days` 이고, 기간이 끝난 뒤 로그인하면 다시 변경 단계가 나온다. 발급 시점의 판정과 지금의 판정을 함께 본다 — 그 사이 운영자가 '변경해야 로그인' 으로 바꿨으면 연기할 수 없다. 성공하면 활동 로그 `auth.password_change_postpone` 과 훅 `core.auth.password_change_postponed` 가 남는다.
+
+관리자 경로는 비밀번호를 쓰기 **전에** 관리자 여부를 확인한다 — 관리자 로그인에 비관리자가 오면 로그인 단계가 이 단계를 열지 않지만(종전처럼 `403`), 위조·재사용된 식별자로 이 엔드포인트를 직접 부르면 비밀번호를 바꾸지 않고 `403 auth.admin_required` 로 끊는다.
 
 ### POST /api/auth/admin/login/two-factor
 <!-- @generated:start:api.auth.admin.login.two-factor -->
@@ -431,6 +599,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
 <!-- @generated:end -->
 
@@ -439,6 +608,8 @@ HTTP/1.1 200
 관리자 로그인의 인증번호 확인 단계. 사용자 경로(`POST /api/auth/login/two-factor`)와 같은 규칙으로 코드를 확인하고, **확인에 성공한 뒤에** 관리자 여부를 판정한다.
 
 `AuthService::completeTwoFactor()` 는 코드 확인에 성공한 시점에 토큰을 발급하므로, 관리자 판정으로 `403` 을 돌려줄 때는 반드시 그 발급분을 회수한다(`revokeIssuedSession()`). 회수하지 않으면 관리자가 아닌 사용자가 응답만 `403` 을 받을 뿐 유효한 세션을 손에 쥔다.
+
+**비밀번호를 바꿔야 하는 관리자 (#736)**: 코드 확인에 성공해도 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 토큰 대신 `POST /api/auth/login` 과 같은 변경 단계 응답(`password_change_required: true`, `challenge_id` …)을 돌려주고, 그 식별자는 관리자 경로에 묶여 `POST /api/auth/admin/login/password-change` 로만 완료된다. 비관리자는 변경 단계를 열지 않고 위와 같이 발급분 회수 + `403` 이다. 이 시점에 2단계 인증 코드는 이미 소비됐으므로, 변경 단계 식별자가 만료되면 처음부터 다시 로그인해야 한다. 식별자를 저장하지 못하면 `503 auth.password_change_unavailable` 이다.
 
 
 ### POST /api/auth/admin/login/two-factor/resend
@@ -657,13 +828,27 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts` — `Retry-After` 헤더 동반) |
-| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
+| 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
 
 <!-- @generated:end -->
 
 **설명**
 
 일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
+
+**비밀번호를 바꿔야 하는 경우 (#736)**: 비밀번호(·2단계 인증)를 통과했어도 비밀번호가 만료됐거나(`security.password_expiry_*`) 관리자가 정해 준 비밀번호면 **토큰을 발급하지 않는다**. 대신 `200` 과 함께 `message: auth.password_change_required`(만료) / `auth.password_change_required_admin_assigned` 및 아래 필드를 반환하며, 클라이언트는 `POST /api/auth/login/password-change`(연기는 `/postpone`)로 새 비밀번호를 보내야 로그인이 완료된다. 순서는 2단계 인증이 먼저다 — 2단계 인증이 켜져 있으면 이 응답은 `POST /api/auth/login/two-factor` 가 돌려준다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `password_change_required` | boolean | 항상 `true` — 이 응답이 변경 단계임을 나타낸다 |
+| `challenge_id` | string(uuid) | 변경 단계 식별자 (10분, 한 번만, 발급 경로에 묶임) |
+| `reason` | string | `expired`(사용 기간 만료) \| `admin_assigned`(관리자가 정해 준 비밀번호) |
+| `can_postpone` | boolean | '다음에 변경' 가능 여부 (만료 + '다음에 변경 허용' 모드만 `true`) |
+| `postpone_days` | integer\|null | 연기하면 다시 안내할 때까지의 일수 |
+| `expired_at` | string(ISO8601)\|null | 만료 시각 (관리자 지정이면 `null`) |
+| `expires_at` | string(ISO8601) | 변경 단계 식별자 만료 시각 |
+
+이 응답에도 `data.token`·`data.user` 가 없으므로 클라이언트는 `two_factor_required` 와 함께 `password_change_required` 를 먼저 판정해야 한다. 식별자를 저장하지 못하면(캐시 실패) 토큰을 주지 않고 `503 auth.password_change_unavailable` 이다.
 
 **2단계 인증이 켜져 있는 경우**: 보안 환경설정 `security.two_factor_auth` 가 켜져 있으면 비밀번호가 맞아도 **토큰을 발급하지 않는다**. 대신 `200` 과 함께 `message: auth.two_factor_required` 및 아래 필드를 반환하며, 클라이언트는 `POST /api/auth/login/two-factor` 로 코드를 확인해야 로그인이 완료된다.
 
@@ -684,6 +869,168 @@ HTTP/1.1 200
 
 **쓸 수 있는 수단이 하나도 없는 경우**: 갈림길은 그것이 **운영자의 결정인지** 다. 인증 앱 플러그인 설정에서 메일 폴백을 명시적으로 껐다면 `401 auth.two_factor_enrollment_required` 로 로그인을 차단한다 — 그냥 통과시키면 운영자가 끈 결과가 "2단계 인증이 아예 없는 로그인" 이 되어 정반대가 되기 때문이다. 구제는 관리자의 등록 해제(`DELETE /api/plugins/sirsoft-totp/admin/credentials/{user}`) 또는 `totp:reset` artisan 이다. 반면 운영자의 결정이 아닌 이유(메일 설정이 깨진 경우 등)로 수단이 없을 때는 차단하지 않고 경고 로그만 남긴다 — 차단하면 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다.
 
+
+### POST /api/auth/login/password-change
+<!-- @generated:start:api.auth.login.password-change -->
+- **라우트명**: `api.auth.login.password-change`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@completePasswordChange`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 변경 단계 식별자가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 (지금 비밀번호와 같으면 거부, 재사용 금지가 켜져 있으면 최근 N개도 거부) |
+| password_confirmation | body | string | 예 | — | 새 비밀번호 확인 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/password-change HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40",
+    "password": "N3w-Passw0rd!",
+    "password_confirmation": "N3w-Passw0rd!"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 발급 — `user` 만 `UserResource` 로 감싼다). 형태는 로그인 성공 응답과 같다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "비밀번호를 바꾸고 로그인했습니다.",
+    "data": {
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자"
+        },
+        "token": "{MASKED}",
+        "token_type": "Bearer"
+    }
+}
+```
+
+> `user` 객체는 지면 절약을 위해 축약했습니다. 실제로는 `UserResource` 필드 전수가 내려옵니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) — 비밀번호는 바뀌지 않는다 |
+| 422 | Unprocessable Entity | 새 비밀번호 규칙 위반(`errors.password`), 식별자 형식 위반·무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`) |
+| 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+비밀번호·2단계 인증을 통과했지만 비밀번호가 만료됐거나(`reason=expired`) 관리자가 정해 준 비밀번호(`reason=admin_assigned`)인 회원이 로그인 응답의 변경 단계 식별자와 새 비밀번호를 보내 로그인을 마친다. 성공 응답은 로그인 성공과 같은 모양이다.
+
+- 식별자는 10분 유효하고 한 번만 쓸 수 있으며, 발급 경로(사용자·관리자)와 발급 시점의 비밀번호에 묶인다 — 다른 경로로 쓰거나 그 사이 비밀번호가 바뀌었으면 무효다. 2단계 인증 코드는 이미 소비됐으므로 식별자가 만료되면 처음부터 다시 로그인해야 한다.
+- 새 비밀번호는 지금 비밀번호와 같으면 재사용 설정과 무관하게 거부한다(같은 값으로 '변경' 하면 만료·임시 비밀번호 강제가 무력화된다). 재사용 금지 비교는 식별자가 유효할 때만 평가한다.
+- 성공하면 변경일을 기록하고 **모든 기기를 로그아웃**시킨 뒤 새 토큰을 하나 발급한다. 휴면 회원이면 이 자리에서 휴면이 풀리고 `dormancy_restored: true` 가 실린다. 규칙 위반은 로그인 실패 횟수에 넣지 않는다.
+
+### POST /api/auth/login/password-change/postpone
+<!-- @generated:start:api.auth.login.password-change.postpone -->
+- **라우트명**: `api.auth.login.password-change.postpone`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@postponePasswordChange`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 변경 단계 식별자가 식별한다)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_postpone_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/password-change/postpone HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "challenge_id": "9f1c2f2e-0b3a-4f0a-9a1e-5c1b7f9d2c40"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 발급 — `user` 만 `UserResource` 로 감싼다). 형태는 로그인 성공 응답과 같다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
+| postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "비밀번호 변경을 미뤘습니다. 기한 안에 비밀번호를 바꿔 주세요.",
+    "data": {
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자"
+        },
+        "token": "{MASKED}",
+        "token_type": "Bearer",
+        "postponed_until": "2026-10-16T05:15:00+00:00"
+    }
+}
+```
+
+> `user` 객체는 지면 절약을 위해 축약했습니다. 실제로는 `UserResource` 필드 전수가 내려옵니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) |
+| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`) |
+| 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+'다음에 변경 허용' 모드(`security.password_expiry_action=remind`)에서 만료된 회원이 변경을 미루고 로그인을 마친다. 연기 일수는 `security.password_expiry_remind_days` 이고, 기간이 끝난 뒤 로그인하면 다시 변경 단계가 나온다. 발급 시점의 판정과 지금의 판정을 함께 본다 — 그 사이 운영자가 '변경해야 로그인' 으로 바꿨으면 연기할 수 없다. 성공하면 활동 로그 `auth.password_change_postpone` 과 훅 `core.auth.password_change_postponed` 가 남는다.
 
 ### POST /api/auth/login/two-factor
 <!-- @generated:start:api.auth.login.two-factor -->
@@ -769,6 +1116,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (로그인과 같은 제한을 공유하므로 코드 대입 시도도 함께 억제된다 — `auth.too_many_attempts`) |
+| 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
 <!-- @generated:end -->
 
@@ -779,6 +1127,9 @@ HTTP/1.1 200
 challenge 의 `purpose` 가 `login` 인지 먼저 대조한다 — 대조하지 않으면 회원가입·비밀번호 재설정 등 다른 흐름에서 발급된 challenge 로 로그인할 수 있다. 코드 확인에 성공하기 전에는 어떤 경우에도 토큰이 발급되지 않는다.
 
 **계정 잠금은 이 단계에서 다시 검사한다.** 세션을 여는 것은 비밀번호 단계가 아니라 이 엔드포인트이므로, challenge 를 받은 뒤 잠긴 계정은 여기서 `423` 으로 차단된다. 잠기기 전에 발급받은 challenge 를 잠긴 뒤에 완료하는 것만으로 잠금을 우회할 수 없다. 차단은 로그인 완료 훅(`core.auth.after_login`)보다 앞서므로 실패 횟수·잠금 해제 시각도 초기화되지 않는다.
+
+
+**비밀번호를 바꿔야 하는 경우 (#736)**: 코드 확인에 성공해도 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 토큰 대신 `POST /api/auth/login` 과 같은 변경 단계 응답(`password_change_required: true`, `challenge_id` …)을 돌려준다. 이 시점에 2단계 인증 코드는 이미 소비됐으므로, 변경 단계 식별자가 만료되면 처음부터 다시 로그인해야 한다.
 
 
 ### POST /api/auth/login/two-factor/resend
@@ -917,7 +1268,7 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | string | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 길이·특수문자와 운영자가 켠 조합·추측 방지 규칙(아이디 포함·반복·연속)을 따른다(#736) |
 | mobile | body | string | 아니오 | max 20 | 휴대폰번호 (선택) |
 | phone | body | string | 아니오 | max 20 | 전화번호 (선택) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
@@ -1031,7 +1382,7 @@ HTTP/1.1 201
 | --- | --- | --- | --- | --- | --- |
 | token | body | string | 예 | — | 인증/검증 토큰 |
 | email | body | email | 예 | — | 이메일 주소 |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 — 작성 규칙(길이·특수문자·조합·추측 방지)을 따르고, 재사용 금지가 켜져 있으면 최근 N개를 거부한다. 재사용 판정은 **토큰이 유효할 때만** 한다(추측 오라클 차단 — #736). 성공하면 모든 기기가 로그아웃된다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.reset_password_validation_rules`).
 

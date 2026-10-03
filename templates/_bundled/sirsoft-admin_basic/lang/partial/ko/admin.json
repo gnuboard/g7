@@ -2035,7 +2035,9 @@
         "analytics_monthly_report": "방문자 통계 월간 리포트",
         "dormant_pre_notice": "휴면 전환 사전 안내",
         "dormant_converted": "휴면 전환 완료",
-        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내"
+        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내",
+        "password_expiry_notice": "비밀번호 만료 사전 안내",
+        "password_expired": "비밀번호 만료"
       },
       "channels_label": "채널:",
       "edit_modal": {

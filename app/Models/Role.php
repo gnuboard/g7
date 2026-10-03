@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\PasswordExpiryPolicy;
 use App\Models\Concerns\HasUserOverrides;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -75,6 +76,7 @@ class Role extends Model
         'extension_identifier',
         'user_overrides',
         'is_active',
+        'password_expiry_policy',
     ];
 
     /**
@@ -90,6 +92,7 @@ class Role extends Model
             'extension_type' => ExtensionOwnerType::class,
             'user_overrides' => 'array',
             'is_active' => 'boolean',
+            'password_expiry_policy' => PasswordExpiryPolicy::class,
         ];
     }
 

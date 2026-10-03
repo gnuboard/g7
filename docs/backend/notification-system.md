@@ -326,13 +326,15 @@ return [
 
 ### 코어 정의
 
-전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다.
+전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다. 비밀번호 만료 2종(#736)은 `auth:process-password-expiry` 가 발행하며, 변경 화면 주소(`{action_url}`)가 수신자에 따라 다르다 — 관리자는 관리자 회원 수정 화면·관리자 로그인, 회원은 마이페이지 비밀번호 변경·로그인.
 
 | type | hooks | 채널 |
 |------|-------|------|
 | welcome | core.auth.after_register | mail, database |
 | reset_password | core.auth.after_reset_password_request | mail, database |
 | password_changed | core.auth.after_password_changed | mail, database |
+| password_expiry_notice | core.auth.password_expiry_notice | mail, database |
+| password_expired | core.auth.password_expired | mail, database |
 | dormant_pre_notice | core.privacy.dormant_pre_notice | mail, database |
 | dormant_converted | core.privacy.dormant_converted | mail, database |
 | dormant_withdraw_notice | core.privacy.dormant_withdraw_notice | mail, database |

@@ -67,7 +67,10 @@ class AuthActivityLogWiringTest extends TestCase
     }
 
     /**
-     * 비밀번호 변경 훅이 비밀번호 재설정 로그를 남긴다 — 재설정 링크(비로그인)는 본인이 행위자다.
+     * 메일 재설정으로 바꾼 비밀번호 기록 훅이 비밀번호 재설정 로그를 남긴다 — 재설정 링크(비로그인)는 본인이 행위자다.
+     *
+     * 비밀번호 변경 로그는 #736 부터 경로·행위자를 아는 `core.auth.password_change_recorded` 에서 남긴다
+     * (종전 `after_password_changed` 는 인자가 회원뿐이라 모든 변경을 "재설정" 으로 적었다).
      *
      * @scenario case=password_changed_self
      *
@@ -75,20 +78,24 @@ class AuthActivityLogWiringTest extends TestCase
      *
      * @return void 반환값 없음
      */
-    public function test_after_password_changed_writes_reset_password_log_with_self_actor(): void
+    public function test_password_change_recorded_reset_writes_reset_password_log_with_self_actor(): void
     {
         $user = User::factory()->create();
 
-        HookManager::doAction('core.auth.after_password_changed', $user);
+        HookManager::doAction('core.auth.password_change_recorded', $user, [
+            'source' => 'reset',
+            'actor_id' => $user->id,
+            'sessions_revoked' => 0,
+        ]);
 
         $row = DB::table('activity_logs')->where('action', 'auth.reset_password')->where('loggable_id', $user->id)->first();
 
-        $this->assertNotNull($row, 'core.auth.after_password_changed 발화가 비밀번호 재설정 로그를 남기지 않았다');
+        $this->assertNotNull($row, 'core.auth.password_change_recorded(reset) 발화가 비밀번호 재설정 로그를 남기지 않았다');
         $this->assertSame($user->id, (int) $row->user_id);
     }
 
     /**
-     * 관리자가 회원 정보 수정에서 비밀번호를 바꾸면 행위자는 그 관리자다 — 회원 본인으로 적지 않는다.
+     * 관리자가 회원 정보 수정에서 비밀번호를 정하면 행위자는 그 관리자다 — 회원 본인으로 적지 않는다.
      *
      * @scenario case=password_changed_admin
      *
@@ -96,19 +103,23 @@ class AuthActivityLogWiringTest extends TestCase
      *
      * @return void 반환값 없음
      */
-    public function test_after_password_changed_by_admin_logs_admin_as_actor(): void
+    public function test_password_change_recorded_by_admin_logs_admin_as_actor(): void
     {
         $admin = User::factory()->create();
         $member = User::factory()->create();
-        $this->actingAs($admin);
 
-        HookManager::doAction('core.auth.after_password_changed', $member);
+        HookManager::doAction('core.auth.password_change_recorded', $member, [
+            'source' => 'admin',
+            'actor_id' => $admin->id,
+            'sessions_revoked' => 1,
+        ]);
 
-        $row = DB::table('activity_logs')->where('action', 'auth.reset_password')->where('loggable_id', $member->id)->first();
+        $row = DB::table('activity_logs')->where('action', 'auth.password_change')->where('loggable_id', $member->id)->first();
 
         $this->assertNotNull($row);
-        $this->assertSame($admin->id, (int) $row->user_id, '관리자가 바꾼 비밀번호를 회원 본인이 한 것으로 기록했다');
+        $this->assertSame($admin->id, (int) $row->user_id, '관리자가 정한 비밀번호를 회원 본인이 한 것으로 기록했다');
         $this->assertSame($member->id, (int) $row->loggable_id);
+        $this->assertSame('activity_log.description.auth_password_change_by_admin', $row->description_key);
     }
 
     /**

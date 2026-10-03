@@ -37,5 +37,10 @@ return [
             'withdraw_notice' => '휴면 계정 탈퇴 예정 안내',
             'withdraw' => '휴면 계정 탈퇴 처리',
         ],
+        // 비밀번호 만료 (#736) — 보안 탭 「지금 실행」
+        'password_expiry_stages' => [
+            'notice' => '비밀번호 만료 사전 안내',
+            'expire' => '비밀번호 만료 처리',
+        ],
     ],
 ];

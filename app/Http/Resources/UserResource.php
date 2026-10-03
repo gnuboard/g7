@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\MemberNotificationService;
+use App\Services\PasswordExpiryService;
 use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
@@ -325,6 +326,9 @@ class UserResource extends BaseApiResource
             // 회원 알림함 요약 — 회원 상세 「알림함」 탭이 읽는다. 단건 상세 응답이라 2쿼리를 허용하되,
             // 목록(toListArray)에는 넣지 않는다: 목록은 행마다 도므로 같은 집계가 N+1 이 된다.
             'notifications_summary' => app(MemberNotificationService::class)->summaryForUser((int) $this->resource->id),
+            // 비밀번호 만료 개별 설정(따름·적용·제외) — 회원 수정 폼의 선택칸이 읽는다(#736). 판정 결과(`password_status`)는
+            // 역할 판정이 회원마다 들어 목록(UserCollection 이 이 메서드를 행마다 부른다)에서 N+1 이 되므로 상세에서만 덧붙인다.
+            'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합
@@ -436,10 +440,77 @@ class UserResource extends BaseApiResource
                 ? $this->formatDateTimeStringForUser($this->getValue('created_at'))
                 : null,
             'is_owner' => request()->user()?->uuid === $this->resource->uuid,
+            // 비밀번호 변경일·만료 예정 (#736) — 마이페이지 비밀번호 변경 화면이 읽는다. 만료가 적용되지 않으면 예정일은 null.
+            ...$this->profilePasswordFields(),
         ];
 
         // Filter 훅: 모듈이 자신의 데이터를 프로필 응답에 병합
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
+    }
+
+    /**
+     * 관리자 회원 상세의 비밀번호 상태를 반환합니다 (#736 — 상세 응답에만 `password_status` 로 싣는다).
+     *
+     * 적용 판정은 역할을 읽으므로 목록에는 넣지 않는다(A13).
+     *
+     * @return array{changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
+     */
+    public function passwordStatusArray(): array
+    {
+        $expiry = app(PasswordExpiryService::class);
+        $applies = $expiry->appliesTo($this->resource);
+        $expiresAt = $applies ? $expiry->expiresAt($this->resource) : null;
+        $postponedUntil = $this->getValue('password_change_postponed_until');
+
+        return [
+            'changed_at' => $this->getValue('password_changed_at')
+                ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
+                : null,
+            'expires_at' => $expiresAt ? $this->formatDateTimeStringForUser($expiresAt) : null,
+            'expired' => $expiresAt !== null && ! $expiresAt->isFuture(),
+            'applies' => $applies,
+            'policy' => $this->passwordExpiryPolicyValue(),
+            'change_required' => (bool) $this->getValue('password_change_required'),
+            'postponed_until' => $postponedUntil && $postponedUntil->isFuture()
+                ? $this->formatDateTimeStringForUser($postponedUntil)
+                : null,
+            'days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
+        ];
+    }
+
+    /**
+     * 마이페이지용 비밀번호 변경일·만료 예정 필드를 반환합니다.
+     *
+     * @return array{password_changed_at: string|null, password_expires_at: string|null, password_expiry_days_left: int|null} 비밀번호 필드
+     */
+    private function profilePasswordFields(): array
+    {
+        $expiry = app(PasswordExpiryService::class);
+        $expiresAt = $expiry->appliesTo($this->resource) ? $expiry->expiresAt($this->resource) : null;
+
+        return [
+            'password_changed_at' => $this->getValue('password_changed_at')
+                ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
+                : null,
+            'password_expires_at' => $expiresAt ? $this->formatDateTimeStringForUser($expiresAt) : null,
+            'password_expiry_days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
+        ];
+    }
+
+    /**
+     * 비밀번호 만료 개별 설정 값을 문자열로 반환합니다.
+     *
+     * @return string inherit | apply | exempt
+     */
+    private function passwordExpiryPolicyValue(): string
+    {
+        $policy = $this->getValue('password_expiry_policy');
+
+        if ($policy instanceof \BackedEnum) {
+            return (string) $policy->value;
+        }
+
+        return is_string($policy) && $policy !== '' ? $policy : 'inherit';
     }
 
     /**

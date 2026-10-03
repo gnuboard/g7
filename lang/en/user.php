@@ -11,6 +11,43 @@ return [
         'dormant' => 'Dormant',
     ],
 
+    // Password policy (#736) — read by Enum label()
+    'password_expiry_policy' => [
+        'inherit' => 'Follow role and site settings',
+        'apply' => 'Apply',
+        'exempt' => 'Exempt',
+    ],
+    'password_expiry_scope' => [
+        'all' => 'All members',
+        'admin' => 'Administrators only',
+        'selected' => 'Selected roles and members only',
+    ],
+    'password_expiry_action' => [
+        'force' => 'Require change to sign in',
+        'remind' => 'Allow changing later',
+    ],
+    'password_change_reason' => [
+        'expired' => 'Password expired',
+        'admin_assigned' => 'Password set by an administrator',
+    ],
+    'password_change_source' => [
+        'self' => 'Changed by the member',
+        'reset' => 'Password reset',
+        'admin' => 'Set by an administrator',
+        'login_required' => 'Changed at sign-in',
+        'install' => 'Installation',
+        'register' => 'Registration',
+        'admin_create' => 'Created by an administrator',
+    ],
+
+    // Password expiry target list (admin settings > security)
+    'password_expiry_target' => [
+        'admin' => 'Administrator',
+        'member' => 'Member',
+        'column_type' => 'Type',
+        'column_expires_at' => 'Expires on',
+    ],
+
     // Language labels
     'language' => [
         'ko' => '한국어',
@@ -108,9 +145,10 @@ return [
         'email_max' => 'Email must not exceed 255 characters.',
         'password_required' => 'Password is required.',
         'password_confirmed' => 'Password confirmation does not match.',
-        'password_min' => 'Password must be at least 8 characters.',
+        'password_min' => 'Password must be at least :min characters.',
         'current_password_required' => 'Current password is required.',
         'current_password_invalid' => 'Current password is incorrect.',
+        'password_expiry_policy_invalid' => 'Password expiry must be inherit, apply, or exempt.',
         'password_confirmation_required' => 'Password confirmation is required.',
         'language_required' => 'Please select a language.',
         'language_invalid' => 'Unsupported language.',

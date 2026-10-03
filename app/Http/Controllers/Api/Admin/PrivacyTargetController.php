@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\PrivacyTargetListRequest;
 use App\Http\Resources\PrivacyTargetCollection;
 use App\Privacy\DormantAccountService;
 use App\Privacy\PrivacyRetentionManager;
+use App\Services\PasswordExpiryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -27,10 +28,12 @@ class PrivacyTargetController extends AdminBaseController
     /**
      * @param  PrivacyRetentionManager  $retentionManager  보유기간 핸들러 수집기
      * @param  DormantAccountService  $dormantAccountService  휴면 생명주기 서비스
+     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      */
     public function __construct(
         private PrivacyRetentionManager $retentionManager,
         private DormantAccountService $dormantAccountService,
+        private PasswordExpiryService $passwordExpiryService,
     ) {
         parent::__construct();
     }
@@ -91,6 +94,34 @@ class PrivacyTargetController extends AdminBaseController
         return $this->success(
             'common.success',
             (new PrivacyTargetCollection($page))->withColumns($this->dormantAccountService->stageColumns($stage)),
+        );
+    }
+
+    /**
+     * 비밀번호 만료 한 단계의 대상 목록을 한 페이지 조회합니다 (#736 — 만료가 가까운 순).
+     *
+     * 보안 탭이 개인정보 탭과 같은 명단 창을 쓴다. 권한은 휴면 명단과 같은 「설정 읽기 + 회원 읽기」이고,
+     * 회원 읽기가 부분 범위면 전체 명단을 볼 수 없으므로 403 이다.
+     *
+     * @param  PrivacyTargetListRequest  $request  페이지 요청
+     * @param  string  $stage  단계 (`notice`·`expire`)
+     * @return JsonResponse 대상 목록 응답 (알 수 없는 단계 404 · 권한 부족 403)
+     */
+    public function passwordExpiry(PrivacyTargetListRequest $request, string $stage): JsonResponse
+    {
+        if (! in_array($stage, PasswordExpiryService::STAGES, true)) {
+            return $this->notFound('privacy.targets.unknown_stage');
+        }
+
+        if (! $this->retentionManager->canViewTargetList(PasswordExpiryService::TARGET_PERMISSIONS, $request->user())) {
+            return $this->forbidden('auth.permission_denied');
+        }
+
+        $page = $this->passwordExpiryService->stageTargets($stage, $request->page(), $request->perPage());
+
+        return $this->success(
+            'common.success',
+            (new PrivacyTargetCollection($page))->withColumns($this->passwordExpiryService->stageColumns()),
         );
     }
 }

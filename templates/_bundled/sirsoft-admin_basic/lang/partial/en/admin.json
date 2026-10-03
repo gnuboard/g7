@@ -2035,7 +2035,9 @@
         "analytics_monthly_report": "Monthly Analytics Report",
         "dormant_pre_notice": "Dormancy Advance Notice",
         "dormant_converted": "Dormancy Applied",
-        "dormant_withdraw_notice": "Dormant Account Withdrawal Notice"
+        "dormant_withdraw_notice": "Dormant Account Withdrawal Notice",
+        "password_expiry_notice": "Password Expiry Advance Notice",
+        "password_expired": "Password Expired"
       },
       "channels_label": "Channels:",
       "edit_modal": {

@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (602)
+- [코어](#코어) (610)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -115,6 +115,13 @@
 | `core.auth.login_validation_rules` | filter | 2 |  |
 | `core.auth.logout` | action | 1 |  |
 | `core.auth.max_login_attempts` | filter | 2 |  |
+| `core.auth.password_change_postpone_validation_rules` | filter | 2 |  |
+| `core.auth.password_change_postponed` | action | 2 |  |
+| `core.auth.password_change_recorded` | action | 2 |  |
+| `core.auth.password_change_required` | action | 2 |  |
+| `core.auth.password_change_validation_rules` | filter | 2 |  |
+| `core.auth.password_expired` | action | 2 |  |
+| `core.auth.password_expiry_notice` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
@@ -523,6 +530,7 @@
 | `core.settings.before_save` | action | 1 |  |
 | `core.settings.before_set` | action | 2 |  |
 | `core.settings.filter_save_data` | filter | 1 |  |
+| `core.settings.password_expiry_preview_validation_rules` | filter | 2 |  |
 | `core.settings.privacy_preview_validation_rules` | filter | 2 |  |
 | `core.settings.regenerate_app_key_validation_rules` | filter | 2 |  |
 | `core.settings.restore_validation_rules` | filter | 2 |  |

@@ -13,6 +13,43 @@ return [
         'dormant' => '휴면',
     ],
 
+    // 비밀번호 정책 (#736) — Enum label() 이 읽는다
+    'password_expiry_policy' => [
+        'inherit' => '역할·사이트 설정 따름',
+        'apply' => '적용',
+        'exempt' => '제외',
+    ],
+    'password_expiry_scope' => [
+        'all' => '전체 회원',
+        'admin' => '관리자만',
+        'selected' => '지정한 역할·회원만',
+    ],
+    'password_expiry_action' => [
+        'force' => '변경해야 로그인',
+        'remind' => '다음에 변경 허용',
+    ],
+    'password_change_reason' => [
+        'expired' => '비밀번호 사용 기간 만료',
+        'admin_assigned' => '관리자가 정해 준 비밀번호',
+    ],
+    'password_change_source' => [
+        'self' => '본인 변경',
+        'reset' => '비밀번호 재설정',
+        'admin' => '관리자 지정',
+        'login_required' => '로그인 시 변경',
+        'install' => '설치',
+        'register' => '회원가입',
+        'admin_create' => '관리자 등록',
+    ],
+
+    // 비밀번호 만료 대상 명단 (관리자 환경설정 > 보안)
+    'password_expiry_target' => [
+        'admin' => '관리자',
+        'member' => '회원',
+        'column_type' => '구분',
+        'column_expires_at' => '만료일',
+    ],
+
     // 언어 라벨
     'language' => [
         'ko' => '한국어',
@@ -110,9 +147,10 @@ return [
         'email_max' => '이메일은 255자 이하여야 합니다.',
         'password_required' => '비밀번호는 필수입니다.',
         'password_confirmed' => '비밀번호 확인이 일치하지 않습니다.',
-        'password_min' => '비밀번호는 최소 8자 이상이어야 합니다.',
+        'password_min' => '비밀번호는 최소 :min자 이상이어야 합니다.',
         'current_password_required' => '현재 비밀번호를 입력해주세요.',
         'current_password_invalid' => '현재 비밀번호가 올바르지 않습니다.',
+        'password_expiry_policy_invalid' => '비밀번호 만료는 따름·적용·제외 중 하나여야 합니다.',
         'password_confirmation_required' => '비밀번호 확인을 입력해주세요.',
         'language_required' => '언어를 선택해주세요.',
         'language_invalid' => '지원하지 않는 언어입니다.',

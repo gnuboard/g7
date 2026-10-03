@@ -71,6 +71,9 @@ Schedule::command('privacy:process-retention --scheduled')->dailyAt('05:05')->on
 // `privacy.dormant_enabled` 를 false 폴백으로 재확인한다. 보유기간 처리 뒤에 두는 이유는
 // 같은 날 탈퇴된 회원의 잔여 정보 2차 파기가 보존기간부터 새로 시작되어야 하기 때문이다.
 Schedule::command('privacy:process-dormant --scheduled')->dailyAt('05:10')->onOneServer();
+// 비밀번호 만료 사전 안내·만료일 처리(#736) — 설정에 따라 로그인을 해제하므로 기본 꺼짐. 커맨드가
+// `security.password_expiry_enabled` 를 재확인하고, 1회 실행당 안내 상한을 넘는 인원은 다음 날로 넘긴다.
+Schedule::command('auth:process-password-expiry --scheduled')->dailyAt('05:15')->onOneServer();
 
 // 만료 시각이 지난 본인인증 challenge 상태 전환 (비파괴 — 물리 파기는 identity:prune-logs)
 Schedule::command('identity:expire-challenges')->hourly()->onOneServer();

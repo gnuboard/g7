@@ -7,13 +7,14 @@ use App\Models\User;
 use App\Privacy\Contracts\PrivacyManualRunnerInterface;
 use App\Privacy\DormantAccountService;
 use App\Privacy\PrivacyRetentionManager;
+use App\Services\PasswordExpiryService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * 개인정보 조치 직권 실행 대상 수집기
  *
- * 코어 기본 대상(보유기간 핸들러마다 하나 + 휴면 4단계)과 확장이
+ * 코어 기본 대상(보유기간 핸들러마다 하나 + 휴면 4단계 + 비밀번호 만료 2단계)과 확장이
  * `core.privacy.manual_run_targets` 필터로 더한 대상을 키로 모은다. 접수 API·큐 작업·상태
  * 조회가 모두 이 수집기에서 대상을 찾는다 — 큐 작업은 대상을 직렬화하지 않고 실행 시점에
  * 키로 다시 찾으므로, 그사이 확장이 비활성화되면 실행하지 않고 실패로 기록된다.
@@ -37,10 +38,12 @@ class PrivacyManualRunRegistry
     /**
      * @param  PrivacyRetentionManager  $retentionManager  보유기간 핸들러 수집기
      * @param  DormantAccountService  $dormantAccountService  휴면 생명주기 서비스
+     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      */
     public function __construct(
         private PrivacyRetentionManager $retentionManager,
         private DormantAccountService $dormantAccountService,
+        private PasswordExpiryService $passwordExpiryService,
     ) {}
 
     /**
@@ -63,6 +66,12 @@ class PrivacyManualRunRegistry
 
         foreach (DormantAccountService::STAGES as $stage) {
             $runner = new DormantStageRunner($stage, $this->dormantAccountService);
+            $runners[$runner->key()] = $runner;
+        }
+
+        // 비밀번호 만료 2단계 (#736) — 보안 탭의 「지금 실행」. 개인정보 조치와 같은 접수·진행 장치를 쓴다.
+        foreach (PasswordExpiryService::STAGES as $stage) {
+            $runner = new PasswordExpiryStageRunner($stage, $this->passwordExpiryService);
             $runners[$runner->key()] = $runner;
         }
 

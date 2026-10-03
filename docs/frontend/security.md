@@ -402,11 +402,11 @@ AuthManager.refreshToken()
 | 필드 `expose: false` | 해당 필드만 미노출 |
 | 필드 `sensitive: true` | 해당 필드 미노출 (비밀번호, 토큰 등) |
 
-#### 노출 차단 카테고리
+#### 노출 차단·제한 카테고리
 
 | 카테고리 | expose | 사유 |
 |----------|--------|------|
-| `security` | `false` | 로그인 시도 제한, 비밀번호 정책 등 공격자 정보 제공 위험 |
+| `security` | `true` + `fields` 10키 | 비밀번호 작성·재사용 규칙 10키(`password_min_length`·`require_password_special_char`·`password_require_char_types`·`password_block_*`·`password_*_chars_length`·`password_reuse_*`)만 노출 — 가입·변경·재설정 화면이 실제 정책대로 안내하기 위함. 로그인 시도 제한·잠금·비밀번호 만료·IP 제한·2단계 인증·토큰 키는 `fields` 에 선언하지 않아 내보내지 않는다(공격자 정보 제공 위험) |
 | `mail` | `false` | SMTP password, API secret 포함 |
 | `seo` | `false` | 프론트엔드 미참조 (관리자 환경설정은 API 데이터 기반) |
 | `drivers` | `false` | S3 secret, Redis password 등 인프라 자격증명 포함 |
@@ -425,8 +425,12 @@ AuthManager.refreshToken()
       }
     },
     "security": {
-      "expose": false,
-      "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
+      "expose": true,
+      "_comment": "비밀번호 작성·재사용 규칙만 노출(예시는 10키 중 2개) — 만료·IP·2FA·토큰·잠금 키는 fields 에 선언하지 않아 내보내지 않는다",
+      "fields": {
+        "password_min_length": { "type": "integer", "sensitive": false },
+        "require_password_special_char": { "type": "boolean", "sensitive": false }
+      }
     },
     "mail": {
       "expose": false,

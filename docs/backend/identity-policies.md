@@ -9,6 +9,7 @@
 회원가입·비밀번호 재설정·민감 작업 등 모든 IDV 강제 시점은 IdentityPolicy 단일 진실로 통합
 정책 = (scope, target, purpose, applies_to, conditions, enabled, grace, fail_mode) 9개 필드
 미들웨어 `identity.policy:KEY` 부착 또는 `EnforceIdentityPolicyListener` 의 hook scope 매칭으로 자동 enforce
+라우트명으로 매핑할 수 없는 자리는 코드가 정책 키로 직접 건다 — IdentityPolicyService::enforceForRequest() (7.1.0, §2.4)
 applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 권한 보유 역할 검사)
 회원가입 단계 분기는 `conditions.signup_stage` 키로 표현 (before_submit / after_create)
 ```
@@ -41,7 +42,7 @@ applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 
 
 운영자 입력 UI: 정책 폼 모달의 "우선순위" 입력칸(0~65535, 기본 100) + 정책 목록의 "우선순위" 컬럼. 코어(`sirsoft-admin_basic`)·모듈(`sirsoft-board`/`sirsoft-ecommerce`) 환경설정 정책 탭 모두 동일.
 
-## 2. 두 가지 enforce 경로 (모두 동적 — 정책 DB toggle 만으로 즉시 효과)
+## 2. enforce 경로 (모두 동적 — 정책 DB toggle 만으로 즉시 효과)
 
 ### 2.1 라우트 자동 매핑 (scope=route)
 
@@ -80,6 +81,12 @@ scope=route 가 자동 매핑으로 동일한 "DB toggle = 즉시 효과" 모델
 [IdentityVerificationRequiredException](../../app/Exceptions/IdentityVerificationRequiredException.php) 은 의도적으로 `\Error` 를 상속하여 `catch (\Exception)` 을 우회합니다. PHP 의 `\Error` 와 `\Exception` 은 별도 계층이며 `\Throwable` 만 공통 부모. Laravel 글로벌 핸들러의 `render(Throwable)` 콜백은 정상 매칭되어 428 응답 발급.
 
 **라우트 작성 시 별도 안전망 코드 작성 불필요** — 어떤 catch-all 패턴을 쓰더라도 IDV 흐름은 항상 글로벌 핸들러까지 도달.
+
+### 2.4 코드에서 정책 키로 거는 자리 (7.1.0)
+
+한 라우트가 입력에 따라 민감 작업이 되기도 하고 아니기도 해서 라우트명으로 매핑할 수 없을 때는 코드가 정책 키로 직접 겁니다 — `IdentityPolicyService::enforceForRequest('정책 키', $request)`. 판정은 라우트 미들웨어와 같은 한 곳(`enforcePolicyForRequest()` — `verification_token` 우회 → `applies_to`·`conditions` → grace → 428)이라 결과가 같고, 정책이 없거나 꺼져 있으면 아무 일도 하지 않습니다. 정책의 `target` 은 보지 않습니다 — 거는 자리가 코드에 고정되므로 그 자리를 만든 쪽이 문서에 적습니다.
+
+코어 사용처: `PUT /api/me`·`PUT /api/user/profile` 로 비밀번호를 함께 바꾸면 `core.profile.password_change`(target 은 전용 경로 `api.me.password`)를 겁니다 — 정보수정 API 가 비밀번호 변경 본인인증의 우회로가 되지 않게 하려는 것입니다([password-policy.md](password-policy.md)).
 
 ## 3. `applies_to` 분기 (permission 기반)
 
@@ -237,8 +244,8 @@ public function getIdentityPolicies(): array
 
 ## 9. 관련 코드 진입점
 
-- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()`
-- `app/Http/Middleware/EnforceIdentityPolicy.php` — 라우트 단계 enforce + `user_is_admin` / `target_email` 컨텍스트 주입
+- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()` / `enforceForRequest()`·`enforcePolicyForRequest()`(HTTP 요청 문맥 — `verification_token` 우회 + `user_is_admin` / `target_email` 컨텍스트 주입, 7.1.0)
+- `app/Http/Middleware/EnforceIdentityPolicy.php` — 라우트 단계 enforce (판정은 `enforcePolicyForRequest()` 에 위임)
 - `app/Listeners/Identity/EnforceIdentityPolicyListener.php` — 훅 단계 enforce
 - `app/Extension/Helpers/IdentityPolicySyncHelper.php` — Seeder 가 사용하는 upsert + cleanup
 - `app/Models/IdentityPolicy.php` — `HasUserOverrides` 트레이트로 운영자 수정값 보존

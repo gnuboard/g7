@@ -32,5 +32,9 @@ return [
             'withdraw_notice' => '休眠アカウント退会予定通知',
             'withdraw' => '休眠アカウント退会処理',
         ],
+        'password_expiry_stages' => [
+            'notice' => 'パスワード有効期限の事前通知',
+            'expire' => 'パスワード有効期限切れの処理',
+        ],
     ],
 ];

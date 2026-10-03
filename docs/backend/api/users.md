@@ -238,7 +238,8 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -404,7 +405,7 @@ HTTP/1.1 201
 
 **설명**
 
-관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(8자 이상, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
+관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(보안 설정의 작성 규칙, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
 
 
 ### PATCH /api/admin/users/bulk-status
@@ -1228,6 +1229,16 @@ _단건 응답: `data` 객체의 필드._
 | locked_permanently | boolean | `false` | 영구 잠금 여부. true 면 `locked_until` 과 무관하게 잠금이 유지되며, 해제는 성공 로그인 또는 관리자의 잠금 해제로만 이뤄진다 (잠금 시간 설정이 `0`= 무기한일 때 세워진다) |
 | locked_until | null | `null` | 계정 잠금 해제 시각 (NULL = 잠금 없음) |
 | is_locked | boolean | `false` | locked 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
+| password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
+| password_status.changed_at | string\|null | `2026-07-01 10:20:00` | 마지막 변경 일시 (사용자 시간대) |
+| password_status.expires_at | string\|null | `2026-09-29 10:20:00` | 만료 예정 일시 (적용되지 않으면 null) |
+| password_status.expired | boolean | `false` | 만료됐는지 |
+| password_status.applies | boolean | `true` | 만료가 이 회원에게 적용되는지 (회원 개별 > 역할 > 사이트 범위 판정) |
+| password_status.policy | string | `inherit` | 회원 개별 설정 |
+| password_status.change_required | boolean | `false` | 다음 로그인 때 비밀번호를 바꿔야 하는지 (관리자가 정해 준 비밀번호) |
+| password_status.postponed_until | string\|null | `null` | '다음에 변경' 연기 종료 일시 (연기 중일 때만) |
+| password_status.days_left | integer\|null | `3` | 만료까지 남은 날수 (적용되지 않으면 null) |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 여부 (게시판 모듈 알림 설정) |
 | notify_post_reply | boolean | `false` | 내 게시글 답글 알림 수신 여부 |
 | notify_comment | boolean | `false` | 내 게시글 댓글 알림 수신 여부 |
@@ -1402,7 +1413,9 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 아니오 | — | 비밀번호 |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -1569,7 +1582,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 8자 이상·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
+기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 보안 설정의 작성 규칙·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
 
 
 ### POST /api/admin/users/{user}/unlock

@@ -93,6 +93,11 @@ return [
         'dormant_converted' => '휴면 전환',
         'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
 
+        // 비밀번호 정책 (auth.password_*) — 기존 세그먼트와 겹치지 않는 복합어
+        'password_change' => '비밀번호 변경',
+        'password_change_postpone' => '비밀번호 변경 연기',
+        'password_expiry_logout' => '비밀번호 만료 로그인 해제',
+
         // 개인정보 조치 직권 실행 (privacy.manual_run_*) — 흔한 낱말과 겹치지 않는 복합어
         'manual_run_queued' => '개인정보 조치 직권 실행 접수',
         'manual_run_finished' => '개인정보 조치 직권 실행 종료',
@@ -187,6 +192,12 @@ return [
         'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 또는 비밀번호 재설정 필요)',
         'auth_account_unlocked' => '계정 잠금 해제 (:email)',
         'auth_account_unlocked_by_password_reset' => '비밀번호 재설정으로 계정 잠금 해제 (:email)',
+        'auth_password_change_self' => '비밀번호 변경 (본인)',
+        'auth_password_change_by_admin' => '관리자가 회원 비밀번호 지정 (ID: :user_id)',
+        'auth_password_change_on_login_expired' => '로그인 시 비밀번호 변경 (사용 기간 만료)',
+        'auth_password_change_on_login_admin_assigned' => '로그인 시 비밀번호 변경 (관리자가 정해 준 비밀번호)',
+        'auth_password_change_postpone' => '비밀번호 변경 연기 (:until 까지)',
+        'auth_password_expiry_logout' => '비밀번호 만료로 로그인 해제 (ID: :user_id, :count개 기기)',
 
         // 보안 — IP 접근 제한
         'security_ip_blocked' => 'IP 접근 차단 (:ip → :path)',

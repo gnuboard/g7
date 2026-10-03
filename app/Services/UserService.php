@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\PermissionEscalationException;
@@ -34,12 +35,14 @@ class UserService
      * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
      * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타 정리)
      * @param  PermissionEscalationGuard  $escalationGuard  역할 부여 상한 가드
+     * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
      */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private AttachmentService $attachmentService,
-        private PermissionEscalationGuard $escalationGuard
+        private PermissionEscalationGuard $escalationGuard,
+        private PasswordChangeService $passwordChangeService
     ) {}
 
     /**
@@ -94,6 +97,11 @@ class UserService
                 $data['password'] = Hash::make($data['password']);
             }
 
+            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+                unset($data['password_expiry_policy']);
+            }
+
             // 역할 처리: roles 객체 배열이 오면 role_ids로 변환
             $roleIds = null;
             if (isset($data['role_ids'])) {
@@ -133,6 +141,9 @@ class UserService
             }
 
             $user = $this->userRepository->create($data);
+
+            // 관리자가 정해 준 비밀번호 — 변경일을 남기고 다음 로그인 때 회원이 바꾸도록 표시한다(D11).
+            $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::AdminCreate);
 
             // 역할 동기화
             if ($roleIds !== null && count($roleIds) > 0) {
@@ -179,8 +190,10 @@ class UserService
         UserGradeGuard::assertActorMayModify($user);
 
         try {
-            // 원본 데이터 보관 (after_update 훅에서 사용) — 비밀번호 원문은 뺀다(after_create 와 같은 이유)
-            $originalData = Arr::except($data, ['password', 'password_confirmation']);
+            // 원본 데이터 보관 (after_update 훅에서 사용) — 비밀번호 원문은 뺀다(after_create 와 같은 이유).
+            // 현재 비밀번호(정보수정·관리자 본인 변경의 본인 확인용)도 같은 원문이라 함께 뺀다 — 큐 구독자마다
+            // 작업 표에 평문 사본이 남는다(D18).
+            $originalData = Arr::except($data, ['password', 'password_confirmation', 'current_password']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_update', $user, $data);
@@ -188,8 +201,15 @@ class UserService
             // Filter 훅: 모듈이 자신의 데이터를 추출하고 코어 데이터에서 제거
             $data = HookManager::applyFilters('core.user.filter_update_data', $data, $user);
 
-            // 비밀번호 처리
+            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+                unset($data['password_expiry_policy']);
+            }
+
+            // 비밀번호 처리 — 변경 기록(이력)에 남길 이전 해시는 update 전에 잡아 둔다.
             $passwordChanged = ! empty($data['password']);
+            $oldPasswordHash = $passwordChanged ? $user->getRawOriginal('password') : null;
+            unset($data['current_password']);
             if ($passwordChanged) {
                 $data['password'] = Hash::make($data['password']);
             } else {
@@ -294,8 +314,25 @@ class UserService
             // 상태 변경 경유 탈퇴는 **탈퇴까지 같은 트랜잭션**에 넣는다 — 프로필 갱신을
             // 먼저 커밋하고 탈퇴를 따로 커밋하면, 탈퇴가 실패했을 때 이름·이메일 변경만
             // 남아 "전부 성공하거나 전부 취소" 가 그 경로에서만 깨진다.
-            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus) {
+            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash) {
                 $this->userRepository->update($user, $data);
+
+                // 비밀번호 변경 기록 — 출처는 행위자로 판정한다. 본인이면 현재 기기 토큰만 남기고,
+                // 관리자가 다른 회원의 비밀번호를 정했으면 그 회원의 토큰을 전부 폐기하고 다음 로그인 때
+                // 바꾸도록 표시한다(D11·D17).
+                if ($passwordChanged) {
+                    $actor = Auth::user();
+                    $actor = $actor instanceof User ? $actor : null;
+                    $source = $this->passwordChangeService->sourceFor($user, $actor);
+
+                    $this->passwordChangeService->recordChange(
+                        $user,
+                        is_string($oldPasswordHash) ? $oldPasswordHash : null,
+                        $source,
+                        $actor,
+                        $source === PasswordChangeSource::Self_ ? $this->passwordChangeService->currentTokenId($actor) : null,
+                    );
+                }
 
                 // 상태가 Active 외로 변경되었으면 토큰 삭제 (즉시 로그아웃)
                 if ($newStatus && $newStatus !== $oldStatus && $newStatus !== UserStatus::Active->value) {
@@ -399,6 +436,9 @@ class UserService
 
         // 약관 동의 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
         $user->consents()->delete();
+
+        // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+        $this->passwordChangeService->purgeHistory($user);
 
         // 토큰 삭제 (로그아웃 처리)
         $user->tokens()->delete();
@@ -521,6 +561,9 @@ class UserService
 
                 // 약관 동의 이력 삭제
                 $user->consents()->delete();
+
+                // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+                $this->passwordChangeService->purgeHistory($user);
 
                 // API 토큰 삭제
                 $user->tokens()->delete();

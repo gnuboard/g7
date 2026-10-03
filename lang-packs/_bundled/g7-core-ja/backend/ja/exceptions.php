@@ -204,4 +204,5 @@ return [
         'local_safe_option_package' => 'local-safe ディスクの :option オプションには :package パッケージが必要です。',
     ],
     'privacy_manual_run_conflict' => '同じ対象に対して処理待機中または処理中の職権実行がすでに存在します。終了後に再度実行してください。',
+    'privacy_manual_run_disabled' => 'この機能がオフになっているため、今すぐ実行できません。設定で機能をオンにして保存してから、もう一度実行してください。',
 ];

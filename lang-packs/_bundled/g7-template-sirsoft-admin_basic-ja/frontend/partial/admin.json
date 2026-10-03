@@ -2035,7 +2035,9 @@
         "analytics_monthly_report": "訪問者統計月間レポート",
         "dormant_pre_notice": "休眠転換事前通知",
         "dormant_converted": "休眠転換完了",
-        "dormant_withdraw_notice": "休眠アカウント退会予定通知"
+        "dormant_withdraw_notice": "休眠アカウント退会予定通知",
+        "password_expiry_notice": "パスワード有効期限の事前通知",
+        "password_expired": "パスワード有効期限切れ"
       },
       "channels_label": "チャネル:",
       "edit_modal": {

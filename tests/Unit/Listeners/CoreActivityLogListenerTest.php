@@ -168,7 +168,9 @@ class CoreActivityLogListenerTest extends TestCase
         // 회원 알림함·커스텀 자산·설정 등이 더해졌다 — 2026-09-26 실측 81(접두어별: auth 9 · analytics 9 ·
         // user 7 · menu 6 · schedule 6 · modules 6 · templates 6 · role 5 · plugins 5 · layout 5 · 그 외 17).
         // #708 회원 역할 일괄 변경(core.user.after_bulk_update_roles) +1 → 82.
-        $this->assertCount(82, $hooks);
+        // #736 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
+        // password_change_postponed·password_expired 를 더함 +2 → 84.
+        $this->assertCount(84, $hooks);
     }
 
     /**
@@ -630,6 +632,7 @@ class CoreActivityLogListenerTest extends TestCase
     // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_reset_password_logs_activity(): void
     {
+        // #736 — 비밀번호 변경 로그는 경로를 아는 기록 훅에서 남긴다. 메일 재설정(source=reset)은 종전 문구 그대로다.
         $this->app->instance('request', Request::create('/api/auth/reset-password'));
         $user = $this->createUserMock(5);
 
@@ -643,7 +646,7 @@ class CoreActivityLogListenerTest extends TestCase
                     && isset($context['loggable']);
             });
 
-        $this->listener->handleAuthResetPassword($user);
+        $this->listener->handlePasswordChangeRecorded($user, ['source' => 'reset', 'actor_id' => 5, 'sessions_revoked' => 0]);
     }
 
     /**
@@ -2243,7 +2246,9 @@ class CoreActivityLogListenerTest extends TestCase
             ['core.auth.logout', 'handleAuthLogout', 'auth.logout', ActivityLogType::Admin, 'activity_log.description.auth_logout'],
             ['core.auth.after_register', 'handleAuthRegister', 'auth.register', ActivityLogType::User, 'activity_log.description.auth_register'],
             ['core.auth.after_reset_password_request', 'handleAuthForgotPassword', 'auth.forgot_password', ActivityLogType::User, 'activity_log.description.auth_forgot_password'],
-            ['core.auth.after_password_changed', 'handleAuthResetPassword', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
+            ['core.auth.password_change_recorded', 'handlePasswordChangeRecorded', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
+            ['core.auth.password_change_postponed', 'handlePasswordChangePostponed', 'auth.password_change_postpone', ActivityLogType::User, 'activity_log.description.auth_password_change_postpone'],
+            ['core.auth.password_expired', 'handlePasswordExpired', 'auth.password_expiry_logout', ActivityLogType::System, 'activity_log.description.auth_password_expiry_logout'],
             ['core.auth.record_consents', 'handleAuthRecordConsents', 'auth.record_consents', ActivityLogType::User, 'activity_log.description.auth_record_consents'],
 
             // Role

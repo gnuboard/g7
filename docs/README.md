@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 39개 | 정상 |
+| [백엔드](backend/) | 40개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
 | [확장 시스템](extension/) | 36개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -129,7 +129,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (39개)
+### 백엔드 (40개)
 
 | 문서 | 제목 |
 |------|------|
@@ -158,6 +158,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
 | [pagination.md](backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) |
+| [password-policy.md](backend/password-policy.md) | 비밀번호 정책 (작성 규칙·재사용 금지·만료) |
 | [privacy-retention.md](backend/privacy-retention.md) | 개인정보 보유기간 처리 (Privacy Retention) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |

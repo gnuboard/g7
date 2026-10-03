@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Enums\PasswordChangeSource;
 use App\Models\User;
+use App\Services\PasswordChangeService;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class AdminUserSeeder extends Seeder
@@ -19,7 +21,7 @@ class AdminUserSeeder extends Seeder
         if (! $email || ! $password) {
             throw new \RuntimeException(
                 '관리자 계정 환경변수가 설정되지 않았습니다. '
-                . 'INSTALLER_ADMIN_EMAIL, INSTALLER_ADMIN_PASSWORD 환경변수를 설정해주세요.'
+                .'INSTALLER_ADMIN_EMAIL, INSTALLER_ADMIN_PASSWORD 환경변수를 설정해주세요.'
             );
         }
 
@@ -67,11 +69,11 @@ class AdminUserSeeder extends Seeder
      * 첫 관리자는 슈퍼 관리자로 생성됩니다 (is_super = true).
      * 슈퍼 관리자는 삭제할 수 없으며, 다른 관리자의 권한을 관리할 수 있습니다.
      *
-     * @param array $userData 사용자 데이터
+     * @param  array  $userData  사용자 데이터
      */
     private function createAdminUser(array $userData): void
     {
-        User::create([
+        $user = User::create([
             'name' => $userData['name'],
             'email' => $userData['email'],
             'password' => Hash::make($userData['password']),
@@ -80,5 +82,8 @@ class AdminUserSeeder extends Seeder
             'language' => $userData['language'],
             'is_super' => true,  // 첫 관리자는 슈퍼 관리자로 설정
         ]);
+
+        // 비밀번호 만료 기준일 — 설치 시점이 첫 변경일이다(#736). 설치자가 직접 정한 비밀번호라 변경 요구는 걸지 않는다.
+        app(PasswordChangeService::class)->initializeNewUser($user, PasswordChangeSource::Install);
     }
 }

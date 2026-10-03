@@ -17,6 +17,8 @@ return [
 
     // Privacy manual run — one job per target
     'privacy_manual_run_conflict' => 'A manual run for this target is already queued or running. Try again after it finishes.',
+    // Target that requires its toggle (password expiry) is turned off
+    'privacy_manual_run_disabled' => 'This feature is turned off, so it cannot be run now. Turn it on in the settings, save, and run it again.',
 
     // Optimistic lock — concurrent save conflict
     'concurrent_modification' => 'Another user has saved first. (resource: :resource, current version: :current, your version: :expected)',

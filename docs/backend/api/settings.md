@@ -93,7 +93,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/g7_2.dev","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
@@ -206,7 +206,7 @@ HTTP/1.1 200
 | mail | body | array | 아니오 | — | 메일 탭 설정 묶음 (메일러 종류·SMTP 호스트/포트/인증·암호화·발신자 정보·Mailgun/SES 자격 정보) |
 | upload | body | array | 아니오 | — | 업로드 탭 설정 묶음 (최대 파일 크기·허용 확장자·이미지 최대 크기 및 품질) |
 | seo | body | array | 아니오 | — | SEO 탭 설정 묶음 (메타 태그·검색엔진 인증·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기) |
-| security | body | array | 아니오 | — | 보안 탭 설정 묶음 (HTTPS 강제·로그인 시도 제한·인증 토큰 유지시간·최대 시도 횟수·잠금 시간) |
+| security | body | array | 아니오 | — | 보안 탭 설정 묶음 (HTTPS 강제·로그인 시도 제한·인증 토큰 유지시간·최대 시도 횟수·잠금 시간·비밀번호 정책 — 비밀번호 키별 범위는 아래 `security.password_*` 행) |
 | drivers | body | array | 아니오 | — | 드라이버 탭 설정 묶음 (스토리지/캐시/세션/큐/로그 드라이버 및 S3·Redis·Memcached·WebSocket·검색엔진 접속 정보) |
 | advanced | body | array | 아니오 | — | 고급 탭 설정 묶음 (캐시·디버그·코어 업데이트·GeoIP 설정) |
 | notifications | body | array | 아니오 | — | 알림 탭 설정 묶음. channels 배열로 각 알림 채널의 id·is_active(활성 여부)·sort_order(표시 순서)를 저장 |
@@ -280,6 +280,21 @@ HTTP/1.1 200
 | security.ip_restriction_rules.*.ips.* | body | string | 아니오 | IPv4·IPv6·CIDR | 허용 항목 |
 | security.ip_restriction_rules.*.memo | body | string | 아니오 | max 255 | 운영자 메모 |
 | security.ip_restriction_rules.*.enabled | body | boolean | 아니오 | — | 규칙 사용 여부 (미지정 = 사용). 삭제하지 않고 잠시 끌 때 쓴다 |
+| security.password_require_char_types | body | boolean | 아니오 | — | 비밀번호 조합 규칙 — 켜면 영문·숫자·특수문자 중 2종류 이상 (기본 false). 가입·변경·재설정·관리자 지정 전 경로에 적용 |
+| security.password_block_identifier | body | boolean | 아니오 | — | 이메일 `@` 앞부분(3자 이상, 대소문자 무시)이 들어간 비밀번호 거부 (기본 false) |
+| security.password_block_repeated_chars | body | boolean | 아니오 | — | 같은 문자가 연속으로 반복되는 비밀번호 거부 (기본 false) |
+| security.password_repeated_chars_length | body | integer | 아니오 | min 3, max 6 | 반복 금지가 거부하기 시작하는 글자 수 (기본 4) |
+| security.password_block_sequential_chars | body | boolean | 아니오 | — | 연속 문자(숫자 `1234`·영문 `abcd`·자판 행 `qwer`, 오름·내림) 거부 (기본 false) |
+| security.password_sequential_chars_length | body | integer | 아니오 | min 3, max 6 | 연속 문자 금지가 거부하기 시작하는 글자 수 (기본 4) |
+| security.password_reuse_prevention_enabled | body | boolean | 아니오 | — | 최근 비밀번호 재사용 금지 (기본 false). 관리자를 포함한 전 회원, 관리자가 **다른 회원**의 비밀번호를 정할 때는 검사하지 않는다 |
+| security.password_reuse_count | body | integer | 아니오 | min 1, max 10 | 다시 쓸 수 없는 최근 비밀번호 개수 — 현재 비밀번호 포함 (기본 3) |
+| security.password_expiry_enabled | body | boolean | 아니오 | — | 비밀번호 만료 사용 (기본 false). 꺼짐→켜짐으로 저장한 순간을 서버가 만료 기준 시작일로 기록한다(기존 회원은 그날부터 계산) |
+| security.password_expiry_days | body | integer | 아니오 | min 30, max 730 | 비밀번호 사용 기간(일) (기본 90) |
+| security.password_expiry_notice_days | body | integer | 아니오 | min 1, max 30 | 만료 며칠 전에 사전 안내를 보낼지 (기본 7). **만료가 켜져 있으면 `security.password_expiry_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.password_expiry_notice_days_lt_expiry_days`) |
+| security.password_expiry_scope | body | string | 아니오 | `all`, `admin`, `selected` | 만료 적용 범위 — 전체 회원 / 관리자만 / 역할·회원에서 '적용'으로 지정한 대상만 (기본 `all`). 회원 개별 설정 > 역할 설정 > 이 범위 순으로 판정 |
+| security.password_expiry_action | body | string | 아니오 | `force`, `remind` | 만료 시 동작 — 변경해야 로그인 / 다음에 변경 허용 (기본 `force`). `force` 면 만료 처리 때 그 회원의 로그인 토큰을 모두 폐기 |
+| security.password_expiry_remind_days | body | integer | 아니오 | min 1, max 90 | '다음에 변경'을 고른 뒤 다시 안내하기까지의 일수 (기본 30, `remind` 일 때만 사용) |
+| security.password_expiry_batch_size | body | integer | 아니오 | min 0, max 100000 | 1회 실행당 안내 상한 — 사전 안내·만료 처리에 각각 적용, 만료가 가까운 순 (기본 1000, 0 = 무제한) |
 | advanced.cache_enabled | body | boolean | 아니오 | — | 캐시 사용 여부 |
 | advanced.layout_cache_enabled | body | boolean | 아니오 | — | 레이아웃 캐시 사용 여부 (레이아웃 데이터를 캐시) |
 | advanced.layout_cache_ttl | body | integer | 아니오 | min 0, max 14400 | 레이아웃 캐시 만료 시간 (초, 0 = 만료 없음) |
@@ -344,6 +359,8 @@ HTTP/1.1 200
 | privacy.dormant_withdraw_days | body | integer | 아니오 | min 1, max 3650 | 휴면 전환 시점부터 자동 탈퇴까지의 일수 (기본 365). 이때도 `privacy.dormant_notice_days` 만큼 앞서 탈퇴 예고를 보낸다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
+
+> 비밀번호 정책 정수 키는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
 
 **요청 예시**
 
@@ -678,6 +695,77 @@ HTTP/1.1 200
 건수는 커맨드(`privacy:process-retention --dry-run` · `privacy:process-dormant --dry-run`)와 **같은 조건식**을 지납니다 — 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 기능을 켜게 되고, 그 처리는 되돌릴 수 없습니다.
 
 **기능이 꺼져 있어도 건수를 돌려줍니다.** 운영자는 켜기 **전에** 규모와 명단을 확인해야 하기 때문입니다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다. 명단은 [개인정보 조치 대상 API](privacy.md)로 한 페이지씩 받으며, `can_view_targets` 가 `false` 면 화면이 「더보기」 버튼을 그리지 않습니다.
+
+
+### GET /api/admin/settings/password-expiry-preview
+<!-- @generated:start:api.admin.settings.password-expiry-preview -->
+- **라우트명**: `api.admin.settings.password-expiry-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@passwordExpiryPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.password_expiry_preview_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/password-expiry-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (`PasswordExpiryService::preview()`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| enabled | boolean | `false` | 비밀번호 만료 기능이 켜져 있는지 (`security.password_expiry_enabled`) |
+| started_at | string(ISO8601)\|null | `2026-06-01T03:12:00+00:00` | 만료 기준 시작일(기능을 켠 순간 — 서버 기록). 한 번도 켜지 않았으면 `null` |
+| notice | integer | `12` | 사전 안내 대상 수 — **꺼져 있어도 센다**(저장된 기간값 기준) |
+| expire | integer | `3` | 만료 처리 대상 수 |
+| batch_size | integer | `1000` | 1회 실행당 처리 상한 (0 = 무제한) |
+| can_view_targets | boolean | `true` | 요청 관리자가 명단(「대상 보기」)을 볼 권한이 있는지 — `core.settings.read` + `core.users.read`, 둘 다 전체 범위 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "enabled": true,
+        "started_at": "2026-06-01T03:12:00+00:00",
+        "notice": 12,
+        "expire": 3,
+        "batch_size": 1000,
+        "can_view_targets": true
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+비밀번호 만료 처리(`auth:process-password-expiry`)의 **사전 안내·만료 처리 대상 수를 미리** 돌려줍니다 (#736). 관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 대상 배지가 이 값을 씁니다. 읽기 전용입니다.
+
+건수는 배치·명단(`GET /api/admin/privacy/password-expiry-targets/{stage}`)·직권 실행과 **같은 쿼리**를 지납니다 — 활성 회원, 관리자 지정 변경 대기자 제외, 적용 범위(회원 개별 > 역할 > 사이트 범위), 날짜 경계(기준일 = max(마지막 변경일 ?? 시작일, 시작일)), 이번 주기 미처리. 기능이 꺼져 있어도 셉니다 — 켜기 전에 규모를 확인하는 자리입니다. `{key}` 와일드카드 라우트보다 먼저 등록돼 그 라우트에 흡수되지 않습니다.
 
 
 ### GET /api/admin/settings/app-key
@@ -1924,7 +2012,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 서버가 기록하는 키(`security.password_expiry_started_at`)는 값과 관계없이(null 포함) 422 (`validation.setting.value.server_only`) |
 | 500 | Internal Server Error | 저장 중 예외가 발생한 경우 (`settings.update_error`) |
 
 <!-- @generated:end -->

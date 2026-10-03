@@ -932,6 +932,9 @@ class DormantLifecycleTest extends TestCase
 
         // 휴면 커맨드는 기능이 꺼져 있으면 로그에 도달하기 전에 반환한다.
         $this->enableDormancy(withdraw: true);
+        // 비밀번호 만료 커맨드(#736)도 같은 약속을 하는 모집단이고, 같은 이유로 기능을 켜 둔다.
+        Config::set('g7_settings.core.security.password_expiry_enabled', true);
+        Config::set('g7_settings.core.security.password_expiry_started_at', now()->toIso8601String());
 
         foreach ($promising as $command => $file) {
             foreach ([true, false] as $scheduled) {

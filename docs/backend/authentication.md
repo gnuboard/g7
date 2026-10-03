@@ -1,6 +1,6 @@
 # 인증 및 세션 처리
 
-> **관련 문서**: [README.md](README.md) | [middleware.md](middleware.md)
+> **관련 문서**: [README.md](README.md) | [middleware.md](middleware.md) | [password-policy.md](password-policy.md) (비밀번호 작성 규칙·재사용 금지·만료·로그인 변경 단계)
 
 ---
 

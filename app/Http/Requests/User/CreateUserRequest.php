@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\PasswordExpiryPolicy;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\Role;
@@ -37,7 +38,9 @@ class CreateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'email', Rule::unique(User::class, 'email'), 'max:255'],
-            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
+            // 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않는다(D11) — 회원이 다음 로그인 때 직접 바꾼다.
+            'password' => ['required', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
+            'password_expiry_policy' => ['nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],
@@ -102,6 +105,8 @@ class CreateUserRequest extends FormRequest
             'country.alpha' => __('user.validation.country_alpha'),
             'timezone.in' => __('user.validation.timezone_invalid'),
             'status.in' => __('user.validation.status_invalid'),
+            'password_expiry_policy.string' => __('user.validation.password_expiry_policy_invalid'),
+            'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
 
             // 연락처 정보
             'homepage.url' => __('user.validation.homepage_url'),
@@ -121,6 +126,18 @@ class CreateUserRequest extends FormRequest
             'bio.max' => __('user.validation.bio_max'),
             'admin_memo.max' => __('user.validation.admin_memo_max'),
         ];
+    }
+
+    /**
+     * 아이디(이메일 앞부분) 포함 판정에 쓸 이메일을 반환합니다.
+     *
+     * @return string|null 입력 이메일 (없으면 null)
+     */
+    private function identifierEmail(): ?string
+    {
+        $email = $this->input('email');
+
+        return is_string($email) && $email !== '' ? $email : null;
     }
 
     /**

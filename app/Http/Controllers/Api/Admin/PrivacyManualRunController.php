@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\PrivacyManualRunConflictException;
+use App\Exceptions\PrivacyManualRunDisabledException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\PrivacyManualRunRequest;
 use App\Http\Requests\Admin\PrivacyManualRunStatusRequest;
@@ -117,7 +118,7 @@ class PrivacyManualRunController extends AdminBaseController
      *
      * @param  PrivacyManualRunRequest  $request  대기기간 생략 여부
      * @param  string  $target  대상 키
-     * @return JsonResponse 접수된 기록 (202 · 미등록 404 · 권한 부족 403 · 진행 중 작업 있음 409)
+     * @return JsonResponse 접수된 기록 (202 · 미등록 404 · 권한 부족 403 · 진행 중 작업 있음·꺼져 있어 실행할 수 없음 409)
      */
     public function store(PrivacyManualRunRequest $request, string $target): JsonResponse
     {
@@ -137,6 +138,9 @@ class PrivacyManualRunController extends AdminBaseController
             return $this->error(PrivacyManualRunConflictException::MESSAGE_KEY, 409, [
                 'run' => (new PrivacyManualRunResource($e->activeRun->loadMissing('requester:id,name')))->toArray($request),
             ]);
+        } catch (PrivacyManualRunDisabledException $e) {
+            // 진행 중 충돌과 달리 `errors.run` 이 없다 — 화면은 이 차이로 「기능을 켜고 저장하라」 안내를 고른다.
+            return $this->error(PrivacyManualRunDisabledException::MESSAGE_KEY, 409);
         } catch (Throwable $e) {
             Log::error('개인정보 조치 직권 실행 접수 실패', [
                 'target' => $target,

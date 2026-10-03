@@ -786,6 +786,12 @@ return [
             'challenge_invalid' => 'Verification request is not valid.',
             'code_required' => 'Enter the verification code.',
         ],
+        // Sign-in password change step (#736)
+        'password_change' => [
+            'challenge_required' => 'Password change step is missing. Please sign in again.',
+            'challenge_invalid' => 'Password change step is not valid.',
+            'password_confirmation_required' => 'Please confirm the new password.',
+        ],
         'email' => [
             'required' => 'Email is required.',
             'email' => 'Please enter a valid email address.',
@@ -847,7 +853,18 @@ return [
             'type' => 'The setting value has an unsupported format.',
             'max' => 'Setting value may not be greater than :max characters.',
             'array_max' => 'Setting value may not be larger than :max characters.',
+            'server_only' => 'This setting is recorded by the server and cannot be saved directly.',
         ],
+    ],
+
+    // Password composition and reuse rules (only the rules enabled in security settings apply)
+    'password_policy' => [
+        'char_types' => 'The password must mix at least two of letters, numbers, and special characters.',
+        'contains_identifier' => 'The password may not contain your ID (the part of your email before @).',
+        'repeated_chars' => 'The password may not repeat the same character :count or more times in a row.',
+        'sequential_chars' => 'The password may not contain :count or more sequential characters (such as 1234, abcd, qwer).',
+        'reused' => 'This password was used recently. Your last :count passwords cannot be reused.',
+        'same_as_current' => 'Please enter a password different from your current one.',
     ],
 
     // User validation messages
@@ -1162,6 +1179,14 @@ return [
         'privacy_dormant_notice_days_min' => 'The advance notice period must be at least 1 day.',
         'privacy_dormant_notice_days_max' => 'The advance notice period may not be greater than 365 days.',
         'privacy_dormant_notice_days_lt_dormant_days' => 'The advance notice period must be shorter than the dormancy period. If it is equal or longer, the notice and the transition happen on the same day, leaving no advance notice at all.',
+        // Password policy (#736)
+        'password_policy_boolean' => 'The :attribute must be on or off.',
+        'password_policy_integer' => 'The :attribute must be an integer.',
+        'password_policy_min' => 'The :attribute must be at least :min.',
+        'password_policy_max' => 'The :attribute may not be greater than :max.',
+        'password_expiry_scope_in' => 'The scope must be all members, administrators only, or selected roles and members.',
+        'password_expiry_action_in' => 'The expiry action must be either require change to sign in or allow changing later.',
+        'password_expiry_notice_days_lt_expiry_days' => 'The advance notice must be shorter than the expiry period. If it is equal or longer, the notice and the expiry happen on the same day, leaving no advance notice at all.',
     ],
 
     // Identity verification policy validation messages
@@ -1429,6 +1454,25 @@ return [
         'login_lockout_time' => 'login lockout time',
         'password_min_length' => 'minimum password length',
         'require_password_special_char' => 'require special character in password',
+        'password_require_char_types' => 'require two or more character types',
+        'password_block_identifier' => 'block ID in password',
+        'password_block_repeated_chars' => 'block repeated characters',
+        'password_repeated_chars_length' => 'repeated character length',
+        'password_block_sequential_chars' => 'block sequential characters',
+        'password_sequential_chars_length' => 'sequential character length',
+        'password_reuse_prevention_enabled' => 'password reuse prevention',
+        'password_reuse_count' => 'number of passwords that cannot be reused',
+        'password_expiry_enabled' => 'password expiry',
+        'password_expiry_days' => 'password expiry period',
+        'password_expiry_notice_days' => 'expiry advance notice days',
+        'password_expiry_scope' => 'password expiry scope',
+        'password_expiry_action' => 'password expiry action',
+        'password_expiry_remind_days' => 'change postponement period',
+        'password_expiry_batch_size' => 'notices per run limit',
+        'password_expiry_policy' => 'password expiry',
+        'current_password' => 'current password',
+        'password_confirmation' => 'password confirmation',
+        'challenge_id' => 'password change step ID',
         'two_factor_auth' => 'two-factor authentication',
         'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',

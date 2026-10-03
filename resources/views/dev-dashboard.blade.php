@@ -1181,6 +1181,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>휴면 계정 처리 (실행)</span>
                                     <span class="text-[10px] opacity-60">(privacy:process-dormant)</span>
                                 </button>
+                                <button onclick="runCommand('auth:process-password-expiry --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>비밀번호 만료 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(auth:process-password-expiry --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('auth:process-password-expiry')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>비밀번호 만료 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(auth:process-password-expiry)</span>
+                                </button>
                                 <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>본인인증 challenge 만료 처리</span>
                                     <span class="text-[10px] opacity-60">(identity:expire-challenges)</span>

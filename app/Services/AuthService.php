@@ -15,16 +15,20 @@ use App\Enums\ActivityLogType;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
 use App\Enums\IdentityVerificationStatus;
+use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -50,6 +54,9 @@ class AuthService
      * @param  PasswordResetTokenRepositoryInterface  $passwordResetTokenRepository  비밀번호 재설정 토큰 저장소
      * @param  IdentityPolicyService  $policyService  본인인증 정책 서비스
      * @param  IdentityVerificationLogRepositoryInterface  $identityLogRepository  본인인증 로그 저장소
+     * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
+     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
+     * @param  PasswordChangeChallengeService  $passwordChangeChallengeService  로그인 변경 단계 식별자 서비스
      */
     public function __construct(
         private UserRepositoryInterface $userRepository,
@@ -58,6 +65,9 @@ class AuthService
         private PasswordResetTokenRepositoryInterface $passwordResetTokenRepository,
         private IdentityPolicyService $policyService,
         private IdentityVerificationLogRepositoryInterface $identityLogRepository,
+        private PasswordChangeService $passwordChangeService,
+        private PasswordExpiryService $passwordExpiryService,
+        private PasswordChangeChallengeService $passwordChangeChallengeService,
     ) {}
 
     /**
@@ -116,14 +126,20 @@ class AuthService
      * 이벤트를 구독하는 Listener (`HandleFailedLoginListener` /
      * `HandleSuccessfulLoginListener`) 가 Repository 를 통해 처리합니다.
      *
+     * 순서 불변식: 자격증명 → 상태 → 잠금 → 2단계 인증 → 비밀번호 변경 관문 → (휴면 해제 + 토큰 발급).
+     * 변경 관문이 2단계 인증보다 앞에 오면 비밀번호만 훔친 공격자가 2단계 인증 없이 비밀번호를 바꿔
+     * 계정을 가져간다.
+     *
      * @param  string  $email  사용자 이메일
      * @param  string  $password  사용자 비밀번호
-     * @return array 사용자 정보와 토큰을 포함한 배열
+     * @param  string  $guard  로그인 경로 (user | admin — 관리자 로그인만 'admin', 변경 단계 식별자를 이 경로에 묶는다)
+     * @return array 사용자 정보와 토큰을 포함한 배열 (2단계 인증·비밀번호 변경 단계면 그 안내)
      *
      * @throws ValidationException 인증 정보가 올바르지 않을 때
      * @throws AccountLockedException 계정이 잠겨 있을 때
+     * @throws PasswordChangeUnavailableException 변경 단계를 열 수 없을 때
      */
-    public function login(string $email, string $password): array
+    public function login(string $email, string $password, string $guard = 'user'): array
     {
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
@@ -182,7 +198,218 @@ class AuthService
             return $this->startTwoFactorChallenge($user, $email, $twoFactorProviderId);
         }
 
+        // 비밀번호 변경 관문 — 2단계 인증 뒤, 토큰 발급 앞.
+        $passwordChange = $this->passwordChangeGate($user, $guard);
+
+        if ($passwordChange !== null) {
+            return $passwordChange;
+        }
+
         return $this->issueLoginSession($user, $email);
+    }
+
+    /**
+     * 비밀번호 변경 관문 — 바꿔야 하면 토큰 대신 변경 단계 식별자를 돌려줍니다.
+     *
+     * 관리자 로그인에 비관리자가 들어오면 관문을 건너뛴다(A16) — 종전 경로(토큰 발급 → 컨트롤러 회수 +
+     * 403)를 그대로 타야 비관리자의 비밀번호가 관리자 경로로 바뀌지 않는다.
+     *
+     * @param  User  $user  비밀번호·2단계 인증을 통과한 회원
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array<string, mixed>|null 변경 단계 응답 (요구가 없으면 null)
+     *
+     * @throws PasswordChangeUnavailableException 식별자를 저장하지 못했을 때
+     */
+    private function passwordChangeGate(User $user, string $guard): ?array
+    {
+        if ($guard === 'admin' && ! $user->isAdmin()) {
+            return null;
+        }
+
+        $requirement = $this->passwordExpiryService->loginRequirement($user);
+
+        if ($requirement === null) {
+            return null;
+        }
+
+        $challengeId = $this->passwordChangeChallengeService->issue($user, $guard, $requirement);
+
+        if ($challengeId === null) {
+            Log::error('비밀번호 변경 단계 식별자를 저장하지 못했습니다 — 로그인을 차단합니다', ['user_id' => $user->id]);
+
+            throw new PasswordChangeUnavailableException;
+        }
+
+        return [
+            'password_change_required' => true,
+            'challenge_id' => $challengeId,
+            'reason' => $requirement->reason->value,
+            'can_postpone' => $requirement->canPostpone,
+            'postpone_days' => $requirement->postponeDays,
+            'expired_at' => $requirement->expiredAt?->toIso8601String(),
+            'expires_at' => now()->addSeconds(PasswordChangeChallengeService::TTL_SECONDS)->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 로그인 변경 단계에서 새 비밀번호를 받아 로그인을 마칩니다.
+     *
+     * 같은 식별자의 동시 제출은 잠금으로 하나만 통과시킨다. 관리자 경로는 비밀번호를 쓰기 **전에**
+     * 관리자 여부를 확인한다(A16). 새 비밀번호 규칙(재사용·현재값 비교 포함)은 FormRequest 가 식별자를
+     * 확인한 뒤 평가했다.
+     *
+     * @param  string  $challengeId  변경 단계 식별자
+     * @param  string  $password  새 비밀번호 (평문)
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array 로그인 결과 (user, token, token_type, dormancy_restored?)
+     *
+     * @throws ValidationException 식별자가 무효·처리 중일 때
+     * @throws AuthorizationException 관리자 경로에 비관리자 식별자가 왔을 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     */
+    public function completePasswordChange(string $challengeId, string $password, string $guard): array
+    {
+        return $this->withPasswordChangeLock($challengeId, function () use ($challengeId, $password, $guard) {
+            [$user, $payload] = $this->resolvePasswordChangeChallenge($challengeId, $guard);
+
+            $oldHash = $user->getRawOriginal('password');
+
+            DB::transaction(function () use ($user, $password, $oldHash, $payload) {
+                $this->userRepository->update($user, ['password' => Hash::make($password)]);
+
+                // 로그인 단계 변경은 모든 기기 로그아웃(D17) 뒤 새 토큰을 발급한다.
+                $this->passwordChangeService->recordChange(
+                    $user,
+                    is_string($oldHash) ? $oldHash : null,
+                    PasswordChangeSource::LoginRequired,
+                    $user,
+                    null,
+                    ['reason' => (string) ($payload['reason'] ?? '')],
+                );
+            });
+
+            $this->passwordChangeChallengeService->consume($challengeId);
+
+            // 알림(`password_changed`)은 이 훅을 구독한다 — 다른 변경 경로와 같은 안내가 나가야 한다.
+            HookManager::doAction('core.auth.after_password_changed', $user);
+
+            Auth::login($user);
+
+            return $this->issueLoginSession($user, (string) $user->email);
+        });
+    }
+
+    /**
+     * 로그인 변경 단계에서 '다음에 변경' 을 골라 로그인을 마칩니다 ('다음에 변경 허용' 모드의 만료만).
+     *
+     * @param  string  $challengeId  변경 단계 식별자
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array 로그인 결과 (user, token, token_type, dormancy_restored?, postponed_until)
+     *
+     * @throws ValidationException 식별자가 무효·처리 중이거나 연기할 수 없을 때
+     * @throws AuthorizationException 관리자 경로에 비관리자 식별자가 왔을 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     */
+    public function postponePasswordChange(string $challengeId, string $guard): array
+    {
+        return $this->withPasswordChangeLock($challengeId, function () use ($challengeId, $guard) {
+            [$user, $payload] = $this->resolvePasswordChangeChallenge($challengeId, $guard);
+
+            // 발급 시점의 판정과 지금의 판정을 함께 본다 — 그 사이 운영자가 '변경해야 로그인' 으로 바꿨으면 연기할 수 없다.
+            $requirement = $this->passwordExpiryService->loginRequirement($user);
+
+            if (! ($payload['can_postpone'] ?? false) || $requirement === null || ! $requirement->canPostpone) {
+                throw ValidationException::withMessages([
+                    'challenge_id' => [__('auth.password_change_postpone_not_allowed')],
+                ]);
+            }
+
+            $until = $this->passwordExpiryService->postpone($user);
+
+            $this->passwordChangeChallengeService->consume($challengeId);
+
+            HookManager::doAction('core.auth.password_change_postponed', $user, [
+                'until' => $until->toIso8601String(),
+                'until_display' => $until->copy()->setTimezone($user->getTimezone())->toDateString(),
+            ]);
+
+            Auth::login($user);
+
+            $result = $this->issueLoginSession($user, (string) $user->email);
+            $result['postponed_until'] = $until->toIso8601String();
+
+            return $result;
+        });
+    }
+
+    /**
+     * 변경 단계 식별자를 확인하고 회원을 돌려줍니다 (상태·잠금·관리자 경로 검사 포함).
+     *
+     * @param  string  $challengeId  변경 단계 식별자
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array{0: User, 1: array<string, mixed>} 회원과 식별자 내용
+     *
+     * @throws ValidationException 식별자가 무효일 때
+     * @throws AuthorizationException 관리자 경로에 비관리자 식별자가 왔을 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     */
+    private function resolvePasswordChangeChallenge(string $challengeId, string $guard): array
+    {
+        $payload = $this->passwordChangeChallengeService->peek($challengeId);
+        $user = $payload === null ? null : $this->userRepository->findById((int) $payload['user_id']);
+
+        // 없음·만료·경로 불일치·그 사이 비밀번호가 바뀜 — 전부 같은 응답으로 답한다(상태를 캐내지 못하게).
+        if ($payload === null || $user === null || ! $this->passwordChangeChallengeService->matches($payload, $user, $guard)) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.password_change_invalid_challenge')],
+            ]);
+        }
+
+        // 비밀번호를 쓰기 **전에** 관리자 여부를 본다 — 관리자 경로로 비관리자의 비밀번호를 바꾸거나
+        // 그 세션을 지우지 않는다. 식별자는 더 쓸 데가 없으므로 소비한다.
+        if ($guard === 'admin' && ! $user->isAdmin()) {
+            $this->passwordChangeChallengeService->consume($challengeId);
+
+            throw new AuthorizationException(__('auth.admin_required'));
+        }
+
+        if (! $this->isLoginAllowedStatus($user->status)) {
+            $this->passwordChangeChallengeService->consume($challengeId);
+
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.password_change_invalid_challenge')],
+            ]);
+        }
+
+        $this->assertNotLocked($user);
+
+        return [$user, $payload];
+    }
+
+    /**
+     * 같은 변경 단계 식별자의 동시 처리를 하나로 줄입니다.
+     *
+     * @param  string  $challengeId  변경 단계 식별자
+     * @param  callable(): array  $callback  잠금 안에서 실행할 처리
+     * @return array 처리 결과
+     *
+     * @throws ValidationException 이미 처리 중일 때
+     */
+    private function withPasswordChangeLock(string $challengeId, callable $callback): array
+    {
+        $lock = Cache::lock($this->passwordChangeChallengeService->lockKey($challengeId), 10);
+
+        if (! $lock->get()) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.password_change_in_progress')],
+            ]);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
@@ -425,13 +652,18 @@ class AuthService
     /**
      * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
      *
+     * 코드 확인 뒤 토큰 발급 전에 비밀번호 변경 관문을 지난다 — 이 시점에는 2단계 인증 코드가 이미
+     * 소비됐으므로, 변경 단계 식별자가 만료되면 처음부터 다시 로그인해야 한다.
+     *
      * @param  string  $challengeId  challenge UUID
      * @param  array<string, mixed>  $input  프로바이더 입력 (코드 등)
-     * @return array{user: User, token: string, token_type: string} 로그인 결과
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return array 로그인 결과 (user, token, token_type) 또는 비밀번호 변경 단계 안내
      *
      * @throws ValidationException 검증 실패 또는 challenge 불일치
+     * @throws PasswordChangeUnavailableException 변경 단계를 열 수 없을 때
      */
-    public function completeTwoFactor(string $challengeId, array $input): array
+    public function completeTwoFactor(string $challengeId, array $input, string $guard = 'user'): array
     {
         $identity = app(IdentityVerificationService::class);
 
@@ -469,6 +701,13 @@ class AuthService
         // 세션을 여는 것은 이 지점이다 — challenge 발급 이후에 잠겼을 수 있으므로 재검사한다.
         // Auth::login() 앞에 두어야 로그인 완료 훅이 잠금 필드를 초기화하지 못한다.
         $this->assertNotLocked($user);
+
+        // 비밀번호 변경 관문 — 2단계 인증을 통과한 뒤, 토큰 발급 앞.
+        $passwordChange = $this->passwordChangeGate($user, $guard);
+
+        if ($passwordChange !== null) {
+            return $passwordChange;
+        }
 
         Auth::login($user);
 
@@ -722,6 +961,9 @@ class AuthService
         // 같은 이메일로 재가입조차 불가능해진다. 생성~토큰 발급을 하나로 묶는다.
         [$user, $token] = DB::transaction(function () use ($userData, $data, $now) {
             $user = $this->userRepository->create($userData);
+
+            // 비밀번호 만료 기준일 — 가입 시점이 첫 변경일이다.
+            $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::Register);
 
             // 약관 동의 이력 기록
             $this->recordConsents($user, $data, $now);
@@ -1007,10 +1249,11 @@ class AuthService
         // 기다리거나(공격자가 다시 걸면 끝이 없다) 관리자 해제를 받아야 한다 — 관리자가 한 명뿐인
         // 사이트에서 그 관리자가 잠기면 복구 수단이 없다. 무기한 잠금도 같은 이유로 푼다.
         $wasLocked = $this->userRepository->isLocked($user);
+        $oldPasswordHash = $user->getRawOriginal('password');
 
         // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로
         // 남아 재사용된다(보안). 두 단계를 하나로 묶는다.
-        DB::transaction(function () use ($user, $password, $record) {
+        DB::transaction(function () use ($user, $password, $record, $oldPasswordHash) {
             // Hook 발생 (비밀번호 재설정 시작)
             HookManager::doAction('core.auth.before_reset_password', $user);
 
@@ -1018,6 +1261,13 @@ class AuthService
             $this->userRepository->update($user, [
                 'password' => Hash::make($password),
             ]);
+
+            // 변경 기록 + 모든 기기 로그아웃(D17) — 메일 링크로 바꾼 것은 탈취 대응일 수 있어 현재 기기도 남기지 않는다.
+            $this->passwordChangeService->recordChange(
+                $user,
+                is_string($oldPasswordHash) ? $oldPasswordHash : null,
+                PasswordChangeSource::Reset,
+            );
 
             // 로그인 실패 횟수·잠금 초기화
             $this->userRepository->resetLoginAttempts($user);

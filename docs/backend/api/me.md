@@ -141,6 +141,9 @@ _단건 응답: `data` 객체의 필드._
 | last_login_human | string | `2시간 전` | 마지막 로그인 시각의 상대 표현 (diffForHumans() 산물, 사용자 시간대 기준) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
+| password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
+| password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
+| password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 설정 (게시판 모듈 주입) |
 | notify_post_reply | boolean | `false` | 내 게시글에 대한 답글 알림 수신 설정 (게시판 모듈 주입) |
 | notify_comment | boolean | `false` | 내 게시글에 대한 댓글 알림 수신 설정 (게시판 모듈 주입) |
@@ -279,8 +282,8 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 아니오 | — | 비밀번호 |
-| current_password | body | string | 아니오 | — | 현재 비밀번호 (변경 전 확인용) |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -426,6 +429,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18) |
 
 <!-- @generated:end -->
 
