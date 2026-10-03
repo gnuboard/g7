@@ -14,8 +14,8 @@
  *
  * 단위(PHPUnit 4건)가 viewer 별 판정을, Vitest 가 안내 블록 게이트를 고정하고, 이 spec 은 실서버에서
  * 권한 시스템·라우트 미들웨어·화면 렌더가 함께 맞물리는지를 담당한다.
+ * 소유 매니페스트는 `tests/scenarios/board-secret-content-bypass-paths.yaml`(test_files 로 귀속)이다.
  *
- * @scenario board-secret-content-bypass-paths
  * @axes viewer=outsider viewer=guest viewer=post_author viewer=restricted_admin viewer=owner viewer=reporter viewer=guest_author
  * @effects outsider_gets_null_secret_comment_content,
  *          guest_gets_null_secret_comment_content,

@@ -470,7 +470,6 @@ _admin_base.g7.html (베이스 레이아웃)
 │       ├── _modal_reaggregate.g7.html (구간 재집계)
 │       ├── _modal_purge_all.g7.html (전체 삭제)
 │       ├── _modal_retro_anonymize.g7.html (소급 익명화)
-│       ├── _modal_row_trend.g7.html (리포트 행의 기간 추이)
 │       └── _modal_subject_delete.g7.html (정보주체 삭제)
 │       └── 대시보드 카드는 partials/admin_dashboard/_analytics_widget.g7.html
 │
