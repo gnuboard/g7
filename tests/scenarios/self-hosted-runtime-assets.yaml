@@ -41,6 +41,10 @@ effects:
   - bot_render_path_uses_same_origin_asset
   - layout_script_retries_before_failing
   - layout_script_url_converted_to_current_mode
+  # 레이아웃 편집기 미리보기도 런타임처럼 레이아웃 스크립트 주소를 자산 주소 방식으로 바꿔 싣는다
+  - preview_layout_script_url_converted_to_current_mode
+  # 미리보기·편집기 플러그인 로더가 겹치거나 초기화 요청이 동시에 와도 편집기 본체(UMD)는 한 번만 실행된다
+  - vendored_editor_umd_executes_once_across_loaders
   - failed_layout_script_recorded_and_others_continue
   - failed_asset_shows_retry_notice
   - failed_asset_falls_back_to_plain_input
@@ -63,6 +67,9 @@ test_files:
   - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
   - resources/js/core/template-engine/__tests__/networkResilience.stylesheet.test.ts
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/ckeditorGlobal.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.scriptGate.test.tsx
+  - tests/Playwright/specs/layout-editor/preview-wysiwyg-single-load.spec.ts
   - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-fallback.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.fallback.test.tsx
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts

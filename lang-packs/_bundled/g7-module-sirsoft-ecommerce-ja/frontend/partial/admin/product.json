@@ -500,8 +500,7 @@
     },
     "modal": {
       "add_language": {
-        "title": "言語を追加",
-        "description": "追加する言語を選択してください。"
+        "title": "言語を追加"
       },
       "label_period": {
         "title": "ラベル期間設定",
@@ -539,13 +538,11 @@
   "modal": {
     "preset_manage": {
       "title": "プリセット管理",
-      "description": "検索プリセットを管理します。",
       "add_new": "新しいプリセットを追加",
       "empty": "保存されたプリセットがありません。"
     },
     "preset_save": {
       "title": "プリセット保存",
-      "description": "現在の検索条件をプリセットとして保存します。",
       "placeholder": "プリセット名を入力してください",
       "save": "保存"
     },
@@ -558,7 +555,6 @@
     },
     "bulk_price": {
       "title": "販売価格一括変更",
-      "description": "選択した{{count}}個の商品の販売価格を変更します。",
       "method": "変更方式",
       "method_increase": "値上げ",
       "method_decrease": "値下げ",
@@ -572,7 +568,6 @@
     },
     "bulk_stock": {
       "title": "在庫一括変更",
-      "description": "選択した{{count}}個の商品の在庫を変更します。",
       "method": "変更方式",
       "method_increase": "増加",
       "method_decrease": "減少",
@@ -604,7 +599,6 @@
     },
     "excel_download": {
       "title": "エクセルダウンロード",
-      "description": "ダウンロードする注文書の範囲を選択してください。",
       "option_search": "現在の検索条件でダウンロード",
       "option_search_desc": "合計{{count}}個の商品がダウンロードされます。",
       "option_selected": "選択した商品のみダウンロード",
@@ -1142,7 +1136,6 @@
     "remove": "削除",
     "no_period": "期間未設定",
     "modal_title": "ラベル設定",
-    "modal_description": "ラベルの名前、色、適用期間を設定します。",
     "name": "ラベル名",
     "color": "色",
     "color_reset": "色をリセット",

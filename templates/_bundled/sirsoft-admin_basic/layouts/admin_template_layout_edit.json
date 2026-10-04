@@ -189,7 +189,7 @@
     },
     "named_actions": {
         "save_current_file": {
-            "comment": "저장 — 머리말 버튼과 `Ctrl+S` 가 **같은 이 정의**를 부른다. 두 경로를 각자 적으면 한쪽만 고쳐진\n       상태가 남는다(저장 성공 후 재조회를 한쪽에만 넣는 식의 결함이 실제로 있었다).\n       레이아웃·확장 조각으로 갈리는 것은 엔드포인트와 잠금 번호의 출처뿐이라 `<conditions>` 한 겹으로 가른다.\n       HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다. 받아 둔\n       `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적 잠금).\n       성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 — 안 받으면 다음 저장이 낡은 번호로 나가\n       반드시 실패한다. 그때 `<code-workspace>` 의 버퍼는 clean 으로 바뀌며 초안도 지워진다.",
+            "comment": "저장 — 머리말 버튼과 `Ctrl+S` 가 **같은 이 정의**를 부른다. 두 경로를 각자 적으면 한쪽만 고쳐진\n       상태가 남는다(저장 성공 후 재조회를 한쪽에만 넣는 식의 결함이 실제로 있었다).\n       레이아웃·확장 조각으로 갈리는 것은 엔드포인트와 잠금 번호의 출처뿐이라 `<conditions>` 한 겹으로 가른다.\n       HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다. 받아 둔\n       `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적 잠금).\n       성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 — 안 받으면 다음 저장이 낡은 번호로 나가\n       반드시 실패한다. 그때 `<code-workspace>` 의 버퍼는 clean 으로 바뀌며 초안도 지워진다.\n       `codeEditorLastSave` 는 보낸 파일·본문을 적어 두었다가 성공 응답의 판본을 채운다. 서버는 저장한 마크업을\n       역변환해 돌려주므로 공백·속성 표기가 정규화돼 글자가 달라지는데, 작업 공간이 이 기록으로 그 판본을\n       «내 저장» 으로 알아본다 — 없으면 저장할 때마다 «서버에 더 새 버전이 있습니다» 가 선다.\n       작업 공간에는 `serverValue` 처럼 `raw:` 로 넘긴다. 본문 안의 `$t:` 가 번역 패스에서 바뀌면 보낸 본문과\n       버퍼가 달라 보여, 정규화본을 받아들이지 못하고 저장 뒤에도 미저장으로 남는다(실측 2026-10-04).",
             "handler": "conditions",
             "conditions": [
                 {
@@ -201,7 +201,8 @@
                                 "handler": "setState",
                                 "params": {
                                     "target": "global",
-                                    "isSaving": true
+                                    "isSaving": true,
+                                    "codeEditorLastSave": "{{({key: 'ext:' + _global.selectedExtensionId, value: _global.editorMarkup, revision: null})}}"
                                 }
                             },
                             {
@@ -224,7 +225,8 @@
                                             "isSaving": false,
                                             "markupCompileError": null,
                                             "jsonViewStale": false,
-                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}"
+                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}",
+                                            "codeEditorLastSave": "{{({key: _global.codeEditorLastSave?.key, value: _global.codeEditorLastSave?.value, revision: response.data?.lock_version ?? null})}}"
                                         }
                                     },
                                     {
@@ -283,7 +285,8 @@
                                 "handler": "setState",
                                 "params": {
                                     "target": "global",
-                                    "isSaving": true
+                                    "isSaving": true,
+                                    "codeEditorLastSave": "{{({key: 'layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name), value: _global.editorMarkup, revision: null})}}"
                                 }
                             },
                             {
@@ -306,7 +309,8 @@
                                             "isSaving": false,
                                             "markupCompileError": null,
                                             "jsonViewStale": false,
-                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}"
+                                            "markupWarnings": "{{response.data?.markup_warnings ?? []}}",
+                                            "codeEditorLastSave": "{{({key: _global.codeEditorLastSave?.key, value: _global.codeEditorLastSave?.value, revision: response.data?.lock_version ?? null})}}"
                                         }
                                     },
                                     {
@@ -1184,6 +1188,7 @@
                                                     "fileFormMode": "create_file",
                                                     "fileFormName": "{{$args[0] ? ($args[0] + '/') : ''}}",
                                                     "fileFormContent": "",
+                                                    "fileFormRescueFrom": null,
                                                     "fileFormError": null
                                                 }
                                             },
@@ -1355,7 +1360,7 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
-                                                                        "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.has_update}}",
+                                                                        "if": "{{_global.selectedNodeKind !== 'extension' && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName) && current_layout?.data?.has_update}}",
                                                                         "props": {
                                                                             "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
                                                                         },
@@ -1373,9 +1378,11 @@
                                                                 ]
                                                             },
                                                             {
+                                                                "comment": "설명·수정일·버전 히스토리는 «불러온 파일» 의 것이다. 없는 파일 탭은 서버를 부르지 않아 current_layout 이\n                     직전 파일로 남으므로, 고른 파일과 불러온 파일이 다르면 그리지 않는다 — 그리면 지워진 파일 이름 옆에\n                     다른 파일의 수정일·이력이 붙는다(실측 2026-10-03). 평소 파일 전환 중의 짧은 공백도 같은 이유로 비운다.",
+                                                                "id": "layout_meta_description",
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{_global.selectedNodeKind !== 'extension'}}",
+                                                                "if": "{{_global.selectedNodeKind !== 'extension' && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
                                                                 "props": {
                                                                     "className": "mt-1 text-label-subtle"
                                                                 },
@@ -1391,8 +1398,10 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "id": "layout_meta_modified_at",
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "if": "{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
                                                                 "props": {
                                                                     "className": "text-label-subtle whitespace-nowrap"
                                                                 },
@@ -1400,8 +1409,10 @@
                                                             },
                                                             {
                                                                 "comment": "shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측).",
+                                                                "id": "layout_meta_version_history",
                                                                 "type": "basic",
                                                                 "name": "Button",
+                                                                "if": "{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
                                                                 "actions": [
                                                                     {
                                                                         "type": "click",
@@ -1623,12 +1634,15 @@
                                                         "handler": "sequence",
                                                         "actions": [
                                                             {
+                                                                "comment": "어느 없는 파일을 살리는지 기억한다 — 생성이 성공하면 그 탭과 초안을 거두라고 `retiredKey` 로 돌려준다.\n                       앞선 살리기 알림은 여기서 비운다 — 작업 공간은 알림 하나를 한 번만 처리하므로, 같은 키를 다시 살릴 때도\n                       빈 값을 거쳐야 새 알림으로 받는다.",
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "global",
                                                                     "fileFormMode": "create_file",
                                                                     "fileFormName": "",
                                                                     "fileFormContent": "{{$event.target.value}}",
+                                                                    "fileFormRescueFrom": "{{$event.target.key ?? null}}",
+                                                                    "retiredFileKey": null,
                                                                     "fileFormError": null
                                                                 }
                                                             },
@@ -1668,6 +1682,7 @@
                                                                     "fileFormMode": "create_file",
                                                                     "fileFormName": "",
                                                                     "fileFormContent": "",
+                                                                    "fileFormRescueFrom": null,
                                                                     "fileFormError": null
                                                                 }
                                                             },
@@ -1725,8 +1740,10 @@
                                                     "serverKey": "{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.id ? ('ext:' + current_extension.data.id) : '') : (current_layout?.data?.name ? ('layout:' + current_layout.data.name) : '')}}",
                                                     "serverValue": "{{raw:_global.selectedNodeKind === 'extension' ? (current_extension?.data?.content_markup ?? '') : (current_layout?.data?.content_markup ?? '')}}",
                                                     "serverRevision": "{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.lock_version ?? 0) : (current_layout?.data?.lock_version ?? 0)}}",
+                                                    "lastSave": "{{raw:_global.codeEditorLastSave ?? null}}",
                                                     "fileLabel": "{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout')}}",
                                                     "knownKeys": "{{[...(layout_files?.data ?? []).map(f => 'layout:' + f.name), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => 'ext:' + e.id))]}}",
+                                                    "retiredKey": "{{_global.retiredFileKey ?? ''}}",
                                                     "language": "html",
                                                     "readOnly": "{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === false}}",
                                                     "isLoading": "{{!!_global.isSaving}}",
@@ -1786,11 +1803,12 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "없는 파일 탭이면 비운다 — editorContent·current_layout 은 직전 파일의 산출물이다.",
                                                         "id": "json_editor",
                                                         "type": "composite",
                                                         "name": "CodeEditor",
                                                         "props": {
-                                                            "value": "{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}",
+                                                            "value": "{{raw:(_global.selectedNodeKind !== 'extension' && !(!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)) ? '' : (_global.editorContent ?? current_layout?.data?.content ?? '{}')}}",
                                                             "language": "json",
                                                             "readOnly": true,
                                                             "theme": "auto",

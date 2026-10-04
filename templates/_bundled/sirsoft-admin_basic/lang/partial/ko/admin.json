@@ -223,7 +223,15 @@
       "last_login_at_desc": "마지막로그인 최근순",
       "last_login_at_asc": "마지막로그인 오래된순",
       "name_asc": "이름 오름차순",
-      "name_desc": "이름 내림차순"
+      "name_desc": "이름 내림차순",
+      "email_asc": "이메일 오름차순",
+      "email_desc": "이메일 내림차순",
+      "country_asc": "국가 오름차순",
+      "country_desc": "국가 내림차순",
+      "language_asc": "언어 오름차순",
+      "language_desc": "언어 내림차순",
+      "status_asc": "상태 오름차순",
+      "status_desc": "상태 내림차순"
     },
     "modals": {
       "delete_title": "사용자 삭제",
@@ -1174,8 +1182,8 @@
       "apply": "적용",
       "clear": "선택 해제",
       "confirm_title": "메뉴 역할 일괄 적용",
-      "confirm_add": "메뉴 {{count}}개에 역할 {{roles}} 을(를) 추가합니다.",
-      "confirm_remove": "메뉴 {{count}}개에서 역할 {{roles}} 을(를) 제거합니다.",
+      "confirm_add": "메뉴 {{count}}개에 역할 「{{roles}}」을(를) 추가합니다.",
+      "confirm_remove": "메뉴 {{count}}개에서 역할 「{{roles}}」을(를) 제거합니다.",
       "confirm_auto_parent": "하위 메뉴만 고른 상위 메뉴 {{count}}개에도 함께 추가됩니다.",
       "confirm_auto_child": "고른 상위 메뉴의 하위 메뉴 {{count}}개에서도 함께 빠집니다."
     }
@@ -2582,9 +2590,9 @@
     },
     "layout_edit": {
       "title": "레이아웃 편집",
-      "description": "JSON 파일을 편집하여 페이지 레이아웃을 구성합니다",
+      "description": "화면 마크업(.g7.html)을 편집하여 페이지 레이아웃을 구성합니다",
       "page_title": "레이아웃 편집",
-      "page_description": "JSON 파일을 편집하여 페이지 레이아웃을 구성합니다",
+      "page_description": "화면 마크업(.g7.html)을 편집하여 페이지 레이아웃을 구성합니다",
       "preview": "미리보기",
       "save": "저장",
       "saving": "저장 중...",
@@ -3435,7 +3443,7 @@
     "visitors": {
       "title": "방문자",
       "description": "사람 단위로 묶은 방문 기록. 한 사람을 고르면 활동 타임라인을 봅니다.",
-      "search_placeholder": "방문자 키·IP·회원 번호 (Enter)",
+      "search_placeholder": "방문자 키·IP·회원 번호(#123 은 그 회원만) (Enter)",
       "type_label": "유형",
       "types": {
         "all": "전체",

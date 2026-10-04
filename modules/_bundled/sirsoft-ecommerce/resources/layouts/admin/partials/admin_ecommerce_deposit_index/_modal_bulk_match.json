@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title",
-        "description": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.description",
         "size": "xl",
         "footer": [
             {

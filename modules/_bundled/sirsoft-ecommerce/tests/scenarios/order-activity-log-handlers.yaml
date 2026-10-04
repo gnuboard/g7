@@ -37,6 +37,7 @@ axes:
 
 effects:
   - order_lifecycle_events_are_logged_with_before_and_after
+  - order_deposit_record_is_logged_with_changes # 입금 기록도 활동 로그와 결제금액 변경 내역을 남긴다
   - bulk_events_log_per_item_with_correct_loggable_and_count
   - shipping_address_change_logs_against_order_address
   - order_option_events_log_status_transitions_with_label_keys
@@ -45,3 +46,4 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderDepositActivityLogTest.php

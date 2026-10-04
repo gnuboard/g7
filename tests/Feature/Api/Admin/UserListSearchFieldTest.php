@@ -10,6 +10,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -23,11 +24,10 @@ use Tests\TestCase;
  * - LIKE 검색어의 `%`·`_` 는 글자 그대로 찾는다(이스케이프).
  *
  * 트랜잭션 격리 — 기존 행과 공존하므로 기대 결과는 이 테스트가 만든 회원 uuid 로만 대조한다.
- *
- * @group core
- * @group admin
- * @group user
  */
+#[Group('core')]
+#[Group('admin')]
+#[Group('user')]
 class UserListSearchFieldTest extends TestCase
 {
     use DatabaseTransactions;

@@ -12,6 +12,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 허용 확장자 빈 값 게시판의 업로드 폴백 테스트
@@ -20,10 +21,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * `implode(',', [])` 가 `mimes:` 빈 규칙을 만들어 전 파일 업로드가 거부되던 결함의 회귀 테스트.
  *
  * `??` 는 null 만 잡고 []는 통과시키므로 소비 시점에 `is_array() && !== []` 판정이 필요하다.
- *
- * @group board
- * @group attachment
  */
+#[Group('board')]
+#[Group('attachment')]
 class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
 {
     private User $memberUser;
@@ -57,6 +57,8 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
 
     /**
      * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -113,6 +115,10 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
 
     /**
      * allowed_extensions 가 빈 배열이면 mimes 규칙이 비어있지 않아야 한다 (회귀)
+     *
+     * @effects empty_allowed_extensions_does_not_produce_empty_mimes_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_allowed_extensions_does_not_produce_empty_mimes_rule(): void
     {
@@ -126,6 +132,10 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
 
     /**
      * allowed_extensions 가 NULL 이어도 mimes 규칙이 비어있지 않아야 한다
+     *
+     * @effects null_allowed_extensions_does_not_produce_empty_mimes_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_null_allowed_extensions_does_not_produce_empty_mimes_rule(): void
     {
@@ -142,6 +152,8 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
      * @scenario case=upload_enabled_extensions_empty
      *
      * @effects empty_extensions_upload_falls_back_to_defaults
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_succeeds_when_allowed_extensions_is_empty(): void
     {
@@ -163,6 +175,8 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
      * @scenario case=upload_enabled_extensions_nonempty
      *
      * @effects specified_extensions_still_reject_other_types
+     *
+     * @return void 반환값 없음
      */
     public function test_specified_allowed_extensions_still_reject_other_types(): void
     {
@@ -180,6 +194,8 @@ class AttachmentAllowedExtensionsFallbackTest extends BoardTestCase
 
     /**
      * 테스트 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {

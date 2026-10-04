@@ -196,9 +196,21 @@ if (localeChanged && window.__templateApp) {
 
 ```typescript
 export type LoginResult =
-  | { status: 'authenticated'; user: AuthUser }
+  | { status: 'authenticated'; user: AuthUser; extras?: LoginExtras }
   | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
+
+/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.76.0+). 토큰·사용자·2단계 표지를 뺀 나머지 필드다. */
+export type LoginExtras = Record<string, unknown>;
+
+/** 2단계 인증 확인 결과 (engine-v1.76.0+) */
+export interface TwoFactorSession {
+  user: AuthUser;
+  extras?: LoginExtras;
+}
 ```
+
+`extras` 는 서버가 응답에 안내 필드를 실었을 때만 붙는다(지금 코어가 싣는 것은 `dormancy_restored` 하나다). 휴면 계정이 로그인으로 풀리면 `dormancy_restored: true` 가
+실려, 화면이 「휴면 상태가 해제되었습니다」 안내를 띄울 수 있다.
 
 `AuthManager.login()` 은 이 판별 유니온을 돌려줍니다. 한 형태만 가정하면 challenge 응답에서
 `data.user.*` 접근이 예외가 되고, `data.token`(undefined)을 저장하면 `"undefined"` 문자열이 남아
@@ -208,6 +220,7 @@ export type LoginResult =
 |--------|---------|
 | `login(type, credentials, options?)` | 비밀번호 확인. `LoginResult` 반환 |
 | `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환 |
+| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession`(`user` + 서버 안내 필드 `extras`) 반환 (engine-v1.76.0+) |
 | `resendTwoFactor(type, { challengeId }, options?)` | 인증번호 재발송 → **새** `TwoFactorChallenge` 반환 |
 
 레이아웃에서는 액션 핸들러 `login` / `loginTwoFactor` / `loginTwoFactorResend` 로 사용합니다

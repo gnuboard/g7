@@ -230,10 +230,13 @@
             </div>
             <div class="flex-start gap-4">
               <responsive on="portable" class="flex-center flex-col gap-3"/>
-              <img src="{{copy_source?.data?.thumbnail_url ?? '/images/placeholder.png'}}" alt="{{copy_source?.data?.name?.ko ?? copy_source?.data?.name}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
+              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
+              <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
+                <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+              </div>
               <div class="flex-1 min-w-0">
                 <responsive on="portable" class="w-full text-center"/>
-                <p class="text-primary font-medium truncate">{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}</p>
+                <p class="text-primary font-medium truncate">{{$localized(copy_source?.data?.name) || '-'}}</p>
                 <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}</p>
                 <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
               </div>

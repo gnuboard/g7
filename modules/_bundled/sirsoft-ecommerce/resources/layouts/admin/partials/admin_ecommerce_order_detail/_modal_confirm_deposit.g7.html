@@ -41,8 +41,11 @@
         <span data-if="{{_local.depositConfirmErrors?.amount}}" class="form-error-xs mt-1 block">{{_local.depositConfirmErrors?.amount?.[0] ?? ''}}</span>
         <span data-if="{{!_local.depositConfirmErrors?.amount}}" class="text-hint mt-1 block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount_hint</span>
       </div>
-      <!-- 원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록. -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+      <!-- 원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록.
+        결제 전(주문대기·결제대기) 주문에만 고를 수 있다. 운영자가 상태를 먼저 올려 둔 주문은 서버가 체크와 무관하게
+        입금과 결제금액만 기록하고 상태를 두므로, 체크 대신 그 사실을 알린다(실측 2026-10-03). -->
+      <div data-if="{{order.data?.is_past_payment === true}}" data-testid="confirm-deposit-past-payment-hint" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-hint">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.past_payment_hint|status={{order.data?.order_status_label ?? ''}}</div>
+      <div data-if="{{order.data?.is_past_payment !== true}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
         <label class="flex items-start gap-2 cursor-pointer">
           <input type="checkbox" name="mark_order_complete" class="mt-0.5" checked="{{_local.markOrderComplete ?? false}}">
             <on type="change">

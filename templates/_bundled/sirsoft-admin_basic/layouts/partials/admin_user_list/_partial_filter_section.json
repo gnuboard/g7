@@ -2255,6 +2255,7 @@
                     },
                     "children": [
                         {
+                            "comment": "보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다",
                             "id": "column_selector",
                             "type": "composite",
                             "name": "ColumnSelector",
@@ -2287,11 +2288,6 @@
                                 "menuDescription": "$t:common.column_selector_description",
                                 "position": "right",
                                 "columns": [
-                                    {
-                                        "field": "id",
-                                        "header": "$t:admin.users.columns.id",
-                                        "required": true
-                                    },
                                     {
                                         "field": "name",
                                         "header": "$t:admin.users.columns.name",
@@ -2341,7 +2337,6 @@
                                     }
                                 ],
                                 "defaultColumns": [
-                                    "id",
                                     "name",
                                     "role",
                                     "email"

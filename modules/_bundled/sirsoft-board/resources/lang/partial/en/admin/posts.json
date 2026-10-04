@@ -307,6 +307,10 @@
       "reason_label": "Reason (optional)",
       "reason_placeholder": "Enter a reason",
       "processing": "Processing..."
+    },
+    "skipped": {
+      "title": "Skipped posts",
+      "description": "The following {{count}} post(s) were not processed."
     }
   }
 }

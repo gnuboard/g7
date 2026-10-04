@@ -7,6 +7,7 @@ use App\Enums\PrivacyManualRunStatus;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Jobs\RunPrivacyManualActionJob;
+use App\Models\ActivityLog;
 use App\Models\Permission;
 use App\Models\PrivacyManualRun;
 use App\Models\Role;
@@ -64,7 +65,7 @@ class PrivacyManualRunTest extends TestCase
      *
      * @scenario target_kind=retention_handler, toggle=off, actor=runner
      *
-     * @effects manual_run_is_queued_and_processed_by_the_job, manual_run_ignores_the_disabled_toggle, run_record_captures_count_and_failure, activity_log_records_queue_and_finish
+     * @effects manual_run_is_queued_and_processed_by_the_job, manual_run_ignores_the_disabled_toggle, run_record_captures_count_and_failure, activity_log_records_queue_and_finish, activity_log_orders_queue_before_finish_on_sync_queue
      */
     public function test_retention_run_processes_even_when_the_toggle_is_off(): void
     {
@@ -93,10 +94,43 @@ class PrivacyManualRunTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'privacy.manual_run_queued']);
         $this->assertDatabaseHas('activity_logs', ['action' => 'privacy.manual_run_finished', 'description_key' => 'activity_log.description.privacy_manual_run_completed']);
 
+        // 동기 큐는 접수 요청 안에서 작업까지 끝낸다 — 접수 기록이 먼저 남아야 활동 로그가 일어난 순서로 읽힌다.
+        $this->assertLessThan(
+            ActivityLog::where('action', 'privacy.manual_run_finished')->value('id'),
+            ActivityLog::where('action', 'privacy.manual_run_queued')->value('id'),
+            '접수 로그가 완료 로그보다 앞서야 한다'
+        );
+
         // 자동 배치는 여전히 토글을 본다 — 직권 경로만 토글을 넘는다.
         $this->createWithdrawnUser(600);
         $result = app(PrivacyRetentionManager::class)->process(false, 'user-withdrawn');
         $this->assertSame('disabled', $result['user-withdrawn']['status']);
+    }
+
+    /**
+     * 접수 훅 구독자가 예외를 던져도 작업은 발행되어 처리된다 — 발행 전에 훅이 실패하면 기록은 「대기」로 남아
+     * 기준 시간이 지날 때까지 같은 대상의 재접수가 충돌로 막혔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario target_kind=retention_handler, toggle=off, actor=runner
+     *
+     * @effects manual_run_is_queued_and_processed_by_the_job, queued_hook_failure_does_not_block_dispatch
+     */
+    public function test_queued_hook_subscriber_failure_does_not_block_the_job(): void
+    {
+        $this->createWithdrawnUser(400);
+        $admin = $this->createAdmin(['core.settings.update', 'core.users.update']);
+
+        HookManager::addAction(PrivacyManualRunService::QUEUED_HOOK, function () {
+            throw new \RuntimeException('subscriber failure');
+        });
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/privacy/manual-runs/retention:user-withdrawn')->assertStatus(202);
+
+        $run = PrivacyManualRun::findOrFail($response->json('data.id'));
+        $this->assertSame(PrivacyManualRunStatus::Completed, $run->status, '접수 훅 구독자가 실패해도 작업은 발행·처리된다');
+        $this->assertSame(1, $run->processed_count);
     }
 
     /**

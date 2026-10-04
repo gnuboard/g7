@@ -196,6 +196,7 @@ return [
         'guest_password_reset_not_guest' => '非会員注文のみ照会パスワードをリセットできます。',
         'deposit_confirmed' => '入金が確認され決済完了処理されました。',
         'deposit_recorded' => '入金履歴を記録しました。注文ステータスは入金待ちのまま維持されます。',
+        'deposit_recorded_status_kept' => '入金履歴と決済金額を記録しました。すでに決済後の段階の注文のため、注文ステータスはそのまま維持されます。',
         'deposit_confirm_failed' => '入金確認処理に失敗しました。',
         'deposit_amount_mismatch' => '入金額が決済予定金額と一致しません。',
         'deposit_not_dbank' => '銀行振込注文のみ入金確認できます。',
@@ -1240,5 +1241,8 @@ return [
             'status' => '注文ステータス',
             'closed_at' => '終結日',
         ],
+    ],
+    'notification_relations' => [
+        'author' => 'お問い合わせの投稿者',
     ],
 ];

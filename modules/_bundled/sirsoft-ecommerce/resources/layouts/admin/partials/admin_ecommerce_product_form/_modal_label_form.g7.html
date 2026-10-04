@@ -2,7 +2,7 @@
   등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다
   (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다). -->
 <partial description="Product Form - Label Registration/Edit Modal" editor_label="$t:sirsoft-ecommerce.admin.product.labels.modal_title_create">
-  <modal data-type="composite" data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" description="$t:sirsoft-ecommerce.admin.product.labels.modal_description" size="md">
+  <modal data-type="composite" data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" size="md">
     <div data-ref="label_form_content">
       <div data-ref="label_preview_section">
         <div>

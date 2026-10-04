@@ -28,14 +28,14 @@
                      깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 언어팩까지 전부
                      아이콘을 잃으므로(다른 상세 창과 같은 결함) 식별자 목록으로 든다. -->
                 <icon name="fas fa-language" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
-                <img data-if="{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}" src="{{language_pack_detail?.data?.icon_url}}" alt="$t:defer:extensions.icon.alt|name={{language_pack_detail?.data?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                <img data-if="{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}" src="{{language_pack_detail?.data?.icon_url}}" alt="$t:extensions.icon.alt|name={{language_pack_detail?.data?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
                   <on event="onError">
                     <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
                          다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->
                     <set-state target="local" detailIconBroken="{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"/>
                   </on>
                 </img>
-                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" aria-label="$t:defer:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
+                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
               </div>
               <div class="min-w-0">
                 <p class="text-primary font-semibold truncate">{{language_pack_detail?.data?.name ?? ''}}</p>

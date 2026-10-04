@@ -163,9 +163,20 @@
                     ]
                 },
                 {
-                    "comment": "원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록.",
+                    "comment": "원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록.\n        결제 전(주문대기·결제대기) 주문에만 고를 수 있다. 운영자가 상태를 먼저 올려 둔 주문은 서버가 체크와 무관하게\n        입금과 결제금액만 기록하고 상태를 두므로, 체크 대신 그 사실을 알린다(실측 2026-10-03).",
                     "type": "basic",
                     "name": "Div",
+                    "if": "{{order.data?.is_past_payment === true}}",
+                    "props": {
+                        "data-testid": "confirm-deposit-past-payment-hint",
+                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-hint"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.past_payment_hint|status={{order.data?.order_status_label ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data?.is_past_payment !== true}}",
                     "props": {
                         "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-3"
                     },

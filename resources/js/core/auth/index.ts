@@ -6,4 +6,6 @@ export {
   type AuthState,
   type TwoFactorChallenge,
   type LoginResult,
+  type LoginExtras,
+  type TwoFactorSession,
 } from './AuthManager';

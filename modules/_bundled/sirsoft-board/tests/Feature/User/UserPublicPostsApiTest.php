@@ -11,16 +11,16 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 사용자 공개 게시글 API 테스트
  *
  * 타인의 공개 프로필에서 게시글 목록과 통계를 조회하는 API 테스트입니다.
  * BoardTestCase를 통해 테스트 보드와 데이터 정리를 자동으로 처리합니다.
- *
- * @group board
- * @group user-public-posts
  */
+#[Group('board')]
+#[Group('user-public-posts')]
 class UserPublicPostsApiTest extends BoardTestCase
 {
     /**
@@ -30,6 +30,8 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 게시판 slug
      */
     protected function getTestBoardSlug(): string
     {
@@ -38,6 +40,9 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -51,6 +56,8 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 각 테스트 전 실행
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -67,6 +74,8 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 각 테스트 후 실행
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -75,6 +84,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 비인증 사용자가 다른 사용자의 공개 게시글을 조회할 수 있다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects guest_can_fetch_user_public_posts
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_fetch_user_public_posts(): void
     {
@@ -101,9 +116,15 @@ class UserPublicPostsApiTest extends BoardTestCase
      * 타인 프로필에서도 비밀글은 목록에 나오되 본문은 나가지 않는다.
      *
      * 이 목록은 본문 일부(content_plain)를 함께 싣는데 라우트가 optional.sanctum 이라
-     * **미인증 요청에 타인의 비밀글 본문이 그대로 나갔다**(KVE-2026-1914 형제).
+     * **미인증 요청에 타인의 비밀글 본문이 그대로 나갔다**(비밀글 노출 결함과 같은 부류).
      * 행·제목은 게시판 목록에서 이미 같은 수준으로 보이므로(PostResource 의 목록 규칙)
      * 행은 남기고 본문만 비운다 — UI 의 비밀글 배지도 그대로 동작한다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects secret_posts_are_listed_without_content_for_other_viewers
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_posts_are_listed_without_content_for_other_viewers(): void
     {
@@ -144,6 +165,12 @@ class UserPublicPostsApiTest extends BoardTestCase
      *
      * 블라인드 글의 본문은 이 모듈의 다른 목록에서도 비워진다
      * (PostResource::getMaskedContentPreviewForList) — 같은 규칙을 적용한다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects blinded_posts_are_listed_without_content_for_other_viewers
+     *
+     * @return void 반환값 없음
      */
     public function test_blinded_posts_are_listed_without_content_for_other_viewers(): void
     {
@@ -176,6 +203,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 게시글/댓글 통계를 조회할 수 있다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects can_fetch_user_posts_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_can_fetch_user_posts_stats(): void
     {
@@ -211,6 +244,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 통계에서 블라인드 게시글/댓글은 제외된다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects stats_exclude_blinded_items
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_exclude_blinded_items(): void
     {
@@ -239,6 +278,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 페이지네이션이 정상 동작한다.
+     *
+     * @scenario listing=user_public_posts, request_case=paging_parameter
+     *
+     * @effects pagination_works
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_works(): void
     {
@@ -265,6 +310,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * per_page 파라미터로 페이지당 항목 수를 조절할 수 있다.
+     *
+     * @scenario listing=user_public_posts, request_case=paging_parameter
+     *
+     * @effects per_page_parameter_works
+     *
+     * @return void 반환값 없음
      */
     public function test_per_page_parameter_works(): void
     {
@@ -287,6 +338,12 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 존재하지 않는 사용자의 게시글 조회 시 빈 배열이 반환된다.
+     *
+     * @scenario listing=user_public_posts, request_case=empty_source
+     *
+     * @effects returns_empty_for_non_existent_user
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_empty_for_non_existent_user(): void
     {
@@ -301,6 +358,10 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 헬퍼 메서드: 게시글 생성
+     *
+     * @param  string  $slug  게시판 slug
+     * @param  array<string, mixed>  $attributes  덮어쓸 속성
+     * @return Post 만든 게시글
      */
     private function createPost(string $slug, array $attributes = []): Post
     {
@@ -318,6 +379,11 @@ class UserPublicPostsApiTest extends BoardTestCase
 
     /**
      * 헬퍼 메서드: 댓글 생성
+     *
+     * @param  string  $slug  게시판 slug
+     * @param  int  $postId  게시글 ID
+     * @param  array<string, mixed>  $attributes  덮어쓸 속성
+     * @return Comment 만든 댓글
      */
     private function createComment(string $slug, int $postId, array $attributes = []): Comment
     {

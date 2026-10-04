@@ -33,6 +33,17 @@
                     "text": "$t:mypage.board_activities.reports.cancel_confirm"
                 },
                 {
+                    "comment": "어느 신고를 거두는지 — 목록이 담아 둔 대상(글은 제목, 댓글은 본문 요약)을 그대로 보인다.\n           반응 해제 창과 같은 자리이며, 여러 건을 차례로 취소할 때 엉뚱한 행을 누르지 않게 한다.",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.reportCancelModal?.title}}",
+                    "props": {
+                        "data-testid": "report-cancel-target",
+                        "className": "px-3 py-2 text-sm font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg line-clamp-2"
+                    },
+                    "text": "{{raw:_global.reportCancelModal?.title}}"
+                },
+                {
                     "type": "basic",
                     "name": "P",
                     "props": {

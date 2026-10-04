@@ -1293,6 +1293,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 - `core.templates.after_update` 는 템플릿 **레코드 수정**(`TemplateService::updateTemplate()`) 훅이다. 템플릿 버전 업데이트를 구독하려면 `after_version_update` 를 쓴다.
 - `$info` 는 확장 정보 배열이며 정보를 구할 수 없으면 빈 배열이다(템플릿 활성화는 `['identifier' => ...]`). 리스너는 `$info['version'] ?? null` 처럼 키 부재를 전제로 읽는다.
+- 모듈·플러그인 `$info['permissions']` 는 권한 분류 목록(분류마다 `identifier`·`name`·`permissions[]`)이다. 플러그인은 7.1.0 부터 이 모양이며, 종전에는 권한 선언 전체(`{name, description, categories}`)였다 — 그때 `$info['permissions']['categories']` 를 읽던 리스너는 `$info['permissions']` 를 그대로 읽는다.
 - 직전 훅도 Manager 가 CLI·어드민 UI 공통으로 한 번 발화한다(7.1.0~). 인자는 종전 Service 발화와 같다 — 모듈 `before_install(id)`·`before_activate(id, force)`·`before_deactivate(id, force)`·`before_update(id)`·`before_uninstall(id, deleteData)`, 플러그인 `before_install|activate|deactivate|update(id)`·`before_uninstall(id, deleteData)`, 템플릿 `before_install|activate|deactivate|version_update(id)`·`before_uninstall(id, deleteData)`.
 - 직전 훅은 "시도" 시점에 발화하므로 없는 식별자처럼 실패할 호출에서도 발화한다. 직전 훅 리스너가 예외를 던지면 그 작업이 멈춘다 — 이제 CLI 설치·업데이트에도 똑같이 적용된다.
 

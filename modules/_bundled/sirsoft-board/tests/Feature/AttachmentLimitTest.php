@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 첨부파일 개수 상한 서버측 불변조건 테스트 (B3)
@@ -21,10 +22,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 수정 전에는 `files[]` 직접 업로드만 FormRequest 에서 막고, `attachment_ids` · `temp_key` ·
  * 단일 업로드 반복 경로에는 개수 검사가 없었습니다. 같은 8개 파일을 `temp_key` 로 보내면
  * 201 로 전부 연결되어 사용자 페이지에 그대로 노출됐습니다.
- *
- * @group board
- * @group attachment
  */
+#[Group('board')]
+#[Group('attachment')]
 class AttachmentLimitTest extends BoardTestCase
 {
     private User $memberUser;

@@ -189,6 +189,7 @@
   확인합니다. 수신자·제목·본문으로 각각 찾을 수 있고, 읽음/안 읽음과 수신 기간으로 좁힙니다.
 - 회원 상세에 **「알림함」 탭**이 생겼습니다. 그 회원의 총 알림 수와 안 읽은 수를 보여 주고,
   누르면 그 회원으로 좁힌 알림함 목록으로 넘어갑니다.
+- 확장이 회원 알림함 목록에 조건을 더할 때 그 조건의 이름도 붙일 수 있습니다. 훅 `core.member_notification.index_validation_attributes` 를 새로 두었고(기존 `core.member_notification.index_validation_rules` 와 함께 씁니다), 잘못된 조회 값의 안내 문구가 내부 키 대신 「검색 대상」 같은 항목 이름으로 나옵니다.
 - 확장이 만드는 알림 설정 화면이 **여러 발송 수단을 한 화면에서** 다룰 수 있습니다. 종전에는 알림 목록이 한 번에 한 수단의 문구만 내려 주어, 수단을 바꿔 볼 때마다 화면을 다시 불러야 했습니다. 이제 켜 둔 수단 전부의 문구를 한 번에 받아 한 목록에 보여줄 수 있습니다. 기존 화면의 동작과 응답 크기는 그대로입니다.
 
 - 관리자 코드 편집기에서 저장하지 않은 편집분이 사라지던 경로 세 곳을 막았습니다. 편집기를 두 탭에
@@ -198,9 +199,9 @@
 
 - 알림을 받는 사람마다 내용을 다르게 만들 수 있는 확장 지점이 생겼습니다. 같은 알림이라도 운영자에게는 관리자 화면 주소를, 고객에게는 내 주문 화면 주소를 보내는 식으로 확장이 값을 바꿀 수 있습니다. 이 지점을 쓰는 확장이 없으면 동작은 종전과 같습니다.
 - 알림 템플릿의 역할 수신자를 **여러 개** 지정할 수 있습니다. 종전에는 역할을 하나만 고를 수 있어 「최고관리자 + 고객센터」처럼 두 역할이 함께 받아야 하는 알림은 같은 알림을 나눠 만들거나 포기해야 했습니다. 이미 저장해 둔 한 개짜리 설정은 그대로 동작합니다.
-- 수신자 규칙의 「관련 사용자」를 그 알림이 제공하는 **관계 중에서 고릅니다**(주문 알림의 「주문자」, 게시글 알림의 「글쓴이」 등). 종전에는 관계 이름을 글자로 직접 적어야 했고, 잘못 적어도 저장은 되며 발송 시점에 아무에게도 가지 않는 것으로만 드러났습니다. 관계를 제공하지 않는 알림에서는 이 선택지가 표시되지 않습니다.
+- 수신자 규칙의 「관련 사용자」를 그 알림이 제공하는 **관계 중에서 고릅니다**(상품 문의 답변 알림의 「문의 작성자」, 댓글 알림의 「게시글 작성자」 등). 선택지와 알림 목록은 관계를 이름으로 보이며, 확장은 그 이름을 언어 파일(`messages.notification_relations`)에 둡니다. 종전에는 관계 이름을 글자로 직접 적어야 했고, 잘못 적어도 저장은 되며 발송 시점에 아무에게도 가지 않는 것으로만 드러났습니다. 관계를 제공하지 않는 알림에서는 이 선택지가 표시되지 않습니다.
 - 알림 본문 편집기가 **채널에 맞춰** 열립니다. 메일은 서식 편집기로, 사이트내 알림은 평문 입력으로 열리며, 문자·알림톡처럼 채널을 제공하는 확장이 자기 입력 양식을 두는 채널에서는 그 양식만 표시됩니다. 종전에는 모든 채널이 같은 평문 입력이라 메일에 서식을 넣으려면 HTML 을 손으로 적어야 했고, 같은 내용을 사이트내 알림에 넣으면 태그가 글자 그대로 보였습니다.
-- 화면 편집기의 [화면 동작] 탭에 「검색어를 입력하면」이 추가되었습니다. 검색해서 고르는 선택 항목에 입력한 글자로 목록을 불러오는 동작을 붙일 수 있습니다.
+- 화면 편집기 요소 속성 창의 [동작] 탭에 「검색어를 입력하면」이 추가되었습니다. 검색해서 고르는 선택 항목에 입력한 글자로 목록을 불러오는 동작을 붙일 수 있습니다.
 - 확장이 화면의 목록(표의 열, 탭 등) 중 **한 항목만** 고칠 수 있습니다. 종전에는 목록 전체를 다시 적어 넣는 방법뿐이었는데, 그렇게 적어 둔 목록은 만든 시점에 고정되어 나중에 그누보드가 항목을 더해도 확장의 옛 목록이 그것을 덮어 화면에서 지웠습니다. 이제 바꿀 항목만 지목하면 나머지는 그대로 남습니다.
 - 여러 확장이 화면의 **같은 자리**에 나란히 무언가를 더할 수 있습니다. 종전에는 나중에 적용되는 확장이 앞의 것을 덮어써 하나만 남았고, 그래서 확장끼리 서로의 몫을 대신 그려 주는 우회가 필요했습니다(그 확장이 설치되지 않은 상점에서는 어긋났습니다). 이제 각 확장이 자기 것만 더하면 되고, 새 확장이 추가돼도 기존 확장을 고칠 필요가 없습니다.
 - **스케줄러(cron)가 없어도 방문자 통계가 최신 숫자를 보여 줍니다.** 관리자가 통계 화면(개요·페이지·유입·환경·지역·
@@ -347,6 +348,7 @@
 
 ### Changed
 
+- 플러그인 정보의 `permissions` 가 모듈과 같은 **권한 분류 목록**으로 바뀌었습니다(종전에는 권한 선언 전체를 담은 `{name, description, categories}` 객체). 관리자 플러그인 정보 창에서 권한을 등록하는 플러그인(GDPR, 환율, 2단계 인증 앱 등)의 「권한」 구획이 비어 보이던 것이 이 때문이었습니다. 같은 모양이 플러그인 상세·설치·활성화 응답과 훅 `core.plugins.after_install`·`after_activate`·`after_update` 의 정보 인자(`$info`)에도 실립니다 — `$info['permissions']['categories']` 를 읽던 확장은 `$info['permissions']` 를 분류 목록으로 읽도록 바꿔야 합니다.
 - 확장을 「수정 유지」로 업데이트하면 이제 고친 화면을 통째로 두지 않고, **고친 부분은 그대로 두고 손대지 않은 부분에는 새 버전의 변경을 넣습니다.**
   같은 곳을 운영자와 새 버전이 모두 고쳤으면 운영자 것을 남깁니다. 업데이트 완료 알림에 「새 버전 변경 N곳 자동 반영, 겹친 M곳은 운영자 것 유지」가
   붙고, 활동 로그의 업데이트 행을 펼치면 화면마다 결과가 보이며, 명령어로 업데이트하면 결과 표가 나옵니다. 모듈·플러그인이 끼워 넣는 조각을
@@ -448,7 +450,12 @@
 
 ### Fixed
 
+- 입력 오류가 두 개 이상인 폼을 저장하면 한국어 화면의 오류 안내가 「… (and 1 more error)」처럼 영어 꼬리로 끝나던 문제를 수정했습니다. 이제 「… (외 1개 오류)」로 나옵니다.
+- 레이아웃 편집기의 커스텀 자산 창에서 파일 본문을 모두 지우고 저장하면 「content 필드는 문자열이어야 합니다.」로 저장되지 않던 문제를 수정했습니다. CSS 를 통째로 비우는 저장이 가능해졌고, 본문 없이 보낸 요청은 종전대로 거절합니다.
+- 레이아웃 편집기의 커스텀 자산 창에서 글꼴·이미지처럼 본문을 편집할 수 없는 파일을 고르면 「이 형식(:extension)은…」처럼 확장자 자리에 자리 이름이 그대로 보이던 문제를 고쳤습니다. 이제 `woff2` 처럼 실제 확장자가 표시됩니다.
 - 레이아웃 편집기에서 미리보기 기기를 모바일·태블릿으로 바꿔도 카드·표의 칸과 펼친 행, 화면 폭에 따라 바뀌는 스타일, 셀 안 일부 문구가 실제 브라우저 창 기준으로 그려지던 문제를 고쳤습니다. 이제 미리보기 안의 모든 요소가 고른 기기 폭과 콘텐츠 언어를 따르고, 편집 중에는 셀·슬롯 안 버튼의 동작이 실행되지 않습니다. 테마의 CSS 가 어떤 방식으로 작성됐든(일반 CSS·Bootstrap·Tailwind 등) 화면 폭 조건과 화면 폭 단위가 미리보기 폭으로 판정되며, 편집기를 벗어나면 원래대로 돌아갑니다. 관리자 헤더 통화 선택처럼 다른 위치로 옮겨 그려지는 요소도 편집 캔버스에서 고를 수 있습니다. (#141 @glitter-gim 님께서 제보해주셨습니다.)
+- 레이아웃 편집기 미리보기에서 본문 편집기(CKEditor)가 「편집기를 불러오지 못했습니다」 안내와 함께 임시 입력창으로 바뀌던 문제를 수정했습니다. 미리보기와 편집기 플러그인이 같은 편집기 파일을 각자 불러와 두 번 실행되던 것을 한 번만 실행되게 했고, 환경설정 「에셋 파일 서빙 방식」이 확장자 없는 방식인 사이트에서 미리보기만 그 파일을 찾지 못하던 문제도 함께 고쳤습니다.
+- 레이아웃 편집기에서 창을 편집할 때, 창을 연 화면의 값을 읽는 창(장바구니 옵션 변경, 구매 불가 안내, 주문 일괄변경 확인 등)이 상품과 목록 없이 빈 채로 그려지던 문제를 수정했습니다.
 - 레이아웃에 이름을 붙여 정의한 상수(`<define name="…">`)가 화면에 전달될 때 이름을 잃어, 그 값을 읽는 선택지가 비어 있던 문제를 고쳤습니다 — 회원 등록·수정 화면과 마이페이지의 국가 목록이 여기에 걸려 있었습니다.
 - 레이아웃 검증에 실패했을 때 안내 첫 줄에 번역되지 않은 원문 키나 `:error` 가 그대로 보이고, 플러그인의 실패가 「모듈」로 표기되던 문제를 수정했습니다.
 - 관리자 모듈·플러그인 목록에서 의존성 경고 창으로 강제 활성화한 뒤 「언어팩 다시 켜기」 창을 닫으면, 이미 끝난 강제 활성 창이 빈 목록으로 다시 나타나던 문제를 고쳤습니다. 한 동작 안에서 창을 닫고 바로 다른 창을 여는 모든 화면에 해당합니다.
@@ -1939,6 +1946,21 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Added
 
+- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
+- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
+- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
+- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
+- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
+- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
+
+### Changed
+
+- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
+
+## [7.0.0-alpha.17] - 2026-03-26
+
+### Added
+
 - Monolog 기반 ActivityLog 아키텍처: `Log::channel('activity')` → `ActivityLogHandler` → DB (3단계)
 - `ActivityLogChannel` (커스텀 Monolog 채널), `ActivityLogHandler`, `ActivityLogProcessor` 신규
 - ActivityLog i18n 지원: `description_key` + `description_params` 기반 실시간 다국어 번역
@@ -1949,12 +1971,10 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `config/logging.php`에 `activity` 채널 추가
 - `config/activity_log.php` 전용 설정 파일 신규
 - `activity_logs` 테이블 복합 인덱스 추가 (`loggable_type`+`loggable_id`+`created_at`, `log_type`+`action`+`created_at`)
-- ActivityLog `description_params` ID→이름 변환 필터 훅 (`core.activity_log.filter_description_params`) — `ActivityLog::getLocalizedDescriptionAttribute()`에서 실행
-- 코어 모델 `$activityLogFields` 정의 — `User`, `Role`, `Menu`, `Schedule`, `MailTemplate` (5개 모델)
-- ActivityLog ChangeDetector 필드 라벨 다국어 키 추가 (`lang/ko/activity_log.php`, `lang/en/activity_log.php` — `fields` 섹션)
-- `module_helpers.php` — `getModuleSetting()` 헬퍼 함수 추가
-- CoreActivityLogListener: bulk_update per-User/per-Schedule 전환 + bulk_delete per-Schedule 전환 (건별 loggable_id 기록)
-- ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 fallback 지원
+
+### Fixed
+
+- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
 
 ### Changed
 
@@ -1962,7 +1982,6 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 - `ActivityLogService`: 기록 메서드 전면 제거 → 조회 전용으로 축소
 - `ActivityLogResource`: `description` → `localized_description` (실시간 번역)
 - 모든 Controller에서 `logAdminActivity()` 호출 전면 제거 → Listener 경로로 전환
-- ActivityLog 규정 문서 대폭 보강 (`docs/backend/activity-log.md`) — `description_params` 저장 정책, `ActivityLogDescriptionResolver` 패턴, Bulk Update ChangeDetector 패턴, 개발자 체크리스트 추가
 
 ### Removed
 
@@ -1974,7 +1993,6 @@ abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute
 
 ### Fixed
 
-- `resolveLogType()` 사용자 역할 기반 → 요청 경로 기반으로 변경: 관리자가 사용자 화면에서 수행한 액션이 `admin`으로 기록되던 문제 수정 (ResolvesActivityLogType)
 - 마이페이지 프로필 저장 시 국가·언어 미선택 상태에서 오류가 발생하던 문제 수정 — 해당 필드를 선택 사항으로 변경
 - 인스톨러 Step 2 .env 복사 명령어 안내 수정 — `.env.example.production` → `.env.example` (functions.php 2곳, installer.js 4곳)
 

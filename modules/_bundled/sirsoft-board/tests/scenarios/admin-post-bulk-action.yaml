@@ -55,6 +55,7 @@ effects:
   - admin_post_bulk_blind_changes_status
   - admin_post_bulk_restore_restores_blinded_and_deleted
   - admin_post_bulk_restore_skips_already_published
+  - admin_post_bulk_skipped_items_carry_title_and_reason_label
   - admin_post_single_delete_behaviour_unchanged
   # 단건 블라인드·복구 회귀 (부록 B D8 — 소유 매니페스트 없던 파일을 여기로 편입)
   - admin_post_single_blind_changes_status

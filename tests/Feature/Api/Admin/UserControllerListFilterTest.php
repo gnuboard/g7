@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\CountsQueries;
 use Tests\TestCase;
 
@@ -23,11 +24,10 @@ use Tests\TestCase;
  *
  * 로컬 MySQL 은 migrate:fresh 의 인덱스 DDL 에서 OOM 이 나므로 트랜잭션 격리를 쓴다 — 기존 행과
  * 공존하므로 이 테스트가 만든 회원만 보도록 모든 요청에 이메일 표식(`@lf{고유값}.test`) 검색을 건다.
- *
- * @group core
- * @group admin
- * @group user
  */
+#[Group('core')]
+#[Group('admin')]
+#[Group('user')]
 class UserControllerListFilterTest extends TestCase
 {
     use CountsQueries;

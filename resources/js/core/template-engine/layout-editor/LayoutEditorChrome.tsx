@@ -71,9 +71,13 @@ import { useExtensionDocument } from './hooks/useExtensionDocument';
 import { adaptExtensionToLayoutDocument } from './hooks/adaptExtensionToLayoutDocument';
 import { ExtensionHostPickerModal } from './components/ExtensionHostPickerModal';
 import { useLayoutPreview } from './hooks/useLayoutPreview';
-import type { ComponentManifest } from './components/ComponentPalette';
+import type { ComponentManifest, ComponentManifestEntry } from './components/ComponentPalette';
 import type { NestingSpec, EditorSpec } from './spec/specTypes';
 import { loadEditorSpecBundle, type SampleGlobalSource } from './spec/editorSpecLoader';
+import {
+  loadExtensionPaletteManifestEntries,
+  mergeExtensionManifestEntries,
+} from './spec/extensionPaletteComponents';
 import { buildCoreActionRecipeSeed } from './spec/coreActionRecipes';
 import { registerCoreWidgets } from './spec/registerCoreWidgets';
 import { registerCoreEditors } from './spec/registerCoreEditors';
@@ -205,8 +209,15 @@ function LayoutEditorChromeBody({
 
   // 편집 대상 템플릿의 components.json 매니페스트 + editor-spec.json 로드
   // 추가. 두 자산은 PreviewCanvas → EditorCanvasOverlay 가 팔레트/nesting 평가에 사용.
-  const [manifest, setManifest] = useState<ComponentManifest | null>(null);
+  const [templateManifest, setManifest] = useState<ComponentManifest | null>(null);
   const [editorSpec, setEditorSpec] = useState<EditorSpec | null>(null);
+  // 확장이 팔레트에 등재한 자기 컴포넌트의 매니페스트 항목 — 템플릿 매니페스트에는 확장 컴포넌트가
+  // 없어 팔레트가 그 등재를 모두 걸러 냈다(engine-v1.76.0, extensionPaletteComponents.ts).
+  const [extensionPaletteEntries, setExtensionPaletteEntries] = useState<ComponentManifestEntry[]>([]);
+  const manifest = useMemo(
+    () => mergeExtensionManifestEntries(templateManifest, extensionPaletteEntries),
+    [templateManifest, extensionPaletteEntries],
+  );
   // sampleGlobal deep merge 체인 소스 (모듈 → 플러그인 → 템플릿 순) — PreviewCanvas
   // 가 코어 시드와 합성해 격리 store baseline 을 만든다.
   const [sampleGlobalSources, setSampleGlobalSources] = useState<SampleGlobalSource[]>([]);
@@ -263,6 +274,23 @@ function LayoutEditorChromeBody({
       cancelled = true;
     };
   }, [templateIdentifier]);
+
+  // 팔레트에 컴포넌트를 등재한 확장의 components.json 을 받아 팔레트 목록에 더한다. 등재한 확장이
+  // 없으면 요청이 없다. 템플릿 매니페스트를 기다리는 것은 템플릿 대체본(`overrides`)의 메타를 쓰기 위해서다.
+  useEffect(() => {
+    if (!editorSpec || !templateManifest) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await loadExtensionPaletteManifestEntries(editorSpec, templateManifest, {
+        urlFor: (kind, identifier) =>
+          suffixed(`/api/${kind}/${encodeURIComponent(identifier)}/components`, 'json'),
+      });
+      if (!cancelled) setExtensionPaletteEntries(entries);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editorSpec, templateManifest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -557,14 +585,24 @@ function LayoutEditorChromeBody({
   // 커스텀 자산 관리 모달 — 운영자 CSS·JS·폰트·이미지를 화면에서 직접 넣고 고친다.
   // 권한은 서버가 판정하므로 여기서 버튼을 감추지 않는다(모달이 403 을 안내로 바꾼다).
   const handleManageCustomAssets = useCallback(() => {
+    // 창이 등록한 닫기 요청(미저장 확인 후 닫기) — 백드롭 클릭이 이것을 부른다.
+    let closeRequest: (() => void) | null = null;
     const id = modal.open({
       ariaLabel: t('layout_editor.custom_assets.title'),
       width: 860,
       maxHeightRatio: 0.86,
+      // Esc·백드롭으로 바로 닫지 않는다 — 모달 루트가 닫으면 창의 «저장하지 않은 편집 N건» 확인을 건너뛰어
+      // 쓰던 본문이 사라진다. closeOnEscape=false 면 루트가 Esc 를 가로채지 않아 창 자신의 Esc 처리
+      // (handleClose → 확인)가 받고, 백드롭 클릭은 onRequestClose 로 같은 확인에 넘긴다. 편집이 없으면 바로 닫힌다.
+      closeOnEscape: false,
+      onRequestClose: () => (closeRequest ? closeRequest() : modal.close(id)),
       content: React.createElement(CustomAssetsModal, {
         templateIdentifier,
         t,
         onClose: () => modal.close(id),
+        onRegisterCloseRequest: (handler: (() => void) | null) => {
+          closeRequest = handler;
+        },
       }),
     });
   }, [modal, templateIdentifier, t]);

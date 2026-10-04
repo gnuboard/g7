@@ -1,0 +1,26 @@
+feature: 공개 결제 설정의 은행 목록 — 회원 환불 신청서와 같은 출처
+
+description: |
+  은행 목록은 운영자가 주문설정에서 관리한다. 운영자가 목록을 비웠을 때 회원 환불 신청서는
+  모듈 기본 목록으로 떨어진다(EcommerceSettingsService::getBankList — 필수 칸에 선택지가 0개면
+  환불 신청이 막힌다).
+
+  공개 결제 설정(`GET /settings/payment`)은 원본을 그대로 내보내, 같은 상점에서 관리자 대리 접수·
+  주문 취소·환불 실행 창이 「등록된 은행이 없다」며 환불 계좌를 고를 수 없었고, 주문서와 입금
+  계좌 표시에는 은행명 대신 코드("004")가 섰다(실측 2026-10-03).
+
+  계약: 공개 결제 설정의 `order_settings.banks` 는 getBankList() 결과이고, 입금 계좌의
+  `bank_name` 도 그 목록으로 푼다. 관리자 환경설정 편집 화면은 원본을 그대로 읽는다(변경 없음).
+
+axes:
+  configured_banks:
+    - empty    # 운영자가 목록을 비움 → 기본 목록
+    - custom   # 운영자 목록 → 그대로
+
+effects:
+  - public_payment_settings_falls_back_to_default_bank_list
+  - bank_account_name_resolves_from_effective_bank_list
+  - public_payment_settings_keeps_operator_bank_list
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicPaymentSettingsBankListTest.php

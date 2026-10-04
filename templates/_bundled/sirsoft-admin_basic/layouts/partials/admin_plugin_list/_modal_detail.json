@@ -124,7 +124,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "src": "{{_global.selectedPlugin.icon_url}}",
-                                                                        "alt": "$t:defer:extensions.icon.alt|name={{_global.selectedPlugin?.name ?? ''}}",
+                                                                        "alt": "$t:extensions.icon.alt|name={{_global.selectedPlugin?.name ?? ''}}",
                                                                         "loading": "lazy",
                                                                         "decoding": "async",
                                                                         "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700"
@@ -717,24 +717,52 @@
                                             "text": "$t:admin.plugins.modals.no_permissions"
                                         },
                                         {
+                                            "comment": "서버는 모듈과 같은 분류 배열을 보낸다 — 분류 이름 아래 개별 권한을 「이름 (분류.동작)」으로 그린다(모듈 정보 창과 같은 모양).",
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{_global.selectedPlugin.permissions && _global.selectedPlugin.permissions.length > 0}}",
                                             "props": {
-                                                "className": "flex flex-wrap gap-2"
+                                                "className": "row-stack"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "Div",
                                                     "iteration": {
                                                         "source": "_global.selectedPlugin.permissions",
-                                                        "item_var": "perm"
+                                                        "item_var": "category"
                                                     },
-                                                    "props": {
-                                                        "className": "px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-                                                    },
-                                                    "text": "{{$localized(perm.name)}} ({{perm.identifier}})"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                                                            },
+                                                            "text": "{{$localized(category.name)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex flex-wrap gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "iteration": {
+                                                                        "source": "category.permissions",
+                                                                        "item_var": "perm"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
+                                                                    },
+                                                                    "text": "{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }

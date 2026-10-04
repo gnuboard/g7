@@ -3,6 +3,7 @@
 namespace Tests\Feature\Database;
 
 use Illuminate\Support\Facades\Schema;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -14,10 +15,9 @@ use Tests\TestCase;
  *
  * DDL 은 MySQL 에서 암묵 커밋을 일으켜 트랜잭션 격리와 섞을 수 없으므로 격리 트레이트를 쓰지
  * 않는다. 대신 끝에서 반드시 up 상태로 되돌려 테스트 DB 스키마를 원래대로 남긴다.
- *
- * @group core
- * @group database
  */
+#[Group('core')]
+#[Group('database')]
 class UsersFilterIndexesMigrationTest extends TestCase
 {
     /**

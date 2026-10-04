@@ -1072,6 +1072,8 @@ return [
         'scope_value_not_admin_policy' => '運営者が追加したポリシー(source_type=admin)のキーと一致する必要があります。',
         'definition_already_exists' => '同一の(provider、scope_type、scope_value)定義が既に存在します。',
     ],
+    'summary_more_error' => '(他 :count 件のエラー)',
+    'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
         'layout' => 'レイアウト',
         'module' => 'モジュール',

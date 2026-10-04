@@ -17,7 +17,7 @@
 | status | string | queued 접수, sent 성공, failed 실패 |
 | status_label | string | 현재 로케일의 상태 문구 |
 | channels | string[] | 해당 이벤트의 채널 |
-| channels_label | string | 화면용 채널 목록 |
+| channels_label | string | 화면용 채널 이름 목록(현재 언어, 쉼표 구분). 지금 없는 채널은 식별자 그대로 |
 | is_test | boolean | 시험 발송 여부 |
 | sent_at | string 또는 null | 사용자 시간대 기준 발송 시각 |
 | created_at | string | 사용자 시간대 기준 이벤트 시각 |

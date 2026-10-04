@@ -201,6 +201,7 @@
         "due_amount": "Amount Due",
         "mark_order_complete": "Mark the order as paid",
         "mark_order_complete_hint": "When checked, the order status is changed to paid along with recording the deposit (including mileage earning, stock deduction, and notifications). When unchecked, only the deposit is recorded.",
+        "past_payment_hint": "This order is already at {{status}}, so only the deposit and the paid amount are recorded and the order status is left unchanged.",
         "cancel": "Cancel",
         "confirm": "Confirm Deposit",
         "confirm_success": "The deposit has been recorded.",

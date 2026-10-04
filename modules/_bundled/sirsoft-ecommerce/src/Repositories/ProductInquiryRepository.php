@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Search\KeywordSearch;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -296,18 +297,45 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
 
         $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';
 
-        return $this->paginateWithDeferredJoin(
+        $paginator = $this->paginateWithDeferredJoin(
             query: $query,
             columns: ["{$table}.*"],
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
-            // inquirable 은 eager load 하지 않는다 — 문의 본문은 게시판 모듈의 글에 morph 로
-            // 걸려 있고, 그 모듈이 없거나 morph 별칭이 등록되지 않은 환경에서는 관계를 푸는
-            // 순간 "Class not found" 로 목록 전체가 죽는다. 본문 요약은 Resource 가 타입을
-            // 확인한 뒤에만 읽는다(미등록 타입이면 null).
+            // inquirable 은 쿼리 단계에서 eager load 하지 않는다 — 문의 본문은 게시판 모듈의 글에
+            // morph 로 걸려 있고, 그 모듈이 없거나 morph 별칭이 등록되지 않은 환경에서는 관계를
+            // 푸는 순간 "Class not found" 로 목록 전체가 죽는다. 아래에서 풀리는 행만 골라 싣는다.
             relations: ['user:id,uuid,name,email,status', 'product:id,name,display_status,sales_status'],
             resultCap: PaginationLimits::resultCap('admin.product_inquiries'),
         );
+
+        $this->loadResolvableInquirables($paginator->getCollection());
+
+        return $paginator;
+    }
+
+    /**
+     * 실제 클래스로 풀리는 행에만 원글(inquirable)을 한 번에 싣습니다.
+     *
+     * 싣지 않으면 목록의 본문 요약이 게시판 모듈이 있는 상점에서도 언제나 「본문을 불러올 수
+     * 없습니다」로 비었다(실측 2026-10-03). 타입별로 묶어 한 번씩만 읽으므로 행마다
+     * 쿼리가 붙지 않고, 풀리지 않는 타입의 행은 건드리지 않아 목록이 죽지 않는다.
+     *
+     * @param  \Illuminate\Support\Collection  $rows  현재 페이지의 문의 행
+     * @return void 반환값 없음
+     */
+    private function loadResolvableInquirables(\Illuminate\Support\Collection $rows): void
+    {
+        $loadable = $rows->filter(function ($row) {
+            $type = $row->inquirable_type;
+            $class = $type !== null ? (Relation::getMorphedModel($type) ?? $type) : null;
+
+            return is_string($class) && class_exists($class);
+        });
+
+        if ($loadable->isNotEmpty()) {
+            (new Collection($loadable->values()->all()))->load('inquirable');
+        }
     }
 
     /**
@@ -319,7 +347,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
      * @param  Builder  $query  대상 쿼리
      * @param  string  $field  검색 대상
      * @param  string|null  $keyword  검색어
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyAdminSearch(Builder $query, string $field, ?string $keyword): void
     {
@@ -327,7 +355,8 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             return;
         }
 
-        $needle = '%'.trim($keyword).'%';
+        // `%`·`_` 를 글자 그대로 찾는다 — 이스케이프하지 않으면 「50%」 같은 검색어가 와일드카드로 읽혀 엉뚱한 행이 잡힌다.
+        $needle = '%'.KeywordSearch::escapeLikeWildcards(trim($keyword)).'%';
 
         match ($field) {
             'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
@@ -358,7 +387,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
      *
      * @param  Builder  $query  대상 쿼리
      * @param  string  $needle  LIKE 패턴
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyContentSearch(Builder $query, string $needle): void
     {

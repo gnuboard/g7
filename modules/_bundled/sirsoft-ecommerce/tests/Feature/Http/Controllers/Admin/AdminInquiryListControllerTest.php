@@ -167,6 +167,29 @@ class AdminInquiryListControllerTest extends ModuleTestCase
     }
 
     /**
+     * 검색어의 `%`·`_` 는 와일드카드가 아니라 글자 그대로 찾는다.
+     *
+     * 이스케이프하지 않으면 `a%b` 가 `a…b` 전부와 맞아 다른 회원의 문의까지 잡힌다.
+     *
+     * @effects admin_product_inquiry_search_escapes_like_wildcards
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_search_treats_like_wildcards_literally(): void
+    {
+        $this->memberA->forceFill(['email' => 'zz%cd@example.test'])->save();
+        $this->memberB->forceFill(['email' => 'zzxcd@example.test'])->save();
+        $mine = $this->seedRow($this->memberA);
+        $this->seedRow($this->memberB);
+
+        $this->actingAs($this->admin)
+            ->getJson($this->apiBase.'?search_field=email&search_keyword='.urlencode('zz%cd'))
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $mine);
+    }
+
+    /**
      * 삭제 권한 없는 관리자의 삭제 → 403.
      *
      * @effects admin_product_inquiry_destroy_requires_manage_permission
@@ -431,6 +454,39 @@ class AdminInquiryListControllerTest extends ModuleTestCase
     }
 
     /**
+     * 목록이 원글 본문 요약을 싣고, 풀리지 않는 원글 타입의 행은 요약 없이 그대로 둔다 (실측 2026-10-03).
+     *
+     * 종전에는 목록이 원글 관계를 싣지 않아 게시판 모듈이 있는 상점에서도 모든 행이
+     * 「본문을 불러올 수 없습니다」였다.
+     *
+     * @scenario list=inquiry, permission=read, member_scope=false, extra_filter=none
+     *
+     * @effects admin_product_inquiry_list_shows_content_excerpt
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_shows_content_excerpt_for_resolvable_sources(): void
+    {
+        $resolvable = $this->seedRow($this->memberA, [
+            'inquirable_type' => InquirySourceStub::class,
+            'inquirable_id' => $this->memberA->id,
+        ]);
+        $unresolvable = $this->seedRow($this->memberB, [
+            'inquirable_type' => 'zz_unregistered_source',
+            'inquirable_id' => 1,
+        ]);
+
+        $rows = collect($this->actingAs($this->admin)
+            ->getJson($this->apiBase)
+            ->assertStatus(200)
+            ->json('data.data'))->keyBy('id');
+
+        $this->assertSame('시험 문의 본문입니다.', $rows[$resolvable]['content_excerpt'] ?? null);
+        $this->assertTrue($rows->has($unresolvable), '풀리지 않는 원글 타입의 행도 목록에 남아야 한다.');
+        $this->assertNull($rows[$unresolvable]['content_excerpt']);
+    }
+
+    /**
      * 상품문의 행을 시드하고 ID 를 반환합니다.
      *
      * @param  User|null  $user  문의한 회원
@@ -445,5 +501,24 @@ class AdminInquiryListControllerTest extends ModuleTestCase
         ], $attributes));
 
         return (int) $inquiry->id;
+    }
+}
+
+/**
+ * 상품문의 원글 대역 — 회원 테이블 행을 원글로 삼고 본문만 고정 문장으로 돌려준다.
+ *
+ * 목록이 원글 관계를 실제로 싣는지만 보면 되므로 게시판 모듈의 글 모델이나 새 테이블에
+ * 기대지 않는다.
+ */
+class InquirySourceStub extends User
+{
+    /**
+     * 시험용 본문을 돌려줍니다.
+     *
+     * @return string 본문
+     */
+    public function getContentAttribute(): string
+    {
+        return '<p>시험 문의 본문입니다.</p>';
     }
 }

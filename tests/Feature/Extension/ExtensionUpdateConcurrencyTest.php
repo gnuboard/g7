@@ -19,6 +19,7 @@ use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -50,8 +51,6 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     /**
      * 같은 확장의 업데이트가 진행 중이면 Manager 가 곧바로 거절하고 직전 훅도 발화하지 않는다 (CLI·관리자 공통 진입점).
      *
-     * @dataProvider extensionTypes
-     *
      * @scenario case=lock_held_manager
      *
      * @effects concurrent_update_rejected_before_any_step
@@ -61,6 +60,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
      * @param  string  $beforeHook  직전 훅 이름
      * @return void 반환값 없음
      */
+    #[DataProvider('extensionTypes')]
     public function test_manager_rejects_update_while_same_extension_update_is_running(string $managerClass, string $method, string $beforeHook): void
     {
         $type = $this->typeOf($managerClass);
@@ -89,8 +89,6 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     /**
      * 업데이트가 실패로 끝나도 잠금은 풀려 다음 업데이트를 막지 않는다.
      *
-     * @dataProvider extensionTypes
-     *
      * @scenario case=lock_released_after_failure
      *
      * @effects update_lock_released_after_operation
@@ -99,6 +97,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
      * @param  string  $method  업데이트 메서드
      * @return void 반환값 없음
      */
+    #[DataProvider('extensionTypes')]
     public function test_lock_is_released_after_update_fails(string $managerClass, string $method): void
     {
         $type = $this->typeOf($managerClass);
@@ -123,8 +122,6 @@ class ExtensionUpdateConcurrencyTest extends TestCase
      * Service 가 모든 예외를 422 「업데이트 실패」로 감싸면 화면이 두 번째 요청을 실패로 보여 준다 — 이 예외만은
      * 그대로 올려 보낸다.
      *
-     * @dataProvider extensionTypes
-     *
      * @scenario case=lock_held_api
      *
      * @effects concurrent_update_api_responds_409
@@ -135,6 +132,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
      * @param  string  $route  API 경로 접두어
      * @return void 반환값 없음
      */
+    #[DataProvider('extensionTypes')]
     public function test_api_responds_409_while_same_extension_update_is_running(string $managerClass, string $method, string $beforeHook, string $route): void
     {
         $type = $this->typeOf($managerClass);
@@ -156,8 +154,6 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     /**
      * 업데이트할 것이 없으면 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다.
      *
-     * @dataProvider extensionTypes
-     *
      * @scenario case=no_update_api
      *
      * @effects no_update_response_message_says_nothing_to_update
@@ -172,6 +168,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
      * @param  string  $langFile  문구 파일
      * @return void 반환값 없음
      */
+    #[DataProvider('extensionTypes')]
     public function test_api_says_nothing_to_update_when_already_latest(
         string $managerClass,
         string $method,

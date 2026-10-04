@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -16,10 +17,9 @@ use Tests\TestCase;
  * `country_name ?? country` 를 읽는데 목록 응답만 국가 이름을 싣고 상세·프로필 응답은 코드만
  * 실어, 되살린 화면에 「US」 같은 코드가 그대로 보였다(브라우저 실측). 세 응답이 모두 현지화된
  * 국가 이름을 싣는지 본다.
- *
- * @group core
- * @group user
  */
+#[Group('core')]
+#[Group('user')]
 class UserCountryDisplayTest extends TestCase
 {
     use DatabaseTransactions;

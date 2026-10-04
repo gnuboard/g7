@@ -53,7 +53,7 @@ class OrderOptionResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
-        $listPrice = $this->option_snapshot['list_price'] ?? $this->product_snapshot['list_price'] ?? null;
+        $listPrice = $this->resource->getSnapshotListPrice();
         $finalAmount = $this->getActualPaymentAmount();
 
         // reset() 은 참조 인자를 요구하므로 Eloquent overloaded property 를 바로 전달하면

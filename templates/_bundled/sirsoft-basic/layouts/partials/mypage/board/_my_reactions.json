@@ -321,7 +321,8 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "myReactionsPage": 1
+                                                "myReactionsPage": 1,
+                                                "myReactionsSearchApplied": "{{_global.myReactionsSearch ?? ''}}"
                                             }
                                         },
                                         {
@@ -362,6 +363,7 @@
                                                 "myReactionsTypeId": "",
                                                 "myReactionsTargetType": "",
                                                 "myReactionsSearch": "",
+                                                "myReactionsSearchApplied": "",
                                                 "myReactionsSearchField": "title_content",
                                                 "myReactionsSort": "latest",
                                                 "myReactionsPage": 1
@@ -537,6 +539,7 @@
                                         "myReactionsTypeId": "",
                                         "myReactionsTargetType": "",
                                         "myReactionsSearch": "",
+                                        "myReactionsSearchApplied": "",
                                         "myReactionsSearchField": "title_content",
                                         "myReactionsSort": "latest",
                                         "myReactionsPage": 1
@@ -1599,12 +1602,23 @@
                     }
                 },
                 {
+                    "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
                     "type": "basic",
                     "name": "P",
+                    "if": "{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}",
                     "props": {
                         "className": "text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:mypage.board_activities.reactions.empty"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:board.no_search_results"
                 },
                 {
                     "type": "basic",

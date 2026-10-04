@@ -5,7 +5,7 @@
   저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에
   실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다. -->
 <layout name="admin_user_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"/>
+  <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
   <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).
        권한을 **응답 뒤에 한 번 더 본다** — 조회는 되지만 수정 권한이 없는 경우가 있어
        `abilities.can_update` 가 아니면 스스로 403 으로 접는다. 어떤 실패든 화면을 에러로 갈아끼우는

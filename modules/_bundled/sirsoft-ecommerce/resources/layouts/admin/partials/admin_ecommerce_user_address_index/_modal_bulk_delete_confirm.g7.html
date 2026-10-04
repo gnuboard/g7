@@ -5,7 +5,7 @@
   때문이다 — 목록으로 되돌아가 세어 보게 하지 않는다.
   일괄 삭제는 한 요청으로 보내고 활동 로그도 한 번만 남긴다(건마다 남기면 100건 삭제가 100줄이다). -->
 <partial description="User Address - Bulk Delete Confirm Modal">
-  <modal data-type="composite" data-ref="modal_bulk_delete_confirm" data-testid="admin-addresses-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_addresses_bulk_delete" data-testid="admin-addresses-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title" size="sm">
     <div>
       <div>
         <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.message|count={{(_global.bulkSelectedItems || []).length}}</p>
@@ -36,7 +36,7 @@
               <fail>
                 <set-state target="global" :isBulkDeleting="false" errorMessage="{{error.message}}"/>
                 <close-modal/>
-                <open-modal target="modal_error"/>
+                <open-modal target="modal_addresses_error"/>
               </fail>
               <body ids="{{_global.bulkSelectedItems}}"/>
             </api-call>

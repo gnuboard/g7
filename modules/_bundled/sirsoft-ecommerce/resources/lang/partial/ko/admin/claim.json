@@ -383,13 +383,11 @@
   "modal": {
     "preset_save": {
       "title": "프리셋 저장",
-      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
       "placeholder": "프리셋 이름을 입력하세요",
       "save": "저장"
     },
     "preset_manage": {
       "title": "프리셋 관리",
-      "description": "검색 프리셋을 관리합니다.",
       "add_new": "새 프리셋 추가",
       "empty": "저장된 프리셋이 없습니다."
     },

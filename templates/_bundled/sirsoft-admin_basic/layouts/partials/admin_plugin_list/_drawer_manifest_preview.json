@@ -26,13 +26,14 @@
             "name": "FileInput",
             "actions": [
                 {
-                    "comment": "이 창의 파일 자리는 설치 창의 것과 **별개**다 — 여기서 올려 본 파일이 설치 창으로 넘어가지 않는다.",
+                    "comment": "이 창의 파일 자리는 설치 창의 것과 **별개**다 — 여기서 올려 본 파일이 설치 창으로 넘어가지 않는다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다.",
                     "type": "change",
                     "handler": "setState",
                     "params": {
                         "target": "global",
                         "pluginPreviewFile": "{{$event.target.value}}",
-                        "pluginPreviewFileName": "{{$event.target.value?.name}}"
+                        "pluginPreviewFileName": "{{$event.target.value?.name}}",
+                        "pluginPreviewResult": null
                     }
                 }
             ],
@@ -196,7 +197,7 @@
                                     "props": {
                                         "className": "text-success-soft"
                                     },
-                                    "text": "$t:defer:extensions.manifest_preview.icon_present|path={{_global.pluginPreviewResult?.icon?.path ?? ''}}"
+                                    "text": "$t:extensions.manifest_preview.icon_present|path={{_global.pluginPreviewResult?.icon?.path ?? ''}}"
                                 },
                                 {
                                     "type": "basic",

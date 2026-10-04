@@ -81,6 +81,36 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * `#회원번호` 는 그 회원의 방문만 찾는지 확인합니다.
+     *
+     * 목록의 회원 메뉴 「이 회원으로 검색」은 그 회원의 방문만 보려는 동작이다. 숫자만 넣으면 한 칸 검색이
+     * 방문자 키 앞부분에도 대 보므로, 키가 같은 숫자로 시작하는 비회원 방문이 섞여 나왔다(브라우저 실측:
+     * 회원 1 로 찾자 키가 1 로 시작하는 비회원 방문이 함께 나왔다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_list_search_matches_key_address_or_member
+     */
+    public function test_hash_prefixed_member_number_finds_only_that_member(): void
+    {
+        $member = str_repeat('a', 32);
+        $this->visit(['visitor_key' => $member, 'ip' => '203.0.113.5', 'user_id' => 7]);
+        $this->visit(['visitor_key' => '7'.str_repeat('b', 31), 'ip' => '203.0.113.6', 'user_id' => null]);
+
+        $admin = $this->privacyAdmin();
+        $keys = fn (string $q): array => array_column(
+            $this->actingAs($admin)->getJson('/api/admin/analytics/visitors?preset=today&q='.rawurlencode($q))->json('data.data'),
+            'visitor_key',
+        );
+
+        $this->assertSame([$member], $keys('#7'), '#번호는 그 회원만');
+        $this->assertCount(2, $keys('7'), '숫자만 넣으면 종전대로 키 앞부분·회원 번호를 함께 본다');
+        $this->assertSame([], $keys('#8'));
+    }
+
+    /**
      * 방문자 유형 필터가 그 유형만 남기는지 확인합니다.
      *
      * @return void 없음

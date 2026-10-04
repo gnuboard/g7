@@ -138,16 +138,6 @@
       "actions": "작업"
     }
   },
-  "mobile": {
-    "benefit_label": "혜택금액",
-    "target_type_label": "적용대상",
-    "issue_label": "발급",
-    "validity_period_label": "유효기간",
-    "issue_period_label": "발급기간",
-    "issue_count_label": "발급수량",
-    "status_label": "상태",
-    "creator_label": "등록자"
-  },
   "modal": {
     "status_change": {
       "title": "발급상태를 변경하시겠습니까?",

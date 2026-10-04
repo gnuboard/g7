@@ -201,7 +201,8 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "myPostsPage": 1
+                                                "myPostsPage": 1,
+                                                "myPostsSearchApplied": "{{_global.myPostsSearch ?? ''}}"
                                             }
                                         },
                                         {
@@ -233,6 +234,7 @@
                                                 "target": "global",
                                                 "myPostsBoard": "",
                                                 "myPostsSearch": "",
+                                                "myPostsSearchApplied": "",
                                                 "myPostsSearchField": "title_content",
                                                 "myPostsSort": "latest",
                                                 "myPostsPage": 1
@@ -316,6 +318,7 @@
                                         "target": "global",
                                         "myPostsBoard": "",
                                         "myPostsSearch": "",
+                                        "myPostsSearchApplied": "",
                                         "myPostsSearchField": "title_content",
                                         "myPostsSort": "latest",
                                         "myPostsPage": 1
@@ -510,12 +513,23 @@
                             }
                         },
                         {
+                            "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
                             "type": "basic",
                             "name": "P",
+                            "if": "{{!(!!_global.myPostsSearchApplied || !!_global.myPostsBoard)}}",
                             "props": {
                                 "className": "text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:mypage.board_activities.empty_posts"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.myPostsSearchApplied || !!_global.myPostsBoard}}",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:board.no_search_results"
                         },
                         {
                             "type": "basic",

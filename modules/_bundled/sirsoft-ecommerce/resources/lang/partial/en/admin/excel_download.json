@@ -47,7 +47,6 @@
   "modal": {
     "download_history": {
       "title": "Download History",
-      "description": "View the download history of this file",
       "file_content": "File Content",
       "category": "Category",
       "status": "Status",

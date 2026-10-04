@@ -379,7 +379,7 @@ class OrderOptionService
      * @param  OrderOption  $option  상태가 변경된 옵션
      * @param  OrderStatusEnum  $newStatus  전이 목표 상태
      * @param  array  $metadata  ['carrier_id' => int, 'tracking_number' => string] 부분 배열
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyShippingTracking(OrderOption $option, OrderStatusEnum $newStatus, array $metadata): void
     {
@@ -558,11 +558,11 @@ class OrderOptionService
             }
         });
 
-        // 부모 주문 상태 동기화
-        $orderIds = $this->orderOptionRepository->getOrderIdsByOptionIds($optionIds);
-        foreach ($orderIds as $parentOrderId) {
-            $this->syncParentOrderStatus($parentOrderId);
-        }
+        // 부모 주문 상태 동기화 — 대상 옵션은 위에서 모두 $orderId 소속임을 확인했다.
+        // 변경 뒤에 옵션 id 로 주문을 다시 찾으면, 병합으로 지워진 행만 실린 요청(남은 1개를
+        // 먼저 보낸 형제에 합치는 발송)에서 주문을 못 찾아 동기화를 건너뛴다 — 모든 상품이
+        // 배송중인데 주문은 상품준비중으로 남았다(실측 2026-10-03).
+        $this->syncParentOrderStatus($orderId);
 
         // after 훅 (스냅샷 전달)
         HookManager::doAction('sirsoft-ecommerce.order_option.after_bulk_status_change', $results, $newStatus, $snapshots);
@@ -579,7 +579,7 @@ class OrderOptionService
      *
      * @param  array<int, int>  $optionIds  검증할 주문 옵션 ID 목록
      * @param  int  $orderId  상위 주문 ID
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ResourceScopeMismatchException 하나라도 다른 주문에 속하는 경우
      */
@@ -641,7 +641,7 @@ class OrderOptionService
      * @param  float  $ratio  분할 비율 (변경수량 / 원본수량)
      * @param  int  $quantity  분할 수량
      * @param  array{unit: string, method: string}|null  $earnRounding  적립 절사 기준 (주문 스냅샷 기준)
-     * @return void
+     * @return void 반환값 없음
      */
     private function applySplitAmounts(OrderOption $splitOption, array $origAmounts, float $ratio, int $quantity, ?array $earnRounding = null): void
     {
@@ -687,7 +687,7 @@ class OrderOptionService
      * @param  array  $origAmounts  원본 금액 캡처 데이터
      * @param  OrderOption  $splitOption  분할 레코드
      * @param  int  $remainingQuantity  잔여 수량
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyRemainingAmounts(OrderOption $option, array $origAmounts, OrderOption $splitOption, int $remainingQuantity): void
     {
@@ -729,7 +729,7 @@ class OrderOptionService
      *
      * @param  OrderOption  $survivor  생존 레코드
      * @param  OrderOption  $consumed  피흡수 레코드
-     * @return void
+     * @return void 반환값 없음
      */
     private function mergeOptions(OrderOption $survivor, OrderOption $consumed): void
     {
@@ -760,6 +760,13 @@ class OrderOptionService
             - $survivor->subtotal_discount_amount
             - $survivor->subtotal_points_used_amount
             - $survivor->subtotal_deposit_used_amount;
+
+        // 생존 행이 피흡수 행의 분할 자식이면 피흡수 행의 부모를 잇는다. 그대로 두면 아래
+        // 자식 이전이 생존 행을 자기 자신의 자식(parent_option_id = 자기 id)으로 만든다
+        // (실측 2026-10-03: 3개 중 2개 먼저 발송 → 남은 1개 발송 → 생존 행의 부모가 자기 자신).
+        if ((int) $survivor->parent_option_id === (int) $consumed->id) {
+            $survivor->parent_option_id = $consumed->parent_option_id;
+        }
 
         // mc_* 필드 합산
         $mcFields = [
@@ -794,7 +801,7 @@ class OrderOptionService
      *
      * @param  int  $fromOrderOptionId  피흡수 옵션 ID
      * @param  int  $toOrderOptionId  생존 옵션 ID
-     * @return void
+     * @return void 반환값 없음
      */
     private function transferClaimOptions(int $fromOrderOptionId, int $toOrderOptionId): void
     {
@@ -852,7 +859,7 @@ class OrderOptionService
      * 트랜잭션 진입 전에 변경을 차단한다. 정책 비활성(enabled=false) 시에는 enforce 가 통과시킨다.
      *
      * @param  array<int>  $optionIds  변경 대상 옵션 ID 배열
-     * @return void
+     * @return void 반환값 없음
      */
     private function enforcePaymentCompleteIdv(array $optionIds): void
     {
@@ -899,7 +906,7 @@ class OrderOptionService
      * Order::isPartiallyCancelled() 파생 플래그로 노출한다 (2026-06-22, partial_cancelled 제거).
      *
      * @param  int  $orderId  동기화할 주문 ID
-     * @return void
+     * @return void 반환값 없음
      */
     public function syncParentOrderStatus(int $orderId): void
     {
@@ -956,7 +963,7 @@ class OrderOptionService
      *
      * @param  Order  $order  대상 주문
      * @param  OrderStatusEnum  $newStatus  목표 주문 상태
-     * @return void
+     * @return void 반환값 없음
      */
     private function transitionOrderStatus($order, OrderStatusEnum $newStatus): void
     {
@@ -991,7 +998,7 @@ class OrderOptionService
         $order->loadMissing('payment');
         $paymentSettled = $order->payment?->payment_status === PaymentStatusEnum::PAID;
         $headerUnpaid = (float) $order->total_paid_amount <= 0.0 && (float) $order->total_due_amount > 0.0;
-        $movesPastPayment = ! $newStatus->isBeforePayment() && $newStatus !== OrderStatusEnum::CANCELLED;
+        $movesPastPayment = $newStatus->isPastPayment();
 
         if ($movesPastPayment && $paymentSettled && $headerUnpaid) {
             // 실제로 수납된 금액은 결제 레코드가 들고 있다 — 미수금(total_due_amount)을 그대로

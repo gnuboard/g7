@@ -318,7 +318,7 @@
                                                                     "props": {
                                                                         "value": "{{rcpt.relation ?? ''}}",
                                                                         "className": "w-full text-sm",
-                                                                        "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: r }))]}}"
+                                                                        "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
                                                                     }
                                                                 },
                                                                 {
@@ -695,40 +695,50 @@
                                             "name": "Div",
                                             "children": [
                                                 {
-                                                    "comment": "언어 탭을 바꾸면 id 가 바뀌어 편집기가 다시 선다 — 쓰기 경로에 활성 언어가 박혀 있어, 같은 인스턴스를 유지하면 언어를 바꾼 뒤 입력이 **이전 언어** 로 저장된다.",
-                                                    "id": "template_body_rich_{{_global.notification_template_form_modal?.editLang ?? $locale}}",
-                                                    "type": "extension_point",
-                                                    "name": "html_editor",
-                                                    "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'rich'}}",
-                                                    "props": {
-                                                        "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                        "multilingual": false,
-                                                        "trackChanges": false,
-                                                        "writeScope": "global",
-                                                        "writePath": "notification_template_form_modal.template.body.{{_global.notification_template_form_modal?.editLang ?? $locale}}",
-                                                        "name": "notification_template_body"
+                                                    "comment": "서식 편집기는 언어마다 하나씩 두고 편집 중인 언어의 것만 세운다. 편집기는 마운트 때 본문과 쓰기 경로를 한 번만 받으므로, 한 인스턴스를 언어 사이에 돌려 쓰면 탭을 바꿔도 이전 언어 본문이 보이고 입력이 **이전 언어** 칸에 저장된다(실측 2026-10-03). 노드 id 에 언어를 넣는 것으로는 다시 서지 않는다 — 엔진은 자식 key 를 바인딩 전 원문 id 로 잡는다. 탭을 바꾸면 이전 언어의 슬롯이 내려가고(data-if) 새 언어의 슬롯이 그 언어 본문·쓰기 경로로 새로 선다. 편집기 이름도 언어별이라 내려가는 편집기와 서는 편집기가 같은 컨테이너를 두고 다투지 않는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{$locales}}",
+                                                        "item_var": "bodyLoc"
                                                     },
-                                                    "default": [
+                                                    "children": [
                                                         {
-                                                            "type": "composite",
-                                                            "name": "HtmlEditor",
-                                                            "actions": [
+                                                            "id": "template_body_rich_{{bodyLoc}}",
+                                                            "type": "extension_point",
+                                                            "name": "html_editor",
+                                                            "if": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'rich') && (_global.notification_template_form_modal?.editLang ?? $locale) === bodyLoc}}",
+                                                            "props": {
+                                                                "content": "{{_global.notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}",
+                                                                "multilingual": false,
+                                                                "trackChanges": false,
+                                                                "writeScope": "global",
+                                                                "writePath": "notification_template_form_modal.template.body.{{bodyLoc}}",
+                                                                "name": "notification_template_body_{{bodyLoc}}"
+                                                            },
+                                                            "default": [
                                                                 {
-                                                                    "comment": "본문(언어별) — 제목과 같은 방식이고, 편집기라 아래 변수 안내의 `{키}` 를 그대로 쓴다.",
-                                                                    "type": "change",
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                                    "type": "composite",
+                                                                    "name": "HtmlEditor",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "본문(언어별) — 제목과 같은 방식이고, 편집기라 아래 변수 안내의 `{키}` 를 그대로 쓴다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[bodyLoc]: $event.target.value})}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "content": "{{_global.notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}",
+                                                                        "isHtml": true,
+                                                                        "showHtmlModeToggle": false,
+                                                                        "className": "min-h-[200px]"
                                                                     }
                                                                 }
-                                                            ],
-                                                            "props": {
-                                                                "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                                "isHtml": true,
-                                                                "showHtmlModeToggle": false,
-                                                                "className": "min-h-[200px]"
-                                                            }
+                                                            ]
                                                         }
                                                     ]
                                                 },

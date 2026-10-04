@@ -104,6 +104,13 @@ class LayoutFileService
             throw new LayoutFileOperationException('layouts.errors.name_taken', ['name' => $name]);
         }
 
+        // 본문의 `layout_name` 을 파일 이름으로 맞춘다 — 이름변경과 같은 규칙이다. 코드 편집기의 «새 이름으로
+        // 저장» 은 지워진 파일의 편집분(`<layout name="옛이름">`)을 그대로 싣는데, 맞추지 않으면 파일 이름과
+        // 다른 이름의 산출물이 저장되고 그 마크업을 다시 저장할 때마다 옛 이름이 되살아난다.
+        if (array_key_exists('layout_name', $content)) {
+            $content['layout_name'] = $name;
+        }
+
         HookManager::doAction('core.layout.before_create', $templateId, $name, $content);
 
         // 지워진(soft delete) 같은 이름의 행이 남아 있으면 **되살려 쓴다**.
@@ -492,7 +499,7 @@ class LayoutFileService
      * 검사(`str_contains('..')`)는 정상 이름을 막으면서 인코딩된 탈출을 놓친다.
      *
      * @param  string  $name  검사할 이름
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws LayoutFileOperationException 규칙 위반 시
      */
@@ -544,7 +551,7 @@ class LayoutFileService
      *
      * @param  TemplateLayout  $layout  대상 레이아웃
      * @param  string  $errorKey  위반 시 쓸 다국어 키
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws LayoutFileOperationException 템플릿 소유가 아닐 때
      */
@@ -572,7 +579,7 @@ class LayoutFileService
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $name  레이아웃 이름
      * @param  string  $errorKey  위반 시 쓸 다국어 키
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws LayoutFileOperationException 참조가 있을 때
      */
@@ -791,7 +798,7 @@ class LayoutFileService
      * 행 자체가 사라지거나 옮겨 가므로 마지막 키를 명시적으로 지운다.
      *
      * @param  int  $layoutId  레이아웃 ID
-     * @return void
+     * @return void 반환값 없음
      */
     private function forgetMarkupCache(int $layoutId): void
     {

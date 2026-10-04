@@ -8,6 +8,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\Role;
 use App\Models\User;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 사용자 댓글 API 상위 게시글 스코프 검증 테스트
@@ -15,20 +16,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 검증 목적:
  * - 게시글 A 의 댓글을 게시글 B 의 URL 로 수정/삭제할 수 없다 (교차 경로 차단)
  * - 정상 경로(자기 게시글 URL)로는 기존과 동일하게 수정/삭제된다
- *
- * @group board
- * @group comment
- * @group scope
  */
+#[Group('board')]
+#[Group('comment')]
+#[Group('scope')]
 class CommentScopeTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-scope';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -40,6 +51,11 @@ class CommentScopeTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +77,8 @@ class CommentScopeTest extends BoardTestCase
      * @scenario resource=board_comment_user, parent_scope=mismatched, actor=member
      *
      * @effects cross_scope_write_rejected, target_resource_unchanged_on_rejection
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_update_comment_through_other_post_url(): void
     {
@@ -88,6 +106,8 @@ class CommentScopeTest extends BoardTestCase
      * @scenario resource=board_comment_user, parent_scope=mismatched, actor=member
      *
      * @effects cross_scope_write_rejected, target_resource_unchanged_on_rejection
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_delete_comment_through_other_post_url(): void
     {
@@ -114,6 +134,8 @@ class CommentScopeTest extends BoardTestCase
      * @scenario resource=board_comment_user, parent_scope=matching, actor=member
      *
      * @effects matching_scope_still_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_can_update_comment_through_own_post_url(): void
     {
@@ -139,6 +161,8 @@ class CommentScopeTest extends BoardTestCase
      * @scenario resource=board_comment_user, parent_scope=matching, actor=member
      *
      * @effects matching_scope_still_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_can_delete_comment_through_own_post_url(): void
     {

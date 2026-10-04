@@ -10,7 +10,7 @@ import { CodeWorkspace } from '../CodeWorkspace';
  *
  * 종전에는 편집 버퍼가 전역 변수 한 벌(`_global.editorMarkup`)이었다. 파일을 고르면 재조회 응답의
  * `init-global` 이 그 전역을 **무조건 덮어썼으므로**, 저장하지 않은 수정이 아무 경고 없이 사라졌다.
- * PO 가 제보한 유실이 바로 이것이다.
+ * 제보된 유실이 바로 이것이다.
  *
  * 그래서 여기서 잠그는 핵심 명제는 하나다 —
  * **"버퍼가 dirty 면 `serverValue` 를 무시한다."** 이 한 줄이 되돌아가면 결함도 함께 되돌아온다.
@@ -157,6 +157,97 @@ describe('CodeWorkspace — 버퍼 수명', () => {
     );
 
     expect(onDirtyChange).toHaveBeenLastCalledWith({ target: { value: [] } });
+  });
+
+  /**
+   * 서버는 저장한 마크업을 역변환해 돌려주므로 공백·속성 표기가 정규화된다(실측 2026-10-04: 태그 안
+   * 공백 세 칸을 저장하면 한 칸으로, 설치본의 `<query/>` 는 `:query="{}"` 로 돌아왔다). 글자가 달라도 그
+   * 판본이 내 저장이 만든 것이면 충돌이 아니다 — 서버 본문으로 clean 이 된다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_accepts_normalized_own_save_without_conflict
+   */
+  it('내 저장이 정규화된 본문으로 돌아와도 충돌 바 없이 서버 본문으로 clean 이 된다', () => {
+    const onDirtyChange = vi.fn();
+    const mine = '<layout   name="a"/><!--MINE-->';
+    const normalized = '<layout name="a"/><!--MINE-->';
+
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} onDirtyChange={onDirtyChange} />,
+    );
+
+    type(mine);
+
+    // 저장을 보냈다 — 아직 판본이 없다.
+    rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} lastSave={{ key: 'layout:a', value: mine, revision: null }} onDirtyChange={onDirtyChange} />,
+    );
+    // 성공 — 응답 판본이 기록되고, 다시 받은 본문은 정규화돼 있다.
+    rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={normalized} serverRevision={2} lastSave={{ key: 'layout:a', value: mine, revision: 2 }} onDirtyChange={onDirtyChange} />,
+    );
+
+    expect(screen.queryByTestId('conflict-bar')).not.toBeInTheDocument();
+    expect(editorValue()).toBe(normalized);
+    expect(onDirtyChange).toHaveBeenLastCalledWith({ target: { value: [] } });
+  });
+
+  /**
+   * 저장을 보낸 뒤 응답이 오기 전에 더 친 글자는 아직 저장되지 않았다 — 지우지 않고 dirty 로 남긴다.
+   * 기준선은 내 저장의 판본으로 옮겨 충돌로 세우지 않는다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_keeps_edits_typed_after_save_dirty
+   */
+  it('저장을 보낸 뒤 더 친 글자는 남고 dirty 로 남는다 (충돌 바 없음)', () => {
+    const onDirtyChange = vi.fn();
+    const sent = '<layout   name="a"/><!--MINE-->';
+
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} onDirtyChange={onDirtyChange} />,
+    );
+
+    type(sent);
+    rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} lastSave={{ key: 'layout:a', value: sent, revision: null }} onDirtyChange={onDirtyChange} />,
+    );
+    type(`${sent}<!--MORE-->`);
+    rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={'<layout name="a"/><!--MINE-->'} serverRevision={2} lastSave={{ key: 'layout:a', value: sent, revision: 2 }} onDirtyChange={onDirtyChange} />,
+    );
+
+    expect(screen.queryByTestId('conflict-bar')).not.toBeInTheDocument();
+    expect(editorValue()).toBe(`${sent}<!--MORE-->`);
+    expect(onDirtyChange).toHaveBeenLastCalledWith({ target: { value: ['layout:a'] } });
+  });
+
+  /**
+   * 내 저장 기록은 **그 파일, 그 판본**에만 쓴다. 남이 그 뒤에 저장했거나(판본이 더 오름) 다른 파일의
+   * 기록이면 종전대로 충돌 바를 세운다 — 남의 편집을 조용히 받아들이거나 내 편집을 버리지 않는다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_still_flags_conflict_for_other_saves
+   */
+  it('판본이 내 저장보다 더 올랐거나 다른 파일의 기록이면 여전히 충돌 바를 세운다', () => {
+    const mine = '<layout name="a"/><!--MINE-->';
+
+    const first = render(<CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} />);
+    type(mine);
+    first.rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={'<layout name="theirs"/>'} serverRevision={3} lastSave={{ key: 'layout:a', value: mine, revision: 2 }} />,
+    );
+    expect(screen.getByTestId('conflict-bar')).toBeInTheDocument();
+    expect(editorValue()).toBe(mine);
+    first.unmount();
+    window.localStorage.clear();
+
+    const second = render(<CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} />);
+    type(mine);
+    second.rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue={'<layout name="theirs"/>'} serverRevision={2} lastSave={{ key: 'layout:b', value: mine, revision: 2 }} />,
+    );
+    expect(screen.getByTestId('conflict-bar')).toBeInTheDocument();
+    expect(editorValue()).toBe(mine);
   });
 
   /** @effects code_workspace_pushes_active_buffer_to_host */
@@ -461,7 +552,7 @@ describe('CodeWorkspace — 앞 파일 응답 오염 방지', () => {
 });
 
 /**
- * 파일을 여는 중의 빈 값은 **편집이 아니다** (PO 제보 2026-09-12).
+ * 파일을 여는 중의 빈 값은 **편집이 아니다** (2026-09-12 제보).
  *
  * 편집기는 제어 컴포넌트라 `value` prop 이 바뀌면 그대로 change 를 올려 준다. 파일을 눌러
  * 서버 본문이 도착하기 전에는 그 파일의 버퍼가 아직 없어 빈 값이 올라오는데, 그것을 편집으로

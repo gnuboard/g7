@@ -173,7 +173,7 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 17개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 11개 | `vitest.config.ts` |
+| Vitest | 12개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 

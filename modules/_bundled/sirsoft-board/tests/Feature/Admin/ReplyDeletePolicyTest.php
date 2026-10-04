@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 답글 삭제 정책(reply_delete_policy) + 답글 트리 연쇄 삭제/복원 테스트
@@ -23,21 +24,31 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 이미 trashed 인 자손은 cascade 가 변조하지 않음 (trigger_type/deleted_at 불변)
  * - 신고 조치 삭제(trigger 'report')에도 block 정책 동일 적용 (cascade_replies 옵션만 우회)
  * - 끊긴 체인 밑 고아 답글은 block 통과 삭제에서도 cascade 스윕으로 함께 정리
- *
- * @group board
- * @group admin
  */
+#[Group('board')]
+#[Group('admin')]
 class ReplyDeletePolicyTest extends BoardTestCase
 {
     private PostService $postService;
 
     private User $adminWithManage;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'reply-delete-policy';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -51,6 +62,11 @@ class ReplyDeletePolicyTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -159,6 +175,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
     /**
      * cascade 정책: 부모 삭제 시 깊이 3 답글 트리 전체 + 자손별 댓글/첨부가
      * cascade soft delete + trigger_type='cascade' + status='deleted' 로 마킹된다.
+     *
+     * @effects cascade_policy_soft_deletes_all_descendant_replies
+     *
+     * @return void 반환값 없음
      */
     public function test_cascade_policy_soft_deletes_all_descendant_replies(): void
     {
@@ -194,6 +214,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
 
     /**
      * 복원 시 cascade 로 지워졌던 자손 답글 + 그 댓글/첨부가 함께 복원된다.
+     *
+     * @effects cascade_restore_restores_descendants_and_their_children
+     *
+     * @return void 반환값 없음
      */
     public function test_cascade_restore_restores_descendants_and_their_children(): void
     {
@@ -223,6 +247,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
     /**
      * 사용자 직접 삭제(trigger 'user') 로 먼저 지워진 중간 자손의 서브트리는
      * 부모 삭제 → 복원 후에도 trashed 로 유지된다 (고아 재생성 금지).
+     *
+     * @effects user_predeleted_reply_subtree_stays_trashed_after_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_user_predeleted_reply_subtree_stays_trashed_after_restore(): void
     {
@@ -256,6 +284,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
     /**
      * cascade 는 이미 trashed 인 자손(trigger 'user')을 변조하지 않는다
      * (trigger_type 유지 + deleted_at 불변).
+     *
+     * @effects cascade_skips_already_trashed_descendants
+     *
+     * @return void 반환값 없음
      */
     public function test_cascade_skips_already_trashed_descendants(): void
     {
@@ -284,6 +316,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
 
     /**
      * block 정책: 살아있는 답글이 있는 글의 관리자 삭제 → 422 + 정책 메시지, 부수효과 0.
+     *
+     * @effects block_policy_returns_422_with_message_when_alive_reply_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_block_policy_returns_422_with_message_when_alive_reply_exists(): void
     {
@@ -309,6 +345,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
 
     /**
      * block 정책: 답글이 전부 trashed 면 삭제가 허용된다.
+     *
+     * @effects block_policy_allows_delete_when_replies_all_trashed
+     *
+     * @return void 반환값 없음
      */
     public function test_block_policy_allows_delete_when_replies_all_trashed(): void
     {
@@ -330,6 +370,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
 
     /**
      * block 정책은 사용자 삭제 경로(회원 본인 글)에도 동일하게 적용된다 → 422.
+     *
+     * @effects user_delete_path_applies_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_user_delete_path_applies_policy(): void
     {
@@ -357,6 +401,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
     /**
      * 신고 조치 삭제(trigger 'report')에도 block 정책이 동일하게 적용된다.
      * 정책 우회는 오직 cascade_replies 옵션(훅 경유)뿐 — trigger 문자열은 우회 수단이 아니다.
+     *
+     * @effects report_trigger_delete_applies_block_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_report_trigger_delete_applies_block_policy(): void
     {
@@ -381,6 +429,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
      * 끊긴 체인 밑 고아 답글: 직계 답글이 전부 trashed 라 block 정책이 삭제를 허용하는
      * 경우에도 cascade 스윕이 실행되어, trashed 자손 밑에 살아남아 있던 고아 답글을
      * 함께 정리한다 (계획서 WP2 §PostService — "block 통과 시에도 실행").
+     *
+     * @effects orphan_reply_under_trashed_chain_is_swept_on_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_reply_under_trashed_chain_is_swept_on_delete(): void
     {
@@ -411,6 +463,10 @@ class ReplyDeletePolicyTest extends BoardTestCase
     /**
      * 훅 경유 삭제(options cascade_replies=true)는 block 정책을 우회하고
      * 자손 답글까지 cascade 로 함께 정리한다 (시스템 생성 답변 정리 보장).
+     *
+     * @effects ecommerce_hook_delete_bypasses_block_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_ecommerce_hook_delete_bypasses_block_policy(): void
     {

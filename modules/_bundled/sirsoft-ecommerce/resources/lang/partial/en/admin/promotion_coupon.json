@@ -138,16 +138,6 @@
       "actions": "Actions"
     }
   },
-  "mobile": {
-    "benefit_label": "Benefit",
-    "target_type_label": "Target Type",
-    "issue_label": "Issue",
-    "validity_period_label": "Validity Period",
-    "issue_period_label": "Issue Period",
-    "issue_count_label": "Issue Count",
-    "status_label": "Status",
-    "creator_label": "Creator"
-  },
   "modal": {
     "status_change": {
       "title": "Change issue status?",

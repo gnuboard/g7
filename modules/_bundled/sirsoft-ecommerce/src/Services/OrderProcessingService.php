@@ -352,7 +352,7 @@ class OrderProcessingService
      *
      * @param  Order  $order  대상 주문
      * @param  array|null  $snapshot  변경 전 주문 속성 스냅샷 (활동로그의 전/후 표가 읽는다)
-     * @return void
+     * @return void 반환값 없음
      */
     protected function fireZeroAmountPaymentCompleteHooks(Order $order, ?array $snapshot = null): void
     {
@@ -1935,8 +1935,10 @@ class OrderProcessingService
 
         // 결제완료 전이 동반: 주문이 아직 미결제일 때만 결제완료 SSoT(completePayment)에 위임.
         // completePayment 가 payment 도 PAID 로 정합화하므로 입금 기록을 중복하지 않는다.
-        // order_status 가 이미 결제완료인 경우(불일치/추가입금)는 아래 입금 기록만 수행한다.
-        if ($markOrderComplete && $order->order_status !== OrderStatusEnum::PAYMENT_COMPLETE) {
+        // order_status 가 이미 결제 이후(결제완료·상품준비중·배송…)인 경우(불일치/추가입금)는
+        // 아래 입금 기록만 수행한다. 결제완료만 비교하면 상품준비중 주문이 completePayment 로
+        // 들어가 결제완료로 **되돌아가고** 마일리지·재고·알림이 다시 돈다.
+        if ($markOrderComplete && ! $this->isOrderPastPayment($order)) {
             return $this->completePayment($order, [], (int) round($amount));
         }
 
@@ -1948,10 +1950,42 @@ class OrderProcessingService
     }
 
     /**
-     * 결제 레코드(payment)만 입금완료(PAID)로 정합화합니다 — 주문 상태 전이 없이.
+     * 수동 입금확인이 어느 갈래로 처리될지 판정합니다 — confirmManualDeposit 과 같은 기준을 씁니다.
+     *
+     * 호출부(관리자 입금확인 응답 문장 등)가 사전 상태를 보고 갈래를 따로 추정하면, 이 서비스의 판정이
+     * 바뀔 때 응답이 실제 처리와 어긋난다. 처리 전에 이 메서드로 갈래를 받아 쓴다.
+     *
+     * @param  Order  $order  주문 (처리 전 상태)
+     * @param  bool  $markOrderComplete  결제완료 전이 요청 여부
+     * @return string `complete`(결제완료 전이) | `record`(입금 기록만, 결제대기 유지) | `status_kept`(이미 결제 이후 — 상태 유지, 결제금액 기록)
+     */
+    public function resolveManualDepositOutcome(Order $order, bool $markOrderComplete): string
+    {
+        if ($this->isOrderPastPayment($order)) {
+            return 'status_kept';
+        }
+
+        return $markOrderComplete ? 'complete' : 'record';
+    }
+
+    /**
+     * 주문 상태가 이미 결제 이후 단계인지 판정합니다 (취소 제외).
+     *
+     * @param  Order  $order  주문
+     * @return bool 결제완료·상품준비중·배송·구매확정 등이면 true
+     */
+    private function isOrderPastPayment(Order $order): bool
+    {
+        return $order->order_status?->isPastPayment() ?? false;
+    }
+
+    /**
+     * 입금을 기록합니다 — 결제 레코드(payment)를 입금완료(PAID)로 정합화하고, 주문 상태 전이는 하지 않습니다.
      *
      * 입금액이 결제예정금액과 정확히 일치하는지 검증한 뒤(불일치 시 422), 결제 레코드의
-     * payment_status·paid_at·입금액을 갱신한다. 마일리지/재고/알림 등 결제완료 부수효과는
+     * payment_status·paid_at·입금액을 갱신한다. 주문 상태가 이미 결제 이후 단계면 주문의 결제금액·
+     * 미수금·결제일도 함께 채운다. 두 갱신은 한 트랜잭션으로 묶는다 — 한쪽만 남으면 결제행은 PAID 인데
+     * 주문은 결제금액 0 인 상태로 굳고 [입금확인] 도 사라진다. 마일리지/재고/알림 등 결제완료 부수효과는
      * 발생시키지 않는다(그건 completePayment 의 책임). 입금자명은 호출부에서 기록한다.
      *
      * @param  Order  $order  주문
@@ -1972,17 +2006,41 @@ class OrderProcessingService
         // paid_amount_local 에 그대로 들어가고, paid_amount_base 는 base 진실값으로 동결한다.
         $this->validatePaymentAmount($order, (int) round($amount));
 
-        $payment->update([
-            'payment_status' => PaymentStatusEnum::PAID,
-            'paid_at' => Carbon::now(),
-            'paid_amount_local' => (int) round($amount),
-            'paid_amount_base' => (float) $order->total_due_amount,
-        ]);
+        // 기록 전 주문 스냅샷 — 입금 기록 훅이 넘겨 활동 로그가 바뀐 결제금액을 변경 내역으로 남긴다.
+        $beforeSnapshot = $order->toArray();
+
+        DB::transaction(function () use ($order, $payment, $amount) {
+            $payment->update([
+                'payment_status' => PaymentStatusEnum::PAID,
+                'paid_at' => Carbon::now(),
+                'paid_amount_local' => (int) round($amount),
+                'paid_amount_base' => (float) $order->total_due_amount,
+            ]);
+
+            // 주문 상태가 이미 결제 이후면 주문의 결제금액도 함께 채운다.
+            //
+            // 운영자가 상태를 먼저 올려 둔 뒤(결제대기 → 결제완료 → 상품준비중) 입금을 「기록만」 하면
+            // 결제행은 PAID 인데 주문은 결제금액 0·미수금 그대로 남는다. 상태 전이 쪽 정합화
+            // (OrderOptionService::transitionOrderStatus)는 이미 지나간 뒤이고, 결제행이 PAID 라
+            // [입금확인] 도 사라져 화면으로 되돌릴 방법이 없다 — 이후 환불 예정액이 전부 0원으로
+            // 계산된다(실측 2026-10-03). 결제 이전 상태의 주문은 종전대로 결제행만 기록한다.
+            if ($this->isOrderPastPayment($order) && (float) $order->total_paid_amount <= 0.0) {
+                $paidAmount = (float) $order->total_due_amount;
+                $currencySnapshot = $order->currency_snapshot ?? $this->buildCurrencySnapshot();
+
+                $order->update([
+                    'paid_at' => $order->paid_at ?? Carbon::now(),
+                    'total_paid_amount' => $paidAmount,
+                    'total_due_amount' => 0,
+                    'mc_total_paid_amount' => $this->buildMultiCurrencyAmount($paidAmount, $currencySnapshot),
+                ]);
+            }
+        });
 
         // 입금 기록 훅 — 관리자가 "결제완료 전이 없이 입금만 기록"한 경로.
         // 이 경로는 completePayment 를 타지 않으므로 after_payment_complete 가 발화하지 않는다.
         // 현금영수증 자동발급 리스너가 두 훅을 모두 구독해 입금 확인 경로 전체를 덮는다.
-        HookManager::doAction('sirsoft-ecommerce.order.after_deposit_recorded', $order->fresh(), $amount);
+        HookManager::doAction('sirsoft-ecommerce.order.after_deposit_recorded', $order->fresh(), $amount, $beforeSnapshot);
     }
 
     /**

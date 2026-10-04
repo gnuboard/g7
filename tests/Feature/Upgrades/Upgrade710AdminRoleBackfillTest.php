@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use App\Upgrades\Data\V7_1_0\Migrations\BackfillAdminRoleOnMenus;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
@@ -17,10 +18,9 @@ use Tests\TestCase;
  * 같은지, 다른 역할은 건드리지 않는지 잠근다.
  *
  * 시나리오 SSoT: tests/scenarios/role-menu-bulk-assignment.yaml
- *
- * @group core
- * @group upgrade
  */
+#[Group('core')]
+#[Group('upgrade')]
 class Upgrade710AdminRoleBackfillTest extends TestCase
 {
     use DatabaseTransactions;

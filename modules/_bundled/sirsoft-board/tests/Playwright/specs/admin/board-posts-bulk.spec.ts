@@ -79,4 +79,35 @@ test.describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
     await expect.poll(() => requests.filter((r) => r.includes('bulk-blind')).length).toBe(1);
     await expect(page.locator('table tbody')).toContainText(/블라인드|Blinded/i);
   });
+
+  // 건너뛴 글은 「건너뜀 N개」 개수만이 아니라 어느 글이 왜 빠졌는지 창으로 편다(실측 2026-10-03).
+  // @scenario bulk_action=blind, permission=manage, row_state=blinded
+  // @effects admin_post_bulk_skipped_items_carry_title_and_reason_label
+  test('이미 블라인드된 글을 다시 블라인드하면 건너뛴 게시글 창이 제목과 사유를 보인다', async ({ page, scrapSeed }) => {
+    const token = issueToken(
+      'sirsoft-board.boards.read',
+      `sirsoft-board.${scrapSeed.board_free_slug}.admin.posts.read`,
+      `sirsoft-board.${scrapSeed.board_free_slug}.admin.manage`,
+    );
+    await openPostList(page, token, scrapSeed.board_free_slug);
+
+    const runBlind = async (): Promise<void> => {
+      await page.locator('table tbody input[type="checkbox"]').first().click();
+      await page.getByTestId('admin-post-bulk-blind').click();
+      await expect(page.getByTestId('admin-post-bulk-modal')).toBeVisible();
+      await page.getByTestId('admin-post-bulk-confirm').click();
+    };
+
+    // 첫 번째로 블라인드해 둔 뒤, 같은 행을 다시 블라인드한다 — 두 번째는 건너뛴다.
+    await runBlind();
+    await expect(page.locator('table tbody tr').first()).toContainText(/블라인드|Blinded/i);
+    await runBlind();
+
+    const skipped = page.getByTestId('admin-post-bulk-skipped');
+    await expect(skipped).toBeVisible();
+    await expect(page.getByTestId('admin-post-bulk-skipped-row')).toHaveCount(1);
+    await expect(page.getByTestId('admin-post-bulk-skipped-row').first()).toContainText(/이미 블라인드된 글|Already blinded/);
+    // 제목 자리에 식 원문(`{{…}}`)이 남지 않는다.
+    await expect(skipped).not.toContainText('{{');
+  });
 });

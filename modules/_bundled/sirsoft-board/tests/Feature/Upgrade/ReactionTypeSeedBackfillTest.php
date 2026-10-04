@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 1.0.3 반응 유형(추천/비추천) 시드 백필 업그레이드 스텝 테스트
@@ -16,10 +17,9 @@ use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
  * - 반응 유형이 비어 있던 사이트(install 시더 미실행)에 추천·비추천이 채워진다
  * - 이미 유형이 있으면 사용자 수정(user_overrides·is_active)을 보존한다
  * - 재실행해도 중복 생성되지 않는다 (멱등)
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class ReactionTypeSeedBackfillTest extends BoardTestCase
 {
     /**

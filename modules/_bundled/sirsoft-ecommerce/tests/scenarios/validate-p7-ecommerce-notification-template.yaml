@@ -5,13 +5,14 @@ description: |
   다중 선택 영어 문구)을 쇼핑몰 사본에서 닫는다. 표현식을 엔진에 그대로 넣어 평가한다.
 
 axes:
-  case: [specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple]
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple]
 
 effects:
   - recipient_rule_type_switch_clears_previous_value
   - recipient_rule_related_user_seeds_first_declared_relation
   - recipient_rule_exclude_trigger_user_only_carries_between_group_types
   - recipient_relation_select_shows_placeholder
+  - recipient_relation_select_shows_relation_names
   - recipient_relation_outside_declaration_warns
   - recipient_multi_select_count_label_is_translated
 

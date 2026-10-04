@@ -44,7 +44,7 @@ function buttonByTestId(testId: string): any {
 }
 
 describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
-    // @scenario surface=admin_post_list, permission=manage
+    // @scenario permission=manage
     // @effects admin_post_bulk_selectable_requires_manage
     it('체크 칸은 manage 능력이 있을 때만 나온다', () => {
         const grid = flattenNodes(layout).find((n: any) => n?.name === 'DataGrid');
@@ -52,7 +52,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         expect(grid.props.selectable).toBe('{{posts?.data?.abilities?.can_manage === true}}');
     });
 
-    // @scenario surface=admin_post_list, permission=manage
+    // @scenario permission=manage
     // @effects admin_post_bulk_selection_lifts_to_global
     it('선택은 전역으로 올린다 — 일괄 바가 표 밖에 있다', () => {
         const grid = flattenNodes(layout).find((n: any) => n?.name === 'DataGrid');
@@ -61,7 +61,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         expect(action.params.selectedIds_board_posts).toMatch(/\$args\[0\]/);
     });
 
-    // @scenario surface=admin_post_list, bulk_action=delete
+    // @scenario bulk_action=delete
     // @effects admin_post_bulk_buttons_disabled_without_manage_or_selection
     it('세 버튼 모두 manage 능력과 선택이 둘 다 있어야 풀린다', () => {
         for (const testId of ['admin-post-bulk-delete', 'admin-post-bulk-blind', 'admin-post-bulk-restore']) {
@@ -72,7 +72,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         }
     });
 
-    // @scenario surface=admin_post_list, bulk_action=blind
+    // @scenario bulk_action=blind
     // @effects admin_post_bulk_buttons_share_one_modal
     it('세 버튼이 같은 확인 창을 열고 갈래만 달리 심는다', () => {
         const expected: Record<string, string> = {
@@ -89,7 +89,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         }
     });
 
-    // @scenario surface=admin_post_list, bulk_action=restore
+    // @scenario bulk_action=restore
     // @effects admin_post_bulk_clears_previous_reason
     it('갈래를 고를 때 직전 사유를 비운다 — 다른 갈래의 문장이 이력에 실리면 안 된다', () => {
         for (const testId of ['admin-post-bulk-delete', 'admin-post-bulk-blind', 'admin-post-bulk-restore']) {
@@ -100,7 +100,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         }
     });
 
-    // @scenario surface=admin_post_list, bulk_action=delete
+    // @scenario bulk_action=delete
     // @effects admin_post_bulk_branches_have_distinct_method_and_path
     it('갈래마다 메서드와 경로가 다르다', () => {
         expect(branches.delete.params.method).toBe('DELETE');
@@ -113,7 +113,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         expect(branches.restore.target).toMatch(/\/posts\/bulk-restore$/);
     });
 
-    // @scenario surface=admin_post_list, bulk_action=blind
+    // @scenario bulk_action=blind
     // @effects admin_post_bulk_sends_ids_and_reason
     it('세 갈래 모두 선택 목록과 사유를 함께 보낸다', () => {
         for (const branch of ['delete', 'blind', 'restore']) {
@@ -122,7 +122,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         }
     });
 
-    // @scenario surface=admin_post_list, bulk_action=delete
+    // @scenario bulk_action=delete
     // @effects admin_post_bulk_clears_selection_on_success
     it('성공하면 선택과 사유를 비우고 목록을 다시 부른다', () => {
         for (const branch of ['delete', 'blind', 'restore']) {
@@ -135,7 +135,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         }
     });
 
-    // @scenario surface=admin_post_list, bulk_action=delete
+    // @scenario bulk_action=delete
     // @effects admin_post_bulk_failure_opens_error_modal
     it('실패는 토스트가 아니라 오류 창으로 세운다', () => {
         for (const branch of ['delete', 'blind', 'restore']) {
@@ -147,7 +147,7 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         expect(modals.bulk_post_error_modal).toBeTruthy();
     });
 
-    // @scenario surface=admin_post_list, bulk_action=delete
+    // @scenario bulk_action=delete
     // @effects admin_post_bulk_confirm_guards_double_submit
     it('확인 버튼은 처리 중 두 번 눌리지 않는다', () => {
         const confirm = buttonByTestId('admin-post-bulk-confirm');
@@ -155,5 +155,53 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         expect(confirm.props.disabled).toMatch(/bulkPostLoading/);
         // 첫 액션이 진행 표시를 켜 준다 — 여러 건이라 응답이 늦다.
         expect(actionsOf(confirm)[0].params.bulkPostLoading).toBe(true);
+    });
+});
+
+describe('관리자 게시글 일괄 처리 — 건너뛴 글 결과 창', () => {
+    // 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 창으로 편다 — 토스트의 「건너뜀 N개」 개수만으로는
+    // 다시 고를 수 없다(브라우저 실측 2026-10-03).
+    // @scenario bulk_action=delete
+    // @effects admin_post_bulk_skipped_items_carry_title_and_reason_label
+    it('세 갈래 모두 응답의 skipped 를 담고, 하나라도 있으면 결과 창을 연다', () => {
+        for (const action of ['delete', 'blind', 'restore']) {
+            const actions = flattenActions(branches[action]);
+            const store = actions.find((a: any) => a.handler === 'setState' && 'bulkPostSkipped' in (a.params ?? {}));
+            expect(store?.params.bulkPostSkipped).toContain('response?.data?.skipped');
+
+            const open = actions.find((a: any) => a.handler === 'openModal' && a.target === 'bulk_post_skipped_modal');
+            expect(open).toBeTruthy();
+            expect(String(open.if)).toContain('skipped');
+        }
+    });
+
+    // @scenario bulk_action=delete
+    // @effects admin_post_bulk_skipped_items_carry_title_and_reason_label
+    it('결과 창은 글마다 번호·제목과 서버가 번역한 사유를 낸다', () => {
+        const skipped = modals.bulk_post_skipped_modal;
+        expect(skipped).toBeTruthy();
+        const json = JSON.stringify(skipped);
+        expect(json.includes('_global.bulkPostSkipped')).toBe(true);
+        // 제목은 회원이 쓴 글이다 — 안에 `$t:` 가 있어도 번역하지 않도록 raw 로 그린다
+        expect(json.includes("{{raw:skippedPost.title ?? ''}}")).toBe(true);
+        // 빈 폴백이 빠진 식(`?? }}`)은 화면에 원문 그대로 나온다
+        expect(json.includes("?? }}")).toBe(false);
+        expect(json.includes('skippedPost.reason_label')).toBe(true);
+    });
+
+    // 편집기는 창 상태가 없으면 「0개 게시글」 빈 목록으로 연다 — 형제 창(일괄 처리, 오류)처럼 창이 읽는 값을 담는다.
+    // @scenario bulk_action=delete
+    // @effects admin_post_bulk_skipped_items_carry_title_and_reason_label
+    it('편집기 창 상태가 결과 창이 읽는 건너뛴 글 목록을 응답과 같은 모양으로 담는다', () => {
+        const spec = require('../../../../editor-spec.json');
+        const group = (spec.states?.groups ?? []).find(
+            (g: any) => g.scope?.kind === 'modal' && g.scope?.match === 'bulk_post_skipped_modal',
+        );
+        const seeded = group?.items?.find((i: any) => i.default)?.initialState?.global?.bulkPostSkipped;
+        expect(Array.isArray(seeded)).toBe(true);
+        expect(seeded.length).toBeGreaterThan(0);
+        for (const row of seeded) {
+            expect(Object.keys(row).sort()).toEqual(['id', 'reason', 'reason_label', 'title']);
+        }
     });
 });

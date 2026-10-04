@@ -81,6 +81,25 @@ effects:
   - approval_transition_freezes_content_into_approved_content
   - rejection_transition_stores_comments_detail
   - manual_sync_updates_single_row
+  # 휴면 해제 (release 후 카카오측 실제 상태를 다시 읽어 반영)
+  - dormant_release_calls_kapi_and_restores_status
+  - release_outside_dormant_rejected_422
+  # 관리 API 계약 (목록, 맵, 상세, 생성, 발송 설정, 권한, 404)
+  - list_requires_view_permission
+  - list_joins_definition_label_with_pagination
+  - list_supports_status_filter_and_search
+  - list_search_matches_localized_definition_name
+  - unknown_status_filter_rejected_422
+  - map_returns_summary_keyed_by_notification_type
+  - detail_returns_content_with_rejection_reasons
+  - create_requires_manage_permission
+  - create_starts_as_draft
+  - unknown_definition_rejected_422
+  - delivery_upsert_creates_draft_row_when_missing
+  - missing_row_returns_404
+  - view_permission_cannot_reach_mutation_routes
+  - image_upload_requires_manage_permission
+  - validation_messages_use_korean_field_labels
   # 화면 (S5 — 제품 결정 2026-08-23: 편집 모달 통합)
   - bizppurio_tab_replaces_sms_and_alimtalk_tabs
   - tab_visible_when_any_of_tab_channels_active

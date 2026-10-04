@@ -1519,6 +1519,7 @@
     "policy_version_snapshot": "정책 버전 스냅샷",
     "rows_selected": "행 선택됨 (일괄 작업)",
     "delete_confirm": "삭제 확인",
+    "withdraw_confirm": "탈퇴 확인 창",
     "bulk_delete_confirm": "일괄 삭제 확인",
     "editor_preview_open": "편집기 미리보기 펼침",
     "marketing_channel_edit": "마케팅 채널 수정",

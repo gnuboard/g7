@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 첨부파일 관리 API 테스트
@@ -18,11 +19,10 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 권한 부재 시 403, 미인증 시 401 응답
  * - 삭제 후 attachments_count 감소 (PostCountSyncListener 동작)
  * - 존재하지 않는 파일 삭제/다운로드 → 404
- *
- * @group board
- * @group admin
- * @group attachment
  */
+#[Group('board')]
+#[Group('admin')]
+#[Group('attachment')]
 class AdminAttachmentManagementTest extends BoardTestCase
 {
     private User $adminWithUpload;

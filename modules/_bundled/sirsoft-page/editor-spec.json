@@ -717,8 +717,14 @@
                 "previewVersion": {
                   "id": 2,
                   "version": 2,
-                  "title": "회사 소개 (2판)",
-                  "content": "<h2>회사 소개</h2><p>2판에서는 연혁과 핵심 가치를 보강했습니다.</p>",
+                  "title": {
+                    "ko": "회사 소개 (2판)",
+                    "en": "About Us (v2)"
+                  },
+                  "content": {
+                    "ko": "<h2>회사 소개</h2><p>2판에서는 연혁과 핵심 가치를 보강했습니다.</p>",
+                    "en": "<h2>About Us</h2><p>Version 2 adds our history and core values.</p>"
+                  },
                   "content_mode": "html",
                   "seo_meta": {
                     "title": "회사 소개 | 시르소프트",

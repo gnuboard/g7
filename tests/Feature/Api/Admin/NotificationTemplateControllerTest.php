@@ -264,6 +264,63 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
+     * 정의 응답이 관계마다 운영자가 읽을 이름을 싣습니다 — 선택지와 목록이 `post_author` 같은 키를 그대로 보이지 않게.
+     *
+     * 확장 알림은 그 확장의 `messages.notification_relations.{관계}`, 코어 알림은 `notification.relations.{관계}`
+     * 에서 이름을 찾고, 없으면 키를 그대로 둡니다(선언은 있는데 이름이 없는 관계도 고를 수는 있어야 한다).
+     *
+     * @scenario editing_axis=related_user_relation, layer=resource_payload
+     *
+     * @effects notification_definition_resource_carries_relation_labels
+     *
+     * @return void 반환값 없음
+     */
+    public function test_definition_resource_carries_relation_labels(): void
+    {
+        app('translator')->addLines(['messages.notification_relations.post_author' => '게시글 작성자'], 'ko', 'sirsoft-board');
+        $this->definition->update([
+            'extension_type' => 'module',
+            'extension_identifier' => 'sirsoft-board',
+            'relations' => ['post_author', 'undeclared_name'],
+        ]);
+
+        $this->authRequest()
+            ->withHeaders(['Accept-Language' => 'ko'])
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.relation_labels.post_author', '게시글 작성자')
+            ->assertJsonPath('data.relation_labels.undeclared_name', 'undeclared_name');
+    }
+
+    /**
+     * 코어 알림의 관계 이름은 코어 언어 파일 `notification.relations.{관계}` 에서 찾습니다.
+     *
+     * 지금 코어 정의는 관계를 두지 않아 그 그룹이 비어 있지만, 코어 알림이 관계를 선언하는 순간 쓰일 분기다 —
+     * 확장 분기만 시험하면 이 분기가 엉뚱한 네임스페이스를 보더라도 드러나지 않는다.
+     *
+     * @scenario editing_axis=related_user_relation, layer=resource_payload
+     *
+     * @effects notification_definition_resource_carries_relation_labels
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_definition_relation_labels_come_from_core_lang_group(): void
+    {
+        app('translator')->addLines(['notification.relations.target_user' => '대상 회원'], 'ko');
+        $this->definition->update([
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'relations' => ['target_user'],
+        ]);
+
+        $this->authRequest()
+            ->withHeaders(['Accept-Language' => 'ko'])
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.relation_labels.target_user', '대상 회원');
+    }
+
+    /**
      * 템플릿을 편집하면 Template.is_default 와 Definition.is_default 가 모두 false 로 전환됩니다.
      *
      * 리셋 버튼 노출 근거다.

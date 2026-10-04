@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Extension\HookManager;
 use App\Services\MenuService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
@@ -15,9 +16,8 @@ use Tests\TestCase;
  * 사라졌다(화면은 「모든 역할」 로 표기). 수정 경로가 관리자 역할을 항상 남기는지 잠근다.
  *
  * 시나리오 SSoT: tests/scenarios/role-menu-bulk-assignment.yaml
- *
- * @group core
  */
+#[Group('core')]
 class MenuServiceRoleSyncTest extends TestCase
 {
     use DatabaseTransactions;

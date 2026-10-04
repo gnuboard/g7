@@ -92,6 +92,11 @@ effects:
   - gdpr_allowlist_contains_key
   # 상세·설치·업데이트·삭제 확인 창 전량(모집단은 조각 디렉터리에서 파생)에 아이콘이 붙는다.
   - modal_headers_show_icon
+  # 상세 창 아이콘 대체 글·언어팩 배지 낭독명·업데이트 창 호환 경고·미리보기 「아이콘 포함」 문구가 키 원문으로
+  # 남지 않는다 — `$t:defer:` 는 반복 서브트리 안에서만 해소되므로 반복 밖에는 두지 않는다.
+  - extension_texts_resolve_outside_iteration
+  # 상세 창은 분류 이름 아래 개별 권한을 그린다(응답 모양은 코어 매니페스트 plugin-info-permissions-shape.yaml).
+  - plugin_detail_permissions_render_by_category
 
 sub_flows:
   - id: manifest_preview_icon
@@ -102,6 +107,8 @@ sub_flows:
     effects:
       - preview_shows_icon_presence
       - preview_shows_icon_warning
+      # 새 파일을 고르면 직전 파일의 판정을 비운다 — 검사 전 새 파일 이름 아래 앞 결과가 남지 않게
+      - preview_clears_previous_result_on_file_change
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ExtensionCardGrid.test.tsx
@@ -109,3 +116,5 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-view-mode-gdpr-allowlist.test.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-extension-view-mode.spec.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_template_list.i18n_keys.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-text-resolution.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-plugin-detail-permissions.test.tsx

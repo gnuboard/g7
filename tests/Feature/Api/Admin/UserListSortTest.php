@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -17,11 +18,10 @@ use Tests\TestCase;
  * 정렬돼야 한다.
  *
  * 트랜잭션 격리 — 기존 행과 섞이지 않게 이메일 표식 검색으로 이 테스트의 회원만 본다.
- *
- * @group core
- * @group admin
- * @group user
  */
+#[Group('core')]
+#[Group('admin')]
+#[Group('user')]
 class UserListSortTest extends TestCase
 {
     use DatabaseTransactions;

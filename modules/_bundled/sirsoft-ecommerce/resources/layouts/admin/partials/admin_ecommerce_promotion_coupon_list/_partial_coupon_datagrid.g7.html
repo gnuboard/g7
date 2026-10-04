@@ -1,5 +1,6 @@
-<!-- 쿠폰 목록 — 결과 표. 넓은 화면은 표, 좁은 화면은 카드로 **같은 목록을 두 벌** 그린다 —
-  행 액션 갈래가 양쪽에 각각 있으므로 한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.
+<!-- 쿠폰 목록 — 결과 표. 좁은 화면(768px 미만)에서는 DataGrid 가 스스로 카드 보기로 바꿔 그리므로
+  목록을 따로 두 벌 두지 않는다. 예전에 있던 별도 카드 블록은 아무도 채우지 않는 `_global.isPortable`
+  에 묶여 한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3).
   
   정렬·페이지·페이지당 개수는 전부 URL query 로 나간다(재진입·뒤로가기·주소 공유에서 같은
   화면이 서야 한다). 정렬 select 의 값이 `created_at_desc` 처럼 한 덩어리인데 서버로는
@@ -68,7 +69,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" data-ref="pc_data_table" data-if="{{!_global.isPortable}}" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+    <data-grid data-type="composite" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
       <blur-until-loaded sources="coupons"/>
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
@@ -221,107 +222,5 @@
         </switch>
       </on>
     </data-grid>
-    <div data-ref="mobile_card_view" data-if="{{_global.isPortable}}">
-      <div>
-        <!-- 이름 없는 노드는 레지스트리 조회가 undefined 라 통째로 렌더되지 않는다 — 감싸는 DOM 없이 반복만 하려면 Fragment 를 쓴다. 반복 변수도 item_var 가 정본이다(엔진은 item 을 읽지 않는다). -->
-        <fragment data-each="coupon, couponIdx in coupons?.data?.data || []">
-          <card data-type="composite" class="{{(_local.selectedItems || []).includes(coupon.id) ? 'ring-2 ring-blue-500' : ''}}">
-            <div class="flex-start justify-between">
-              <div class="flex-center gap-3">
-                <input type="checkbox" class="checkbox" checked="{{(_local.selectedItems || []).includes(coupon.id)}}">
-                  <on type="change">
-                    <!-- 좁은 화면 카드 — 체크박스. 넓은 화면 표의 선택과 **같은 배열**을 나눠 쓰므로 화면 폭이 바뀌어도 선택이 유지된다. -->
-                    <set-state target="_local" selectedItems="{{(_local.selectedItems || []).includes(coupon.id) ? (_local.selectedItems || []).filter(id => id !== coupon.id) : [...(_local.selectedItems || []), coupon.id]}}"/>
-                  </on>
-                </input>
-                <div>
-                  <span class="text-primary font-medium">{{coupon.localized_name}}</span>
-                  <span class="text-label-subtle ml-2">{{coupon.created_at}}</span>
-                </div>
-              </div>
-              <action-menu data-type="composite" triggerLabel="" triggerIconName="ellipsis-vertical" position="right">
-                <prop name="items">
-                  <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="edit" disabled="{{!coupon.abilities?.can_update}}"/>
-                  <item id="issue_history" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" iconName="list"/>
-                  <item id="direct_issue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue" iconName="gift" disabled="{{!coupon.abilities?.can_update}}"/>
-                  <item :divider="true"/>
-                  <item id="delete" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete" iconName="trash" variant="danger" disabled="{{!coupon.abilities?.can_delete}}"/>
-                </prop>
-                <on event="onItemClick">
-                  <!-- 행 액션(좁은 화면 카드). 위 표 판본과 같은 갈래를 반복 변수 이름만 바꿔 적은 것이다 — 한쪽만 고치면 화면 폭에 따라 동작이 갈린다. -->
-                  <switch>
-                    <case when="edit">
-                      <navigate path="/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit" :mergeQuery="true">
-                        <query/>
-                      </navigate>
-                    </case>
-                    <case when="issue_history">
-                      <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
-                        <field name="issueHistoryCoupon">
-                          <field name="id" value="{{coupon.id}}"/>
-                          <field name="name" value="{{coupon.localized_name}}"/>
-                        </field>
-                      </set-state>
-                      <refetch-data-source dataSourceId="couponIssues"/>
-                      <open-modal target="modal_issue_history"/>
-                    </case>
-                    <case when="direct_issue">
-                      <set-state target="global" :directIssueSelectedUsers="[]" directIssueSearchKeyword="" :directIssueSearchResults="[]" :directIssueSubmitting="false" :directIssueSearchResultsKeyword="null">
-                        <field name="directIssueCoupon">
-                          <field name="id" value="{{coupon.id}}"/>
-                          <field name="name" value="{{coupon.localized_name}}"/>
-                        </field>
-                      </set-state>
-                      <open-modal target="modal_direct_issue"/>
-                    </case>
-                    <case when="delete">
-                      <set-state target="global">
-                        <field name="deleteTarget">
-                          <field name="id" value="{{coupon.id}}"/>
-                          <field name="name" value="{{coupon.localized_name}}"/>
-                        </field>
-                      </set-state>
-                      <open-modal target="modal_delete_confirm"/>
-                    </case>
-                  </switch>
-                </on>
-              </action-menu>
-            </div>
-            <hr class="my-3 border-gray-200 dark:border-gray-700"/>
-            <div class="space-y-2 text-sm">
-              <div class="text-primary font-medium">{{coupon.benefit_formatted}}</div>
-              <div class="flex-center gap-2">
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type_label:</span>
-                <badge data-type="composite" color="{{coupon.target_type_badge_color}}" text="{{coupon.target_type_label}}"/>
-              </div>
-              <div class="flex-center gap-2">
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_label:</span>
-                <badge data-type="composite" color="{{coupon.issue_method_badge_color}}" text="{{coupon.issue_method_label}}"/>
-                <badge data-type="composite" color="{{coupon.issue_condition_badge_color}}" text="{{coupon.issue_condition_label}}"/>
-              </div>
-              <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.validity_period_label: </span>
-                <span>{{coupon.valid_period_formatted}}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period_label: </span>
-                <span>{{coupon.issue_period_formatted}}</span>
-              </div>
-              <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count_label: </span>
-                <span>{{coupon.issue_count_formatted}}</span>
-              </div>
-              <div class="flex-between">
-                <div class="flex-center gap-2">
-                  <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status_label:</span>
-                  <badge data-type="composite" color="{{coupon.issue_status_badge_color}}" text="{{coupon.issue_status_label}}"/>
-                </div>
-                <span class="text-gray-500 dark:text-gray-400">{{coupon.created_by_name ?? '-'}}</span>
-              </div>
-            </div>
-          </card>
-        </fragment>
-      </div>
-    </div>
   </div>
 </partial>

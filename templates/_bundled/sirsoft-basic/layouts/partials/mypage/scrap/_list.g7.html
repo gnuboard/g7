@@ -33,7 +33,7 @@
           <!-- 엔터 검색 — 검색 버튼과 같은 순서(잠금 → 1쪽·선택 비움 → 재조회 → 잠금 해제)를 탄다 -->
           <sequence>
             <!-- 엔터도 검색 버튼과 같은 순서를 탄다 — 입력칸에서 엔터를 쳤는데 아무 일도 없으면 사용자는 검색이 없다고 읽는다 -->
-            <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]"/>
+            <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]" scrapSearchApplied="{{_local.scrapSearch ?? ''}}"/>
             <refetch-data-source dataSourceId="scrap"/>
             <set-state target="local" :scrapSearching="false"/>
           </sequence>
@@ -43,7 +43,7 @@
       <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
         <on type="click">
           <!-- 검색 결과는 다른 행 집합이다 — 이전 선택을 들고 가면 화면에 없는 행이 선택된 채로 일괄 해제에 실린다 -->
-          <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]"/>
+          <set-state target="local" :scrapSearching="true" :scrapPage="1" :scrapSelectedIds="[]" scrapSearchApplied="{{_local.scrapSearch ?? ''}}"/>
           <refetch-data-source dataSourceId="scrap"/>
           <set-state target="local" :scrapSearching="false"/>
         </on>
@@ -56,7 +56,7 @@
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{(_local.scrapSearching || _local.scrapResetting) ?? false}}">
         <on type="click">
           <!-- 검색어·검색 대상·선택을 한꺼번에 처음 상태로 되돌린다 -->
-          <set-state target="local" :scrapResetting="true" scrapSearch="" scrapSearchField="title_content" :scrapPage="1" :scrapSelectedIds="[]"/>
+          <set-state target="local" :scrapResetting="true" scrapSearch="" scrapSearchApplied="" scrapSearchField="title_content" :scrapPage="1" :scrapSelectedIds="[]"/>
           <refetch-data-source dataSourceId="scrap"/>
           <set-state target="local" :scrapResetting="false"/>
         </on>
@@ -319,7 +319,9 @@
       <div data-if="{{!scrap.data.data || scrap.data.data.length === 0}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
         <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
         <icon name="bookmark" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:mypage.scrap.empty</p>
+        <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
+        <p data-if="{{!(!!_local.scrapSearchApplied)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.scrap.empty</p>
+        <p data-if="{{!!_local.scrapSearchApplied}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
       </div>
       <!-- 페이지네이션 — 마이페이지 문의내역 탭과 동일하게 항상 노출 (1페이지뿐이어도 표시). 총 건수가 상한에 걸리면 last_page 가 null 로 온다 — 그때는 has_more_pages 로 다음 이동을 끝까지 열어 둔다 -->
       <pagination data-type="composite" currentPage="{{scrap.data.pagination.current_page ?? 1}}" totalPages="{{scrap.data.pagination.last_page ?? null}}" hasMorePages="{{scrap.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">

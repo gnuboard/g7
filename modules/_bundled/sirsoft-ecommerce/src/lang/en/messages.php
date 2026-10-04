@@ -213,6 +213,7 @@ return [
         'guest_password_reset_not_guest' => 'Only guest orders can have their lookup password reset.',
         'deposit_confirmed' => 'Deposit confirmed and the order has been marked as paid.',
         'deposit_recorded' => 'The deposit has been recorded. The order remains awaiting payment.',
+        'deposit_recorded_status_kept' => 'The deposit and the paid amount have been recorded. The order is already past payment, so its status is left unchanged.',
         'deposit_confirm_failed' => 'Failed to confirm the deposit.',
         'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
         'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
@@ -1374,5 +1375,9 @@ return [
     // Dashboard
     'dashboard' => [
         'fetch_success' => 'Dashboard data loaded.',
+    ],
+    // Relation names for the "related user" recipient rule — shown on the notification settings screen instead of keys.
+    'notification_relations' => [
+        'author' => 'Inquiry author',
     ],
 ];

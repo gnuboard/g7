@@ -9,6 +9,7 @@ use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\ReportType;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Report 모델 스코프 단위 테스트
@@ -20,18 +21,28 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - scopeByBoard: 특정 게시판 신고만 조회
  * - scopeByDateRange: 날짜 범위 필터링
  * - 복합 스코프: 여러 조건 체이닝
- *
- * @group board
- * @group unit
- * @group model
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('model')]
 class ReportModelScopeTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'report-scope-test';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -42,6 +53,12 @@ class ReportModelScopeTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 시험용 게시글을 만들고 그 게시글에 대한 신고를 만듭니다.
+     *
+     * @param  array<string, mixed>  $attributes  덮어쓸 속성
+     * @return Report 만든 신고
+     */
     private function createReport(array $attributes = []): Report
     {
         $postId = $this->createTestPost();
@@ -66,6 +83,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByStatus: Enum 인스턴스로 필터링
+     *
+     * @scenario operation=query_reports, condition=by_status
+     *
+     * @effects scope_by_status_with_enum
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_status_with_enum(): void
     {
@@ -80,6 +103,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByStatus: 문자열로 필터링
+     *
+     * @scenario operation=query_reports, condition=by_status
+     *
+     * @effects scope_by_status_with_string
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_status_with_string(): void
     {
@@ -95,6 +124,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByStatus: 해당 상태 없으면 빈 컬렉션
+     *
+     * @scenario operation=query_reports, condition=by_status
+     *
+     * @effects scope_by_status_returns_empty_when_no_match
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_status_returns_empty_when_no_match(): void
     {
@@ -113,6 +148,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByType: Post 타입만 조회
+     *
+     * @scenario operation=query_reports, condition=by_type
+     *
+     * @effects scope_by_type_post
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_type_post(): void
     {
@@ -140,6 +181,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByType: 문자열로도 필터링 가능
+     *
+     * @scenario operation=query_reports, condition=by_type
+     *
+     * @effects scope_by_type_with_string
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_type_with_string(): void
     {
@@ -159,6 +206,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByBoard: 특정 게시판 신고만 반환
+     *
+     * @scenario operation=query_reports, condition=by_board
+     *
+     * @effects scope_by_board_filters_correctly
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_board_filters_correctly(): void
     {
@@ -172,6 +225,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByBoard: 존재하지 않는 board_id → 빈 컬렉션
+     *
+     * @scenario operation=query_reports, condition=by_board
+     *
+     * @effects scope_by_board_returns_empty_for_nonexistent_board
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_board_returns_empty_for_nonexistent_board(): void
     {
@@ -185,6 +244,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByDateRange: 범위 내 신고만 반환
+     *
+     * @scenario operation=query_reports, condition=by_date_range
+     *
+     * @effects scope_by_date_range_includes_records_in_range
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_date_range_includes_records_in_range(): void
     {
@@ -202,6 +267,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * scopeByDateRange: 범위 밖 신고는 제외
+     *
+     * @scenario operation=query_reports, condition=by_date_range
+     *
+     * @effects scope_by_date_range_excludes_records_outside_range
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_by_date_range_excludes_records_outside_range(): void
     {
@@ -223,6 +294,12 @@ class ReportModelScopeTest extends BoardTestCase
 
     /**
      * 복합 스코프: byBoard + byStatus 체이닝
+     *
+     * @scenario operation=query_reports, condition=chained_filters
+     *
+     * @effects chaining_by_board_and_by_status
+     *
+     * @return void 반환값 없음
      */
     public function test_chaining_by_board_and_by_status(): void
     {

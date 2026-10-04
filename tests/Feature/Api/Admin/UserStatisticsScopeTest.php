@@ -8,23 +8,23 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
  * 회원 목록 통계의 권한 스코프 회귀 테스트 (#705 D11)
  *
  * 목록 응답은 `data`(행)와 `statistics`(숫자)를 함께 싣는다. self 스코프 운영자에게 목록이
- * 본인 1건인데 통계가 전체 회원 수면, 숨긴 것을 숫자로 흘린다. 스코프는 KVE-2026-2368 로 이미
+ * 본인 1건인데 통계가 전체 회원 수면, 숨긴 것을 숫자로 흘린다. 스코프는 앞선 보안 수정으로 이미
  * 저장소 한 자리(`scopedUserQuery()`)에 모였으므로, 이 테스트는 **목록 건수와 통계가 같은 범위**
  * 라는 계약을 필터 개편 이후에도 고정한다.
  *
  * 트랜잭션 격리 — 코어 역할·권한은 시더로 심는다.
- *
- * @group core
- * @group admin
- * @group user
- * @group security
  */
+#[Group('core')]
+#[Group('admin')]
+#[Group('user')]
+#[Group('security')]
 class UserStatisticsScopeTest extends TestCase
 {
     use DatabaseTransactions;

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\LoggerInterface;
 use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
@@ -24,11 +25,10 @@ use Tests\TestCase;
  * 변경과 같은 두 축(등급·범위)과 역할 상한·자기 잠금을 서비스가 지키는지 찌른다.
  *
  * 시나리오 SSoT: tests/scenarios/user-bulk-role-assignment.yaml
- *
- * @group core
- * @group admin
- * @group user
  */
+#[Group('core')]
+#[Group('admin')]
+#[Group('user')]
 class UserBulkRolesTest extends TestCase
 {
     use DatabaseTransactions;

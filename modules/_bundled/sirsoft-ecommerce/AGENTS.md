@@ -201,7 +201,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 587개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 213개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 214개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 44개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |

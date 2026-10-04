@@ -360,6 +360,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | comment_count | integer | `0` | comment 개수 (집계) |
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
+| reaction_total | integer | `5` | 게시판이 켠 활성 반응 유형의 개수 합계 (1.2.0+). 관리자 목록의 「반응」 열이 읽는다. 게시판이 반응을 껐거나 활성 유형이 없으면 **키 자체가 실리지 않는다** |
 | has_attachment | boolean | `false` | attachment 여부 |
 | thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 이미지 첨부가 없으면 본문 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.1.0+). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시·본문 이미지 URL 노출 차단 — 필드 자체는 유지) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
@@ -2359,7 +2360,14 @@ HTTP/1.1 200
     "data": {
         "affected_count": 2,
         "affected_ids": [12, 15],
-        "skipped": [{ "id": 19, "reason": "has_replies" }]
+        "skipped": [
+            {
+                "id": 19,
+                "reason": "has_replies",
+                "reason_label": "답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)",
+                "title": "답글이 달린 공지"
+            }
+        ]
     }
 }
 ```
@@ -2368,7 +2376,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | affected_count | integer | 실제로 처리된 건수 |
 | affected_ids | array | 처리된 게시글 ID 목록 |
-| skipped | array | 건너뛴 항목 `{id, reason}` 목록 |
+| skipped | array | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID)·`reason`(사유 코드, 아래 표)·`reason_label`(요청 언어로 번역된 사유 — 1.2.0+)·`title`(글 제목, 조회 전에 실패했으면 `null` — 1.2.0+). 관리자 목록 화면은 건너뛴 글이 있으면 이 두 값으로 「건너뛴 게시글」 창을 연다 |
 
 메시지 키는 `sirsoft-board::messages.posts_bulk.{delete,blind,restore}_success` 이며 `:count`·`:skipped`
 를 치환합니다 (`src/lang/{ko,en}/messages.php:311-316`).
@@ -2383,7 +2391,10 @@ HTTP/1.1 200
 | `has_replies` | delete | 게시판의 답글 삭제 정책이 `block` 인데 살아 있는 답글이 있는 글 — 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않습니다 |
 | `already_blinded` | blind | 이미 블라인드된 글 |
 | `already_published` | restore | 이미 정상 게시 중인 글 |
+| `unknown_action` | 공통 | 정의되지 않은 처리 종류 (라우트가 세 갈래만 열어 두어 화면에서는 나오지 않음) |
 | `error` | 공통 | 항목 처리 중 예외. **한 건의 실패가 나머지를 막지 않습니다** — 사유만 남기고 계속합니다 |
+
+사유 문구는 `sirsoft-board::messages.posts_bulk.skip_reasons.{reason}` 에서 읽습니다.
 
 ### 훅과 본인인증(IDV)
 

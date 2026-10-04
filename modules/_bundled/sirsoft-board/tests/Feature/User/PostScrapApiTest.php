@@ -8,6 +8,7 @@ use App\Enums\UserStatus;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 사용자 게시글 스크랩 API 테스트
@@ -29,18 +30,28 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * @scenario action=toggle_add
  *
  * @effects scrap_record_created_on_add, scrap_count_incremented_on_add, guest_toggle_rejected_401, scrap_disabled_board_rejected_403, cross_board_post_rejected_404, activity_log_scrap_add_written
- *
- * @group board
- * @group user
- * @group scrap
  */
+#[Group('board')]
+#[Group('user')]
+#[Group('scrap')]
 class PostScrapApiTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'user-scrap-api';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -54,6 +65,11 @@ class PostScrapApiTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -72,6 +88,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects scrap_record_created_on_add, scrap_count_incremented_on_add
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_can_scrap_post(): void
     {
@@ -99,6 +117,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_remove
      *
      * @effects scrap_record_deleted_on_toggle_remove, scrap_count_decremented_on_remove, scrap_count_never_negative, activity_log_scrap_remove_written
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_removes_existing_scrap(): void
     {
@@ -128,6 +148,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects scrap_record_created_on_add
+     *
+     * @return void 반환값 없음
      */
     public function test_user_can_scrap_own_post(): void
     {
@@ -146,6 +168,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=guest,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects guest_toggle_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_cannot_toggle_scrap(): void
     {
@@ -162,6 +186,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_off,post_state=alive,post_scope=same_board
      *
      * @effects scrap_disabled_board_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_blocked_when_scrap_disabled(): void
     {
@@ -180,6 +206,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=other_board
      *
      * @effects cross_board_post_rejected_404
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_rejects_post_from_another_board(): void
     {
@@ -209,6 +237,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects activity_log_scrap_add_written
+     *
+     * @return void 반환값 없음
      */
     public function test_scrap_add_writes_activity_log(): void
     {
@@ -230,6 +260,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=toggle_remove,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects activity_log_scrap_remove_written
+     *
+     * @return void 반환값 없음
      */
     public function test_scrap_remove_writes_activity_log(): void
     {
@@ -256,6 +288,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects mypage_list_sorted_recent_first
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_scraps_recent_first(): void
     {
@@ -284,6 +318,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=soft_deleted,post_scope=same_board
      *
      * @effects mypage_list_includes_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_index_includes_deleted_post_scrap(): void
     {
@@ -308,6 +344,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_delete
      *
      * @effects mypage_list_deleted_post_exposes_board_and_author
+     *
+     * @return void 반환값 없음
      */
     public function test_index_deleted_post_scrap_exposes_board_and_author_but_not_title(): void
     {
@@ -335,6 +373,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_delete
      *
      * @effects mypage_list_withdrawn_author_anonymized
+     *
+     * @return void 반환값 없음
      */
     public function test_index_withdrawn_author_scrap_anonymizes_name(): void
     {
@@ -358,6 +398,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search
      *
      * @effects mypage_list_search_filters_by_title
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_filters_by_post_title(): void
     {
@@ -379,6 +421,8 @@ class PostScrapApiTest extends BoardTestCase
      * search 에 매칭되는 게시글이 없으면 빈 목록을 반환한다 (에러 아님).
      *
      * @scenario action=mypage_search
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_no_match_returns_empty_list(): void
     {
@@ -398,6 +442,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search
      *
      * @effects mypage_list_search_excludes_deleted_post_title
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_excludes_deleted_post_even_if_title_matches(): void
     {
@@ -423,6 +469,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_delete
      *
      * @effects mypage_delete_requires_ownership, mypage_list_sorted_recent_first, mypage_list_includes_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_user_can_delete_own_scrap(): void
     {
@@ -445,6 +493,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_delete,actor=other_user,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
      *
      * @effects mypage_delete_requires_ownership
+     *
+     * @return void 반환값 없음
      */
     public function test_user_cannot_delete_others_scrap(): void
     {
@@ -472,6 +522,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search,search_field=title_content
      *
      * @effects mypage_list_search_field_title_content_matches_title_or_content
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_title_content_matches_title_or_content(): void
     {
@@ -503,6 +555,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search,search_field=title
      *
      * @effects mypage_list_search_field_title_ignores_content
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_title_ignores_content_match(): void
     {
@@ -529,6 +583,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search,search_field=content
      *
      * @effects mypage_list_search_field_content_ignores_title
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_content_ignores_title_match(): void
     {
@@ -555,6 +611,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search
      *
      * @effects mypage_list_rejects_invalid_search_field
+     *
+     * @return void 반환값 없음
      */
     public function test_index_rejects_invalid_search_field(): void
     {
@@ -579,6 +637,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario board_setting=use_scrap_off
      *
      * @effects mypage_list_flags_scrap_disabled_board
+     *
+     * @return void 반환값 없음
      */
     public function test_index_marks_scrap_disabled_when_board_use_scrap_off(): void
     {
@@ -605,6 +665,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario board_setting=inactive
      *
      * @effects mypage_list_flags_inactive_board
+     *
+     * @return void 반환값 없음
      */
     public function test_index_marks_scrap_disabled_when_board_inactive(): void
     {
@@ -628,6 +690,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_search,board_setting=use_scrap_off
      *
      * @effects mypage_list_search_excludes_disabled_board
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_excludes_scrap_disabled_rows(): void
     {
@@ -657,6 +721,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario board_setting=board_deleted
      *
      * @effects mypage_list_keeps_scraps_of_deleted_board
+     *
+     * @return void 반환값 없음
      */
     public function test_index_keeps_scraps_with_null_board_id_and_flags_board_deleted(): void
     {
@@ -683,6 +749,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario board_setting=use_scrap_off
      *
      * @effects mypage_single_delete_works_for_disabled_row
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_still_works_for_scrap_disabled_row(): void
     {
@@ -710,6 +778,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_bulk_delete
      *
      * @effects mypage_bulk_delete_removes_only_owned_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_removes_only_owned_scraps_and_reports_count(): void
     {
@@ -748,6 +818,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_bulk_delete
      *
      * @effects mypage_bulk_delete_decrements_scrap_count_per_post, scrap_count_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_decrements_scrap_count_per_post(): void
     {
@@ -777,6 +849,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_bulk_delete
      *
      * @effects mypage_bulk_delete_writes_unscrap_log_per_row
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_writes_unscrap_activity_log_per_row(): void
     {
@@ -806,6 +880,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_bulk_delete
      *
      * @effects mypage_bulk_delete_validates_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_validates_ids(): void
     {
@@ -836,6 +912,8 @@ class PostScrapApiTest extends BoardTestCase
      * @scenario action=mypage_bulk_delete
      *
      * @effects guest_toggle_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_unauthenticated_401(): void
     {

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
+use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -18,17 +19,27 @@ use Psr\Log\LoggerInterface;
  * - 교차 게시글 부모를 가진 고아 댓글이 최상위로 승격된다 (본문 보존)
  * - depth 가 루트부터 부모 depth + 1 로 재계산된다
  * - 재실행해도 결과가 동일하다 (멱등)
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class CommentHierarchyCleanupTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-hierarchy-cleanup';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -46,6 +57,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=foreign
      *
      * @effects existing_cross_post_parent_detached_content_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_cross_post_parent_is_detached_and_content_preserved(): void
     {
@@ -75,6 +88,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects existing_clamped_depth_recalculated
+     *
+     * @return void 반환값 없음
      */
     public function test_clamped_depth_is_recalculated_from_root(): void
     {
@@ -109,6 +124,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects cleanup_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_is_idempotent(): void
     {
@@ -141,6 +158,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=missing
      *
      * @effects dangling_parent_skipped_with_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_dangling_parent_is_skipped_with_warning(): void
     {
@@ -182,6 +201,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=cycle
      *
      * @effects unreachable_cycle_skipped_with_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_unreachable_cycle_is_skipped_with_warning(): void
     {
@@ -228,6 +249,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=self
      *
      * @effects healthy_hierarchy_emits_no_cycle_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_healthy_hierarchy_emits_no_cycle_warning(): void
     {
@@ -250,6 +273,8 @@ class CommentHierarchyCleanupTest extends BoardTestCase
 
     /**
      * 1.0.3 정리 마이그레이션을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runCleanup(): void
     {

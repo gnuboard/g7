@@ -251,6 +251,42 @@ describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
     expect(collect(success, (n) => n.handler === 'refetchDataSource')[0].params.dataSourceId).toBe('users');
   });
 
+  // 창 닫기가 목록 재요청 뒤에 있으면, 재요청을 기다리는 동안 닫힐 창에 결과 카드와 「0명에게…」 안내가 비친다
+  // (라이브 실측: 제외 0명인 추가에서 결과 카드 「2명 변경, 0명 제외」 와 「선택한 회원 0명에게…」 가 잠깐 보였다).
+  // @scenario mode=add, target=normal, role=within_ceiling
+  // @effects bulk_role_result_hides_zero_count_desc
+  it('제외가 없으면 목록 재요청보다 창 닫기가 먼저다', () => {
+    const apply = collect(modalPartial, (n) => n.id === 'bulk_roles_apply')[0];
+    const success = collect(apply, (n) => n.handler === 'apiCall')[0].onSuccess;
+    const steps = collect(success, (n) => n.handler === 'sequence')[0].actions.map((a: any) => a.handler);
+
+    expect(steps.indexOf('closeModal')).toBeGreaterThan(-1);
+    expect(steps.indexOf('closeModal')).toBeLessThan(steps.indexOf('refetchDataSource'));
+  });
+
+  // 적용하면 선택이 비어 안내 문구의 인원이 0 으로 바뀐다 — 결과 화면에서는 안내를 숨기고 결과 카드가 말한다.
+  // @scenario mode=add, target=super_admin, role=within_ceiling
+  // @effects bulk_role_result_hides_zero_count_desc
+  it('결과 화면에서는 「선택한 회원 N명에게…」 안내를 숨긴다 (추가·제거 모두)', async () => {
+    for (const mode of ['add', 'remove'] as const) {
+      testUtils = createLayoutTest(buildLayout({
+        userBulkRoleMode: mode,
+        selectedIds_admin_users: [],
+        userBulkRoleResult: { updated_count: 1, skipped_count: 1, skipped: [{ uuid: 'uuid-u1', reason: 'grade' }] },
+      }), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
+      testUtils.mockApi('users', { response: { success: true, data: { data: USERS } } });
+
+      await testUtils.render();
+
+      await screen.findByTestId('bulk_roles_result');
+      const desc = mode === 'add' ? adminKo.users.bulk_roles.add_desc : adminKo.users.bulk_roles.remove_desc;
+      expect(screen.queryByText(desc.replace('{{count}}', '0'))).toBeNull();
+
+      testUtils.cleanup();
+      testUtils = undefined;
+    }
+  });
+
   // @scenario mode=add, target=normal, role=above_ceiling
   // @effects ceiling_violation_rejects_request
   it('상한 위반 403 은 창 안 문구로 남고 선택은 그대로다', async () => {

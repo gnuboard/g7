@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Config;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -20,6 +21,15 @@ use Tests\TestCase;
  */
 class DatabaseConfigDeprecationTest extends TestCase
 {
+    /**
+     * MySQL, MariaDB 연결 옵션을 읽어도 PDO 지원 중단 경고가 나지 않는다.
+     *
+     * @scenario concern=pdo_ssl_constant, check_mode=runtime_load
+     *
+     * @effects mysql_options_does_not_trigger_pdo_deprecation
+     *
+     * @return void 반환값 없음
+     */
     public function test_mysql_options_does_not_trigger_pdo_deprecation(): void
     {
         $deprecations = $this->captureDeprecations(function () {
@@ -44,6 +54,15 @@ class DatabaseConfigDeprecationTest extends TestCase
         );
     }
 
+    /**
+     * 설정 파일이 지원 중단된 PDO 상수를 PHP 버전 가드 없이 쓰지 않는다.
+     *
+     * @scenario concern=pdo_ssl_constant, check_mode=static_source
+     *
+     * @effects config_file_does_not_reference_unguarded_deprecated_pdo_constant
+     *
+     * @return void 반환값 없음
+     */
     public function test_config_file_does_not_reference_unguarded_deprecated_pdo_constant(): void
     {
         $file = file_get_contents(config_path('database.php'));
@@ -73,8 +92,15 @@ class DatabaseConfigDeprecationTest extends TestCase
      * 케이스는 config 가 `env('DB_READ_HOST', default)` (중첩 env) 로 되돌아가면
      * fallback 이 무력화되므로(env() 가 ''를 반환) 이 테스트가 그 회귀를 차단한다.
      *
-     * @dataProvider readFallbackProvider
+     * @scenario concern=read_connection_fallback, check_mode=runtime_load
+     *
+     * @effects read_connection_falls_back_to_write_when_read_env_empty
+     *
+     * @param  string|null  $readHost  DB_READ_HOST 값
+     * @param  string  $expectedHost  기대 읽기 호스트
+     * @return void 반환값 없음
      */
+    #[DataProvider('readFallbackProvider')]
     public function test_read_connection_falls_back_to_write_when_read_env_empty(
         ?string $readHost,
         string $expectedHost
@@ -100,7 +126,9 @@ class DatabaseConfigDeprecationTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: ?string, 1: string}>
+     * 읽기 호스트 환경값과 기대 호스트를 돌려줍니다.
+     *
+     * @return array<string, array{0: ?string, 1: string}> 읽기 호스트 값과 기대 호스트
      */
     public static function readFallbackProvider(): array
     {
@@ -114,6 +142,12 @@ class DatabaseConfigDeprecationTest extends TestCase
     /**
      * 정적 검사 — config 가 read fallback 에 Elvis(?:) 패턴을 사용하는지 확인.
      * 중첩 env(A, env(B)) 로 회귀하면(빈 문자열 fallback 실패) 이 테스트가 차단한다.
+     *
+     * @scenario concern=read_connection_fallback, check_mode=static_source
+     *
+     * @effects config_uses_elvis_fallback_for_read_connection
+     *
+     * @return void 반환값 없음
      */
     public function test_config_uses_elvis_fallback_for_read_connection(): void
     {
@@ -132,6 +166,7 @@ class DatabaseConfigDeprecationTest extends TestCase
      *
      * @param  string  $key  환경변수 키
      * @param  string|null  $value  값 (null 이면 제거)
+     * @return void 반환값 없음
      */
     private function setEnvVar(string $key, ?string $value): void
     {
@@ -146,8 +181,10 @@ class DatabaseConfigDeprecationTest extends TestCase
     }
 
     /**
+     * 콜백을 실행하며 생긴 지원 중단 경고를 모읍니다.
+     *
      * @param  callable  $fn  실행 중 발생한 deprecation 을 수집할 콜백
-     * @return array<int, array{message: string, file: string, line: int}>
+     * @return array<int, array{message: string, file: string, line: int}> 모은 경고
      */
     private function captureDeprecations(callable $fn): array
     {

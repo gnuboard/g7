@@ -241,7 +241,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
 
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_list_search_filters_by_title
-    it('회귀: 상시 안내 배너는 제거되어 검색 영역이 헤더 바로 아래에 온다 (PO 지시로 배너 제거)', () => {
+    it('회귀: 상시 안내 배너는 제거되어 검색 영역이 헤더 바로 아래에 온다 (배너 제거 결정)', () => {
         const str = serialized(scrapList);
         expect(str).not.toContain('mypage.scrap.notice"');
         expect(str).not.toContain('mypage.scrap.notice_sub');
@@ -448,7 +448,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
 
         // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
         // @effects mypage_tab_follows_board_activity
-        it('회귀: 표 셀 여백은 마이페이지 마일리지 탭과 동일한 px-4 py-3 이다 (PO 지시 — 지나치게 빡빡했던 px-2 py-2 에서 마일리지 탭 기준으로 복원)', () => {
+        it('회귀: 표 셀 여백은 마이페이지 마일리지 탭과 동일한 px-4 py-3 이다 (결정 — 지나치게 빡빡했던 px-2 py-2 에서 마일리지 탭 기준으로 복원)', () => {
             const str = serialized(scrapList);
             expect(str).not.toContain('px-4 py-4');
             expect(str).not.toContain('px-2 py-2');
@@ -477,7 +477,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
 
         // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
         // @effects mypage_list_includes_deleted_post
-        it('회귀: 게시판·제목 컬럼은 왼쪽 정렬이고 나머지(작성자/댓글/스크랩일/관리) 헤더는 가운데 정렬이다 (PO 지시로 게시판 컬럼을 가운데→왼쪽 정렬로 변경)', () => {
+        it('회귀: 게시판·제목 컬럼은 왼쪽 정렬이고 나머지(작성자/댓글/스크랩일/관리) 헤더는 가운데 정렬이다 (결정에 따라 게시판 컬럼을 가운데→왼쪽 정렬로 변경)', () => {
             const headerRow = collectNodes(scrapList, (n) => (n as any).name === 'Tr' && !n.if && !n.actions).find((tr) =>
                 serialized(tr).includes('mypage.scrap.table.board'),
             );
@@ -705,7 +705,7 @@ describe('이슈 #524 — 해제 확인 모달 (_modal_scrap_delete.json)', () =
 
     // @scenario action=mypage_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_delete_requires_ownership
-    it('회귀: 원글 보존 안내 문구는 별도 강조 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 붙는다 (1안 — PO 지시로 박스형에서 인라인 텍스트로 변경)', () => {
+    it('회귀: 원글 보존 안내 문구는 별도 강조 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 붙는다 (1안 — 결정에 따라 박스형에서 인라인 텍스트로 변경)', () => {
         const bodyWrap = collectNodes(
             scrapDeleteModal,
             (n) => (n as any).name === 'Div' && (n as any).props?.className === 'flex-1 pt-0.5',
@@ -962,5 +962,17 @@ describe('#524 WP-A — 마이페이지 스크랩 검색·선택 삭제·중지 
         ]) {
             expect(testIds).toContain(id);
         }
+    });
+});
+
+describe('마이페이지 스크랩 — 검색 0건 안내', () => {
+    // 검색어를 건 채 0건이면 「아직 스크랩한 글이 없다」가 아니라 검색 결과가 없다는 뜻이다(실측 2026-10-03).
+    // @scenario action=mypage_search,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board,search_field=title
+    // @effects mypage_filtered_empty_says_no_results
+    it('검색 중 0건은 검색 결과 없음, 조건이 없을 때만 아직 없음', () => {
+        const json = JSON.stringify(scrapList);
+        expect(json.includes('$t:board.no_search_results')).toBe(true);
+        expect(json.includes('{{!!_local.scrapSearchApplied}}')).toBe(true);
+        expect(json.includes('{{!(!!_local.scrapSearchApplied)}}')).toBe(true);
     });
 });

@@ -307,6 +307,10 @@
       "reason_label": "理由（選択）",
       "reason_placeholder": "処理理由を入力してください",
       "processing": "処理中..."
+    },
+    "skipped": {
+      "title": "スキップされた投稿",
+      "description": "以下の{{count}}件の投稿は処理されませんでした。"
     }
   }
 }

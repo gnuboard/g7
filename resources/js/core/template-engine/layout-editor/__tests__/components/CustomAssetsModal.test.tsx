@@ -7,13 +7,18 @@
  *  - 저장은 PUT `custom-assets/content` 로 나가고 성공 후 목록을 다시 읽는다
  *  - 편집 불가(바이너리) 파일은 본문 편집기를 열지 않고 교체 안내를 보여 준다
  *  - 툴바 토글은 `?custom=off` 상태를 문구·`aria-pressed` 로 드러낸다
+ *  - 편집기에서 연 창은 Esc·백드롭 모두 미저장 확인을 거친다(편집이 없으면 바로 닫힌다)
+ *  - 창 문구의 치환 자리는 화면 번역기 형식(`{name}`)이다
  */
 
 import React from 'react';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CustomAssetsModal } from '../../components/CustomAssetsModal';
 import { EditorToolbar } from '../../components/EditorToolbar';
+import { LayoutEditorChrome } from '../../LayoutEditorChrome';
 import { LayoutEditorProvider } from '../../LayoutEditorContext';
 import { TranslationProvider } from '../../../TranslationContext';
 import { TranslationEngine } from '../../../TranslationEngine';
@@ -186,6 +191,117 @@ describe('CustomAssetsModal', () => {
         ([url, init]) => !(init as RequestInit)?.method && String(url).endsWith('/custom-assets'),
       );
       expect(listCalls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  /**
+   * 새 파일(아직 목록에 없는 경로)의 본문 입력이 화면에 남아 이어져야 한다. 본문 칸이 «고른 파일» 의 버퍼만 읽어
+   * 새 경로에서는 늘 빈 값으로 그려졌고, 키를 누를 때마다 빈 값에 한 글자가 붙어 버퍼에 마지막 글자만 남았다
+   * (브라우저 실측 2026-10-03: 한 줄을 쳐서 저장하니 「}」 1바이트 파일).
+   *
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_keeps_typing_for_a_new_path
+   */
+  it('[case:wysiwyg-3] 새 경로의 본문은 입력한 대로 보이고 다음 입력이 이어진다', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return Promise.resolve(jsonResponse(200, { data: { path: 'new.css', size: 9 } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-assets-path')).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByTestId('g7le-custom-assets-path'), { target: { value: 'new.css' } });
+
+    const content = screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement;
+    fireEvent.change(content, { target: { value: 'b' } });
+    expect(content.value).toBe('b');
+    fireEvent.change(content, { target: { value: 'body{}' } });
+    expect(content.value).toBe('body{}');
+
+    fireEvent.click(screen.getByTestId('g7le-custom-assets-save'));
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'PUT');
+      expect(JSON.parse(String((put?.[1] as RequestInit).body)).content).toBe('body{}');
+    });
+  });
+
+  /**
+   * 새 파일의 본문은 경로를 나중에 고쳐도 따라가야 한다. 본문을 «입력 중인 경로» 의 버퍼에 두면 경로 칸을 고치는
+   * 순간 본문 칸이 비고, 그대로 저장하면 고친 경로에 빈 파일이 저장되며 쓴 본문은 옛 경로 버퍼에 숨는다.
+   *
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_keeps_typing_for_a_new_path
+   */
+  it('새 파일 본문을 쓴 뒤 경로를 고쳐도 본문이 남고 고친 경로로 저장된다', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return Promise.resolve(jsonResponse(200, { data: { path: 'fixed.css', size: 6 } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    const pathInput = (await screen.findByTestId('g7le-custom-assets-path')) as HTMLInputElement;
+    fireEvent.change(pathInput, { target: { value: 'fixd.css' } });
+
+    const content = screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement;
+    fireEvent.change(content, { target: { value: 'body{}' } });
+
+    fireEvent.change(pathInput, { target: { value: 'fixed.css' } });
+    expect(content.value).toBe('body{}');
+
+    fireEvent.click(screen.getByTestId('g7le-custom-assets-save'));
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'PUT');
+      const body = JSON.parse(String((put?.[1] as RequestInit).body));
+      expect(body.path).toBe('fixed.css');
+      expect(body.content).toBe('body{}');
+    });
+  });
+
+  /**
+   * 경로를 정하기 전에 본문부터 써도 입력이 받아져야 한다 — 경로가 비었다고 입력을 버리면 운영자는 왜
+   * 글자가 안 쳐지는지 알 수 없다. 저장 버튼은 경로가 생길 때까지 잠겨 있다.
+   *
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_keeps_typing_for_a_new_path
+   */
+  it('경로보다 본문을 먼저 써도 입력이 남고 경로를 넣으면 저장된다', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return Promise.resolve(jsonResponse(200, { data: { path: 'later.css', size: 6 } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    const pathInput = (await screen.findByTestId('g7le-custom-assets-path')) as HTMLInputElement;
+    const content = screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement;
+    fireEvent.change(content, { target: { value: 'a{}' } });
+    expect(content.value).toBe('a{}');
+    expect((screen.getByTestId('g7le-custom-assets-save') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.change(pathInput, { target: { value: 'later.css' } });
+    fireEvent.click(screen.getByTestId('g7le-custom-assets-save'));
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'PUT');
+      const body = JSON.parse(String((put?.[1] as RequestInit).body));
+      expect(body.path).toBe('later.css');
+      expect(body.content).toBe('a{}');
     });
   });
 
@@ -620,5 +736,161 @@ describe('EditorToolbar — 커스텀 자산 (D32·D33)', () => {
 
     fireEvent.click(button());
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('LayoutEditorChrome — 커스텀 자산 창의 미저장 보호', () => {
+  // 회귀 배경(브라우저 실측 2026-10-03): 편집기 모달 루트가 Esc 를 캡처 단계에서 가로채 창을 바로 닫고,
+  // 백드롭 클릭도 바로 닫아, 창 자신의 «저장하지 않은 편집 N건» 확인을 거치지 않고 쓰던 본문이 사라졌다.
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : String(input);
+        if (/\/editor\/routes\.json/.test(url)) {
+          return new Response(
+            JSON.stringify({ success: true, data: { routes: [
+              { path: '/', layout: 'home', source: { kind: 'template', identifier: null }, meta: { title: '홈' } },
+            ] } }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+        if (/\/custom-assets(\?|$)/.test(url)) {
+          return new Response(JSON.stringify({ data: { ...listBody.data, files: [] } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  async function openFromChromeWithUnsavedText(): Promise<HTMLTextAreaElement> {
+    render(
+      <TranslationProvider
+        translationEngine={new TranslationEngine()}
+        translationContext={{ templateId: 'test', locale: 'ko' }}
+      >
+        <LayoutEditorChrome templateIdentifier="sirsoft-admin_basic" initialLocale="ko" />
+      </TranslationProvider>,
+    );
+    fireEvent.click(await screen.findByTestId('g7le-toolbar-custom-assets'));
+    const content = (await screen.findByTestId('g7le-custom-assets-content')) as HTMLTextAreaElement;
+    fireEvent.change(content, { target: { value: 'body{}' } });
+
+    return content;
+  }
+
+  /**
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_guards_unsaved_text_on_close
+   */
+  it('[case:wysiwyg-4] 본문을 쓰다 Esc 를 누르면 버릴지 묻고, 취소하면 창과 본문이 남는다', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const content = await openFromChromeWithUnsavedText();
+
+    fireEvent.keyDown(content, { key: 'Escape' });
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body{}');
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.keyDown(screen.getByTestId('g7le-custom-assets-content'), { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('g7le-custom-assets-content')).toBeNull();
+    });
+  });
+
+  /**
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_guards_unsaved_text_on_close
+   */
+  it('저장하지 않은 본문이 있을 때 백드롭을 누르면 Esc 와 같이 버릴지 묻는다', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await openFromChromeWithUnsavedText();
+
+    const backdrop = document.querySelector('.g7le-modal-backdrop') as HTMLElement;
+    expect(backdrop).toBeTruthy();
+    fireEvent.click(backdrop);
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body{}');
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.click(document.querySelector('.g7le-modal-backdrop') as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('g7le-custom-assets-content')).toBeNull();
+    });
+  });
+
+  /**
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_guards_unsaved_text_on_close
+   */
+  it('저장하지 않은 편집이 없으면 백드롭을 눌렀을 때 묻지 않고 닫힌다(페이지 설정 창과 같은 동작)', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(
+      <TranslationProvider
+        translationEngine={new TranslationEngine()}
+        translationContext={{ templateId: 'test', locale: 'ko' }}
+      >
+        <LayoutEditorChrome templateIdentifier="sirsoft-admin_basic" initialLocale="ko" />
+      </TranslationProvider>,
+    );
+    fireEvent.click(await screen.findByTestId('g7le-toolbar-custom-assets'));
+    await screen.findByTestId('g7le-custom-assets-content');
+
+    fireEvent.click(document.querySelector('.g7le-modal-backdrop') as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('g7le-custom-assets-content')).toBeNull();
+    });
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+});
+
+// 편집기 문구의 치환 자리는 화면 번역기가 바꾸는 `{name}`(또는 `{{name}}`)이어야 한다. 서버 언어 파일 형식인
+// `:name` 을 쓰면 치환되지 않고 화면에 그대로 나온다(실측 2026-10-03: 닫기 확인 「저장하지 않은 편집 :count건」).
+describe('편집기 문구 치환 자리 형식', () => {
+  const repoRoot = resolve(__dirname, '../../../../../../..');
+
+  /**
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_guards_unsaved_text_on_close
+   */
+  it('layout_editor.json 값(ko·en·ja 팩)에 `:name` 형식 자리가 없다', () => {
+    const files = [
+      'lang/partial/ko/layout_editor.json',
+      'lang/partial/en/layout_editor.json',
+      'lang-packs/_bundled/g7-core-ja/frontend/partial/layout_editor.json',
+    ];
+    const colonParam = /(?<![A-Za-z0-9/]):([a-z][a-z_]+)/;
+    const offenders: string[] = [];
+
+    const walk = (obj: Record<string, unknown>, prefix: string, file: string): void => {
+      for (const [k, v] of Object.entries(obj)) {
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (typeof v === 'string') {
+          if (colonParam.test(v)) offenders.push(`${file} ${key}: ${v}`);
+        } else if (v && typeof v === 'object') {
+          walk(v as Record<string, unknown>, key, file);
+        }
+      }
+    };
+
+    for (const file of files) {
+      walk(JSON.parse(readFileSync(resolve(repoRoot, file), 'utf-8')), '', file);
+    }
+
+    expect(offenders, '편집기 번역기는 :name 을 치환하지 않는다 — {name} 으로 쓸 것').toEqual([]);
   });
 });

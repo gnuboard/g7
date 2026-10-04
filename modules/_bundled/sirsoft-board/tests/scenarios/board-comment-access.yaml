@@ -1,0 +1,45 @@
+feature: 게시판 댓글 관리 권한과 비회원 댓글 비밀번호 확인
+
+description: |
+  관리자 화면의 댓글 작성, 수정, 삭제 권한 경계와 비회원 댓글의 비밀번호 확인 API 를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 action 은 댓글에 하는 요청(관리자 작성, 수정, 삭제, 블라인드, 복구, 비회원 댓글 비밀번호 확인), entitlement 는 요청자가 그 요청을 할 자격이 있는지다.
+  자격은 권한(관리, 작성 전용, 권한 없음, 미인증)과 소유 여부, 게시판 댓글 사용 설정, 비회원 댓글 비밀번호가 함께 정한다.
+  자격이 있어도 입력이 잘못되거나 대상이 없으면 entitled 칸에서 거절 응답을 본다.
+
+axes:
+  action: [create, update, delete, blind, restore, verify_password]
+  entitlement: [entitled, not_entitled]
+
+effects:
+  - admin_can_create_comment
+  - unauthenticated_cannot_create_comment
+  - user_without_permission_cannot_create_comment
+  - cannot_create_comment_when_comments_disabled
+  - admin_manage_can_update_any_comment
+  - admin_write_can_update_own_comment
+  - admin_write_cannot_update_others_comment
+  - admin_write_cannot_update_guest_comment
+  - admin_manage_can_delete_any_comment
+  - admin_write_can_delete_own_comment
+  - user_without_permission_cannot_delete_comment
+  - admin_manage_can_blind_comment
+  - blind_comment_reason_at_max_length_passes
+  - blind_comment_reason_over_max_length_fails
+  - blind_comment_does_not_change_comments_count
+  - admin_write_cannot_blind_comment
+  - cannot_blind_comment_when_comments_disabled
+  - admin_manage_can_restore_blinded_comment
+  - restore_comment_syncs_comments_count
+  - admin_write_cannot_restore_comment
+  - restore_nonexistent_comment_returns_404
+  - correct_password_returns_token
+  - wrong_password_returns_401
+  - member_comment_returns_400
+  - nonexistent_comment_returns_404
+  - missing_password_returns_422
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminCommentManagementTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentVerifyPasswordTest.php

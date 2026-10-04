@@ -326,6 +326,14 @@ return [
         'blind_success' => ':count個の投稿をブラインド処理しました。(スキップ :skipped個)',
         'restore_success' => ':count個の投稿を復元しました。(スキップ :skipped個)',
         'action_failed' => '投稿一括処理に失敗しました。',
+        'skip_reasons' => [
+            'already_deleted' => '既に削除された投稿',
+            'has_replies' => '返信が付いた投稿（返信削除ポリシーにより削除不可）',
+            'already_blinded' => '既にブラインド処理された投稿',
+            'already_published' => '既に公開中の投稿',
+            'unknown_action' => '不明な処理',
+            'error' => '処理中にエラーが発生しました',
+        ],
     ],
     'reaction' => [
         'list_success' => 'リアクションタイプのリストを閲覧しました。',
@@ -387,5 +395,11 @@ return [
             'post' => '投稿',
             'comment' => 'コメント',
         ],
+    ],
+    'notification_relations' => [
+        'post_author' => '投稿者',
+        'parent_comment_author' => '元コメントの投稿者',
+        'original_post_author' => '元投稿の投稿者',
+        'board_managers' => '掲示板管理者',
     ],
 ];

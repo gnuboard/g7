@@ -1,0 +1,21 @@
+feature: 개인정보 통지 이력 — 발송 채널 칸이 채널 이름을 보인다
+
+description: |
+  「개인정보 통지 이력」 화면의 발송 채널 칸이 `database` 같은 채널 식별자를 그대로 보였다. 설정 화면의 발송 채널은
+  「사이트내 알림」처럼 이름으로 보여 운영자가 둘을 대조하기 어려웠다. 이력 응답의 `channels_label` 이 현재 언어의
+  채널 이름을 싣고, 지금 없는 채널은 식별자로 남긴다. 식별자 목록(`channels`)은 그대로 둔다.
+
+axes:
+  locale: [ko]
+  channel: [core, unknown]
+
+effects:
+  - notice_log_channels_show_channel_names
+  - notice_log_unknown_channel_keeps_identifier
+  - notice_log_channel_names_built_once_per_request
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Resources/GdprNoticeLogResourceTest.php
+
+notes: |
+  브라우저 실측: GDPR 설정 → 개인정보 통지 이력 → 발송 채널 칸 「사이트내 알림」(종전 database).

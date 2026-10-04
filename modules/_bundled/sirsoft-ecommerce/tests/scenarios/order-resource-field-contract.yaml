@@ -52,6 +52,7 @@ effects:
   # ① 합계·정가 재료 (OrderResource / OrderOptionResource)
   - option_final_amount_deducts_discount_points_and_deposit
   - option_list_price_comes_from_the_option_snapshot
+  - option_list_price_adds_the_option_adjustment_without_an_option_list_price  # 옵션 스냅샷 정가가 없으면 상품 정가 + 옵션 조정액(실측 2026-10-03: 정가 ¥4,000 < 판매가 ¥5,000)
   - option_resource_drops_the_removed_mc_discount_field
   - order_total_quantity_sums_the_option_quantities
   - order_total_list_price_sums_snapshot_list_price_times_quantity

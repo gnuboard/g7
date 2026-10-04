@@ -671,7 +671,7 @@ class PostService
      * @param  string  $action  처리 종류 (delete|blind|restore)
      * @param  array<int, int>  $ids  대상 게시글 ID 목록
      * @param  string|null  $reason  사유 (블라인드·복구 이력에 남는다)
-     * @return array{affected_count: int, affected_ids: array<int, int>, skipped: array<int, array{id: int, reason: string}>} 처리 결과
+     * @return array{affected_count: int, affected_ids: array<int, int>, skipped: array<int, array{id: int, reason: string, reason_label: string, title: string|null}>} 처리 결과
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
@@ -692,6 +692,7 @@ class PostService
 
         foreach ($ids as $rawId) {
             $id = (int) $rawId;
+            $post = null;
 
             try {
                 $post = $this->postRepository->findOrFail($slug, $id);
@@ -699,7 +700,7 @@ class PostService
                 $skipReason = $this->resolveBulkSkipReason($post, $slug, $id, $action, $board);
 
                 if ($skipReason !== null) {
-                    $skipped[] = ['id' => $id, 'reason' => $skipReason];
+                    $skipped[] = $this->bulkSkippedEntry($id, $skipReason, $post);
 
                     continue;
                 }
@@ -713,7 +714,7 @@ class PostService
                 $affectedIds[] = $id;
             } catch (\Exception $e) {
                 // 한 건의 실패가 나머지를 막지 않는다 — 사유만 남기고 계속한다.
-                $skipped[] = ['id' => $id, 'reason' => 'error'];
+                $skipped[] = $this->bulkSkippedEntry($id, 'error', $post);
             }
         }
 
@@ -723,6 +724,28 @@ class PostService
             'affected_count' => count($affectedIds),
             'affected_ids' => $affectedIds,
             'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * 일괄 처리에서 건너뛴 한 항목을 응답 모양으로 만듭니다.
+     *
+     * 사유 코드만 실으면 화면은 「건너뜀 N개」 개수밖에 알릴 수 없다 — 어느 글이 왜 빠졌는지
+     * 운영자가 바로 읽을 수 있게 글 제목과 번역된 사유를 함께 싣는다. 확장이 `after_bulk_action`
+     * 훅으로 받는 항목도 같은 모양이며, 기존 키(`id`·`reason`)는 그대로다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  string  $reason  건너뛴 사유 코드
+     * @param  Post|null  $post  조회된 게시글 (조회 전에 실패했으면 null)
+     * @return array{id: int, reason: string, reason_label: string, title: string|null} 건너뛴 항목
+     */
+    private function bulkSkippedEntry(int $id, string $reason, ?Post $post): array
+    {
+        return [
+            'id' => $id,
+            'reason' => $reason,
+            'reason_label' => __("sirsoft-board::messages.posts_bulk.skip_reasons.{$reason}"),
+            'title' => $post?->title,
         ];
     }
 
@@ -988,7 +1011,7 @@ class PostService
      * 게시판 존재성을 검증합니다.
      *
      * @param  string  $slug  게시판 슬러그
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
@@ -1019,7 +1042,7 @@ class PostService
      * @param  string|null  $tempKey  임시 업로드 키
      * @param  array<UploadedFile>  $files  업로드할 파일 배열
      * @param  string  $context  로그 컨텍스트 (생성/수정)
-     * @return void
+     * @return void 반환값 없음
      */
     private function linkAttachments(
         string $slug,
@@ -1382,7 +1405,7 @@ class PostService
      * 필요한 범위를 넘어 기능이 깎인다.
      * 판정은 저장소가 `viewer_id` 로 수행한다(fail-closed — 값이 없으면 타인 관점).
      *
-     * 단, 열람자가 **읽을 수 없는 게시판**의 글은 행째 뺀다(KVE-2026-2371 동반). 이 목록은 비로그인에게도
+     * 단, 열람자가 **읽을 수 없는 게시판**의 글은 행째 뺀다(보안). 이 목록은 비로그인에게도
      * 열려 있어, 게시판 목록에서는 401 인 회원전용 게시판의 일반글이 제목·본문 미리보기째 나가던
      * 우회로였다. 본인 프로필은 본인 글이라 제외하지 않는다.
      *
@@ -1550,7 +1573,7 @@ class PostService
      * 게시글 생성/삭제 시 홈페이지 통계 및 최근 게시글 캐시를 무효화합니다.
      *
      * @param  string  $slug  게시판 슬러그
-     * @return void
+     * @return void 반환값 없음
      */
     private function invalidatePostCaches(string $slug): void
     {
@@ -1569,7 +1592,7 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $identifier  사용자 ID 또는 IP
      * @param  int  $seconds  쿨다운 시간 (초)
-     * @return void
+     * @return void 반환값 없음
      */
     public function recordPostCooldown(string $slug, string|int $identifier, int $seconds): void
     {

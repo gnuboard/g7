@@ -475,9 +475,11 @@ class OrderController extends AdminBaseController
     }
 
     /**
-     * 무통장 주문의 입금을 확인하여 결제완료로 전이합니다.
+     * 무통장 주문의 입금을 확인합니다.
      *
-     * 무통장(dbank) 미결제 주문에 한해 입금자명·입금액을 기록하고 결제완료 처리합니다.
+     * 입금자명·입금액을 기록하고, 요청과 주문 상태에 따라 결제완료로 전이하거나(미결제 + 전이 요청),
+     * 결제대기로 둔 채 입금만 기록하거나(전이 미요청), 이미 결제 이후 상태면 상태를 두고 결제금액만
+     * 채웁니다. 응답 문장은 처리 전에 서비스가 판정한 갈래를 따릅니다.
      * 입금액이 결제예정금액과 정확히 일치하지 않으면 422 를 반환합니다.
      *
      * @param  ConfirmDepositRequest  $request  입금확인 요청 데이터
@@ -488,6 +490,10 @@ class OrderController extends AdminBaseController
     {
         try {
             $markComplete = $request->shouldMarkOrderComplete();
+            // 운영자가 상태를 먼저 올려 둔 주문(상품준비중 등)은 체크와 무관하게 상태를 두고
+            // 입금과 결제금액만 기록한다 — 응답 문장도 그 결과를 따라야 하므로, 갈래는 처리 전에
+            // 서비스가 처리에 쓰는 것과 같은 판정으로 받는다.
+            $outcome = $this->orderProcessingService->resolveManualDepositOutcome($order, $markComplete);
 
             $this->orderProcessingService->confirmManualDeposit(
                 $order,
@@ -501,11 +507,16 @@ class OrderController extends AdminBaseController
             // 「입금 내역만 기록」은 주문을 결제대기로 남겨 둔다(모달이 그렇게 안내한다).
             // 두 경우에 같은 문장을 돌려주면 응답만 읽는 소비자는 결제되지 않은 주문을
             // 결제완료로 읽는다 — 운영자가 후속 입금 확인을 건너뛸 수 있다.
+            // 이미 결제 이후 상태인 주문은 어느 쪽도 아니다 — 상태는 그대로이고 결제금액만 채워진다.
+            $messageKey = match ($outcome) {
+                'status_kept' => 'messages.orders.deposit_recorded_status_kept',
+                'complete' => 'messages.orders.deposit_confirmed',
+                default => 'messages.orders.deposit_recorded',
+            };
+
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
-                $markComplete
-                    ? 'messages.orders.deposit_confirmed'
-                    : 'messages.orders.deposit_recorded',
+                $messageKey,
                 new OrderResource($updatedOrder)
             );
         } catch (PaymentAmountMismatchException $e) {

@@ -26,6 +26,21 @@ class SaveExtensionCustomAssetRequest extends FormRequest
     }
 
     /**
+     * 검증 전 전처리 — 비운 본문을 빈 문자열로 되돌립니다.
+     *
+     * 전역 미들웨어(`ConvertEmptyStringsToNull`)가 빈 문자열을 null 로 바꿔, 아래 `string` 규칙이 «비운 본문»
+     * 을 422 로 막았다. 키가 있는데 null 이면 운영자가 본문을 비운 것이다 — 키 자체가 없는 요청과 구분한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->exists('content') && $this->input('content') === null) {
+            $this->merge(['content' => '']);
+        }
+    }
+
+    /**
      * 검증 규칙
      *
      * @return array<string, mixed>

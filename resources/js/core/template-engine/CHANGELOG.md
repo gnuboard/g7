@@ -5,6 +5,21 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.76.0] - 2026-10-03
+
+### Added
+
+- `G7Core.AuthManager` 의 로그인 결과(`LoginResult`)에 서버가 함께 보낸 안내 필드를 담는 `extras`(예 `dormancy_restored`)를 더했습니다. 서버가 싣지 않으면 키 자체가 없어 종전 결과 모양은 그대로입니다.
+- 2단계 인증 확인 뒤 세션을 마무리하고 사용자와 안내 필드를 함께 돌려주는 `AuthManager.completeTwoFactorSession()` 과 그 결과 타입(`TwoFactorSession`, `LoginExtras`)을 공개했습니다. 기존 `completeTwoFactor()` 는 같은 사용자 값을 그대로 돌려줍니다.
+
+### Fixed
+
+- 휴면 회원이 로그인해 계정이 풀려도 로그인 화면(사용자·관리자)의 「휴면 상태가 해제되었습니다」 안내가 한 번도 뜨지 않던 문제를 고쳤습니다. 서버는 해제된 로그인에만 `dormancy_restored: true` 를 싣는데, `AuthManager.login()` 이 응답에서 사용자만 골라 돌려주고 `login`·`loginTwoFactor` 핸들러가 `{ user, two_factor_required }` 만 만들어 레이아웃의 `<toast if="{{response.dormancy_restored}}">` 에 닿지 않았습니다. 세션을 연 응답에서 토큰·사용자·2단계 표지를 뺀 나머지 필드를 `LoginResult.extras` 로 넘기고(서버가 실었을 때만 키가 있음), 핸들러가 그것을 `response` 에 펼칩니다. 토큰은 ApiClient 가 보관하므로 `response` 로 흘려보내지 않습니다. 2단계 인증 완료는 공개 API `completeTwoFactor()`(사용자만 반환)를 그대로 두고 `completeTwoFactorSession()` 을 새로 두어 핸들러가 씁니다. 회귀 잠금: `ActionDispatcher.loginServerFlags.test.ts` (AuthManager.ts, ActionDispatcher.ts, auth/index.ts)
+- 레이아웃 편집기 「커스텀 자산」 창에서 새 파일 경로를 적고 본문을 치면 글자가 지워지며 마지막 한 글자만 남고, 그대로 저장하면 1바이트 파일이 생기던 문제를 고쳤습니다(파일별 버퍼를 도입한 engine-v1.71.0 부터). 본문 칸이 고른 파일의 버퍼만 읽어 새 파일에서는 늘 빈 값을 그렸습니다. 새 파일 본문은 경로와 따로 두는 전용 버퍼(`NEW_FILE_BUFFER_KEY`)에 담아, 경로보다 본문을 먼저 써도 입력이 남고 경로를 나중에 고쳐도 본문이 따라가며, 저장에 성공하면 그 경로의 버퍼로 옮깁니다. 저장하지 않은 새 파일 본문은 미저장 개수와 대상 전환·닫기 확인에 함께 잡히고 본문 검색에서는 빠집니다. 회귀 잠금: `CustomAssetsModal.test.tsx` 3건 (CustomAssetsModal.tsx)
+- 모듈이나 플러그인이 자기 editor-spec `componentPalette` 에 등재한 컴포넌트(`{확장식별자}.{이름}`, 예 Hello 모듈의 `MemoCard`)가 레이아웃 편집기 「요소 추가」 창에 한 번도 나오지 않던 문제를 고쳤습니다(확장 팔레트 등재를 처음 도입한 engine-v1.67.0 부터). 팔레트 목록의 원천이 편집 대상 템플릿 `components.json` 하나라 `resolveCategories` 가 그룹의 확장 이름을 매니페스트에서 찾지 못해 버렸고, 놓을 자리(`nesting`)도 템플릿이 자기 이름으로만 써 루트(`draggable`)와 컨테이너(`accepts`) 필터가 다시 걸렀습니다. 셸이 병합 스펙에서 팔레트에 등재된 확장 이름을 모아 그 확장의 `components.json` 만 받아 등록 이름으로 바꿔 매니페스트에 더하고(템플릿이 `overrides` 로 대체했으면 대체본 메타), 스펙 로더가 병합 뒤 확장 컴포넌트에 템플릿이 `Div` 를 받는 자리(끌어 놓기 목록·`Div` 를 받는 컨테이너)를 함께 줍니다. 템플릿이 그 이름을 어느 컨테이너 `accepts` 에 직접 적었으면 그 선언을 따릅니다. 등재한 확장이 없으면 요청도 없습니다. 회귀 잠금: `extensionPaletteComponents.test.tsx` 13건(번들 실물 Hello 모듈 + 관리자 기본 템플릿 포함) (extensionPaletteComponents.ts, editorSpecLoader.ts, LayoutEditorChrome.tsx)
+- 「커스텀 자산」 창을 Esc 나 바깥(백드롭) 클릭으로 닫으면 「저장하지 않은 편집 N건」 확인 없이 닫혀 쓰던 본문이 사라지던 문제를 고쳤습니다. 편집기 모달 루트가 Esc 를 캡처 단계에서 가로채 창을 바로 닫아, 창 자신의 Esc 처리(`handleClose` → 확인)까지 키가 닿지 않았습니다. 창을 `closeOnEscape: false` 로 열어 Esc 는 창 자신의 처리가 받고, 백드롭 클릭은 편집기 모달의 새 선택지 `onRequestClose`(백드롭 클릭을 바로 닫지 않고 호출자에게 맡김)로 창이 등록한 같은 처리에 넘깁니다. 편집이 없으면 바로 닫혀 페이지 설정 창과 같고, 있으면 확인을 거칩니다. 같은 창의 문구 3건(`custom_assets.binary_hint`·`discard_confirm`·`no_match`)이 서버 형식 자리(`:count`)를 써 화면에 자리 이름이 그대로 보이던 것도 엔진 번역기 형식(`{count}`)으로 바꿨습니다(ko·en·ja 팩). 회귀 잠금: `CustomAssetsModal.test.tsx` 「커스텀 자산 창의 미저장 보호」 3건·「편집기 문구 치환 자리 형식」 1건 (LayoutEditorChrome.tsx, EditorModalContext.tsx, CustomAssetsModal.tsx)
+- 레이아웃 편집기 미리보기의 본문 편집기(CKEditor)가 임시 입력창으로 바뀌던 문제를 고쳤습니다. 미리보기의 레이아웃 스크립트 주입이 런타임과 달리 자산 주소 방식(`convertToCurrentMode`)을 거치지 않아 확장자 없는 방식 사이트에서 404 가 났고, 다른 로더(편집기 플러그인의 자체 로더)가 다른 id 로 먼저 실은 같은 스크립트를 알아보지 못해 한 번 더 실어 UMD 가 두 번 실행됐습니다. 이제 바꾼 주소로 싣고, 이미 실린 태그는 id 와 주소(두 형태)로 찾습니다. 회귀 잠금: `PreviewCanvas.scriptGate.test.tsx` (PreviewCanvas.tsx)
+- 레이아웃 편집기 창 편집에서 창을 연 화면의 값(`$parent._local`)을 읽는 창이 상태 표본을 넣어도 빈 채로 그려지던 문제를 고쳤습니다. 런타임은 창에 창을 연 레이아웃의 데이터 맥락을 `parentDataContext` 로 넘기는데, 미리보기는 창 노드를 루트 형제로 덧붙여 그리면서 이 맥락을 넘기지 않았습니다. 이제 창 노드에 런타임 openModal 과 같은 모양(`_local`, `_global`, 호스트 레이아웃의 `computed` 정의로 계산한 `_computed`)을 `$parent` 로 넘깁니다. 회귀 잠금: `modalEditParentContext.test.ts`, `PreviewCanvas.modalParentContext.test.tsx` (PreviewCanvas.tsx, modalEditParentContext.ts)
 ## [engine-v1.75.3] - 2026-10-04
 
 > 요청 Host·외부 주소를 믿던 자리를 닫은 버전이다. 모두 도입 때부터 있던 잠재 결함이며(창 열기 engine-v1.40 계열 2026-03, 전역 헤더 engine-v1.16.0, 본인인증 재요청·폴백 2026-04) 상태 저장소·렌더 사이클은 건드리지 않는다.

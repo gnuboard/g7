@@ -97,6 +97,7 @@ sub_flows:
       - dormant_account_is_restored_on_login
       - dormant_token_reuse_is_blocked_by_status_middleware
       - dormancy_login_clears_a_stale_notice_marker
+      - dormancy_restored_flag_reaches_login_layouts
 
 effects:
   - dormancy_requires_advance_notice_before_conversion
@@ -123,10 +124,14 @@ effects:
   - dormancy_notice_date_is_rendered_in_the_recipient_timezone
   - scheduler_flag_is_recorded_when_the_signature_promises_it
   - measurement_seed_stages_land_in_their_target_lists
+  - purge_also_removes_seeds_anonymized_by_the_measured_action
+  - dormancy_restored_flag_reaches_login_layouts
 
 test_files:
   - tests/Feature/Privacy/DormantLifecycleTest.php
   - tests/Feature/Console/PlaywrightSeedDormantCommandTest.php
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginServerFlags.test.ts
+  - tests/Playwright/specs/auth/dormant-login-restore.spec.ts
 
 rules_layer_coverage:
   - rule: offset-chunk-mutates-filter

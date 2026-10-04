@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 답글 첨부 직렬화 회귀 검증 (76차 브라우저 실측)
@@ -28,19 +29,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   ① 부모 상세의 `replies[]` 각 항목은 `attachments` 를 배열로 싣는다.
  *   ② 그 배열은 단독 조회했을 때와 같은 내용이다 (개수·식별자 일치).
  *   ③ 손자 답글(깊이 2 이상)도 같다 — 적재가 트리 전 단계에 걸린다.
- *
- * @group board
- * @group admin
  */
+#[Group('board')]
+#[Group('admin')]
 class ReplyAttachmentSerializationTest extends BoardTestCase
 {
     private User $manager;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'reply-attachment-serialization';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -55,6 +66,11 @@ class ReplyAttachmentSerializationTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -120,6 +136,8 @@ class ReplyAttachmentSerializationTest extends BoardTestCase
      * @scenario reply_count=multiple
      *
      * @effects reply_attachments_serialized, reply_attachments_not_shared
+     *
+     * @return void 반환값 없음
      */
     public function test_replies_carry_their_own_attachments_in_parent_detail(): void
     {
@@ -162,6 +180,8 @@ class ReplyAttachmentSerializationTest extends BoardTestCase
      * @scenario reply_count=multiple
      *
      * @effects nested_reply_attachments_serialized
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_reply_carries_attachments(): void
     {
@@ -190,6 +210,8 @@ class ReplyAttachmentSerializationTest extends BoardTestCase
      * @scenario reply_count=single
      *
      * @effects empty_reply_attachments_is_array
+     *
+     * @return void 반환값 없음
      */
     public function test_reply_without_attachment_serializes_empty_array(): void
     {

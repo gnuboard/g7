@@ -133,6 +133,38 @@ class PlaywrightSeedDormantCommandTest extends TestCase
     }
 
     /**
+     * 실측이 잔여정보를 파기해 이메일이 바뀐 시드 계정도 정리 옵션이 지웁니다.
+     *
+     * `withdrawn` 단계는 「지금 실행」이 이메일을 `withdrawn_{id}@removed.invalid` 로 바꾸라고 심는 계정이라,
+     * 이메일 접두사만 보는 정리는 실측을 한 번 할 때마다 그만큼을 개발 DB 에 남겼다.
+     *
+     * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
+     *
+     * @effects measurement_seed_stages_land_in_their_target_lists, purge_also_removes_seeds_anonymized_by_the_measured_action
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function purge_removes_seeds_anonymized_by_the_withdrawn_retention_run(): void
+    {
+        $this->seedStage('withdrawn', 2);
+        $seededIds = User::query()->where('email', 'like', 'playwright_dormant_%')->pluck('id')->all();
+        $bystander = User::factory()->create(['email' => 'bystander@example.test']);
+
+        app(WithdrawnUserRetentionHandler::class)->process(false, true);
+        $this->assertSame(
+            2,
+            User::query()->whereIn('id', $seededIds)->where('email', 'like', '%'.WithdrawnUserRetentionHandler::ANONYMIZED_EMAIL_DOMAIN)->count(),
+            '실측과 같은 상태 — 시드 계정의 이메일이 파기 표지로 바뀌었다'
+        );
+
+        $this->artisan('playwright:seed-dormant', ['--purge-users' => true])->assertExitCode(0);
+
+        $this->assertSame(0, User::query()->whereIn('id', $seededIds)->count());
+        $this->assertTrue(User::query()->whereKey($bystander->id)->exists(), '시드가 아닌 계정은 남는다');
+    }
+
+    /**
      * 옵트인 환경변수를 켜고 커맨드로 계정을 심는다.
      *
      * @param  string  $stage  단계

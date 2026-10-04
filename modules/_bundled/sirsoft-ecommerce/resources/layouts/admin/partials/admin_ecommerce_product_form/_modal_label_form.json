@@ -10,7 +10,6 @@
     "name": "Modal",
     "props": {
         "title": "{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}",
-        "description": "$t:sirsoft-ecommerce.admin.product.labels.modal_description",
         "size": "md"
     },
     "children": [

@@ -40,6 +40,7 @@ axes:
   search_field: [title_content, title, content]
 
 effects:
+  - mypage_filtered_empty_says_no_results
   - scrap_record_created_on_add
   - scrap_record_deleted_on_toggle_remove
   - scrap_count_incremented_on_add

@@ -12,7 +12,8 @@
  *    `conditionRecipes`/`sampleData.byX`)은 key 병합 — 뒤 단계가 같은 key 를
  *    덮어쓴다(템플릿이 마지막이라 최우선).
  *  - `componentPalette.groups` / `states.groups` 는 concat (라인 10853).
- *  - `nesting` 은 draggable union + containers key 병합.
+ *  - `nesting` 은 draggable union + containers key 병합. 병합 뒤 팔레트에 등재된 확장 컴포넌트
+ *    (`{확장식별자}.{이름}`)에 템플릿이 일반 블록(`Div`)을 받는 자리를 함께 준다(engine-v1.76.0).
  *  - `sampleGlobal` 은 본 로더에서 **병합하지 않는다** — 코어 우선 충돌 정책 +
  *    dev 경고가 필요하므로 순서 있는 소스 목록(`sampleGlobalSources`)으로 노출하고,
  *  `sampleGlobalChain.ts` 의 deep merge 체인이 코어 시드와 합성한다.
@@ -37,6 +38,10 @@ import type {
   LoadingComponentSpec,
 } from './specTypes';
 import { createLogger } from '../../../utils/Logger';
+import {
+  collectExtensionPaletteComponents,
+  withExtensionComponentPlacement,
+} from './extensionPaletteComponents';
 
 const logger = createLogger('EditorSpecLoader');
 
@@ -402,6 +407,17 @@ export async function loadEditorSpecBundle(
   if (merged !== null && Object.keys(bySource).length > 0) {
     const m: EditorSpec = merged;
     m.sampleData = { ...(m.sampleData ?? {}), bySource };
+  }
+
+  // 확장이 팔레트에 등재한 자기 컴포넌트에 놓을 자리를 준다. 템플릿 nesting 은 확장 이름을 몰라
+  // 그대로 두면 등재한 컴포넌트가 어느 자리에서도 걸러진다(extensionPaletteComponents.ts).
+  if (merged !== null) {
+    const m: EditorSpec = merged;
+    const extensionNames = Array.from(collectExtensionPaletteComponents(m).values()).flatMap(
+      (names) => Array.from(names),
+    );
+    const placed = withExtensionComponentPlacement(m.nesting, extensionNames);
+    if (placed !== m.nesting) m.nesting = placed;
   }
 
   return { spec: merged, sampleGlobalSources };

@@ -5,6 +5,7 @@ namespace Tests\Feature\LayoutMarkup;
 use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,11 @@ class MarkupInstallTest extends TestCase
 
     private string $tmp;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,6 +42,14 @@ class MarkupInstallTest extends TestCase
         {
             use ValidatesLayoutFiles;
 
+            /**
+             * 레이아웃 파일 검증을 그대로 실행해 결과를 돌려줍니다.
+             *
+             * @param  string  $path  레이아웃 경로
+             * @param  string  $id  확장 식별자
+             * @param  string  $type  확장 종류
+             * @return array 검증 결과
+             */
             public function run(string $path, string $id, string $type): array
             {
                 return $this->validateLayoutFiles($path, $id, $type, true);
@@ -46,6 +60,11 @@ class MarkupInstallTest extends TestCase
         File::ensureDirectoryExists($this->tmp);
     }
 
+    /**
+     * 테스트가 남긴 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->tmp);
@@ -54,9 +73,13 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
+     * 마크업 소스는 메모리에서 컴파일돼 등록된다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects markup_source_compiles_in_memory_and_registers
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_source_compiles_in_memory_and_registers(): void
     {
@@ -73,9 +96,13 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
+     * 설치는 디스크에 JSON 을 쓰지 않는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects install_writes_no_json_to_disk
+     *
+     * @return void 반환값 없음
      */
     public function test_install_writes_no_json_to_disk(): void
     {
@@ -88,9 +115,13 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
+     * 마크업과 JSON 이 함께 있으면 마크업을 쓴다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects markup_wins_when_both_present
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_wins_when_both_present(): void
     {
@@ -110,9 +141,13 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
+     * JSON 만 있으면 그대로 설치한다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects json_only_installs_directly
+     *
+     * @return void 반환값 없음
      */
     public function test_json_only_installs_directly(): void
     {
@@ -130,9 +165,13 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
+     * 잘못된 마크업 소스는 설치를 거절한다.
+     *
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects invalid_markup_source_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_markup_is_rejected(): void
     {
@@ -150,6 +189,8 @@ class MarkupInstallTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects hello_extension_markup_layout_installs_from_in_memory_compile
+     *
+     * @return void 반환값 없음
      */
     public function test_hello_module_markup_demo_installs_from_in_memory_compile(): void
     {
@@ -191,6 +232,8 @@ class MarkupInstallTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects html_install_equals_json_install
+     *
+     * @return void 반환값 없음
      */
     public function test_html_install_equals_json_install(): void
     {
@@ -236,12 +279,16 @@ class MarkupInstallTest extends TestCase
      * W3(sirsoft-admin_basic — 129파일)도 같은 데이터셋에 합류한다. 템플릿은 확장과 설치 경로가
      * 다르고(TemplateManager) 물량이 한 자릿수가 아니라 세 자릿수라, 여기서 도는 것이 ② 의 실효다.
      *
-     * @dataProvider migratedWaveTwoRoots
-     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects wave_two_html_install_equals_json_install, wave_three_template_html_install_equals_json_install
+     *
+     * @param  string  $relativeRoot  이관 실물의 상대 경로
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $sourceType  확장 종류
+     * @return void 반환값 없음
      */
+    #[DataProvider('migratedWaveTwoRoots')]
     public function test_wave_two_html_install_equals_json_install(string $relativeRoot, string $identifier, string $sourceType): void
     {
         $layoutsPath = base_path($relativeRoot);
@@ -362,6 +409,7 @@ class MarkupInstallTest extends TestCase
      *
      * @param  string  $name  파일 베이스 이름
      * @param  string  $source  소스 내용
+     * @return void 반환값 없음
      */
     private function writeMarkup(string $name, string $source): void
     {
@@ -373,6 +421,7 @@ class MarkupInstallTest extends TestCase
      *
      * @param  string  $name  파일 베이스 이름
      * @param  array<string, mixed>  $json  JSON 데이터
+     * @return void 반환값 없음
      */
     private function writeJson(string $name, array $json): void
     {

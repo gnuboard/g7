@@ -124,6 +124,50 @@ test.describe('회원 목록 역할 일괄 변경 (#708)', () => {
     await expect(page.getByRole('dialog')).toContainText('선택한 회원 1명에게서 역할을 제거합니다.');
   });
 
+  // 키보드 사용자는 역할 칸에 검색어를 치고 Enter 로 고른다. 태그 입력이 비제어 입력값(늘 빈 값)을 보고
+  // Enter 를 막아 선택이 되지 않던 결함을 고정한다. 적용 직후 선택이 비면서 창 머리 문구가 「0명에게…」 로
+  // 바뀌어 비치던 것도 함께 막는다 — 창이 닫히기 전 어느 순간에도 그 문구가 나오면 안 된다.
+  // @scenario mode=add, target=normal, role=within_ceiling
+  // @effects bulk_role_keyboard_enter_selects_role, bulk_role_result_hides_zero_count_desc
+  test('역할 칸에 검색어를 치고 Enter 로 고를 수 있고, 적용 직후 창에 「0명」 안내가 비치지 않는다', async ({ page }) => {
+    await page.goto(`/admin/users?filters[0][field]=all&filters[0][value]=${prefix}&filters[0][operator]=like`);
+    const rows = page.locator('tbody tr').filter({ hasText: prefix });
+    await expect(rows).toHaveCount(2, { timeout: 30_000 });
+    for (let i = 0; i < 2; i++) await rows.nth(i).getByRole('checkbox').click();
+
+    await page.getByRole('button', { name: '역할 추가', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('선택한 회원 2명에게 역할을 추가합니다.');
+
+    const combo = dialog.getByRole('combobox');
+    await combo.click();
+    await combo.pressSequentially(`E2E 회원역할 ${stamp % 100000}`);
+    await expect(page.getByRole('option', { name: roleName, exact: true })).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(dialog.locator('.tag-input__multi-value__label')).toHaveText([roleName]);
+
+    // 창이 열린 동안 「0명」 문구가 한 번이라도 비치는지 지켜본다
+    await page.evaluate(() => {
+      (window as any).__zeroDescSeen = false;
+      const mo = new MutationObserver(() => {
+        const d = document.querySelector('[role="dialog"]');
+        if (d && /0명에게/.test(d.textContent ?? '')) (window as any).__zeroDescSeen = true;
+      });
+      mo.observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
+    // 메뉴를 닫으려고 창 제목을 누른다 — 제목은 머리글 태그가 아니라 `#modal-title` 이다
+    await dialog.locator('#modal-title').click();
+    await dialog.getByRole('button', { name: '적용', exact: true }).click();
+    await expect(dialog).toBeHidden({ timeout: 15_000 });
+    expect(await page.evaluate(() => (window as any).__zeroDescSeen)).toBe(false);
+
+    const api = apiOf(page);
+    for (const uuid of userUuids) {
+      const detail = await api('GET', `/api/admin/users/${uuid}`);
+      expect((detail.json.data.roles ?? []).map((r: any) => r.id)).toContain(roleId);
+    }
+  });
+
   // 모바일 「일괄 작업 선택」 은 상태 4종과 같은 잠금 규칙을 역할 항목에도 건다 — 고른 회원이 없을 때
   // 눌리면 빈 대상(uuids=[])으로 요청해 422 로 끝난다.
   // @scenario mode=add, target=normal, role=within_ceiling

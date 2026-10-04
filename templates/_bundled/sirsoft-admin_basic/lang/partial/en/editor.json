@@ -1519,6 +1519,7 @@
     "policy_version_snapshot": "Policy version snapshot",
     "rows_selected": "Rows selected (bulk actions)",
     "delete_confirm": "Delete confirmation",
+    "withdraw_confirm": "Withdrawal confirmation",
     "bulk_delete_confirm": "Bulk delete confirmation",
     "editor_preview_open": "Editor preview expanded",
     "marketing_channel_edit": "Marketing channel editing",

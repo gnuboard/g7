@@ -76,7 +76,6 @@
   "modal": {
     "manual_match": {
       "title": "Manual Matching",
-      "description": "Manually connect deposit records with orders",
       "deposit_info": "Deposit Info",
       "depositor_name": "Depositor Name",
       "deposit_amount": "Deposit Amount",
@@ -88,7 +87,6 @@
     },
     "process_history": {
       "title": "Processing History",
-      "description": "View deposit processing history and webhook logs",
       "order_number": "Order Number",
       "timeline_title": "Processing Timeline",
       "system_pg_webhook": "System (PG Webhook)",
@@ -102,7 +100,6 @@
     },
     "bulk_match": {
       "title": "Bulk Matching",
-      "description": "Match {{count}} selected deposit records with orders.",
       "instruction_1": "• Enter order number directly, or search results will appear automatically when you enter order number/customer name.",
       "instruction_2": "• Select the desired order from search results to auto-fill. (e.g., ORD20251118-0001)",
       "columns": {

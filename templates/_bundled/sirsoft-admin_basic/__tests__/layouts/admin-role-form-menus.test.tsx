@@ -98,6 +98,11 @@ describe('역할 폼 — 접근 가능 메뉴 (#708)', () => {
     expect(evaluate(treeNode.props.disabled, context)).toBe(true);
     expect(evaluate(readonlyHint.if, context)).toBe(true);
     expect(evaluate(readonlyHint.if, { ...context, role_menus_tree: tree(true) })).toBe(false);
+    // 조회 403 은 대체값({ data: [] })으로 남는다 — 권한이 없다는 뜻이므로 안내가 보인다
+    expect(evaluate(readonlyHint.if, { ...context, role_menus_tree: source.fallback })).toBe(true);
+    // 아직 받기 전(값 없음)에는 권한을 모른다 — 최고관리자에게도 「권한이 없어 볼 수만 있습니다」 가 비치던 결함
+    // (라이브 실측: 역할 수정 화면을 연 직후 안내가 보였다가 메뉴가 도착하면 사라졌다)
+    expect(evaluate(readonlyHint.if, { ...context, role_menus_tree: undefined })).toBe(false);
     expect(source.endpoint).toBe('/api/admin/menus');
     expect(source.errorHandling['403'].handler).toBe('suppress');
     expect(source.fallback).toEqual({ data: [] });

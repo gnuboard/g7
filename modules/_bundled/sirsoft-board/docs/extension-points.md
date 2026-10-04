@@ -72,7 +72,7 @@
 | `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:666` |
 | `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:579` |
 | `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:574` |
-| `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:720` |
+| `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:721` |
 | `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:287` |
 | `sirsoft-board.post.after_delete` | action | — | `src/Services/PostService.php:517` |
 | `sirsoft-board.post.after_restore` | action | — | `src/Services/PostService.php:654` |

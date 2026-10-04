@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 마이페이지 게시판 활동 검색 대상 구분 + 댓글 OFF 게시판 제외 테스트
@@ -25,20 +26,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * @scenario surface=mypage_my_posts,search_field=title
  *
  * @effects mypage_my_posts_search_field_title_only, mypage_my_comments_search_field_post_title
- *
- * @group board
- * @group user
- * @group search
  */
+#[Group('board')]
+#[Group('user')]
+#[Group('search')]
 class UserActivitySearchFieldTest extends BoardTestCase
 {
     private User $member;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'mypage-activity-search';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -51,6 +62,11 @@ class UserActivitySearchFieldTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -69,6 +85,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_posts,search_field=title
      *
      * @effects mypage_my_posts_search_field_title_only
+     *
+     * @return void 반환값 없음
      */
     public function test_my_posts_search_field_title_only(): void
     {
@@ -84,6 +102,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_posts,search_field=content
      *
      * @effects mypage_my_posts_search_field_content_only
+     *
+     * @return void 반환값 없음
      */
     public function test_my_posts_search_field_content_only(): void
     {
@@ -101,6 +121,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_posts,search_field=title_content
      *
      * @effects mypage_my_posts_search_field_title_content
+     *
+     * @return void 반환값 없음
      */
     public function test_my_posts_search_field_title_content(): void
     {
@@ -123,6 +145,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_posts
      *
      * @effects mypage_my_posts_echoes_applied_search_field
+     *
+     * @return void 반환값 없음
      */
     public function test_my_posts_echoes_search_field_and_falls_back_on_unknown(): void
     {
@@ -150,6 +174,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_comments,search_field=content
      *
      * @effects mypage_my_comments_search_field_content
+     *
+     * @return void 반환값 없음
      */
     public function test_my_comments_search_field_content(): void
     {
@@ -171,6 +197,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_comments,search_field=post_title
      *
      * @effects mypage_my_comments_search_field_post_title
+     *
+     * @return void 반환값 없음
      */
     public function test_my_comments_search_field_post_title(): void
     {
@@ -201,6 +229,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_my_comments,board_setting=use_comment_off
      *
      * @effects mypage_my_comments_excludes_comment_disabled_board
+     *
+     * @return void 반환값 없음
      */
     public function test_my_comments_excludes_use_comment_off_board(): void
     {
@@ -227,6 +257,8 @@ class UserActivitySearchFieldTest extends BoardTestCase
      * @scenario surface=mypage_activities,board_setting=use_comment_off
      *
      * @effects mypage_activities_commented_excludes_comment_disabled_board
+     *
+     * @return void 반환값 없음
      */
     public function test_board_activities_commented_excludes_use_comment_off_board(): void
     {

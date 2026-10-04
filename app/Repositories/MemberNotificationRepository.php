@@ -6,6 +6,7 @@ use App\Contracts\Repositories\MemberNotificationRepositoryInterface;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Search\KeywordSearch;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -84,7 +85,7 @@ class MemberNotificationRepository implements MemberNotificationRepositoryInterf
      * @param  Builder  $query  대상 쿼리
      * @param  string  $type  검색 대상 (all|recipient|subject|body)
      * @param  string|null  $search  검색어
-     * @return void
+     * @return void 반환값 없음
      */
     private function applySearch(Builder $query, string $type, ?string $search): void
     {
@@ -92,7 +93,8 @@ class MemberNotificationRepository implements MemberNotificationRepositoryInterf
             return;
         }
 
-        $needle = '%'.trim($search).'%';
+        // `%`·`_` 는 글자 그대로 찾는다 — 회원 목록 검색과 같은 기준
+        $needle = '%'.KeywordSearch::escapeLikeWildcards(trim($search)).'%';
 
         // 원시 SQL 은 쿼리 빌더가 접두사를 붙여 주지 않는다 — 여기서만 직접 붙인다.
         // (빌더 메서드에 넘기는 테이블명은 반대로 접두사를 붙이면 이중 접두가 된다)

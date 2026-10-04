@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 게시글 일괄 처리 API 테스트 (삭제 · 블라인드 · 복구)
@@ -33,22 +34,32 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * @scenario surface=admin_post_list,action=bulk_delete,actor=admin
  *
  * @effects admin_post_bulk_requires_manage_permission, admin_post_bulk_fires_hook_once
- *
- * @group board
- * @group admin
- * @group post
  */
+#[Group('board')]
+#[Group('admin')]
+#[Group('post')]
 class AdminPostBulkActionTest extends BoardTestCase
 {
     private User $adminWithManage;
 
     private User $writerOnly;
 
+    /**
+     * 이 테스트가 쓰는 게시판 슬러그를 돌려줍니다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'admin-post-bulk';
     }
 
+    /**
+     * 답글을 켠 테스트 게시판 속성을 돌려줍니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -61,6 +72,11 @@ class AdminPostBulkActionTest extends BoardTestCase
         ];
     }
 
+    /**
+     * admin.manage 를 가진 관리자와 posts.write 만 가진 운영자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -85,6 +101,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * admin.manage 없는 운영자의 일괄 삭제 → 403.
      *
      * @effects admin_post_bulk_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_requires_manage_permission(): void
     {
@@ -105,6 +123,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 답글 삭제 정책이 block 이면 답글 있는 글은 건너뛰고 사유를 싣는다.
      *
      * @effects admin_post_bulk_delete_skips_posts_with_replies
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_deletes_selected_and_skips_posts_with_replies_when_policy_block(): void
     {
@@ -131,6 +151,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 이미 삭제된 글은 건너뛴다 (already_deleted).
      *
      * @effects admin_post_bulk_delete_skips_already_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_skips_already_deleted(): void
     {
@@ -157,6 +179,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 일괄 블라인드 → status=blinded, 사유가 이력에 남는다.
      *
      * @effects admin_post_bulk_blind_changes_status
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_blind_changes_status_and_records_reason(): void
     {
@@ -185,6 +209,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 일괄 복구 → 블라인드된 글과 삭제된 글 모두 published 로 돌아온다.
      *
      * @effects admin_post_bulk_restore_restores_blinded_and_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_restore_restores_blinded_and_deleted(): void
     {
@@ -212,6 +238,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 이미 게시 상태인 글의 복구는 건너뛴다.
      *
      * @effects admin_post_bulk_restore_skips_already_published
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_restore_skips_already_published(): void
     {
@@ -225,6 +253,37 @@ class AdminPostBulkActionTest extends BoardTestCase
         $response->assertJsonPath('data.skipped.0.reason', 'already_published');
     }
 
+    /**
+     * 건너뛴 항목은 화면이 그대로 보일 수 있게 글 제목과 읽을 수 있는 사유를 함께 싣는다.
+     *
+     * 종전에는 사유 코드(`has_replies` 등)만 실려, 화면은 「건너뜀 N개」 개수만 알렸다 —
+     * 어느 글이 왜 빠졌는지 운영자가 알 길이 없었다(브라우저 실측 2026-10-03).
+     *
+     * @effects admin_post_bulk_skipped_items_carry_title_and_reason_label
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_skipped_items_carry_title_and_reason_label(): void
+    {
+        $blinded = $this->createTestPost(['title' => '이미 블라인드된 글', 'status' => 'blinded']);
+
+        $response = $this->actingAs($this->adminWithManage)
+            ->patchJson($this->url('/bulk-blind'), ['ids' => [$blinded]]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.skipped.0.id', $blinded);
+        $response->assertJsonPath('data.skipped.0.reason', 'already_blinded');
+        $response->assertJsonPath('data.skipped.0.title', '이미 블라인드된 글');
+        $response->assertJsonPath(
+            'data.skipped.0.reason_label',
+            __('sirsoft-board::messages.posts_bulk.skip_reasons.already_blinded'),
+        );
+        $this->assertNotSame(
+            'sirsoft-board::messages.posts_bulk.skip_reasons.already_blinded',
+            $response->json('data.skipped.0.reason_label'),
+        );
+    }
+
     // ==========================================
     // 훅 발화 횟수
     // ==========================================
@@ -236,6 +295,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 상태로 끝난다 — 그 사고를 막는 설계라서 횟수 자체가 계약이다.
      *
      * @effects admin_post_bulk_fires_hook_once
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_action_fires_bulk_hook_once_not_per_item(): void
     {
@@ -276,6 +337,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * `catch (\Exception)` 에 걸리지 않고 통과해야 한다 — 그 경로도 이 테스트가 함께 잰다.
      *
      * @effects admin_post_bulk_returns_428_when_identity_policy_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_action_returns_428_when_identity_policy_enabled_and_deletes_nothing(): void
     {
@@ -304,6 +367,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * 리팩터 회귀: 단건 삭제는 여전히 before_delete 를 발화한다.
      *
      * @effects admin_post_single_delete_behaviour_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_single_delete_behaviour_unchanged(): void
     {
@@ -330,6 +395,8 @@ class AdminPostBulkActionTest extends BoardTestCase
      * ids 검증 — 누락·빈 배열·상한 초과·정수 아님은 모두 422.
      *
      * @effects admin_post_bulk_validates_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_action_validates_ids(): void
     {
@@ -408,7 +475,7 @@ class AdminPostBulkActionTest extends BoardTestCase
      * `syncDynamicHookSubscriptions()` 를 불러야 리스너가 그 target 에 실제로 붙는다 —
      * 이 호출을 빼면 정책을 켜도 훅이 조용히 통과해 테스트가 «428 이 안 난다» 로 헛돈다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function enableBulkActionIdentityPolicy(): void
     {
@@ -430,7 +497,7 @@ class AdminPostBulkActionTest extends BoardTestCase
     /**
      * 동적 훅 구독은 정적 상태라 테스트 사이에 샌다 — 매 테스트 뒤 해제한다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {

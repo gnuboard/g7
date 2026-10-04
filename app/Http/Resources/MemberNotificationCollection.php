@@ -40,6 +40,7 @@ class MemberNotificationCollection extends BaseApiCollection
         $typeLabelMap = app(NotificationDefinitionRepositoryInterface::class)->getLabelMap($user?->locale);
 
         return array_merge([
+            // 행 메뉴 「삭제」가 읽는 행 abilities 는 MemberNotificationResource 가 표준 메타로 싣는다.
             'data' => $this->mapWithRowNumber(
                 fn ($notification) => (new MemberNotificationResource($notification))
                     ->withTypeLabelMap($typeLabelMap)

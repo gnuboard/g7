@@ -410,10 +410,12 @@
               <case when="delete">
                 <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk" method="DELETE">
                   <success>
-                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
                     <refetch-data-source dataSourceId="posts"/>
                     <toast type="success" message="{{result.message}}"/>
                     <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
                   </success>
                   <fail>
                     <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
@@ -425,10 +427,12 @@
               <case when="blind">
                 <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind" method="PATCH">
                   <success>
-                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
                     <refetch-data-source dataSourceId="posts"/>
                     <toast type="success" message="{{result.message}}"/>
                     <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
                   </success>
                   <fail>
                     <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
@@ -440,10 +444,12 @@
               <case when="restore">
                 <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore" method="PATCH">
                   <success>
-                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason=""/>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
                     <refetch-data-source dataSourceId="posts"/>
                     <toast type="success" message="{{result.message}}"/>
                     <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
                   </success>
                   <fail>
                     <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
@@ -459,6 +465,30 @@
             <icon name="spinner" class="spinner-sm"/>
             <span>$t:sirsoft-board.admin.posts.bulk.modal.processing</span>
           </span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리에서 건너뛴 글 — 서버가 글마다 제목과 번역된 사유(reason_label)를 실어 보낸다.
+         이미 지워진 글·답글이 달린 글처럼 처리하지 못한 이유가 개수 뒤에 묻히지 않게 한 줄씩 편다 -->
+    <modal data-type="composite" data-ref="bulk_post_skipped_modal" title="$t:sirsoft-board.admin.posts.bulk.skipped.title" size="md">
+      <meta editor_label="$t:sirsoft-board.admin.posts.bulk.skipped.title"/>
+      <div data-testid="admin-post-bulk-skipped" class="py-2">
+        <p class="text-body">$t:sirsoft-board.admin.posts.bulk.skipped.description|count={{(_global.bulkPostSkipped ?? []).length}}</p>
+        <ul class="mt-3 divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg max-h-80 overflow-y-auto">
+          <li data-each="skippedPost in {{_global.bulkPostSkipped ?? []}}" data-testid="admin-post-bulk-skipped-row" class="px-3 py-2 flex items-start justify-between gap-3">
+            <span class="min-w-0 text-sm text-gray-900 dark:text-white truncate">#{{skippedPost.id}} {{raw:skippedPost.title ?? ''}}</span>
+            <span class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400 text-right">{{skippedPost.reason_label ?? skippedPost.reason}}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
         </button>
       </div>
     </modal>

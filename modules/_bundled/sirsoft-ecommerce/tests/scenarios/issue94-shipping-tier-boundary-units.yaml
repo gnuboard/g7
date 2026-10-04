@@ -75,6 +75,7 @@ effects:
   - partial_cancel_moves_the_shipping_tier_with_the_remainder # 잔여가 구간을 넘나들면 배송비도 따라 옮긴다
   - partial_cancel_keeps_the_shipping_fee_inside_the_same_tier # 같은 구간·같은 단위 수면 배송비는 그대로
   - partial_cancel_rescales_the_per_unit_shipping_fee     # 단위당 정책은 잔여 단위 수로 다시 곱한다
+  - order_totals_recorded_from_option_subtotals_on_create # 주문 생성 시 총 무게, 총 부피를 옵션 소계(g, cm³) 합으로 기록
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php

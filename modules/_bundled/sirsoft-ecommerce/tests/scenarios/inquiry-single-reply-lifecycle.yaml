@@ -48,6 +48,11 @@ effects:
   - board_not_configured_safe           # 게시판 미설정 시 422/안전 열화 (500 없음)
   - pivot_type_comes_from_hook_payload  # 게시판 삭제 벌크 훅의 글 모델 타입(셋째 인자)으로 피벗을 가림 — 이커머스는 게시판 클래스명을 적지 않음
   - pivot_untouched_when_hook_type_missing # 타입 없는 벌크 훅(이전 판 게시판)은 피벗을 지우지 않음
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - count_replies_by_parent_id_counts_only_live_children
+  - has_alive_replies_returns_true_for_direct_live_reply
+  - has_alive_replies_returns_false_when_all_replies_trashed
+  - has_alive_replies_returns_false_when_only_grandchild_alive
 
 sub_flows:
   - id: board_listener_contract

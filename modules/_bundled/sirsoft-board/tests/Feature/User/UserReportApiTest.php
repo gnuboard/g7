@@ -4,7 +4,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 사용자 신고 API 테스트
@@ -18,18 +20,28 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * URL:
  * - POST /api/modules/sirsoft-board/boards/{slug}/posts/{id}/reports
  * - POST /api/modules/sirsoft-board/boards/{slug}/comments/{id}/reports
- *
- * @group board
- * @group user
- * @group report
  */
+#[Group('board')]
+#[Group('user')]
+#[Group('report')]
 class UserReportApiTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'user-report-api';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -43,6 +55,11 @@ class UserReportApiTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +74,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 회원이 다른 사람의 게시글 신고 → 201
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects authenticated_user_can_report_post
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_can_report_post(): void
     {
@@ -80,6 +103,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 미인증 요청 → 401
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects unauthenticated_cannot_report_post
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_cannot_report_post(): void
     {
@@ -93,6 +122,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * use_report=false 게시판 → 403
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects report_disabled_board_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_report_disabled_board_returns_403(): void
     {
@@ -110,6 +145,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 본인 게시글 신고 → 403
+     *
+     * @scenario operation=submit_post_report, condition=own_target
+     *
+     * @effects cannot_report_own_post
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_report_own_post(): void
     {
@@ -124,6 +165,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 블라인드된 게시글 신고 → 403
+     *
+     * @scenario operation=submit_post_report, condition=blinded_target
+     *
+     * @effects cannot_report_blinded_post
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_report_blinded_post(): void
     {
@@ -142,6 +189,12 @@ class UserReportApiTest extends BoardTestCase
      *
      * 첫 신고 성공 후 쿨다운이 기록되므로, 별도 사용자로 각 신고 시도.
      * DB에 직접 신고 레코드를 삽입한 후 재시도해 쿨다운 422와 구분.
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects duplicate_post_report_returns_409
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_post_report_returns_409(): void
     {
@@ -150,7 +203,7 @@ class UserReportApiTest extends BoardTestCase
         $postId = $this->createTestPost(['user_id' => $author->id]);
 
         // boards_reports에 직접 신고 집계 레코드 삽입 (쿨다운 우회)
-        $reportId = \Illuminate\Support\Facades\DB::table('boards_reports')->insertGetId([
+        $reportId = DB::table('boards_reports')->insertGetId([
             'board_id' => $this->board->id,
             'target_type' => 'post',
             'target_id' => $postId,
@@ -162,7 +215,7 @@ class UserReportApiTest extends BoardTestCase
             'updated_at' => now(),
         ]);
         // reporter_id는 boards_report_logs에 기록
-        \Illuminate\Support\Facades\DB::table('boards_report_logs')->insert([
+        DB::table('boards_report_logs')->insert([
             'report_id' => $reportId,
             'reporter_id' => $reporter->id,
             'reason_type' => 'spam',
@@ -182,6 +235,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 유효하지 않은 reason_type → 422
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects invalid_reason_type_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_reason_type_returns_422(): void
     {
@@ -196,6 +255,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * reason_detail 누락 → 422
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     *
+     * @effects missing_reason_detail_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_reason_detail_returns_422(): void
     {
@@ -214,6 +279,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 회원이 다른 사람의 댓글 신고 → 201
+     *
+     * @scenario operation=submit_comment_report, condition=reportable_target
+     *
+     * @effects authenticated_user_can_report_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_can_report_comment(): void
     {
@@ -237,6 +308,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 본인 댓글 신고 → 403
+     *
+     * @scenario operation=submit_comment_report, condition=own_target
+     *
+     * @effects cannot_report_own_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_report_own_comment(): void
     {
@@ -252,6 +329,12 @@ class UserReportApiTest extends BoardTestCase
 
     /**
      * 블라인드된 댓글 신고 → 403
+     *
+     * @scenario operation=submit_comment_report, condition=blinded_target
+     *
+     * @effects cannot_report_blinded_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_report_blinded_comment(): void
     {
@@ -273,6 +356,12 @@ class UserReportApiTest extends BoardTestCase
     // Helper
     // ==========================================
 
+    /**
+     * 게시글 신고 API 주소를 만듭니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string API 주소
+     */
     private function postReportUrl(int $postId): string
     {
         $slug = $this->board->slug;
@@ -280,6 +369,12 @@ class UserReportApiTest extends BoardTestCase
         return "/api/modules/sirsoft-board/boards/{$slug}/posts/{$postId}/reports";
     }
 
+    /**
+     * 댓글 신고 API 주소를 만듭니다.
+     *
+     * @param  int  $commentId  댓글 ID
+     * @return string API 주소
+     */
     private function commentReportUrl(int $commentId): string
     {
         $slug = $this->board->slug;

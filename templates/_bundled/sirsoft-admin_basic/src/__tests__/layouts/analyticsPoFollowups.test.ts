@@ -341,6 +341,19 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
     expect(menuJson).toContain('admin.analytics.visitors.action.search_by_member');
   });
 
+  // 「이 회원으로 검색」은 그 회원의 방문만 봐야 한다. 숫자만 검색칸에 넣으면 서버가 방문자 키 앞부분에도 대 보아
+  // 키가 같은 숫자로 시작하는 비회원이 섞였다(브라우저 실측: 회원 1 을 찾으면 키가 1 로 시작하는 비회원 방문이 함께 나왔다).
+  // `#번호` 는 서버가 회원 번호로만 찾는 표기다.
+  // @scenario screen=visitors, state=normal, viewport=1440, locale=ko
+  // @effects visitor_list_shows_members_by_name_with_an_actor_menu
+  it('「이 회원으로 검색」은 #회원번호 로 찾는다', () => {
+    const layout = loadLayout('admin_analytics_visitors.json');
+    const menuJson = stringify(nodesNamed(layout, 'ActionMenu'));
+
+    expect(menuJson).toContain("'#' + String(row.user_id ?? '')");
+    expect(menuJson).not.toContain('"q":"{{String(row.user_id ?? \'\')}}"');
+  });
+
   // @scenario screen=visitors, state=normal, viewport=1440, locale=en
   // @effects member_column_labels_exist_in_both_locales
   it('회원 칸이 쓰는 이름이 모든 로케일(ko·en·ja)에 있다', () => {

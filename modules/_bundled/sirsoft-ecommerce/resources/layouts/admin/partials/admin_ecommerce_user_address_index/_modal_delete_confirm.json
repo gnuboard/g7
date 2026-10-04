@@ -4,7 +4,7 @@
         "is_partial": true,
         "description": "User Address - Delete Confirm Modal"
     },
-    "id": "modal_delete_confirm",
+    "id": "modal_addresses_delete",
     "type": "composite",
     "name": "Modal",
     "props": {
@@ -131,7 +131,7 @@
                                         },
                                         {
                                             "handler": "openModal",
-                                            "target": "modal_error"
+                                            "target": "modal_addresses_error"
                                         }
                                     ]
                                 }

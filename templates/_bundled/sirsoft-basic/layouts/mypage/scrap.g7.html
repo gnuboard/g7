@@ -1,14 +1,14 @@
 <!-- 마이페이지 스크랩 탭 — 내 스크랩을 검색하고 선택 해제한다. 조회 조건은 URL 이 아니라 로컬 상태(scrapPage·scrapSearch·scrapSearchField)에 있어 데이터소스 URL 에 직접 보간한다 -->
 <layout name="mypage/scrap" version="1.0.0" extends="_user_base">
   <!-- 내 스크랩 목록 — 페이지·검색어·검색 대상을 로컬 상태에서 읽어 URL 에 보간한다. 검색·쪽 이동은 refetch 로 다시 받는다 -->
-  <data-source id="scrap" label_key="$t:editor.data_source.scrap" type="api" endpoint="/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}&amp;search={{_local.scrapSearch ?? ''}}&amp;search_field={{_local.scrapSearchField ?? 'title_content'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <data-source id="scrap" label_key="$t:editor.data_source.scrap" type="api" endpoint="/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}&amp;search={{_local.scrapSearchApplied ?? ''}}&amp;search_field={{_local.scrapSearchField ?? 'title_content'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
   <computed name="currentTab">scrap</computed>
   <permissions/>
   <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
     <spinner component="PageLoading"/>
   </transition-overlay>
   <init>
-    <set-state target="local" :scrapPage="1" scrapSearch="" scrapSearchField="title_content" :scrapSelectedIds="[]"/>
+    <set-state target="local" :scrapPage="1" scrapSearch="" scrapSearchApplied="" scrapSearchField="title_content" :scrapSelectedIds="[]"/>
   </init>
   <slot name="content">
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">

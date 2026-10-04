@@ -409,6 +409,15 @@ DB 컬럼이 늘지 않는다 — `NotificationSyncHelper` 가 저장 필드를 
 - 선언이 비면 타입 드롭다운에서 「관련 사용자」 자체가 **표시되지 않는다**. 관계를 주지 않는 알림에서 그 타입을 고르면 수신자가 0명이 되고 로그도 남지 않기 때문이다.
 - 서버는 저장 시 `relation` 값이 이 목록 안에 있는지 검증한다 — 오타가 발송 시점이 아니라 저장 시점에 드러난다.
 - 리스너가 실제로 그 키를 공급하는지는 선언과 별개다. 선언만 하고 공급하지 않으면 같은 「조용한 0명」이 된다.
+- **관계마다 이름을 언어 파일에 둔다.** 관리자 화면은 선택지와 목록에 관계 키(`post_author`) 대신 이름(「게시글 작성자」)을 보인다. 정의 응답의 `relation_labels` 가 그 이름이며, 확장 알림은 그 확장의 `{식별자}::messages.notification_relations.{관계}`, 코어 알림은 `notification.relations.{관계}` 에서 찾는다(코어 정의는 아직 관계를 두지 않아 이 그룹은 비어 있다 — 코어 알림이 관계를 선언할 때 함께 적는다). 키가 없으면 관계 키를 그대로 보인다 — 운영자에게 개발용 이름이 노출되므로 ko·en(번들 언어팩 포함)에 함께 적는다.
+
+```php
+// modules/_bundled/sirsoft-board/src/lang/ko/messages.php
+'notification_relations' => [
+    'post_author' => '게시글 작성자',
+    'board_managers' => '게시판 관리자',
+],
+```
 
 ### 코어 config 블록
 
@@ -702,7 +711,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 
 `hidden_template_editor: true` 는 `template_editor: 'none'` 으로 해석되어 **하위호환이 유지된다** — 기존 확장은 고치지 않아도 된다.
 
-`none`(또는 `hidden_template_editor`)을 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
+`none`(또는 `hidden_template_editor`)을 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다. 이름이 공통이라 extension_point 파일 1본이 그 모달을 둔 모든 화면(코어·게시판·쇼핑몰 설정, 같은 모달을 둔 플러그인 설정 화면 — GDPR·환율)에 주입된다. 주입 UI 가 읽는 데이터소스는 화면별 오버레이가 아니라 확장 지점 조각의 `data_sources` 에 둔다 — 그래야 확장이 모르는 화면(다른 플러그인 설정)에도 함께 실린다. 같은 id 를 오버레이에서 다시 선언하지 않는다(한 레이아웃 안 id 중복).
 
 | extension_point | 위치 | props |
 | --- | --- | --- |

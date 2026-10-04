@@ -42,6 +42,41 @@ async function openMyReports(page: Page, token: string): Promise<void> {
   await expect(page.locator('[data-testid^="my-report-row-"]').first()).toBeVisible({ timeout: 20_000 });
 }
 
+/**
+ * 필터의 선택지를 하나씩 골라 검색을 돌리고, 요청에 실린 값과 응답 상태를 모은다.
+ *
+ * 필터는 네이티브 select 가 아니라 목록 단추(Select 컴포넌트)라 옵션에 value 속성이 없다 —
+ * 그래서 화면이 실제로 보낸 쿼리 값을 요청 주소에서 읽는다. 목록은 문서 끝에 따로 그려진다.
+ *
+ * @param page 대상 페이지
+ * @param testId 필터 래퍼의 data-testid
+ * @param param 요청 쿼리에서 읽을 이름
+ * @returns 선택지마다 보낸 값과 응답 상태
+ */
+async function chooseEachOption(page: Page, testId: string, param: string): Promise<Array<{ value: string; status: number }>> {
+  const trigger = page.locator(`[data-testid="${testId}"] button`).first();
+  await trigger.click();
+  const count = await page.getByRole('listbox').getByRole('option').count();
+  await page.keyboard.press('Escape');
+
+  const searchButton = page.locator('[data-testid="my-reports-search-field"]')
+    .locator('xpath=ancestor::*[.//button[normalize-space()="검색" or normalize-space()="Search"]][1]')
+    .getByRole('button', { name: /^(검색|Search)$/ });
+
+  const sent: Array<{ value: string; status: number }> = [];
+  for (let i = 0; i < count; i++) {
+    await trigger.click();
+    await page.getByRole('listbox').getByRole('option').nth(i).click();
+    const [response] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/me/reports') && r.request().method() === 'GET'),
+      searchButton.click(),
+    ]);
+    sent.push({ value: new URL(response.url()).searchParams.get(param) ?? '', status: response.status() });
+  }
+
+  return sent;
+}
+
 test.describe('마이페이지 내 신고 (#525 WP-E)', () => {
   // @scenario case=subtab_lists_reports_with_status_badges
   // @effects lists_own_logs_with_status_and_can_cancel
@@ -87,18 +122,10 @@ test.describe('마이페이지 내 신고 (#525 WP-E)', () => {
     // 2026-09-16 5차 검증: 「검토 중」·「처리 완료」가 서버에 없는 값이라 전 회원이 422 를 받았다.
     await openMyReports(page, reactionSeed.member_a_token);
 
-    const filter = page.locator('[data-testid="my-reports-status-filter"]');
-    const values = await filter.locator('option').evaluateAll((nodes) =>
-      nodes.map((n) => (n as HTMLOptionElement).value).filter((v) => v !== ''),
-    );
-    expect(values.length).toBeGreaterThan(0);
-
-    for (const value of values) {
-      const [response] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/me/reports') && r.url().includes(`status=${value}`)),
-        filter.selectOption(value),
-      ]);
-      expect(response.status(), `상태 '${value}' 가 서버에 거부됐다`).toBe(200);
+    const sent = await chooseEachOption(page, 'my-reports-status-filter', 'status');
+    expect(sent.length).toBeGreaterThan(1);
+    for (const { value, status } of sent) {
+      expect(status, `상태 '${value}' 가 서버에 거부됐다`).toBe(200);
     }
   });
 
@@ -109,25 +136,36 @@ test.describe('마이페이지 내 신고 (#525 WP-E)', () => {
     // 'title_content' 로 떨어져 사유 설명으로는 영영 찾지 못한다. 그래서 값이 실제로
     // 쿼리에 실려 나가는지까지 본다(6차 검증이 연 축).
     await openMyReports(page, reactionSeed.member_a_token);
+    await expect(page.locator('[data-testid="my-reports-search-field"]')).toBeVisible();
 
-    const filter = page.locator('[data-testid="my-reports-search-field"]');
-    await expect(filter).toBeVisible();
-
-    const values = await filter.locator('option').evaluateAll((nodes) =>
-      nodes.map((n) => (n as HTMLOptionElement).value).filter(Boolean),
-    );
-    expect(values.length).toBeGreaterThan(0);
-    expect(values, '신고 사유로 찾는 선택지가 없다').toContain('reason');
-
-    for (const value of values) {
-      const [response] = await Promise.all([
-        page.waitForResponse(
-          (r) => r.url().includes('/me/reports') && r.url().includes(`search_field=${value}`),
-        ),
-        filter.selectOption(value),
-      ]);
-      expect(response.status(), `검색 대상 '${value}' 가 서버에 거부됐다`).toBe(200);
+    const sent = await chooseEachOption(page, 'my-reports-search-field', 'search_field');
+    expect(sent.length).toBeGreaterThan(1);
+    expect(sent.map((s) => s.value), '신고 사유로 찾는 선택지가 없다').toContain('reason');
+    for (const { value, status } of sent) {
+      expect(status, `검색 대상 '${value}' 가 서버에 거부됐다`).toBe(200);
     }
+  });
+
+  // 취소 창은 목록 행의 머리줄(글은 제목, 댓글은 본문 요약)을 그대로 보여 어느 신고를 거두는지 알린다.
+  // 맞는 것이 없는 검색은 「아직 넣은 신고가 없다」가 아니라 검색 결과가 없다고 말한다(실측 2026-10-03).
+  // @scenario case=subtab_lists_reports_with_status_badges
+  // @effects mypage_reports_post_row_leads_with_title, mypage_filtered_empty_says_no_results
+  test('취소 창이 거둘 신고의 대상을 보이고, 맞는 것이 없는 검색은 검색 결과 없음을 낸다', async ({ page, reactionSeed }) => {
+    await openMyReports(page, reactionSeed.member_a_token);
+
+    const row = page.locator(`[data-testid="my-report-row-${reactionSeed.report_log_pending_id}"]`);
+    const headline = (await row.locator('button.text-left, span.line-clamp-2').first().innerText()).trim();
+    expect(headline.length).toBeGreaterThan(0);
+
+    await page.locator(`[data-testid="my-report-cancel-${reactionSeed.report_log_pending_id}"]`).click();
+    await expect(page.locator('[data-testid="report-cancel-target"]')).toHaveText(headline);
+    await page.getByRole('dialog').getByRole('button', { name: /^(취소|Cancel)$/ }).first().click();
+    await expect(page.locator('[data-testid="report-cancel-target"]')).toBeHidden();
+
+    const filterRow = page.locator('[data-testid="my-reports-search-field"]').locator('xpath=ancestor::*[.//button][1]');
+    await filterRow.locator('input').first().fill('zz-없는-검색어-000');
+    await filterRow.getByRole('button', { name: /^(검색|Search)$/ }).click();
+    await expect(page.locator('[data-testid="my-reports-empty"]')).toContainText(/검색 결과가 없습니다|No search results found/, { timeout: 20_000 });
   });
 
   // @scenario case=subtab_cancel_only_when_pending

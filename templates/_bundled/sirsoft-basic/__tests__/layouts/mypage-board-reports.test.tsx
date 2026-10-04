@@ -178,6 +178,29 @@ describe('내 신고 — 상태 표시', () => {
         expect(/!report\.target_deleted/.test(json)).toBe(true);
     });
 
+    // 글 신고의 스냅샷에는 제목과 본문이 함께 있다 — 본문 요약을 먼저 쓰면 형제 탭(내 반응·내 글)과 달리
+    // 글 제목이 한 번도 보이지 않는다(실측 2026-10-03). 댓글 스냅샷은 제목이 없어 본문 요약으로 떨어진다.
+    // @scenario case=subtab_lists_reports_with_status_badges
+    // @effects mypage_reports_post_row_leads_with_title
+    it('글 신고는 제목을, 댓글 신고는 본문 요약을 머리줄로 낸다', () => {
+        expect(json.includes('report.title ?? report.excerpt')).toBe(true);
+        expect(json.includes('report.excerpt ?? report.title')).toBe(false);
+        expect(modalJson.includes('report.excerpt ?? report.title')).toBe(false);
+        // 제목과 요약은 회원이 쓴 글이다 — 안에 `$t:` 가 있어도 번역하지 않도록 raw 로 그린다.
+        expect(json.includes('{{raw:report.title ?? report.excerpt ?? \'\'}}')).toBe(true);
+        expect(modalJson.includes('{{raw:_global.reportCancelModal?.title}}')).toBe(true);
+    });
+
+    // 취소 창은 목록이 담아 둔 대상을 보여 준다 — 담기만 하고 쓰지 않던 값이었다(실측 2026-10-03).
+    // @scenario case=subtab_cancel_only_when_pending
+    // @effects mypage_reports_post_row_leads_with_title
+    it('취소 창이 거둘 신고의 대상을 보여 준다', () => {
+        // 목록의 취소 버튼이 창 상태에 번호와 함께 대상 제목(없으면 본문 요약)을 담는다.
+        expect(json.includes('"reportCancelModal":{"id":"{{report.id}}","title":"{{report.title ?? report.excerpt ?? \'\'}}"}')).toBe(true);
+        expect(modalJson.includes('report-cancel-target')).toBe(true);
+        expect(modalJson.includes('_global.reportCancelModal?.title')).toBe(true);
+    });
+
     // @scenario case=subtab_lists_reports_with_status_badges
     // @effects mypage_reports_status_badge_has_four_branches
     it('내가 고른 사유와 덧붙인 설명을 함께 낸다', () => {
@@ -228,5 +251,14 @@ describe('내 신고 — 취소', () => {
     // @effects mypage_reports_cancel_modal_calls_delete_and_refetches
     it('닫을 때 대상 정보를 비운다 — 여러 행이 이 창을 돌려 쓴다', () => {
         expect(/"reportCancelModal":\s*null/.test(modalJson)).toBe(true);
+    });
+});
+
+describe('내 신고 — 검색 0건 안내', () => {
+    // @scenario case=subtab_lists_reports_with_status_badges
+    // @effects mypage_filtered_empty_says_no_results
+    it('검색·게시판·상태·대상 중 하나라도 걸려 있으면 검색 결과 없음을 낸다', () => {
+        expect(json.includes('!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType')).toBe(true);
+        expect(json.includes('$t:board.no_search_results')).toBe(true);
     });
 });

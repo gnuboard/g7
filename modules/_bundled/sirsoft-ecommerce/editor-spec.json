@@ -415,7 +415,7 @@
               "name_localized": "베이직 오버핏 코튼 티셔츠",
               "product_code": "TS-1001",
               "sku": "TS-1001",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 29000,
               "list_price_formatted": "29,000원",
               "selling_price": 23200,
@@ -518,7 +518,7 @@
               "name_localized": "데일리 와이드 슬랙스",
               "product_code": "PT-2042",
               "sku": "PT-2042",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 39000,
               "list_price_formatted": "39,000원",
               "selling_price": 39000,
@@ -616,7 +616,7 @@
               "name_localized": "구스다운 경량 패딩 점퍼",
               "product_code": "OW-3310",
               "sku": "OW-3310",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 189000,
               "list_price_formatted": "189,000원",
               "selling_price": 132300,
@@ -738,7 +738,7 @@
               "id": 5001,
               "hash": "img5001",
               "original_filename": "tshirt_main.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "정면",
               "is_thumbnail": true,
               "sort_order": 0,
@@ -755,7 +755,7 @@
               "id": 5002,
               "hash": "img5002",
               "original_filename": "tshirt_back.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "후면",
               "is_thumbnail": false,
               "sort_order": 1,
@@ -772,7 +772,7 @@
               "id": 5003,
               "hash": "img5003",
               "original_filename": "tshirt_detail.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "디테일",
               "is_thumbnail": false,
               "sort_order": 2,
@@ -1621,7 +1621,7 @@
               "product": {
                 "id": 101,
                 "name": "베이직 오버핏 코튼 티셔츠",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "블랙 / M",
               "rating": 5,
@@ -1655,7 +1655,7 @@
               "product": {
                 "id": 101,
                 "name": "베이직 오버핏 코튼 티셔츠",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "화이트 / L",
               "rating": 4,
@@ -1689,7 +1689,7 @@
               "product": {
                 "id": 102,
                 "name": "데일리 와이드 슬랙스",
-                "thumbnail_url": "/images/placeholder.png"
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
               },
               "option_snapshot_label": "",
               "rating": 2,
@@ -4050,13 +4050,13 @@
           },
           "product_code": "PT-2042",
           "selling_price": 39000,
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "images": [
             {
               "id": 5101,
               "hash": "img5101",
               "original_filename": "slacks_main.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "정면",
               "is_thumbnail": true,
               "sort_order": 0,
@@ -4073,7 +4073,7 @@
               "id": 5102,
               "hash": "img5102",
               "original_filename": "slacks_detail.jpg",
-              "download_url": "/images/placeholder.png",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "alt_text": "디테일",
               "is_thumbnail": false,
               "sort_order": 1,
@@ -5654,14 +5654,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -5679,7 +5679,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -5697,7 +5697,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -5712,7 +5712,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -6174,14 +6174,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -6199,7 +6199,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -6217,7 +6217,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -6232,7 +6232,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -6694,14 +6694,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -6719,7 +6719,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -6737,7 +6737,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -6752,7 +6752,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -7214,14 +7214,14 @@
                     "description": {
                       "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
                     },
-                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                    "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
                     "description_mode": "html",
                     "images": [
                       {
                         "id": 5001,
                         "hash": "img5001",
                         "original_filename": "tshirt_main.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "정면",
                         "alt_text_current": "베이직 오버핏 티셔츠 정면",
                         "is_thumbnail": true,
@@ -7239,7 +7239,7 @@
                         "id": 5002,
                         "hash": "img5002",
                         "original_filename": "tshirt_back.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "후면",
                         "alt_text_current": "베이직 오버핏 티셔츠 후면",
                         "is_thumbnail": false,
@@ -7257,7 +7257,7 @@
                         "id": 5003,
                         "hash": "img5003",
                         "original_filename": "tshirt_detail.jpg",
-                        "download_url": "/images/placeholder.png",
+                        "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                         "alt_text": "디테일",
                         "alt_text_current": "소매 디테일 컷",
                         "is_thumbnail": false,
@@ -7272,7 +7272,7 @@
                         "is_image": true
                       }
                     ],
-                    "thumbnail_url": "/images/placeholder.png",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
                     "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
                     "meta_keywords": [
@@ -7719,10 +7719,10 @@
                           "image_count": 2,
                           "images": [
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             }
                           ],
                           "has_reply": true,
@@ -7796,19 +7796,19 @@
                           "image_count": 5,
                           "images": [
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             },
                             {
-                              "download_url": "/images/placeholder.png"
+                              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                             }
                           ],
                           "has_reply": true,
@@ -9165,34 +9165,6 @@
         ]
       },
       {
-        "comment": "admin 마일리지/예치금 설정 — _local.activeTab(mileage/deposit)으로 탭을 분기한다(본문 line 130/165).",
-        "scope": {
-          "kind": "route",
-          "match": "*/admin/ecommerce/mileage-deposit-settings"
-        },
-        "items": [
-          {
-            "id": "tab_mileage",
-            "label": "$t:editor.state.tab.mileage",
-            "default": true,
-            "initialState": {
-              "local": {
-                "activeTab": "mileage"
-              }
-            }
-          },
-          {
-            "id": "tab_deposit",
-            "label": "$t:editor.state.tab.deposit",
-            "initialState": {
-              "local": {
-                "activeTab": "deposit"
-              }
-            }
-          }
-        ]
-      },
-      {
         "comment": "shop/guest_order_form — 비회원 주문 조회 폼. 본문이 _global.currentUser.uuid 유무로 양분된다(slots.content[0] 회원→마이페이지 리다이렉트 안내 / content[1] 비회원→조회 폼). 편집기 sampleGlobal 은 로그인 상태(currentUser 시드)라 비회원 조회 폼이 기본 미표시이므로, currentUser 를 null 로 패치한 비회원 상태를 기본으로 노출해 폼을 편집 가능하게 한다.",
         "scope": {
           "kind": "route",
@@ -9298,8 +9270,7 @@
                 "issueHistoryFilterUser": {
                   "uuid": "00000000-0000-4000-8000-000000000031"
                 },
-                "issueHistoryPerPage": 10,
-                "isPortable": true
+                "issueHistoryPerPage": 10
               }
             }
           }
@@ -9382,9 +9353,392 @@
             "label": "$t:editor.state.order_detail_partially_cancelled",
             "comment": "부분취소 상태 — order.data.is_partially_cancelled=true 로 취소 표시 분기를 캔버스에 노출.",
             "sampleDataOverrides": {
-              "byEndpointPattern": {
-                "/api/modules/sirsoft-ecommerce/admin/orders/*": {
+              "byDataSourceId": {
+                "order": {
                   "data": {
+                    "id": 5101,
+                    "order_number": "20260601-0042",
+                    "order_status": "preparing",
+                    "order_status_label": "배송준비중",
+                    "order_status_variant": "info",
+                    "order_device": "pc",
+                    "order_device_label": "PC",
+                    "is_first_order": false,
+                    "abilities": {
+                      "can_read": true,
+                      "can_update": true,
+                      "can_cancel": true
+                    },
+                    "subtotal_amount": 76000,
+                    "subtotal_amount_formatted": "76,000원",
+                    "total_discount_amount": 9500,
+                    "total_discount_amount_formatted": "9,500원",
+                    "total_shipping_amount": 3000,
+                    "total_shipping_amount_formatted": "3,000원",
+                    "total_amount": 69500,
+                    "total_amount_formatted": "69,500원",
+                    "total_paid_amount": 69500,
+                    "total_paid_amount_formatted": "69,500원",
+                    "total_product_coupon_discount_amount": 5000,
+                    "total_product_coupon_discount_amount_formatted": "5,000원",
+                    "total_order_coupon_discount_amount": 2500,
+                    "total_order_coupon_discount_amount_formatted": "2,500원",
+                    "total_coupon_discount_amount": 7500,
+                    "total_coupon_discount_amount_formatted": "7,500원",
+                    "total_code_discount_amount": 2000,
+                    "total_code_discount_amount_formatted": "2,000원",
+                    "total_points_used_amount": 1000,
+                    "total_points_used_amount_formatted": "1,000원",
+                    "total_deposit_used_amount": 0,
+                    "total_deposit_used_amount_formatted": "0원",
+                    "total_earned_points_amount": 710,
+                    "total_earned_points_amount_formatted": "710원",
+                    "total_tax_amount": 6318,
+                    "total_tax_amount_formatted": "6,318원",
+                    "total_vat_amount": 6318,
+                    "total_vat_amount_formatted": "6,318원",
+                    "total_list_price": 82000,
+                    "total_list_price_formatted": "82,000원",
+                    "total_quantity": 3,
+                    "item_count": 2,
+                    "mc_subtotal_amount": {
+                      "KRW": {
+                        "price": 76000,
+                        "formatted": "76,000원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 55.7,
+                        "formatted": "$55.70",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_discount_amount": {
+                      "KRW": {
+                        "price": 9500,
+                        "formatted": "9,500원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 6.9,
+                        "formatted": "$6.90",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_shipping_amount": {
+                      "KRW": {
+                        "price": 3000,
+                        "formatted": "3,000원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 2.2,
+                        "formatted": "$2.20",
+                        "is_default": false
+                      }
+                    },
+                    "mc_total_amount": {
+                      "KRW": {
+                        "price": 69500,
+                        "formatted": "69,500원",
+                        "is_default": true
+                      },
+                      "USD": {
+                        "price": 50.7,
+                        "formatted": "$50.70",
+                        "is_default": false
+                      }
+                    },
+                    "ordered_at_formatted": "2026-06-01 19:30",
+                    "paid_at_formatted": "2026-06-01 19:31",
+                    "delivered_at": null,
+                    "user_id": "u-1001",
+                    "user_login_id": "gildong",
+                    "orderer_name": "홍길동",
+                    "orderer_phone": "010-1234-5678",
+                    "orderer_tel": "02-555-1234",
+                    "orderer_email": "gildong@example.com",
+                    "recipient_name": "홍길동",
+                    "recipient_phone": "010-1234-5678",
+                    "recipient_zipcode": "06234",
+                    "recipient_address": "서울특별시 강남구 테헤란로 123",
+                    "recipient_detail_address": "4층 401호",
+                    "delivery_memo": "부재 시 경비실에 맡겨주세요",
+                    "shipping_address": {
+                      "recipient_name": "홍길동",
+                      "recipient_phone": "010-1234-5678",
+                      "zipcode": "06234",
+                      "address": "서울특별시 강남구 테헤란로 123",
+                      "address_detail": "4층 401호",
+                      "full_address": "서울특별시 강남구 테헤란로 123 4층 401호",
+                      "delivery_memo": "부재 시 경비실에 맡겨주세요"
+                    },
+                    "options": [
+                      {
+                        "id": 9101,
+                        "option_status": "preparing",
+                        "option_status_label": "배송준비중",
+                        "option_status_variant": "info",
+                        "product_id": 1,
+                        "product_option_id": 101,
+                        "sku": "EARBUDS-PRO-BLK",
+                        "product_name": "프리미엄 무선 이어버드 프로",
+                        "product_option_name": "미드나잇 블랙 / 기본",
+                        "option_name": "미드나잇 블랙 / 기본",
+                        "quantity": 2,
+                        "shipped_quantity": 0,
+                        "unit_price": 29000,
+                        "unit_price_formatted": "29,000원",
+                        "subtotal_price": 58000,
+                        "subtotal_price_formatted": "58,000원",
+                        "subtotal_discount_amount": 7500,
+                        "subtotal_discount_amount_formatted": "7,500원",
+                        "list_price": 32000,
+                        "list_price_formatted": "32,000원",
+                        "final_amount": 50500,
+                        "final_amount_formatted": "50,500원",
+                        "product_coupon_discount_amount": 5000,
+                        "product_coupon_discount_amount_formatted": "5,000원",
+                        "order_coupon_discount_amount": 2500,
+                        "order_coupon_discount_amount_formatted": "2,500원",
+                        "coupon_discount_amount": 7500,
+                        "coupon_discount_amount_formatted": "7,500원",
+                        "code_discount_amount": 0,
+                        "code_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원",
+                        "subtotal_points_used_amount": 500,
+                        "subtotal_points_used_amount_formatted": "500원",
+                        "subtotal_deposit_used_amount": 0,
+                        "subtotal_deposit_used_amount_formatted": "0원",
+                        "subtotal_earned_points_amount": 530,
+                        "subtotal_earned_points_amount_formatted": "530원",
+                        "subtotal_tax_amount": 4818,
+                        "subtotal_tax_amount_formatted": "4,818원",
+                        "subtotal_vat_amount": 4818,
+                        "subtotal_vat_amount_formatted": "4,818원",
+                        "shipping_policy_name": "기본 배송 정책",
+                        "shipping_type_label": "택배",
+                        "shipping_amount": 3000,
+                        "shipping_amount_formatted": "3,000원",
+                        "carrier_name": "CJ대한통운",
+                        "tracking_number": "6123456789012",
+                        "thumbnail_url": null,
+                        "product_snapshot": {
+                          "product_code": "EARBUDS-PRO"
+                        },
+                        "mc_unit_price": {
+                          "KRW": {
+                            "price": 29000,
+                            "formatted": "29,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 21.3,
+                            "formatted": "$21.30",
+                            "is_default": false
+                          }
+                        },
+                        "mc_subtotal_price": {
+                          "KRW": {
+                            "price": 58000,
+                            "formatted": "58,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 42.6,
+                            "formatted": "$42.60",
+                            "is_default": false
+                          }
+                        },
+                        "confirmed_at": null,
+                        "promotions_applied_snapshot": {
+                          "coupons": [
+                            {
+                              "name": "이어버드 단독 10% 할인",
+                              "total_discount_formatted": "5,000원"
+                            }
+                          ],
+                          "discount_codes": [
+                            {
+                              "code": "WELCOME2000",
+                              "name": "신규가입 2,000원 할인코드",
+                              "total_discount_formatted": "2,000원"
+                            }
+                          ],
+                          "events": []
+                        }
+                      },
+                      {
+                        "id": 9102,
+                        "option_status": "cancelled",
+                        "option_status_label": "주문취소",
+                        "option_status_variant": "danger",
+                        "product_id": 2,
+                        "product_option_id": 102,
+                        "sku": "CABLE-15M-WHT",
+                        "product_name": "고속 충전 케이블 1.5m",
+                        "product_option_name": "1.5m",
+                        "option_name": "1.5m",
+                        "quantity": 1,
+                        "shipped_quantity": 0,
+                        "unit_price": 18000,
+                        "unit_price_formatted": "18,000원",
+                        "subtotal_price": 18000,
+                        "subtotal_price_formatted": "18,000원",
+                        "subtotal_discount_amount": 0,
+                        "subtotal_discount_amount_formatted": "0원",
+                        "list_price": 18000,
+                        "list_price_formatted": "18,000원",
+                        "final_amount": 18000,
+                        "final_amount_formatted": "18,000원",
+                        "product_coupon_discount_amount": 0,
+                        "product_coupon_discount_amount_formatted": "0원",
+                        "order_coupon_discount_amount": 0,
+                        "order_coupon_discount_amount_formatted": "0원",
+                        "coupon_discount_amount": 0,
+                        "coupon_discount_amount_formatted": "0원",
+                        "code_discount_amount": 0,
+                        "code_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원",
+                        "subtotal_points_used_amount": 0,
+                        "subtotal_points_used_amount_formatted": "0원",
+                        "subtotal_deposit_used_amount": 0,
+                        "subtotal_deposit_used_amount_formatted": "0원",
+                        "subtotal_earned_points_amount": 180,
+                        "subtotal_earned_points_amount_formatted": "180원",
+                        "subtotal_tax_amount": 1500,
+                        "subtotal_tax_amount_formatted": "1,500원",
+                        "subtotal_vat_amount": 1500,
+                        "subtotal_vat_amount_formatted": "1,500원",
+                        "shipping_policy_name": "무료 배송 정책",
+                        "shipping_type_label": "택배",
+                        "shipping_amount": 0,
+                        "shipping_amount_formatted": "0원",
+                        "carrier_name": "CJ대한통운",
+                        "tracking_number": "6123456789013",
+                        "thumbnail_url": null,
+                        "product_snapshot": {
+                          "product_code": "CABLE-15M"
+                        },
+                        "mc_unit_price": {
+                          "KRW": {
+                            "price": 18000,
+                            "formatted": "18,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 13.2,
+                            "formatted": "$13.20",
+                            "is_default": false
+                          }
+                        },
+                        "mc_subtotal_price": {
+                          "KRW": {
+                            "price": 18000,
+                            "formatted": "18,000원",
+                            "is_default": true
+                          },
+                          "USD": {
+                            "price": 13.2,
+                            "formatted": "$13.20",
+                            "is_default": false
+                          }
+                        },
+                        "confirmed_at": null,
+                        "promotions_applied_snapshot": {
+                          "coupons": [],
+                          "discount_codes": [],
+                          "events": []
+                        }
+                      }
+                    ],
+                    "payment": {
+                      "payment_method_label": "신용카드"
+                    },
+                    "payments": [
+                      {
+                        "id": 8101,
+                        "payment_status": "paid",
+                        "payment_status_label": "결제완료",
+                        "payment_status_variant": "success",
+                        "payment_method": "card",
+                        "payment_method_label": "신용카드",
+                        "payment_type_label": "일반결제",
+                        "payment_number": "PAY-20260601-0042",
+                        "paid_amount_formatted": "69,500원",
+                        "account_info": null,
+                        "requested_at_formatted": "2026-06-01 19:30",
+                        "paid_at_formatted": "2026-06-01 19:31",
+                        "due_date_formatted": null,
+                        "cancelled_amount": 0,
+                        "cancelled_amount_formatted": "0원",
+                        "refunded_amount": 0,
+                        "refunded_amount_formatted": "0원",
+                        "refund_status_label": null,
+                        "refund_status_variant": null,
+                        "refund_points_amount": 0,
+                        "refund_points_amount_formatted": "0원",
+                        "event_discount_amount": 0,
+                        "event_discount_amount_formatted": "0원",
+                        "referral_discount_amount": 0,
+                        "referral_discount_amount_formatted": "0원"
+                      }
+                    ],
+                    "shippings": [],
+                    "promotions_applied_snapshot": {
+                      "product_promotions": {
+                        "coupons": [
+                          {
+                            "coupon_id": 5001,
+                            "name": "이어버드 단독 10% 할인",
+                            "target_type": "product_amount",
+                            "total_discount": 5000,
+                            "total_discount_formatted": "5,000원"
+                          }
+                        ],
+                        "discount_codes": [
+                          {
+                            "code_id": 7001,
+                            "code": "WELCOME2000",
+                            "name": "신규가입 2,000원 할인코드",
+                            "total_discount": 2000,
+                            "total_discount_formatted": "2,000원"
+                          }
+                        ],
+                        "events": []
+                      },
+                      "order_promotions": {
+                        "coupons": [
+                          {
+                            "coupon_id": 6001,
+                            "name": "5만원 이상 5,000원 할인",
+                            "target_type": "order_amount",
+                            "total_discount": 5000,
+                            "total_discount_formatted": "5,000원"
+                          }
+                        ],
+                        "discount_codes": [],
+                        "events": []
+                      }
+                    },
+                    "shipping_policy_applied_snapshot": {
+                      "items": [
+                        {
+                          "product_option_id": 9001,
+                          "policy": {
+                            "policy_name": "기본 배송 정책",
+                            "standalone_shipping_amount": 3000,
+                            "standalone_shipping_amount_formatted": "3,000원"
+                          }
+                        }
+                      ],
+                      "address": {
+                        "country_code": "KR",
+                        "zipcode": "06234"
+                      }
+                    },
                     "is_partially_cancelled": true
                   }
                 }
@@ -9471,8 +9825,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -9498,10 +9856,31 @@
             "initialState": {
               "global": {
                 "targetPolicy": {
-                  "countries_display": "샘플 값",
-                  "country_settings": [],
+                  "countries_display": "대한민국, 미국",
+                  "country_settings": [
+                    {
+                      "country_code": "KR",
+                      "shipping_method_label": "택배",
+                      "charge_policy": "conditional_free",
+                      "charge_policy_label": "조건부 무료",
+                      "base_fee": 3000,
+                      "currency_code": "KRW",
+                      "extra_fee_enabled": true,
+                      "is_active": true
+                    },
+                    {
+                      "country_code": "US",
+                      "shipping_method_label": "국제 특송",
+                      "charge_policy": "fixed",
+                      "charge_policy_label": "고정",
+                      "base_fee": 25,
+                      "currency_code": "USD",
+                      "extra_fee_enabled": false,
+                      "is_active": true
+                    }
+                  ],
                   "id": 1,
-                  "name_localized": "샘플 값"
+                  "name_localized": "기본 택배 배송"
                 }
               }
             }
@@ -9617,7 +9996,7 @@
             "initialState": {
               "global": {
                 "infiniteScroll": {
-                  "currentPage": "샘플 값",
+                  "currentPage": 1,
                   "hasMore": true,
                   "isLoadingMore": false
                 },
@@ -9698,7 +10077,7 @@
         ]
       },
       {
-        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_addresses, selectedItems_addresses) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, isBulkDeleting) — 표가 선택한 행을 옮겨 담는 값이라, 편집기에서는 이 상태로 담아야 「0건」으로 열리지 않는다.",
         "scope": {
           "kind": "modal",
           "match": "modal_addresses_bulk_delete"
@@ -9710,15 +10089,19 @@
             "default": true,
             "initialState": {
               "global": {
-                "selectedItems_addresses": [],
-                "bulkDeleting_addresses": false
+                "bulkSelectedItems": [
+                  1,
+                  2,
+                  3
+                ],
+                "isBulkDeleting": false
               }
             }
           }
         ]
       },
       {
-        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_addresses, deleting_addresses, selectedItems_addresses) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 확인 문장의 수령인·회원 이름이 빈 채로 열리지 않는다.",
         "scope": {
           "kind": "modal",
           "match": "modal_addresses_delete"
@@ -9730,10 +10113,11 @@
             "default": true,
             "initialState": {
               "global": {
-                "selectedItems_addresses": [],
-                "deleting_addresses": false,
-                "deleteTarget_addresses": {
-                  "id": 1
+                "isDeleting": false,
+                "deleteTarget": {
+                  "id": 1,
+                  "recipient_name": "홍길동",
+                  "member_name": "김회원"
                 }
               }
             }
@@ -9773,6 +10157,36 @@
             "initialState": {
               "global": {
                 "isProcessing": false
+              },
+              "local": {
+                "bulkConfirmItems": [
+                  {
+                    "id": 101,
+                    "product_name": "베이직 오버핏 코튼 티셔츠",
+                    "product_option_name": "색상: 블랙 / 사이즈: L",
+                    "sku": "TS-BK-L",
+                    "original_price": 29000,
+                    "unit_price": 23200,
+                    "quantity": 2,
+                    "option_status": "payment_complete",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  },
+                  {
+                    "id": 102,
+                    "product_name": "프리미엄 무선 이어버드 프로",
+                    "product_option_name": "색상: 미드나잇 블랙",
+                    "sku": "EB-PRO-MB",
+                    "original_price": 129000,
+                    "unit_price": 129000,
+                    "quantity": 1,
+                    "option_status": "payment_complete",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  }
+                ],
+                "changeQuantities": {
+                  "101": 2,
+                  "102": 1
+                }
               }
             }
           }
@@ -9855,6 +10269,34 @@
               "global": {
                 "preferredCurrency": "KRW",
                 "defaultCurrency": "KRW"
+              },
+              "local": {
+                "cancelItems": [
+                  {
+                    "id": 101,
+                    "product_name": "베이직 오버핏 코튼 티셔츠",
+                    "product_option_name": "색상: 블랙 / 사이즈: L",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "unit_price_formatted": "23,200원",
+                    "quantity": 2,
+                    "subtotal_formatted": "46,400원",
+                    "cancel_quantity": 1,
+                    "option_status": "payment_complete",
+                    "option_status_label": "결제완료"
+                  },
+                  {
+                    "id": 102,
+                    "product_name": "프리미엄 무선 이어버드 프로",
+                    "product_option_name": "색상: 미드나잇 블랙",
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "unit_price_formatted": "129,000원",
+                    "quantity": 1,
+                    "subtotal_formatted": "129,000원",
+                    "cancel_quantity": 1,
+                    "option_status": "payment_complete",
+                    "option_status_label": "결제완료"
+                  }
+                ]
               }
             }
           }
@@ -9936,6 +10378,32 @@
             "initialState": {
               "global": {
                 "isCopyingProduct": false
+              },
+              "local": {
+                "productList": {
+                  "copyTargetProduct": {
+                    "name": {
+                      "ko": "베이직 오버핏 코튼 티셔츠",
+                      "en": "Basic Oversized Cotton T-shirt"
+                    },
+                    "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  }
+                },
+                "ui": {
+                  "copyOptions": {
+                    "images": true,
+                    "options": true,
+                    "categories": true,
+                    "sales_info": true,
+                    "description": true,
+                    "notice": true,
+                    "common_info": true,
+                    "other_info": false,
+                    "shipping": true,
+                    "seo": false,
+                    "identification": false
+                  }
+                }
               }
             }
           }
@@ -10020,7 +10488,16 @@
                 },
                 "directIssueSearchKeyword": "샘플 값",
                 "directIssueSearchResults": [],
-                "directIssueSelectedUsers": [],
+                "directIssueSelectedUsers": [
+                  {
+                    "uuid": "00000000-0000-4000-8000-000000000041",
+                    "name": "김민준"
+                  },
+                  {
+                    "uuid": "00000000-0000-4000-8000-000000000042",
+                    "name": "이서연"
+                  }
+                ],
                 "directIssueSubmitting": false
               }
             }
@@ -10047,6 +10524,12 @@
                   "definition": {
                     "id": 1,
                     "type": "sample_notification",
+                    "relations": [
+                      "author"
+                    ],
+                    "relation_labels": {
+                      "author": "문의 작성자"
+                    },
                     "name": {
                       "ko": "샘플 알림 정의",
                       "en": "Sample notification"
@@ -10082,12 +10565,16 @@
                     },
                     {
                       "type": "related_user",
-                      "value": "author"
+                      "relation": "author"
                     },
                     {
                       "type": "role",
-                      "value": "admin",
-                      "display_name": "최고 관리자",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
                       "exclude_trigger_user": false
                     },
                     {
@@ -10170,6 +10657,12 @@
                   "definition": {
                     "id": 1,
                     "type": "sample_notification",
+                    "relations": [
+                      "author"
+                    ],
+                    "relation_labels": {
+                      "author": "문의 작성자"
+                    },
                     "name": {
                       "ko": "샘플 알림 정의",
                       "en": "Sample notification"
@@ -10205,12 +10698,16 @@
                     },
                     {
                       "type": "related_user",
-                      "value": "author"
+                      "relation": "author"
                     },
                     {
                       "type": "role",
-                      "value": "admin",
-                      "display_name": "최고 관리자",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
                       "exclude_trigger_user": false
                     },
                     {
@@ -10363,7 +10860,7 @@
               "global": {
                 "imagePreview": {
                   "imageAlt": "샘플 값",
-                  "imageUrl": "/sample"
+                  "imageUrl": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
                 },
                 "reviewForModal": {
                   "content": "샘플 설명 문구입니다.",
@@ -10609,21 +11106,41 @@
                       "memo": [
                         "샘플 안내 문구입니다."
                       ],
-                      "user_id": 1
+                      "user_id": [
+                        "샘플 안내 문구입니다."
+                      ]
                     },
                     "message": "샘플 설명 문구입니다."
                   },
                   "expiresAt": "2026-09-19 11:30:00",
                   "isSaving": false,
-                  "memberSearchKeyword": "샘플 값",
-                  "memberSearchResults": [],
+                  "memberSearchKeyword": "김",
+                  "memberSearchResults": [
+                    {
+                      "uuid": "00000000-0000-4000-8000-000000000051",
+                      "name": "김민준",
+                      "email": "minjun@example.com",
+                      "ecommerce_mileage": {
+                        "available": 12000
+                      }
+                    },
+                    {
+                      "uuid": "00000000-0000-4000-8000-000000000052",
+                      "name": "김서윤",
+                      "email": "seoyun@example.com",
+                      "ecommerce_mileage": {
+                        "available": 3500
+                      }
+                    }
+                  ],
                   "reason": "샘플 사유입니다.",
                   "selectedMember": {
                     "balance": 0,
                     "name": "샘플 제목",
                     "uuid": "00000000-0000-4000-8000-000000000031"
                   },
-                  "useDefaultExpiry": true
+                  "useDefaultExpiry": true,
+                  "memberSearchResultsKeyword": "김"
                 }
               }
             }
@@ -10762,6 +11279,18 @@
                     "name": "샘플 제목"
                   }
                 }
+              },
+              "local": {
+                "form": {
+                  "product_notice": {
+                    "제품 소재": "면 100%",
+                    "색상": "블랙, 화이트, 네이비",
+                    "치수": "M, L, XL",
+                    "제조자": "(주)샘플패션",
+                    "제조국": "대한민국",
+                    "세탁방법": "찬물 단독 손세탁"
+                  }
+                }
               }
             }
           }
@@ -10804,8 +11333,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -10820,7 +11353,7 @@
         ]
       },
       {
-        "comment": "모달 본문이 읽는 전역 상태(reviewBatchAction, reviewBatchIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "comment": "모달 본문이 읽는 상태 — 리뷰 일괄 처리 창은 전역 상태(reviewBatchAction, reviewBatchIds), 할인코드 상태 변경 창은 화면 로컬(selectedItems, bulkStatus)을 읽는다. 같은 창 id 를 배너, 리뷰, 할인코드 창이 함께 써서 한 묶음에 둘을 같이 심는다. 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
         "scope": {
           "kind": "modal",
           "match": "modal_status_change"
@@ -10838,6 +11371,13 @@
                   13
                 ],
                 "reviewBatchAction": "visible"
+              },
+              "local": {
+                "selectedItems": [
+                  1,
+                  2
+                ],
+                "bulkStatus": "inactive"
               }
             }
           }
@@ -10940,9 +11480,26 @@
             "initialState": {
               "global": {
                 "multilingualTagEdit": {
-                  "editingIndex": "샘플 값",
-                  "supportedLocales": [],
-                  "values": "샘플 값"
+                  "editingIndex": 0,
+                  "supportedLocales": [
+                    {
+                      "code": "ko",
+                      "label": "한국어"
+                    },
+                    {
+                      "code": "en",
+                      "label": "English"
+                    },
+                    {
+                      "code": "ja",
+                      "label": "日本語"
+                    }
+                  ],
+                  "values": {
+                    "ko": "빨강",
+                    "en": "Red",
+                    "ja": "赤"
+                  }
                 }
               }
             }
@@ -11067,8 +11624,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -11168,8 +11729,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -11250,8 +11815,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -11259,7 +11828,7 @@
                   "updated_at": "2026-09-19 11:30:00"
                 },
                 "infiniteScroll": {
-                  "currentPage": "샘플 값",
+                  "currentPage": 1,
                   "hasMore": true,
                   "isLoadingMore": false
                 },
@@ -11356,8 +11925,12 @@
                     "can_delete": true,
                     "can_update": true
                   },
-                  "content": "샘플 설명 문구입니다.",
-                  "content_mode": "sample",
+                  "content": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description.",
+                    "ja": "サンプルの説明文です。"
+                  },
+                  "content_mode": "text",
                   "created_at": "2026-09-19 11:30:00",
                   "is_active": true,
                   "is_default": true,
@@ -11365,7 +11938,7 @@
                   "updated_at": "2026-09-19 11:30:00"
                 },
                 "infiniteScroll": {
-                  "currentPage": "샘플 값",
+                  "currentPage": 1,
                   "hasMore": true,
                   "isLoadingMore": false
                 },

@@ -301,6 +301,7 @@
         "due_amount": "결제예정금액",
         "mark_order_complete": "주문을 결제완료로 처리",
         "mark_order_complete_hint": "체크하면 입금 기록과 함께 주문 상태를 결제완료로 변경합니다(마일리지 적립·재고 차감·알림 발송 포함). 체크하지 않으면 입금 내역만 기록합니다.",
+        "past_payment_hint": "이 주문은 이미 {{status}} 단계라 입금 내역과 결제금액만 기록하고 주문 상태는 바꾸지 않습니다.",
         "cancel": "취소",
         "confirm": "입금확인",
         "confirm_success": "입금이 확인되어 처리되었습니다.",

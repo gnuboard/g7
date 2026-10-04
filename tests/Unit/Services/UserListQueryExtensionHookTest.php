@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -21,10 +22,9 @@ use Tests\TestCase;
  * - `core.user.filter_list_params` 가 파라미터를 바꿀 수 있다
  * - `core.user.list_query_extensions` 클로저가 코어 조건 **뒤에** 적용되어 결과를 좁힌다
  * - `ext_filters[]` 원소(`{확장id}.{키}={값}`)가 `ext.{확장id}.{키}` 중첩 배열로 펴진다
- *
- * @group core
- * @group hooks
  */
+#[Group('core')]
+#[Group('hooks')]
 class UserListQueryExtensionHookTest extends TestCase
 {
     use DatabaseTransactions;

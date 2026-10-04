@@ -39,6 +39,12 @@ effects:
   - manifest_filter_auto_registered_for_module_scope
   - manifest_filter_auto_registered_for_plugin_scope
   - manifest_filter_auto_registered_for_template_scope
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - module_notification_definitions_fires_lang_pack_filter
+  - module_identity_messages_fires_lang_pack_filter
+  - plugin_notification_definitions_fires_lang_pack_filter
+  - plugin_identity_messages_fires_lang_pack_filter
+  - manifest_translations_filter_auto_registered_and_injects_ja
 
 test_files:
   - tests/Unit/Services/LanguagePack/LanguagePackSeedInjectorTest.php

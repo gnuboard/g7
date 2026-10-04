@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Support;
 
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
@@ -88,7 +89,8 @@ final class CalculationSnapshotPresenter
     }
 
     /**
-     * 옵션 한 줄의 정가를 구합니다. (옵션 스냅샷 list_price → 상품 정가 + 옵션 조정액)
+     * 옵션 한 줄의 정가를 구합니다. 규칙은 주문 상세와 같은 단일 원천(OrderOption)을 쓴다 —
+     * 옵션 스냅샷 정가 → 상품 정가 + 옵션 조정액 → 없으면 판매 단가.
      *
      * @param  array  $optionSnapshot  옵션 스냅샷
      * @param  array  $productSnapshot  상품 스냅샷
@@ -96,10 +98,7 @@ final class CalculationSnapshotPresenter
      */
     private function listPriceOf(array $optionSnapshot, array $productSnapshot): float
     {
-        $listPrice = $optionSnapshot['list_price']
-            ?? (($productSnapshot['list_price'] ?? 0) + ($optionSnapshot['price_adjustment'] ?? 0));
-
-        return (float) $listPrice;
+        return OrderOption::resolveListOrUnitPriceFromSnapshots($optionSnapshot, $productSnapshot);
     }
 
     /**

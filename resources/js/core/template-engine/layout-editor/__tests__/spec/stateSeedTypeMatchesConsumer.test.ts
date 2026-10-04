@@ -12,6 +12,10 @@
  * 앞 라운드는 지목된 자리만 고치고 가드를 남기지 않아 같은 부류 13경로·30자리가 그대로 남았다.
  * 이 테스트는 모집단을 저장소에서 파생해 **남은 자리가 0** 임을 가드한다.
  *
+ * 식이 아니라 **컴포넌트 속성**으로 받는 자리도 본다 — `<toast toasts="{{_global.toasts}}"/>`
+ * 처럼 그대로 넘기면 식에는 `.map(` 이 없어 위 검사를 빠져나가지만, 컴포넌트 안에서 배열로 다뤄 렌더가 깨졌다
+ * (화면 채움 상태의 알림·코드 경고·표시 열·설치 확장 목록 7자리). 속성 타입은 번들 템플릿 components.json 이 정본이다.
+ *
  * @since engine-v1.50.0
  */
 
@@ -131,9 +135,54 @@ const TAILS: Array<[string, string]> = [
   ['array-method', '\\s*\\??\\.\\s*(filter|map|slice|some|every|join|find|reduce)\\s*\\('],
   ['?? []', '\\s*(\\?\\?|\\|\\|)\\s*\\[\\s*\\]'],
   ['?? number', '\\s*(\\?\\?|\\|\\|)\\s*\\d'],
+  // 수로 셈하는 자리 — `x + 1`, `(x ?? y ?? 1) + 1`. 문자열이면 「샘플 값1」 처럼 이어 붙어 쪽 번호가 깨진다
+  // (공통 레이아웃 알림 더 보기의 page, 공통정보 목록의 무한 스크롤 page — 검토 지적 2026-10-04).
+  ['arithmetic', '\\s*[+\\-*/]\\s*\\d'],
+  ['?? … ) arithmetic', '\\s*\\?\\?[^}"]*?\\)\\s*[+\\-*/]\\s*\\d'],
 ];
 
-function nonStringUsages(parent: string, key: string, markup: string): string[] {
+/**
+ * 번들 템플릿 components.json 에서 컴포넌트별 속성 타입을 모은다 — 「컴포넌트 이름 → 속성 → 타입」.
+ * 같은 이름을 여러 템플릿이 다르게 적었으면 문자열이 아닌 쪽을 남긴다(어느 템플릿에서든 깨지면 위반).
+ */
+function discoverComponentPropTypes(): Map<string, Map<string, string>> {
+  const types = new Map<string, Map<string, string>>();
+  const baseDir = resolve(ROOT, 'templates/_bundled');
+  if (!existsSync(baseDir)) return types;
+  for (const tpl of readdirSync(baseDir)) {
+    const file = resolve(baseDir, tpl, 'components.json');
+    if (!existsSync(file)) continue;
+    const manifest = JSON.parse(readFileSync(file, 'utf8'));
+    for (const list of Object.values(manifest?.components ?? {})) {
+      if (!Array.isArray(list)) continue;
+      for (const entry of list as Array<{ name?: string; props?: Record<string, { type?: string }> }>) {
+        if (!entry?.name) continue;
+        const props = types.get(entry.name) ?? new Map<string, string>();
+        for (const [prop, meta] of Object.entries(entry.props ?? {})) {
+          const type = String(meta?.type ?? '').toLowerCase();
+          if (!type || props.get(prop) === 'array') continue;
+          if (!props.has(prop) || props.get(prop) === 'string') props.set(prop, type);
+        }
+        types.set(entry.name, props);
+      }
+    }
+  }
+  return types;
+}
+
+/** 마크업 태그(kebab)를 컴포넌트 이름(Pascal)으로 — `tab-navigation` → `TabNavigation`. */
+const pascalOf = (tag: string): string =>
+  tag.split('-').map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part)).join('');
+
+/** 문자열로는 성립하지 않는 컴포넌트 속성 타입. */
+const NON_STRING_PROP_TYPES = new Set(['array', 'number', 'object']);
+
+function nonStringUsages(
+  parent: string,
+  key: string,
+  markup: string,
+  propTypes: Map<string, Map<string, string>>,
+): string[] {
   const anchor = anchorOf(parent, key);
   const why: string[] = [];
   for (const [label, tail] of TAILS) {
@@ -141,11 +190,20 @@ function nonStringUsages(parent: string, key: string, markup: string): string[] 
   }
   if (new RegExp(`data-each\\s*=\\s*"[^"]*?\\bin\\s+[^"]*?${anchor}`).test(markup)) why.push('data-each');
   if (new RegExp(`(parseInt|Number)\\s*\\(\\s*[^)"]*?${anchor}`).test(markup)) why.push('parseInt/Number');
-  return why.sort();
+  // 컴포넌트 속성에 그대로 바인딩된 자리 — `<toast toasts="{{_global.toasts}}"/>` 처럼 식이 아니라
+  // 컴포넌트가 값을 쓰는 경우다. 문자열이 배열 속성에 들어가면 컴포넌트 안에서 `.map` 이 깨진다
+  // (실측 2026-10-04: 화면 채움 상태의 `_global.toasts` 가 「샘플 값」이라 Toast 가 렌더 오류).
+  const propBinding = new RegExp(`<([a-z][a-z0-9-]*)\\b[^>]*?\\s([A-Za-z][\\w-]*)="\\{\\{\\s*(?:raw:)?${anchor}\\s*\\}\\}"`, 'g');
+  for (const match of markup.matchAll(propBinding)) {
+    const type = propTypes.get(pascalOf(match[1]))?.get(match[2]);
+    if (type && NON_STRING_PROP_TYPES.has(type)) why.push(`prop:${pascalOf(match[1])}.${match[2]}(${type})`);
+  }
+  return [...new Set(why)].sort();
 }
 
 const SPEC_FILES = discoverSpecFiles();
 const LAYOUT_FILES = discoverLayouts();
+const PROP_TYPES = discoverComponentPropTypes();
 
 // 모집단이 비면 아래 단언은 조용히 통과한다 — 「위반 0」과 「검사 대상 0」은 다른 명제다.
 describe('표본 타입 가드 모집단', () => {
@@ -157,11 +215,17 @@ describe('표본 타입 가드 모집단', () => {
     expect(SPEC_FILES).toContain('modules/_bundled/sirsoft-ecommerce/editor-spec.json');
     const seeds = SPEC_FILES.flatMap(collectScalarSeeds);
     expect(seeds.length).toBeGreaterThan(0);
+    // 컴포넌트 속성 타입 모집단도 비어 있으면 안 된다 — 비면 속성 바인딩 판정이 조용히 0건이 된다.
+    expect(PROP_TYPES.size).toBeGreaterThanOrEqual(50);
+    expect(PROP_TYPES.get('Toast')?.get('toasts')).toBe('array');
   });
 });
 
 describe('자동 채움 표본의 타입 정합', () => {
-  /** @effects sample_seed_type_matches_consumer_expression */
+  /**
+   * @effects sample_seed_type_matches_consumer_expression
+   * @effects sample_seed_type_matches_component_prop_type
+   */
   it('레이아웃이 배열·수로 읽는 자리에 문자열 표본이 남아 있지 않다', () => {
     const markup = LAYOUT_FILES.map((abs) => readFileSync(abs, 'utf8')).join('\n');
     const offenders = new Set<string>();
@@ -178,7 +242,7 @@ describe('자동 채움 표본의 타입 정합', () => {
     for (const [, seeds] of pairs) {
       const { parent, key } = seeds[0];
       if (!markup.includes(key)) continue;
-      const why = nonStringUsages(parent, key, markup);
+      const why = nonStringUsages(parent, key, markup, PROP_TYPES);
       if (why.length === 0) continue;
       for (const seed of seeds) {
         offenders.add(`${seed.parent || 'global'}.${seed.key} [${why.join(',')}] ${seed.spec}`);

@@ -11,6 +11,7 @@ use App\Services\MenuService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
@@ -22,10 +23,9 @@ use Tests\TestCase;
  * 지키는지, 같은 역할을 다시 더해도 행이 겹치지 않는지를 찌른다.
  *
  * 시나리오 SSoT: tests/scenarios/role-menu-bulk-assignment.yaml
- *
- * @group core
- * @group admin
  */
+#[Group('core')]
+#[Group('admin')]
 class MenuBulkRolesTest extends TestCase
 {
     use DatabaseTransactions;

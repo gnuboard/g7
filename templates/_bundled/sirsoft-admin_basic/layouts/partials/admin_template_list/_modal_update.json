@@ -58,7 +58,7 @@
                                     "props": {
                                         "className": "text-warning-soft mt-1"
                                     },
-                                    "text": "$t:defer:extensions.update_modal.compat_warning_message|type=$t:extensions.types.template|required={{_global.selectedTemplate?.required_core_version ?? _global.selectedTemplate?.incompatible_required_version ?? ''}}|installed={{_global.selectedTemplate?.current_core_version ?? ''}}"
+                                    "text": "$t:extensions.update_modal.compat_warning_message|type=$t:extensions.types.template|required={{_global.selectedTemplate?.required_core_version ?? _global.selectedTemplate?.incompatible_required_version ?? ''}}|installed={{_global.selectedTemplate?.current_core_version ?? ''}}"
                                 },
                                 {
                                     "type": "basic",

@@ -27,15 +27,15 @@
           "label": "$t:editor.state.screen_filled",
           "initialState": {
             "global": {
-              "layoutWarnings": "샘플 값",
+              "layoutWarnings": [{ "id": "editor-sample-warning", "type": "compatibility", "level": "warning", "message": "샘플 경고" }],
               "adminNotificationCount": 0,
               "mobileLanguageOpen": false,
-              "toasts": "샘플 값",
-              "sidebarCollapsed": "샘플 값",
+              "toasts": [{ "id": "editor-sample-toast", "type": "success", "message": "샘플 알림" }],
+              "sidebarCollapsed": false,
               "notificationsUnreadOnly": true,
-              "notificationsHasMore": "샘플 값",
+              "notificationsHasMore": true,
               "notificationsLoadingMore": false,
-              "notificationsCurrentPage": "샘플 값"
+              "notificationsCurrentPage": 1
             }
           }
         }
@@ -80,7 +80,7 @@
                 12,
                 13
               ],
-              "visibleColumns_admin_users": "샘플 값"
+              "visibleColumns_admin_users": ["name", "role", "email", "nickname", "status", "created_at", "last_login_at"]
             }
           }
         }
@@ -171,6 +171,19 @@
             "_local.errors.email": [
               "올바른 이메일 형식이 아닙니다"
             ]
+          }
+        },
+        {
+          "id": "withdraw_confirm",
+          "label": "$t:editor.state.withdraw_confirm",
+          "comment": "탈퇴 확인 창은 data-if 로 여는 인라인 창이라 편집기 창 목록에 없다 — 창을 여는 지역 상태(showWithdrawConfirm)를 이 화면 상태로 켜서 미리본다.",
+          "initialState": {
+            "local": {
+              "showWithdrawConfirm": true
+            },
+            "global": {
+              "isSaving": false
+            }
           }
         }
       ]
@@ -531,7 +544,7 @@
       ]
     },
     {
-      "comment": "템플릿 목록. admin_template_list 는 라우트 path param route.type(user/admin)으로 데이터소스 type 파라미터를 분기한다(본문 line 45/600). 탭 하이라이트는 _global.activeTemplateTab 이지만 목록 내용은 route.type 이 SSoT 이므로 두 값을 함께 주입한다.",
+      "comment": "템플릿 목록. admin_template_list 는 라우트 path param route.type(user/admin)으로 데이터소스 type 파라미터를 분기한다(본문 line 45/600). 탭 하이라이트는 _global.activeTemplateTab 이지만 목록 내용은 route.type 이 SSoT 이므로 두 값을 함께 주입한다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
       "scope": {
         "kind": "route",
         "match": "*/admin/templates/:type"
@@ -566,8 +579,38 @@
           "id": "screen_filled",
           "label": "$t:editor.state.screen_filled",
           "initialState": {
+            "route": {
+              "type": "user"
+            },
             "global": {
+              "activeTemplateTab": "user",
               "isCheckingTemplateUpdates": false
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user",
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user",
+              "extensionViewMode": "list"
             }
           }
         }
@@ -604,7 +647,7 @@
           "initialState": {
             "global": {
               "theme": "light",
-              "toasts": "샘플 값"
+              "toasts": [{ "id": "editor-sample-toast", "type": "success", "message": "샘플 알림" }]
             }
           }
         }
@@ -648,10 +691,10 @@
       ]
     },
     {
-      "comment": "확장 관리 4화면의 보기 방식. 편집기 캔버스는 정적 시뮬레이션이라 토글 클릭이 없으므로 _global.extensionViewMode 를 상태로 주입해야 갤러리·목록 두 배치를 모두 편집할 수 있다. 기본은 갤러리이며, 목록 변종은 회귀 축이라 현행 배치를 그대로 보여 준다.",
+      "comment": "모듈·플러그인·템플릿 언어팩 관리(세 화면 모두 admin_language_pack_list 를 상속)의 보기 방식. 편집기 캔버스는 정적 시뮬레이션이라 토글 클릭이 없으므로 _global.extensionViewMode 를 상태로 주입해야 갤러리·목록 두 배치를 모두 편집할 수 있다. 기본은 갤러리이며, 목록 변종은 회귀 축이라 현행 배치를 그대로 보여 준다. 범위는 레이아웃 이름이 아니라 라우트다 — 편집기는 route/base/modal 범위만 맞춰 본다.",
       "scope": {
-        "kind": "layout",
-        "match": "admin_plugin_list|admin_module_list|admin_template_list|admin_language_pack_list"
+        "kind": "route",
+        "match": "*/admin/*/:identifier/language-packs"
       },
       "items": [
         {
@@ -945,7 +988,22 @@
               "fileDeleteTarget": "샘플 값",
               "fileDeleteError": "샘플 값",
               "fileDeleteRouteRequired": "샘플 값",
-              "fileDeleteReferences": []
+              "fileDeleteReferences": [
+                {
+                  "name": "partials/shop/_header.g7.html",
+                  "line": 12,
+                  "kind": "include",
+                  "kind_label": "포함",
+                  "route_path": null
+                },
+                {
+                  "name": "shop/index",
+                  "line": 3,
+                  "kind": "route",
+                  "kind_label": "라우트",
+                  "route_path": "/shop"
+                }
+              ]
             }
           }
         }
@@ -1001,7 +1059,7 @@
                 "properties": {},
                 "provider_id": 1,
                 "purpose": "샘플 값",
-                "status": "sample",
+                "status": "verified",
                 "target_hash": "샘플 값",
                 "user_id": 1,
                 "verified_at": "2026-09-19 11:30:00"
@@ -1132,7 +1190,7 @@
           "initialState": {
             "global": {
               "ip_restriction_rule_form_modal": {
-                "error": "샘플 값",
+                "error": "pattern_required",
                 "form": {
                   "enabled": true,
                   "ips": [],
@@ -1166,7 +1224,7 @@
                   "can_activate": true,
                   "can_install": true
                 },
-                "icon_url": "/sample",
+                "icon_url": null,
                 "identifier": "샘플 값",
                 "install_blocked_reason": "target_version_too_old",
                 "locale": "ko",
@@ -1281,6 +1339,14 @@
           "initialState": {
             "global": {
               "isLanguagePackUninstalling": false
+            },
+            "local": {
+              "uninstallId": 7,
+              "uninstallScope": "module",
+              "uninstallTarget": "sirsoft-ecommerce",
+              "uninstallLocale": "ja",
+              "uninstallIconUrl": null,
+              "uninstallCascade": false
             }
           }
         }
@@ -1300,6 +1366,12 @@
           "initialState": {
             "global": {
               "isLanguagePackUpdating": false
+            },
+            "local": {
+              "updateId": 7,
+              "updateCurrent": "1.1.4",
+              "updateLatest": "1.1.5",
+              "updateIconUrl": null
             }
           }
         }
@@ -1339,13 +1411,22 @@
             "global": {
               "identity_message_definition_add_modal": {
                 "editLang": "ko",
-                "errors": {},
+                "errors": null,
                 "form": {
-                  "body": "샘플 설명 문구입니다.",
-                  "name": "샘플 제목",
+                  "body": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description."
+                  },
+                  "name": {
+                    "ko": "샘플 메시지 정의",
+                    "en": "Sample message definition"
+                  },
                   "provider_id": 1,
                   "scope_value": "샘플 값",
-                  "subject": "샘플 제목"
+                  "subject": {
+                    "ko": "샘플 제목",
+                    "en": "Sample subject"
+                  }
                 },
                 "isSaving": false
               }
@@ -1417,15 +1498,31 @@
                   "provider_id": 1,
                   "scope_type": "sample",
                   "scope_value": "샘플 값",
-                  "variables": []
+                  "variables": [
+                    {
+                      "key": "code"
+                    },
+                    {
+                      "key": "expire_minutes"
+                    },
+                    {
+                      "key": "app_name"
+                    }
+                  ]
                 },
                 "editLang": "ko",
-                "errors": {},
+                "errors": null,
                 "isSaving": false,
                 "template": {
-                  "body": "샘플 설명 문구입니다.",
+                  "body": {
+                    "ko": "샘플 설명 문구입니다.",
+                    "en": "Sample description."
+                  },
                   "id": 1,
-                  "subject": "샘플 제목"
+                  "subject": {
+                    "ko": "샘플 제목",
+                    "en": "Sample subject"
+                  }
                 }
               },
               "appName": "샘플 제목",
@@ -1497,7 +1594,13 @@
                 "editLang": "ko",
                 "definition": {
                   "id": 1,
-                  "type": "sample_notification",
+                  "type": "welcome",
+                  "relations": [
+                    "author"
+                  ],
+                  "relation_labels": {
+                    "author": "작성자"
+                  },
                   "name": {
                     "ko": "샘플 알림 정의",
                     "en": "Sample notification"
@@ -1533,12 +1636,16 @@
                   },
                   {
                     "type": "related_user",
-                    "value": "author"
+                    "relation": "author"
                   },
                   {
                     "type": "role",
-                    "value": "admin",
-                    "display_name": "최고 관리자",
+                    "value": [
+                      "admin"
+                    ],
+                    "display_names": [
+                      "최고 관리자"
+                    ],
                     "exclude_trigger_user": false
                   },
                   {
@@ -1599,7 +1706,13 @@
                 "editLang": "ko",
                 "definition": {
                   "id": 1,
-                  "type": "sample_notification",
+                  "type": "welcome",
+                  "relations": [
+                    "author"
+                  ],
+                  "relation_labels": {
+                    "author": "작성자"
+                  },
                   "name": {
                     "ko": "샘플 알림 정의",
                     "en": "Sample notification"
@@ -1635,12 +1748,16 @@
                   },
                   {
                     "type": "related_user",
-                    "value": "author"
+                    "relation": "author"
                   },
                   {
                     "type": "role",
-                    "value": "admin",
-                    "display_name": "최고 관리자",
+                    "value": [
+                      "admin"
+                    ],
+                    "display_names": [
+                      "최고 관리자"
+                    ],
                     "exclude_trigger_user": false
                   },
                   {
@@ -1683,49 +1800,6 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(affectedTemplates, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "module_deactivate_warning_modal"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "affectedTemplates": ["샘플 값"],
-              "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
       "comment": "모달 본문이 읽는 전역 상태(moduleChangelog, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -1739,30 +1813,136 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.3.0",
+                "description": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
+                "requires_core": ">=7.1.0",
+                "dependencies": [],
+                "status": "active",
+                "license": "MIT",
+                "layouts_count": 31,
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon",
+                "permissions": [
+                  {
+                    "identifier": "products",
+                    "name": {
+                      "ko": "상품 관리",
+                      "en": "Product Management"
+                    },
+                    "permissions": [
+                      {
+                        "action": "read",
+                        "name": {
+                          "ko": "상품 조회",
+                          "en": "Read Products"
+                        }
+                      },
+                      {
+                        "action": "create",
+                        "name": {
+                          "ko": "상품 생성",
+                          "en": "Create Product"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "상품 수정",
+                          "en": "Update Product"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "identifier": "orders",
+                    "name": {
+                      "ko": "주문 관리",
+                      "en": "Order Management"
+                    },
+                    "permissions": [
+                      {
+                        "action": "read",
+                        "name": {
+                          "ko": "주문 조회",
+                          "en": "Read Orders"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "주문 수정",
+                          "en": "Update Order"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "roles": [
+                  {
+                    "identifier": "sirsoft-ecommerce.manager",
+                    "name": {
+                      "ko": "이커머스 관리자",
+                      "en": "Ecommerce Manager"
+                    }
+                  }
+                ],
+                "admin_menus": [
+                  {
+                    "name": {
+                      "ko": "이커머스",
+                      "en": "Ecommerce"
+                    },
+                    "slug": "sirsoft-ecommerce",
+                    "icon": "fas fa-shopping-cart"
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-module-sirsoft-ecommerce-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.3.0"
+                  },
+                  {
+                    "identifier": "g7-module-sirsoft-ecommerce-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.1.5"
+                  }
+                ]
               },
-              "moduleChangelog": ["샘플 값"]
+              "moduleChangelog": [
+                {
+                  "version": "1.3.0",
+                  "date": "2026-09-04",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["취소·반품·교환 신청과 관리자 처리 화면을 추가했습니다.", "회원 상세에 쇼핑 데이터 탭을 추가했습니다."]
+                    },
+                    {
+                      "name": "Fixed",
+                      "items": ["관리자 주문 상세의 보조 통화 표시를 바로잡았습니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.2.1",
+                  "date": "2026-08-24",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["장바구니 담기 수량 제한이 적용되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ]
             }
           }
         }
@@ -1782,32 +1962,25 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "inactive"
               },
               "activateWarningData": {
-                "missing_modules": [],
-                "missing_plugins": []
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
               },
               "isForceActivating": false
             }
@@ -1829,33 +2002,29 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "active"
               },
               "deactivateWarningData": {
-                "dependent_modules": [],
-                "dependent_plugins": [],
-                "dependent_templates": []
+                "dependent_templates": [
+                  {
+                    "name": "기본 사용자 템플릿",
+                    "type": "user"
+                  }
+                ],
+                "dependent_modules": [
+                  {
+                    "name": "쇼핑몰",
+                    "version": "1.3.0"
+                  }
+                ],
+                "dependent_plugins": [
+                  {
+                    "name": "토스페이먼츠",
+                    "version": "1.1.0"
+                  }
+                ]
               },
               "isForceDeactivating": false
             }
@@ -1877,33 +2046,47 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
                 "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
               },
-              "moduleInstallVendorMode": "sample",
+              "moduleInstallVendorMode": "auto",
               "installPreview": {
-                "dependencies": [],
-                "language_packs": []
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-module-sirsoft-ecommerce-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
               },
               "installSelectedDeps": [],
               "installSelectedLPs": [],
@@ -1926,25 +2109,32 @@
           "default": true,
           "initialState": {
             "global": {
-              "modulePreviewFile": "샘플 값",
+              "modulePreviewFile": "sirsoft-ecommerce-1.3.1.zip",
               "isModulePreviewLoading": false,
               "modulePreviewResult": {
-                "icon": {
-                  "path": "/sample",
-                  "present": "샘플 값",
-                  "valid": "샘플 값",
-                  "warnings": [{"message": "샘플 값"}]
-                },
                 "manifest": {
-                  "identifier": "샘플 값",
-                  "vendor": "샘플 값",
-                  "version": 3
+                  "identifier": "sirsoft-ecommerce",
+                  "vendor": "sirsoft",
+                  "version": "1.3.1"
                 },
                 "validation": {
-                  "already_installed": "샘플 값",
-                  "errors": ["샘플 값"],
-                  "existing_version": "샘플 값",
-                  "is_valid": true
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.3.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
                 }
               }
             }
@@ -1965,16 +2155,12 @@
           "default": true,
           "initialState": {
             "global": {
-              "moduleInstallError": "샘플 값",
-              "moduleInstallErrors": {
-                "error": "샘플 값",
-                "file": "샘플 값",
-                "github_url": "/sample"
-              },
+              "moduleInstallError": null,
+              "moduleInstallErrors": null,
               "moduleInstallTab": "github",
-              "moduleGithubUrl": "/sample",
+              "moduleGithubUrl": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
               "isModuleManualInstalling": false,
-              "moduleUploadFile": "샘플 값"
+              "moduleUploadFile": null
             }
           }
         }
@@ -1993,7 +2179,13 @@
           "default": true,
           "initialState": {
             "global": {
-              "reactivateLanguagePacksData": [],
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-module-sirsoft-board-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
               "isBulkActivatingLanguagePacks": false
             }
           }
@@ -2014,28 +2206,9 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "active"
               },
               "isModuleRefreshingLayouts": false
             }
@@ -2057,45 +2230,82 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "inactive",
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
               },
               "moduleUninstallBackups": [],
-              "deleteModuleData": "샘플 값",
+              "deleteModuleData": true,
               "moduleUninstallInfo": {
-                "extension_directory": {
-                  "path": "/sample",
-                  "size_formatted": "샘플 값"
-                },
-                "shared_records": ["샘플 값"],
-                "storage_directories": ["샘플 값"],
-                "tables": ["샘플 값"],
-                "total_storage_size_formatted": "샘플 값",
-                "total_table_size_formatted": "샘플 값",
+                "tables": [
+                  {
+                    "name": "ecommerce_categories",
+                    "size_formatted": "144 KB"
+                  },
+                  {
+                    "name": "ecommerce_category_images",
+                    "size_formatted": "96 KB"
+                  },
+                  {
+                    "name": "ecommerce_brands",
+                    "size_formatted": "128 KB"
+                  },
+                  {
+                    "name": "ecommerce_search_presets",
+                    "size_formatted": "48 KB"
+                  }
+                ],
+                "storage_directories": [
+                  {
+                    "name": "cache",
+                    "size_formatted": "40.1 KB"
+                  },
+                  {
+                    "name": "images",
+                    "size_formatted": "101.2 MB"
+                  },
+                  {
+                    "name": "settings",
+                    "size_formatted": "31.6 KB"
+                  }
+                ],
                 "vendor_directory": {
-                  "items": [{"name": "샘플 값", "size_formatted": "샘플 값"}],
-                  "total_size_formatted": "샘플 값"
-                }
+                  "items": [
+                    {
+                      "name": "vendor/",
+                      "size_formatted": "1.1 MB"
+                    },
+                    {
+                      "name": "composer.lock",
+                      "size_formatted": "3 KB"
+                    }
+                  ],
+                  "total_size_formatted": "1.1 MB"
+                },
+                "extension_directory": {
+                  "path": "modules/sirsoft-ecommerce",
+                  "size_formatted": "40.2 MB"
+                },
+                "shared_records": [
+                  {
+                    "table": "permissions",
+                    "label_key": "permissions",
+                    "count": 95
+                  },
+                  {
+                    "table": "menus",
+                    "label_key": "menus",
+                    "count": 17
+                  },
+                  {
+                    "table": "notification_definitions",
+                    "label_key": "notification_definitions",
+                    "count": 52
+                  }
+                ],
+                "total_table_size_formatted": "8.3 MB",
+                "total_storage_size_formatted": "101.3 MB"
               },
               "isModuleUninstalling": false
             }
@@ -2117,38 +2327,45 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "admin_menus": ["샘플 값"],
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.3.0",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/releases",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
                 "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "layouts_count": 3,
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
+                "incompatible_required_version": null,
+                "status": "active",
                 "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "latest_version": "1.3.1",
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
               },
-              "moduleForceUpdate": "샘플 값",
-              "moduleUpdateError": "샘플 값",
-              "updateChangelog": ["샘플 값"],
-              "moduleRebuildSearchIndex": "샘플 값",
+              "moduleForceUpdate": false,
+              "moduleUpdateError": null,
+              "updateChangelog": [
+                {
+                  "version": "1.3.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
+              "moduleRebuildSearchIndex": false,
               "hasModifiedModuleLayouts": true,
-              "modifiedModuleLayoutsCount": 0,
-              "modifiedModuleLayoutsCheckFailed": "샘플 값",
-              "moduleLayoutStrategy": "샘플 값",
-              "modifiedModuleLayouts": 0,
+              "modifiedModuleLayoutsCount": 1,
+              "modifiedModuleLayoutsCheckFailed": false,
+              "moduleLayoutStrategy": "keep",
+              "modifiedModuleLayouts": [
+                {
+                  "name": "admin_ecommerce_product_list",
+                  "updated_at": "2026-09-30 14:20:00"
+                }
+              ],
               "isModuleUpdating": false
             }
           }
@@ -2188,29 +2405,117 @@
           "initialState": {
             "global": {
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-gdpr",
+                "vendor": "sirsoft",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "version": "1.1.0",
+                "description": "쿠키 동의 배너, 자동 차단, 동의 이력 저장, 마이페이지 동의 철회를 제공하는 GDPR 대응 플러그인입니다.",
+                "requires_core": ">=7.1.0",
+                "dependencies": [],
+                "status": "active",
+                "license": "MIT",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon",
+                "permissions": [
+                  {
+                    "identifier": "privacy",
+                    "name": {
+                      "ko": "개인정보 보호",
+                      "en": "Privacy"
+                    },
+                    "permissions": [
+                      {
+                        "action": "view",
+                        "name": {
+                          "ko": "개인정보 조회",
+                          "en": "View Privacy"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "개인정보 설정 변경",
+                          "en": "Update Privacy Settings"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "roles": [
+                  {
+                    "identifier": "sirsoft-gdpr.privacy",
+                    "name": {
+                      "ko": "개인정보 운영자",
+                      "en": "Privacy Operator"
+                    }
+                  }
+                ],
+                "hooks": [
+                  {
+                    "name": "sirsoft-gdpr.privacy.annual_notice_due",
+                    "type": "action",
+                    "description": {
+                      "ko": "개인정보 연간 통지 접수 후 발화",
+                      "en": "Annual privacy notice queued"
+                    }
+                  },
+                  {
+                    "name": "sirsoft-gdpr.consent.granted",
+                    "type": "action",
+                    "description": {
+                      "ko": "동의 부여 시 발화",
+                      "en": "Fired when consent is granted"
+                    }
+                  },
+                  {
+                    "name": "sirsoft-gdpr.necessary_storage.filter_provided_keys",
+                    "type": "filter",
+                    "description": {
+                      "ko": "확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다)",
+                      "en": "Extensions provide their own storage keys that non-consenting visitors still need (merged into the strictly necessary allowlist)"
+                    }
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-plugin-sirsoft-gdpr-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.1.0"
+                  },
+                  {
+                    "identifier": "g7-plugin-sirsoft-gdpr-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.0.3"
+                  }
+                ]
               },
-              "pluginChangelog": ["샘플 값"]
+              "pluginChangelog": [
+                {
+                  "version": "1.1.0",
+                  "date": "2026-08-20",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["개인정보 이용내역 연간 통지를 추가했습니다.", "동의 이력 화면에서 채널별 발송 결과를 구분합니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.0.0",
+                  "date": "2026-07-01",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["쿠키 동의 배너와 동의 이력 저장을 추가했습니다."]
+                    }
+                  ]
+                }
+              ]
             }
           }
         }
@@ -2249,32 +2554,26 @@
           "initialState": {
             "global": {
               "activateWarningData": {
-                "missing_modules": [],
-                "missing_plugins": []
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
               },
               "isForceActivating": false,
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "inactive"
               }
             }
           }
@@ -2295,33 +2594,30 @@
           "initialState": {
             "global": {
               "deactivateWarningData": {
-                "dependent_modules": [],
-                "dependent_plugins": [],
-                "dependent_templates": []
+                "dependent_templates": [
+                  {
+                    "name": "기본 사용자 템플릿",
+                    "type": "user"
+                  }
+                ],
+                "dependent_modules": [
+                  {
+                    "name": "쇼핑몰",
+                    "version": "1.3.0"
+                  }
+                ],
+                "dependent_plugins": [
+                  {
+                    "name": "토스페이먼츠",
+                    "version": "1.1.0"
+                  }
+                ]
               },
               "isForceDeactivating": false,
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "active"
               }
             }
           }
@@ -2342,35 +2638,50 @@
           "initialState": {
             "global": {
               "installPreview": {
-                "dependencies": [],
-                "language_packs": []
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-plugin-sirsoft-tosspayments-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
               },
               "installSelectedDeps": [],
               "installSelectedLPs": [],
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
                 "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
               },
-              "pluginInstallVendorMode": "sample",
+              "pluginInstallVendorMode": "auto",
               "isPluginInstalling": false
             }
           }
@@ -2390,25 +2701,32 @@
           "default": true,
           "initialState": {
             "global": {
-              "pluginPreviewFile": "샘플 값",
+              "pluginPreviewFile": "sirsoft-gdpr-1.1.1.zip",
               "isPluginPreviewLoading": false,
               "pluginPreviewResult": {
-                "icon": {
-                  "path": "/sample",
-                  "present": "샘플 값",
-                  "valid": "샘플 값",
-                  "warnings": [{"message": "샘플 값"}]
-                },
                 "manifest": {
-                  "identifier": "샘플 값",
-                  "vendor": "샘플 값",
-                  "version": 3
+                  "identifier": "sirsoft-gdpr",
+                  "vendor": "sirsoft",
+                  "version": "1.1.1"
                 },
                 "validation": {
-                  "already_installed": "샘플 값",
-                  "errors": ["샘플 값"],
-                  "existing_version": "샘플 값",
-                  "is_valid": true
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.1.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
                 }
               }
             }
@@ -2429,16 +2747,12 @@
           "default": true,
           "initialState": {
             "global": {
-              "pluginInstallError": "샘플 값",
-              "pluginInstallErrors": {
-                "error": "샘플 값",
-                "file": "샘플 값",
-                "github_url": "/sample"
-              },
+              "pluginInstallError": null,
+              "pluginInstallErrors": null,
               "pluginInstallTab": "github",
-              "pluginGithubUrl": "/sample",
+              "pluginGithubUrl": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr",
               "isPluginManualInstalling": false,
-              "pluginUploadFile": "샘플 값"
+              "pluginUploadFile": null
             }
           }
         }
@@ -2457,7 +2771,13 @@
           "default": true,
           "initialState": {
             "global": {
-              "reactivateLanguagePacksData": [],
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-plugin-sirsoft-tosspayments-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
               "isBulkActivatingLanguagePacks": false
             }
           }
@@ -2478,27 +2798,9 @@
           "initialState": {
             "global": {
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "active"
               },
               "isPluginRefreshingLayouts": false
             }
@@ -2520,44 +2822,70 @@
           "initialState": {
             "global": {
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "inactive",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
               },
               "pluginUninstallBackups": [],
-              "deletePluginData": "샘플 값",
+              "deletePluginData": true,
               "pluginUninstallInfo": {
-                "extension_directory": {
-                  "path": "/sample",
-                  "size_formatted": "샘플 값"
-                },
-                "shared_records": ["샘플 값"],
-                "storage_directories": ["샘플 값"],
-                "tables": ["샘플 값"],
-                "total_storage_size_formatted": "샘플 값",
-                "total_table_size_formatted": "샘플 값",
+                "tables": [
+                  {
+                    "name": "gdpr_user_consents",
+                    "size_formatted": "48 KB"
+                  },
+                  {
+                    "name": "gdpr_user_consent_histories",
+                    "size_formatted": "80 KB"
+                  },
+                  {
+                    "name": "gdpr_policy_versions",
+                    "size_formatted": "64 KB"
+                  },
+                  {
+                    "name": "gdpr_privacy_notice_logs",
+                    "size_formatted": "80 KB"
+                  }
+                ],
+                "storage_directories": [
+                  {
+                    "name": "settings",
+                    "size_formatted": "1.6 KB"
+                  }
+                ],
                 "vendor_directory": {
-                  "items": [{"name": "샘플 값", "size_formatted": "샘플 값"}],
-                  "total_size_formatted": "샘플 값"
-                }
+                  "items": [
+                    {
+                      "name": "composer.lock",
+                      "size_formatted": "623 B"
+                    }
+                  ],
+                  "total_size_formatted": "623 B"
+                },
+                "extension_directory": {
+                  "path": "plugins/sirsoft-gdpr",
+                  "size_formatted": "3.2 MB"
+                },
+                "shared_records": [
+                  {
+                    "table": "permissions",
+                    "label_key": "permissions",
+                    "count": 4
+                  },
+                  {
+                    "table": "menus",
+                    "label_key": "menus",
+                    "count": 2
+                  },
+                  {
+                    "table": "notification_definitions",
+                    "label_key": "notification_definitions",
+                    "count": 1
+                  }
+                ],
+                "total_table_size_formatted": "272 KB",
+                "total_storage_size_formatted": "1.6 KB"
               },
               "isPluginUninstalling": false
             }
@@ -2578,38 +2906,46 @@
           "default": true,
           "initialState": {
             "global": {
-              "updateChangelog": ["샘플 값"],
+              "updateChangelog": [
+                {
+                  "version": "1.1.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
               "selectedPlugin": {
-                "current_core_version": "샘플 값",
-                "dependencies": ["샘플 값"],
-                "description": "샘플 설명 문구입니다.",
-                "github_changelog_url": "/sample",
-                "hooks": [{"type": "action", "name": "샘플 값", "description": "샘플 값"}, {"type": "filter", "name": "샘플 값", "description": "샘플 값"}],
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
+                "identifier": "sirsoft-gdpr",
+                "vendor": "sirsoft",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "version": "1.1.0",
+                "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr/releases",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
                 "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "permissions": ["샘플 값"],
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "roles": ["샘플 값"],
-                "status": "uninstalled",
+                "incompatible_required_version": null,
+                "status": "active",
                 "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "latest_version": "1.1.1",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
               },
-              "pluginForceUpdate": "샘플 값",
-              "pluginUpdateError": "샘플 값",
-              "pluginRebuildSearchIndex": "샘플 값",
+              "pluginForceUpdate": false,
+              "pluginUpdateError": null,
+              "pluginRebuildSearchIndex": false,
               "hasModifiedPluginLayouts": true,
-              "modifiedPluginLayoutsCount": 0,
-              "modifiedPluginLayoutsCheckFailed": "샘플 값",
-              "pluginLayoutStrategy": "샘플 값",
-              "modifiedPluginLayouts": 0,
+              "modifiedPluginLayoutsCount": 1,
+              "modifiedPluginLayoutsCheckFailed": false,
+              "pluginLayoutStrategy": "keep",
+              "modifiedPluginLayouts": [
+                {
+                  "name": "gdpr_consent_log",
+                  "updated_at": "2026-09-30 14:20:00"
+                }
+              ],
               "isPluginUpdating": false
             }
           }
@@ -2835,33 +3171,10 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "inactive"
               },
               "isTemplateActivating": false
             }
@@ -2883,33 +3196,9 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "active"
               },
               "isTemplateDeactivating": false
             }
@@ -2931,35 +3220,103 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "vendor": "sirsoft",
+                "name": "Basic",
+                "version": "1.2.0",
+                "type": "user",
+                "description": "그누보드7 기본 사용자 템플릿",
+                "requires_core": ">=7.1.0",
+                "status": "active",
+                "license": "MIT",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon",
                 "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
+                  "basic": ["Button", "Input", "Textarea", "Select", "Option", "Checkbox", "PasswordInput", "Div"],
+                  "composite": ["Header", "Footer", "MobileNav", "ProductCard", "RichTextEditor", "ImageGallery"]
                 },
-                "current_core_version": "샘플 값",
                 "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
+                  "modules": [
+                    {
+                      "identifier": "sirsoft-board",
+                      "name": "게시판",
+                      "required_version": ">=1.0.0",
+                      "installed_version": "1.2.0",
+                      "is_active": true,
+                      "is_met": true
+                    },
+                    {
+                      "identifier": "sirsoft-ecommerce",
+                      "name": "이커머스",
+                      "required_version": ">=1.3.0",
+                      "installed_version": "1.3.0",
+                      "is_active": true,
+                      "is_met": true
+                    }
+                  ],
+                  "plugins": [
+                    {
+                      "identifier": "sirsoft-daum_postcode",
+                      "name": "Daum 우편번호",
+                      "required_version": ">=1.0.0",
+                      "installed_version": "1.1.0",
+                      "is_active": true,
+                      "is_met": true
+                    }
+                  ]
                 },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "externals": [
+                  {
+                    "type": "style",
+                    "id": "fontawesome",
+                    "url": "/api/templates/assets/sirsoft-basic?file=vendor%2Ffont-awesome%2F6.4.0%2Fcss%2Fall.inlined.css"
+                  },
+                  {
+                    "type": "webfont",
+                    "id": "pretendard",
+                    "url": "/api/templates/assets/sirsoft-basic?file=vendor%2Fpretendard%2F1.3.9%2Fpretendard-variable.css"
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-template-sirsoft-basic-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.2.0"
+                  },
+                  {
+                    "identifier": "g7-template-sirsoft-basic-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.1.4"
+                  }
+                ]
               },
-              "templateChangelog": ["샘플 값"]
+              "templateChangelog": [
+                {
+                  "version": "1.2.0",
+                  "date": "2026-09-09",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["마이페이지에 스크랩과 내 반응 목록을 추가했습니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.1.0",
+                  "date": "2026-08-10",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["주문서에 환불 계좌 입력란을 추가했습니다."]
+                    }
+                  ]
+                }
+              ]
             }
           }
         }
@@ -2998,38 +3355,26 @@
           "initialState": {
             "global": {
               "activateWarningData": {
-                "missing_modules": [],
-                "missing_plugins": []
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
               },
               "isForceActivating": false,
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "inactive"
               }
             }
           }
@@ -3050,39 +3395,49 @@
           "initialState": {
             "global": {
               "installPreview": {
-                "dependencies": [],
-                "language_packs": []
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-template-sirsoft-basic-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
               },
               "installSelectedDeps": [],
               "installSelectedLPs": [],
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
                 "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
               },
               "isTemplateInstalling": false
             }
@@ -3103,26 +3458,33 @@
           "default": true,
           "initialState": {
             "global": {
-              "templatePreviewFile": "샘플 값",
+              "templatePreviewFile": "sirsoft-basic-1.2.1.zip",
               "isTemplatePreviewLoading": false,
               "templatePreviewResult": {
-                "icon": {
-                  "path": "/sample",
-                  "present": "샘플 값",
-                  "valid": "샘플 값",
-                  "warnings": [{"message": "샘플 값"}]
-                },
                 "manifest": {
-                  "identifier": "샘플 값",
-                  "type": "admin",
-                  "vendor": "샘플 값",
-                  "version": 3
+                  "identifier": "sirsoft-basic",
+                  "vendor": "sirsoft",
+                  "version": "1.2.1",
+                  "type": "user"
                 },
                 "validation": {
-                  "already_installed": "샘플 값",
-                  "errors": ["샘플 값"],
-                  "existing_version": "샘플 값",
-                  "is_valid": true
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.2.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
                 }
               }
             }
@@ -3143,16 +3505,12 @@
           "default": true,
           "initialState": {
             "global": {
-              "templateInstallError": "샘플 값",
-              "templateInstallErrors": {
-                "error": "샘플 값",
-                "file": "샘플 값",
-                "github_url": "/sample"
-              },
+              "templateInstallError": null,
+              "templateInstallErrors": null,
               "templateInstallTab": "github",
-              "templateGithubUrl": "/sample",
+              "templateGithubUrl": "https://github.com/gnuboard/g7-template-sirsoft-basic",
               "isTemplateManualInstalling": false,
-              "templateUploadFile": "샘플 값"
+              "templateUploadFile": null
             }
           }
         }
@@ -3171,7 +3529,13 @@
           "default": true,
           "initialState": {
             "global": {
-              "reactivateLanguagePacksData": [],
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-template-sirsoft-basic-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
               "isBulkActivatingLanguagePacks": false
             }
           }
@@ -3192,33 +3556,9 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "active"
               },
               "isTemplateRefreshingLayouts": false
             }
@@ -3240,40 +3580,22 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
-                "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
-                "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "inactive",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
               },
-              "templateUninstallBackups": [],
-              "deleteTemplateData": "샘플 값",
+              "templateUninstallBackups": [
+                {
+                  "archive": "sirsoft-basic_20260920_103000.zip"
+                }
+              ],
+              "deleteTemplateData": true,
               "templateUninstallInfo": {
                 "extension_directory": {
-                  "path": "/sample",
-                  "size_formatted": "샘플 값"
+                  "path": "templates/sirsoft-basic",
+                  "size_formatted": "13.7 MB"
                 }
               },
               "isTemplateUninstalling": false
@@ -3295,43 +3617,46 @@
           "default": true,
           "initialState": {
             "global": {
-              "updateChangelog": ["샘플 값"],
+              "updateChangelog": [
+                {
+                  "version": "1.2.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
               "selectedTemplate": {
-                "components": {
-                  "basic": ["샘플 값"],
-                  "composite": ["샘플 값"]
-                },
-                "current_core_version": "샘플 값",
-                "dependencies": {
-                  "modules": ["샘플 값"],
-                  "plugins": ["샘플 값"]
-                },
-                "description": "샘플 설명 문구입니다.",
-                "externals": ["샘플 값"],
-                "github_changelog_url": "/sample",
-                "icon_url": "/sample",
-                "identifier": "샘플 값",
-                "incompatible_required_version": "샘플 값",
+                "identifier": "sirsoft-basic",
+                "vendor": "sirsoft",
+                "name": "Basic",
+                "version": "1.2.0",
+                "type": "user",
+                "github_changelog_url": "https://github.com/gnuboard/g7-template-sirsoft-basic/blob/main/CHANGELOG.md",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
                 "is_compatible": true,
-                "language_packs": ["샘플 값"],
-                "latest_version": "샘플 값",
-                "license": "샘플 값",
-                "name": "샘플 제목",
-                "required_core_version": "샘플 값",
-                "requires_core": "샘플 값",
-                "status": "uninstalled",
-                "type": "admin",
+                "incompatible_required_version": null,
+                "status": "active",
                 "update_source": "github",
-                "vendor": "샘플 값",
-                "version": 3
+                "latest_version": "1.2.1",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
               },
-              "templateForceUpdate": "샘플 값",
-              "templateUpdateError": "샘플 값",
+              "templateForceUpdate": false,
+              "templateUpdateError": null,
               "hasModifiedTemplateLayouts": true,
-              "modifiedTemplateLayoutsCount": 0,
-              "modifiedTemplateLayoutsCheckFailed": "샘플 값",
-              "templateLayoutStrategy": "샘플 값",
-              "modifiedTemplateLayouts": 0,
+              "modifiedTemplateLayoutsCount": 1,
+              "modifiedTemplateLayoutsCheckFailed": false,
+              "templateLayoutStrategy": "keep",
+              "modifiedTemplateLayouts": [
+                {
+                  "name": "home",
+                  "updated_at": "2026-09-30 14:20:00"
+                }
+              ],
               "isTemplateUpdating": false
             }
           }
@@ -3358,25 +3683,6 @@
               "layoutVersionLimit": 20,
               "dirtyFileKeys": [],
               "isRestoring": false
-            }
-          }
-        }
-      ]
-    },
-    {
-      "comment": "모달 본문이 읽는 전역 상태(isSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "withdraw_confirm_dialog"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "isSaving": false
             }
           }
         }
@@ -3537,7 +3843,7 @@
                 },
                 "extension_identifier": "샘플 값",
                 "extension_type": "core",
-                "icon": "샘플 값",
+                "icon": "fas fa-folder",
                 "is_active": true,
                 "name": "샘플 제목",
                 "order": "샘플 값",
@@ -3557,7 +3863,7 @@
               "formData": {
                 "extension_identifier": "샘플 값",
                 "extension_type": "sample",
-                "icon": "샘플 값",
+                "icon": "fas fa-folder",
                 "is_active": true,
                 "name": "샘플 제목",
                 "parent_id": 1,
@@ -3573,7 +3879,7 @@
       ]
     },
     {
-      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
       "scope": {
         "kind": "route",
         "match": "*/admin/modules"
@@ -3588,6 +3894,24 @@
             }
           },
           "default": true
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
+          }
         }
       ]
     },
@@ -3625,7 +3949,7 @@
       ]
     },
     {
-      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
       "scope": {
         "kind": "route",
         "match": "*/admin/plugins"
@@ -3640,6 +3964,24 @@
             }
           },
           "default": true
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
+          }
         }
       ]
     },
@@ -3672,8 +4014,8 @@
                   "샘플 안내 문구입니다."
                 ]
               },
-              "installedModules": "샘플 값",
-              "installedPlugins": "샘플 값",
+              "installedModules": [{ "identifier": "sirsoft-board", "name": "게시판", "status": "active" }, { "identifier": "sirsoft-ecommerce", "name": "이커머스", "status": "active" }],
+              "installedPlugins": [{ "identifier": "sirsoft-gdpr", "name": "GDPR", "status": "active" }],
               "activePermissionTab": "샘플 값",
               "isSaving": false
             }
@@ -3755,38 +4097,6 @@
             }
           },
           "default": true
-        }
-      ]
-    },
-    {
-      "comment": "서비스 점검 안내 화면 — 비활성 확장 목록(_global.errorData)은 점검 응답이 담는 값이라 편집기에서는 상태로 담아야 목록이 그려진다.",
-      "scope": {
-        "kind": "layout",
-        "match": "503"
-      },
-      "items": [
-        {
-          "id": "screen_filled",
-          "label": "$t:editor.state.screen_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "errorData": {
-                "modules": [
-                  {
-                    "identifier": "sirsoft-board",
-                    "name": "게시판"
-                  }
-                ],
-                "plugins": [
-                  {
-                    "identifier": "sirsoft-gdpr",
-                    "name": "개인정보 동의"
-                  }
-                ]
-              }
-            }
-          }
         }
       ]
     }

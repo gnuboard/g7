@@ -11,6 +11,7 @@ use App\Services\ExtensionStaticCacheService;
 use App\Support\CustomAssets;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -36,6 +37,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
 
     private string $customDir;
 
+    /**
+     * 전용 관리 권한 사용자와 레이아웃 편집 권한만 가진 사용자의 토큰을 준비하고 테스트 파일을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -84,6 +90,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
         $this->cleanupCustomDir();
     }
 
+    /**
+     * 테스트가 만든 파일을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->cleanupCustomDir();
@@ -93,6 +104,8 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
 
     /**
      * 테스트가 만든 파일만 지웁니다 (운영자 파일 보존).
+     *
+     * @return void 반환값 없음
      */
     private function cleanupCustomDir(): void
     {
@@ -112,7 +125,7 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
      * @param  string  $suffix  `/custom-assets…` 이후 경로
      * @param  string  $type  확장 타입 (`template` | `module` | `plugin`)
      * @param  string|null  $identifier  확장 식별자 (기본: 대상 템플릿)
-     * @return string URL
+     * @return string 관리 API URL
      */
     private function url(string $suffix, string $type = 'template', ?string $identifier = null): string
     {
@@ -120,7 +133,10 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
-     * @return array<string, string>
+     * 토큰을 실은 Bearer 인증 헤더와 JSON 수락 헤더를 만듭니다.
+     *
+     * @param  string  $token  인증 토큰
+     * @return array<string, string> 인증 헤더
      */
     private function headers(string $token): array
     {
@@ -128,9 +144,53 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 본문을 통째로 비워 저장할 수 있습니다.
+     *
+     * 규칙 주석이 약속한 동작이다 — 운영자가 CSS 를 비우는 것은 정당한 조작이고, 막히면 파일을 지우는 것 말고는
+     * 되돌릴 길이 없다. 그런데 전역 미들웨어가 빈 문자열을 null 로 바꿔 `string` 규칙에 걸려 422 「content 필드는
+     * 문자열이어야 합니다.」가 났다(브라우저 실측 2026-10-03, 7.0.11 부터).
+     *
+     * @scenario manage_actor=with_permission, manage_action=save
+     *
+     * @effects custom_asset_editor_saves_an_emptied_file
+     *
+     * @return void 반환값 없음
+     */
+    public function test_본문을_비워_저장할_수_있다(): void
+    {
+        $path = '__t123-emptied.css';
+
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => $path, 'content' => 'body { color: red; }'],
+            $this->headers($this->managerToken)
+        )->assertStatus(200);
+
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => $path, 'content' => ''],
+            $this->headers($this->managerToken)
+        )->assertStatus(200);
+
+        $this->assertFileExists($this->customDir.DIRECTORY_SEPARATOR.$path);
+        $this->assertSame('', file_get_contents($this->customDir.DIRECTORY_SEPARATOR.$path));
+
+        // 본문 키 자체가 없으면 종전대로 막는다 — 실수로 비우는 것과 구분한다.
+        $this->putJson(
+            $this->url('/custom-assets/content'),
+            ['path' => $path],
+            $this->headers($this->managerToken)
+        )->assertStatus(422)->assertJsonValidationErrors(['content']);
+    }
+
+    /**
+     * 전용 권한으로 저장한 파일이 목록(자동 로드 표시 포함)과 본문 조회에 나오고, 삭제하면 디스크에서 사라진다.
+     *
      * @scenario operation=delete, target=custom_asset
      *
      * @effects code_editor_deletes_softly
+     *
+     * @return void 반환값 없음
      */
     public function test_저장_조회_목록_삭제_왕복(): void
     {
@@ -182,9 +242,13 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 이름변경은 파일을 새 경로로 옮기고 원본을 남기지 않으며, 활동 로그에 번역된 설명으로 기록된다.
+     *
      * @scenario operation=rename, target=custom_asset
      *
      * @effects custom_asset_editor_renames_through_the_api
+     *
+     * @return void 반환값 없음
      */
     public function test_이름변경은_파일을_옮기고_원본을_남기지_않는다(): void
     {
@@ -225,6 +289,8 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
      * 경고 없이 사라지므로 서비스가 먼저 막는다. 입력 오류가 아니라 상태 충돌이라 409 다.
      *
      * @effects custom_asset_editor_renames_through_the_api
+     *
+     * @return void 반환값 없음
      */
     public function test_이름변경_대상이_이미_있으면_409_로_막힌다(): void
     {
@@ -251,7 +317,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 확장자를 바꾸는 이름변경은 422 로 거부되고 원본 파일이 그대로 남는다.
+     *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_이름변경이_확장자를_바꾸면_거부된다(): void
     {
@@ -274,10 +344,14 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
-     * @dataProvider 탈출_경로_제공자
+     * 이름변경은 원본 경로와 대상 경로 어느 쪽에서든 경로 탈출을 422 로 막는다.
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @param  string  $path  디렉터리 밖으로 벗어나려는 경로
+     * @return void 반환값 없음
      */
+    #[DataProvider('탈출_경로_제공자')]
     public function test_이름변경도_경로_탈출을_차단한다(string $path): void
     {
         $this->postJson(
@@ -294,9 +368,13 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 검색이 본문 일치(1부터 세는 줄 번호와 미리보기 포함)와 파일명 일치를 모두 찾는다.
+     *
      * @scenario scope=name, target=extension_fragment
      *
      * @effects custom_asset_editor_filters_by_name
+     *
+     * @return void 반환값 없음
      */
     public function test_검색은_파일명과_본문을_모두_찾는다(): void
     {
@@ -332,7 +410,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 검색어가 2자 미만이면 422 로 거부된다.
+     *
      * @effects code_editor_skips_content_search_below_two_characters
+     *
+     * @return void 반환값 없음
      */
     public function test_검색어가_2자_미만이면_422(): void
     {
@@ -343,7 +425,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 전용 권한이 없는 사용자는 이름변경과 검색도 403 으로 막힌다.
+     *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_이름변경과_검색도_전용_권한을_요구한다(): void
     {
@@ -360,7 +446,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 레이아웃 편집 권한만 가진 사용자는 목록, 본문 조회, 저장이 모두 403 으로 막히고 파일이 생기지 않는다.
+     *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_레이아웃_편집_권한만으로는_접근할_수_없다(): void
     {
@@ -390,7 +480,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 인증 없이 보낸 목록 요청은 401 로 거부된다.
+     *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_비인증_요청은_거부된다(): void
     {
@@ -401,7 +495,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 디렉터리 밖으로 벗어나려는 경로 사례를 제공합니다.
+     *
+     * @return array<string, array{0: string}> 사례 이름별 탈출 경로
      */
     public static function 탈출_경로_제공자(): array
     {
@@ -415,10 +511,14 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
-     * @dataProvider 탈출_경로_제공자
+     * 본문 저장 경로가 디렉터리 밖으로 벗어나면 422 로 차단된다.
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @param  string  $path  디렉터리 밖으로 벗어나려는 경로
+     * @return void 반환값 없음
      */
+    #[DataProvider('탈출_경로_제공자')]
     public function test_경로_탈출은_422_로_차단된다(string $path): void
     {
         // @scenario manage_actor=with_permission, manage_action=save
@@ -431,7 +531,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 편집할 수 없는 바이너리 확장자(woff2)는 본문 저장이 422 로 거부된다.
+     *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_편집_불가_확장자는_본문_저장이_거부된다(): void
     {
@@ -446,9 +550,13 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 업로드는 허용 확장자만 받아 php 파일은 422 로 거부하고 png 이미지는 저장한다.
+     *
      * @scenario operation=create, target=custom_asset
      *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_업로드는_허용_확장자만_받는다(): void
     {
@@ -472,7 +580,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 목록 응답에 편집 가능 확장자, 텍스트 크기 한도, 업로드 크기 한도가 함께 실린다.
+     *
      * @effects custom_asset_editor_filters_by_name
+     *
+     * @return void 반환값 없음
      */
     public function test_목록_응답이_편집기_메타를_함께_싣는다(): void
     {
@@ -490,7 +602,9 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 확장 타입별 대상 확장 식별자 사례를 제공합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 사례 이름별 확장 타입과 확장 식별자
      */
     public static function 확장_타입_제공자(): array
     {
@@ -507,10 +621,13 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
      * 타입별로 경로·검증이 갈리면 그중 약한 쪽이 조용한 우회로가 되고, 반대로 한 타입만
      * 동작하면 운영자는 "모듈에서는 왜 안 되는지" 를 알 수 없다.
      *
-     * @dataProvider 확장_타입_제공자
-     *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @param  string  $type  확장 타입 (`template` | `module` | `plugin`)
+     * @param  string  $identifier  확장 식별자
+     * @return void 반환값 없음
      */
+    #[DataProvider('확장_타입_제공자')]
     public function test_세_타입_모두_같은_왕복을_지원한다(string $type, string $identifier): void
     {
         // @scenario manage_actor=with_permission, manage_action=save
@@ -563,7 +680,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 허용된 세 타입이 아닌 확장 타입은 라우트가 받지 않아 404 가 난다.
+     *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_알_수_없는_확장_타입은_라우트가_받지_않는다(): void
     {
@@ -576,7 +697,11 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 본문 저장이 확장 캐시 버전을 새 값으로 덮어써 올린다.
+     *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_저장이_확장_캐시_버전을_올린다(): void
     {
