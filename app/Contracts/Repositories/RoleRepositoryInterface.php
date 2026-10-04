@@ -48,6 +48,14 @@ interface RoleRepositoryInterface
     public function getByIdentifiers(array $identifiers): Collection;
 
     /**
+     * 역할 ID 목록을 식별자로 바꿉니다 (없는 ID 는 건너뜁니다).
+     *
+     * @param  array<int, int>  $ids  역할 ID 목록
+     * @return array<int, string> 역할 ID => 식별자
+     */
+    public function getIdentifiersByIds(array $ids): array;
+
+    /**
      * 식별자로 역할에 소속된 사용자들을 조회합니다.
      *
      * @param  string  $identifier  역할 식별자

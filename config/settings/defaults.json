@@ -43,6 +43,7 @@
             "password_expiry_remind_days": 30,
             "password_expiry_batch_size": 1000,
             "password_expiry_started_at": null,
+            "activity_log_retention_days": 365,
             "allow_internal_outbound_urls": false,
             "ip_restriction_enabled": false,
             "admin_allowed_ips": [],

@@ -160,6 +160,8 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.password_expiry_action' => 'force',
             'g7_settings.core.security.password_expiry_remind_days' => 30,
             'g7_settings.core.security.password_expiry_batch_size' => 1000,
+            // 활동 로그 보관 기간(#736 D14) — 사이트 저장값이 파기 테스트로 새지 않게 기본값으로 고정
+            'g7_settings.core.security.activity_log_retention_days' => 365,
             'g7_settings.core.security.password_expiry_started_at' => null,
         ]);
     }

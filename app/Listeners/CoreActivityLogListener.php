@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ActivityLogType;
@@ -37,11 +38,13 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 Repository
      * @param  UserRepositoryInterface  $userRepository  사용자 Repository (bulk lookup)
      * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 Repository (bulk lookup)
+     * @param  RoleRepositoryInterface  $roleRepository  역할 Repository (역할 ID → 식별자)
      */
     public function __construct(
         protected ActivityLogRepositoryInterface $activityLogRepository,
         protected UserRepositoryInterface $userRepository,
         protected ScheduleRepositoryInterface $scheduleRepository,
+        protected RoleRepositoryInterface $roleRepository,
     ) {}
 
     /**
@@ -62,6 +65,8 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_search' => ['method' => 'handleUserAfterSearch', 'priority' => 20],
             'sirsoft-core.user.after_bulk_update' => ['method' => 'handleUserAfterBulkUpdate', 'priority' => 20],
             'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
+            // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우(#736 D23) — 권한 부여·변경 기록이라 3년 보관 대상
+            'core.user.after_update_roles' => ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
 
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
@@ -379,6 +384,47 @@ class CoreActivityLogListener implements HookListenerInterface
                 ],
             ]);
         }
+    }
+
+    /**
+     * 회원 등록·수정으로 역할·최고관리자 지정이 바뀐 뒤 로그 기록 (#736 D23)
+     *
+     * 붙은·떨어진 역할은 식별자로 남긴다 — 역할 ID 는 역할을 지우고 다시 만들면 다른 역할을 가리킨다.
+     * 지금은 없는 역할(기록 사이에 삭제)은 ID 문자열로 남긴다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  array{attached?: array<int, int>, detached?: array<int, int>, is_super?: array{from: bool, to: bool}|null}  $changes  변경분
+     * @param  string  $source  'create' | 'update'
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterUpdateRoles(User $user, array $changes, string $source = 'update'): void
+    {
+        $attached = array_map('intval', $changes['attached'] ?? []);
+        $detached = array_map('intval', $changes['detached'] ?? []);
+        $identifiers = $this->roleRepository->getIdentifiersByIds(array_merge($attached, $detached));
+        $toIdentifiers = static fn (array $ids): array => array_values(array_map(
+            static fn (int $id): string => (string) ($identifiers[$id] ?? $id),
+            $ids,
+        ));
+
+        $added = $toIdentifiers($attached);
+        $removed = $toIdentifiers($detached);
+
+        $this->logActivity('user.roles_update', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_roles_update',
+            'description_params' => [
+                'user_id' => $user->id,
+                'added' => $added === [] ? '-' : implode(', ', $added),
+                'removed' => $removed === [] ? '-' : implode(', ', $removed),
+            ],
+            'properties' => [
+                'source' => $source,
+                'added' => $added,
+                'removed' => $removed,
+                'is_super' => $changes['is_super'] ?? null,
+            ],
+        ]);
     }
 
     // ═══════════════════════════════════════════

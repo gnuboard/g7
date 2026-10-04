@@ -114,6 +114,19 @@ scope=route 가 자동 매핑으로 동일한 "DB toggle = 즉시 효과" 모델
 | `user_role` | `context['user_roles']` | `['admin']` (교집합 1개 이상) |
 | `signup_stage` | `context['signup_stage']` | `'before_submit'` 또는 `'after_create'` |
 
+### 4.0 훅 경로의 `changed_fields` 계산 (7.1.0)
+
+scope=hook 정책은 훅 인자에서 바뀐 항목을 직접 계산한다(`EnforceIdentityPolicyListener::extractChangedFields()`). 순서:
+
+1. 인자 중 `changed_fields` 키를 가진 배열이 있으면 그 값을 그대로 쓴다 — 발행자가 명시한 값이 우선.
+2. 인자에 **모델과 입력 배열**이 함께 있으면(예: `core.user.before_update($user, $data)`) 입력값과 저장된 값을 비교한다.
+   - 모델 컬럼에 있는 키만, 스칼라·null 값만 비교한다. 배열 값(`roles`·`role_ids` 등)은 건너뛴다.
+   - 비교 전에 앞뒤 공백을 지우고 빈 문자열은 null 로 본다 — 폼이 빈 칸을 빈 문자열로 보내도 "바뀜" 이 아니다.
+   - `password` 는 저장값이 해시라 비교하지 않고, 비어 있지 않으면 바뀐 것으로 본다.
+3. 그 외에는 객체의 `getDirty()` — 모델을 채운 **뒤** 발행하는 훅용.
+
+`before_*` 훅은 모델을 채우기 **전에** 발행되므로 모델의 `getDirty()` 는 늘 비어 있다. 7.1.0 전에는 첫 객체의 `getDirty()` 를 곧바로 돌려줘 `core.profile.contact_change`(기본 켜짐)가 이메일·전화·휴대폰을 바꿔도 한 번도 발동하지 않았다. 모델과 입력 배열을 함께 넘기는 확장 훅에 `changed_fields` 조건 정책을 걸면 같은 규칙으로 판정된다.
+
 ### 4.1 `signup_stage` 사용 사례 — 회원가입 단계 분기
 
 | 단계 | 정책 KEY | scope/target | enabled 시 동작 |

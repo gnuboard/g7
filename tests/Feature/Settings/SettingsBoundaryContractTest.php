@@ -47,6 +47,7 @@ class SettingsBoundaryContractTest extends TestCase
             'security.password_expiry_notice_days' => 'security_password_expiry_notice_days',
             'security.password_expiry_remind_days' => 'security_password_expiry_remind_days',
             'security.password_expiry_batch_size' => 'security_password_expiry_batch_size',
+            'security.activity_log_retention_days' => 'security_activity_log_retention_days',
             'advanced.layout_cache_ttl' => 'advanced_cache_ttl',
             'advanced.stats_cache_ttl' => 'advanced_cache_ttl',
             'advanced.seo_cache_ttl' => 'advanced_cache_ttl',

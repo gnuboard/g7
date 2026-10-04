@@ -171,6 +171,7 @@
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
+| `_tab_security_activity_log` | `partials` | partial | - |
 | `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
@@ -307,7 +308,7 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
   재사용은 칸 아래, 잠금(423)·관리자 아님(403)은 단계 상단 오류에 싣습니다.
 - 켜진 비밀번호 규칙은 `_global.settings.security.*` 로 한 줄 안내합니다(관리자 화면에는 `PasswordInput` 이 없다). 관리자 재설정
   화면(`admin_reset_password`)·회원 등록/수정 화면도 같은 줄을 씁니다.
-- 휴면 해제 토스트는 모든 최종 성공 지점에 있습니다 — engine-v1.77.0 전에는 엔진이 `dormancy_restored` 를 버려 뜨지 않았습니다.
+- 휴면 해제 토스트는 모든 최종 성공 지점에 있습니다 — engine-v1.76.0 전에는 엔진이 `dormancy_restored` 를 버려 뜨지 않았습니다.
 
 ### 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드 (#736)
 
@@ -317,6 +318,13 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 보입니다 — 건수(`passwordExpiryPreview`)·「대상 보기」(개인정보 명단 창 재사용, 명단 권한이 있으면 0명이어도)·「지금 실행」(전용 확인 창
 `_modal_password_expiry_run`, 저장 안 한 변경·처리 중·**저장된 만료 꺼짐**이면 잠김 — 서버도 409)·마지막 실행 결과 줄
 (`passwordExpiryManualRuns`, 진행 중이면 3초 폴링). 저장 성공 시 보안 탭이면 건수를 다시 받습니다.
+
+### 보안 탭 「활동 로그(접속기록) 보관」 카드
+
+`partials/admin_settings/_tab_security_activity_log` 조각이 접근 제한 카드 뒤·앱 키 카드 앞에 들어갑니다. 보관 기간 숫자 칸 하나
+(`security.activity_log_retention_days`, min/max 는 `_meta.limits.security_activity_log_retention_days_*` — 하한 365일은 법정 최소)와
+법정 안내 상자(접속기록 1·2년, 권한·역할 변경 기록은 이 값과 관계없이 3년)입니다. 저장은 보안 탭 공용 저장 버튼이 함께 보냅니다.
+반응형 프리셋은 쓰지 않습니다.
 
 ### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
 
@@ -560,6 +568,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_notification_definitions.g7.html (알림 정의)
 │           ├── _tab_security.g7.html (보안)
 │           ├── _tab_security_ip_restriction.g7.html (보안 > IP 접근 제한 카드)
+│           ├── _tab_security_activity_log.g7.html (보안 > 활동 로그(접속기록) 보관 카드)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)

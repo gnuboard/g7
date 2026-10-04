@@ -4105,7 +4105,7 @@ export class ActionDispatcher {
    *
    * 로그인·2단계 인증 확인·비밀번호 변경·연기 네 핸들러가 같은 모양을 돌려주도록 단일
    * 지점에 둔다 — 갈라지면 한 경로에서만 `dormancy_restored`(휴면 해제 안내)나 변경 단계
-   * 필드가 빠진다(engine-v1.77.0 이전에는 `dormancy_restored` 를 버려 휴면 해제 토스트가
+   * 필드가 빠진다(engine-v1.76.0 이전에는 `dormancy_restored` 를 버려 휴면 해제 토스트가
    * 한 번도 뜨지 않았다).
    *
    * @param result AuthManager 로그인 결과 (2단계 인증 형태 제외)
@@ -4132,7 +4132,7 @@ export class ActionDispatcher {
     }
 
     // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored`·연기 기한 `postponed_until` 등)는 서버가 실었을
-    // 때만 키가 있다 — 레이아웃은 `response.dormancy_restored` 로 안내한다 (engine-v1.77.0).
+    // 때만 키가 있다 — 레이아웃은 `response.dormancy_restored` 로 안내한다 (engine-v1.76.0).
     return { ...(result.extras ?? {}), user: result.user, password_change_required: false };
   }
 

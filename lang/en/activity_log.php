@@ -96,6 +96,9 @@ return [
         'password_change_postpone' => 'Password Change Postponed',
         'password_expiry_logout' => 'Signed Out on Password Expiry',
 
+        // Role change from the user create/edit form (user.roles_update, #736) — a compound distinct from bulk_roles
+        'roles_update' => 'Roles Changed',
+
         // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
         'manual_run_queued' => 'Privacy action manual run queued',
         'manual_run_finished' => 'Privacy action manual run finished',
@@ -132,6 +135,7 @@ return [
         'user_update_language' => 'User language setting changed',
         'user_bulk_update_status' => 'Users status bulk updated (:count items)',
         'user_bulk_roles' => 'User roles bulk changed (ID: :user_id)',
+        'user_roles_update' => 'User roles changed (ID: :user_id, added: :added, removed: :removed)',
 
         // Member notification inbox (admin deleting a member's received notifications)
         'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count items)',

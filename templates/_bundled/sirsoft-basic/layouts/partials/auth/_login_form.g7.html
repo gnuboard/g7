@@ -287,9 +287,11 @@
         </button>
         <button type="button" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
           <on type="click">
-            <!-- 처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다. -->
-            <set-state target="global" :twoFactor="null" :passwordChange="null" :loginError="null" :loginErrors="null"/>
-            <set-state target="local" :passwordChangeInput="null"/>
+            <!-- 처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌리고, 입력하던 새 비밀번호(로컬)도 비운다. -->
+            <sequence>
+              <set-state target="global" :twoFactor="null" :passwordChange="null" :loginError="null" :loginErrors="null"/>
+              <set-state target="local" :passwordChangeInput="null"/>
+            </sequence>
           </on>
           $t:auth.two_factor.restart
         </button>

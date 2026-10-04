@@ -92,9 +92,9 @@ class SaveSettingsRequest extends FormRequest
     private const IP_RULE_TEXT_MAX = 255;
 
     /**
-     * 보안 탭 비밀번호 정책의 정수 키 (정수 문자열 정규화 대상)
+     * 보안 탭의 정수 키 (정수 문자열 정규화 대상) — 비밀번호 정책·활동 로그 보관
      */
-    private const SECURITY_PASSWORD_INTEGER_FIELDS = [
+    private const SECURITY_INTEGER_FIELDS = [
         // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
         'password_min_length',
         'password_repeated_chars_length',
@@ -104,6 +104,7 @@ class SaveSettingsRequest extends FormRequest
         'password_expiry_notice_days',
         'password_expiry_remind_days',
         'password_expiry_batch_size',
+        'activity_log_retention_days',
     ];
 
     /**
@@ -186,7 +187,7 @@ class SaveSettingsRequest extends FormRequest
 
         $changed = false;
 
-        foreach (self::SECURITY_PASSWORD_INTEGER_FIELDS as $field) {
+        foreach (self::SECURITY_INTEGER_FIELDS as $field) {
             if (! array_key_exists($field, $security)) {
                 continue;
             }
@@ -542,6 +543,8 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_action' => ['nullable', 'string', Rule::in(PasswordExpiryAction::values())],
             'security.password_expiry_remind_days' => $this->securityIntegerRules('password_expiry_remind_days'),
             'security.password_expiry_batch_size' => $this->securityIntegerRules('password_expiry_batch_size'),
+            // 활동 로그(접속기록) 보관 기간 — 하한 365 는 법정 최소(#736 D14). 파기 서비스도 같은 바닥을 다시 건다.
+            'security.activity_log_retention_days' => $this->securityIntegerRules('activity_log_retention_days'),
             'security.two_factor_auth' => ['nullable', 'boolean'],
             // 적용 범위. 미전송(기존 클라이언트)은 기본값 'all' 유지 — 레거시 저장값
             // (two_factor_auth=true 단독)의 "전체" 의미가 그대로 보존된다.
@@ -1310,6 +1313,9 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_batch_size.integer' => __('validation.settings.password_policy_integer'),
             'security.password_expiry_batch_size.min' => __('validation.settings.password_policy_min'),
             'security.password_expiry_batch_size.max' => __('validation.settings.password_policy_max'),
+            'security.activity_log_retention_days.integer' => __('validation.settings.password_policy_integer'),
+            'security.activity_log_retention_days.min' => __('validation.settings.activity_log_retention_days_min'),
+            'security.activity_log_retention_days.max' => __('validation.settings.password_policy_max'),
             // IP 접근 제한 (자기 잠금 문구는 withValidator() 가 현재 IP 를 넣어 직접 부착한다)
             'security.ip_restriction_enabled.boolean' => __('validation.settings.ip_restriction_enabled_boolean'),
             'security.admin_allowed_ips.array' => __('validation.settings.admin_allowed_ips_array'),
@@ -1615,6 +1621,7 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_action' => __('validation.attributes.password_expiry_action'),
             'security.password_expiry_remind_days' => __('validation.attributes.password_expiry_remind_days'),
             'security.password_expiry_batch_size' => __('validation.attributes.password_expiry_batch_size'),
+            'security.activity_log_retention_days' => __('validation.attributes.activity_log_retention_days'),
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
             'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),

@@ -146,13 +146,17 @@ class UserService
             $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::AdminCreate);
 
             // 역할 동기화
+            $roleSync = null;
             if ($roleIds !== null && count($roleIds) > 0) {
-                $user->roles()->sync($roleIds);
+                $roleSync = $user->roles()->sync($roleIds);
                 $user->flushPermissionCaches();
             }
 
             // After 훅: 사용자 객체와 원본 데이터 전달
             HookManager::doAction('core.user.after_create', $user, $originalData);
+
+            // 권한 부여 기록(D23) — 새 회원에게 붙은 역할과 최고관리자 지정을 별도 훅으로 알린다.
+            $this->dispatchRoleChange($user, $roleSync, false, 'create');
 
             return $user->fresh(['modules', 'plugins', 'menus', 'roles']);
         } catch (Exception $e) {
@@ -306,6 +310,10 @@ class UserService
             // 스냅샷 캡처 (ChangeDetector용)
             $snapshot = $user->toArray();
 
+            // 역할 변경 기록(D23)의 최고관리자 지정 전후 비교용
+            $wasSuper = (bool) $user->is_super;
+            $roleSync = null;
+
             // 탈퇴 위임 시 아바타는 커밋 후에 지운다 (트랜잭션 안에서 지우면 롤백돼도 파일은 안 돌아온다).
             $avatarAttachment = $withdrawViaStatus ? $user->avatarAttachment : null;
 
@@ -314,7 +322,7 @@ class UserService
             // 상태 변경 경유 탈퇴는 **탈퇴까지 같은 트랜잭션**에 넣는다 — 프로필 갱신을
             // 먼저 커밋하고 탈퇴를 따로 커밋하면, 탈퇴가 실패했을 때 이름·이메일 변경만
             // 남아 "전부 성공하거나 전부 취소" 가 그 경로에서만 깨진다.
-            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash) {
+            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash, &$roleSync) {
                 $this->userRepository->update($user, $data);
 
                 // 비밀번호 변경 기록 — 출처는 행위자로 판정한다. 본인이면 현재 기기 토큰만 남기고,
@@ -341,7 +349,7 @@ class UserService
 
                 // 역할 동기화
                 if ($roleIds !== null) {
-                    $user->roles()->sync($roleIds);
+                    $roleSync = $user->roles()->sync($roleIds);
                 }
 
                 // 익명화 + before_withdraw 훅 + 연계 데이터 정리 (본인 탈퇴와 동일 코드)
@@ -357,6 +365,9 @@ class UserService
 
             // After 훅: 사용자 객체와 원본 데이터, 스냅샷 전달
             HookManager::doAction('core.user.after_update', $user, $originalData, $snapshot);
+
+            // 권한 변경 기록(D23) — 역할·최고관리자 지정이 실제로 바뀐 경우만, 커밋 뒤에 알린다.
+            $this->dispatchRoleChange($user, $roleSync, $wasSuper, 'update');
 
             if ($withdrawViaStatus) {
                 $this->runWithdrawAfterEffects($user, $avatarAttachment);
@@ -1050,6 +1061,36 @@ class UserService
         );
 
         return $result;
+    }
+
+    /**
+     * 회원 등록·수정으로 역할 또는 최고관리자 지정이 바뀌었으면 `core.user.after_update_roles` 를 발행합니다.
+     *
+     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관)의 기록 지점이다(#736 D23).
+     * 일괄 경로(`bulkUpdateRoles`)는 `core.user.after_bulk_update_roles` 가 따로 남긴다. 바뀐 것이 없으면 발행하지 않는다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  array{attached?: array<int, int|string>, detached?: array<int, int|string>}|null  $roleSync  `sync()` 결과 (역할을 건드리지 않았으면 null)
+     * @param  bool  $wasSuper  변경 전 최고관리자 여부
+     * @param  string  $source  'create' | 'update'
+     * @return void 반환값 없음
+     */
+    private function dispatchRoleChange(User $user, ?array $roleSync, bool $wasSuper, string $source): void
+    {
+        $attached = array_values(array_map('intval', $roleSync['attached'] ?? []));
+        $detached = array_values(array_map('intval', $roleSync['detached'] ?? []));
+        $isSuper = (bool) $user->is_super;
+        $superChange = $wasSuper !== $isSuper ? ['from' => $wasSuper, 'to' => $isSuper] : null;
+
+        if ($attached === [] && $detached === [] && $superChange === null) {
+            return;
+        }
+
+        HookManager::doAction('core.user.after_update_roles', $user, [
+            'attached' => $attached,
+            'detached' => $detached,
+            'is_super' => $superChange,
+        ], $source);
     }
 
     /**

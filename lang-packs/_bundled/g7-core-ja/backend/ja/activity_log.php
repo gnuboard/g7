@@ -79,6 +79,9 @@ return [
         'password_change' => 'パスワード変更',
         'password_change_postpone' => 'パスワード変更の延期',
         'password_expiry_logout' => 'パスワード有効期限切れによるログイン解除',
+
+        // 会員登録・編集でのロール変更 (user.roles_update, #736)
+        'roles_update' => 'ロール変更',
         'manual_run_queued' => '個人情報措置職権実行受付',
         'manual_run_finished' => '個人情報措置職権実行終了',
         'analytics' => [
@@ -254,6 +257,7 @@ return [
         'privacy_manual_run_completed' => '個人情報措置職権実行完了 (:target, :count件)',
         'privacy_manual_run_failed' => '個人情報措置職権実行失敗 (:target)',
         'user_bulk_roles' => 'ユーザーのロール一括変更 (ID: :user_id)',
+        'user_roles_update' => 'ユーザーのロール変更 (ID: :user_id, 追加: :added, 解除: :removed)',
     ],
     'fields' => [
         'name' => '名前',

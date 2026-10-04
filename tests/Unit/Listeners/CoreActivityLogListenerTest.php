@@ -170,7 +170,12 @@ class CoreActivityLogListenerTest extends TestCase
         // #708 회원 역할 일괄 변경(core.user.after_bulk_update_roles) +1 → 82.
         // #736 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
         // password_change_postponed·password_expired 를 더함 +2 → 84.
-        $this->assertCount(84, $hooks);
+        // #736 D23 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
+        $this->assertCount(85, $hooks);
+        $this->assertSame(
+            ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
+            $hooks['core.user.after_update_roles'] ?? null,
+        );
     }
 
     /**

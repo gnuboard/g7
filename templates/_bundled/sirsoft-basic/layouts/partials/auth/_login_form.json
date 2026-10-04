@@ -1090,11 +1090,11 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌리고, 입력하던 새 비밀번호(로컬)도 비운다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",

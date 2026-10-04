@@ -202,10 +202,10 @@ export type LoginResult =
   | { status: 'two_factor_required'; challenge: TwoFactorChallenge }
   | { status: 'password_change_required'; challenge: PasswordChangeChallenge }; // engine-v1.77.0+
 
-/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.77.0+). 토큰·사용자·단계 표지를 뺀 나머지 필드다. */
+/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.76.0+). 토큰·사용자·단계 표지를 뺀 나머지 필드다. */
 export type LoginExtras = Record<string, unknown>;
 
-/** 2단계 인증 확인 결과 (engine-v1.77.0+, 비밀번호 변경 단계 형태는 engine-v1.77.0+) */
+/** 2단계 인증 확인 결과 (engine-v1.76.0+, 비밀번호 변경 단계 형태는 engine-v1.77.0+) */
 export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_required' }>;
 ```
 
@@ -220,7 +220,7 @@ export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_requir
 |--------|---------|
 | `login(type, credentials, options?)` | 비밀번호 확인. `LoginResult` 반환 |
 | `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환. 비밀번호 변경 단계가 오면 세션을 열지 않고 오류를 던집니다 |
-| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession` 반환 — `authenticated`(`user` + 서버 안내 필드 `extras`) 또는 `password_change_required`(engine-v1.77.0+) (engine-v1.77.0+) |
+| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession` 반환 — `authenticated`(`user` + 서버 안내 필드 `extras`) 또는 `password_change_required`(engine-v1.77.0+) (engine-v1.76.0+) |
 | `resendTwoFactor(type, { challengeId }, options?)` | 인증번호 재발송 → **새** `TwoFactorChallenge` 반환 |
 
 레이아웃에서는 액션 핸들러 `login` / `loginTwoFactor` / `loginTwoFactorResend` 로 사용합니다
@@ -280,7 +280,7 @@ export interface PasswordChangeChallenge {
 | `loginPasswordChangePostpone` (body `challenge_id`) | — | `{ user, password_change_required: false, postponed_until, dormancy_restored? }` |
 
 `dormancy_restored` 는 휴면이 그 로그인으로 풀렸을 때만 실립니다. 네 핸들러 모두 결과의 `extras` 를 `response` 에
-펼쳐 전달합니다(engine-v1.77.0 전에는 엔진이 버려 휴면 해제 안내가 뜨지 않았습니다).
+펼쳐 전달합니다(engine-v1.76.0 전에는 엔진이 버려 휴면 해제 안내가 뜨지 않았습니다).
 
 실패(422)는 `error.errors` 로 구분합니다 — 규칙 위반·현재 비밀번호와 같은 값·최근 사용 비밀번호는
 `errors.password`, 식별자 만료·무효(시간 초과, 이미 사용, 다른 로그인 경로의 식별자)는 `errors.challenge_id` 입니다.

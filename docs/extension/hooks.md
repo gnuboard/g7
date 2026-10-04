@@ -204,6 +204,18 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 다시 계산하면 집행 시점과 하루 어긋날 수 있습니다. 배치 훅은 표지(이번 주기 처리 기록)를 먼저 남긴 뒤 발행하고,
 발행이 던지면 표지를 되돌립니다(휴면 사전 안내와 같은 규칙) — 큐 안에서 실패한 발송은 표지를 되돌리지 못합니다.
 
+### 회원 역할 변경 훅 (7.1.0)
+
+회원 등록·수정(`UserService::createUser`·`updateUser`)으로 역할이나 최고관리자 지정이 **실제로 바뀌면**
+`core.user.after_update_roles` 를 발행합니다. 바뀐 것이 없으면(같은 역할로 다시 저장, 역할을 싣지 않는 정보수정) 발행하지
+않습니다. 여러 회원의 역할을 한꺼번에 바꾸는 일괄 경로는 짝 훅 `core.user.after_bulk_update_roles` 가 따로 알립니다.
+코어 활동 로그가 이 훅으로 `user.roles_update` 를 남기며, 이 기록은 권한 부여·변경 기록이라 활동 로그 보관 기간과
+관계없이 최소 3년 보관됩니다(`config('core.activity_log.long_retention_actions')`).
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.user.after_update_roles` | action | `(User $user, array $changes, string $source)` — `$changes` = `attached`(붙은 역할 ID 목록) · `detached`(떨어진 역할 ID 목록) · `is_super`(최고관리자 지정이 바뀌었으면 `['from' => bool, 'to' => bool]`, 아니면 `null`), `$source` = `create`·`update` | 등록은 `core.user.after_create` 뒤, 수정은 커밋 뒤 `core.user.after_update` 뒤 |
+
 ### 관리자 회원 목록 확장 필터 훅
 
 관리자 회원 목록(`GET /api/admin/users`)에 모듈·플러그인이 자기 필터를 더하는 경로다. 값은 화면이

@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 71훅 + 확장 167훅 = 총 238훅 (확장별 목록은 그 확장이 소유)
+1. 코어 74훅 + 확장 167훅 = 총 241훅 (확장별 목록은 그 확장이 소유)
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -41,9 +41,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 71훅**
+**총 74훅**
 
-### User (9훅)
+### User (10훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -56,6 +56,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.user.after_search` | `handleUserAfterSearch` | `user.search` | Admin | - |
 | `sirsoft-core.user.after_bulk_update` | `handleUserAfterBulkUpdate` | `user.bulk_update` | Admin | - |
 | `core.user.after_bulk_update_roles` | `handleUserAfterBulkUpdateRoles` | `user.bulk_roles` | Admin | User |
+| `core.user.after_update_roles` | `handleUserAfterUpdateRoles` | `user.roles_update` | Admin | User |
+
+`user.bulk_roles`·`user.roles_update` 는 권한 부여·변경 기록이라 활동 로그 보관 기간과 관계없이 최소 3년 보관한다 — [activity-log.md](activity-log.md) 「보관 기간」.
 
 ### Auth (11훅)
 

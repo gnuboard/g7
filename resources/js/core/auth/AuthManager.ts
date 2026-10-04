@@ -90,7 +90,7 @@ export interface PasswordChangeChallenge {
  * 가정하면 다른 형태에서 토큰·사용자 필드가 없어 화면이 알 수 없는 오류로 멈춘다.
  *
  * @since engine-v1.65.0
- * @since engine-v1.77.0 `extras` 추가
+ * @since engine-v1.76.0 `extras` 추가
  * @since engine-v1.77.0 `password_change_required` 형태 추가
  */
 export type LoginResult =
@@ -625,7 +625,7 @@ export class AuthManager {
 
     if (data.token && data.user) {
       const user = this.establishSession(type, data.token, data.user);
-      // 서버가 덧붙인 안내(휴면 해제·변경 연기 기한 등)를 버리면 화면이 그 사실을 알 길이 없다 (engine-v1.77.0).
+      // 서버가 덧붙인 안내(휴면 해제·변경 연기 기한 등)를 버리면 화면이 그 사실을 알 길이 없다 (engine-v1.76.0).
       const extras = pickLoginExtras(data);
 
       return extras ? { status: 'authenticated', user, extras } : { status: 'authenticated', user };

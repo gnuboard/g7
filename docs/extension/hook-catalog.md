@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (610)
+- [코어](#코어) (611)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -596,6 +596,7 @@
 | `core.user.after_search` | action | 2 |  |
 | `core.user.after_show` | action | 1 |  |
 | `core.user.after_update` | action | 3 |  |
+| `core.user.after_update_roles` | action | 3 |  |
 | `core.user.after_withdraw` | action | 1 |  |
 | `core.user.before_bulk_update_roles` | action | 3 |  |
 | `core.user.before_create` | action | 1 |  |

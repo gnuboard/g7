@@ -8,6 +8,7 @@ use App\Enums\IdentityOriginType;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -325,45 +326,128 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     /**
      * 훅 인자에서 changed_fields 를 추출합니다 (정책 conditions.changed_fields 매칭용).
      *
-     * `before_update` 류 훅은 (아직 값을 채우지 않은 모델, 저장할 데이터) 로 발화한다 — 모델의 getDirty() 는
-     * 이 시점에 비어 있으므로, 비어 있으면 함께 넘어온 데이터 배열을 모델의 현재 값과 비교해 바뀐 칸을 뽑는다.
-     * getDirty() 만 보던 판정은 회원 정보 수정에서 늘 빈 목록이 되어 연락처 변경 정책이 발화하지 않았다.
+     * 판정 순서:
+     *  1. 인자 중 `changed_fields` 키를 가진 배열 — 발행자가 명시한 값을 그대로 쓴다.
+     *  2. (모델, 입력 배열) 짝 — 모델에 이미 채운 변경(`getDirty()`)이 있으면 그것을 쓰고, 비어 있으면
+     *     입력값과 저장된 값을 비교해 실제로 바뀌는 항목만 센다. `before_update` 류 훅은 (아직 값을 채우지 않은
+     *     모델, 저장할 데이터) 로 발화해 `getDirty()` 가 늘 비어 있다 — `getDirty()` 만 보던 판정은 회원 정보
+     *     수정에서 늘 빈 목록이 되어 연락처 변경 정책이 발화하지 않았다(#699·#736 D21).
+     *  3. 그 외 객체의 `getDirty()` — 모델을 채운 뒤 발행하는 훅.
      *
      * @param  array<int, mixed>  $args  훅 인자
      * @return array<int, string> 변경 필드명 배열
      */
     protected function extractChangedFields(array $args): array
     {
+        foreach ($args as $arg) {
+            if (is_array($arg) && array_key_exists('changed_fields', $arg)) {
+                return array_values((array) $arg['changed_fields']);
+            }
+        }
+
         $model = null;
-        $data = null;
+        $input = null;
+        foreach ($args as $arg) {
+            if ($model === null && $arg instanceof Model) {
+                $model = $arg;
+            } elseif ($input === null && is_array($arg)) {
+                $input = $arg;
+            }
+        }
+
+        if ($model !== null && $input !== null) {
+            $dirty = array_keys($model->getDirty());
+
+            return $dirty !== [] ? $dirty : $this->diffInputAgainstModel($model, $input);
+        }
 
         foreach ($args as $arg) {
-            if (is_array($arg) && isset($arg['changed_fields'])) {
-                return (array) $arg['changed_fields'];
-            }
-            if ($model === null && is_object($arg) && method_exists($arg, 'getDirty')) {
-                $model = $arg;
-            } elseif ($data === null && is_array($arg)) {
-                $data = $arg;
+            if (is_object($arg) && method_exists($arg, 'getDirty')) {
+                return array_keys($arg->getDirty());
             }
         }
 
-        if ($model === null) {
-            return [];
-        }
+        return [];
+    }
 
-        $dirty = array_keys($model->getDirty());
-        if ($dirty !== [] || $data === null || ! method_exists($model, 'getAttribute')) {
-            return $dirty;
-        }
-
+    /**
+     * 입력 배열 중 모델에 저장된 값과 다른 항목명을 돌려줍니다.
+     *
+     * 모델 컬럼에 있는 키만, 그리고 스칼라·null 값만 비교한다 — 회원 수정 요청에 함께 실리는 역할 배열
+     * (`roles`·`role_ids`)처럼 배열 값은 컬럼 비교 대상이 아니고, 문자열로 바꾸면 경고가 나 요청이 500 이 된다.
+     * 비밀번호는 저장값이 해시라 비교할 수 없으므로 비어 있지 않으면 변경으로 본다.
+     *
+     * @param  Model  $model  저장 전 모델
+     * @param  array<string|int, mixed>  $input  요청 입력
+     * @return array<int, string> 바뀌는 항목명
+     */
+    protected function diffInputAgainstModel(Model $model, array $input): array
+    {
+        $attributes = $model->getAttributes();
         $changed = [];
-        foreach ($data as $field => $value) {
-            if (is_string($field) && $model->getAttribute($field) != $value) {
-                $changed[] = $field;
+
+        foreach ($input as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            if ($key === 'password') {
+                if (is_string($value) && $value !== '') {
+                    $changed[] = $key;
+                }
+
+                continue;
+            }
+
+            if (! array_key_exists($key, $attributes)) {
+                continue;
+            }
+
+            $before = $attributes[$key];
+            if (! $this->isComparable($value) || ! $this->isComparable($before)) {
+                continue;
+            }
+
+            if ($this->normalizeForDiff($value) !== $this->normalizeForDiff($before)) {
+                $changed[] = $key;
             }
         }
 
         return $changed;
+    }
+
+    /**
+     * 비교 가능한 값(스칼라 또는 null)인지 판정합니다.
+     *
+     * @param  mixed  $value  값
+     * @return bool 스칼라·null 이면 true
+     */
+    private function isComparable(mixed $value): bool
+    {
+        return $value === null || is_scalar($value);
+    }
+
+    /**
+     * 비교용으로 값을 정규화합니다 — 앞뒤 공백 제거, 빈 문자열은 null, 불리언은 '1'/'0', 나머지는 문자열.
+     *
+     * 폼은 빈 칸을 빈 문자열로 보내고 DB 는 null 로 저장하며, 원시 속성은 정수·불리언을 드라이버 표현으로 준다 —
+     * 같은 값을 "바뀜" 으로 세지 않게 한 표현으로 맞춘다.
+     *
+     * @param  mixed  $value  스칼라 또는 null
+     * @return string|null 정규화된 값
+     */
+    private function normalizeForDiff(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        $string = trim((string) $value);
+
+        return $string === '' ? null : $string;
     }
 }

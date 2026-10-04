@@ -1846,6 +1846,14 @@
           "expire_warning": "Members whose logins were ended must set a new password at their next login.",
           "queue_hint": "The run is queued and its result appears on this card when it finishes. You cannot run the same target again until its queued job finishes."
         }
+      },
+      "activity_log_retention": {
+        "title": "Activity log (access record) retention",
+        "desc": "How long to keep the activity log — the record of admin and member access and actions. Records older than this are deleted automatically every day at 04:45.",
+        "days": "Retention period",
+        "days_suffix": "days",
+        "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
+        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
       }
     },
     "identity": {

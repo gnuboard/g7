@@ -66,6 +66,9 @@ return [
         'security_password_expiry_remind_days_max' => 90,
         'security_password_expiry_batch_size_min' => 0,
         'security_password_expiry_batch_size_max' => 100000,
+        // 활동 로그(접속기록) 보관 기간 — 최소 365 는 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년(#736 D14)
+        'security_activity_log_retention_days_min' => 365,
+        'security_activity_log_retention_days_max' => 3650,
 
         // 고급 (캐시 TTL)
         'advanced_cache_ttl_min' => 0,
@@ -130,6 +133,31 @@ return [
     'pagination' => [
         'result_cap' => 10000,
         'max_page' => 1000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 활동 로그 자동 파기 (activity-log:prune)
+    |--------------------------------------------------------------------------
+    | 일반 로그는 환경설정 > 보안 「활동 로그 보관 기간」(security.activity_log_retention_days,
+    | 365~3650일)을 따르고, 아래 액션은 그 값과 관계없이 최소 long_retention_days 일 보관합니다.
+    | 개인정보의 안전성 확보조치 기준 제5조③ — 권한 부여·변경·말소 내역 3년 보관(#736 D14).
+    |
+    | - long_retention_actions: 역할 정의·권한 구성·회원 역할 변경 기록 (정확히 일치하는 액션 이름)
+    | - long_retention_days:    그 액션의 최소 보관 일수
+    */
+    'activity_log' => [
+        'long_retention_actions' => [
+            'role.create',
+            'role.update',
+            'role.delete',
+            'role.sync_permissions',
+            'role.toggle_status',
+            'menu.sync_roles',
+            'user.roles_update',
+            'user.bulk_roles',
+        ],
+        'long_retention_days' => 1095,
     ],
 
     /*

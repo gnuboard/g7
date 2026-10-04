@@ -87,7 +87,7 @@
 | `provider_id` | string | 인증번호를 보낸 프로바이더 |
 | `expires_at` | string \| null | 인증 요청 만료 시각 (ISO8601) |
 | `password_change_required` | boolean | `true` 면 비밀번호 변경 단계입니다(engine-v1.77.0+) — 필드는 [loginPasswordChange](#loginpasswordchange) 참조 |
-| `dormancy_restored` | boolean | 휴면 계정이 이 로그인으로 풀렸으면 `true` (서버가 실었을 때만 있음, engine-v1.77.0+). `loginTwoFactor`·`loginPasswordChange`·`loginPasswordChangePostpone` 의 결과에도 같은 필드가 실린다 |
+| `dormancy_restored` | boolean | 휴면 계정이 이 로그인으로 풀렸으면 `true` (서버가 실었을 때만 있음, engine-v1.76.0+). `loginTwoFactor`·`loginPasswordChange`·`loginPasswordChangePostpone` 의 결과에도 같은 필드가 실린다 |
 
 분기를 두지 않으면 인증이 끝나기 전에 홈으로 이동하거나, 빈 사용자 정보가 상태에 실립니다.
 「2단계 인증이 아니면 성공」 으로 판정하지 말고 `password_change_required` 도 함께 봅니다 — 변경 단계 응답에는 토큰이 없습니다.

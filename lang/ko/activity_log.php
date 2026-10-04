@@ -98,6 +98,9 @@ return [
         'password_change_postpone' => '비밀번호 변경 연기',
         'password_expiry_logout' => '비밀번호 만료 로그인 해제',
 
+        // 회원 등록·수정의 역할 변경 (user.roles_update, #736) — 일괄 변경(bulk_roles)과 겹치지 않는 복합어
+        'roles_update' => '역할 변경',
+
         // 개인정보 조치 직권 실행 (privacy.manual_run_*) — 흔한 낱말과 겹치지 않는 복합어
         'manual_run_queued' => '개인정보 조치 직권 실행 접수',
         'manual_run_finished' => '개인정보 조치 직권 실행 종료',
@@ -134,6 +137,7 @@ return [
         'user_update_language' => '사용자 언어 설정 변경',
         'user_bulk_update_status' => '사용자 일괄 상태 변경 (:count건)',
         'user_bulk_roles' => '사용자 역할 일괄 변경 (ID: :user_id)',
+        'user_roles_update' => '사용자 역할 변경 (ID: :user_id, 추가: :added, 회수: :removed)',
 
         // 회원 알림함 (관리자가 회원 수신함을 지우는 행위)
         'member_notification_bulk_delete' => '회원 알림함 일괄 삭제 (:count건)',
