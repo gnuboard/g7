@@ -51,6 +51,31 @@ class PasswordExpiryTargetApiTest extends TestCase
     }
 
     /**
+     * 날짜 열 이름은 단계마다 다르다 — 사전 안내 명단은 아직 오지 않은 날이라 「만료 예정일」, 만료 처리 명단은
+     * 「만료일」(2026-10-04 결정). 나머지 열(이름·이메일·구분)은 같다.
+     *
+     * @scenario stage=notice|expire, actor=full_reader
+     *
+     * @effects target_date_column_label_follows_stage
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_date_column_label_follows_the_stage(): void
+    {
+        $this->enableExpiry();
+        $viewer = $this->makeLimitedAdmin(['core.settings.read', 'core.users.read']);
+
+        $notice = $this->actingAs($viewer)->getJson('/api/admin/privacy/password-expiry-targets/notice')->assertOk();
+        $expire = $this->actingAs($viewer)->getJson('/api/admin/privacy/password-expiry-targets/expire')->assertOk();
+
+        $this->assertSame(__('user.password_expiry_target.column_expires_due'), $notice->json('data.columns.date'));
+        $this->assertSame(__('user.password_expiry_target.column_expires_at'), $expire->json('data.columns.date'));
+        $this->assertNotSame($notice->json('data.columns.date'), $expire->json('data.columns.date'));
+        $this->assertSame(__('user.password_expiry_target.column_type'), $notice->json('data.columns.context'));
+    }
+
+    /**
      * 설정 읽기만 있으면 명단 버튼 값이 false 이고 직접 호출은 403, 회원 읽기가 부분 범위여도 403 이다.
      *
      * @scenario actor=settings_reader|scoped_users_reader

@@ -22,7 +22,7 @@
 14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
 15. [실전 예시](#실전-예시)
 
-> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` 가 함께 설명되어 있습니다.
+> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` · `loginPasswordChange` · `loginPasswordChangePostpone` 가 함께 설명되어 있습니다.
 
 ---
 
@@ -73,10 +73,11 @@
 | `admin` | 관리자 인증 |
 | `user` | 사용자 인증 |
 
-### login 의 반환값 — 2단계 인증이 켜진 사이트
+### login 의 반환값 — 2단계 인증·비밀번호 변경 단계가 있는 사이트
 
-서버는 보안 환경설정에 따라 **두 가지 형태의 200** 을 돌려줍니다. `onSuccess` 는 두 형태 모두에서
-실행되므로, 후속 액션은 `response.two_factor_required` 로 분기해야 합니다.
+서버는 보안 환경설정과 회원 상태에 따라 **세 가지 형태의 200**(로그인 완료 · 2단계 인증 · 비밀번호 변경 단계)을
+돌려줍니다. `onSuccess` 는 세 형태 모두에서 실행되므로, 후속 액션은 `response.two_factor_required` 와
+`response.password_change_required` 로 분기해야 합니다.
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -85,9 +86,11 @@
 | `challenge_id` | string | 인증번호 확인에 그대로 전달할 식별자 |
 | `provider_id` | string | 인증번호를 보낸 프로바이더 |
 | `expires_at` | string \| null | 인증 요청 만료 시각 (ISO8601) |
-| `dormancy_restored` | boolean | 휴면 계정이 이 로그인으로 풀렸으면 `true` (서버가 실었을 때만 있음, engine-v1.76.0+). `loginTwoFactor` 의 결과에도 같은 필드가 실린다 |
+| `password_change_required` | boolean | `true` 면 비밀번호 변경 단계입니다(engine-v1.77.0+) — 필드는 [loginPasswordChange](#loginpasswordchange) 참조 |
+| `dormancy_restored` | boolean | 휴면 계정이 이 로그인으로 풀렸으면 `true` (서버가 실었을 때만 있음, engine-v1.77.0+). `loginTwoFactor`·`loginPasswordChange`·`loginPasswordChangePostpone` 의 결과에도 같은 필드가 실린다 |
 
 분기를 두지 않으면 인증이 끝나기 전에 홈으로 이동하거나, 빈 사용자 정보가 상태에 실립니다.
+「2단계 인증이 아니면 성공」 으로 판정하지 말고 `password_change_required` 도 함께 봅니다 — 변경 단계 응답에는 토큰이 없습니다.
 
 ```html
 <on type="submit">
@@ -101,7 +104,7 @@
           <field name="code" value=""/>
         </field>
       </set-state>
-      <navigate if="{{!response.two_factor_required}}" path="/"/>
+      <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="/"/>
     </success>
     <body email="{{form.email}}" password="{{form.password}}"/>
   </login>
@@ -131,7 +134,7 @@
     },
     {
       "handler": "navigate",
-      "if": "{{!response.two_factor_required}}",
+      "if": "{{!response.two_factor_required && !response.password_change_required}}",
       "params": { "path": "/" }
     }
   ]
@@ -143,14 +146,16 @@
 
 ### loginTwoFactor
 
-인증번호를 확인해 로그인을 완료합니다. 성공 시 토큰이 발급되고 `{ user }` 를 돌려줍니다.
+인증번호를 확인해 로그인을 완료합니다. 성공 시 토큰이 발급되고 `{ user, password_change_required: false, dormancy_restored? }` 를 돌려줍니다.
+코드가 맞아도 비밀번호 변경 단계가 남았으면 토큰 없이 `{ user: null, password_change_required: true, challenge_id, … }` 를 돌려줍니다(engine-v1.77.0+) —
+성공 분기에서 `response.password_change_required` 를 먼저 봅니다.
 
 ```html
 <on type="submit">
   <action handler="loginTwoFactor" target="user">
     <success>
-      <set-state target="global" currentUser="{{response.user}}" :twoFactor="null"/>
-      <navigate path="/"/>
+      <set-state if="{{!response.password_change_required}}" target="global" currentUser="{{response.user}}" :twoFactor="null"/>
+      <navigate if="{{!response.password_change_required}}" path="/"/>
     </success>
     <fail>
       <set-state target="global" twoFactor.error="{{error.message}}"/>
@@ -173,8 +178,8 @@
     }
   },
   "onSuccess": [
-    { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "twoFactor": null } },
-    { "handler": "navigate", "params": { "path": "/" } }
+    { "handler": "setState", "if": "{{!response.password_change_required}}", "params": { "target": "global", "currentUser": "{{response.user}}", "twoFactor": null } },
+    { "handler": "navigate", "if": "{{!response.password_change_required}}", "params": { "path": "/" } }
   ],
   "onError": [
     { "handler": "setState", "params": { "target": "global", "twoFactor.error": "{{error.message}}" } }
@@ -215,6 +220,89 @@
 ```
 
 반환값은 `{ two_factor_required, challenge_id, provider_id, expires_at }` 입니다.
+
+### loginPasswordChange
+
+로그인 비밀번호 변경 단계에서 새 비밀번호를 정해 로그인을 완료합니다(engine-v1.77.0+). 비밀번호가 만료됐거나
+관리자가 정해 준 비밀번호면 `login`·`loginTwoFactor` 가 토큰 대신 이 단계를 돌려줍니다.
+
+| 단계 응답 필드 (`login`·`loginTwoFactor`) | 타입 | 설명 |
+|------|------|------|
+| `password_change_required` | boolean | `true` |
+| `challenge_id` | string | 이 핸들러에 그대로 전달할 식별자 (발급 후 10분) |
+| `reason` | `expired` \| `admin_assigned` | 사용 기간 만료 / 관리자가 정해 준 비밀번호 |
+| `can_postpone` | boolean | 「다음에 변경」 가능 여부 |
+| `postpone_days` | number \| null | 미루면 다시 안내할 때까지의 일수 |
+| `expired_at` | string \| null | 만료 시각 (관리자 지정이면 null) |
+| `expires_at` | string \| null | 식별자 만료 시각 |
+
+단계 정보는 `_global.passwordChange` 에 두어도 되지만, 새 비밀번호·확인 **값**은 `_local`(아래 예시는 `_local.passwordChangeInput`)에
+둡니다 — `_global` 에는 민감 정보를 두지 않습니다([security.md](security.md)).
+
+```html
+<on type="submit">
+  <login-password-change target="user" if="{{_global.passwordChange?.required}}">
+    <success>
+      <set-state target="global" currentUser="{{response.user}}" :passwordChange="null"/>
+      <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+      <navigate path="/"/>
+    </success>
+    <fail>
+      <set-state target="global" passwordChange.error="{{error.message}}" passwordChange.errors="{{error.errors}}"/>
+    </fail>
+    <body challenge_id="{{_global.passwordChange?.challenge_id}}" password="{{_local.passwordChangeInput?.password}}" password_confirmation="{{_local.passwordChangeInput?.password_confirmation}}"/>
+  </login-password-change>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "loginPasswordChange",
+  "target": "user",
+  "if": "{{_global.passwordChange?.required}}",
+  "params": {
+    "body": {
+      "challenge_id": "{{_global.passwordChange?.challenge_id}}",
+      "password": "{{_local.passwordChangeInput?.password}}",
+      "password_confirmation": "{{_local.passwordChangeInput?.password_confirmation}}"
+    }
+  },
+  "onSuccess": [
+    { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "passwordChange": null } },
+    { "handler": "toast", "if": "{{response.dormancy_restored}}", "params": { "type": "info", "message": "$t:auth.dormancy_restored" } },
+    { "handler": "navigate", "params": { "path": "/" } }
+  ],
+  "onError": [
+    { "handler": "setState", "params": { "target": "global", "passwordChange.error": "{{error.message}}", "passwordChange.errors": "{{error.errors}}" } }
+  ]
+}
+```
+
+- `params.body.challenge_id` 는 필수입니다. 비밀번호는 비어 있어도 서버로 보내 규칙 문구를 서버가 정합니다.
+- 성공하면 서버가 **모든 기기를 로그아웃**시키고 새 토큰을 하나 발급합니다. 반환은 `{ user, password_change_required: false, dormancy_restored? }`.
+- 422 의 `error.errors.password` 는 규칙 위반·현재 비밀번호와 같은 값·최근 사용 비밀번호, `error.errors.challenge_id` 는 식별자 만료·무효입니다 —
+  후자는 처음부터 다시 로그인해야 하므로 단계 상태를 비우고 자격증명 단계로 돌아갑니다.
+- `target` 은 `login` 과 같은 값(`user` / `admin`) — 다른 경로에서 받은 식별자는 422 입니다.
+
+### loginPasswordChangePostpone
+
+비밀번호 변경을 미루고(「다음에 변경」) 로그인을 완료합니다(engine-v1.77.0+). 단계 응답의 `can_postpone` 이 `true` 일 때만 서버가 받아 줍니다.
+
+```json
+{
+  "handler": "loginPasswordChangePostpone",
+  "target": "user",
+  "params": { "body": { "challenge_id": "{{_global.passwordChange?.challenge_id}}" } },
+  "onSuccess": [
+    { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}", "passwordChange": null } },
+    { "handler": "navigate", "params": { "path": "/" } }
+  ]
+}
+```
+
+반환값은 `{ user, password_change_required: false, postponed_until, dormancy_restored? }` 입니다. 마크업 태그는 `<login-password-change-postpone>` 입니다.
 
 ### logout
 

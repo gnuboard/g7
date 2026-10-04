@@ -121,7 +121,7 @@ class PrivacyTargetController extends AdminBaseController
 
         return $this->success(
             'common.success',
-            (new PrivacyTargetCollection($page))->withColumns($this->passwordExpiryService->stageColumns()),
+            (new PrivacyTargetCollection($page))->withColumns($this->passwordExpiryService->stageColumns($stage)),
         );
     }
 }

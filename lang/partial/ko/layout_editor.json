@@ -1330,6 +1330,14 @@
       "label": "인증번호 다시 받기",
       "param_body": "인증 요청 정보"
     },
+    "login_password_change": {
+      "label": "새 비밀번호로 로그인 완료",
+      "param_body": "변경 요청 정보"
+    },
+    "login_password_change_postpone": {
+      "label": "비밀번호 변경 미루기",
+      "param_body": "변경 요청 정보"
+    },
     "logout": {
       "label": "로그아웃 처리",
       "param_target": "이동할 곳"

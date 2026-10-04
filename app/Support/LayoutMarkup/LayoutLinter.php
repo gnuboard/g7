@@ -12,7 +12,7 @@ use App\Enums\LayoutMarkupLintCode;
  * "만들 수는 있으나 권하지 않는다" 다. 그래서 예외가 아니라 `LintWarning` 목록을 모아 돌려준다.
  *
  * 다섯 가지를 본다:
- *  ① **미등록 핸들러** — 액션 handler 가 코어 44종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
+ *  ① **미등록 핸들러** — 액션 handler 가 코어 49종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
  *  ② **플러그인 완전 레이아웃** — 플러그인은 layout_extensions·설정 화면만 두는 관례이나 완전
  *     레이아웃을 정의함(gdpr_consent_log·plugin_settings 예외, D15).
  *  ③ **nesting 위반** — 부모 컨테이너의 accepts 가 허용하지 않는 자식(빈 accepts 부모는 제외 —
@@ -416,7 +416,7 @@ final class LayoutLinter
     }
 
     /**
-     * 핸들러가 코어 44종·확장(`.`)·템플릿 등록·custom 디스패치 중 하나인지 판정합니다.
+     * 핸들러가 코어 49종·확장(`.`)·템플릿 등록·custom 디스패치 중 하나인지 판정합니다.
      *
      * @param  string  $handler  핸들러명
      * @param  CompileContext  $context  문맥

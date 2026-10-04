@@ -3,13 +3,13 @@
 namespace App\Support\LayoutMarkup;
 
 /**
- * 액션 컴파일(S3)의 SSoT — 내장 핸들러 44종과 키 배치 규칙.
+ * 액션 컴파일(S3)의 SSoT — 내장 핸들러 49종과 키 배치 규칙.
  *
  * 액션 마크업의 두 가지 사실을 이 한 곳에 모은다.
  *
  * **① 핸들러 태그명 ↔ 핸들러명.** 마크업 태그는 소문자·kebab 이고 엔진 핸들러명은 camelCase 다
  * (`<set-state>` ↔ `setState`). 이 변환은 규칙적(대문자 앞 하이픈)이라 자동 도출할 수 있으나,
- * 44종을 명시 목록으로 못박아 "레지스트리에 없는 kebab 은 핸들러가 아니다" 를 결정적으로 판정한다.
+ * 49종을 명시 목록으로 못박아 "레지스트리에 없는 kebab 은 핸들러가 아니다" 를 결정적으로 판정한다.
  * 확장·템플릿 핸들러(`sirsoft-ecommerce.toggleArrayValue`)는 점을 품어 태그명이 될 수 없으므로
  * 범용 `<action handler="...">` 로 작성하고 이름을 원문 그대로 싣는다.
  *
@@ -18,14 +18,14 @@ namespace App\Support\LayoutMarkup;
  * 읽는다. 넣는 위치가 틀리면 조용히 무시되므로(계획 §198) 위치를 여기서 결정한다.
  *
  * `target` 의 위치가 핸들러마다 다른 것이 가장 미묘한 지점이다(전 번들 실측):
- *   - apiCall·openModal·closeModal·setLocale·login·logout → **top-level**(엔드포인트·모달 id·로케일)
+ *   - apiCall·openModal·closeModal·setLocale·login(·2단계 인증·비밀번호 변경 단계)·logout → **top-level**(엔드포인트·모달 id·로케일)
  *   - setState·showErrorPage 등 그 밖 전부 → **params**(setState 는 params.target 이 상태 스코프)
  * 그래서 `target` 은 핸들러별 집합으로 가른다. 나머지 top-level 키는 핸들러 무관 공통이다.
  */
 final class ActionHandlerManifest
 {
     /**
-     * 엔진 내장 핸들러 44종 (camelCase) — ActionDispatcher switch 27 + registerDefaultHandlers 17.
+     * 엔진 내장 핸들러 49종 (camelCase) — ActionDispatcher switch 32 + registerDefaultHandlers 17.
      *
      * 제어 핸들러(switch·conditions·sequence·parallel)는 전용 태그·자식 문법을 가지므로 단순
      * 핸들러 태그 목록에서 제외된다(아래 CONTROL_HANDLERS).
@@ -44,7 +44,7 @@ final class ActionHandlerManifest
         // nav
         'navigate', 'navigateBack', 'navigateForward', 'openWindow', 'replaceUrl', 'redirect',
         // api / auth / data source
-        'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
+        'apiCall', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'logout', 'refetchDataSource', 'appendDataSource', 'updateDataSource',
         'ensureIdentityVerified', 'resolveIdentityChallenge',
         // state
         'setState', 'setError', 'updateProductField', 'updateOptionField',
@@ -77,7 +77,8 @@ final class ActionHandlerManifest
      * @var array<int, string>
      */
     private const TARGET_TOP_LEVEL_HANDLERS = [
-        'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout',
+        'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend',
+        'loginPasswordChange', 'loginPasswordChangePostpone', 'logout',
     ];
 
     /**
@@ -202,7 +203,7 @@ final class ActionHandlerManifest
     }
 
     /**
-     * 이름이 내장 47종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
+     * 이름이 내장 49종 핸들러인지 판정합니다 (범용 `<action handler>` 검증용).
      *
      * @param  string  $handler  camel 핸들러명
      * @return bool 내장 핸들러이면 true

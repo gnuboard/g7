@@ -74,6 +74,7 @@
   <init-local>
     <field name="form">
       <field name="is_active" :value="true"/>
+      <field name="password_expiry_policy" value="inherit"/>
     </field>
   </init-local>
   <permissions>
@@ -92,6 +93,7 @@
     <set-state if="{{!route?.id}}" target="local">
       <field name="form">
         <field name="is_active" :value="true"/>
+        <field name="password_expiry_policy" value="inherit"/>
       </field>
     </set-state>
   </init>
@@ -148,7 +150,7 @@
                   </sequence>
                 </on-code>
               </error-handling>
-              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" permissions="{{_local.form.permission_values ?? []}}" menu_ids="{{role_menus_tree?.data?.abilities?.can_update === true &amp;&amp; _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"/>
+              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" password_expiry_policy="{{_local.form.password_expiry_policy ?? 'inherit'}}" permissions="{{_local.form.permission_values ?? []}}" menu_ids="{{role_menus_tree?.data?.abilities?.can_update === true &amp;&amp; _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"/>
             </api-call>
           </sequence>
         </on>
@@ -177,6 +179,18 @@
               <label class="form-label">$t:admin.roles.form.description</label>
               <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
               <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
+            </div>
+            <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
+                 회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->
+            <div data-ref="password_expiry_policy_field">
+              <label class="form-label">$t:admin.roles.form.password_expiry</label>
+              <!-- 고른 값을 폼에 담는다 — 저장 본문이 이 값을 그대로 싣는다. -->
+              <select name="password_expiry_policy" class="w-full" value="{{_local.form?.password_expiry_policy ?? 'inherit'}}" error="{{_global.formErrors?.password_expiry_policy?.[0] ?? ''}}" options="{{[{label: '$t:admin.roles.form.password_expiry_inherit', value: 'inherit'}, {label: '$t:admin.roles.form.password_expiry_apply', value: 'apply'}, {label: '$t:admin.roles.form.password_expiry_exempt', value: 'exempt'}]}}">
+                <on type="change">
+                  <set-state target="local" form.password_expiry_policy="{{$event.target.value}}"/>
+                </on>
+              </select>
+              <span class="text-tertiary mt-1">$t:admin.roles.form.password_expiry_hint</span>
             </div>
             <div data-ref="is_active_field" class="flex-between">
               <div>

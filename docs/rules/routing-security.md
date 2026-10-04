@@ -131,7 +131,7 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 
 | ❌ 금지 | ✅ 올바른 사용 |
 |--------|---------------|
-| 응답 타입을 한 형태로 고정 선언하고 `response.data.user.*` 를 바로 읽기 | 판별 유니온으로 두 형태를 표현 (`LoginResult` = `{status:'authenticated', user}` \| `{status:'two_factor_required', challenge}`) |
+| 응답 타입을 한 형태로 고정 선언하고 `response.data.user.*` 를 바로 읽기 | 판별 유니온으로 세 형태를 표현 (`LoginResult` = `{status:'authenticated', user}` \| `{status:'two_factor_required', challenge}` \| `{status:'password_change_required', challenge}` — 세 번째는 engine-v1.77.0+) |
 | 저장 지점에 형태 가드 없이 `setToken(response.data.token)` | 비어 있지 않은 문자열만 저장 — `localStorage` 는 무엇을 넣든 문자열로 바꾸므로 `undefined` 가 `"undefined"`(truthy)로 남아 이후 모든 요청이 `Bearer undefined` 로 나가 401 이 된다 |
 | 대체 형태 분기를 사용자 경로에만 두고 관리자 경로는 그대로 | 관리자 경로가 먼저 500 이 되면 설정을 되돌릴 수단까지 사라진다 — 두 경로 동시 적용 |
 | `onSuccess` 후속 액션에 조건 없이 성공 처리를 나열 | 대체 형태에서 실행되면 안 되는 액션마다 `if:"{{!response.대체형태플래그}}"` |

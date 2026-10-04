@@ -40,7 +40,8 @@ return [
         'admin' => '管理者',
         'member' => '会員',
         'column_type' => '区分',
-        'column_expires_at' => '有効期限',
+        'column_expires_due' => '有効期限予定日',
+        'column_expires_at' => '有効期限切れ日',
     ],
     'language' => [
         'ko' => '韓国語',

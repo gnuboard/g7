@@ -51,10 +51,12 @@ class CompletePasswordChangeRequest extends FormRequest
      */
     public function rules(): array
     {
+        // 확인 불일치는 확인 칸(`password_confirmation`)에 붙인다 — 화면이 확인 칸 아래에 띄운다(2026-10-04 결정).
+        // `confirmed` 를 새 비밀번호 칸에 두면 오류가 새 비밀번호 칸으로 간다.
         $rules = [
             'challenge_id' => ['required', 'string', 'uuid'],
-            'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->challengeUser()?->email)],
-            'password_confirmation' => ['required', 'string'],
+            'password' => ['required', 'string', ...PasswordPolicy::rules($this->challengeUser()?->email)],
+            'password_confirmation' => ['required', 'string', 'same:password'],
         ];
 
         // 확장이 새 비밀번호 규칙을 덧붙일 수 있도록 개방한다
@@ -91,8 +93,8 @@ class CompletePasswordChangeRequest extends FormRequest
             'challenge_id.uuid' => __('validation.auth.password_change.challenge_invalid'),
             'password.required' => __('validation.auth.password.required'),
             'password.min' => __('validation.auth.password.min'),
-            'password.confirmed' => __('validation.auth.password.confirmed'),
             'password_confirmation.required' => __('validation.auth.password_change.password_confirmation_required'),
+            'password_confirmation.same' => __('validation.auth.password.confirmed'),
         ];
     }
 

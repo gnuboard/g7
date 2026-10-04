@@ -357,7 +357,21 @@
       "validation_error": "Please check the input information.",
       "error_loading_user": "An error occurred while loading user information.",
       "no_edit_permission": "You do not have permission to edit this user.",
-      "go_to_detail": "Go to Details"
+      "go_to_detail": "Go to Details",
+      "password_policy": {
+        "admin_assigned_notice": "After saving, this member must change the password at the next login. Passwords set by an administrator are not checked for reuse.",
+        "create_notice": "The new member must change the password at the first login.",
+        "current_password": "Current password",
+        "current_password_hint": "Enter your current password to change your own account's password.",
+        "expiry": "Password expiry",
+        "expiry_inherit": "Follow role and site settings",
+        "expiry_apply": "Apply",
+        "expiry_exempt": "Exempt",
+        "expiry_hint": "The member's own setting takes precedence over role and site settings.",
+        "status_applies": "Current: applies · expires {{date}} (D-{{days}})",
+        "status_expired": "Current: applies · expired",
+        "status_not_applies": "Current: does not apply"
+      }
     },
     "detail": {
       "page_title": "User Details",
@@ -406,6 +420,19 @@
         "total": "Total notifications",
         "unread": "Unread",
         "view_inbox": "View inbox"
+      },
+      "password": {
+        "title": "Password",
+        "changed_at": "Last changed",
+        "expires_at": "Expires",
+        "not_applies": "Does not apply",
+        "expired": "Expired ({{date}})",
+        "expires_value": "{{date}} (D-{{days}})",
+        "change_required": "Must change at next login",
+        "yes": "Yes",
+        "no": "No",
+        "postponed_until": "Postponed until",
+        "policy": "Expiry setting"
       }
     },
     "filter": {
@@ -1246,7 +1273,12 @@
       "menus_admin_locked_hint": "The administrator role always has access to every menu.",
       "menus_select_all": "Select all",
       "menus_clear_all": "Clear all",
-      "menus_inactive_badge": "Inactive"
+      "menus_inactive_badge": "Inactive",
+      "password_expiry": "Password expiry",
+      "password_expiry_inherit": "Follow site settings",
+      "password_expiry_apply": "Apply",
+      "password_expiry_exempt": "Exempt",
+      "password_expiry_hint": "Whether expiry applies to members with this role. A member's own setting takes precedence, and when a member's roles disagree between \"Apply\" and \"Exempt\", \"Apply\" wins."
     },
     "modals": {
       "delete_title": "Delete Role",
@@ -1729,6 +1761,90 @@
           "ips_required": "Please enter at least one allowed IP.",
           "apply": "Apply",
           "apply_hint": "Applied rules are stored only after you press Save at the bottom of the screen."
+        }
+      },
+      "password_policy": {
+        "title": "Password policy",
+        "desc": "Rules that new passwords must follow, and limits on reusing old ones.",
+        "char_types": "Character mix",
+        "char_types_label": "Require at least 2 of letters, numbers and special characters",
+        "char_types_hint": "e.g. abcd1234 (letters + numbers) passes, abcdefgh (letters only) is rejected.",
+        "block_identifier": "Block user ID",
+        "block_identifier_label": "Reject passwords that contain the email's local part (user ID)",
+        "block_identifier_hint": "Checked only when the part before @ is 3 characters or longer, case-insensitive.",
+        "block_repeated": "Block repeated characters",
+        "block_repeated_label": "Reject passwords with the same character repeated in a row",
+        "block_repeated_hint": "e.g. with 4, passwords containing aaaa or 1111 are rejected. (3-6)",
+        "repeated_length_aria": "Repeated characters limit",
+        "block_sequential": "Block sequences",
+        "block_sequential_label": "Reject passwords containing sequences like 1234, abcd or qwer",
+        "block_sequential_hint": "Reversed sequences of digits, letters or keyboard rows (4321, dcba) are blocked too. (3-6)",
+        "sequential_length_aria": "Sequence length limit",
+        "length_suffix": "characters or more",
+        "reuse": "Prevent reuse",
+        "reuse_desc": "Members cannot set a password they used recently.",
+        "reuse_count": "Recent passwords that cannot be reused",
+        "reuse_count_hint": "Includes the current password (1-10). Passwords set by an administrator on the member create/edit screen are not checked, and that member must change the password at the next login."
+      },
+      "password_expiry": {
+        "title": "Password expiry",
+        "desc": "Require members to change passwords older than the set period, with a notice before they expire.",
+        "enabled": "Use password expiry",
+        "enabled_desc": "The period is counted from the day you turn this on. Turning it off and on again restarts the count from that day.",
+        "started_at": "Start date",
+        "started_at_pending": "Counting starts when you save.",
+        "started_at_hint": "Passwords set before this feature was turned on are treated as last changed on this date.",
+        "days": "Expiry period (days)",
+        "days_hint": "30-730 days. A password expires this long after it was last changed.",
+        "notice_days": "Advance notice (days before expiry)",
+        "notice_days_hint": "1-30 days, shorter than the expiry period. One email and site notification is sent on that day.",
+        "scope": "Applies to",
+        "scope_all": "All members",
+        "scope_admin": "Administrators only",
+        "scope_selected": "Selected roles and members only",
+        "scope_hint": "The \"Password expiry\" setting on the role edit and member create/edit screens takes precedence over this.",
+        "scope_selected_hint": "Applies only to roles and members set to \"Apply\" on the role edit and member create/edit screens.",
+        "action": "When a password expires",
+        "action_force": "Must change to log in",
+        "action_remind": "Allow changing later",
+        "action_force_hint": "On the expiry date all of that member's logins are ended, and a new password must be set at the next login.",
+        "action_remind_hint": "Members are asked to change at login; choosing \"Change later\" asks again after the set period. Login is not blocked.",
+        "remind_days": "Ask again after (days)",
+        "remind_days_hint": "1-90 days. Members who chose \"Change later\" are asked again after this period.",
+        "batch_size": "Limit per run (members)",
+        "batch_size_hint": "Applies to advance notices and expiry processing separately. Members closest to expiry go first; the rest are handled in the next run. Enter 0 for no limit.",
+        "schedule_notice": "The scheduler sends notice emails and site notifications every day at 05:15. Mail settings and the \"Password expiry notice\" / \"Password expired\" notifications must be on. Tell members about the password change cycle in your privacy policy in advance.",
+        "rows": {
+          "notice": "Expiry notice",
+          "expire": "Expiry processing"
+        },
+        "target_count": "{{count}} member(s)",
+        "targets_title": {
+          "notice": "Password expiry notice targets",
+          "expire": "Password expiry processing targets"
+        },
+        "run_disabled_hint": "Turn on password expiry and save to use \"Run now\".",
+        "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} members processed",
+        "run": {
+          "editor_label": "Password expiry manual run confirmation",
+          "modal_title": {
+            "notice": "Password expiry notice — run now",
+            "expire": "Password expiry processing — run now"
+          },
+          "confirm_desc": {
+            "notice": "Sends the notices once now without waiting for the scheduler.",
+            "expire": "Sends the expiry notification and, when \"Must change to log in\" is set, ends all of those members' logins."
+          },
+          "count_label": "To be processed",
+          "count_value": "{{count}} of {{total}} member(s) in this run",
+          "batch_label": "Limit per run",
+          "batch_value": "{{count}} member(s)",
+          "remaining_label": "Remaining",
+          "remaining_value": "{{count}} member(s) in the next run",
+          "expire_mode": "Expiry notification + end logins (when \"Must change to log in\")",
+          "disabled_notice": "Password expiry is off, so this cannot run. Turn it on and save first.",
+          "expire_warning": "Members whose logins were ended must set a new password at their next login.",
+          "queue_hint": "The run is queued and its result appears on this card when it finishes. You cannot run the same target again until its queued job finishes."
         }
       }
     },

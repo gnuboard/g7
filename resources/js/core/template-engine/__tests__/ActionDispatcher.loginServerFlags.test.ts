@@ -80,7 +80,8 @@ describe('[case:backend-51] ActionDispatcher — 로그인 응답 안내 플래�
       params: { body: { email: user.email, password: 'pw' } },
     });
 
-    expect(response).toEqual({ user, two_factor_required: false });
+    // engine-v1.77.0 부터 비밀번호 변경 단계 여부(`password_change_required`)를 함께 싣는다.
+    expect(response).toEqual({ user, two_factor_required: false, password_change_required: false });
   });
 
   // @scenario stage=restore, toggle=on

@@ -242,7 +242,9 @@
 실렸을 때만 안내 토스트를 띄웁니다(`auth.dormancy_restored`). 서버는 **해제됐을 때만** 그 키를 보내므로
 키의 존재 자체가 조건입니다 — `false` 를 늘 보내는 형태로 바꾸면 매 로그인마다 안내가 뜹니다.
 1단계(2FA 없는 사이트)와 2단계 완료 경로 **둘 다**에 같은 토스트를 둡니다. 한쪽만 두면 사이트의 2FA
-설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다.
+설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다. 비밀번호 변경 단계(#736)의 완료·연기 경로에도 같은 토스트를 둡니다.
+엔진이 engine-v1.77.0 전에는 이 키를 핸들러 응답에서 버려 토스트가 한 번도 뜨지 않았습니다 — 이 레이아웃 조건은 그대로이고
+엔진이 키를 전달하도록 고쳐졌습니다.
 
 `mypage/claims*` 와 `shop/guest_claim_*` 는 한 클러스터입니다 — 목록·상세·작성/수정 셸이
 `partials/mypage/claims/` 의 같은 조각을 공유하고, 비회원 셸은 데이터소스 endpoint 와 헤더만
@@ -714,9 +716,9 @@ slots.content:
 정상 로그인과 인증번호 요구(challenge)입니다. `_login_form.json` 은 그 둘을 **같은 카드 안에서**
 단계 전환으로 처리합니다.
 
-- 1단계(이메일·비밀번호) 블록은 `if: "{{!_global.twoFactor?.required}}"`, 2단계(인증번호) 블록은
-  그 부정형을 답니다. 두 `if` 는 언제나 상보여야 합니다 — 한쪽만 고치면 두 단계가 겹쳐 보이거나
-  둘 다 사라집니다.
+- 2단계(인증번호) 블록은 `if: "{{_global.twoFactor?.required}}"` 이고, 1단계(이메일·비밀번호) 블록은 그 부정형에
+  비밀번호 변경 단계의 부정까지 더합니다(아래 「비밀번호 변경 단계」 서술). 단계 `if` 는 언제나 상보여야 합니다 — 한쪽만
+  고치면 두 단계가 겹쳐 보이거나 둘 다 사라집니다.
 - 제출 시퀀스의 `login` 과 `loginTwoFactor` 도 같은 쌍으로 상호배타입니다. `loginTwoFactor` 쪽
   `if` 가 빠지면 인증번호 단계에서 Enter 를 눌렀을 때 새 challenge 가 발급되어 흐름이 끊깁니다.
 - 인증번호 입력은 controlled 입니다(`value` + `onChange` 의 `setState` 쌍). `events: {}` 래퍼는
@@ -730,6 +732,35 @@ slots.content:
   아무것도 보내지 않으므로 앱 코드 안내로 바꾸고 **「인증번호 다시 받기」 버튼을 감춥니다** —
   남겨 두면 눌러도 아무 일이 없는 것처럼 보입니다. 백업 코드(`xxxxx-xxxxx`)도 같은 칸에
   받으므로 `maxLength` 를 넓힙니다. 그 외 수단(메일 등)은 종전 화면 그대로입니다.
+
+**비밀번호 변경 단계 (#736, engine-v1.77.0)**
+
+비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 로그인·인증번호 확인 응답이 토큰 대신 변경 단계를 돌려줍니다
+(`response.password_change_required`). `_login_form` 은 이를 2단계 인증과 같은 짜임으로 **같은 카드 안의 3단계**로 처리합니다.
+
+- 단계 정보는 `_global.passwordChange`(`required`·`challenge_id`·`reason`·`can_postpone`·`postpone_days`·`expired_at`·`error`·
+  `errors`)이고, `auth/login` 의 `init` 이 `twoFactor` 와 함께 `null` 로 되돌립니다. 새 비밀번호·확인 **값**은 `_global` 에 두지 않고
+  `_local.passwordChangeInput`(`password`·`password_confirmation`)에 둡니다 — `_global` 은 민감 정보 금지이고(`docs/frontend/security.md`),
+  단계 진입·「처음부터」·식별자 만료 때 비웁니다.
+- 세 단계의 블록 `if` 는 상보입니다 — 1단계는 `!twoFactor.required && !passwordChange.required`. 제출 시퀀스의 `login`·
+  `loginTwoFactor`·`loginPasswordChange` 도 같은 조건으로 상호배타입니다.
+- `login`·`loginTwoFactor` 의 성공 분기는 `response.password_change_required` 를 먼저 봅니다. 「2단계 인증이 아니면 성공」으로
+  판정하면 토큰 없는 응답을 성공으로 오판해 이동합니다. 최종 성공 지점(로그인·인증번호·변경·연기)마다 현재 사용자 설정·
+  비회원 주문조회 토큰 정리·토스트·휴면 안내·이동을 같은 모양으로 둡니다.
+- 「다음에 변경」은 `can_postpone` 일 때만 그립니다(`loginPasswordChangePostpone`). 「처음부터」는 두 단계 상태를 모두 비웁니다.
+- 실패 422 중 `errors.challenge_id`(시간 초과·무효)는 단계를 비우고 1단계 오류 자리에 「처음부터 다시 로그인」 안내를 싣습니다 —
+  인증번호도 이미 소비됐습니다. `errors.password`·`errors.password_confirmation` 은 각 칸 아래에 싣습니다.
+- 새 비밀번호 칸은 `PasswordInput` 규칙을 보안 환경설정 값으로 바인딩하고(아래 「비밀번호 규칙 바인딩」), 서버만 확인하는 규칙
+  (재사용·아이디·반복·연속·현재 비밀번호와 같은 값)은 작은 글로 알립니다.
+
+**비밀번호 규칙 바인딩 (#736)**
+
+가입(`_register_form`)·재설정(`auth/reset_password`)·마이페이지 변경(`mypage/change-password`)·로그인 변경 단계의 새 비밀번호 칸은
+`enableRules` 를 리터럴(`minLength:8`)이 아니라 `_global.settings.security.*`(코어가 공개하는 작성 규칙 10키)로 만든 식에 바인딩합니다 —
+`['minLength:' + (password_min_length ?? 8)]` 에 특수문자 필수면 `hasSpecial`, 문자 종류 조합이면 `minTypes:2` 를 더합니다. 자리표시의
+글자 수(`|count=`)도 같은 값입니다. 숫자를 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내합니다. 재설정·마이페이지는 422 를
+토스트로 뭉개지 않고 칸 아래(`error` prop)에 싣습니다. 마이페이지 화면은 `/api/me` 의 `password_changed_at`·`password_expires_at`·
+`password_expiry_days_left` 로 마지막 변경·만료 예정(D-n)을 보여 줍니다.
 
 **금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
 

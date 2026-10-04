@@ -1685,7 +1685,9 @@
     "privacyTargets": "個人情報対策対象リスト",
     "privacyManualRuns": "個人情報措置職権実行ステータス",
     "analytics_row_trend": "訪問者統計の項目推移",
-    "role_menus_tree": "アクセス可能なメニューツリー"
+    "role_menus_tree": "アクセス可能なメニューツリー",
+    "passwordExpiryPreview": "パスワード有効期限の対象件数",
+    "passwordExpiryManualRuns": "パスワード有効期限の手動実行状態"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

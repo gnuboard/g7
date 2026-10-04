@@ -1,5 +1,5 @@
 {
-    "comment": "관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가\n  거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가\n  없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는\n  아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.\n  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다.",
+    "comment": "관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가\n  거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가\n  없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는\n  아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.\n  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다.\n  단계는 셋이다 — 자격증명 / 2단계 인증 / 비밀번호 변경(#736, engine-v1.77.0). 비밀번호가 만료됐거나 관리자가 정해 준\n  비밀번호면 서버가 토큰 대신 변경 단계를 돌려준다(2단계 인증 확인 뒤에도 온다). 세 단계의 블록 `if` 와 제출 액션의 `if` 는\n  상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다 — 「2단계 인증이 아니면 성공」으로 판정하면\n  토큰 없는 변경 단계 응답을 성공으로 오판해 이동한다. 변경 단계 식별자가 만료·무효(422 `errors.challenge_id`)면 처음부터 다시\n  로그인해야 한다(2단계 인증 코드도 이미 소비됐다). 단계 상태는 화면을 떠나면 의미가 없으므로 init 에서 비운다.",
     "version": "1.0.0",
     "layout_name": "admin_login",
     "meta": {
@@ -20,6 +20,7 @@
                 "loginError": null,
                 "loginErrors": null,
                 "twoFactor": null,
+                "passwordChange": null,
                 "loginForm": {
                     "email": "",
                     "password": ""
@@ -148,7 +149,7 @@
                                             "comment": "1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다.",
                                             "handler": "login",
                                             "target": "admin",
-                                            "if": "{{!_local.twoFactor?.required}}",
+                                            "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                             "params": {
                                                 "body": {
                                                     "email": "{{_local.loginForm.email}}",
@@ -177,8 +178,29 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다.",
                                                     "handler": "setState",
-                                                    "if": "{{!response.two_factor_required}}",
+                                                    "if": "{{response.password_change_required}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange": {
+                                                            "required": true,
+                                                            "challenge_id": "{{response.challenge_id}}",
+                                                            "reason": "{{response.reason}}",
+                                                            "can_postpone": "{{response.can_postpone}}",
+                                                            "postpone_days": "{{response.postpone_days}}",
+                                                            "expired_at": "{{response.expired_at}}",
+                                                            "password": "",
+                                                            "password_confirmation": "",
+                                                            "error": null,
+                                                            "errors": null
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
                                                     "params": {
                                                         "target": "local",
                                                         "isLoggingIn": false
@@ -187,7 +209,7 @@
                                                 {
                                                     "comment": "휴면이 풀린 로그인에만 실린다 — 관리자 계정도 휴면 전환 대상이다(자동 탈퇴만\n                     제외된다). 사용자 템플릿에만 이 안내를 두면 관리자는 자기 계정이 잠겼다 풀린\n                     사실을 끝내 모른 채 되돌아간다.",
                                                     "handler": "toast",
-                                                    "if": "{{!response.two_factor_required && response.dormancy_restored}}",
+                                                    "if": "{{!response.two_factor_required && !response.password_change_required && response.dormancy_restored}}",
                                                     "params": {
                                                         "type": "info",
                                                         "message": "$t:auth.dormancy_restored"
@@ -195,7 +217,7 @@
                                                 },
                                                 {
                                                     "handler": "navigate",
-                                                    "if": "{{!response.two_factor_required}}",
+                                                    "if": "{{!response.two_factor_required && !response.password_change_required}}",
                                                     "params": {
                                                         "path": "{{query.redirect ?? '/admin'}}"
                                                     }
@@ -231,9 +253,29 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "코드가 맞아도 비밀번호 변경 단계가 남았을 수 있다 — 그때는 이동하지 않고 변경 단계로 바꾼다.",
+                                                    "handler": "setState",
+                                                    "if": "{{response.password_change_required}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "passwordChange": {
+                                                            "required": true,
+                                                            "challenge_id": "{{response.challenge_id}}",
+                                                            "reason": "{{response.reason}}",
+                                                            "can_postpone": "{{response.can_postpone}}",
+                                                            "postpone_days": "{{response.postpone_days}}",
+                                                            "expired_at": "{{response.expired_at}}",
+                                                            "password": "",
+                                                            "password_confirmation": "",
+                                                            "error": null,
+                                                            "errors": null
+                                                        }
+                                                    }
+                                                },
+                                                {
                                                     "comment": "2단계 인증을 쓰는 관리자도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에\n                     따라 해제 사실이 보이기도 하고 안 보이기도 한다.",
                                                     "handler": "toast",
-                                                    "if": "{{response.dormancy_restored}}",
+                                                    "if": "{{!response.password_change_required && response.dormancy_restored}}",
                                                     "params": {
                                                         "type": "info",
                                                         "message": "$t:auth.dormancy_restored"
@@ -241,6 +283,7 @@
                                                 },
                                                 {
                                                     "handler": "navigate",
+                                                    "if": "{{!response.password_change_required}}",
                                                     "params": {
                                                         "path": "{{query.redirect ?? '/admin'}}"
                                                     }
@@ -256,6 +299,74 @@
                                                     "loginErrors": "{{error.errors}}"
                                                 }
                                             }
+                                        },
+                                        {
+                                            "comment": "3단계 — 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급한다.\n                 식별자가 만료·무효(422 `errors.challenge_id`)면 단계를 비우고 자격증명 단계로 돌아가 다시 로그인을 안내한다.\n                 그 밖의 실패(규칙 위반·같은 값·재사용 422, 잠금 423, 관리자 아님 403)는 단계에 머물며 칸 아래·상단에 싣는다.",
+                                            "handler": "loginPasswordChange",
+                                            "target": "admin",
+                                            "if": "{{_local.passwordChange?.required}}",
+                                            "params": {
+                                                "body": {
+                                                    "challenge_id": "{{_local.passwordChange?.challenge_id}}",
+                                                    "password": "{{_local.passwordChange?.password}}",
+                                                    "password_confirmation": "{{_local.passwordChange?.password_confirmation}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:auth.login.password_change.changed_toast"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response.dormancy_restored}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:auth.dormancy_restored"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{query.redirect ?? '/admin'}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{error.errors?.challenge_id}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange": null,
+                                                        "loginError": "{{$t('auth.login.password_change.restart_required')}}",
+                                                        "loginErrors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{!error.errors?.challenge_id}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isLoggingIn": false,
+                                                        "passwordChange.error": "{{error.errors?.password || error.errors?.password_confirmation ? null : error.message}}",
+                                                        "passwordChange.errors": "{{error.errors ?? null}}",
+                                                        "loginErrors": "{{error.errors}}"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
@@ -311,7 +422,7 @@
                                     "id": "login_email_field",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!_local.twoFactor?.required}}",
+                                    "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                     "children": [
                                         {
                                             "id": "login_email_label",
@@ -355,7 +466,7 @@
                                     "id": "login_password_field",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!_local.twoFactor?.required}}",
+                                    "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                     "children": [
                                         {
                                             "id": "login_password_label",
@@ -399,7 +510,7 @@
                                     "id": "login_forgot_password",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!_local.twoFactor?.required}}",
+                                    "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                     "props": {
                                         "className": "flex-center justify-end"
                                     },
@@ -430,7 +541,7 @@
                                     "id": "login_submit_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!_local.twoFactor?.required}}",
+                                    "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                     "props": {
                                         "type": "submit",
                                         "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
@@ -580,6 +691,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "autoBinding": false,
                                                         "id": "two_factor_code",
                                                         "type": "text",
                                                         "name": "two_factor_code",
@@ -736,6 +848,420 @@
                                                             "params": {
                                                                 "target": "local",
                                                                 "twoFactor": null,
+                                                                "loginError": null,
+                                                                "loginErrors": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "disabled": "{{_local.isLoggingIn}}"
+                                                    },
+                                                    "text": "$t:auth.login.two_factor.restart"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "3단계 비밀번호 변경 — 비밀번호(와 켜져 있으면 2단계 인증)는 통과했지만 새 비밀번호를 정해야 로그인이 끝난다.\n             사유(만료·관리자 지정)와 「다음에 변경」 가능 여부는 서버 응답대로 그린다. 입력은 상태가 값을 소유한다.",
+                                    "id": "login_password_change_step",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.passwordChange?.required}}",
+                                    "props": {
+                                        "className": "space-y-6"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "login_password_change_notice",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 space-y-1",
+                                                "role": "status",
+                                                "aria-live": "polite"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-semibold text-yellow-800 dark:text-yellow-300"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.title"
+                                                },
+                                                {
+                                                    "id": "login_password_change_reason_expired",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.passwordChange?.reason !== 'admin_assigned' && !_local.passwordChange?.can_postpone}}",
+                                                    "props": {
+                                                        "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.reason_expired|date={{_local.passwordChange?.expired_at | date}}"
+                                                },
+                                                {
+                                                    "id": "login_password_change_reason_remind",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.passwordChange?.reason !== 'admin_assigned' && _local.passwordChange?.can_postpone}}",
+                                                    "props": {
+                                                        "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.reason_remind|date={{_local.passwordChange?.expired_at | date}}|days={{_local.passwordChange?.postpone_days ?? 0}}"
+                                                },
+                                                {
+                                                    "id": "login_password_change_reason_admin",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.passwordChange?.reason === 'admin_assigned'}}",
+                                                    "props": {
+                                                        "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.reason_admin_assigned"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "login_password_change_error",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_local.passwordChange?.error}}",
+                                            "props": {
+                                                "className": "alert-danger",
+                                                "role": "alert"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "{{_local.passwordChange?.error ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.loginErrors?.locked_until}}",
+                                                    "props": {
+                                                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "login_password_change_new_field",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "password_change_new",
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.new_password"
+                                                },
+                                                {
+                                                    "comment": "새 비밀번호 — 자동바인딩을 끄고 상태가 값을 소유한다(실패해도 입력이 남고, 처음부터 누르면 함께 비워진다).\n                 이 폼은 data-key=\"loginForm\" 이라 끄지 않으면 자동바인딩 값이 value 보다 앞서, 단계를 다시 밟을 때 칸에는\n                 이전 비밀번호가 보이고 요청은 빈 값으로 나갔다.",
+                                                    "id": "login_password_change_new_input",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "passwordChange.password": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "autoBinding": false,
+                                                        "id": "password_change_new",
+                                                        "type": "password",
+                                                        "name": "password_change_new",
+                                                        "autoComplete": "new-password",
+                                                        "value": "{{_local.passwordChange?.password ?? ''}}",
+                                                        "placeholder": "$t:auth.login.password_change.new_password",
+                                                        "className": "input py-3 {{_local.passwordChange?.errors?.password ? 'input-error' : ''}}",
+                                                        "disabled": "{{_local.isLoggingIn}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "login_password_change_rules",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "mt-2 flex flex-wrap gap-x-1 text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.require_password_special_char}}",
+                                                            "text": "$t:auth.password_rules.special"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.password_require_char_types}}",
+                                                            "text": "$t:auth.password_rules.char_types"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.password_block_identifier}}",
+                                                            "text": "$t:auth.password_rules.identifier"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.password_block_repeated_chars}}",
+                                                            "text": "$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.password_block_sequential_chars}}",
+                                                            "text": "$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.settings?.security?.password_reuse_prevention_enabled}}",
+                                                            "text": "$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:auth.password_rules.not_current"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "login_password_change_new_error",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.passwordChange?.errors?.password}}",
+                                                    "props": {
+                                                        "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "{{Array.isArray(_local.passwordChange?.errors?.password) ? _local.passwordChange.errors.password[0] : _local.passwordChange?.errors?.password}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "login_password_change_confirm_field",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "password_change_confirm",
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.confirm_password"
+                                                },
+                                                {
+                                                    "comment": "새 비밀번호 확인 — 새 비밀번호 칸과 같은 방식으로 상태가 값을 소유한다.",
+                                                    "id": "login_password_change_confirm_input",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "passwordChange.password_confirmation": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "autoBinding": false,
+                                                        "id": "password_change_confirm",
+                                                        "type": "password",
+                                                        "name": "password_change_confirm",
+                                                        "autoComplete": "new-password",
+                                                        "value": "{{_local.passwordChange?.password_confirmation ?? ''}}",
+                                                        "placeholder": "$t:auth.login.password_change.confirm_password",
+                                                        "className": "input py-3 {{_local.passwordChange?.errors?.password_confirmation ? 'input-error' : ''}}",
+                                                        "disabled": "{{_local.isLoggingIn}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "login_password_change_confirm_error",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.passwordChange?.errors?.password_confirmation}}",
+                                                    "props": {
+                                                        "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "{{Array.isArray(_local.passwordChange?.errors?.password_confirmation) ? _local.passwordChange.errors.password_confirmation[0] : _local.passwordChange?.errors?.password_confirmation}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "변경하고 로그인 — submit 이라 Enter 키로도 제출된다",
+                                            "id": "login_password_change_submit",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "submit",
+                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                                "disabled": "{{_local.isLoggingIn}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "login_password_change_spinner",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{_local.isLoggingIn}}",
+                                                    "props": {
+                                                        "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!_local.isLoggingIn}}",
+                                                    "text": "$t:auth.login.password_change.submit"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.isLoggingIn}}",
+                                                    "text": "$t:auth.login.processing"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "login_password_change_actions",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col sm:flex-row gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "login_password_change_postpone",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{_local.passwordChange?.can_postpone}}",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 연기 종료일을 알려 주고 원래 가려던 곳으로 보낸다.\n                     식별자가 만료·무효면 처음부터 다시 로그인하게 한다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isLoggingIn": true,
+                                                                        "passwordChange.error": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "loginPasswordChangePostpone",
+                                                                    "target": "admin",
+                                                                    "params": {
+                                                                        "body": {
+                                                                            "challenge_id": "{{_local.passwordChange?.challenge_id}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "isLoggingIn": false,
+                                                                                "passwordChange": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "info",
+                                                                                "message": "$t:auth.login.password_change.postponed_toast|date={{response.postponed_until | date}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "if": "{{response.dormancy_restored}}",
+                                                                            "params": {
+                                                                                "type": "info",
+                                                                                "message": "$t:auth.dormancy_restored"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "{{query.redirect ?? '/admin'}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "if": "{{error.errors?.challenge_id}}",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "isLoggingIn": false,
+                                                                                "passwordChange": null,
+                                                                                "loginError": "{{$t('auth.login.password_change.restart_required')}}",
+                                                                                "loginErrors": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "if": "{{!error.errors?.challenge_id}}",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "isLoggingIn": false,
+                                                                                "passwordChange.error": "{{error.message}}",
+                                                                                "loginErrors": "{{error.errors}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "flex-1 px-4 py-3 rounded-lg font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer",
+                                                        "disabled": "{{_local.isLoggingIn}}"
+                                                    },
+                                                    "text": "$t:auth.login.password_change.postpone"
+                                                },
+                                                {
+                                                    "id": "login_password_change_restart",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "처음부터 — 두 단계 상태와 지난 오류를 함께 지워 자격증명 단계로 되돌린다.",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "twoFactor": null,
+                                                                "passwordChange": null,
                                                                 "loginError": null,
                                                                 "loginErrors": null
                                                             }

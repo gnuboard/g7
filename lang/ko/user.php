@@ -47,6 +47,7 @@ return [
         'admin' => '관리자',
         'member' => '회원',
         'column_type' => '구분',
+        'column_expires_due' => '만료 예정일',
         'column_expires_at' => '만료일',
     ],
 

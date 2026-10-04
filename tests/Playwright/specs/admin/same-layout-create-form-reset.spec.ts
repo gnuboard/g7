@@ -235,7 +235,11 @@ test.describe('같은 레이아웃 수정 → 등록 SPA 전환 시 등록 폼 �
    */
   test('역할 수정 → 역할 등록: 직전 역할의 식별자·이름이 남지 않는다', async ({ page }) => {
     test.setTimeout(150_000);
-    const [role] = await listRecords(page, token, '/api/admin/roles?per_page=1');
+    // 보호된 역할(코어·확장 소유)은 슈퍼 관리자가 아니면 수정 화면이 스스로 403 으로 접힌다 — 목록 첫 행이 확장 소유
+    // 역할인 사이트에서 전제가 깨졌다(2026-10-04 실측). 서버가 행마다 싣는 수정 가능 판정으로 고른다.
+    const roles = await listRecords(page, token, '/api/admin/roles?per_page=100');
+    const role = roles.find((r) => r?.abilities?.can_update === true);
+    expect(role, '수정 가능한 역할이 목록에 없다(전제 불성립)').toBeDefined();
     const result = await editThenCreate(page, `/admin/roles/${role.id}/edit`, '/admin/roles/create');
     expect(result.edit.id, '수정 화면이 역할을 불러오지 못했다(전제 불성립)').toBe(role.id);
     expectCleanCreateForm(result, '/admin/roles/create', pageErrors);

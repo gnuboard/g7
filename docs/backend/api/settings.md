@@ -360,7 +360,7 @@ HTTP/1.1 200
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 
-> 비밀번호 정책 정수 키는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
+> 비밀번호 정책 정수 키(최소 길이 `security.password_min_length` 포함)는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
 
 **요청 예시**
 

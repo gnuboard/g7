@@ -61,6 +61,7 @@ sub_flows:
       - target_row_keeps_count_view_run_and_result_together
 
 effects:
+  - confirm_modal_execute_locks_repeat_click
   - manual_run_is_queued_and_processed_by_the_job
   - manual_run_ignores_the_disabled_toggle
   - run_requires_settings_and_domain_update_permission

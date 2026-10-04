@@ -68,7 +68,9 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
    * @effects code_step_rendered_on_challenge, credential_step_hidden_on_challenge
    */
   it('1단계 입력과 2단계 블록의 조건이 상보적이다', () => {
-    const stepOne = nodes.filter((n) => n.if === '{{!_local.twoFactor?.required}}');
+    // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
+    // admin-login-password-change-step.test.tsx 가 잠근다).
+    const stepOne = nodes.filter((n) => n.if === '{{!_local.twoFactor?.required && !_local.passwordChange?.required}}');
     const stepTwo = nodes.filter((n) => n.if === '{{_local.twoFactor?.required}}');
 
     expect(stepOne.length).toBeGreaterThanOrEqual(3);
@@ -104,7 +106,7 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
     const login = formActions.find((a) => a.handler === 'login');
     const verify = formActions.find((a) => a.handler === 'loginTwoFactor');
 
-    expect(login?.if).toBe('{{!_local.twoFactor?.required}}');
+    expect(login?.if).toBe('{{!_local.twoFactor?.required && !_local.passwordChange?.required}}');
     expect(verify?.if).toBe('{{_local.twoFactor?.required}}');
     expect(login?.target).toBe('admin');
     expect(verify?.target).toBe('admin');

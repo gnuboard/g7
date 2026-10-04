@@ -162,6 +162,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 ---
 
+#### PasswordInput 검증 규칙 (#736)
+
+`enableRules` 는 「규칙:값」 목록입니다(`minLength:N`·`maxLength:N`·`hasUppercase`·`hasLowercase`·`hasNumber`·`hasSpecial`·`noSpaces`·`minTypes:N`).
+`hasSpecial` 은 서버(`PasswordPolicy`·`PasswordComposition`)와 같은 유니코드 구두점·기호·공백 범주로 판정하고, `minTypes` 는 **영문(대·소문자 한 종류)·숫자·특수문자**
+세 종류 중 N종 이상 섞였는지 봅니다(기본 2 — 서버 「문자 종류 조합」과 같다). 종전에는 특수문자 집합이 좁고 `minTypes` 가 대·소문자를 따로 세어 화면 체크와 서버 판정이
+갈렸습니다. 비밀번호 칸에서는 규칙을 리터럴로 두지 말고 `_global.settings.security.*` 로 만든 식에 바인딩합니다(→ [layouts.md](layouts.md) 「비밀번호 규칙 바인딩」).
+재사용·아이디 포함·반복·연속처럼 서버만 판정하는 규칙은 이 컴포넌트가 확인하지 않습니다.
+
 ### Composite Components (27개)
 
 > **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 36종). 목록 자체는 원문 그대로입니다.

@@ -331,7 +331,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
+                            "comment": "더블클릭: disabled 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다 — 버튼이 첫 클릭\n               즉시 스스로 잠근다(lockRepeatClick, #736 S2 P10).\n               접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -412,6 +412,7 @@
                     ],
                     "props": {
                         "type": "button",
+                        "lockRepeatClick": true,
                         "className": "btn btn-danger flex-center gap-2",
                         "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
                     },

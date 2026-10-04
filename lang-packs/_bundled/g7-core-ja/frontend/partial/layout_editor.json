@@ -1302,6 +1302,14 @@
       "label": "認証番号の再送信",
       "param_body": "認証リクエスト情報"
     },
+    "login_password_change": {
+      "label": "新しいパスワードでログインを完了",
+      "param_body": "変更リクエスト情報"
+    },
+    "login_password_change_postpone": {
+      "label": "パスワード変更を後回しにする",
+      "param_body": "変更リクエスト情報"
+    },
     "logout": {
       "label": "ログアウト処理",
       "param_target": "移動先"

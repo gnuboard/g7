@@ -22,6 +22,12 @@
             "default": "md",
             "description": "버튼 크기 (sm | md | lg)"
           },
+          "lockRepeatClick": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "연타 잠금 — 첫 클릭 즉시 잠가 처리 중 표시(disabled)가 그려지기 전의 두 번째 클릭을 무시"
+          },
           "className": {
             "type": "string",
             "required": false,

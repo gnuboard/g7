@@ -10,6 +10,9 @@
 
 - 본인인증 메일 링크로 확인한 결과를 처음 화면이 받아 갈 때의 안내·오류 문구와 입력 항목 이름의 일본어 번역을 추가했습니다.
 - 비밀번호 정책(작성 규칙·재사용 금지·만료·로그인 변경 단계) 문구의 일본어 번역을 추가했습니다 — 검증 메시지(`validation.password_policy.*`·보안 설정 항목명·`validation.auth.password_change.*`), 회원 문구(`user.password_expiry_*`·`user.password_change_*`), 로그인 안내(`auth.password_change_*`), 활동 로그(`password_change`·`password_change_postpone`·`password_expiry_logout`), 직권 실행 단계 이름, 기능이 꺼져 있어 직권 실행을 거절할 때의 안내(`exceptions.privacy_manual_run_disabled`), 알림 정의 2종(비밀번호 만료 사전 안내·비밀번호 만료)의 메일·사이트 알림 문구입니다. `user.validation.password_min` 은 설정한 길이를 보여 주도록 `:min` 으로 바꿨습니다.
+- 비밀번호 만료 사전 안내 사이트 알림 본문을 받는 회원 이름으로 시작하는 문구(「{name}様、パスワードは…」)로 맞췄습니다.
+- 비밀번호 만료 사전 안내 대상 명단의 날짜 열 이름 「有効期限予定日」(`user.password_expiry_target.column_expires_due`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 열 이름만 한국어(「만료 예정일」)로 보입니다. 만료 처리 명단의 날짜 열은 이미 지난 날짜라 「有効期限切れ日」로 맞췄습니다(`column_expires_at`).
+- 레이아웃 편집기의 새 액션 2종(비밀번호 변경 단계 완료·연기 — `layout_editor.action_recipe.login_password_change*`)의 일본어 번역을 추가했습니다.
 - 확장 업데이트 명령어(`module:update`·`plugin:update`·`template:update`·번들 일괄 업데이트)의 터미널 안내 문구와 설치·업데이트·제거 진행 문구의 일본어 번역을 추가했습니다(`extensions.commands.update.*`·`extensions.commands.bundled_update.*`·`extensions.progress.*`, 71키).
 - 확장을 「수정 유지」로 업데이트했을 때의 레이아웃 처리 결과(업데이트 완료 알림 요약, CLI 결과 표, 활동 로그 변경 내용) 일본어 번역을 추가했습니다.
 

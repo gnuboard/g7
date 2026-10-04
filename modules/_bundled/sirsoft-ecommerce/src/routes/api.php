@@ -108,31 +108,31 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     Route::get('/recent', [PublicProductController::class, 'recent'])
         ->name('products.recent');
 
-    // 상품 상세 — product_code(16자 영숫자) 기준. 숫자 ID 도 하위호환 허용
+    // 상품 상세 — product_code 기준(상품코드 규칙과 같은 문자: 영문·숫자·하이픈·밑줄). 숫자 ID 도 하위호환 허용
     // (Product::resolveRouteBinding 이 code/id 자동 해석).
     Route::get('/{product}', [PublicProductController::class, 'show'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.show');
 
     Route::get('/{product}/downloadable-coupons', [PublicCouponController::class, 'downloadableCoupons'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.downloadable-coupons');
 
     // 상품 공개 리뷰 목록 및 별점 통계 조회
     Route::get('/{product}/reviews', [PublicProductReviewController::class, 'index'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.reviews.index');
 
     // 상품 1:1 문의 목록 조회 (비회원 포함)
     // GET /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::get('/{product}/inquiries', [PublicProductInquiryController::class, 'index'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.inquiries.index');
 
     // 상품 1:1 문의 작성 (회원 전용)
     // POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::post('/{product}/inquiries', [PublicProductInquiryController::class, 'store'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->middleware('auth:sanctum')
         ->name('products.inquiries.store');
 });
@@ -1102,7 +1102,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // 여러 상품의 옵션 배치 조회 (목록에서 행을 펼칠 때)
         // GET /api/modules/sirsoft-ecommerce/admin/products/options?product_ids[]=1&product_ids[]=2
         //
-        // `/{identifier}` 보다 반드시 위에 둔다 — identifier 제약이 [0-9a-zA-Z]+ 라 리터럴
+        // `/{identifier}` 보다 반드시 위에 둔다 — identifier 제약이 [0-9a-zA-Z_-]+(상품코드 규칙과 같은 문자) 라 리터럴
         // "options" 를 삼켜 상품 상세로 잘못 라우팅된다 (generate-code / by-code 와 같은 규칙).
         Route::get('/options', [AdminProductController::class, 'options'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
@@ -1123,35 +1123,35 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // ID 또는 상품코드(product_code)로 조회 가능
         Route::get('/{identifier}', [AdminProductController::class, 'show'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('identifier', '[0-9a-zA-Z]+')
+            ->where('identifier', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show');
 
         // 상품 폼 데이터 조회 (수정 모드용)
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/form
         Route::get('/{product}/form', [AdminProductController::class, 'showForForm'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show-for-form');
 
         // 상품 복사용 데이터 조회
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/copy
         Route::get('/{product}/copy', [AdminProductController::class, 'showForCopy'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show-for-copy');
 
         // 상품 삭제 가능 여부 확인
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/can-delete
         Route::get('/{product}/can-delete', [AdminProductController::class, 'canDelete'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.delete')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.can-delete');
 
         // 상품 활동 로그 조회
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/logs
         Route::get('/{product}/logs', [AdminProductController::class, 'logs'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.logs');
 
         Route::put('/{product}', [AdminProductController::class, 'update'])

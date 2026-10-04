@@ -225,21 +225,54 @@
                     ]
                 },
                 {
+                    "comment": "규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다.",
                     "type": "basic",
                     "name": "PasswordInput",
                     "props": {
                         "name": "password",
-                        "placeholder": "$t:auth.register.password_placeholder|count=8",
+                        "placeholder": "$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                         "required": true,
                         "disabled": "{{_local?.isRegistering}}",
                         "showToggle": true,
                         "showValidation": true,
-                        "error": "{{_local.errors?.password?.[0] ?? ''}}",
-                        "enableRules": [
-                            "minLength:8"
-                        ]
+                        "enableRules": "{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}",
+                        "error": "{{_local.errors?.password?.[0] ?? ''}}"
                     }
+                },
+                {
+                    "comment": "화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736).",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
+                    "props": {
+                        "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.password_rules.server_intro"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_identifier}}",
+                            "text": "$t:auth.password_rules.identifier"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_repeated_chars}}",
+                            "text": "$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_sequential_chars}}",
+                            "text": "$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}"
+                        }
+                    ]
                 }
             ]
         },

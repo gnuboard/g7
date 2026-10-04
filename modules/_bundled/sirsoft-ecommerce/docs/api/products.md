@@ -1539,7 +1539,7 @@ HTTP/1.1 200
 
 이 엔드포인트는 **부분 성공**을 계약으로 합니다. 존재하지 않거나 권한 스코프 밖인 상품 ID 는 404 를 만들지 않고 응답의 `product_ids` 에서 빠집니다 — 하나가 없다고 나머지의 정상 조회를 버릴 이유가 없고, 배치에서 "무엇이 없었는지" 는 상태코드로 표현할 수 없기 때문입니다. 단건 404 semantics 가 필요하면 `GET /admin/products/{identifier}` 를 사용합니다. 권한 스코프는 옵션 테이블이 아니라 상품 쿼리에서 먼저 적용되므로, `scope=self` 사용자가 타인 상품 ID 를 실어 보내도 옵션이 노출되지 않습니다.
 
-라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z]+` 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
+라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z_-]+` 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/products/{identifier}
@@ -1603,6 +1603,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+`identifier` 는 숫자 ID 또는 상품코드다. 상품코드는 등록 규칙과 같은 문자(영문·숫자·하이픈 `-`·밑줄 `_`)를 받는다 — `/{product}/form`·`/copy`·`/can-delete`·`/logs` 와 공개 `GET /products/{product}`(·`/downloadable-coupons`·`/reviews`·`/inquiries`)도 같다. 종전에는 영숫자만 받아 하이픈·밑줄 코드의 상품이 405/404 로 열리지 않았다.
 
 **설명** 관리자 화면용 단일 상품 상세를 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.products.read` 권한이 필요하며, `ProductService::findByIdOrCode()`로 숫자 ID 우선, 없으면 상품코드로 상품을 찾은 뒤 `getDetail($id, includeInactive: true)`로 비활성(숨김/판매중지) 상품까지 포함해 상세를 로드하고 `ProductResource`로 반환합니다. 공개 상세와 달리 전시상태에 관계없이 조회되므로 관리자 편집/열람에 사용하며, 대상이 없으면 404를 반환합니다.
 

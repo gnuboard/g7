@@ -5433,6 +5433,56 @@
         "checked_at": "2026-09-25T14:02:20+09:00"
       }
     },
+    "passwordExpiryPreview": {
+      "data": {
+        "enabled": true,
+        "started_at": "2026-06-01T09:00:00+09:00",
+        "notice": 12,
+        "expire": 3,
+        "batch_size": 1000,
+        "can_view_targets": true
+      }
+    },
+    "passwordExpiryManualRuns": {
+      "data": {
+        "targets": {
+          "password_expiry:notice": {
+            "key": "password_expiry:notice",
+            "label": "비밀번호 만료 사전 안내",
+            "can_run": true,
+            "enabled": true,
+            "supports_skip_waiting": false,
+            "run": {
+              "id": 11,
+              "target": "password_expiry:notice",
+              "status": "completed",
+              "status_label": "완료",
+              "is_active": false,
+              "skip_waiting": false,
+              "processed_count": 8,
+              "remaining_count": 4,
+              "mode": "notify",
+              "error": null,
+              "requester_name": "관리자",
+              "queued_at": "2026-09-25 10:12:01",
+              "started_at": "2026-09-25 10:12:02",
+              "finished_at": "2026-09-25 10:12:05"
+            }
+          },
+          "password_expiry:expire": {
+            "key": "password_expiry:expire",
+            "label": "비밀번호 만료 처리",
+            "can_run": true,
+            "enabled": true,
+            "supports_skip_waiting": false,
+            "run": null
+          }
+        },
+        "has_active": false,
+        "finished_since": false,
+        "checked_at": "2026-09-25T10:12:20+09:00"
+      }
+    },
     "privacyTargets": {
       "data": {
         "data": [

@@ -3,6 +3,7 @@
 namespace App\Privacy\ManualRun;
 
 use App\Privacy\Contracts\PrivacyManualRunnerInterface;
+use App\Privacy\Contracts\PrivacyManualRunReadableInterface;
 use App\Privacy\Contracts\PrivacyManualRunRequiresEnabledInterface;
 use App\Services\PasswordExpiryService;
 
@@ -14,10 +15,11 @@ use App\Services\PasswordExpiryService;
  * 같은 락을 잡는다. 휴면·보존기간과 달리 직권 실행도 토글이 켜져 있어야 한다 — 꺼져 있으면 로그인 관문이
  * 변경을 요구하지 않아, 꺼진 채 처리하면 "다음 로그인 때 변경" 안내와 로그아웃만 남는다(#736, 2026-10-03 확정).
  * 접수는 {@see PrivacyManualRunRequiresEnabledInterface} 로 거절되고, 접수 뒤 꺼지면 서비스가 처리하지 않는다.
+ * 설정을 보기만 하는 관리자도 마지막 실행 기록을 본다({@see PrivacyManualRunReadableInterface}, 2026-10-04 결정).
  *
  * @since 7.1.0
  */
-class PasswordExpiryStageRunner implements PrivacyManualRunnerInterface, PrivacyManualRunRequiresEnabledInterface
+class PasswordExpiryStageRunner implements PrivacyManualRunnerInterface, PrivacyManualRunReadableInterface, PrivacyManualRunRequiresEnabledInterface
 {
     /** 대상 키 접두사 */
     public const PREFIX = 'password_expiry:';
@@ -56,6 +58,14 @@ class PasswordExpiryStageRunner implements PrivacyManualRunnerInterface, Privacy
     public function permissions(): array
     {
         return PasswordExpiryService::RUN_PERMISSIONS;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function readPermissions(): array
+    {
+        return PasswordExpiryService::RUN_READ_PERMISSIONS;
     }
 
     /**

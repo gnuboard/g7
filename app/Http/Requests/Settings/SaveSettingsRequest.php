@@ -95,6 +95,8 @@ class SaveSettingsRequest extends FormRequest
      * 보안 탭 비밀번호 정책의 정수 키 (정수 문자열 정규화 대상)
      */
     private const SECURITY_PASSWORD_INTEGER_FIELDS = [
+        // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
+        'password_min_length',
         'password_repeated_chars_length',
         'password_sequential_chars_length',
         'password_reuse_count',

@@ -24,7 +24,7 @@ const EXPECTED_HANDLERS = [
   // C14~C16 데이터
   'refetchDataSource', 'appendDataSource', 'updateDataSource',
   // C17~C22 기타
-  'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'logout', 'setLocale', 'emitEvent', 'apiCall',
+  'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'logout', 'setLocale', 'emitEvent', 'apiCall',
   // C24~C27 제어흐름(C23 top-level if 는 엔진 처리 — 카탈로그 비포함) + C29 conditions
   'conditions', 'sequence', 'parallel', 'switch', 'suppress',
   // 결제 진입(requestPgPayment)은 코어 카탈로그에서 제외됨 — 결제는 커머스 도메인이라
@@ -37,6 +37,7 @@ const EXPECTED_HANDLERS = [
 const PLACEHOLDER_HANDLER_RECIPES = new Set<string>();
 
 describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('계획 의 코어 핸들러 스펙을 누락 없이 정의한다', () => {
     const keys = Object.keys(CORE_ACTION_RECIPES);
     for (const handler of EXPECTED_HANDLERS) {
@@ -46,6 +47,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     expect(keys.sort()).toEqual([...EXPECTED_HANDLERS].sort());
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('각 스펙은 label·build.handler 를 갖고 build.handler 가 key 와 일치한다 (placeholder 핸들러 recipe 예외)', () => {
     for (const [key, spec] of Object.entries(CORE_ACTION_RECIPES)) {
       expect(typeof spec.label, `${key}.label`).toBe('string');
@@ -58,6 +60,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     }
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('모든 스펙이 actionRecipeEngine 으로 정규화·빌드된다(미등록 0)', () => {
     const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
     // 빌드 불가 스펙은 normalize 가 떨구므로, 전부 정규화돼야 한다.
@@ -76,6 +79,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     }
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('navigate 는 transition_overlay_target param(component-target-picker, replace 종속)을 갖는다 (C4)', () => {
     const navigate = CORE_ACTION_RECIPES.navigate;
     const param = navigate.params?.find((p) => p.key === 'transition_overlay_target');
@@ -85,12 +89,14 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     expect((param as Record<string, unknown>)?.dependsOn).toEqual({ param: 'replace', equals: true });
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('switch 의 cases 는 advanced 잠금 — cases 는 객체맵(Record)이라 action-list 로 표현 불가', () => {
     const advancedOf = (handler: string, key: string) =>
       CORE_ACTION_RECIPES[handler]?.params?.find((p) => p.key === key)?.advanced;
     expect(advancedOf('switch', 'cases')).toBe(true);
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('중첩 액션 컨테이너(apiCall onSuccess/onError·sequence·parallel)는 친화 중첩 빌더(action-list) — advanced 아님', () => {
     // 응답 후속 동작/다단 동작(결제 진입·상태 저장·이동 등)을 코드 없이 추가/편집할 수 있어야 한다.
     const paramOf = (handler: string, key: string) =>
@@ -101,6 +107,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     }
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('conditions recipe — branches 는 branch-list 위젯, build 는 conditions 최상위 키', () => {
     // conditions 는 액션 최상위 키(handleConditions 가 action.conditions 만 읽음).
     const conditions = CORE_ACTION_RECIPES.conditions;
@@ -113,6 +120,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     expect((conditions.build?.params as Record<string, unknown> | undefined)?.conditions).toBeUndefined();
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('apiCall identity_target email/phone 은 data-chip 일반 입력칸이다 (advanced 잠금 아님)', () => {
     // advanced: true 면 편집기가 입력칸 대신 "[고급] 코드 편집" 잠금 배지만 렌더하므로,
     // 직접 입력 가능한 data-chip 위젯이어야 한다 (body/query 와 동일).
@@ -125,6 +133,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     expect(phoneParam?.advanced).toBeFalsy();
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('apiCall identity_target 입력값이 액션 최상위 identity_target 으로 빌드된다', () => {
     const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
     const apiCall = normalized.find((r) => r.build.handler === 'apiCall')!;
@@ -142,6 +151,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     });
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('apiCall identity_target 미입력 시 키가 떨궈진다 (깔끔한 JSON)', () => {
     const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
     const apiCall = normalized.find((r) => r.build.handler === 'apiCall')!;
@@ -151,6 +161,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     expect(built.identity_target).toBeUndefined();
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('identity_target 없는 apiCall 도 친화 폼으로 매칭된다 (회귀 차단 — advanced 로 떨어지면 입력칸 사라짐)', () => {
     const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
 
@@ -171,6 +182,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
     }
   });
 
+  /** @effects editor_core_catalog_lists_every_core_handler */
   it('친화 라벨·param 라벨은 모두 $t: 다국어 키다(평문 박기 금지)', () => {
     for (const [key, spec] of Object.entries(CORE_ACTION_RECIPES)) {
       expect(spec.label, `${key}.label 은 $t: 키`).toMatch(/^\$t:/);
@@ -184,6 +196,7 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
 });
 
 describe('buildCoreActionRecipeSeed — 시드 3블록 ', () => {
+  /** @effects editor_core_recipe_seed_builds */
   it('actionRecipes/initActionRecipes 는 동일 카탈로그, errorRecipes 는 부분집합 + showErrorPage', () => {
     const seed = buildCoreActionRecipeSeed();
     expect(seed.actionRecipes).toBe(CORE_ACTION_RECIPES);

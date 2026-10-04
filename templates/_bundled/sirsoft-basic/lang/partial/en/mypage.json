@@ -153,8 +153,15 @@
         "change_password_processing": "Changing...",
         "change_password_success": "Password has been changed.",
         "change_password_failed": "Failed to change password.",
-        "password_min_length": "Password must be at least 8 characters.",
-        "back_to_profile": "Back to Profile"
+        "back_to_profile": "Back to Profile",
+        "password_status": {
+            "changed_at": "Last changed {{date}}",
+            "expires_at": "Expires {{date}}",
+            "days_left": "D-{{days}}",
+            "expired": "Expired",
+            "other_devices_logged_out": "You have been logged out on other devices. This device stays logged in.",
+            "changed_toast": "Your password has been changed. You have been logged out on other devices."
+        }
     },
     "orders": {
         "title": "Order History",

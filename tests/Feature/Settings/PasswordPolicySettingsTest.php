@@ -51,8 +51,6 @@ class PasswordPolicySettingsTest extends TestCase
     /**
      * 새 키 전부가 저장되고, 숫자 입력칸이 보낸 문자열은 정수로 저장된다.
      *
-     * @scenario tab=security, input_state=valid_strings
-     *
      * @effects all_policy_keys_persist_with_integer_types
      *
      * @return void 반환값 없음
@@ -93,9 +91,26 @@ class PasswordPolicySettingsTest extends TestCase
     }
 
     /**
-     * 범위를 벗어난 값과 모르는 선택지는 422 로 막는다.
+     * 최소 길이 칸도 숫자 입력칸이 보낸 문자열을 정수로 저장한다 — 비밀번호 정책 카드로 옮긴 기존 칸이 신규 정수 칸과 달리
+     * 문자열 `'10'` 으로 남던 결함(#736 S2 브라우저 실측). defaults.json 이 정수로 선언한 키가 문자열로 굳는 #636 S4 의
+     * 정수 문자열 저장 결함과 같은 부류다.
      *
-     * @scenario tab=security, input_state=out_of_range
+     * @scenario min_length_setting=raised
+     *
+     * @effects all_policy_keys_persist_with_integer_types
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_min_length_field_is_saved_as_an_integer(): void
+    {
+        $this->saveSecurity(['password_min_length' => '10'])->assertOk();
+
+        $this->assertSame(10, app(ConfigRepositoryInterface::class)->getCategory('security')['password_min_length']);
+    }
+
+    /**
+     * 범위를 벗어난 값과 모르는 선택지는 422 로 막는다.
      *
      * @effects out_of_range_values_rejected
      *
@@ -124,8 +139,6 @@ class PasswordPolicySettingsTest extends TestCase
     /**
      * 만료를 켠 채 안내일이 기간보다 짧지 않으면 교차 검증 422 다(기간 30·안내 30).
      *
-     * @scenario tab=security, input_state=notice_not_shorter
-     *
      * @effects notice_must_be_shorter_than_expiry
      *
      * @return void 반환값 없음
@@ -153,8 +166,6 @@ class PasswordPolicySettingsTest extends TestCase
 
     /**
      * 화면에는 비밀번호 작성·재사용 규칙 10키만 내보낸다 — 만료·IP·2FA·토큰은 내보내지 않는다.
-     *
-     * @scenario surface=frontend_settings
      *
      * @effects frontend_exposes_only_ten_password_keys
      *

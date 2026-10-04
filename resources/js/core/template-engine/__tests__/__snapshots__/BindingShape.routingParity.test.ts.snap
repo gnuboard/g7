@@ -92,8 +92,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분�
 {
   "numericIndex": 44,
   "other": 2,
-  "quotedBracket": 30,
-  "total": 76,
+  "quotedBracket": 31,
+  "total": 77,
 }
 `;
 
@@ -156,6 +156,19 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "['created_at', 'user_id', 'status_label', 'is_test']",
     "files": [
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_notice_log.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": true,
+      "DataBindingEngine.resolveBindings": true,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "['notice', 'expire']",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_password_policy.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": true,

@@ -9,11 +9,12 @@
     },
     "init_actions": [
         {
-            "comment": "2단계 인증 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다.",
+            "comment": "2단계 인증·비밀번호 변경(#736) 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다.",
             "handler": "setState",
             "params": {
                 "target": "global",
-                "twoFactor": null
+                "twoFactor": null,
+                "passwordChange": null
             }
         },
         {

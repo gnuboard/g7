@@ -370,7 +370,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
 | password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 (지금 비밀번호와 같으면 거부, 재사용 금지가 켜져 있으면 최근 N개도 거부) |
-| password_confirmation | body | string | 예 | — | 새 비밀번호 확인 |
+| password_confirmation | body | string | 예 | `password` 와 같은 값 | 새 비밀번호 확인 — 다르면 422 오류가 `errors.password_confirmation` 에 붙는다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_validation_rules`).
 
@@ -863,7 +863,7 @@ HTTP/1.1 200
 
 **어떤 수단이 선택되는가**: `security.two_factor_scope` 가 대상을 고르고(`all` 전체 / `admin` 관리자만, 기본 `all`), 그 다음 사용자별로 쓸 수 있는 수단을 해석한다. 인증 앱을 등록한 사용자는 앱으로, 등록하지 않은 사용자는 메일로 되돌아간다 — 등록하지 않았다는 이유로 관리자가 로그인하지 못하면 설정을 되돌릴 수단까지 사라지기 때문이다.
 
-이 응답에는 `data.token` 과 `data.user` 가 없다. **클라이언트는 `two_factor_required` 를 먼저 판정해야 한다** — 응답 형태가 하나라고 가정하고 `data.user.*` 를 읽으면 그 자리에서 예외가 나고, `data.token` 을 그대로 저장하면 `"undefined"` 문자열이 남아 이후 모든 요청이 `401` 로 튕긴다(공개 #133). 코어 클라이언트(`AuthManager.login()`)는 `LoginResult` 판별 유니온으로 두 형태를 구분해 돌려준다.
+이 응답에는 `data.token` 과 `data.user` 가 없다. **클라이언트는 `two_factor_required` 를 먼저 판정해야 한다** — 응답 형태가 하나라고 가정하고 `data.user.*` 를 읽으면 그 자리에서 예외가 나고, `data.token` 을 그대로 저장하면 `"undefined"` 문자열이 남아 이후 모든 요청이 `401` 로 튕긴다(공개 #133). 코어 클라이언트(`AuthManager.login()`)는 `LoginResult` 판별 유니온으로 세 형태(로그인 완료 · 2단계 인증 · 비밀번호 변경 단계 — engine-v1.77.0+)를 구분해 돌려준다.
 
 **인증번호를 보내지 못한 경우**: 자격 증명은 올바르지만 코드를 전달할 수단이 없으므로 로그인을 완료할 수 없다. 이때는 `401`(자격 증명 오류)이 아니라 `503 auth.two_factor_delivery_failed` 를 반환한다 — `401` 로 뭉뚱그리면 사용자는 비밀번호를 의심하며 같은 실패를 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다. 발송에 실패해도 2단계 인증을 건너뛰고 로그인시키지는 않는다.
 
@@ -882,7 +882,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | challenge_id | body | string | 예 | uuid | 로그인 응답이 돌려준 비밀번호 변경 단계 식별자 |
 | password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 (지금 비밀번호와 같으면 거부, 재사용 금지가 켜져 있으면 최근 N개도 거부) |
-| password_confirmation | body | string | 예 | — | 새 비밀번호 확인 |
+| password_confirmation | body | string | 예 | `password` 와 같은 값 | 새 비밀번호 확인 — 다르면 422 오류가 `errors.password_confirmation` 에 붙는다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.password_change_validation_rules`).
 

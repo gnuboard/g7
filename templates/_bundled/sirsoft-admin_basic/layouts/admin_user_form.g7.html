@@ -111,6 +111,13 @@
   <init>
     <!-- 생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다. -->
     <set-state if="{{!route?.id}}" target="local" :form="null" :hasChanges="false"/>
+    <!-- 생성 모드 기본값 — 비밀번호 만료 개별 설정은 「역할·사이트 설정 따름」에서 시작한다(#736). 위에서 form 을 비운 뒤라
+         이 한 키만 담긴다. -->
+    <set-state if="{{!route?.id}}" target="local" form.password_expiry_policy="inherit"/>
+    <!-- 수정 모드: 다른 회원의 수정 화면에서 SPA 로 넘어오면 `_local.form` 이 남고, 회원 데이터 소스(initLocal)는 기록에 있는 키만
+         덮어써 비밀번호 칸은 그대로 남는다 — 직전 회원에 입력하다 만 비밀번호가 이 회원 폼에 실려 저장되면 이 회원의 비밀번호가
+         바뀌고 다음 로그인 때 변경을 요구받는다(#736 S2 실측). 진입마다 세 칸을 비운다. -->
+    <set-state if="{{!!route?.id}}" target="local" form.password="" form.password_confirmation="" form.current_password=""/>
   </init>
   <slot name="content">
     <div data-ref="user_form_content" data-key="form" class="admin-page-content-responsive">
@@ -237,6 +244,33 @@
                 </label>
                 <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
               </div>
+            </div>
+            <!-- 켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만
+                 검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다. -->
+            <p data-ref="password_rules_hint" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+              <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
+              <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
+              <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_sequential_chars}}">$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}</span>
+              <span data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_global.settings?.security?.password_reuse_prevention_enabled}}">$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}</span>
+            </p>
+            <!-- 다른 회원의 비밀번호를 정해 주면 그 회원은 다음 로그인 때 본인이 바꿔야 한다(D11 — 서버가 플래그를 세운다).
+                 등록은 늘 그렇다. 저장 전에 미리 알려 운영자가 의도를 확인하게 한다. -->
+            <div data-ref="password_admin_assigned_notice" data-if="{{!!_local.form?.password &amp;&amp; !(!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid)}}" class="alert-info">
+              <p class="text-info-soft">{{route?.id ? '$t:admin.users.form.password_policy.admin_assigned_notice' : '$t:admin.users.form.password_policy.create_notice'}}</p>
+            </div>
+            <!-- 본인 계정의 비밀번호를 바꿀 때만 현재 비밀번호를 묻는다(D19). 서버는 화면과 별개로 행위자 = 대상을 판정해
+                 같은 확인과 재사용 검사를 한다 — 이 칸은 그 요구를 미리 보여 주는 자리다. -->
+            <div data-ref="field_current_password" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password}}">
+              <label class="form-label">
+                <span>$t:admin.users.form.password_policy.current_password</span>
+                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+              </label>
+              <input type="password" name="current_password" autoComplete="current-password" placeholder="$t:admin.users.form.password_policy.current_password" class="{{_local.errors?.current_password ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.current_password}}" class="text-red-500 dark:text-red-400 text-xs mt-1">{{_local.errors?.current_password?.[0] ?? ''}}</span>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.current_password_hint</p>
             </div>
           </div>
         </div>
@@ -375,6 +409,48 @@
                 <input type="text" value="{{user?.data?.dormant_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
               </div>
             </div>
+          </div>
+        </div>
+        <!-- 비밀번호(#736) — 상세의 「비밀번호」 구획과 같은 자리·같은 순서로 선다(#599 상세↔수정 정합).
+             마지막 변경·만료 예정·다음 로그인 때 변경 필요·연기 종료는 서버가 적는 기록이라 잠긴 글자로 두고(등록 모드에는 회원이 없어 숨긴다),
+             고칠 수 있는 것은 만료 개별 설정 하나다 — 등록 모드에서도 보인다. -->
+        <div data-ref="section_password_info" id="password_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.password.title</h3>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_password_changed_at" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.changed_at</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>
+            </div>
+            <div data-ref="field_password_expires_at" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.expires_at</label>
+              <div data-if="{{!user?.data?.password_status?.applies}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
+              <div data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}" class="text-error-soft text-sm">$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}</div>
+              <div data-if="{{user?.data?.password_status?.applies &amp;&amp; !user?.data?.password_status?.expired}}" class="text-primary text-sm">$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}</div>
+            </div>
+            <div data-ref="field_password_change_required" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.change_required</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.change_required ? '$t:admin.users.detail.password.yes' : '$t:admin.users.detail.password.no'}}</div>
+            </div>
+            <div data-ref="field_password_postponed_until" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status?.postponed_until}}">
+              <label class="form-label">$t:admin.users.detail.password.postponed_until</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.postponed_until ?? '-'}}</div>
+            </div>
+          </div>
+          <div data-ref="field_password_expiry_policy" class="mt-4">
+            <label class="form-label">$t:admin.users.form.password_policy.expiry</label>
+            <!-- 만료 개별 설정 — 고른 값을 폼에 담는다(커스텀 Select 는 value 제어 전용이라 상태 칸 선택과 같은 방식). -->
+            <select name="password_expiry_policy" class="w-full" value="{{_local.form?.password_expiry_policy ?? 'inherit'}}" error="{{_local.errors?.password_expiry_policy?.[0] ?? ''}}" options="{{[{label: '$t:admin.users.form.password_policy.expiry_inherit', value: 'inherit'}, {label: '$t:admin.users.form.password_policy.expiry_apply', value: 'apply'}, {label: '$t:admin.users.form.password_policy.expiry_exempt', value: 'exempt'}]}}">
+              <on type="change">
+                <set-state target="local" form.password_expiry_policy="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.expiry_hint</p>
+            <!-- 현재 판정(수정 화면) — 저장된 설정 기준이다. 방금 고른 값은 저장해야 판정에 반영된다. -->
+            <p data-ref="password_expiry_status_line" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status}}" class="text-xs text-gray-700 dark:text-gray-300 mt-1">
+              <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_expired</span>
+              <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expires_at &amp;&amp; !user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_applies|date={{user?.data?.password_status?.expires_at | date}}|days={{user?.data?.password_status?.days_left ?? 0}}</span>
+              <span data-if="{{!user?.data?.password_status?.applies}}">$t:admin.users.form.password_policy.status_not_applies</span>
+            </p>
           </div>
         </div>
         <!-- 동의정보 — 회원이 언제 동의했는가는 기록이지 설정이 아니라 잠긴 채로 세운다.

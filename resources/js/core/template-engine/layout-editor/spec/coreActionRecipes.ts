@@ -297,6 +297,18 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [{ key: 'body', label: `$t:${L}.login_two_factor_resend.param_body`, widget: 'key-value' }],
     build: { handler: 'loginTwoFactorResend', params: { body: '{{body}}' } },
   },
+  // C18-3 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
+  loginPasswordChange: {
+    label: `$t:${L}.login_password_change.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_password_change.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginPasswordChange', params: { body: '{{body}}' } },
+  },
+  // C18-4 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
+  loginPasswordChangePostpone: {
+    label: `$t:${L}.login_password_change_postpone.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_password_change_postpone.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginPasswordChangePostpone', params: { body: '{{body}}' } },
+  },
   // C19 로그아웃 처리
   logout: {
     label: `$t:${L}.logout.label`,

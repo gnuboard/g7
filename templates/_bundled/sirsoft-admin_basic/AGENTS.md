@@ -108,7 +108,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
-- [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
+- [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 

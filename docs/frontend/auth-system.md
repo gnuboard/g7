@@ -24,6 +24,8 @@
 - [API 엔드포인트](#api-엔드포인트)
 - [토큰 자동 갱신](#토큰-자동-갱신)
 - [로그인 시 로케일 처리](#로그인-시-로케일-처리)
+- [2단계 인증 로그인 (engine-v1.65.0+)](#2단계-인증-로그인-engine-v1650)
+- [비밀번호 변경 요구 로그인 (engine-v1.77.0+)](#비밀번호-변경-요구-로그인-engine-v1770)
 - [사용 예시](#사용-예시)
 - [이벤트 처리](#이벤트-처리)
 - [주의사항](#주의사항)
@@ -98,10 +100,10 @@ private getAuthType(route: Route, pathname: string): AuthType {
 
 ## API 엔드포인트
 
-| 구분 | 로그인 | 인증번호 확인 | 인증번호 재발송 | 사용자 정보 | 로그아웃 | 토큰 갱신 |
-|------|--------|--------------|----------------|------------|---------|----------|
-| **관리자** | `/auth/admin/login` | `/auth/admin/login/two-factor` | `/auth/admin/login/two-factor/resend` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
-| **일반사용자** | `/auth/login` | `/auth/login/two-factor` | `/auth/login/two-factor/resend` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
+| 구분 | 로그인 | 인증번호 확인 | 인증번호 재발송 | 비밀번호 변경 단계 (완료 / 연기) | 사용자 정보 | 로그아웃 | 토큰 갱신 |
+|------|--------|--------------|----------------|------------------------------|------------|---------|----------|
+| **관리자** | `/auth/admin/login` | `/auth/admin/login/two-factor` | `/auth/admin/login/two-factor/resend` | `/auth/admin/login/password-change` / `…/postpone` | `/admin/auth/user` | `/admin/auth/logout` | `/admin/auth/refresh` |
+| **일반사용자** | `/auth/login` | `/auth/login/two-factor` | `/auth/login/two-factor/resend` | `/auth/login/password-change` / `…/postpone` | `/user/auth/user` | `/user/auth/logout` | `/user/auth/refresh` |
 
 **공통**:
 
@@ -192,24 +194,22 @@ if (localeChanged && window.__templateApp) {
 ## 2단계 인증 로그인 (engine-v1.65.0+)
 
 보안 환경설정의 「2단계 인증」이 켜져 있으면 서버는 비밀번호가 맞아도 토큰을 발급하지 않고
-인증 요청(challenge)만 돌려줍니다. 즉, **로그인 응답은 두 가지 형태의 200** 입니다.
+인증 요청(challenge)만 돌려줍니다. 비밀번호 변경 단계(engine-v1.77.0+, 아래 절)까지 더하면 **로그인 응답은 세 가지 형태의 200** 입니다.
 
 ```typescript
 export type LoginResult =
   | { status: 'authenticated'; user: AuthUser; extras?: LoginExtras }
-  | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
+  | { status: 'two_factor_required'; challenge: TwoFactorChallenge }
+  | { status: 'password_change_required'; challenge: PasswordChangeChallenge }; // engine-v1.77.0+
 
-/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.76.0+). 토큰·사용자·2단계 표지를 뺀 나머지 필드다. */
+/** 서버가 로그인 응답에 함께 실은 안내 필드 (engine-v1.77.0+). 토큰·사용자·단계 표지를 뺀 나머지 필드다. */
 export type LoginExtras = Record<string, unknown>;
 
-/** 2단계 인증 확인 결과 (engine-v1.76.0+) */
-export interface TwoFactorSession {
-  user: AuthUser;
-  extras?: LoginExtras;
-}
+/** 2단계 인증 확인 결과 (engine-v1.77.0+, 비밀번호 변경 단계 형태는 engine-v1.77.0+) */
+export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_required' }>;
 ```
 
-`extras` 는 서버가 응답에 안내 필드를 실었을 때만 붙는다(지금 코어가 싣는 것은 `dormancy_restored` 하나다). 휴면 계정이 로그인으로 풀리면 `dormancy_restored: true` 가
+`extras` 는 서버가 응답에 안내 필드를 실었을 때만 붙는다(지금 코어가 싣는 것은 `dormancy_restored`, 비밀번호 변경을 미룬 로그인의 `postponed_until` 이다). 휴면 계정이 로그인으로 풀리면 `dormancy_restored: true` 가
 실려, 화면이 「휴면 상태가 해제되었습니다」 안내를 띄울 수 있다.
 
 `AuthManager.login()` 은 이 판별 유니온을 돌려줍니다. 한 형태만 가정하면 challenge 응답에서
@@ -219,8 +219,8 @@ export interface TwoFactorSession {
 | 메서드 | 하는 일 |
 |--------|---------|
 | `login(type, credentials, options?)` | 비밀번호 확인. `LoginResult` 반환 |
-| `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환 |
-| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession`(`user` + 서버 안내 필드 `extras`) 반환 (engine-v1.76.0+) |
+| `completeTwoFactor(type, { challengeId, code }, options?)` | 인증번호 확인 → 토큰 발급 → `AuthUser` 반환. 비밀번호 변경 단계가 오면 세션을 열지 않고 오류를 던집니다 |
+| `completeTwoFactorSession(type, { challengeId, code }, options?)` | `completeTwoFactor` 와 같은 확인을 하고 `TwoFactorSession` 반환 — `authenticated`(`user` + 서버 안내 필드 `extras`) 또는 `password_change_required`(engine-v1.77.0+) (engine-v1.77.0+) |
 | `resendTwoFactor(type, { challengeId }, options?)` | 인증번호 재발송 → **새** `TwoFactorChallenge` 반환 |
 
 레이아웃에서는 액션 핸들러 `login` / `loginTwoFactor` / `loginTwoFactorResend` 로 사용합니다
@@ -244,6 +244,60 @@ export interface TwoFactorSession {
 서버는 기존 challenge 를 **취소하고 새로 발행**합니다. 유효한 코드를 여러 개 동시에 살려 두면
 대입 시도의 표적이 넓어지기 때문입니다. 따라서 클라이언트는 응답의 `challenge_id` 로 반드시
 교체하고 입력란을 비워야 합니다.
+
+---
+
+## 비밀번호 변경 요구 로그인 (engine-v1.77.0+)
+
+비밀번호가 만료됐거나(보안 환경설정 「비밀번호 만료」) 관리자가 정해 준 비밀번호면, 서버는 비밀번호와
+(켜져 있으면) 2단계 인증이 모두 맞아도 토큰 대신 **비밀번호 변경 단계**를 돌려줍니다. 순서는 항상
+자격증명 → 2단계 인증 → 비밀번호 변경입니다 — 변경 단계가 2단계 인증보다 앞에 오면 비밀번호만 훔친
+사람이 2단계 인증 없이 비밀번호를 바꿔 계정을 가져갑니다.
+
+```typescript
+export interface PasswordChangeChallenge {
+  challengeId: string;
+  reason: 'expired' | 'admin_assigned';   // 사용 기간 만료 / 관리자가 정해 준 비밀번호
+  canPostpone: boolean;                    // '다음에 변경' 가능 여부 (만료 + '다음에 변경 허용' 설정일 때만)
+  postponeDays: number | null;             // 미루면 다시 안내할 때까지의 일수
+  expiredAt: string | null;                // 만료 시각 (관리자 지정이면 null)
+  expiresAt: string | null;                // 이 challenge 가 무효가 되는 시각 (발급 후 10분)
+}
+```
+
+| 메서드 | 하는 일 |
+|--------|---------|
+| `completePasswordChange(type, { challengeId, password, passwordConfirmation }, options?)` | 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급. `LoginResult`(authenticated) |
+| `postponePasswordChange(type, { challengeId }, options?)` | 변경을 미루고 로그인 완료. `extras.postponed_until` 포함 |
+
+레이아웃 핸들러와 `response` 모양:
+
+| 핸들러 | 변경 단계일 때 `response` | 로그인 완료일 때 `response` |
+|--------|--------------------------|---------------------------|
+| `login` | `{ user: null, two_factor_required: false, password_change_required: true, challenge_id, reason, can_postpone, postpone_days, expired_at, expires_at }` | `{ user, two_factor_required: false, password_change_required: false, dormancy_restored? }` |
+| `loginTwoFactor` | 위와 같음(`two_factor_required` 없음) | `{ user, password_change_required: false, dormancy_restored? }` |
+| `loginPasswordChange` (body `challenge_id`·`password`·`password_confirmation`) | — | `{ user, password_change_required: false, dormancy_restored? }` |
+| `loginPasswordChangePostpone` (body `challenge_id`) | — | `{ user, password_change_required: false, postponed_until, dormancy_restored? }` |
+
+`dormancy_restored` 는 휴면이 그 로그인으로 풀렸을 때만 실립니다. 네 핸들러 모두 결과의 `extras` 를 `response` 에
+펼쳐 전달합니다(engine-v1.77.0 전에는 엔진이 버려 휴면 해제 안내가 뜨지 않았습니다).
+
+실패(422)는 `error.errors` 로 구분합니다 — 규칙 위반·현재 비밀번호와 같은 값·최근 사용 비밀번호는
+`errors.password`, 식별자 만료·무효(시간 초과, 이미 사용, 다른 로그인 경로의 식별자)는 `errors.challenge_id` 입니다.
+후자는 **처음부터 다시 로그인**해야 합니다 — 2단계 인증 코드도 이미 소비됐습니다.
+
+### 레이아웃 작성 규칙
+
+- 세 단계(자격증명 / 2단계 인증 / 비밀번호 변경)의 블록 `if` 는 서로 **상보적**입니다. 제출 시퀀스의 `login`·
+  `loginTwoFactor`·`loginPasswordChange` 도 상호배타 `if` 를 갖습니다.
+- `login`·`loginTwoFactor` 성공 분기는 **`response.password_change_required` 를 먼저** 봅니다. 「2단계 인증이 아니면
+  로그인 성공」(`navigate if="{{!response.two_factor_required}}"`)으로 판정하면 변경 단계 응답(`user: null`, 토큰 없음)을
+  성공으로 오판해 이동하고, 보호 화면이 다시 로그인으로 돌려보냅니다.
+- 같은 시퀀스·`onSuccess` 안에서 방금 저장한 단계 상태를 다시 읽지 않습니다 — `{{response.*}}` 만 씁니다.
+- 변경 단계 상태도 `init_actions` 에서 초기화합니다(화면을 떠났다 오면 처음부터).
+- 「다음에 변경」 버튼은 `can_postpone` 일 때만 그립니다. 「처음부터 다시」 는 두 단계 상태를 모두 비웁니다.
+- `errors.challenge_id` 422 를 받으면 안내 후 자격증명 단계로 돌아갑니다.
+- 최종 성공 지점(로그인·2단계 인증·변경·연기)마다 `response.dormancy_restored` 토스트와 이동을 같은 모양으로 둡니다.
 
 ---
 

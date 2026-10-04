@@ -1048,7 +1048,7 @@ return [
                     ],
                     'body' => [
                         'ko' => '<h1>{name}님, 안녕하세요.</h1>'
-                            .'<p>회원님의 비밀번호 사용 기간이 <strong>{expires_at}</strong> 에 끝납니다.</p>'
+                            .'<p>회원님의 비밀번호 사용 기간이 <strong>{expires_at}</strong>에 끝납니다.</p>'
                             .'<p>만료 전에 변경해 주세요. 만료 후에는 로그인할 때 새 비밀번호를 설정해야 합니다.</p>'
                             .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">비밀번호 변경하기</a></td></tr></table>'
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1064,8 +1064,9 @@ return [
                     'recipients' => [['type' => 'trigger_user']],
                     'subject' => ['ko' => '비밀번호 만료 {days_left}일 전입니다', 'en' => 'Your password expires in {days_left} days'],
                     'body' => [
-                        'ko' => '비밀번호가 {expires_at} 에 만료됩니다. 만료 전에 변경해 주세요.',
-                        'en' => 'Your password expires on {expires_at}. Please change it before then.',
+                        // 받는 회원 이름으로 시작한다(2026-10-04 결정, 디자인 캔버스 사이트 알림)
+                        'ko' => '{name}님, 비밀번호가 {expires_at}에 만료됩니다. 만료 전에 변경해 주세요.',
+                        'en' => '{name}, your password expires on {expires_at}. Please change it before then.',
                     ],
                     'click_url' => '{action_url}',
                 ],

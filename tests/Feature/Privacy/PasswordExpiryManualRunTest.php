@@ -149,7 +149,7 @@ class PasswordExpiryManualRunTest extends TestCase
     /**
      * 실행 권한(설정 변경 + 회원 변경)이 없으면 403 이다.
      *
-     * @scenario stage=notice|expire, actor=reader
+     * @scenario stage=notice|expire
      *
      * @effects manual_run_requires_run_permissions
      *
@@ -187,5 +187,44 @@ class PasswordExpiryManualRunTest extends TestCase
         $this->actingAs($admin)->postJson('/api/admin/privacy/manual-runs/password_expiry:expire')
             ->assertStatus(409)
             ->assertJsonPath('errors.run.id', $first->json('data.id'));
+    }
+
+    /**
+     * 설정을 보기만 하는 관리자도 만료 카드의 마지막 직권 실행 기록(실행자 이름 포함)을 받는다 — 화면은 「지금 실행」을
+     * 비활성으로 보이고 그 아래 마지막 실행 줄을 그린다(2026-10-04 결정). 실행 권한은 `can_run` 으로만 판정하고,
+     * 개인정보 탭 대상(보유기간·휴면)은 종전대로 실행 권한이 없으면 기록을 가린다.
+     *
+     * @scenario stage=notice|expire
+     *
+     * @effects settings_reader_sees_last_run_but_cannot_run
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function a_settings_reader_sees_the_last_run_but_cannot_run(): void
+    {
+        $this->enableExpiry();
+        $runner = $this->makeLimitedAdmin(['core.settings.update', 'core.users.update']);
+        $this->actingAs($runner)->postJson('/api/admin/privacy/manual-runs/password_expiry:notice')->assertStatus(202);
+
+        $reader = $this->makeLimitedAdmin(['core.settings.read']);
+        $status = $this->actingAs($reader)
+            ->getJson('/api/admin/privacy/manual-runs?targets=password_expiry:notice,password_expiry:expire,retention:user-withdrawn')
+            ->assertOk();
+
+        $notice = $status->json('data.targets.password_expiry:notice');
+        $this->assertFalse($notice['can_run']);
+        $this->assertSame($runner->name, $notice['run']['requester_name']);
+        $this->assertNull($status->json('data.targets.password_expiry:expire.run'), '기록이 없는 단계');
+        $this->assertFalse($status->json('data.targets.password_expiry:expire.can_run'));
+        $this->assertNull($status->json('data.targets.retention:user-withdrawn.run'), '개인정보 탭 대상은 종전대로 가린다');
+
+        $this->actingAs($reader)->postJson('/api/admin/privacy/manual-runs/password_expiry:notice')->assertForbidden();
+
+        $outsider = $this->makeLimitedAdmin(['core.users.read']);
+        $this->assertNull(
+            $this->actingAs($outsider)->getJson('/api/admin/privacy/manual-runs?targets=password_expiry:notice')->json('data.targets.password_expiry:notice.run'),
+            '설정 읽기 권한이 없으면 가린다',
+        );
     }
 }

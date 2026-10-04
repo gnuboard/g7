@@ -53,22 +53,4 @@ export interface ModalProps {
  * 그 두 단계를 쓰던 화면이 한 픽셀도 움직이지 않도록 일부러 맞췄다.
  */
 export declare const MODAL_SIZE_WIDTHS: Record<string, string>;
-/**
- * Modal 집합 컴포넌트
- *
- * Div + Button 기본 컴포넌트를 조합하여 모달 UI를 구성합니다.
- * ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기 기능을 포함합니다.
- *
- * @example
- * // 레이아웃 JSON 사용 예시
- * {
- *   "name": "Modal",
- *   "props": {
- *     "isOpen": "{{modals.userEdit}}",
- *     "title": "사용자 편집",
- *     "width": "600px"
- *   },
- *   "children": [...]
- * }
- */
 export declare const Modal: React.FC<ModalProps>;

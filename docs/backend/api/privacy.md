@@ -218,7 +218,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-`retention-targets` 와 같은 행 형태입니다(`data[]` · `columns` · `pagination`). `context` 는 구분(관리자·회원), `date` 는 **만료일**(사용자 시간대 날짜)이며, **만료가 가까운 순**(기준일 오름차순, 같으면 ID 순)으로 정렬합니다 — 1회 실행당 상한이 있으면 배치가 이 순서대로 처리합니다. 권한은 `core.settings.read` + `core.users.read` 를 **전체 범위로** 가져야 합니다(범위가 좁으면 403).
+`retention-targets` 와 같은 행 형태입니다(`data[]` · `columns` · `pagination`). `context` 는 구분(관리자·회원), `date` 는 기준 날짜(사용자 시간대) — 열 이름이 단계를 따라 사전 안내(`notice`)는 **만료 예정일**(`user.password_expiry_target.column_expires_due`), 만료 처리(`expire`)는 **만료일**(`column_expires_at`)이며, **만료가 가까운 순**(기준일 오름차순, 같으면 ID 순)으로 정렬합니다 — 1회 실행당 상한이 있으면 배치가 이 순서대로 처리합니다. 권한은 `core.settings.read` + `core.users.read` 를 **전체 범위로** 가져야 합니다(범위가 좁으면 403).
 
 **응답 예시**
 
@@ -245,7 +245,7 @@ HTTP/1.1 200
             "title": "이름",
             "subtitle": "이메일",
             "context": "구분",
-            "date": "만료일"
+            "date": "만료 예정일"
         },
         "pagination": {
             "current_page": 1,
@@ -304,7 +304,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | targets | object | `{"dormant:convert": {…}}` | 대상 키 => 상태 |
-| targets.*.can_run | boolean | `true` | 요청한 관리자가 직권 실행할 수 있는지 — `false` 면 `label`·`enabled`·`run` 이 가려진다(`null`) |
+| targets.*.can_run | boolean | `true` | 요청한 관리자가 직권 실행할 수 있는지 — `false` 면 `label`·`enabled`·`run` 이 가려진다(`null`). 단 실행기가 열람 권한을 선언(`PrivacyManualRunReadableInterface::readPermissions()`, 비밀번호 만료 = `core.settings.read`)했고 관리자가 그 권한을 가지면 `can_run=false` 여도 `run`(접수자 이름 포함)을 준다 — `label`·`enabled` 는 그대로 `null` 이다. 화면은 버튼을 보이되 잠근다 |
 | targets.*.label | string\|null | `"휴면 전환"` | 대상 이름 |
 | targets.*.enabled | boolean\|null | `false` | 자동 실행 토글 — 보유기간·휴면은 안내용(직권 실행은 이 값과 무관), 비밀번호 만료(`password_expiry:*`)는 `false` 면 접수가 409 로 거절되므로 화면이 「지금 실행」을 비활성으로 그린다 |
 | targets.*.supports_skip_waiting | boolean | `true` | 「대기기간 생략」 지원 여부 (휴면 전환·탈퇴 단계만) |

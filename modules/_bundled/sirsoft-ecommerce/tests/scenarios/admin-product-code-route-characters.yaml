@@ -1,0 +1,18 @@
+feature: 상품 API(관리자·공개) — 하이픈·밑줄 상품코드 라우팅
+
+description: |
+  상품코드 규칙은 영문·숫자·하이픈·밑줄을 받으므로, 상품코드로 여는 관리자 상품 API(상세·폼·복사·삭제 가능 여부·활동 로그)도
+  같은 문자를 받아야 한다. 종전 라우트 제약이 영숫자만 받아 `CBT-TEST-…` 같은 코드의 상품은 수정 화면이 비었다(상세 405).
+  제약을 넓혀도 리터럴 경로(options·generate-code)는 그대로 자기 라우트로 간다.
+
+axes:
+  code_chars: [hyphen_underscore]
+  endpoint: [read_routes, literal_routes, public_routes]
+
+effects:
+  - code_with_hyphen_reaches_every_product_read_route
+  - literal_routes_not_swallowed_by_identifier
+  - public_product_routes_accept_code_with_hyphen
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductRouteCodeCharactersTest.php

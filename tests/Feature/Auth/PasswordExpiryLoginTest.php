@@ -391,6 +391,38 @@ class PasswordExpiryLoginTest extends TestCase
     }
 
     /**
+     * 확인 칸이 새 비밀번호와 다르면 그 오류는 확인 칸(`password_confirmation`)에 붙는다 — 화면이 확인 칸 아래에 띄운다
+     * (2026-10-04 결정, 디자인 캔버스 AdminLoginError). 새 비밀번호 칸에는 오류가 없다.
+     *
+     * @scenario guard=user|admin
+     *
+     * @effects confirmation_mismatch_reported_on_confirmation_field
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function a_confirmation_mismatch_is_reported_on_the_confirmation_field(): void
+    {
+        $this->enableExpiry();
+
+        foreach ([false, true] as $admin) {
+            $user = $this->expiredUser($admin);
+            $challengeId = $this->login($user, $admin)->json('data.challenge_id');
+            $prefix = $admin ? '/api/auth/admin' : '/api/auth';
+
+            $response = $this->postJson("{$prefix}/login/password-change", [
+                'challenge_id' => $challengeId,
+                'password' => 'Passw0rd!new',
+                'password_confirmation' => 'Passw0rd!other',
+            ])->assertStatus(422);
+
+            $response->assertJsonValidationErrors(['password_confirmation']);
+            $response->assertJsonMissingValidationErrors(['password']);
+            $this->assertSame([__('validation.auth.password.confirmed')], $response->json('errors.password_confirmation'));
+        }
+    }
+
+    /**
      * 휴면 회원도 변경을 마치면 휴면이 풀리고 응답에 그 사실이 실린다.
      *
      * @scenario guard=user|admin, reason=expired, dormant=yes

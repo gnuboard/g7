@@ -48,6 +48,13 @@ class PasswordExpiryService
     public const RUN_PERMISSIONS = ['core.settings.update', 'core.users.update'];
 
     /**
+     * 직권 실행 상태(마지막 실행 결과·접수자)를 보는 권한.
+     *
+     * 실행 권한이 없어도 환경설정을 볼 수 있는 관리자에게는 버튼을 잠근 채 마지막 실행 결과를 보인다(#736 S2 결정).
+     */
+    public const RUN_READ_PERMISSIONS = ['core.settings.read'];
+
+    /**
      * 처리 단계 (사전 안내 / 만료일 처리)
      */
     public const STAGES = ['notice', 'expire'];
@@ -443,7 +450,7 @@ class PasswordExpiryService
     /**
      * 단계 식별자로 대상 쿼리를 고릅니다.
      *
-     * @param  string  $stage  notice | expire
+     * @param  string  $stage  처리 단계 식별자 — 사전 안내 notice · 만료 처리 expire ({@see self::STAGES})
      * @param  Carbon|null  $startedAt  시작일
      * @return Builder<User> 대상 쿼리
      *
@@ -482,7 +489,7 @@ class PasswordExpiryService
     /**
      * 한 단계의 대상 명단 한 페이지를 돌려줍니다 (만료가 가까운 순).
      *
-     * @param  string  $stage  notice | expire
+     * @param  string  $stage  처리 단계 식별자 — 사전 안내 notice · 만료 처리 expire ({@see self::STAGES})
      * @param  int  $page  페이지 번호 (1부터)
      * @param  int  $perPage  페이지 크기
      * @return LengthAwarePaginator<int, PrivacyRetentionTarget> 대상 행 페이지
@@ -514,22 +521,28 @@ class PasswordExpiryService
     /**
      * 명단 열 라벨을 돌려줍니다.
      *
+     * 날짜 열은 단계마다 이름이 다르다 — 사전 안내 명단의 날짜는 아직 오지 않은 「만료 예정일」, 만료 처리 명단은
+     * 이미 지난 「만료일」이다(#736, 2026-10-04 결정).
+     *
+     * @param  string  $stage  처리 단계 식별자 — 사전 안내 notice · 만료 처리 expire ({@see self::STAGES})
      * @return array<string, string> 열 이름 => 라벨
      */
-    public function stageColumns(): array
+    public function stageColumns(string $stage): array
     {
         return [
             'title' => __('privacy.targets.columns.name'),
             'subtitle' => __('privacy.targets.columns.email'),
             'context' => __('user.password_expiry_target.column_type'),
-            'date' => __('user.password_expiry_target.column_expires_at'),
+            'date' => $stage === 'notice'
+                ? __('user.password_expiry_target.column_expires_due')
+                : __('user.password_expiry_target.column_expires_at'),
         ];
     }
 
     /**
      * 이번 실행에서 처리할 건수를 셉니다 — min(대상 수, 상한).
      *
-     * @param  string  $stage  notice | expire
+     * @param  string  $stage  처리 단계 식별자 — 사전 안내 notice · 만료 처리 expire ({@see self::STAGES})
      * @return int 처리 예정 건수
      */
     public function runCount(string $stage): int

@@ -137,7 +137,8 @@
     ],
     "initLocal": {
         "form": {
-            "is_active": true
+            "is_active": true,
+            "password_expiry_policy": "inherit"
         }
     },
     "permissions": [
@@ -168,7 +169,8 @@
             "params": {
                 "target": "local",
                 "form": {
-                    "is_active": true
+                    "is_active": true,
+                    "password_expiry_policy": "inherit"
                 }
             }
         }
@@ -295,6 +297,7 @@
                                                 "name": "{{_local.form.name_raw ?? form.name}}",
                                                 "description": "{{_local.form.description_raw ?? form.description}}",
                                                 "is_active": "{{_local.form.is_active === true}}",
+                                                "password_expiry_policy": "{{_local.form.password_expiry_policy ?? 'inherit'}}",
                                                 "permissions": "{{_local.form.permission_values ?? []}}",
                                                 "menu_ids": "{{role_menus_tree?.data?.abilities?.can_update === true && _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"
                                             }
@@ -568,6 +571,52 @@
                                                             "className": "text-red-500 text-xs"
                                                         },
                                                         "text": "{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는\n                 회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선).",
+                                                "id": "password_expiry_policy_field",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.roles.form.password_expiry"
+                                                    },
+                                                    {
+                                                        "comment": "고른 값을 폼에 담는다 — 저장 본문이 이 값을 그대로 싣는다.",
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.password_expiry_policy": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "name": "password_expiry_policy",
+                                                            "className": "w-full",
+                                                            "value": "{{_local.form?.password_expiry_policy ?? 'inherit'}}",
+                                                            "error": "{{_global.formErrors?.password_expiry_policy?.[0] ?? ''}}",
+                                                            "options": "{{[{label: '$t:admin.roles.form.password_expiry_inherit', value: 'inherit'}, {label: '$t:admin.roles.form.password_expiry_apply', value: 'apply'}, {label: '$t:admin.roles.form.password_expiry_exempt', value: 'exempt'}]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-tertiary mt-1"
+                                                        },
+                                                        "text": "$t:admin.roles.form.password_expiry_hint"
                                                     }
                                                 ]
                                             },

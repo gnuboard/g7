@@ -112,6 +112,9 @@ export const MODAL_SIZE_WIDTHS: Record<string, string> = {
   '2xl': '1120px',
 };
 
+/** 열린 모달 순서(맨 뒤가 맨 위) — Esc 는 맨 위 창만 처리한다. */
+const openModalStack: symbol[] = [];
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -143,19 +146,35 @@ export const Modal: React.FC<ModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // ESC 키로 모달 닫기
+  // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(#736 S2 — 열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
+  // 순서는 열린 시점으로 정하므로 onClose·closeOnEscape 는 ref 로 읽어 다시 그려져도 순서가 바뀌지 않게 한다.
+  const onCloseRef = useRef(onClose);
+  const closeOnEscapeRef = useRef(closeOnEscape);
   useEffect(() => {
+    onCloseRef.current = onClose;
+    closeOnEscapeRef.current = closeOnEscape;
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const token = Symbol('modal');
+    openModalStack.push(token);
+
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen && closeOnEscape) {
-        onClose();
+      if (event.key !== 'Escape' || openModalStack[openModalStack.length - 1] !== token) return;
+      if (closeOnEscapeRef.current) {
+        onCloseRef.current();
       }
     };
 
-    if (isOpen && closeOnEscape) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose, closeOnEscape]);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      const index = openModalStack.indexOf(token);
+      if (index !== -1) openModalStack.splice(index, 1);
+    };
+  }, [isOpen]);
 
   // 포커스 트랩
   useEffect(() => {

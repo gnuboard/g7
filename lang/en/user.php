@@ -45,7 +45,8 @@ return [
         'admin' => 'Administrator',
         'member' => 'Member',
         'column_type' => 'Type',
-        'column_expires_at' => 'Expires on',
+        'column_expires_due' => 'Expires on',
+        'column_expires_at' => 'Expired on',
     ],
 
     // Language labels

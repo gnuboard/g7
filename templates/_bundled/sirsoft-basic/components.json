@@ -201,6 +201,11 @@
             "required": false,
             "description": "표시할 규칙 키 목록 (minLength, hasUppercase, hasLowercase, hasNumber, hasSpecial)"
           },
+          "enableRules": {
+            "type": "array",
+            "required": false,
+            "description": "켤 검증 규칙 목록. 파라미터는 「규칙:값」 (minLength:N, maxLength:N, hasUppercase, hasLowercase, hasNumber, hasSpecial, noSpaces, minTypes:N). hasSpecial 은 서버와 같은 유니코드 구두점·기호·공백 범주로 판정하고, minTypes 는 영문·숫자·특수문자 세 종류 중 N종 이상 섞였는지 본다(서버 「문자 종류 조합」과 같다). 보안 환경설정 값으로 식을 만들어 바인딩한다 — 예: {{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)]}}"
+          },
           "wrapperClassName": {
             "type": "string",
             "required": false,

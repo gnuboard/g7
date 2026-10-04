@@ -61,7 +61,13 @@ const tabIds = (layout: unknown): string[] => {
  * 수정 화면에만 있는 것이 허용되는 칸 — 상세에 짝이 없어도 된다.
  * 비밀번호는 **쓰기 전용**이라 상세가 보여 줄 값 자체가 없다(해시를 화면에 낼 수는 없다).
  */
-const FORM_ONLY = ['field_password_group', 'field_password', 'field_password_confirmation'];
+const FORM_ONLY = [
+  'field_password_group',
+  'field_password',
+  'field_password_confirmation',
+  // 본인 계정의 비밀번호를 바꿀 때만 묻는 확인 칸(#736 D19) — 비밀번호처럼 쓰기 전용이다.
+  'field_current_password',
+];
 
 /**
  * 수정 화면에서 잠긴 채로 서는 칸 — 시스템이 적는 기록이라 운영자가 정할 값이 아니다.
@@ -77,6 +83,11 @@ const RECORD_ONLY = [
   'field_withdrawn_at',
   'field_blocked_at',
   'field_dormant_at',
+  // 비밀번호 구획(#736) — 변경일·만료 예정·변경 요구·연기 종료는 서버가 적는 기록이다(만료 개별 설정만 고친다).
+  'field_password_changed_at',
+  'field_password_expires_at',
+  'field_password_change_required',
+  'field_password_postponed_until',
   'field_terms_consent',
   'field_privacy_consent',
   'field_notifications_total',
@@ -145,7 +156,7 @@ describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
         else Object.values(n).forEach(walk);
       };
       walk(form);
-      return hit ? !/"name":\s*"(email|name|nickname|password|password_confirmation|role_ids|status|mobile|phone|homepage|zipcode|address|address_detail|country|language|timezone|signature|bio|admin_memo)"/.test(JSON.stringify(hit)) : true;
+      return hit ? !/"name":\s*"(email|name|nickname|password|password_confirmation|current_password|password_expiry_policy|role_ids|status|mobile|phone|homepage|zipcode|address|address_detail|country|language|timezone|signature|bio|admin_memo)"/.test(JSON.stringify(hit)) : true;
     });
 
     expect(missing).toEqual([]);
