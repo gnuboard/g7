@@ -5,6 +5,7 @@ namespace App\Http\Middleware\Analytics;
 use App\Analytics\AnalyticsBotClassifier;
 use App\Analytics\AnalyticsConfig;
 use App\Services\Analytics\BotHitRecorder;
+use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,7 +70,8 @@ class TrackBotHit
             $this->recorder->record(
                 AnalyticsBotClassifier::botName($userAgent, $config->excludedUserAgents),
                 $userAgent,
-                $request->fullUrl(),
+                // 보안: 요청 Host 가 아니라 사이트 주소 + 요청 경로
+                SiteUrl::forPath($request->getRequestUri()),
                 $request->ip(),
                 $this->cacheStatus($response),
                 $config->ipMaskOctets,

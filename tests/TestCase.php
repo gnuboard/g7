@@ -136,6 +136,12 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.ip_restriction_enabled' => false,
             'g7_settings.core.security.admin_allowed_ips' => [],
             'g7_settings.core.security.ip_restriction_rules' => [],
+            // 사이트 주소도 고정한다. 부팅 시 개발 사이트의 `general.site_url` 이 `app.url` 을 덮어쓰는데,
+            // 리다이렉트·콜백·링크·사이트맵 주소는 요청 Host 가 아니라 이 값으로 만들어지므로(SiteUrl)
+            // 테스트 요청(http://localhost)과 다른 개발 사이트 주소가 결과에 섞인다. 다른 주소를 검증하는
+            // 테스트는 자기 setUp 에서 `app.url` 을 명시한다.
+            'app.url' => 'http://localhost',
+            'g7_settings.core.general.site_url' => 'http://localhost',
         ]);
     }
 

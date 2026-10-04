@@ -383,6 +383,8 @@ plugins/_bundled/sirsoft-payment/
 
 ---
 
+> 결제·본인인증처럼 외부로 복귀·콜백 주소를 보내거나 결과 화면으로 리다이렉트하는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다 — [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다).
+
 ## 서비스 프로바이더 작성
 
 모든 플러그인 ServiceProvider 는 `App\Extension\BasePluginServiceProvider` 를 상속한다. Laravel 기본 `ServiceProvider` 를 직접 상속하면 Repository / Storage / Cache 자동 바인딩과 다국어 로드를 직접 구현해야 하며, 글로벌 컨테이너 바인딩 누수 결함의 위험이 발생한다.

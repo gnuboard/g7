@@ -68,6 +68,8 @@ return [
     'stripped_query_params' => [
         'utm_campaign', 'utm_source', 'utm_medium', 'utm_term', 'utm_content',
         'fbclid', 'gclid', 'msclkid', 'igshid',
+        // 보안: 비밀번호 재설정·본인인증·서명 링크의 증표와 이메일은 통계(페이지 이름·유입 주소)에 남기지 않는다.
+        'token', 'email', 'verification_token', 'challenge_id', 'signature', 'expires',
     ],
 
     /*

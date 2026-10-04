@@ -16,7 +16,7 @@
 
 템플릿 편집 창(`resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html`)의 수신자 검색은 코어 API 를 그대로 부릅니다 — 역할은 `GET /api/admin/roles`, 특정 회원은 `GET /api/admin/users/search`. 회원 검색칸을 비우면 드롭다운이 빈 검색어로 `onSearch` 를 부르는데, 코어 회원 검색은 `keyword` 가 비면(공백뿐이어도) 422 로 거절하므로 이 호출에는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 가드를 둡니다. 가드를 빼면 검색어를 지울 때마다 422 가 납니다. 창·검색 드롭다운·토글·본문 편집기에는 `data-type="composite"` 가 붙어 있어 레이아웃 컴파일이 템플릿의 컴포넌트 목록과 무관하게 종류를 판정합니다.
 
-통지문의 처리방침 링크는 설정 「개인정보처리방침 주소」(`privacy_policy_url`)를 씁니다. 메일은 사이트 밖에서 열리므로 `/` 로 시작하는 사이트 경로는 앱 주소를 붙인 절대 주소로, `https://` 주소는 그대로 접수 시점 스냅샷에 얼립니다. 기본 메일 템플릿은 링크 줄 전체를 변수 `{privacy_policy_link}` 로 싣습니다 — 주소가 비어 있으면 이 값이 빈 문자열이라 링크 줄 없이 발송됩니다(누를 수 없는 링크를 보내지 않음). 주소만 필요한 사용자 정의 템플릿은 `{privacy_policy_url}` 을 쓸 수 있지만, 그 경우 주소가 비면 빈 링크가 되므로 직접 처리하세요.
+통지문의 처리방침 링크는 설정 「개인정보처리방침 주소」(`privacy_policy_url`)를 씁니다. 메일은 사이트 밖에서 열리므로 `/` 로 시작하는 사이트 경로는 요청 Host 가 아니라 사이트 주소(`APP_URL`)를 붙인 절대 주소로, `https://` 주소는 그대로 접수 시점 스냅샷에 얼립니다. 기본 메일 템플릿은 링크 줄 전체를 변수 `{privacy_policy_link}` 로 싣습니다 — 주소가 비어 있으면 이 값이 빈 문자열이라 링크 줄 없이 발송됩니다(누를 수 없는 링크를 보내지 않음). 주소만 필요한 사용자 정의 템플릿은 `{privacy_policy_url}` 을 쓸 수 있지만, 그 경우 주소가 비면 빈 링크가 되므로 직접 처리하세요.
 
 카드의 대상 행(`annual_notice_target_row` — 이름 · 이번 주기 대상 · 대상 보기 · 결과 줄)에 있는 **「지금 실행」**은 코어 관리자 직권 실행입니다. 플러그인은 `GdprAnnualNoticeListener` 가
 `core.privacy.manual_run_targets` 필터로 `Privacy\AnnualNoticeManualRunner`(키 `sirsoft-gdpr:annual_notice`)를

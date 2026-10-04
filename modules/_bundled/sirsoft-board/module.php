@@ -6,6 +6,7 @@ use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Services\AttachmentService;
+use App\Support\SiteUrl;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
@@ -636,7 +637,8 @@ class Module extends AbstractModule
             // 상대 경로(/api/...) 는 url() 로 절대 URL 변환 — Facebook/Threads/Slack 모두 절대 URL 필수.
             $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
             $image = $thumbnailRaw !== ''
-                ? (str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw))
+                // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
+                ? (str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : SiteUrl::absolute($thumbnailRaw))
                 : '';
 
             return array_filter([
@@ -690,7 +692,7 @@ class Module extends AbstractModule
         // 썸네일 URL — thumbnail 키 우선 + 절대 URL 변환
         $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
         if ($thumbnailRaw !== '') {
-            $schema['image'] = str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw);
+            $schema['image'] = str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : SiteUrl::absolute($thumbnailRaw);
         }
 
         $publishedAt = (string) ($post['created_at'] ?? '');

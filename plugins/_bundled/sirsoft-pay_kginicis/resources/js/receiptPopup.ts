@@ -150,9 +150,33 @@ export function receiptRowLabel(info: KginicisReceiptInfo | null | undefined): s
     return info?.receipt_label || translateKginicis('user.receipt_label', '영수증');
 }
 
+/**
+ * 외부(PG) 영수증 주소를 팝업으로 엽니다.
+ *
+ * 보안: https 주소만 열고, 새 창이 이 창(window.opener)을 조작하지 못하게 opener 를 끊은 뒤 주소를 싣는다
+ * (역방향 탭내빙 차단). 빈 창을 먼저 여는 이유 — `noopener` 를 주면 팝업 크기 지정이 무시되는 브라우저가 있다.
+ *
+ * @param url 영수증 주소
+ * @param name 창 이름
+ * @param features 창 속성
+ * @returns 열었으면 true
+ */
+export function openExternalReceiptWindow(url: unknown, name: string, features: string): boolean {
+    if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
+        return false;
+    }
+    const popup = window.open('', name, features);
+    if (popup) {
+        popup.opener = null;
+        popup.location.href = url;
+    }
+
+    return true;
+}
+
 export function openKginicisReceipt(info: KginicisReceiptInfo): void {
     if (info.receipt_url) {
-        window.open(info.receipt_url, 'kginicis_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        openExternalReceiptWindow(info.receipt_url, 'kginicis_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
         return;
     }
 

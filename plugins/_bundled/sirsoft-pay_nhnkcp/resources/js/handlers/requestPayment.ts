@@ -347,7 +347,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             price: Number(pgPaymentData.amount),
             payment_method: paymentMethod,
         };
-        const callbackUrl = window.location.origin + config.callback_urls.callback;
+        const callbackUrl = requireSiteAbsoluteUrl(config.callback_urls.callback);
 
         await preparePaymentRetry(closeReportContext);
 
@@ -436,6 +436,7 @@ async function handleMobilePayment(
     }
 
     const { pay_url, fields } = approvalJson.data as { pay_url: string; fields: Record<string, string> };
+    assertTrustedPgFormAction(pay_url);
 
     // 페이지 전환 form 생성 및 제출
     const form = document.createElement('form');
@@ -667,4 +668,50 @@ try {
             }
         };
     });
+}
+
+/**
+ * PG 로 보낼 결과 수신 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만 쓰고,
+ * 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
+}
+
+/**
+ * 결제 정보를 POST 할 PG 주소가 그 PG 도메인인지 확인합니다.
+ *
+ * 보안: 서버 응답이 준 form action 으로 거래 키·주문자 정보를 POST 한다 — https 이고 PG 도메인일 때만
+ * 제출한다(fail-closed, SDK 주소 검사와 같은 기준).
+ *
+ * @param url 제출 주소
+ * @throws Error 허용 밖 주소인 경우
+ */
+export function assertTrustedPgFormAction(url: unknown): void {
+    let parsed: URL | null = null;
+
+    try {
+        parsed = typeof url === 'string' ? new URL(url) : null;
+    } catch {
+        parsed = null;
+    }
+
+    if (parsed === null || parsed.protocol !== 'https:' || !/(^|\.)kcp\.co\.kr$/i.test(parsed.hostname)) {
+        throw new Error(
+            t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+        );
+    }
 }

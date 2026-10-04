@@ -20,7 +20,7 @@ const CLIENT_CONFIG_DATA = {
     data: {
         client_key: 'test_key',
         sdk_url: 'https://example.com/sdk.js',
-        callback_urls: { success: '/success', fail: '/fail' },
+        callback_urls: { success: 'https://shop.example.test/success', fail: 'https://shop.example.test/fail' },
     },
 };
 
@@ -313,7 +313,7 @@ describe('requestPaymentHandler', () => {
         const baseConfig = (overrides: any = {}) => ({
             client_key: 'ck',
             sdk_url: 'https://example.com/sdk.js',
-            callback_urls: { success: '/success', fail: '/fail' },
+            callback_urls: { success: 'https://shop.example.test/success', fail: 'https://shop.example.test/fail' },
             order_sheet_mode: true,
             enabled_methods: [
                 { id: 'toss_card', method: 'CARD', easy_pay_provider: null, core_payment_method: 'card' },

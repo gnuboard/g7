@@ -2307,25 +2307,25 @@ HTTP/1.1 200
 }
 ```
 
-`return` 쿼리(same-origin) 가 있으면 JSON 대신 302 redirect 입니다.
+`return` 쿼리(사이트 주소와 같은 출처) 가 있으면 JSON 대신 302 redirect 입니다. `Location` 은 상대 경로로 받은 `return` 도 사이트 주소(`APP_URL`) 기준 절대 URL 로 바꿔 싣습니다.
 
 ```http
 HTTP/1.1 302
-Location: /checkout?verification_token=eyJ0eXAiOiJKV1Qi...&challenge_id=00484973-8cd3-4a1d-85f2-78361feb6f0d
+Location: https://example.com/checkout?verification_token=eyJ0eXAiOiJKV1Qi...&challenge_id=00484973-8cd3-4a1d-85f2-78361feb6f0d
 ```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 302 | Found (실패 redirect) | 검증 실패 + `return` 쿼리(same-origin) 존재 시 `{return}?identity_error={failure_code}` 로 리다이렉트 |
+| 302 | Found (실패 redirect) | 검증 실패 + `return` 쿼리(사이트 주소와 같은 출처) 존재 시 사이트 주소 기준 절대 URL `{return}?identity_error={failure_code}` 로 리다이렉트 |
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
 | 404 | Not Found | `providerId` 에 해당하는 프로바이더가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 검증 실패 + `return` 쿼리 없음 — 본문의 `error.failure_code` 에 실패 사유 코드 (`CHALLENGE_NOT_FOUND`/`EXPIRED`/`INVALID_CODE` 등, `identity.errors.*` 메시지 동반) |
 
 <!-- @generated:end -->
 
-**설명** 외부 IDV 프로바이더(외부 인증 SDK/OAuth-style provider) 가 사용자 브라우저를 앱으로 되돌려 보내는 redirect 콜백 진입점입니다. `auth:sanctum` 인증이 필요합니다. body/query 의 `challenge_id` 를 추출해 `IdentityVerificationService::handleProviderCallback` 에 위임하며, 클라이언트가 stash 한 `return` 쿼리 유무와 성공 여부에 따라 응답이 갈립니다 — 성공+return: 302 로 `{return}?verification_token=...&challenge_id=...`, 성공+return 없음: 200 JSON `{ verification_token }`, 실패+return: 302 로 `{return}?identity_error={failure_code}`, 실패+return 없음: 422 JSON. `return` URL 은 open redirect 방지를 위해 same-origin(또는 `/` 상대경로) 만 허용하고 protocol-relative(`//`) 는 차단합니다.
+**설명** 외부 IDV 프로바이더(외부 인증 SDK/OAuth-style provider) 가 사용자 브라우저를 앱으로 되돌려 보내는 redirect 콜백 진입점입니다. `auth:sanctum` 인증이 필요합니다. body/query 의 `challenge_id` 를 추출해 `IdentityVerificationService::handleProviderCallback` 에 위임하며, 클라이언트가 stash 한 `return` 쿼리 유무와 성공 여부에 따라 응답이 갈립니다 — 성공+return: 302 로 `{return}?verification_token=...&challenge_id=...`, 성공+return 없음: 200 JSON `{ verification_token }`, 실패+return: 302 로 `{return}?identity_error={failure_code}`, 실패+return 없음: 422 JSON. `return` URL 은 open redirect 방지를 위해 사이트 주소(`APP_URL`)와 scheme·host·port 가 모두 같은 절대 URL 이나 `/` 로 시작하는 상대 경로만 허용합니다(`SiteUrl::isSameOrigin()`). protocol-relative(`//`)·`/\` 로 시작하는 경로·제어 문자·userinfo 가 섞인 주소처럼 브라우저와 서버가 다르게 해석할 수 있는 입력은 거부합니다(이때는 `return` 이 없는 것처럼 JSON 으로 응답). 허용된 상대 경로는 요청 Host 가 아니라 사이트 주소 기준 절대 URL 로 바꿔 리다이렉트하므로, 위조 Host 로 시작한 콜백이라도 검증 토큰이 다른 도메인으로 가지 않습니다.
 
 
 ### POST /api/identity/challenges

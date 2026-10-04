@@ -72,7 +72,7 @@ effects:
   - start_auth_handler_shows_toast_and_skips_window_open_when_public_payload_missing
 
   # bridge → postMessage → resolve + close sequence
-  - bridge_postmessage_origin_check_against_window_location_origin_strict_equality
+  - bridge_postmessage_origin_check_against_site_origin_strict_equality
   - bridge_verified_dispatches_sequence_resolve_verified_and_close_modal
   - bridge_failed_dispatches_sequence_resolve_failed_with_failure_code_and_close_modal
   - bridge_no_data_dispatches_sequence_resolve_cancelled_and_close_modal

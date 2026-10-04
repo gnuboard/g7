@@ -17,14 +17,16 @@ use Plugins\Sirsoft\PayKginicis\Controllers\PaymentCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\PaymentCloseController;
 use Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController;
 
-// 에스크로 구매결정: 사용자 인증 필요
-Route::get('/payment/escrow-confirm/{orderNumber}', [UserEscrowConfirmController::class, 'show'])
-    ->middleware('auth')
-    ->name('payment.escrow-confirm.show');
-
 // 팝업 닫기 (KG 이니시스 closeUrl — 인증 불필요)
+// 주문번호 라우트보다 먼저 등록한다 — 뒤에 두면 `{orderNumber}` 가 `close` 를 가로채 닫기 주소가 오류로 끝났다.
 Route::get('/payment/escrow-confirm/close', [UserEscrowConfirmController::class, 'close'])
     ->name('payment.escrow-confirm.close');
+
+// 에스크로 구매결정: 로그인 본인 주문만 — 인증 판정은 컨트롤러가 한다(비로그인은 401 안내).
+// `auth` 미들웨어는 로그인 라우트가 없는 이 앱에서 비로그인 요청을 500 으로 끝낸다.
+Route::get('/payment/escrow-confirm/{orderNumber}', [UserEscrowConfirmController::class, 'show'])
+    ->where('orderNumber', '^(?!close$)[A-Za-z0-9_-]+$')
+    ->name('payment.escrow-confirm.show');
 
 // PC 표준결제창 닫기 (KG 이니시스 closeUrl — 인증 불필요)
 Route::get('/payment/close', [PaymentCloseController::class, 'show'])
@@ -69,6 +71,16 @@ Route::withoutMiddleware([ValidateCsrfToken::class])->group(function () {
         ->name('payment.mobile.callback');
 
     // 에스크로 구매결정 결과 수신 (KG 이니시스 → 사용자 브라우저 POST)
+    // 확인창이 발급한 일회용 증표가 경로에 실린 주소만 기록한다(증표 없는 주소는 배포 순간 열려 있던
+    // 확인창 호환용 — 기록하지 않고 같은 응답만 준다).
+    Route::post('/payment/escrow-confirm/pc/return/{nonce}', [UserEscrowConfirmController::class, 'pcReturn'])
+        ->where('nonce', '[A-Za-z0-9]{40}')
+        ->name('payment.escrow-confirm.pc-return.bound');
+
+    Route::post('/payment/escrow-confirm/mobile/return/{nonce}', [UserEscrowConfirmController::class, 'mobileReturn'])
+        ->where('nonce', '[A-Za-z0-9]{40}')
+        ->name('payment.escrow-confirm.mobile-return.bound');
+
     Route::post('/payment/escrow-confirm/pc/return', [UserEscrowConfirmController::class, 'pcReturn'])
         ->name('payment.escrow-confirm.pc-return');
 

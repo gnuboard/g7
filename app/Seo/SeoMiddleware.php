@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\Contracts\SeoRendererInterface;
+use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -57,8 +58,9 @@ class SeoMiddleware
 
         // 기본 로케일을 ?locale=xx로 명시한 경우 → clean URL로 301 리다이렉트 (중복 URL 방지)
         if ($request->query('locale') === $defaultLocale) {
-            // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 다른 사이트로 보내는 리다이렉트 방지
-            $cleanUrl = SeoUrl::absolute($request->getPathInfo());
+            // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 다른 사이트로 보내는 리다이렉트 방지.
+            // 요청 경로는 언제나 경로로 취급한다(`//다른호스트/…` 가 완전 URL 로 통과하지 않게).
+            $cleanUrl = SiteUrl::forPath($request->getPathInfo());
 
             // 기존 쿼리에서 locale 제거
             $query = $request->query();

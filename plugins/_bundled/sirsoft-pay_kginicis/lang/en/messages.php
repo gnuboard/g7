@@ -13,6 +13,7 @@ return [
         'provider_name' => 'KG Inicis',
     ],
     'escrow' => [
+        'confirm_login_required' => 'Please log in and start the purchase decision again from the order details.',
         'invoice_required' => 'Please enter the tracking number.',
         'courier_required' => 'Please select a courier.',
         'default_confirmer' => 'Administrator',

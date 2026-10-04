@@ -2,6 +2,8 @@
 
 namespace App\Seo;
 
+use App\Support\SiteUrl;
+
 /**
  * 봇 화면이 쓰는 절대 URL 의 단일 출처
  *
@@ -12,6 +14,8 @@ namespace App\Seo;
  *
  * 그래서 봇 화면의 절대 URL 은 요청이 아니라 운영자가 정한 사이트 주소(`config('app.url')`)로
  * 만든다. 같은 사이트를 여러 도메인으로 서빙해도 canonical 은 사이트 주소 하나로 모인다(의도).
+ *
+ * 실제 계산은 코어 공용 {@see SiteUrl} 에 위임한다 — SEO 호출부가 쓰는 이름만 남긴다.
  */
 final class SeoUrl
 {
@@ -25,7 +29,7 @@ final class SeoUrl
      */
     public static function base(): string
     {
-        return rtrim(trim((string) config('app.url')), '/');
+        return SiteUrl::base();
     }
 
     /**
@@ -39,18 +43,7 @@ final class SeoUrl
      */
     public static function absolute(string $path): string
     {
-        if (app('url')->isValidUrl($path)) {
-            return $path;
-        }
-
-        $query = '';
-        $queryPosition = strpos($path, '?');
-        if ($queryPosition !== false) {
-            $query = substr($path, $queryPosition);
-            $path = substr($path, 0, $queryPosition);
-        }
-
-        return rtrim(self::base().'/'.trim($path, '/'), '/').$query;
+        return SiteUrl::absolute($path);
     }
 
     /**
@@ -63,14 +56,6 @@ final class SeoUrl
      */
     public static function origin(): string
     {
-        $parts = parse_url(self::base());
-
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            return '';
-        }
-
-        $origin = strtolower($parts['scheme']).'://'.strtolower($parts['host']);
-
-        return isset($parts['port']) ? $origin.':'.$parts['port'] : $origin;
+        return SiteUrl::origin();
     }
 }

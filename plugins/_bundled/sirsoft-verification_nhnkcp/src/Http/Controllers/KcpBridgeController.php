@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\SiteUrl;
 use Illuminate\Http\Response;
 use Plugins\Sirsoft\VerificationNhnkcp\Http\Requests\KcpBridgeRequest;
 
@@ -45,12 +46,18 @@ class KcpBridgeController extends PublicBaseController
     /**
      * UTF-8 HTML 응답 헬퍼.
      *
+     * 보안: 이 페이지 주소에는 검증 토큰이 실린다 — 다른 곳으로 Referer 를 남기지 않고 캐시하지 않는다.
+     *
      * @param  string  $html  본문 HTML
      * @return Response UTF-8 로 인코딩된 HTML 응답
      */
     protected function htmlResponse(string $html): Response
     {
-        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Referrer-Policy' => 'no-referrer',
+            'Cache-Control' => 'no-store, private',
+        ]);
     }
 
     /**
@@ -68,6 +75,8 @@ class KcpBridgeController extends PublicBaseController
         // 문서 언어와 제목을 현재 로케일에 맞춘다 (스크린리더 발음 규칙도 lang 속성을 따른다).
         $locale = e(app()->getLocale());
         $title = e(__('sirsoft-verification_nhnkcp::messages.bridge_page_title'));
+        // 보안: 부모창 전달 대상은 브리지 자신의 주소(요청 Host 를 따른다)가 아니라 사이트 주소의 origin.
+        $siteOrigin = json_encode(SiteUrl::origin(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
         return <<<HTML
 <!DOCTYPE html>
@@ -81,7 +90,18 @@ class KcpBridgeController extends PublicBaseController
 <script>
 (function () {
     var REDIRECT_STASH_KEY = 'g7.identity.redirectStash';
+    var SITE_ORIGIN = {$siteOrigin} || '/';
     var payload = {$payloadJson};
+
+    // 복귀 주소는 같은 출처 경로만 — 사이트 origin 절대 주소는 경로로 바꾸고, 그 밖(다른 출처·//·역슬래시·제어 문자)은 버린다.
+    function toSafeReturnPath(u) {
+        if (typeof u !== 'string' || u === '') { return null; }
+        if (u.indexOf(SITE_ORIGIN + '/') === 0) { u = u.slice(SITE_ORIGIN.length); }
+        else if (u === SITE_ORIGIN) { u = '/'; }
+        if (u.charAt(0) !== '/' || u.charAt(1) === '/' || u.indexOf(String.fromCharCode(92)) >= 0) { return null; }
+        for (var i = 0; i < u.length; i++) { var c = u.charCodeAt(i); if (c < 32 || c === 127) { return null; } }
+        return u;
+    }
 
     // 데스크톱: 부모창 postMessage + 자기 창 닫기
     if (window.opener && !window.opener.closed) {
@@ -92,7 +112,7 @@ class KcpBridgeController extends PublicBaseController
                 challenge_id: payload.challenge_id,
                 identity_error: payload.identity_error,
                 identity_error_message: payload.identity_error_message
-            }, window.location.origin);
+            }, SITE_ORIGIN);
         } catch (e) { /* opener cross-origin — 무시 */ }
         window.close();
         return;
@@ -107,7 +127,7 @@ class KcpBridgeController extends PublicBaseController
     }
     try { window.sessionStorage.removeItem(REDIRECT_STASH_KEY); } catch (e) {}
 
-    var dest = (stash && stash.return_url) ? stash.return_url : '/';
+    var dest = (stash && toSafeReturnPath(stash.return_url)) || '/';
     var sep = dest.indexOf('?') >= 0 ? '&' : '?';
     if (payload.verification_token) {
         dest += sep + 'verification_token=' + encodeURIComponent(payload.verification_token);

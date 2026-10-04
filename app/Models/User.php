@@ -8,6 +8,7 @@ use App\Enums\MenuPermissionType;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
+use App\Support\SiteUrl;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
@@ -595,7 +596,8 @@ class User extends Authenticatable implements HasLocalePreference
 
         // 레거시 방식: avatar 필드 (하위 호환)
         if (! empty($this->avatar)) {
-            return url('storage/attachments/avatars/'.$this->avatar);
+            // 보안: 요청 Host 가 아니라 사이트 주소 기준
+            return SiteUrl::absolute('/storage/attachments/avatars/'.$this->avatar);
         }
 
         return null;

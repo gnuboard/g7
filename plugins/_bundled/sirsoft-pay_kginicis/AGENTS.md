@@ -82,6 +82,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 카드/PayPay 는 즉시 완료, 편의점은 입금대기로 저장 후 별도 NOTI 수신 시 완료. 로컬 후속
 처리가 실패하면 CBT 전용 취소 API 로 자동 취소를 시도하고, 그마저 실패하면 수동 취소가
 필요하다는 오류 로그를 남깁니다.
+
+**외부로 나가는 주소**: 결제창·구매결정 창에 넘기는 복귀·통보 주소(`returnUrl`·`P_NEXT_URL`·CBT `notiUrl` 등), client-config 의 `callback_urls`, 결제 후 리다이렉트, 관리자 입금통보 URL 안내는 모두 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 브라우저 콜백 FormRequest(Auth·Mobile·Cbt)의 검증 실패도 Referer 가 아니라 사이트 주소의 실패 URL(`error=invalid_params`)로 보낸다. 에스크로 구매결정 확인창은 열릴 때마다 일회용 증표를 발급해 결과 수신 주소 경로(`escrow-confirm/pc/return/{nonce}`·`mobile/return/{nonce}`)에 싣고, 증표와 거래번호가 맞는 수신만 기록한다(증표 없는 종전 주소는 기록하지 않는다).
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -152,10 +154,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 45개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 26개 | `vitest.config.ts` |
+| PHPUnit | 47개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| Vitest | 27개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 17개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 18개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

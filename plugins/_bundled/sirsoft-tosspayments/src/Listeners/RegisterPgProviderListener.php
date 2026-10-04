@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\SiteUrl;
 use Plugins\Sirsoft\Tosspayments\Concerns\MapsTossPaymentMethods;
 
 /**
@@ -42,6 +43,7 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용)
      *
      * @param  mixed  ...$args  인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -106,9 +108,10 @@ class RegisterPgProviderListener implements HookListenerInterface
                 'cash_receipt_type' => (string) ($settings['vbank_cash_receipt_type'] ?? ''),
             ],
             'use_escrow' => (string) ($settings['use_escrow'] ?? 'off'),
+            // 보안: PG 로 보내는 결과 수신 주소 — 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL.
             'callback_urls' => [
-                'success' => '/plugins/sirsoft-tosspayments/payment/success',
-                'fail' => '/plugins/sirsoft-tosspayments/payment/fail',
+                'success' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/payment/success'),
+                'fail' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/payment/fail'),
             ],
         ]);
     }

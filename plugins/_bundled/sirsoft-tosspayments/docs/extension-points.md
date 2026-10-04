@@ -10,9 +10,9 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:119` |
-| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:174` |
+| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:175` |
 | `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:114` |
-| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:167` |
+| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:168` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

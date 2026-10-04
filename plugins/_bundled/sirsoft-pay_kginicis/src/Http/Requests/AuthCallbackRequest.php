@@ -6,11 +6,13 @@ namespace Plugins\Sirsoft\PayKginicis\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Plugins\Sirsoft\PayKginicis\Http\Requests\Concerns\RedirectsInvalidCallbackToFailUrl;
 
 class AuthCallbackRequest extends FormRequest
 {
+    use RedirectsInvalidCallbackToFailUrl;
+
     /**
      * authorize
      *
@@ -52,15 +54,10 @@ class AuthCallbackRequest extends FormRequest
      * @param  Validator  $validator  실패한 검증기
      * @return void 반환값 없음
      *
-     * @throws ValidationException 항상 던진다
+     * @throws HttpResponseException 결제 실패 화면으로의 302 (Referer 를 따르지 않는다)
      */
     protected function failedValidation(Validator $validator): void
     {
-        Log::error('KG Inicis: AuthCallbackRequest validation failed', [
-            'errors' => $validator->errors()->toArray(),
-            'input' => array_keys($this->all()),
-        ]);
-
-        throw new ValidationException($validator);
+        $this->redirectInvalidCallback($validator, 'KG Inicis: AuthCallbackRequest validation failed');
     }
 }

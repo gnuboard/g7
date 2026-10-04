@@ -21,6 +21,7 @@ use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
+use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
@@ -246,10 +247,11 @@ class IdentityVerificationController extends PublicBaseController
 
         if (! $result->success) {
             if ($returnUrl !== '' && $this->isSafeReturnUrl($returnUrl)) {
-                $sep = str_contains($returnUrl, '?') ? '&' : '?';
+                $target = $this->absoluteReturnUrl($returnUrl);
+                $sep = str_contains($target, '?') ? '&' : '?';
 
                 return redirect()->away(
-                    $returnUrl.$sep.'identity_error='.urlencode($result->failureCode ?? 'UNKNOWN'),
+                    $target.$sep.'identity_error='.urlencode($result->failureCode ?? 'UNKNOWN'),
                 );
             }
 
@@ -263,10 +265,11 @@ class IdentityVerificationController extends PublicBaseController
         $token = $result->claims['verification_token'] ?? '';
 
         if ($returnUrl !== '' && $this->isSafeReturnUrl($returnUrl)) {
-            $sep = str_contains($returnUrl, '?') ? '&' : '?';
+            $target = $this->absoluteReturnUrl($returnUrl);
+            $sep = str_contains($target, '?') ? '&' : '?';
 
             return redirect()->away(
-                $returnUrl.$sep.'verification_token='.urlencode((string) $token).'&challenge_id='.urlencode($challengeId),
+                $target.$sep.'verification_token='.urlencode((string) $token).'&challenge_id='.urlencode($challengeId),
             );
         }
 
@@ -279,23 +282,31 @@ class IdentityVerificationController extends PublicBaseController
     }
 
     /**
-     * `return` 쿼리 URL 이 같은 origin 인지 검증 — open redirect 차단.
+     * `return` 쿼리 URL 이 사이트 주소와 같은 출처인지 검증 — open redirect 차단.
      *
-     * 절대 URL 이면 host 가 현재 앱 host 와 일치해야 통과, 상대 경로(`/...`) 는 통과.
+     * 보안: 브라우저와 PHP 가 다르게 해석하는 입력(`/\evil.com`·제어 문자·`https://evil.com\@site/`)과
+     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 이 소유한다.
      *
      * @param  string  $url  검사할 복귀 URL
-     * @return bool 같은 origin 이면 true
+     * @return bool 같은 출처면 true
      */
     private function isSafeReturnUrl(string $url): bool
     {
-        if ($url === '' || $url[0] === '/') {
-            return ! str_starts_with($url, '//'); // protocol-relative 차단
-        }
+        return SiteUrl::isSameOrigin($url);
+    }
 
-        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        return $appHost !== null && $urlHost !== null && $appHost === $urlHost;
+    /**
+     * 같은 출처로 판정된 복귀 주소를 사이트 주소 기준 절대 URL 로 만듭니다.
+     *
+     * 보안: 상대 경로를 그대로 Location 에 실으면 브라우저가 요청 Host 기준으로 해석한다 — 위조 Host 로
+     * 시작한 콜백이면 토큰이 그 Host 로 간다.
+     *
+     * @param  string  $url  같은 출처로 판정된 복귀 주소(상대 경로 또는 사이트 주소 절대 URL)
+     * @return string 사이트 주소 기준 절대 URL
+     */
+    private function absoluteReturnUrl(string $url): string
+    {
+        return str_starts_with($url, '/') ? SiteUrl::forPath($url) : $url;
     }
 
     /**

@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -98,7 +99,7 @@ class UserVbankMockDepositController extends AuthBaseController
             'available' => true,
             'trade_no' => $tradeNo,
             'account_no' => $payment->vbank_number,
-            'notify_url' => url(self::VBANK_NOTIFY_PATH),
+            'notify_url' => SiteUrl::absolute(self::VBANK_NOTIFY_PATH),
             'mock_url' => self::KCP_TEST_MOCK_URL,
             'is_admin_view' => $isAdmin,
         ]);

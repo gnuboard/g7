@@ -2097,6 +2097,13 @@
      * Step 3 폼 제출 이벤트 초기화
      */
     function initStep3FormSubmit() {
+        // 사이트 주소 기본값: 저장된 값이 없으면 운영자가 실제로 보고 있는 주소(앱 루트)로 채운다 —
+        // 서버가 아는 Host 는 프록시 뒤에서 내부 주소·http 일 수 있다.
+        const appUrlInput = document.getElementById('app_url');
+        if (appUrlInput && appUrlInput.dataset.autofill === '1') {
+            appUrlInput.value = getAppRootUrl();
+        }
+
         const form = document.getElementById('config-form');
         if (form) {
             form.addEventListener('submit', function(e) {

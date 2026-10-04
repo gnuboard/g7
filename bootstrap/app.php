@@ -20,6 +20,7 @@ use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\RedirectToCanonicalHost;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
@@ -125,7 +126,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // 신뢰 Host (전역, 인증 불필요) — 사이트 주소(APP_URL)의 도메인·하위 도메인과 TRUSTED_HOSTS 가
         // 아닌 Host 헤더로 온 요청을 받지 않는다. 위조 Host 로 절대 URL 을 만드는 코드가 남아 있을 때의
-        // 마지막 겹이다(KVE-2026-2333/2334 — 근본 조치는 SEO 렌더러가 Host 를 쓰지 않게 한 것).
+        // 마지막 겹이다(보안: 근본 조치는 절대 URL 을 요청 Host 가 아니라 사이트 주소로 만드는 것 —
+        // App\Support\SiteUrl). 하위 도메인·포트만 바꾼 Host 는 통과하므로 그 자체로는 충분하지 않다.
         // 설치 전·TRUSTED_HOSTS_ENABLED=false 면 빈 목록(제한 없음), 로컬·테스트는 Laravel 이 건너뛴다.
         $middleware->trustHosts(at: fn (): array => TrustedHosts::patterns(), subdomains: false);
 
@@ -195,6 +197,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'optional.sanctum' => OptionalSanctumMiddleware::class,
             'start.api.session' => StartApiSession::class,
             'seo' => SeoMiddleware::class,
+            // 사이트 주소가 아닌 Host 의 화면 요청 → 사이트 주소로 301 (화면 셸 라우트에만 붙인다)
+            'canonical.host' => RedirectToCanonicalHost::class,
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
@@ -207,6 +211,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // API 경로는 Accept 헤더와 무관하게 항상 JSON 으로 렌더링한다 — 기본 검증 실패 처리는 JSON 을
+        // 기대하지 않는 요청을 previous()(Referer → 세션 → 요청 Host)로 302 이동시킨다.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request): bool => $request->is('api/*') || $request->expectsJson());
+
         // API 401 응답 시 잔존 세션 쿠키 정리
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             // API 경로는 Accept 헤더 유무와 무관하게 항상 JSON 401 (web redirect/route('login') 폴백 차단).
@@ -224,7 +232,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403 (KVE-2026-1919).
+        // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403.
         // 컨트롤러 catch 가 우선 처리하지만, 새 호출부가 로컬 catch 없이 이 예외를 던져도
         // 조용한 500 대신 일관된 403 이 되도록 전역 렌더러를 둔다(심층 방어). 메시지는 예외
         // 생성자가 lang 키로 설정한 것을 그대로 쓴다 — 컨트롤러 매핑과 동일 문구.

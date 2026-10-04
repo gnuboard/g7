@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce;
 use App\Extension\AbstractModule;
 use App\Models\IdentityMessageDefinition;
 use App\Seo\Concerns\LocalizesSeoValues;
+use App\Support\SiteUrl;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Benchmark\OrderCreationBenchmark;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
@@ -3884,7 +3885,8 @@ class Module extends AbstractModule
             // ProductImage::download_url 은 "/api/..." 상대 경로 형식이므로 url() 통과 필수.
             $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
             $image = $imageRaw !== ''
-                ? (str_starts_with($imageRaw, 'http') ? $imageRaw : url($imageRaw))
+                // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
+                ? (str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw))
                 : '';
 
             // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
@@ -3901,7 +3903,7 @@ class Module extends AbstractModule
             $category = data_get($context, 'category.data', []);
             $catImageRaw = $this->resolveLocalizedValue($category['thumbnail_url'] ?? '');
             $catImage = $catImageRaw !== ''
-                ? (str_starts_with($catImageRaw, 'http') ? $catImageRaw : url($catImageRaw))
+                ? (str_starts_with($catImageRaw, 'http') ? $catImageRaw : SiteUrl::absolute($catImageRaw))
                 : '';
 
             return array_filter([
@@ -3950,7 +3952,7 @@ class Module extends AbstractModule
         // 절대 URL 변환 (Schema.org image 도 검색엔진이 절대 URL 권장)
         $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
         if ($imageRaw !== '') {
-            $schema['image'] = str_starts_with($imageRaw, 'http') ? $imageRaw : url($imageRaw);
+            $schema['image'] = str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw);
         }
 
         if (! empty($product['sku'])) {

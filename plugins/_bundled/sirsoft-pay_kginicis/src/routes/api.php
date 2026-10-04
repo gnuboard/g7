@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtConnectivityCheckController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtCvsOperationsController;
@@ -61,8 +62,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         return response()->json([
             'success' => true,
             'data' => [
-                'url' => url('/plugins/sirsoft-pay_kginicis/payment/vbank-notify'),
-                'mobile_url' => url('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
+                // 운영자가 PG 관리자에 등록할 주소 — 접속한 주소가 아니라 사이트 주소로 안내한다.
+                'url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/vbank-notify'),
+                'mobile_url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
             ],
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')

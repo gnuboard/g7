@@ -102,6 +102,8 @@
 (동기 훅, `sync: true`) → `ValidateTossSettingsListener`가 `vbank_valid_hours`(1~2160시간)와
 `use_escrow`(`off`/`on`/`buyer_choice` 3-상태) 범위를 검증 → 위반 시 `ValidationException`으로
 저장 자체를 막습니다.
+
+**외부로 나가는 주소**: 토스 SDK 에 넘기는 `successUrl`·`failUrl`, client-config 의 `callback_urls`, 결제 후 리다이렉트, 관리자 웹훅 URL 안내는 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 실패 콜백(`FailCallbackRequest`)의 검증 실패도 Referer 가 아니라 사이트 주소의 실패 URL(`error=invalid_params`)로 보낸다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -165,10 +167,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 25개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 26개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

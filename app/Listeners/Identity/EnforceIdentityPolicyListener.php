@@ -78,6 +78,8 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      * 다시 등록한다. 정적 추적($dynamicCallbacks)이 HookManager 실제 상태와 항상 일치하므로,
      * 반복 호출/테스트 RefreshDatabase 환경에서도 이중 등록(이중 428)이 발생하지 않는다.
      * 코어 hook 과의 중복은 코어 hook 집합을 제외해 회피한다.
+     *
+     * @return void 반환값 없음
      */
     public static function syncDynamicHookSubscriptions(): void
     {
@@ -114,6 +116,8 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
 
     /**
      * 동적 구독 추적 상태를 초기화하고 등록된 콜백을 해제합니다 (테스트 격리용).
+     *
+     * @return void 반환값 없음
      */
     public static function resetDynamicSubscriptions(): void
     {
@@ -192,6 +196,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      * before_* 훅 핸들러. 현재 실행 중인 훅 이름과 매칭되는 hook scope 정책을 enforce 합니다.
      *
      * @param  mixed  ...$args  훅별로 다양한 인자 (첫 인자는 보통 모델/payload)
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -306,7 +311,8 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
             if ($request instanceof Request) {
                 return [
                     'method' => $request->getMethod(),
-                    'url' => $request->fullUrl(),
+                    // 보안: 경로+쿼리만 — 요청 Host·scheme 을 싣지 않는다(재요청은 같은 출처로만).
+                    'url' => $request->getRequestUri(),
                 ];
             }
         } catch (\Throwable) {

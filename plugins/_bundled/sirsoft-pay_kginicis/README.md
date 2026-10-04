@@ -190,6 +190,11 @@ php artisan plugin:update sirsoft-pay_kginicis --force
 | CBT 편의점 입금 NOTI URL | `https://{도메인}/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify` |
 | 에스크로 구매결정 화면 | `https://{도메인}/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{orderNumber}` |
 
+플러그인이 결제창·구매결정 창에 넘기는 복귀·통보 주소와 관리자 화면의 입금통보 URL 안내는 접속한 주소가 아니라
+사이트 주소(`APP_URL`)로 만들어집니다. 운영 도메인과 `APP_URL` 이 다르면 PG 가 엉뚱한 주소로 결과를 보내므로
+먼저 `APP_URL` 을 확인하세요. 에스크로 구매결정 결과 수신 주소(`.../escrow-confirm/pc/return/{증표}`·
+`.../mobile/return/{증표}`)는 확인창이 열릴 때마다 일회용 증표를 붙여 자동으로 넘기므로 가맹점 관리자에 등록하지 않습니다.
+
 가상계좌 입금통보 URL은 KG 이니시스 서버가 직접 호출하므로 운영 환경에서 IP 화이트리스트가
 적용됩니다(`203.238.37.15`, `39.115.212.9`, `118.129.210.25`, `183.109.71.153` — 운영 전
 KG 이니시스 최신 연동 가이드로 다시 확인하세요). `local`/`testing` 환경에서는 개발·테스트를

@@ -14,6 +14,9 @@ return [
     |   enabled : false 면 검사하지 않는다 — 다른 도메인으로 접속이 막혔을 때의 비상 스위치.
     |             근본 해결은 APP_URL 을 실제 사이트 주소로 맞추거나 hosts 에 추가하는 것이다.
     |   hosts   : 사이트 주소와 다른 도메인으로도 서빙하면 콤마로 나열한다(정확히 일치만 허용).
+    |   canonical_redirect : 사이트 주소가 아닌 Host(하위 도메인·포트·별칭)로 들어온 화면 요청을
+    |             같은 경로의 사이트 주소로 301 이동시킨다. API·확장 라우트(결제·본인인증 콜백)·
+    |             사이트맵·정적 파일은 대상이 아니다. App\Http\Middleware\RedirectToCanonicalHost 참고.
     |
     | 설치 완료 전과 로컬 개발(APP_ENV=local)에서는 검사하지 않는다.
     |
@@ -22,5 +25,7 @@ return [
     'enabled' => env('TRUSTED_HOSTS_ENABLED', true),
 
     'hosts' => env('TRUSTED_HOSTS'),
+
+    'canonical_redirect' => env('CANONICAL_HOST_REDIRECT', true),
 
 ];

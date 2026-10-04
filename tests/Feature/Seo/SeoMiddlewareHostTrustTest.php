@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 /**
- * SeoMiddleware 의 Host 비신뢰·동시 렌더 상한을 검증합니다 (KVE-2026-2333/2335).
+ * SeoMiddleware 의 Host 비신뢰·동시 렌더 상한을 검증합니다.
  *
  * 렌더러·캐시는 목으로 두고 미들웨어가 직접 만드는 값(301 Location)과 렌더 게이트(예산·슬롯)만 본다.
  */
@@ -164,5 +164,28 @@ class SeoMiddlewareHostTrustTest extends TestCase
 
         $third = $this->middleware->handle(Request::create('/c'), $this->spaNext());
         $this->assertSame('MISS', $third->headers->get('X-SEO-Cache'), '예외 뒤에도 슬롯이 반환돼 렌더된다');
+    }
+
+    /**
+     * `//다른호스트/…` 경로로 기본 로케일을 명시해도 301 Location 은 사이트 주소 안 경로다.
+     *
+     * 회귀: 요청 경로가 `//` 로 시작하면 완전 URL 로 취급되어 그대로 Location 이 됐다(봇 UA 전용
+     * 오픈 리다이렉트 — UA 는 누구나 위조할 수 있다).
+     *
+     * @scenario host_header=genuine, sink=locale_redirect
+     *
+     * @effects locale_redirect_uses_site_origin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_locale_redirect_keeps_double_slash_path_inside_site(): void
+    {
+        $request = Request::create('https://site.example/x?locale=ko');
+        $request->server->set('REQUEST_URI', '//evil.example/x?locale=ko');
+
+        $response = $this->middleware->handle($request, $this->spaNext());
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame('https://site.example/evil.example/x', $response->headers->get('Location'));
     }
 }

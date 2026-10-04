@@ -5,6 +5,7 @@ namespace App\Seo;
 use App\Contracts\Repositories\SitemapUrlRepositoryInterface;
 use App\Enums\SitemapChangeFreq;
 use App\Extension\HookManager;
+use App\Support\SiteUrl;
 
 /**
  * 사이트맵 리소스 색인기
@@ -156,7 +157,8 @@ class SitemapIndexer
     /**
      * 항목의 절대 URL(loc)을 해석합니다.
      *
-     * 'loc'(절대 URL)이 있으면 그대로, 없으면 'url'(상대 경로)을 url() 로 절대화합니다.
+     * 'loc'(절대 URL)이 있으면 그대로, 없으면 'url'(상대 경로)을 사이트 주소 기준으로 절대화합니다.
+     * 보안: 요청 Host 로 만들면 위조 Host 요청 안에서 색인된 주소가 사이트맵에 영구히 남는다.
      *
      * @param  array<string, mixed>  $entry  URL 항목
      * @return string|null 절대 URL (해석 불가 시 null)
@@ -168,7 +170,7 @@ class SitemapIndexer
         }
 
         if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
-            return url($entry['url']);
+            return SiteUrl::absolute($entry['url']);
         }
 
         return null;

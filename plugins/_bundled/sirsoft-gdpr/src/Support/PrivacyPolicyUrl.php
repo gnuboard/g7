@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Support;
 
 use App\Support\OutboundUrlValidator;
+use App\Support\SiteUrl;
 use App\Support\TrustedScriptHosts;
 
 /**
@@ -108,7 +109,8 @@ final class PrivacyPolicyUrl
     /**
      * 메일처럼 사이트 밖에서 열리는 자리에 쓸 절대 주소로 바꿉니다.
      *
-     * 사이트 내부 경로는 앱 주소(`url()`)를 앞에 붙이고, https 절대 주소는 그대로 둡니다.
+     * 사이트 내부 경로는 사이트 주소(`SiteUrl::absolute()`)를 앞에 붙이고, https 절대 주소는 그대로 둡니다.
+     * 요청 Host 를 쓰지 않는다 — 결과가 전 회원 통지 스냅샷에 동결된다.
      *
      * @param  mixed  $value  설정 저장값
      * @return string 절대 주소, 허용 형식이 아니거나 비었으면 빈 문자열
@@ -121,7 +123,7 @@ final class PrivacyPolicyUrl
             return '';
         }
 
-        return str_starts_with($url, '/') ? url($url) : $url;
+        return str_starts_with($url, '/') ? SiteUrl::absolute($url) : $url;
     }
 
     /**

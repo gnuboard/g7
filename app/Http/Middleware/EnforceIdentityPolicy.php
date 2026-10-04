@@ -5,6 +5,9 @@ namespace App\Http\Middleware;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityOriginType;
+use App\Exceptions\IdentityVerificationRequiredException;
+use App\Models\IdentityPolicy;
+use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use Closure;
@@ -36,8 +39,11 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceIdentityPolicy
 {
     /**
+     * 본인인증 정책 강제 미들웨어를 생성합니다.
+     *
      * @param  IdentityPolicyService  $policyService  정책 유스케이스 Service
      * @param  IdentityPolicyRepositoryInterface  $policyRepository  정책 Repository
+     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  verification_token 우회 판정용 challenge 로그 Repository
      */
     public function __construct(
         protected IdentityPolicyService $policyService,
@@ -53,7 +59,7 @@ class EnforceIdentityPolicy
      * @param  string|null  $policyKey  정책 키 (identity_policies.key)
      * @return Response
      *
-     * @throws \App\Exceptions\IdentityVerificationRequiredException 정책 위반 시
+     * @throws IdentityVerificationRequiredException 정책 위반 시
      */
     public function handle(Request $request, Closure $next, ?string $policyKey = null): Response
     {
@@ -74,7 +80,9 @@ class EnforceIdentityPolicy
      *
      * 라우트 이름이 없는 요청 (예: 404 / health check) 은 빈 배열 반환 → 미들웨어 즉시 통과.
      *
-     * @return iterable<\App\Models\IdentityPolicy>
+     * @param  Request  $request  HTTP 요청 (자동 매핑 모드에서 라우트 이름을 읽는다)
+     * @param  string|null  $policyKey  미들웨어 인자로 지정된 정책 키 (없으면 자동 매핑 모드)
+     * @return iterable<IdentityPolicy> 강제할 정책 목록 (없으면 빈 배열)
      */
     protected function resolvePolicies(Request $request, ?string $policyKey): iterable
     {
@@ -97,9 +105,13 @@ class EnforceIdentityPolicy
     /**
      * 단일 정책에 대해 enforce 절차를 수행합니다 (token bypass → grace 윈도우 → exception).
      *
-     * @throws \App\Exceptions\IdentityVerificationRequiredException 정책 위반 시
+     * @param  IdentityPolicy  $policy  강제할 정책
+     * @param  Request  $request  HTTP 요청
+     * @return void 반환값 없음
+     *
+     * @throws IdentityVerificationRequiredException 정책 위반 시
      */
-    protected function enforcePolicy(\App\Models\IdentityPolicy $policy, Request $request): void
+    protected function enforcePolicy(IdentityPolicy $policy, Request $request): void
     {
         // verification_token 우회 — IdentityGuardInterceptor 가 verify 직후 토큰을 query/body 에 부착해
         // 원 요청을 재실행할 때 grace_minutes 윈도우와 무관하게 통과시킨다.
@@ -122,7 +134,8 @@ class EnforceIdentityPolicy
             'origin_policy_key' => $policy->key,
             'return_request' => [
                 'method' => $request->getMethod(),
-                'url' => $request->fullUrl(),
+                // 보안: 경로+쿼리만 — 요청 Host·scheme 을 실으면 클라이언트 재요청이 교차 출처로 인증 정보를 보낼 수 있다.
+                'url' => $request->getRequestUri(),
             ],
         ];
 
@@ -138,11 +151,11 @@ class EnforceIdentityPolicy
      * 요청에 식별자가 전혀 없으면(예: 별도 정책에서 email 외 식별자 사용) 검사를 건너뛰고 통과시킵니다 —
      * 이 경우 다운스트림 listener 가 자기 도메인의 식별자로 매칭을 강제해야 합니다.
      *
-     * @param  \App\Models\IdentityVerificationLog  $log  토큰이 가리키는 verified 로그
+     * @param  IdentityVerificationLog  $log  토큰이 가리키는 verified 로그
      * @param  Request  $request  HTTP 요청
      * @return bool target_hash 일치 여부 (식별자 미존재 시 true)
      */
-    protected function tokenTargetMatches(\App\Models\IdentityVerificationLog $log, Request $request): bool
+    protected function tokenTargetMatches(IdentityVerificationLog $log, Request $request): bool
     {
         $user = $request->user();
         $email = $user instanceof User && $user->email

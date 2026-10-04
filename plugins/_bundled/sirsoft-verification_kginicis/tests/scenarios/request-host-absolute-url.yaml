@@ -1,0 +1,34 @@
+feature: 본인확인 결과 전달 주소의 사이트 주소 고정 (요청 Host·브라우저 현재 주소 비신뢰)
+
+description: |
+  이니시스 콜백 뒤 브리지 이동, 브리지의 부모창 postMessage 대상, 프런트가 이니시스로 보내는 결과
+  수신 주소(successUrl·failUrl)가 요청 Host 또는 window.location.origin 을 따랐다 — 위조 Host·별칭으로
+  시작한 인증의 검증 토큰이 그 도메인으로 갔다. 모두 사이트 주소(코어 SiteUrl)로 고정한다.
+
+  - 콜백 → 브리지: SiteUrl::absolute()
+  - 브리지: postMessage 대상 = 사이트 origin 리터럴, 모바일 복귀는 같은 출처 경로만, no-referrer·no-store
+  - 챌린지 payload: callbackUrl·siteOrigin (프런트는 이 값만 쓰고 window.location.origin 을 쓰지 않는다)
+
+axes:
+  # forged = 위조 Host 변종 4종(외부 도메인·사이트 하위 도메인·포트만 바꾼 Host·신뢰 프록시 X-Forwarded-Host)을
+  #          코어 `Tests\Concerns\ForgesRequestHost::forgedHosts()` 데이터 제공자가 모두 돈다(사이트 주소 행 포함).
+  host_header: [canonical, forged]
+  sink: [bridge_redirect, bridge_page, provider_callback_url, front_result_url, front_message]
+
+exclusions:
+  - { sink: provider_callback_url, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+
+effects:
+  - callback_redirects_to_site_bridge
+  - bridge_posts_to_site_origin_without_referrer_or_cache
+  - bridge_mobile_return_accepts_same_origin_path_only
+  - invalid_bridge_request_ends_as_failure_on_site_bridge
+  - challenge_payload_carries_site_callback_url
+  - front_sends_site_callback_url
+  - front_stops_without_site_callback_url
+  - front_accepts_only_popup_site_origin_current_challenge
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Controllers/InicisHostTrustTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/resources/js/__tests__/hostTrust.test.ts
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Playwright/specs/user/bridge-mobile-return-path.spec.ts

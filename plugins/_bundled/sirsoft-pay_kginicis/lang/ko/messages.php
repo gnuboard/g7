@@ -16,6 +16,7 @@ return [
         'invoice_required' => '운송장번호를 입력해주세요.',
         'courier_required' => '택배사를 선택해주세요.',
         'default_confirmer' => '관리자',
+        'confirm_login_required' => '로그인한 뒤 주문 상세에서 구매결정을 다시 진행해 주세요.',
     ],
     'claim' => [
         'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터가 없습니다.',

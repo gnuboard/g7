@@ -13,6 +13,7 @@ use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterfac
 use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepository;
 use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Support\CbtClaimAuthAmount;
+use Plugins\Sirsoft\PayKginicis\Support\EscrowConfirmNonce;
 
 class PayKginicisServiceProvider extends BasePluginServiceProvider
 {
@@ -39,6 +40,7 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
      */
     protected array $cacheServices = [
         CbtClaimAuthAmount::class,
+        EscrowConfirmNonce::class,
     ];
 
     /**

@@ -198,6 +198,52 @@ export function assertTrustedSdkUrl(url: string): void {
 }
 
 /**
+ * PG 로 보낼 결과·통보 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과·입금통보가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만
+ * 쓰고, 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
+}
+
+/**
+ * 결제 정보를 POST 할 PG 주소가 KG 이니시스 도메인인지 확인합니다.
+ *
+ * 보안: 서버·PG 응답이 준 form action 으로 거래 키·주문자 정보를 POST 한다 — https 이고
+ * `*.inicis.com` 일 때만 제출한다(fail-closed, SDK 주소 검사와 같은 기준).
+ *
+ * @param url 제출 주소
+ * @throws Error 허용 밖 주소인 경우
+ */
+export function assertTrustedPgFormAction(url: unknown): void {
+    let parsed: URL | null = null;
+
+    try {
+        parsed = typeof url === 'string' ? new URL(url) : null;
+    } catch {
+        parsed = null;
+    }
+
+    if (parsed === null || parsed.protocol !== 'https:' || !/(^|\.)inicis\.com$/i.test(parsed.hostname)) {
+        throw new Error(
+            t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+        );
+    }
+}
+
+/**
  * SDK 스크립트를 로드합니다.
  *
  * 완료 판정은 **SDK 전역 확보**로 한다 — DOM 에 태그가 있다는 것은 로드 완료를
@@ -376,8 +422,7 @@ async function requestMobileKoreanPayment(
 
     // 메뉴얼(STEP 2) 표준 응답에는 P_OID 가 없음 — 주문번호를 쿼리스트링으로 echo 받아 회수.
     const nextUrl = appendSelectedPaymentMethod(
-        window.location.origin +
-            config.callback_urls.mobile_callback +
+        requireSiteAbsoluteUrl(config.callback_urls.mobile_callback) +
             '?orderId=' + encodeURIComponent(pgPaymentData.order_number),
         paymentMethod,
     );
@@ -440,10 +485,10 @@ async function requestMobileKoreanPayment(
     // PC 가상계좌는 KG 이니시스 가맹점 어드민의 등록 URL 로 통보되지만, 모바일은
     // 요청에 P_NOTI_URL 을 명시해야 입금통보를 받을 수 있다.
     if (iniPayment === 'VBANK' && ! isEasyPay) {
-        fields.P_NOTI_URL =
-            window.location.origin + config.callback_urls.mobile_vbank_notify;
+        fields.P_NOTI_URL = requireSiteAbsoluteUrl(config.callback_urls.mobile_vbank_notify);
     }
 
+    assertTrustedPgFormAction(submitUrl);
     markMobilePaymentReturnPending();
     submitForm(
         submitUrl,
@@ -494,11 +539,11 @@ async function requestKoreanPayment(
     }
 
     const callbackUrl = appendSelectedPaymentMethod(
-        window.location.origin + config.callback_urls.callback,
+        requireSiteAbsoluteUrl(config.callback_urls.callback),
         paymentMethod,
     );
     // KG 이니시스 공식 closeUrl 페이지에서 결제창만 닫게 하여 체크아웃 SPA를 유지한다.
-    const orderCloseUrl = window.location.origin + config.callback_urls.close;
+    const orderCloseUrl = requireSiteAbsoluteUrl(config.callback_urls.close);
     removeKoreanPaymentForms();
 
     const formId = KOREAN_PAYMENT_FORM_ID_PREFIX + Date.now();
@@ -605,7 +650,7 @@ function buildCbtExtraData(config: ClientConfig, paymentMethod?: string): CbtExt
         ? CBT_PAYMETHODS_BY_PAYMENT_METHOD[paymentMethod]
         : undefined;
     const paymethod = selectedPaymethods ?? base.payment?.paymethod ?? DEFAULT_CBT_PAYMETHODS;
-    const cvsNotifyUrl = window.location.origin + config.callback_urls.cbt_cvs_notify;
+    const cvsNotifyUrl = requireSiteAbsoluteUrl(config.callback_urls.cbt_cvs_notify);
 
     return {
         ...base,
@@ -663,11 +708,11 @@ async function requestCbtPayment(
     const { hash_data: hashData } = hashResponse.data;
 
     const returnUrl =
-        window.location.origin +
-        config.callback_urls.cbt_callback +
+        requireSiteAbsoluteUrl(config.callback_urls.cbt_callback) +
         `?oid=${encodeURIComponent(pgPaymentData.order_number)}` +
         `&selectedPaymentMethod=${encodeURIComponent(paymentMethod ?? 'card')}`;
 
+    assertTrustedPgFormAction(config.callback_urls.cbt_auth_url);
     submitForm(config.callback_urls.cbt_auth_url, {
         cbtType:     'JPPG',
         mid:         japanMid,

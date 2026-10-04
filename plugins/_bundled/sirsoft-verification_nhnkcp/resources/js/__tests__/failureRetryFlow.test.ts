@@ -12,6 +12,10 @@ import { startAuthHandler, resolveFailureMessage, MODAL_ID } from '../index';
 
 const CALL_URL = 'https://testcert.kcp.co.kr/certGateway.do';
 const NEXT_CALL_URL = 'https://testcert.kcp.co.kr/certGateway.do?next=1';
+/** 서버가 챌린지 payload 로 내려주는 사이트 origin — 결과 창 출처 검증 기준 */
+const SITE_ORIGIN = 'https://shop.example.test';
+/** 가장 최근에 연 인증 팝업 — 결과 메시지의 발신 창 */
+let lastPopup: unknown = null;
 
 interface SubmittedForm {
     action: string;
@@ -44,7 +48,7 @@ function setupG7Core(): void {
             provider_id: 'nhnkcp',
             purpose: 'signup',
             challenge_id: currentChallengeId,
-            public_payload: { call_url: CALL_URL, reg_cert_key: 'CERTKEY000000001' },
+            public_payload: { call_url: CALL_URL, reg_cert_key: 'CERTKEY000000001', siteOrigin: SITE_ORIGIN },
         },
     };
 
@@ -87,14 +91,23 @@ function captureFormSubmits(): void {
     };
 }
 
-/** 브리지가 부모 창으로 보내는 결과 메시지를 재현한다. */
+/** 브리지가 부모 창으로 보내는 결과 메시지를 재현한다(사이트 origin·열린 팝업이 보낸 것으로). */
 function emitBridgeResult(data: Record<string, unknown>): void {
-    window.dispatchEvent(
-        new MessageEvent('message', {
-            data: { type: 'identity_result', ...data },
-            origin: window.location.origin,
-        }),
-    );
+    const ev = new MessageEvent('message', {
+        data: { type: 'identity_result', ...data },
+        origin: SITE_ORIGIN,
+    });
+    Object.defineProperty(ev, 'source', { value: lastPopup });
+    window.dispatchEvent(ev);
+}
+
+/** 인증 팝업을 흉내 내고 마지막으로 연 팝업을 기억한다. */
+function openPopupStub(popup: { closed: boolean; close: () => void } = { closed: false, close: vi.fn() }) {
+    return vi.fn(() => {
+        lastPopup = popup;
+
+        return popup;
+    });
 }
 
 describe('인증 실패 후 흐름', () => {
@@ -103,7 +116,7 @@ describe('인증 실패 후 흐름', () => {
         setupG7Core();
         captureFormSubmits();
         window.sessionStorage.clear();
-        vi.stubGlobal('open', vi.fn(() => ({ closed: false, close: vi.fn() })));
+        vi.stubGlobal('open', openPopupStub());
     });
 
     afterEach(() => {
@@ -154,7 +167,7 @@ describe('인증 실패 후 흐름', () => {
                 data: {
                     id: 'challenge-reissued',
                     expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002' },
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002', siteOrigin: SITE_ORIGIN },
                 },
             }),
         }));
@@ -191,7 +204,7 @@ describe('인증 실패 후 흐름', () => {
                 data: {
                     id: 'challenge-reissued-2',
                     expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003' },
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
                 },
             }),
         }));
@@ -213,7 +226,7 @@ describe('인증 실패 후 흐름', () => {
     it('인증창을 닫았다가 다시 시작하면 새 거래를 발급받는다', async () => {
         vi.useFakeTimers();
         const popup = { closed: false, close: vi.fn() };
-        vi.stubGlobal('open', vi.fn(() => popup));
+        vi.stubGlobal('open', openPopupStub(popup));
 
         await startAuthHandler();
         popup.closed = true;
@@ -227,12 +240,12 @@ describe('인증 실패 후 흐름', () => {
                 data: {
                     id: 'challenge-reissued-3',
                     expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004' },
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004', siteOrigin: SITE_ORIGIN },
                 },
             }),
         }));
         vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
-        vi.stubGlobal('open', vi.fn(() => ({ closed: false, close: vi.fn() })));
+        vi.stubGlobal('open', openPopupStub());
 
         await startAuthHandler();
 

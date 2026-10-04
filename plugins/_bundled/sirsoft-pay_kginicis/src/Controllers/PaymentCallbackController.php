@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -314,7 +315,7 @@ class PaymentCallbackController
 
             $tid = (string) ($pgResponse['tid'] ?? '');
 
-            // 승인 응답이 돌려준 주문번호가 이 콜백의 주문과 같아야 반영한다 (KVE-2026-2434 전수조사).
+            // 승인 응답이 돌려준 주문번호가 이 콜백의 주문과 같아야 반영한다.
             // authToken 은 주문번호를 묶지 않으므로, 싼 주문의 승인 토큰에 비싼 주문번호와 그 금액을 붙여
             // 보내면 비싼 주문이 싼 금액으로 결제완료될 수 있었다. 금액은 PG 가 승인한 값만 기준이다 — 콜백
             // TotPrice 는 브라우저를 거친 값이라 대조에 쓰면 대조가 항등식이 된다(아래 카드 경로와 같은 규칙).
@@ -840,7 +841,7 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -852,7 +853,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -862,29 +863,6 @@ class PaymentCallbackController
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         return $baseUrl.$separator.$query;
-    }
-
-    /**
-     * 상대 경로면 APP_URL 기준으로 절대 URL 화.
-     *
-     * PG가 브라우저 POST 로 콜백을 보내는 동안 Apache 가 ProxyPreserveHost Off 등
-     * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
-     * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
-     * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
-     *
-     * @param  string  $url  리다이렉트 URL (상대 또는 절대)
-     * @return string 절대 URL
-     */
-    private function absolutize(string $url): string
-    {
-        if (preg_match('#^https?://#i', $url) === 1) {
-            return $url;
-        }
-
-        $base = rtrim((string) config('app.url'), '/');
-        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
-
-        return $base.$path;
     }
 
     /**
