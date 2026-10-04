@@ -3,8 +3,10 @@
 namespace App\Services\Analytics;
 
 use App\Analytics\TrackingRequestFactory;
+use App\Analytics\UrlNormalizer;
 use App\Contracts\Analytics\ConversionRecorderInterface;
 use App\Enums\Analytics\ActionType;
+use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -56,17 +58,65 @@ class ConversionRecorder implements ConversionRecorderInterface
     /**
      * 전환이 일어난 화면 주소를 정합니다.
      *
+     * 보안: 같은 사이트 판정은 요청 Host 가 아니라 사이트 호스트(포트 포함)와 비교한다 — 요청 Host 와 같은
+     * Referer 를 믿으면 위조 Host 요청이 임의 주소를 통계에 심는다. 폴백도 사이트 주소 + 요청 경로다.
+     *
      * @param  Request  $request  HTTP 요청
-     * @return string 같은 사이트 Referer, 없으면 요청 주소
+     * @return string 같은 사이트 Referer, 없으면 사이트 주소 기준 요청 주소
      */
     private function pageUrl(Request $request): string
     {
         $referer = (string) $request->headers->get('referer', '');
+        $siteHost = $this->siteHostWithPort();
 
-        if ($referer !== '' && parse_url($referer, PHP_URL_HOST) === $request->getHost()) {
+        if ($referer !== '' && $siteHost !== '' && $this->refererHostWithPort($referer) === $siteHost) {
             return $referer;
         }
 
-        return $request->fullUrl();
+        return SiteUrl::forPath($request->getRequestUri());
+    }
+
+    /**
+     * 사이트 호스트(소문자·www 제거)와 사이트 주소에 명시된 포트를 반환합니다.
+     *
+     * @return string 예: `example.com`, `example.com:8443` (사이트 주소가 없으면 빈 문자열)
+     */
+    private function siteHostWithPort(): string
+    {
+        $host = UrlNormalizer::siteHost();
+
+        if ($host === '') {
+            return '';
+        }
+
+        $port = parse_url(SiteUrl::hostWithPort(), PHP_URL_PORT);
+
+        return is_int($port) ? $host.':'.$port : $host;
+    }
+
+    /**
+     * Referer 의 호스트를 사이트 호스트와 같은 형태(소문자·www 제거·비표준 포트만 표기)로 반환합니다.
+     *
+     * @param  string  $referer  Referer 헤더 값
+     * @return string 호스트 (해석 불가 시 빈 문자열)
+     */
+    private function refererHostWithPort(string $referer): string
+    {
+        $parts = parse_url($referer);
+
+        if (! is_array($parts) || ! isset($parts['host']) || $parts['host'] === '') {
+            return '';
+        }
+
+        $host = strtolower($parts['host']);
+        $host = str_starts_with($host, 'www.') ? substr($host, 4) : $host;
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $port = $parts['port'] ?? null;
+
+        if ($port === null || ($scheme === 'https' && $port === 443) || ($scheme === 'http' && $port === 80)) {
+            return $host;
+        }
+
+        return $host.':'.$port;
     }
 }

@@ -22,6 +22,7 @@ import { getErrorHandlingResolver } from '../error';
 import { getActionDispatcher } from './ActionDispatcher';
 import type { ErrorHandlingMap, OnErrorHandler, OnSuccessHandler, ErrorContext, SuccessContext, ErrorCondition } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
+import { isSameOriginRequestUrl } from '../support/navPolicy';
 import { webSocketManager } from '../websocket/WebSocketManager';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import type { GlobalHeaderRule } from './LayoutLoader';
@@ -887,6 +888,12 @@ export class DataSourceManager {
     context: Record<string, any>,
   ): Record<string, string> {
     const result: Record<string, string> = {};
+
+    // 보안: 전역 헤더(비회원 주문 조회 토큰·비밀글 열람 토큰 등)는 같은 출처 요청에만 싣는다 —
+    // 패턴이 `*` 여도 교차 출처 데이터소스로 증표가 새지 않게, Bearer 와 같은 판정을 쓴다.
+    if (!isSameOriginRequestUrl(endpoint)) {
+      return result;
+    }
 
     for (const rule of this.globalHeaders) {
       if (this.matchesPattern(endpoint, rule.pattern)) {

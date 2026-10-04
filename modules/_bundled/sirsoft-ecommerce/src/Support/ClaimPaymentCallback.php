@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
+use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -47,7 +48,8 @@ final class ClaimPaymentCallback
                 voidOnReject: $onAmountMismatch === null,
             );
 
-            return redirect(ClaimPaymentRedirect::success($paid));
+            // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 사이트 주소로 만든다.
+            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::success($paid)));
         } catch (OrderClaimException $e) {
             Log::warning('[claim.payment] 콜백 승인 거절', [
                 'payment_number' => $payment->payment_number,
@@ -59,7 +61,7 @@ final class ClaimPaymentCallback
                 $onAmountMismatch($e);
             }
 
-            return redirect(ClaimPaymentRedirect::fail($payment, self::errorCode($e)));
+            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, self::errorCode($e))));
         } catch (\Exception $e) {
             Log::error('[claim.payment] 콜백 승인 처리 중 예외', [
                 'payment_number' => $payment->payment_number,
@@ -67,7 +69,7 @@ final class ClaimPaymentCallback
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect(ClaimPaymentRedirect::fail($payment, 'approve_failed'));
+            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, 'approve_failed')));
         }
     }
 

@@ -184,6 +184,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('app_url')) ?> *</label>
                         <input type="url" name="app_url" id="app_url" value="<?= htmlspecialchars($formData['app_url']) ?>"
+                               data-autofill="<?= ! empty($formData['app_url_autofill']) ? '1' : '0' ?>"
                                class="form-input" required
                                aria-invalid="false" aria-describedby="app_url-error">
                         <div id="app_url-error" class="field-error" role="alert"></div>

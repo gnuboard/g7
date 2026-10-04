@@ -4,6 +4,7 @@ namespace App\Analytics;
 
 use App\Enums\Analytics\ActionType;
 use App\Extension\HookManager;
+use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -166,7 +167,8 @@ class TrackingRequestFactory
      * 방문 URL 을 정합니다.
      *
      * 비콘은 브라우저가 보고 있던 주소를 보내고(SPA 라 서버가 아는 주소와 다를 수 있다),
-     * 서버 폴백은 요청 주소를 씁니다.
+     * 서버 폴백은 요청 경로를 씁니다 — 저장되는 주소의 호스트는 요청 Host 가 아니라 사이트 주소입니다
+     * (위조 Host 가 통계에 섞이지 않게).
      *
      * @param  Request  $request  HTTP 요청
      * @param  array<string, mixed>  $payload  비콘 페이로드
@@ -176,7 +178,7 @@ class TrackingRequestFactory
     {
         $url = self::text($payload['url'] ?? null, 2048);
 
-        return $url ?? $request->fullUrl();
+        return $url ?? SiteUrl::forPath($request->getRequestUri());
     }
 
     /**

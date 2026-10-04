@@ -14,6 +14,9 @@ import {
     consumeMobilePaymentReturnPending,
 } from '../../paymentDomCleanup';
 
+/** 서버(client-config)가 사이트 주소로 만들어 내려주는 결과 수신 주소의 origin */
+const SITE_ORIGIN = 'https://shop.example.test';
+
 const PG_PAYMENT = {
     order_number: 'ORD-001',
     order_name: 'Test Order',
@@ -83,8 +86,8 @@ describe('requestPaymentHandler — PC closeUrl', () => {
             use_credit_point: false,
             callback_urls: {
                 signature: '/api/plugins/sirsoft-pay_kginicis/payment/signature',
-                callback: '/plugins/sirsoft-pay_kginicis/payment/callback',
-                close: '/plugins/sirsoft-pay_kginicis/payment/close',
+                callback: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/callback`,
+                close: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/close`,
             },
         },
     };
@@ -150,10 +153,10 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect(paySpy).toHaveBeenCalledTimes(1);
         const fields = getLastPaymentFormFields();
         expect(fields.returnUrl).toBe(
-            `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/callback`,
+            `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/callback`,
         );
         expect(fields.closeUrl).toBe(
-            `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/close`,
+            `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/close`,
         );
         expect(fields.closeUrl).not.toBe('');
         expect(fields.payViewType).toBe('overlay');
@@ -273,7 +276,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect(fields.gopaymethod).toBe('onlynaverpay');
         expect(fields.acceptmethod).toContain('cardonly');
         expect(fields.returnUrl).toBe(
-            `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/callback` +
+            `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/callback` +
                 '?selectedPaymentMethod=kginicis_naverpay',
         );
     });
@@ -311,8 +314,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
             callback_urls: {
                 cbt_checkout_token: '/api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token',
                 cbt_hash_data: '/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data',
-                cbt_callback: '/api/plugins/sirsoft-pay_kginicis/payment/cbt/callback',
-                cbt_cvs_notify: '/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify',
+                cbt_callback: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/callback`,
+                cbt_cvs_notify: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify`,
                 cbt_auth_url: 'https://devcbt.inicis.com/cbtauth',
             },
             cbt_extra_data: {
@@ -426,7 +429,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(extraData.payment.paymethod).toEqual(['CARD']);
         expect(extraData.payment.isMobile).toBe('false');
         expect(extraData.payment.cvs.notiUrl).toBe(
-            `${window.location.origin}${CLIENT_CONFIG.data.callback_urls.cbt_cvs_notify}`,
+            `${CLIENT_CONFIG.data.callback_urls.cbt_cvs_notify}`,
         );
         expect(extraData.gmoPayment.merchantName).toBe('サンプルストア');
     });
@@ -469,7 +472,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         const extraData = JSON.parse(fields.extraData);
         expect(extraData.payment.paymethod).toEqual(['CVS']);
         expect(extraData.payment.cvs.notiUrl).toBe(
-            `${window.location.origin}${CLIENT_CONFIG.data.callback_urls.cbt_cvs_notify}`,
+            `${CLIENT_CONFIG.data.callback_urls.cbt_cvs_notify}`,
         );
     });
 
@@ -566,12 +569,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(fields.buyerTel).toBe('');
     });
 
-    it('returnUrl 은 현재 origin + cbt_callback + oid 쿼리', async () => {
+    it('returnUrl 은 서버가 준 cbt_callback 절대 주소 + oid 쿼리', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CBT_PG_PAYMENT } });
 
         const fields = getLastSubmittedFormFields();
         expect(fields.returnUrl).toBe(
-            `${window.location.origin}${CLIENT_CONFIG.data.callback_urls.cbt_callback}` +
+            `${CLIENT_CONFIG.data.callback_urls.cbt_callback}` +
                 `?oid=${encodeURIComponent(CBT_PG_PAYMENT.order_number)}` +
                 '&selectedPaymentMethod=card',
         );
@@ -627,8 +630,8 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
             japan_mid: '',
             callback_urls: {
                 mobile_signature: '/api/plugins/sirsoft-pay_kginicis/payment/mobile/signature',
-                mobile_callback: '/plugins/sirsoft-pay_kginicis/payment/mobile/callback',
-                mobile_vbank_notify: '/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify',
+                mobile_callback: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/callback`,
+                mobile_vbank_notify: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
             },
         },
     };
@@ -799,7 +802,7 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         const fields = getLastSubmittedFormFields();
         expect(fields.P_INI_PAYMENT).toBe('VBANK');
         expect(fields.P_NOTI_URL).toBe(
-            `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
+            `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
         );
     });
 
@@ -828,7 +831,7 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(fields.P_RESERVED).toContain('d_npay=Y');
         expect(fields.P_SKIP_TERMS).toBe('Y');
         expect(fields.P_NEXT_URL).toBe(
-            `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/mobile/callback` +
+            `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/callback` +
                 `?orderId=${encodeURIComponent(PG_PAYMENT.order_number)}` +
                 '&selectedPaymentMethod=kginicis_naverpay',
         );

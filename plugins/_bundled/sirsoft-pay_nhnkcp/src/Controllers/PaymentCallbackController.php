@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
@@ -311,7 +312,7 @@ class PaymentCallbackController
             // 가상계좌: 계좌 발급 완료 처리 (실제 입금은 vbankNotify에서 처리)
             // 분기 판정은 주문에 저장된 결제수단만 본다 — 요청의 use_pay_method 를 함께 보면
             // 비인증 브라우저가 use_pay_method=VCNT 한 줄로 카드 주문을 가상계좌 분기로 몰아
-            // 승인 검증이 없는 경로를 고를 수 있다 (KVE-2026-2018 동일 계열).
+            // 승인 검증이 없는 경로를 고를 수 있다.
             // 결제창은 결제수단을 확정한 뒤 열리므로 정상 흐름은 주문 값만으로 판정된다.
             $isVbank = (bool) $order->payment?->isVirtualAccount();
             if ($isVbank) {
@@ -338,7 +339,7 @@ class PaymentCallbackController
                 // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
                 // 이 엔드포인트는 비인증 브라우저 POST 라 "승인 실패" 는 공격자가 남의 주문번호와
                 // 위조 암호문을 보내기만 해도 만들어낼 수 있는 상태다. 그것을 근거로 실패 처리하면
-                // 타인의 결제대기 주문을 임의로 취소시킬 수 있다 (KVE-2026-2018).
+                // 타인의 결제대기 주문을 임의로 취소시킬 수 있다.
                 // 실제 승인이 일어난 뒤의 실패만 아래 catch 블록에서 주문에 반영한다.
                 return redirect($this->resolveFailUrl([
                     'error' => $pgResCd,
@@ -671,7 +672,7 @@ class PaymentCallbackController
      * 그 외 (CLI 9502 / 예외 / 평문 필드 결락) 는 발급 실패로 판정하되 **주문 상태는 바꾸지
      * 않고** fail URL 로 되돌려 보낸다 — 이 엔드포인트는 비인증 브라우저 POST 라, 발급 미완을
      * 근거로 실패 처리하면 주문번호만 아는 제3자가 남의 주문을 취소시킬 수 있다
-     * (KVE-2026-2018 과 동일 기준). 정당한 실패는 소유권을 검증하는 close-report 가 기록한다.
+     * 정당한 실패는 소유권을 검증하는 close-report 가 기록한다.
      *
      * PC 분기는 CLI 발급 응답의 금액(`amount`)과 거래번호가 주문 청구액·응답에 맞을 때만 계좌를
      * 기록한다. 금액이 다르거나 비어 있으면 발급된 계좌를 취소하고 아무것도 기록하지 않는다.
@@ -704,8 +705,8 @@ class PaymentCallbackController
             // 모바일 분기는 PG 서버 호출이 없어 계좌 정보의 유일한 출처가 브라우저 평문이다.
             // 그래서 이 콜백이 소유자 인증을 거친 결제 세션에서 비롯됐는지를 먼저 확인한다 —
             // 승인키 발급 시점에 실어 보낸 일회성 nonce 가 param_opt_2 로 되돌아와야 한다
-            // (KVE-2026-2019). 불일치/부재면 상태를 전혀 바꾸지 않고 실패 URL 로 돌린다
-            // ("브라우저 입력만으로 상태 변경 금지" — KVE-2026-2018/2046 과 같은 기준).
+            // 불일치/부재면 상태를 전혀 바꾸지 않고 실패 URL 로 돌린다
+            // ("브라우저 입력만으로 상태 변경 금지" 기준).
             if (! $this->mobileVbankStateMatches($order, $validated['param_opt_2'] ?? null)) {
                 Log::warning('KCP: mobile vbank callback rejected — session state mismatch', [
                     'ordr_idxx' => $ordrIdxx,
@@ -743,7 +744,7 @@ class PaymentCallbackController
 
                 // 승인이 성립하지 않았다 — 주문 상태를 바꾸지 않는다. 이 엔드포인트는 비인증
                 // 브라우저 POST 라, CLI 실패를 근거로 실패 처리하면 남의 주문번호와 위조 입력만으로
-                // 그 주문을 취소시킬 수 있다 (카드 경로와 동일 기준 · KVE-2026-2018).
+                // 그 주문을 취소시킬 수 있다 (카드 경로와 동일 기준).
                 // 정당한 결제 실패는 소유권을 검증하는 close-report 가 기록한다.
                 return redirect($this->resolveFailUrl([
                     'error' => 'cli_exception',
@@ -786,7 +787,7 @@ class PaymentCallbackController
             // 모바일 분기의 $pgResponse 는 콜백 POST 평문을 그대로 옮긴 값이라 PG 서버 호출이
             // 아예 없고, PC 분기의 CLI 실패도 위조 암호문으로 유도할 수 있다. 어느 쪽이든
             // 비인증 브라우저 입력이므로 이를 근거로 실패 처리하면 주문번호만 아는 제3자가
-            // 남의 결제대기 주문을 취소시킬 수 있다 (카드 경로와 동일 기준 · KVE-2026-2018).
+            // 남의 결제대기 주문을 취소시킬 수 있다 (카드 경로와 동일 기준).
             // 정당한 발급 실패는 소유권을 검증하는 close-report 가 기록한다.
             return redirect($this->resolveFailUrl([
                 'error' => $effectiveCode,
@@ -1043,7 +1044,7 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -1125,7 +1126,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -1142,29 +1143,6 @@ class PaymentCallbackController
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         return $baseUrl.$separator.$query;
-    }
-
-    /**
-     * 상대 경로면 APP_URL 기준으로 절대 URL 화.
-     *
-     * PG가 브라우저 POST 로 콜백을 보내는 동안 Apache 가 ProxyPreserveHost Off 등
-     * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
-     * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
-     * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
-     *
-     * @param  string  $url  리다이렉트 URL (상대 또는 절대)
-     * @return string 절대 URL
-     */
-    private function absolutize(string $url): string
-    {
-        if (preg_match('#^https?://#i', $url) === 1) {
-            return $url;
-        }
-
-        $base = rtrim((string) config('app.url'), '/');
-        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
-
-        return $base.$path;
     }
 
     /**

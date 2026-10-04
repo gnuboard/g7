@@ -89,7 +89,7 @@
 | available | boolean | 모의입금을 안내할 수 있는 상태인지 |
 | trade_no | string | 거래번호. `transaction_id` 가 비어 있으면 결제 메타의 `tno` 로 폴백 |
 | account_no | string | 발급된 가상계좌 번호 |
-| notify_url | string | 이 사이트의 입금통보 수신 주소 — KCP 테스트 페이지에 넣을 값 ([vbank.md](vbank.md)) |
+| notify_url | string | 이 사이트의 입금통보 수신 주소 — KCP 테스트 페이지에 넣을 값. 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL ([vbank.md](vbank.md)) |
 | mock_url | string | KCP 테스트 관리자의 가상계좌 모의입금 페이지 주소 |
 | is_admin_view | boolean | 관리자 자격으로 조회했는지 (화면 문구 분기용) |
 

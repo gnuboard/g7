@@ -448,7 +448,7 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
 
 <!-- @generated:end -->
 
@@ -459,6 +459,8 @@ PC 표준결제창(KRW)의 인증 결과를 브라우저 POST 로 수신해 서�
 주문번호 자리(`MOID`/`orderNumber`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고, 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled`)로 리다이렉트합니다. 승인 금액 불일치로 거절되면 망취소로 보상합니다.
 
 주의사항: (1) `authUrl`·`netCancelUrl` 은 콜백으로 들어온 값을 그대로 신뢰하지 않고 `idc_name` 기준 화이트리스트로 검증해 SSRF 를 차단하며, 검증 실패 시 `error=auth_url_invalid` 로 되돌립니다. (2) 승인 응답의 결제수단이 가상계좌(`VBank`)면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기 상태로 두며, 실제 완료는 입금통보(vbank-notify) 시점에 이뤄집니다. (3) 같은 거래번호가 이미 결제완료인 경우 재처리하지 않고 성공 페이지로 복귀합니다(재전송 방어). (4) 승인 후 금액 불일치나 예외가 발생하면 즉시 망취소(net cancel)를 보내 PG 측 승인 잔존을 해제합니다. 승인 금액은 서버 승인 응답의 값만 주문 청구액과 대조하며, 응답에 금액이 없거나 청구액과 다르면(청구액이 0 인 경우 포함) 카드·계좌이체·간편결제는 `error=amount_mismatch`, 가상계좌 발급은 `error=order_not_payable` 로 망취소 후 실패 처리합니다. 이미 결제완료됐거나 취소된 주문에 새 승인이 도착해도 주문을 바꾸지 않고 망취소 후 `error=order_not_payable` 로 돌려보냅니다(같은 거래번호의 재전송은 (3) 대로 성공). (5) 사용자가 결제창을 닫은 취소(`2001`/`0021`/`0022`/빈값, 또는 메시지에 '취소'·'사용자' 포함)는 실패가 아니므로 에러 쿼리 없이 체크아웃으로 조용히 복귀합니다.
+
+리다이렉트 주소(성공·실패·클레임 신청서 상세)는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만듭니다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않습니다. 파라미터 검증 실패도 Referer 를 따르지 않고 같은 실패 URL(`error=invalid_params`)로 보냅니다.
 
 예시 시나리오: 구매자가 PC 결제창에서 카드 결제를 승인 → KG 이니시스가 이 콜백으로 `resultCode=0000` + `authToken` + `authUrl` 전송 → 서버가 승인 API 호출 후 주문 결제완료 → `/shop/orders/{orderId}/complete` 로 리다이렉트.
 
@@ -523,7 +525,7 @@ Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=20260714-
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
 
 <!-- @generated:end -->
 
@@ -534,6 +536,8 @@ Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=20260714-
 주문번호 자리(`orderID`/`orderId`/`oid`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고(CBT 는 승인 재료가 `sid` 하나이므로 `cbt_sid` 로 실어 보냅니다), 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled` + `claim_number`)로 리다이렉트합니다. 결제창 단계 실패와 사용자 취소도 체크아웃이 아니라 같은 신청서 상세로 돌려보내며, PG 원문 메시지는 싣지 않고 오류 코드만 전달합니다. 승인이 확정된 뒤 모듈이 거절하면 CBT 환불 API 로 보상합니다.
 
 주의사항: (1) 브라우저가 전달한 인증 결과는 무인증 값이므로 그것만으로 주문 상태를 바꾸지 않고, 반드시 서버 승인 응답을 권위 있는 결과로 사용합니다. (2) 콜백의 `mid` 가 설정된 일본 가맹점 MID 와 다르면 위조 콜백으로 보고 즉시 중단합니다(`error=mid_mismatch`). (3) 승인 응답의 주문번호·MID·통화(JPY)·결제수단이 주문·체크아웃 선택값과 모두 일치해야 하며, 하나라도 어긋나면 승인 이후라도 실패로 처리합니다. (4) 결제수단이 `CVS`(편의점)면 결제완료가 아니라 입금대기로 저장하고 확인번호·접수번호·입금기한을 기록하며, 실제 완료는 편의점 입금통보(cvs-notify) 시점입니다. (5) 승인이 확정된 뒤 후속 처리에서 예외가 나면 자동 환불을 시도하고, 환불까지 실패하면 수동 환불 필요 상태로 대사 레코드를 남깁니다. (6) 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구)는 실패가 아니므로 에러 없이 체크아웃으로 복귀하며, PayPay 업스트림 처리 실패는 별도 안내 메시지로 치환됩니다.
+
+리다이렉트 주소(성공·실패·클레임 신청서 상세)는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만듭니다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않습니다. 파라미터 검증 실패도 Referer 를 따르지 않고 같은 실패 URL(`error=invalid_params`)로 보냅니다.
 
 예시 시나리오: 일본 구매자가 PayPay 로 결제 → 결제창이 `sid` 를 붙여 이 콜백으로 복귀 → 서버가 승인 요청 → 성공 시 주문 결제완료 후 완료 페이지로 리다이렉트. 편의점결제를 선택했다면 같은 흐름이지만 입금대기 상태로 남고, 구매자가 편의점에서 입금하면 그때 완료됩니다.
 
@@ -611,7 +615,7 @@ Location: https://example.com/shop/checkout?error=cbt_failed&orderId=20260714-12
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
 
 <!-- @generated:end -->
 
@@ -622,6 +626,8 @@ Location: https://example.com/shop/checkout?error=cbt_failed&orderId=20260714-12
 주문번호 자리(`orderID`/`orderId`/`oid`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고(CBT 는 승인 재료가 `sid` 하나이므로 `cbt_sid` 로 실어 보냅니다), 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled` + `claim_number`)로 리다이렉트합니다. 결제창 단계 실패와 사용자 취소도 체크아웃이 아니라 같은 신청서 상세로 돌려보내며, PG 원문 메시지는 싣지 않고 오류 코드만 전달합니다. 승인이 확정된 뒤 모듈이 거절하면 CBT 환불 API 로 보상합니다.
 
 주의사항: (1) 브라우저가 전달한 인증 결과는 무인증 값이므로 그것만으로 주문 상태를 바꾸지 않고, 반드시 서버 승인 응답을 권위 있는 결과로 사용합니다. (2) 콜백의 `mid` 가 설정된 일본 가맹점 MID 와 다르면 위조 콜백으로 보고 즉시 중단합니다(`error=mid_mismatch`). (3) 승인 응답의 주문번호·MID·통화(JPY)·결제수단이 주문·체크아웃 선택값과 모두 일치해야 하며, 하나라도 어긋나면 승인 이후라도 실패로 처리합니다. (4) 결제수단이 `CVS`(편의점)면 결제완료가 아니라 입금대기로 저장하고 확인번호·접수번호·입금기한을 기록하며, 실제 완료는 편의점 입금통보(cvs-notify) 시점입니다. (5) 승인이 확정된 뒤 후속 처리에서 예외가 나면 자동 환불을 시도하고, 환불까지 실패하면 수동 환불 필요 상태로 대사 레코드를 남깁니다. (6) 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구)는 실패가 아니므로 에러 없이 체크아웃으로 복귀하며, PayPay 업스트림 처리 실패는 별도 안내 메시지로 치환됩니다.
+
+리다이렉트 주소(성공·실패·클레임 신청서 상세)는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만듭니다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않습니다. 파라미터 검증 실패도 Referer 를 따르지 않고 같은 실패 URL(`error=invalid_params`)로 보냅니다.
 
 예시 시나리오: 일본 구매자가 PayPay 로 결제 → 결제창이 `sid` 를 붙여 이 콜백으로 복귀 → 서버가 승인 요청 → 성공 시 주문 결제완료 후 완료 페이지로 리다이렉트. 편의점결제를 선택했다면 같은 흐름이지만 입금대기 상태로 남고, 구매자가 편의점에서 입금하면 그때 완료됩니다.
 
@@ -712,7 +718,7 @@ OK
 
 일본 CBT 편의점(CVS) 결제의 입금 통보(NOTI)를 KG 이니시스 서버로부터 직접 수신하는 웹훅입니다. 구매자가 편의점에서 실제로 대금을 납부하면 KG 이니시스가 이 주소로 통보를 보내고, 서버는 통보를 검증한 뒤 입금대기 상태의 결제를 결제완료로 전환합니다. 이 URL 은 관리자 화면의 CBT 편의점 운영 정보에 표시되며, 그대로 KG 이니시스 가맹점 설정의 통보 URL 로 등록하면 됩니다.
 
-주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며(HTTP 200 고정), `OK` 를 돌려주지 않으면 KG 이니시스가 통보를 재시도합니다. 검증 실패는 `FAIL`, 처리 불필요(비-성공 상태 통보·이미 결제완료)는 `OK` 로 응답합니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 에서 온 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) 위조 통보를 막기 위해 발급 시점에 저장한 거래번호(TID)·가맹점 MID·세션 ID(SID)와 통보 값을 대조하고, 통화가 `JPY` 인지, 금액이 결제 통화 기준 청구액과 같은지, 결제 상태가 입금대기이고 결제수단이 CVS 인지까지 모두 확인합니다. 어느 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) `status` 가 `00`(입금 완료)이 아닌 통보는 무시하고 `OK` 로 응답합니다. (5) 모든 통보는 성공·실패·무시 여부와 사유가 결제 이력에 기록되어 관리자 화면에서 확인할 수 있습니다.
+주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며(HTTP 200 고정), `OK` 를 돌려주지 않으면 KG 이니시스가 통보를 재시도합니다. 검증 실패(필수값 누락 포함)는 `FAIL`, 처리 불필요(비-성공 상태 통보·이미 결제완료)는 `OK` 로 응답합니다. 다만 필드 형식 위반(문자열 자리에 배열 등)은 요청 검증 단계에서 `422` JSON(`{success: false, message, errors}`)으로 끝나며, 직전 페이지(Referer)·요청 Host 로 이동(302)하지 않습니다 — KG 이니시스에는 `FAIL` 과 같은 실패라 재시도 동작은 같습니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 에서 온 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) 위조 통보를 막기 위해 발급 시점에 저장한 거래번호(TID)·가맹점 MID·세션 ID(SID)와 통보 값을 대조하고, 통화가 `JPY` 인지, 금액이 결제 통화 기준 청구액과 같은지, 결제 상태가 입금대기이고 결제수단이 CVS 인지까지 모두 확인합니다. 어느 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) `status` 가 `00`(입금 완료)이 아닌 통보는 무시하고 `OK` 로 응답합니다. (5) 모든 통보는 성공·실패·무시 여부와 사유가 결제 이력에 기록되어 관리자 화면에서 확인할 수 있습니다.
 
 예시 시나리오: 구매자가 편의점결제를 선택해 확인번호를 발급받고 입금대기 상태가 됨 → 며칠 뒤 편의점에서 납부 → KG 이니시스가 `status=00` 통보를 이 주소로 전송 → 검증 통과 시 주문이 결제완료로 전환되고 서버는 `OK` 를 반환.
 
@@ -812,6 +818,8 @@ _에러 응답이 정의되어 있지 않습니다. 인증·요청 파라미터 
 
 에스크로 구매결정 팝업의 닫기(closeUrl) 전용 페이지입니다. 구매자가 PC 에스크로 구매결정 창을 닫으면 KG 이니시스가 이 주소를 열고, 페이지는 창을 닫는 스크립트만 실행합니다. 결제나 구매결정 상태를 바꾸지 않으며 인증도 요구하지 않습니다(팝업 정리 용도). 응답은 JSON 이 아니라 HTML 입니다.
 
+이 라우트는 주문번호 라우트(`escrow-confirm/{orderNumber}`)보다 먼저 등록되고, 주문번호 패턴은 `close` 를 받지 않습니다 — 종전에는 주문번호 라우트가 `close` 를 가로채 닫기 주소가 오류로 끝났습니다.
+
 
 ### POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return
 <!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.mobile-return -->
@@ -837,8 +845,60 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 
 | 리다이렉트 대상 | 조건 |
 | --- | --- |
-| `/mypage/orders/{orderNumber}` | `P_ESCROW_TID` 로 KG 이니시스 에스크로 결제행을 찾아 구매결정 결과(`P_STATUS` `00` = 구매확정, 그 외 = 구매거절)를 결제 메타 `escrow_confirm` 에 기록한 경우 |
-| `/mypage/orders` | 거래번호가 비었거나 매칭되는 에스크로 결제가 없어 아무것도 기록하지 않은 경우 |
+| `{사이트 주소}/mypage/orders` | 항상 — 증표가 없는 이 주소는 구매결정 결과를 기록하지 않는다 |
+
+_KG 이니시스가 POST 로 보내는 필드(라우트 FormRequest 로 선언되지 않아 요청 파라미터 표에는 나타나지 않음): `P_STATUS`(구매결정 결과 코드), `P_ESCROW_TID`(에스크로 거래번호), `P_CL_STATUS`(결제 상태 구분), `P_RMESG1`(결과 메시지)._
+
+**응답 예시**
+
+```http
+HTTP/1.1 302 Found
+Location: https://example.com/mypage/orders
+```
+
+**에러 응답**
+
+_에러 응답이 정의되어 있지 않습니다. 어떤 입력이든 기록 없이 주문 목록(`/mypage/orders`)으로 리다이렉트합니다._
+
+<!-- @generated:end -->
+
+**설명**
+
+증표(nonce) 없이 남아 있는 종전 모바일 구매결정 결과 수신 주소입니다. 확인창은 이제 결과 수신 주소로 `mobile/return/{nonce}` 를 넘기므로, 이 주소는 배포 순간 이미 열려 있던 확인창의 복귀만 받습니다. 공개 주소라 거래번호만으로 기록하면 거래번호를 아는 제3자가 남의 결제에 구매결정 기록을 남길 수 있어, **결과를 기록하지 않고** 경고 로그만 남긴 뒤 사이트 주소의 주문 목록으로 리다이렉트합니다.
+
+주의사항: 응답은 JSON 이 아니라 리다이렉트(302)입니다. 실제 기록은 `POST .../escrow-confirm/mobile/return/{nonce}` 가 담당합니다.
+
+
+### POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return/{nonce}
+<!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.mobile-return.bound -->
+- **라우트명**: `web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.mobile-return.bound`
+- **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController@mobileReturn`
+- **인증/권한**: 공개 (인증 불필요 — 경로의 일회용 증표로 확인창과 결속)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| nonce | path | string | 예 | 영숫자 40자 | 확인창(`escrow-confirm/{orderNumber}`)이 발급한 일회용 증표. 한 번 꺼내면 지워지며 30분 뒤 만료된다. 패턴에 맞지 않으면 라우트가 매칭되지 않는다(404). |
+
+**요청 예시**
+
+```http
+POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return/u8jzPde0IgxLd6GncfBAepfJBd0Kh8oOOL8dKLzd HTTP/1.1
+Host: api.example.com
+Content-Type: application/x-www-form-urlencoded
+
+P_STATUS=00&P_ESCROW_TID=StdpayCARDINIpayTest20260714...&P_CL_STATUS=...&P_RMESG1=...
+```
+
+**응답 필드** (`data` 내부)
+
+_이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 리다이렉트(302)로만 응답하며, 대상은 사이트 주소(`APP_URL`) 기준 절대 URL 입니다._
+
+| 리다이렉트 대상 | 조건 |
+| --- | --- |
+| `{사이트 주소}/mypage/orders/{orderNumber}` | 증표가 유효하고 증표에 기억된 거래번호가 `P_ESCROW_TID` 와 같으며, 그 거래번호의 KG 이니시스 에스크로 결제행에 구매결정 결과(`P_STATUS` `00` = 구매확정, 그 외 = 구매거절)를 결제 메타 `escrow_confirm` 에 기록한 경우 |
+| `{사이트 주소}/mypage/orders` | 증표가 없거나 만료·재사용된 경우, 거래번호가 증표와 다른 경우, 매칭되는 에스크로 결제가 없는 경우 — 아무것도 기록하지 않는다 |
 
 _KG 이니시스가 POST 로 보내는 필드(라우트 FormRequest 로 선언되지 않아 요청 파라미터 표에는 나타나지 않음): `P_STATUS`(구매결정 결과 코드), `P_ESCROW_TID`(에스크로 거래번호), `P_CL_STATUS`(결제 상태 구분), `P_RMESG1`(결과 메시지)._
 
@@ -851,15 +911,15 @@ Location: https://example.com/mypage/orders/20260714-1200001234
 
 **에러 응답**
 
-_에러 응답이 정의되어 있지 않습니다. 거래번호가 비었거나 매칭되는 에스크로 결제가 없어도 예외를 던지지 않고 주문 목록(`/mypage/orders`)으로 리다이렉트합니다._
+_에러 응답이 정의되어 있지 않습니다. 증표·거래번호가 맞지 않아도 예외를 던지지 않고 기록 없이 주문 목록(`/mypage/orders`)으로 리다이렉트합니다._
 
 <!-- @generated:end -->
 
 **설명**
 
-모바일 에스크로 구매결정 결과를 KG 이니시스로부터 수신하는 복귀 지점입니다. 구매자가 모바일에서 구매확정 또는 구매거절을 마치면 KG 이니시스가 이 주소로 결과를 전송하고, 서버는 전달된 에스크로 거래번호로 해당 결제를 찾아 구매결정 결과(확정/거절, 결과 코드, 메시지)를 결제 이력에 기록한 뒤 마이페이지 주문 상세로 리다이렉트합니다.
+모바일 에스크로 구매결정 결과를 KG 이니시스로부터 수신하는 복귀 지점입니다. 구매자가 확인창에서 구매확정 또는 구매거절을 마치면 KG 이니시스가 확인창이 넘긴 `P_NEXT_URL`(이 주소)로 결과를 전송합니다. 서버는 경로의 증표를 한 번만 꺼내 그 증표에 기억된 거래번호와 `P_ESCROW_TID` 를 대조하고, 일치할 때만 구매결정 결과(확정/거절, 결과 코드, 메시지)를 결제 이력에 기록한 뒤 마이페이지 주문 상세로 리다이렉트합니다.
 
-주의사항: 응답은 JSON 이 아니라 리다이렉트(302)이며, 성공 시 해당 주문 상세로, 거래번호로 결제를 찾지 못하면 주문 목록으로 이동합니다. 거래번호가 없거나 매칭되는 에스크로 결제가 없으면 아무것도 기록하지 않고 조용히 넘어갑니다(외부에서 임의 호출해도 상태가 바뀌지 않음). 구매거절이 접수된 경우 판매자 측에서 별도로 구매거절 확인(관리자 에스크로 거절확인) 절차를 진행해야 합니다.
+주의사항: 결과 수신 주소는 PG 가 사용자 브라우저로 POST 하는 공개 주소라 인증·서명이 없습니다. 증표는 확인창을 연 본인 요청에서만 발급되므로, 거래번호를 아는 제3자가 이 주소를 직접 호출해도 기록이 남지 않습니다. 증표를 경로에 싣는 이유는 PG 가 쿼리 문자열을 보존하는지와 무관하게 전달되게 하기 위해서입니다. 구매거절이 접수된 경우 판매자 측에서 별도로 구매거절 확인(관리자 에스크로 거절확인) 절차를 진행해야 합니다.
 
 
 ### POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return
@@ -882,7 +942,7 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 을 반환하지 않습니다 (`data` 없음). 응답은 `Content-Type: text/html; charset=UTF-8` 의 HTML(HTTP 200)이며, 부모 창을 새로고침하고 팝업을 닫는 스크립트뿐입니다. 구매결정 결과(`ResultCode` `00` = 구매확정, 그 외 = 구매거절)와 확정·거절 일시, 거절 사유는 `tid` 로 찾은 에스크로 결제행의 결제 메타 `escrow_confirm` 에 기록됩니다._
+_이 엔드포인트는 JSON 을 반환하지 않습니다 (`data` 없음). 응답은 `Content-Type: text/html; charset=UTF-8` 의 HTML(HTTP 200)이며, 부모 창을 새로고침하고 팝업을 닫는 스크립트뿐입니다. 증표가 없는 이 주소는 구매결정 결과를 기록하지 않습니다._
 
 _KG 이니시스가 POST 로 보내는 필드(라우트 FormRequest 로 선언되지 않아 요청 파라미터 표에는 나타나지 않음): `ResultCode`(구매결정 결과 코드), `tid`(에스크로 거래번호), `CNF_Date`/`CNF_Time`(구매확정 일시), `DNY_Date`/`DNY_Time`(구매거절 일시), `DNY_DenyMsg`(구매거절 사유)._
 
@@ -897,28 +957,78 @@ Content-Type: text/html; charset=UTF-8
 
 **에러 응답**
 
-_에러 응답이 정의되어 있지 않습니다. 거래번호가 비었거나 매칭되는 에스크로 결제가 없어도 기록만 생략하고 동일한 HTML(200)을 반환합니다._
+_에러 응답이 정의되어 있지 않습니다. 어떤 입력이든 기록 없이 동일한 HTML(200)을 반환합니다._
 
 <!-- @generated:end -->
 
 **설명**
 
-PC 에스크로 구매결정 결과를 KG 이니시스 팝업으로부터 수신하는 복귀 지점입니다. 구매자가 구매확정 또는 구매거절을 마치면 KG 이니시스 결제창이 이 주소로 결과를 전송하고, 서버는 전달된 에스크로 거래번호로 결제를 찾아 구매결정 결과(확정/거절, 결과 코드, 확정·거절 일시, 거절 사유)를 결제 이력에 기록합니다.
+증표(nonce) 없이 남아 있는 종전 PC 구매결정 결과 수신 주소입니다. 확인창은 이제 결과 수신 주소로 `pc/return/{nonce}` 를 넘기므로, 이 주소는 배포 순간 이미 열려 있던 확인창의 복귀만 받습니다. 공개 주소라 거래번호만으로 기록하면 거래번호를 아는 제3자가 남의 결제에 구매결정 기록을 남길 수 있어, **결과를 기록하지 않고** 경고 로그만 남긴 뒤 같은 팝업 닫기 HTML 을 돌려줍니다.
 
-주의사항: 응답은 JSON 이 아니라 HTML 이며, 팝업을 닫고 부모 창을 새로고침하는 스크립트를 반환합니다. 거래번호가 비어 있거나 매칭되는 에스크로 결제가 없으면 아무 기록도 남기지 않습니다. 결과 코드가 확정(`00`)이 아니면 구매거절로 기록되며, 이후 판매자 측 구매거절 확인 절차가 필요합니다.
+주의사항: 응답은 JSON 이 아니라 HTML 입니다. 실제 기록은 `POST .../escrow-confirm/pc/return/{nonce}` 가 담당합니다.
+
+
+### POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return/{nonce}
+<!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.pc-return.bound -->
+- **라우트명**: `web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.pc-return.bound`
+- **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController@pcReturn`
+- **인증/권한**: 공개 (인증 불필요 — 경로의 일회용 증표로 확인창과 결속)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| nonce | path | string | 예 | 영숫자 40자 | 확인창(`escrow-confirm/{orderNumber}`)이 발급한 일회용 증표. 한 번 꺼내면 지워지며 30분 뒤 만료된다. 패턴에 맞지 않으면 라우트가 매칭되지 않는다(404). |
+
+**요청 예시**
+
+```http
+POST /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return/u8jzPde0IgxLd6GncfBAepfJBd0Kh8oOOL8dKLzd HTTP/1.1
+Host: api.example.com
+Content-Type: application/x-www-form-urlencoded
+
+ResultCode=00&tid=StdpayCARDINIpayTest20260714...&CNF_Date=20260714&CNF_Time=120000
+```
+
+**응답 필드** (`data` 내부)
+
+_이 엔드포인트는 JSON 을 반환하지 않습니다 (`data` 없음). 응답은 `Content-Type: text/html; charset=UTF-8` 의 HTML(HTTP 200)이며, 부모 창을 새로고침하고 팝업을 닫는 스크립트뿐입니다. 증표가 유효하고 증표에 기억된 거래번호가 `tid` 와 같을 때만 구매결정 결과(`ResultCode` `00` = 구매확정, 그 외 = 구매거절)와 확정·거절 일시, 거절 사유를 그 에스크로 결제행의 결제 메타 `escrow_confirm` 에 기록합니다._
+
+_KG 이니시스가 POST 로 보내는 필드(라우트 FormRequest 로 선언되지 않아 요청 파라미터 표에는 나타나지 않음): `ResultCode`(구매결정 결과 코드), `tid`(에스크로 거래번호), `CNF_Date`/`CNF_Time`(구매확정 일시), `DNY_Date`/`DNY_Time`(구매거절 일시), `DNY_DenyMsg`(구매거절 사유)._
+
+**응답 예시**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+
+<script>try{window.opener&&window.opener.location.reload();}catch(e){}window.close();</script>
+```
+
+**에러 응답**
+
+_에러 응답이 정의되어 있지 않습니다. 증표가 없거나 만료·재사용됐거나, 거래번호가 증표와 다르거나, 매칭되는 에스크로 결제가 없어도 기록만 생략하고 동일한 HTML(200)을 반환합니다._
+
+<!-- @generated:end -->
+
+**설명**
+
+PC 에스크로 구매결정 결과를 KG 이니시스 팝업으로부터 수신하는 복귀 지점입니다. 구매자가 확인창에서 구매확정 또는 구매거절을 마치면 KG 이니시스 결제창이 확인창이 넘긴 `returnUrl`(이 주소)로 결과를 전송합니다. 서버는 경로의 증표를 한 번만 꺼내 그 증표에 기억된 거래번호와 `tid` 를 대조하고, 일치할 때만 구매결정 결과(확정/거절, 결과 코드, 확정·거절 일시, 거절 사유)를 결제 이력에 기록합니다.
+
+주의사항: 응답은 JSON 이 아니라 HTML 이며, 팝업을 닫고 부모 창을 새로고침하는 스크립트를 반환합니다. 결과 수신 주소는 인증·서명이 없는 공개 주소라, 증표가 맞지 않는 수신은 기록하지 않고 경고 로그만 남깁니다. 결과 코드가 확정(`00`)이 아니면 구매거절로 기록되며, 이후 판매자 측 구매거절 확인 절차가 필요합니다.
 
 
 ### GET /plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{orderNumber}
 <!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show -->
 - **라우트명**: `web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController@show`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 로그인 필요 (라우트 미들웨어가 아니라 컨트롤러가 판정 — 비로그인은 401 안내 HTML)
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| orderNumber | path | string | 예 | — | 구매결정할 주문의 주문번호. 로그인 사용자 본인의 KG 이니시스 에스크로 결제(`is_escrow=true`, `transaction_id` 존재)를 찾는 키로 사용된다. |
+| orderNumber | path | string | 예 | 영숫자·`_`·`-` (`close` 제외) | 구매결정할 주문의 주문번호. 로그인 사용자 본인의 KG 이니시스 에스크로 결제(`is_escrow=true`, `transaction_id` 존재)를 찾는 키로 사용된다. |
 
 **요청 예시**
 
@@ -934,8 +1044,8 @@ _이 엔드포인트는 JSON 을 반환하지 않습니다 (`data` 없음). 응�
 
 | 분기 | 반환 HTML | 폼 전송 대상 | 주요 hidden 필드 |
 | --- | --- | --- | --- |
-| PC | `INIStdPay_escrow_conf.js` 로드 후 `INIStdPay.pay('escrow_confirm_form')` 자동 실행 | KG 이니시스 PC 구매결정 팝업 (테스트: `stgstdpay.inicis.com`, 운영: `stdpay.inicis.com`) | `mid`, `tid`, `timestamp`, `mKey`, `currency=WON`, `returnUrl`(pc/return), `closeUrl`(escrow-confirm/close) |
-| 모바일 | 폼 자동 submit 스크립트 | `https://mobile.inicis.com/smart/payment/` (accept-charset: euc-kr) | `P_INI_PAYMENT=ESCROWCONFIRM`, `P_MID`, `P_ESCROW_TID`, `P_NEXT_URL`(mobile/return) |
+| PC | `INIStdPay_escrow_conf.js` 로드 후 `INIStdPay.pay('escrow_confirm_form')` 자동 실행 | KG 이니시스 PC 구매결정 팝업 (테스트: `stgstdpay.inicis.com`, 운영: `stdpay.inicis.com`) | `mid`, `tid`, `timestamp`, `mKey`, `currency=WON`, `returnUrl`(pc/return/{nonce}), `closeUrl`(escrow-confirm/close) |
+| 모바일 | 폼 자동 submit 스크립트 | `https://mobile.inicis.com/smart/payment/` (accept-charset: euc-kr) | `P_INI_PAYMENT=ESCROWCONFIRM`, `P_MID`, `P_ESCROW_TID`, `P_NEXT_URL`(mobile/return/{nonce}) |
 
 **응답 예시**
 
@@ -960,7 +1070,7 @@ Content-Type: text/html; charset=UTF-8
         <input type="hidden" name="timestamp" value="1768348800000">
         <input type="hidden" name="mKey" value="e3b0c44298fc1c14…">
         <input type="hidden" name="currency" value="WON">
-        <input type="hidden" name="returnUrl" value="https://example.com/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return">
+        <input type="hidden" name="returnUrl" value="https://example.com/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return/u8jzPde0IgxLd6GncfBAepfJBd0Kh8oOOL8dKLzd">
         <input type="hidden" name="closeUrl" value="https://example.com/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/close">
         <input type="hidden" name="acceptmethod" value="">
     </form>
@@ -972,7 +1082,7 @@ Content-Type: text/html; charset=UTF-8
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 401 | Unauthorized | 비로그인 상태로 접근한 경우 (라우트에 `auth` 미들웨어 적용 — 요약의 "공개" 표기는 자동 생성 오차) |
+| 401 | Unauthorized | 비로그인 상태로 접근한 경우 — 로그인 필요 안내 HTML(`text/html`)을 401 로 돌려준다. 라우트에 `auth` 미들웨어를 걸지 않는다(이 앱에는 로그인 라우트가 없어 종전에는 500 으로 끝났다) |
 | 404 | Not Found | `orderNumber` 에 해당하는 주문이 접속 사용자 본인 소유가 아니거나, 해당 주문에 거래번호가 있는 KG 이니시스 에스크로 결제(`pg_provider=kginicis`, `is_escrow=true`)가 없는 경우 |
 
 <!-- @generated:end -->
@@ -981,7 +1091,9 @@ Content-Type: text/html; charset=UTF-8
 
 구매자가 자신의 에스크로 주문에 대해 구매결정(구매확정/구매거절)을 진행하도록 KG 이니시스 구매결정 창을 띄워 주는 진입 페이지입니다. 마이페이지 주문 상세의 "구매결정" 버튼이 이 주소를 열며, 서버는 접속한 사용자 본인의 KG 이니시스 에스크로 결제를 찾아 거래번호를 담은 폼을 만들고 KG 이니시스 구매결정 창으로 자동 전송합니다. 접속 기기의 User-Agent 로 PC/모바일을 판별해 각각 PC 팝업 방식과 모바일 전송 방식으로 분기합니다.
 
-주의사항: 응답은 JSON 이 아니라 HTML 페이지입니다. 로그인이 필요하며(비로그인 시 로그인 흐름으로 전환), 주문번호에 해당하는 에스크로 결제가 본인 소유가 아니거나 존재하지 않으면 404 로 응답합니다. 구매결정 결과는 이 페이지가 아니라 KG 이니시스가 되돌려보내는 복귀 지점(escrow-confirm PC/모바일 return)에서 기록됩니다.
+주의사항: 응답은 JSON 이 아니라 HTML 페이지입니다. 로그인이 필요하며(비로그인이면 로그인 필요 안내 HTML 을 401 로 반환), 주문번호에 해당하는 에스크로 결제가 본인 소유가 아니거나 존재하지 않으면 404 로 응답합니다. 구매결정 결과는 이 페이지가 아니라 KG 이니시스가 되돌려보내는 복귀 지점(escrow-confirm PC/모바일 return)에서 기록됩니다.
+
+확인창을 열 때마다 거래번호·주문번호·회원을 담은 일회용 증표(영숫자 40자, 30분 유효)를 발급해 결과 수신 주소의 **경로**(`pc/return/{nonce}`·`mobile/return/{nonce}`)에 싣습니다. 결과 수신 주소와 닫기 주소는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 KG 이니시스에 넘깁니다.
 
 
 ### GET /plugins/sirsoft-pay_kginicis/payment/mobile/callback
@@ -1017,7 +1129,7 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 | 리다이렉트 대상 | 조건 | 쿼리 파라미터 |
 | --- | --- | --- |
 | 성공 URL (`redirect_success_url`, 기본 `{shopBase}/orders/{orderId}/complete`) | 서버 승인 성공(결제완료 또는 가상계좌 발급), 이미 결제완료된 거래(재전송) | 없음 (주문번호는 경로에 치환) |
-| 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·검증 실패·승인 실패 | `error` (`order_id_missing` \| `missing_fields` \| `req_url_invalid` \| `order_not_found` \| `amount_mismatch` 등), `message` (`P_RMESG1` 결과 메시지), `orderId` |
+| 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·검증 실패·승인 실패 | `error` (`invalid_params` \| `order_id_missing` \| `missing_fields` \| `req_url_invalid` \| `order_not_found` \| `amount_mismatch` 등), `message` (`P_RMESG1` 결과 메시지), `orderId` |
 | 실패 URL (쿼리 없음) | 사용자가 결제창을 닫은 취소(`P_RMESG1` 에 '사용자가 결제를 취소' 등 취소 문구 포함) | 없음 (조용한 복귀) |
 
 **응답 예시**
@@ -1038,7 +1150,7 @@ Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=202607
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
 
 <!-- @generated:end -->
 
@@ -1049,6 +1161,8 @@ Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=202607
 주문번호 자리(`P_OID`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 PC 콜백과 같은 규칙으로 클레임 결제 건을 승인하고 신청서 상세로 리다이렉트합니다. 모바일 경로에는 망취소 URL 이 없어 승인 확정 뒤의 거절은 취소 API 로 보상합니다.
 
 주의사항: (1) 응답은 JSON 이 아니라 리다이렉트(302)이며, 실패 시 체크아웃 URL 에 `error`·`message`·`orderId` 쿼리가 붙습니다. (2) 승인 요청 URL 은 콜백 값을 그대로 신뢰하지 않고 IDC 코드 기준 화이트리스트로 검증해 SSRF 를 차단합니다(실패 시 `error=req_url_invalid`). (3) 모바일 표준 응답에는 주문번호가 빠질 수 있어, 없으면 콜백 URL 쿼리스트링의 `orderId` 를 대체로 사용합니다. (4) 승인 결과가 가상계좌면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기로 두며, 완료는 모바일 가상계좌 입금통보 시점입니다. 승인 응답에 `P_AMT` 가 없거나 주문 청구액과 다르면(청구액이 0 인 경우 포함) 발급을 기록하지 않고 취소한 뒤 `error=order_not_payable` 로 돌려보냅니다. (5) 같은 거래번호가 이미 결제완료면 재처리하지 않고 성공 페이지로 복귀합니다. (6) 승인 후 금액 불일치나 예외가 발생하면 자동 취소를 호출해 PG 측 승인 잔존을 해제하며, 자동 취소마저 실패하면 수동 정산이 필요합니다. (7) 사용자가 결제창을 닫은 취소는 결과 코드만으로 일반 실패와 구분되지 않으므로 결과 메시지의 취소 문구로 판별하며, 이 경우 에러 없이 체크아웃으로 조용히 복귀합니다.
+
+리다이렉트 주소(성공·실패·클레임 신청서 상세)는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만듭니다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않습니다. 파라미터 검증 실패도 Referer 를 따르지 않고 같은 실패 URL(`error=invalid_params`)로 보냅니다.
 
 예시 시나리오: 모바일 구매자가 카드 결제를 승인 → KG 이니시스가 이 콜백으로 인증 성공과 승인 요청 URL 을 전송 → 서버가 승인 요청 → 성공 시 주문 결제완료 후 완료 페이지로 리다이렉트.
 
@@ -1097,7 +1211,7 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 | 리다이렉트 대상 | 조건 | 쿼리 파라미터 |
 | --- | --- | --- |
 | 성공 URL (`redirect_success_url`, 기본 `{shopBase}/orders/{orderId}/complete`) | 서버 승인 성공(결제완료 또는 가상계좌 발급), 이미 결제완료된 거래(재전송) | 없음 (주문번호는 경로에 치환) |
-| 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·검증 실패·승인 실패 | `error` (`order_id_missing` \| `missing_fields` \| `req_url_invalid` \| `order_not_found` \| `amount_mismatch` 등), `message` (`P_RMESG1` 결과 메시지), `orderId` |
+| 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·검증 실패·승인 실패 | `error` (`invalid_params` \| `order_id_missing` \| `missing_fields` \| `req_url_invalid` \| `order_not_found` \| `amount_mismatch` 등), `message` (`P_RMESG1` 결과 메시지), `orderId` |
 | 실패 URL (쿼리 없음) | 사용자가 결제창을 닫은 취소(`P_RMESG1` 에 취소 문구 포함) | 없음 (조용한 복귀) |
 
 **응답 예시**
@@ -1118,7 +1232,7 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
 
 <!-- @generated:end -->
 
@@ -1129,6 +1243,8 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 주문번호 자리(`P_OID`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 PC 콜백과 같은 규칙으로 클레임 결제 건을 승인하고 신청서 상세로 리다이렉트합니다. 모바일 경로에는 망취소 URL 이 없어 승인 확정 뒤의 거절은 취소 API 로 보상합니다.
 
 주의사항: (1) 응답은 JSON 이 아니라 리다이렉트(302)이며, 실패 시 체크아웃 URL 에 `error`·`message`·`orderId` 쿼리가 붙습니다. (2) 승인 요청 URL 은 콜백 값을 그대로 신뢰하지 않고 IDC 코드 기준 화이트리스트로 검증해 SSRF 를 차단합니다(실패 시 `error=req_url_invalid`). (3) 모바일 표준 응답에는 주문번호가 빠질 수 있어, 없으면 콜백 URL 쿼리스트링의 `orderId` 를 대체로 사용합니다. (4) 승인 결과가 가상계좌면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기로 두며, 완료는 모바일 가상계좌 입금통보 시점입니다. 승인 응답에 `P_AMT` 가 없거나 주문 청구액과 다르면(청구액이 0 인 경우 포함) 발급을 기록하지 않고 취소한 뒤 `error=order_not_payable` 로 돌려보냅니다. (5) 같은 거래번호가 이미 결제완료면 재처리하지 않고 성공 페이지로 복귀합니다. (6) 승인 후 금액 불일치나 예외가 발생하면 자동 취소를 호출해 PG 측 승인 잔존을 해제하며, 자동 취소마저 실패하면 수동 정산이 필요합니다. (7) 사용자가 결제창을 닫은 취소는 결과 코드만으로 일반 실패와 구분되지 않으므로 결과 메시지의 취소 문구로 판별하며, 이 경우 에러 없이 체크아웃으로 조용히 복귀합니다.
+
+리다이렉트 주소(성공·실패·클레임 신청서 상세)는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만듭니다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않습니다. 파라미터 검증 실패도 Referer 를 따르지 않고 같은 실패 URL(`error=invalid_params`)로 보냅니다.
 
 예시 시나리오: 모바일 구매자가 카드 결제를 승인 → KG 이니시스가 이 콜백으로 인증 성공과 승인 요청 URL 을 전송 → 서버가 승인 요청 → 성공 시 주문 결제완료 후 완료 페이지로 리다이렉트.
 
@@ -1227,7 +1343,7 @@ OK
 
 모바일 결제로 발급한 가상계좌의 입금통보를 KG 이니시스 서버로부터 직접 수신하는 웹훅입니다. 구매자가 발급받은 계좌에 실제로 입금하면 KG 이니시스가 이 주소로 통보를 보내고, 서버는 통보를 검증한 뒤 입금대기 상태의 주문을 결제완료로 전환합니다. 이 URL 은 관리자 설정의 가상계좌 통보 URL(모바일용)에 표시되며, 그대로 KG 이니시스 가맹점 설정에 등록하면 됩니다.
 
-주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며, `OK` 를 돌려주지 않으면 KG 이니시스가 통보를 재시도합니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 의 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) 위조 통보를 막기 위해 발급 시점에 저장한 거래번호·가맹점 MID·가상계좌번호(숫자만 비교)·결제 통화 기준 청구액을 통보 값과 대조하고, 결제가 가상계좌·입금대기 상태인지도 확인합니다. 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) 통보 상태 코드가 입금통보(`02`)이고 결제수단 구분이 `VBANK` 인 경우에만 실제 입금 처리를 하며, 그 외 통보는 `OK` 로 응답 후 무시합니다. (5) 이미 결제완료된 거래번호의 통보는 중복으로 보고 재처리하지 않습니다. (6) 은행명·입금자명이 EUC-KR 로 들어오면 UTF-8 로 자동 변환해 저장합니다.
+주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며, `OK` 를 돌려주지 않으면 KG 이니시스가 통보를 재시도합니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 의 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) 위조 통보를 막기 위해 발급 시점에 저장한 거래번호·가맹점 MID·가상계좌번호(숫자만 비교)·결제 통화 기준 청구액을 통보 값과 대조하고, 결제가 가상계좌·입금대기 상태인지도 확인합니다. 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) 통보 상태 코드가 입금통보(`02`)이고 결제수단 구분이 `VBANK` 인 경우에만 실제 입금 처리를 하며, 그 외 통보는 `OK` 로 응답 후 무시합니다. (5) 이미 결제완료된 거래번호의 통보는 중복으로 보고 재처리하지 않습니다. (6) 은행명·입금자명이 EUC-KR 로 들어오면 UTF-8 로 자동 변환해 저장합니다. (7) 필수 값이 없거나 형식이 다른 통보는 `422` JSON(`{success: false, message, errors}`)으로 끝나며 직전 페이지(Referer)·요청 Host 로 이동(302)하지 않습니다 — KG 이니시스에는 302 와 같은 실패라 재시도 동작은 같습니다.
 
 예시 시나리오: 구매자가 모바일에서 가상계좌를 선택 → 계좌 발급 후 주문은 입금대기 → 구매자가 계좌 이체 → KG 이니시스가 이 주소로 입금통보 → 검증 통과 시 결제완료 전환 후 `OK` 반환.
 
@@ -1344,7 +1460,7 @@ OK
 
 PC 결제로 발급한 가상계좌의 입금통보를 KG 이니시스 서버로부터 직접 수신하는 웹훅입니다. 구매자가 발급받은 계좌에 실제로 입금하면 KG 이니시스가 이 주소로 통보를 보내고, 서버는 통보를 검증한 뒤 입금대기 상태의 주문을 결제완료로 전환합니다. 이 URL 은 관리자 설정의 가상계좌 통보 URL(PC 웹용)에 표시되며, 그대로 KG 이니시스 가맹점 설정에 등록하면 됩니다.
 
-주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며, `OK` 를 돌려주지 않으면 KG 이니시스가 최대 10회까지 통보를 재시도합니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 의 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) PC 입금통보에는 별도 서명 필드가 없으므로, 발급 시점에 저장한 거래번호·가맹점 MID·가상계좌번호(숫자만 비교)·결제 통화 기준 청구액을 통보 값과 모두 대조하고 결제가 가상계좌·입금대기 상태인지도 확인해 위조 통보를 걸러냅니다. 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) 이미 결제완료된 거래번호의 통보는 중복으로 보고 재처리하지 않고 `OK` 를 반환합니다. (5) 은행명·입금자명이 EUC-KR 로 들어오면 UTF-8 로 자동 변환해 저장합니다. (6) 정산·현금영수증 관련 필드들은 통보가 검증 오류로 차단되지 않도록 수신만 허용하며 처리에는 사용하지 않습니다.
+주의사항: (1) 응답은 JSON 이 아니라 평문 `OK` 또는 `FAIL` 이며, `OK` 를 돌려주지 않으면 KG 이니시스가 최대 10회까지 통보를 재시도합니다. (2) 라우트에 KG 이니시스 공식 발송 IP 화이트리스트가 걸려 있어 허용되지 않은 IP 의 요청은 403 으로 차단됩니다(로컬·테스트 환경 제외). (3) PC 입금통보에는 별도 서명 필드가 없으므로, 발급 시점에 저장한 거래번호·가맹점 MID·가상계좌번호(숫자만 비교)·결제 통화 기준 청구액을 통보 값과 모두 대조하고 결제가 가상계좌·입금대기 상태인지도 확인해 위조 통보를 걸러냅니다. 하나라도 어긋나면 처리하지 않고 `FAIL` 을 반환합니다. (4) 이미 결제완료된 거래번호의 통보는 중복으로 보고 재처리하지 않고 `OK` 를 반환합니다. (5) 은행명·입금자명이 EUC-KR 로 들어오면 UTF-8 로 자동 변환해 저장합니다. (6) 정산·현금영수증 관련 필드들은 통보가 검증 오류로 차단되지 않도록 수신만 허용하며 처리에는 사용하지 않습니다. (7) 필수 값이 없거나 형식이 다른 통보는 `422` JSON(`{success: false, message, errors}`)으로 끝나며 직전 페이지(Referer)·요청 Host 로 이동(302)하지 않습니다 — KG 이니시스에는 302 와 같은 실패라 재시도 동작은 같습니다.
 
 예시 시나리오: 구매자가 PC 결제창에서 가상계좌를 선택 → 계좌 발급 후 주문은 입금대기 → 구매자가 계좌 이체 → KG 이니시스가 이 주소로 입금통보 → 검증 통과 시 결제완료 전환 후 `OK` 반환.
 

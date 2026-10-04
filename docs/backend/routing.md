@@ -15,6 +15,7 @@
 6. .js/.css/.json/.map 로 끝나는 라우트 = dualSuffix/dualSuffixSegment/dualAsset 매크로 필수
 7. catch-all 은 예약 프리픽스를 전수 제외 (가려진 라우트는 200 SPA 셸이라 단서가 없다)
 8. 조건부로만 열리는 라우트군의 게이트 = 그룹 미들웨어 단일 지점 (핸들러 개별 게이트 금지)
+9. 리다이렉트·콜백·제3자 전송·메일 링크의 절대 URL = SiteUrl::absolute() (url()·redirect('/x') 는 요청 Host 를 따른다)
 ```
 
 ---
@@ -25,7 +26,9 @@
 2. [URL 경로 규칙](#url-경로-규칙)
 3. [권한 체크](#권한-체크)
 4. [라우트 정의 예시](#라우트-정의-예시)
-5. [개발 체크리스트](#개발-체크리스트)
+5. [절대 URL 은 사이트 주소로 만든다](#절대-url-은-사이트-주소로-만든다)
+6. [라우트 캐시](#라우트-캐시)
+7. [개발 체크리스트](#개발-체크리스트)
 
 ---
 
@@ -416,6 +419,36 @@ Laravel 의 `throttle:N,M` 은 비로그인 요청의 제한 키를 `sha1(domain
 | 응답 문구·상한 계산이 필요한데 접두사 인자로 해결 | `RateLimiter::for()` 명명 리미터 (`throttle:auth-login` 이 그 예) |
 
 상한과 접두사의 SSoT 는 라우트 정의 한 곳이고, API 레퍼런스는 그 값을 서술한다. 회귀 가드: `tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php` (공유 키를 상한 이상 선점해도 확인 요청이 429 가 아님 + 자기 상한은 그대로 걸림). 재현 경위와 리미터 카운터를 찾는 법은 [API 레퍼런스의 요청 제한 절](api/identity.md#공개-본인인증-엔드포인트의-요청-제한)에 정리돼 있다.
+
+---
+
+## 절대 URL 은 사이트 주소로 만든다
+
+Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormRequest 의 기본 `failedValidation`(직전 화면으로 되돌림)은 절대 주소의 호스트를 **요청의 Host 헤더**(신뢰 프록시 뒤라면 `X-Forwarded-Host`)에서 가져온다. 화면 안 링크처럼 같은 요청에 되돌려 주는 주소라면 문제가 없지만, 그 주소가 사이트 밖으로 나가거나 나중에 다시 쓰이면 Host 를 바꿔 보낸 사람이 목적지를 정하게 된다 — 결제·본인인증 결과와 검증 토큰이 그 호스트로 전달된다.
+
+운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인과 다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
+
+| ❌ 금지 (리다이렉트·콜백·제3자 전송·메일/알림 링크) | ✅ 올바른 사용 |
+|--------|---------------|
+| `redirect('/shop/orders')`, `redirect()->to('/x')` | `redirect(SiteUrl::absolute('/shop/orders'))` |
+| `redirect(ShopRedirectUrl::resolve($setting))` (설정값은 상대 경로일 수 있음) | `redirect(SiteUrl::absolute(ShopRedirectUrl::resolve($setting)))` |
+| PG·본인인증 제공자에 넘기는 `url('/plugins/x/callback')`·`route('x.callback')` | `SiteUrl::absolute('/plugins/x/callback')` |
+| 큐·메일·알림에서 `url('/mypage')` (큐 작업자는 `http://localhost` 로 만든다) | `SiteUrl::absolute('/mypage')` |
+| 웹 라우트(결제·본인인증 콜백, 결과 브리지, PG 서버 통보·웹훅)의 FormRequest 가 기본 `failedValidation` 을 그대로 씀 | 브라우저가 오는 주소면 `failedValidation` 에서 `HttpResponseException(redirect(SiteUrl::absolute($failUrl)))` 로 명시 이동, PG 서버가 부르는 주소면 `HttpResponseException(ResponseHelper::validationError($validator->errors()))` 로 422 (규칙이 빈 배열이라 검증이 실패할 수 없는 요청은 해당 없음) |
+| `return_url` 같은 입력 주소를 요청 Host 와 비교해 허용 | `SiteUrl::isSameOrigin($url)` 로 사이트 주소와 비교 |
+
+`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다.
+
+| 메서드 | 용도 |
+| --- | --- |
+| `SiteUrl::absolute($pathOrUrl)` | 상대 경로를 사이트 주소 기준 절대 URL 로. 이미 절대 URL 이면 그대로 |
+| `SiteUrl::forPath($pathAndQuery)` | 요청에서 꺼낸 경로·쿼리(`$request->getRequestUri()`)를 사이트 주소에 붙인 URL |
+| `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
+| `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
+
+API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host 로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
+
+요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
 
 ---
 

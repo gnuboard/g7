@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\Tosspayments\Controllers\PaymentCloseReportController;
 
@@ -29,7 +30,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         return response()->json([
             'success' => true,
             'data' => [
-                'url' => url('/plugins/sirsoft-tosspayments/webhook/deposit'),
+                // 운영자가 PG 관리자에 등록할 주소 — 접속한 주소가 아니라 사이트 주소로 안내한다.
+                'url' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/webhook/deposit'),
             ],
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')

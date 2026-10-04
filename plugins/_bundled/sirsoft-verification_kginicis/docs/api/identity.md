@@ -170,5 +170,8 @@ HTTP/1.1 200
 길이 상한을 두지 않는다 — 토큰 길이는 코어 발급 정책에 종속되므로, 여기서 상한을 정하면 정책이
 바뀔 때 사용자가 팝업 안에서 오류 화면을 보게 된다.
 
+형식이 틀린 쿼리(`?verification_token[]=x` 등)는 JSON 을 요구한 요청이면 422, 브라우저 요청이면 직전 페이지(Referer)·
+요청 Host 로 돌아가지 않고 사이트 주소의 같은 브리지 `?identity_error=UNKNOWN` 으로 이동해 본인확인 실패로 끝난다.
+
 **응답**: `200 text/html` — 데스크톱(`window.opener` 존재)은 부모창에 `postMessage` 후 창을 닫고,
 모바일은 `sessionStorage` 의 redirectStash 를 복원해 원래 페이지로 이동한다.

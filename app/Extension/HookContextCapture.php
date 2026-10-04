@@ -3,6 +3,7 @@
 namespace App\Extension;
 
 use App\Models\User;
+use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
@@ -119,8 +120,10 @@ class HookContextCapture
         }
 
         if ($server !== []) {
+            // 사이트 주소의 origin 으로 재구성한다 — Host 없는 요청을 바인딩하면 그 안의 url()·route() 가
+            // `http://localhost/…` 를 만들어 큐에서 만든 알림 링크가 깨진다(사이트 주소가 없으면 종전처럼 경로만).
             $request = Request::create(
-                $server['REQUEST_URI'] ?? '/',
+                SiteUrl::origin().($server['REQUEST_URI'] ?? '/'),
                 'GET',
                 [],
                 [],

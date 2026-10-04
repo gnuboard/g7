@@ -85,6 +85,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 `delivery_started`) 중 하나를 분기 발화. 결제 취소는 `PaymentRefundListener`(우선순위 10)가
 먼저 KCP 취소 API 를 호출한 뒤 `CancelActivityLogListener`(우선순위 20)가 그 결과를 활동
 로그에 별도 기록합니다 — `sirsoft-pay_kginicis` 와 동일한 순서 원칙입니다.
+
+**외부로 나가는 주소**: KCP 에 등록하는 결과 수신 주소(`Ret_URL`), client-config 의 `callback_urls`, 결제 후 리다이렉트, 관리자 입금통보·에스크로 공통통보 URL 안내는 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 모바일 승인키 요청(`/mobile/approval-key`)의 `ret_url` 은 구버전 프런트 호환으로만 받고 쓰지 않는다 — 서버가 사이트 주소로 `Ret_URL` 을 만든다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -154,10 +156,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 41개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 21개 | `vitest.config.ts` |
+| PHPUnit | 42개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 22개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

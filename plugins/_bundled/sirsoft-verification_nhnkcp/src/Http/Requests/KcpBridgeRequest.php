@@ -4,15 +4,19 @@
 
 namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Requests;
 
+use App\Support\SiteUrl;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\ValidationException;
 
 /**
  * KCP 인증 결과 브리지 페이지 진입 쿼리를 검증합니다.
  *
  * 콜백 컨트롤러가 302 redirect 로 붙여 보내는 값만 받습니다. 배열 주입
  * (`?verification_token[]=x`)은 string 규칙이 차단합니다 — 이 라우트는 web GET
- * HTML 내비게이션이라 검증 실패는 422 JSON 이 아니라 redirect-back 으로 끝나며,
- * 어느 쪽이든 배열이 브리지 payload 에 유입되지 않는 것이 목적입니다. 종전에는
+ * HTML 내비게이션이라 검증 실패는 422 JSON 이 아니라 사이트 주소 브리지의 실패 결과로
+ * 끝나며(`failedValidation()`), 배열이 브리지 payload 에 유입되지 않는 것이 목적입니다. 종전에는
  * `(string)` 캐스팅이 배열을 "Array" 문자열로 바꿔 브리지 payload 에 유입됐습니다.
  * 길이 상한을 두지 않는 이유는 토큰 길이가 코어 발급 정책에 종속되어 있기 때문입니다
  * (kginicis InicisPopupBridgeRequest 선례).
@@ -46,6 +50,32 @@ class KcpBridgeRequest extends FormRequest
             'identity_error' => ['nullable', 'string'],
             'identity_error_message' => ['nullable', 'string'],
         ];
+    }
+
+    /**
+     * 잘못된 진입 쿼리는 사이트 주소의 같은 브리지에서 본인확인 실패로 끝냅니다.
+     *
+     * 보안: Laravel 기본 검증 실패 처리는 `previous()`(Referer → 세션 → 요청 Host)로 302 이동시킨다 —
+     * 외부 페이지에 걸린 링크면 우리 주소를 거쳐 그 페이지로 되돌아간다. 실패 코드는 부모창이 기본 실패
+     * 안내로 보여 주는 값이다.
+     *
+     * @param  Validator  $validator  실패한 검증기
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException JSON 을 요구한 요청의 422
+     * @throws HttpResponseException 사이트 주소 브리지로의 302
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        // JSON 을 요구한 요청은 기존 계약대로 422 검증 오류로 끝난다(이동이 없어 외부로 새지 않는다).
+        if ($this->expectsJson()) {
+            parent::failedValidation($validator);
+        }
+
+        throw new HttpResponseException(redirect()->away(
+            SiteUrl::absolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/bridge')
+                .'?'.http_build_query(['identity_error' => 'UNKNOWN'])
+        ));
     }
 
     /**

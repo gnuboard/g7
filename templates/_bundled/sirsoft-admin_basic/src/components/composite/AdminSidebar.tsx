@@ -5,6 +5,7 @@ import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // G7Core 전역 객체 접근 헬퍼
 const G7Core = () => (window as any).G7Core;
@@ -278,8 +279,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         handler: 'navigate',
         params: { path: url },
       });
-    } else {
-      // fallback: 전체 페이지 리로드
+    } else if (isSameOriginNavPath(url)) {
+      // fallback: 전체 페이지 리로드 — 보안: 같은 출처 경로로만(메뉴 데이터의 외부 주소 차단)
       window.location.href = url;
     }
   };
@@ -478,3 +479,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     </Div>
   );
 };
+
+/**
+ * 이동 폴백이 따라가도 되는 같은 출처 주소인지 판정합니다.
+ *
+ * `/` 하나로 시작하는 경로(`//`·`/\` 제외)는 문서 주소와 무관하게 같은 출처이고, 그 밖의 주소는 출처를 비교한다.
+ *
+ * @param target 이동할 주소
+ * @returns 같은 출처면 true
+ */
+function isSameOriginNavPath(target: unknown): boolean {
+  if (typeof target === 'string' && /^\/(?![/\\])/.test(target)) {
+    return true;
+  }
+
+  return isSameOriginRequest(target);
+}

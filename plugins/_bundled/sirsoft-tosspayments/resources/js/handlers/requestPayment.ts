@@ -383,7 +383,6 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         // 5. 결제 요청 페이로드 조립
-        const origin = window.location.origin;
         const requestPayload: any = {
             method,
             amount: {
@@ -392,8 +391,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             },
             orderId: pgPaymentData.order_number,
             orderName: pgPaymentData.order_name,
-            successUrl: origin + config.callback_urls.success,
-            failUrl: origin + config.callback_urls.fail,
+            successUrl: requireSiteAbsoluteUrl(config.callback_urls?.success),
+            failUrl: requireSiteAbsoluteUrl(config.callback_urls?.fail),
             customerEmail: pgPaymentData.customer_email ?? undefined,
             customerName: pgPaymentData.customer_name ?? undefined,
             customerMobilePhone: pgPaymentData.customer_phone ?? undefined,
@@ -511,4 +510,25 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         G7Core?.state?.setLocal?.({ paymentErrorMessage: errorMessage, isSubmittingOrder: false });
         G7Core?.modal?.open?.('tosspayments_payment_error_modal');
     }
+}
+
+/**
+ * PG 로 보낼 결과 수신 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만 쓰고,
+ * 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
 }

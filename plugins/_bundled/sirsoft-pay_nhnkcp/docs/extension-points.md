@@ -14,9 +14,9 @@
 | `sirsoft-pay_nhnkcp.escrow.purchase_cancelled` | action | — | `src/Controllers/EscrowCommonNotifyController.php:97` |
 | `sirsoft-pay_nhnkcp.escrow.purchase_confirmed` | action | — | `src/Controllers/EscrowCommonNotifyController.php:96` |
 | `sirsoft-pay_nhnkcp.payment.after_cancel` | action | KCP 결제 취소 완료 후 | `src/Services/NhnKcpApiService.php:280` |
-| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:327` |
+| `sirsoft-pay_nhnkcp.payment.after_confirm` | action | KCP 결제 승인 확인 완료 후 | `src/Controllers/PaymentCallbackController.php:328` |
 | `sirsoft-pay_nhnkcp.payment.before_cancel` | action | KCP 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NhnKcpApiService.php:259` |
-| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:321` |
+| `sirsoft-pay_nhnkcp.payment.before_confirm` | action | KCP 결제 승인 확인 전 | `src/Controllers/PaymentCallbackController.php:322` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

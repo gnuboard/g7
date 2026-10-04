@@ -5,6 +5,22 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.75.3] - 2026-10-04
+
+> 요청 Host·외부 주소를 믿던 자리를 닫은 버전이다. 모두 도입 때부터 있던 잠재 결함이며(창 열기 engine-v1.40 계열 2026-03, 전역 헤더 engine-v1.16.0, 본인인증 재요청·폴백 2026-04) 상태 저장소·렌더 사이클은 건드리지 않는다.
+
+### Security
+
+- `openWindow` 가 외부 주소 새 창을 열 때 그 창이 이 창(`window.opener`)을 조작할 수 있던 문제를 고쳤습니다(역방향 탭내빙). 같은 출처 경로는 종전처럼 바로 열고, 외부 주소는 https 만 빈 창을 연 뒤 `opener` 를 끊고 싣습니다. 외부 http 주소는 열지 않습니다 (ActionDispatcher.ts `handleOpenWindow`)
+- 레이아웃 전역 헤더(`globalHeaders` — 비회원 주문 조회 토큰·비밀글 열람 토큰 등)가 패턴만 맞으면 교차 출처 요청에도 실리던 문제를 고쳤습니다. 같은 출처 요청에만 싣습니다 — Bearer 토큰과 같은 판정(`isSameOriginRequestUrl`)입니다 (ActionDispatcher.ts·DataSourceManager.ts `getMatchingGlobalHeaders`)
+- 본인인증(428) 뒤 원 요청을 다시 보낼 때 재요청 주소의 출처를 확인하지 않아, 그 주소가 다른 출처면 원 요청의 인증 헤더와 검증 토큰이 그쪽으로 갈 수 있던 문제를 고쳤습니다. 같은 출처가 아니면 재요청하지 않습니다(서버도 재요청 주소를 경로로만 내려줍니다) (identity/IdentityGuardInterceptor.ts `handle`)
+
+### Fixed
+
+- 본인인증 실행기를 등록하지 않은 템플릿에서 인증 화면으로 넘어갈 때 복귀 주소를 `?return=<절대 주소>` 로 넘겨, 인증 화면(`query.return_url`)이 읽지 못하고 기본 화면으로 돌아가던 문제를 고쳤습니다. `return_url=<현재 경로>` 로 넘깁니다 (identity/IdentityGuardInterceptor.ts `defaultLauncher`)
+
+회귀 잠금: `ActionDispatcher.hostTrust.test.ts`·`IdentityGuardInterceptor.hostTrust.test.ts` (수정 전 6 failed → 수정 후 통과)
+
 ## [engine-v1.75.2] - 2026-10-02
 
 ### Fixed

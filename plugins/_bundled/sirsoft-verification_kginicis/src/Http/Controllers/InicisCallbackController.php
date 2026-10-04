@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\SiteUrl;
 use Illuminate\Http\RedirectResponse;
 use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisCallbackRequest;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisCallbackResolver;
@@ -48,7 +49,8 @@ class InicisCallbackController extends PublicBaseController
             ],
         );
 
-        $bridgeUrl = url('/plugins/sirsoft-verification_kginicis/plugin/inicis/popup-bridge')
+        // 보안: 요청 Host 가 아니라 사이트 주소 — 위조 Host 로 들어온 콜백이 검증 토큰을 다른 도메인으로 보내지 않게.
+        $bridgeUrl = SiteUrl::absolute('/plugins/sirsoft-verification_kginicis/plugin/inicis/popup-bridge')
             .'?'.http_build_query($outcome->toBridgeQuery());
 
         return redirect()->away($bridgeUrl);

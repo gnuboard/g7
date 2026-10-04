@@ -95,6 +95,8 @@ stash(`nhnkcp:pending_record:`) → `core.auth.after_register`에서 흡수,
 `live_site_cd`에 `SM` 프리픽스가 없으면 자동으로 붙여 저장. 두 훅이 분리된 이유는 코어의
 FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이기 때문입니다 — "필수값이
 비어있지 않은가"는 검증 단계에서, "저장될 값의 형식을 교정"은 저장 단계에서 처리합니다.
+
+**외부로 나가는 주소**: KCP 거래등록의 복귀 주소(`Ret_URL`)와 콜백 뒤 브리지 이동은 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 챌린지 공개 payload 의 `siteOrigin` 은 프론트가 브리지 메시지의 출처를 대조하는 기준이다. 브리지는 결과를 사이트 출처 리터럴로만 `postMessage` 하고, 모바일 복귀는 같은 출처 경로만 따르며, `Referrer-Policy: no-referrer`·`Cache-Control: no-store` 로 응답한다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -153,10 +155,10 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 21개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
-| Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
+| PHPUnit | 22개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
+| Vitest | 8개 | `vitest.config.ts` |
+| Playwright | 3개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 16개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

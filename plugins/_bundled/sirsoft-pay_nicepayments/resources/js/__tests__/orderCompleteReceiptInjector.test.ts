@@ -68,6 +68,7 @@ describe('NicePayments 주문 완료 영수증 버튼 — 공통 응답 형식',
         (document.getElementById(BTN_ID) as HTMLButtonElement).click();
         await vi.advanceTimersByTimeAsync(0);
 
-        expect(openSpy).toHaveBeenCalledWith(RECEIPT, 'nicepay_receipt', expect.any(String));
+        // 외부 영수증은 opener 를 끊은 빈 창을 먼저 열고 주소를 싣는다(역방향 탭내빙 차단)
+        expect(openSpy).toHaveBeenCalledWith('', 'nicepay_receipt', expect.any(String));
     });
 });

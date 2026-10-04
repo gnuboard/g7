@@ -886,6 +886,12 @@ export class ActionDispatcher {
   ): Record<string, string> {
     const result: Record<string, string> = {};
 
+    // 보안: 전역 헤더(비회원 주문 조회 토큰·비밀글 열람 토큰 등)는 같은 출처 요청에만 싣는다 —
+    // 패턴이 `*` 여도 교차 출처 대상으로 증표가 새지 않게, Bearer 와 같은 판정을 쓴다.
+    if (!isSameOriginRequestUrl(endpoint)) {
+      return result;
+    }
+
     for (const rule of this.globalHeaders) {
       if (this.matchesPattern(endpoint, rule.pattern)) {
         Object.entries(rule.headers).forEach(([key, value]) => {
@@ -2125,7 +2131,7 @@ export class ActionDispatcher {
         }
       }
 
-      // 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다 (KVE-2026-2350)
+      // 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
       const eventData = toExpressionEvent(event);
 
       try {
@@ -2170,7 +2176,7 @@ export class ActionDispatcher {
             // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
             _local: componentContext?.state || {},
             // $event: 이벤트의 plain 스냅샷 ({{$event.target.value}} 바인딩 지원).
-            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 싣지 않는다(KVE-2026-2350).
+            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 싣지 않는다.
             // 핸들러는 context.event 로 원본을 받는다.
             $event: eventData,
           },
@@ -3431,7 +3437,7 @@ export class ActionDispatcher {
 
     if (windowTarget === '_self') {
       // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
-      // `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다(KVE-2026-2348).
+      // 보안: `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다.
       const safePath = resolveSafeNavPath(finalPath, '/');
       if (safePath !== finalPath) {
         logger.warn('[handleOpenWindow] same-origin 경로가 아니라 기본 경로로 이동합니다.', finalPath);
@@ -3444,7 +3450,24 @@ export class ActionDispatcher {
 
         return;
       }
-      window.open(finalPath, '_blank');
+      if (isSameOriginRequestUrl(finalPath)) {
+        window.open(finalPath, '_blank');
+
+        return;
+      }
+      // 보안: 외부 주소는 https 만 열고, 새 창이 이 창(opener)을 조작하지 못하게 끊은 뒤 싣는다
+      // (역방향 탭내빙 차단). 빈 창을 먼저 여는 이유 — `noopener` 지정은 사용자 제스처 판정·팝업 크기
+      // 처리가 브라우저마다 달라, 열린 창을 받아 opener 를 직접 끊는다.
+      if (!/^https:\/\//i.test(finalPath)) {
+        logger.warn('[handleOpenWindow] https 가 아닌 외부 주소라 새 창을 열지 않습니다.', finalPath);
+
+        return;
+      }
+      const opened = window.open('', '_blank');
+      if (opened) {
+        opened.opener = null;
+        opened.location.href = finalPath;
+      }
     }
   }
 
@@ -3463,7 +3486,7 @@ export class ActionDispatcher {
    *
    * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
    * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
-   * 오프사이트 이동 sink 가 된다(KVE-2026-2348). 본인인증 제공자의 외부 origin 이동은 명시
+   * 오프사이트 이동 sink 가 된다. 본인인증 제공자의 외부 origin 이동은 명시
    * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.
    *
    * @param target 이동할 주소 (same-origin 절대 경로)
@@ -3816,7 +3839,7 @@ export class ActionDispatcher {
       await this.ensureCsrfToken();
     }
 
-    // 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다 (KVE-2026-2350). 레이아웃은 대상 주소를
+    // 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다. 레이아웃은 대상 주소를
     // 표현식으로 조립할 수 있어, 출처를 보지 않고 실으면 레이아웃 편집 권한만으로 관리자 토큰을 외부로
     // 보낼 수 있다. ApiClient(데이터 소스)도 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
     const sameOrigin = isSameOriginRequestUrl(target);
@@ -3932,7 +3955,7 @@ export class ActionDispatcher {
       // HTTP 428 + identity_verification_required → IDV Guard 인터셉트
       // Challenge 모달 launcher 호출 후 성공 시 원 요청을 재실행합니다.
       // 동일 출처 응답만 믿는다 — launcher 는 응답의 challenge_start_url 로 토큰을 실어 보내므로,
-      // 교차 출처 서버가 428 을 흉내 내면 위에서 뺀 토큰을 후속 요청으로 받아 간다(KVE-2026-2350).
+      // 교차 출처 서버가 428 을 흉내 내면 위에서 뺀 토큰을 후속 요청으로 받아 간다.
       if (!sameOrigin && IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
         logger.warn('[handleApiCall] 교차 출처 응답의 본인인증 요구는 따르지 않습니다.', target);
       }
@@ -8079,7 +8102,7 @@ export class ActionDispatcher {
                 // 커스텀 콜백의 모든 인자를 $args 배열로 전달
                 const contextWithArgs = {
                   ...freshContext,
-                  // 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단(KVE-2026-2350)
+                  // 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단
                   $args: toExpressionArgs(args),
                 };
 

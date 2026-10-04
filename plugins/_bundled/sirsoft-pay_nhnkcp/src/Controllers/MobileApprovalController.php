@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -68,6 +69,9 @@ class MobileApprovalController
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
 
+    /** 결제 결과 수신 경로 (모바일 Ret_URL) */
+    private const CALLBACK_PATH = '/plugins/sirsoft-pay_nhnkcp/payment/callback';
+
     /**
      * @param  KcpSoapService  $soapService  KCP SOAP 서비스
      * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
@@ -105,9 +109,14 @@ class MobileApprovalController
             'buyr_name' => ['nullable', 'string', 'max:50'],
             'buyr_mail' => ['nullable', 'string', 'email', 'max:100'],
             'buyr_tel1' => ['nullable', 'string', 'max:20'],
-            'ret_url' => ['required', 'string', 'url'],
+            // 구버전 프런트 호환으로만 받는다 — 값은 쓰지 않는다(아래 Ret_URL 은 서버가 사이트 주소로 만든다).
+            'ret_url' => ['nullable', 'string'],
             'currency' => ['nullable', 'string', 'size:3'],
         ]);
+
+        // 보안: KCP 에 등록하는 결과 수신 주소는 클라이언트가 보낸 값이 아니라 서버가 사이트 주소로 만든다 —
+        // 임의 절대 URL 을 받으면 결제 결과·가상계좌 정보가 그 도메인으로 간다.
+        $retUrl = SiteUrl::absolute(self::CALLBACK_PATH);
 
         $payMethodKey = strtolower($validated['pay_method']);
         $isEasyPay = str_starts_with($payMethodKey, 'nhnkcp_');
@@ -200,7 +209,7 @@ class MobileApprovalController
                 goodName: $validated['good_name'],
                 amount: (int) $validated['amount'],
                 payMethod: $mobilePayMethod,
-                retUrl: $validated['ret_url'],
+                retUrl: $retUrl,
                 payMethodKey: $payMethodKey,
                 escrow: $useEscrow,
             );
@@ -219,7 +228,7 @@ class MobileApprovalController
                 'buyr_name' => $validated['buyr_name'] ?? '',
                 'buyr_mail' => $validated['buyr_mail'] ?? '',
                 'buyr_tel1' => $validated['buyr_tel1'] ?? '',
-                'Ret_URL' => $validated['ret_url'],
+                'Ret_URL' => $retUrl,
                 'ActionResult' => self::ACTION_RESULT_MAP[$mobilePayMethod] ?? 'card',
                 'escw_used' => $useEscrow ? 'Y' : 'N',
                 'quotaopt' => '12',
@@ -237,7 +246,7 @@ class MobileApprovalController
                 // 모바일 가상계좌 콜백은 계좌번호를 브라우저 평문으로만 전달한다.
                 // 이 지점은 소유자 인증(auth:sanctum)을 통과했으므로 여기서 만든 일회성
                 // nonce 를 passthrough 파라미터로 실어 보내고, 콜백에서 되돌아온 값과
-                // 대조해 그 콜백이 이 결제 세션에서 비롯됐음을 확인한다 (KVE-2026-2019).
+                // 대조해 그 콜백이 이 결제 세션에서 비롯됐음을 확인한다.
                 // param_opt_1 은 간편결제 수단 식별자가 점유하므로 param_opt_2 를 쓴다.
                 $mobileVbankState = $this->issueMobileVbankState($order);
                 if ($mobileVbankState === null) {

@@ -61,6 +61,8 @@ interface ClientConfig {
     mid: string;
     sdk_url: string;
     sign_data_url: string;
+    /** PG 로 보내는 결과 수신 주소(ReturnURL) — 서버가 사이트 주소로 만든 절대 URL */
+    callback_url?: string;
     close_report_url?: string;
     useEscrow?: boolean;
 }
@@ -187,7 +189,6 @@ function createPaymentForm(action: string, fields: Record<string, string>): HTML
     return form;
 }
 
-const CALLBACK_PATH = '/plugins/sirsoft-pay_nicepayments/payment/callback';
 
 // 나이스페이 v3 모바일 결제창 endpoint — 폼을 직접 POST 하면 NicePay 모바일 페이지로 전체 redirect.
 // PC 와 달리 SDK 불필요. 결제 완료 후 ReturnURL 로 redirect.
@@ -288,7 +289,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 3. 서버에서 EdiDate + SignData 생성
         //    공개 엔드포인트지만 서버에서 주문번호, 결제 전 상태, 금액, 구매자 컨텍스트를 검증한다.
-        const signDataUrl = window.location.origin + config.sign_data_url;
+        const signDataUrl = config.sign_data_url;
         const authToken = (typeof localStorage !== 'undefined') ? localStorage.getItem('auth_token') : null;
         const signDataHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -318,7 +319,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         }
 
         const signData: SignDataResponse = await signDataRes.json();
-        const callbackUrl = window.location.origin + CALLBACK_PATH;
+        const callbackUrl = requireSiteAbsoluteUrl(config.callback_url);
 
         // 4. 결제 폼 생성
         // 간편결제는 PayMethod='CARD' + DirectShowOpt='CARD' + 방식별 directive 필드 조합.
@@ -494,4 +495,25 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
         G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
     }
+}
+
+/**
+ * PG 로 보낼 결과 수신 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만 쓰고,
+ * 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
 }

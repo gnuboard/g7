@@ -70,6 +70,8 @@ class TrackBotHitMiddlewareTest extends TestCase
     public function test_googlebot_records_hit_with_cache_status(): void
     {
         config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+        // 기록 주소는 사이트 주소 + 요청 경로다 — 운영자 설정이 부팅 config 로 새어 들지 않게 사이트 주소를 고정한다.
+        config(['app.url' => 'https://example.test']);
         $middleware = app(TrackBotHit::class);
 
         foreach (['HIT', 'MISS', 'BYPASS', null] as $header) {

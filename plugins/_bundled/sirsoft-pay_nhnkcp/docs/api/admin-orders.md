@@ -30,6 +30,8 @@
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url` | `...admin.vbank.notify.url` | `sirsoft-ecommerce.settings.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/health` | `...admin.health` | `sirsoft-ecommerce.settings.read` |
 
+`admin/vbank-notify-url` 이 돌려주는 `url`(가상계좌 입금통보)·`escrow_common_notify_url`(에스크로 공통통보)은 운영자가 KCP 상점관리자에 등록할 주소라, 관리자가 접속한 주소(요청 Host)가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만든다.
+
 ### 에러 응답
 
 | 상태코드 | 의미 | 발생 조건 |

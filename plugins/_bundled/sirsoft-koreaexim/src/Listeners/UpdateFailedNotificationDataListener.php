@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Koreaexim\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\SiteUrl;
 use Plugins\Sirsoft\Koreaexim\Models\KoreaeximRateRun;
 use Plugins\Sirsoft\Koreaexim\Plugin;
 
@@ -59,7 +60,7 @@ class UpdateFailedNotificationDataListener implements HookListenerInterface
             return $data;
         }
         $data['data'] = ['name' => '{recipient_name}', 'status_label' => $run->status->label(), 'message' => $run->message,
-            'search_date' => $run->search_date->toDateString(), 'settings_url' => url('/admin/plugins/sirsoft-koreaexim/settings')];
+            'search_date' => $run->search_date->toDateString(), 'settings_url' => SiteUrl::absolute('/admin/plugins/sirsoft-koreaexim/settings')];
 
         return $data;
     }

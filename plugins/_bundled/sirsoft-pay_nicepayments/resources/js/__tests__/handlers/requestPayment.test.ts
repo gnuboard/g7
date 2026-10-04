@@ -148,7 +148,8 @@ describe('requestPaymentHandler', () => {
                         data: {
                             mid: 'SRpaytestm',
                             sdk_url: 'https://example/sdk.js',
-                            sign_data_url: '/api/plugins/sirsoft-pay_nicepayments/sign-data',
+                            sign_data_url: 'https://shop.example.test/api/plugins/sirsoft-pay_nicepayments/sign-data',
+                            callback_url: 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback',
                             useEscrow: false,
                         },
                     });
@@ -247,7 +248,7 @@ describe('requestPaymentHandler', () => {
             });
         });
 
-        it('비회원이면 SignData 요청에 조회 토큰을 싣는다 — 실패 주문 재결제 복구의 소유자 증명 (KVE-2026-2434)', async () => {
+        it('비회원이면 SignData 요청에 조회 토큰을 싣는다 — 실패 주문 재결제 복구의 소유자 증명', async () => {
             window.localStorage.removeItem('auth_token');
             window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
 

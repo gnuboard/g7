@@ -68,7 +68,7 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | ExpressionEvaluator | `{{}}` 바인딩 표현식 평가 |
 | ComponentHtmlMapper | 컴포넌트→HTML 태그 매핑 |
 | DataSourceResolver | 내부 HTTP API 호출 (주소는 APP_URL 고정) |
-| SeoUrl | 봇 화면 절대 URL·캐시 키 origin 의 단일 출처 (요청 Host 비의존) |
+| SeoUrl | 봇 화면 절대 URL·캐시 키 origin 의 단일 출처 (요청 Host 비의존). 계산은 코어 `App\Support\SiteUrl` 에 위임 — [routing.md](routing.md#절대-url-은-사이트-주소로-만든다) |
 | TemplateRouteResolver | URL→레이아웃 매핑 |
 | SeoMetaResolver | 3계층 캐스케이드 메타 해석 |
 | SeoMiddleware | 미들웨어 (봇 감지 → 렌더링) |

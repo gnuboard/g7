@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -907,7 +908,7 @@ class CbtCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -919,7 +920,7 @@ class CbtCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -929,28 +930,5 @@ class CbtCallbackController
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         return $baseUrl.$separator.$query;
-    }
-
-    /**
-     * 상대 경로면 APP_URL 기준으로 절대 URL 화.
-     *
-     * PG가 브라우저 POST 로 콜백을 보내는 동안 Apache 가 ProxyPreserveHost Off 등
-     * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
-     * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
-     * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
-     *
-     * @param  string  $url  절대 또는 상대 URL
-     * @return string APP_URL 기준 절대 URL
-     */
-    private function absolutize(string $url): string
-    {
-        if (preg_match('#^https?://#i', $url) === 1) {
-            return $url;
-        }
-
-        $base = rtrim((string) config('app.url'), '/');
-        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
-
-        return $base.$path;
     }
 }

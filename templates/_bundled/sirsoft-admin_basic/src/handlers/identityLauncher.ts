@@ -47,7 +47,7 @@ type VerificationResult =
  * Bearer 토큰 헤더를 만듭니다 — 요청 대상이 동일 출처일 때만.
  *
  * challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 교차 출처 서버가 428 을 흉내 내
- * 자기 주소를 넣으면 관리자 토큰을 그 주소로 보내게 되므로 출처를 먼저 본다(KVE-2026-2350).
+ * 자기 주소를 넣으면 관리자 토큰을 그 주소로 보내게 되므로 출처를 먼저 본다.
  *
  * @param url 요청 대상
  * @return 토큰이 있고 대상이 동일 출처면 Authorization 헤더, 아니면 빈 객체
@@ -252,7 +252,11 @@ export async function sirsoftAdminBasicIdentityLauncher(
     return identity.redirectExternally({
       ...payload,
       render_hint: 'external_redirect',
-      redirect_url: `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return=${encodeURIComponent(window.location.href)}`,
+      // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
+      // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
+      redirect_url: `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
+        `${window.location.pathname}${window.location.search}`,
+      )}`,
     });
   }
 

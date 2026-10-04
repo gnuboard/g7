@@ -74,7 +74,13 @@ $ownershipLocked = installer_state_is_claimed($state)
 // Step 3 기본값 설정
 if (! $ownershipLocked && $currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
-    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'];
+    // 서버가 아는 Host 는 프록시 뒤에서 내부 주소일 수 있다 — 저장된 값이 없으면 화면 스크립트가
+    // 운영자가 실제로 보고 있는 주소로 채운다(data-autofill). Host 헤더가 없어도 경고 없이 빈 값.
+    $requestHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $defaults['app_url'] = $requestHost === ''
+        ? ''
+        : (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$requestHost;
+    $defaults['app_url_autofill'] = ! isset($state['config']['app_url']);
     $defaults['admin_language'] = getCurrentLanguage();
     // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
     // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는

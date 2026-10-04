@@ -81,6 +81,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 **에스크로 배송 등록**: 관리자 주문 상세에서 운송장번호·택배사를 입력 →
 `AdminEscrowController::registerDelivery()` → 나이스페이먼츠 배송 등록 API 호출.
 `EscrowDeliveryRegisterRequest`가 입력을 검증합니다.
+
+**외부로 나가는 주소**: 나이스페이먼츠로 넘기는 결과 수신 주소(`ReturnURL`)를 포함한 client-config 의 `callback_url`·`sign_data_url`·`close_report_url`, 결제 후 리다이렉트, 관리자 입금통보 URL 안내는 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 종전 플러그인 자체 `Support/UrlHelper` 는 코어 `SiteUrl` 로 합쳐져 삭제됐다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -146,9 +148,9 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 29개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 21개 | `vitest.config.ts` |
+| Vitest | 22개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

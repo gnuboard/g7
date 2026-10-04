@@ -47,14 +47,14 @@ Accept: application/json
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
+Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 ```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
 
 <!-- @generated:end -->
 
@@ -62,11 +62,11 @@ Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 
 토스 결제창에서 결제가 실패하거나 사용자가 결제를 취소하면 브라우저가 이 URL 로 리다이렉트된다.
 
-JSON 을 반환하지 않는다. 실패 사유를 로그로 기록한 뒤, 실패 페이지(기본 `/shop/checkout`, 설정 `redirect_fail_url`)로 실패 코드·메시지·주문번호를 query 로 실어 **302 리다이렉트**한다. 모든 파라미터가 선택값이라 없어도 4xx 를 반환하지 않는다.
+JSON 을 반환하지 않는다. 실패 사유를 로그로 기록한 뒤, 실패 페이지(기본 `/shop/checkout`, 설정 `redirect_fail_url`)로 실패 코드·메시지·주문번호를 query 로 실어 **302 리다이렉트**한다. 모든 파라미터가 선택값이라 없어도 4xx 를 반환하지 않는다. 형식이 맞지 않는 값(배열 등)이 오면 Referer 를 따르지 않고 같은 실패 URL 에 `error=invalid_params` 를 붙여 보낸다. 리다이렉트 주소는 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 이다.
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
+Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 ```
 
 주문번호 자리(`orderId`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리한다 — 체크아웃이 아니라 신청서 상세(`?claim_payment=failed&error={코드}` + `claim_number`)로 되돌리며, 사용자가 결제창을 스스로 닫은 중단(`PAY_PROCESS_CANCELED`)은 실패가 아니므로 `?claim_payment=cancelled` 로 조용히 복귀한다. 그 결제번호의 클레임 결제 건을 찾지 못하면 종전대로 실패 URL 로 되돌린다.
@@ -187,7 +187,7 @@ Accept: application/json
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/orders/20260711-1418336207/complete
+Location: https://example.com/shop/orders/20260711-1418336207/complete
 ```
 
 **에러 응답**
@@ -228,6 +228,6 @@ JSON 을 반환하지 않고 브라우저를 **302 리다이렉트**한다. 에�
 주의사항:
 
 - **금액 대조가 위변조 방어의 핵심**이다. query 의 `amount` 는 브라우저가 보낸 값이라 승인 요청 금액으로도, 결제완료 대조 금액으로도 쓰지 않는다 — 승인 요청과 대조의 기준은 주문 청구액이고, 결제 성립 여부는 토스 응답의 `totalAmount` 로 판정한다.
-- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`).
+- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`). 상대 경로 설정값은 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 바꿔 리다이렉트한다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않는다.
 
 

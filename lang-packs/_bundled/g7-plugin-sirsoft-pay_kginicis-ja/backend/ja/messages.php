@@ -44,6 +44,7 @@ return [
         'invoice_required' => '送り状番号を入力してください。',
         'courier_required' => '配送業者を選択してください。',
         'default_confirmer' => '管理者',
+        'confirm_login_required' => 'ログインしてから、注文詳細で購入確定をもう一度行ってください。',
     ],
     'cbt_cvs' => [
         'simulate_success' => '入金シミュレーションが完了しました。',

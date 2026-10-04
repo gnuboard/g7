@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,6 @@ use Plugins\Sirsoft\PayNicepayments\Http\Requests\SignDataRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankNotifyRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
-use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
 
 /**
  * 나이스페이먼츠 결제 콜백 컨트롤러
@@ -206,7 +206,7 @@ class PaymentCallbackController
                 $claimPayment = $this->findClaimPayment($moid);
 
                 if ($claimPayment) {
-                    return redirect(ClaimPaymentRedirect::cancelled($claimPayment));
+                    return redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($claimPayment)));
                 }
             }
 
@@ -240,7 +240,7 @@ class PaymentCallbackController
                 $claimPayment = $this->findClaimPayment($moid);
 
                 if ($claimPayment !== null) {
-                    return redirect(ClaimPaymentRedirect::success($claimPayment));
+                    return redirect(SiteUrl::absolute(ClaimPaymentRedirect::success($claimPayment)));
                 }
 
                 // 결제 건을 못 찾아도 주문 경로로 흘려보내지 않는다 — CP 번호를 주문번호로 실은
@@ -332,7 +332,7 @@ class PaymentCallbackController
                     'result_msg' => $pgResponse['ResultMsg'] ?? '',
                 ]);
 
-                // 주문 상태는 바꾸지 않는다 (KVE-2026-2434). 이 콜백은 비인증 브라우저 POST 이고,
+                // 주문 상태는 바꾸지 않는다. 이 콜백은 비인증 브라우저 POST 이고,
                 // 서명(AuthToken+MID+Amt)이 주문번호(Moid)를 묶지 않아 자기 결제창에서 얻은 인증값에
                 // 남의 주문번호를 붙여 보낼 수 있다. 승인 실패를 근거로 실패 처리하면 타인의 결제대기
                 // 주문이 취소된다. 정당한 결제 실패·창 닫힘은 소유자를 확인하는 close-report 가 기록하고,
@@ -349,7 +349,7 @@ class PaymentCallbackController
                 ]));
             }
 
-            // 승인 응답이 돌려준 주문번호·금액이 이 콜백의 주문과 같아야 반영한다 (KVE-2026-2434).
+            // 승인 응답이 돌려준 주문번호·금액이 이 콜백의 주문과 같아야 반영한다.
             // 서명이 주문번호를 묶지 않으므로, 다른 주문의 인증값으로 받은 승인을 이 주문에 붙이지 못하게
             // PG 가 확인해 준 값과 대조한다. 어긋나거나 승인 금액이 없으면 그 승인을 망취소하고 주문은
             // 건드리지 않는다.
@@ -455,7 +455,7 @@ class PaymentCallbackController
             ]);
 
             // 승인은 망취소하고 주문 상태는 바꾸지 않는다 — 금액 불일치도 브라우저가 고른 주문번호로
-            // 만들어낼 수 있어 실패 처리 근거가 되지 못한다 (KVE-2026-2434).
+            // 만들어낼 수 있어 실패 처리 근거가 되지 못한다.
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
 
             return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
@@ -466,7 +466,7 @@ class PaymentCallbackController
                 'error' => $e->getMessage(),
             ]);
 
-            // 승인은 망취소하고 주문 상태는 바꾸지 않는다 (KVE-2026-2434 — 위 금액 불일치와 같은 이유).
+            // 승인은 망취소하고 주문 상태는 바꾸지 않는다 (위 금액 불일치와 같은 이유).
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
 
             return redirect($this->resolveFailUrl([
@@ -489,7 +489,7 @@ class PaymentCallbackController
             }
 
             // 승인은 망취소하고 주문 상태는 바꾸지 않는다. 승인 예외는 NextAppURL 을 나이스페이 밖으로
-            // 바꾸는 것만으로 누구나 일으킬 수 있어, 실패 처리 근거가 되지 못한다 (KVE-2026-2434).
+            // 바꾸는 것만으로 누구나 일으킬 수 있어, 실패 처리 근거가 되지 못한다.
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
 
             return redirect($this->resolveFailUrl([
@@ -849,7 +849,7 @@ class PaymentCallbackController
 
         if (! $order->order_status->isBeforePayment() || $payment->payment_status !== PaymentStatusEnum::READY) {
             // 실패 주문을 결제대기로 되살리는 것은 주문 상태 변경이다 — 주문 소유자(회원 본인 로그인 /
-            // 비회원 조회 토큰)만 할 수 있다 (KVE-2026-2434). 위의 주문자 연락처 대조는 제3자도 통과할 수
+            // 비회원 조회 토큰)만 할 수 있다. 위의 주문자 연락처 대조는 제3자도 통과할 수
             // 있어 서명 발급(상태 불변)에만 쓰고, 상태를 바꾸는 복구의 근거로 삼지 않는다.
             if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
                 Log::warning('NicePayments: SignData retry restore rejected — order ownership not verified', [
@@ -1344,7 +1344,7 @@ class PaymentCallbackController
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
         $url = ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
 
-        return UrlHelper::toAbsolute($url);
+        return SiteUrl::absolute($url);
     }
 
     /**
@@ -1364,7 +1364,7 @@ class PaymentCallbackController
             $baseUrl = $baseUrl.$separator.$query;
         }
 
-        return UrlHelper::toAbsolute($baseUrl);
+        return SiteUrl::absolute($baseUrl);
     }
 
     /**

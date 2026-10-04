@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
@@ -378,8 +379,8 @@ class PaymentCallbackController
             if ($payment) {
                 // 사용자가 결제창을 스스로 닫은 중단은 실패가 아니다 — 오류 안내 없이 복귀.
                 return $code === 'PAY_PROCESS_CANCELED'
-                    ? redirect(ClaimPaymentRedirect::cancelled($payment))
-                    : redirect(ClaimPaymentRedirect::fail($payment, $code));
+                    ? redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($payment)))
+                    : redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, $code)));
             }
 
             return redirect($this->resolveFailUrl(['error' => $code, 'orderId' => $orderId]));
@@ -430,7 +431,7 @@ class PaymentCallbackController
             // 구현하므로, 서버 콜백 경로와 클라이언트 승인 API 경로의 보상이 한 구현이 된다.
             return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
         } catch (LockTimeoutException) {
-            return redirect($this->redirectBusyClaimCallback($payment));
+            return redirect(SiteUrl::absolute($this->redirectBusyClaimCallback($payment)));
         } finally {
             $this->releaseOrderCallbackLock($lock);
         }
@@ -548,7 +549,8 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
+        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 사이트 주소로 만든다.
+        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -560,7 +562,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;

@@ -186,6 +186,8 @@ class ConversionRecorderTest extends TestCase
      */
     public function test_server_recorder_uses_the_current_request(): void
     {
+        config(['app.url' => 'https://example.test', 'g7_settings.core.general.site_url' => 'https://example.test']);
+
         $request = Request::create('https://example.test/api/shop/orders', 'POST', server: [
             'REMOTE_ADDR' => '203.0.113.70',
             'HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.6613.84 Safari/537.36',
