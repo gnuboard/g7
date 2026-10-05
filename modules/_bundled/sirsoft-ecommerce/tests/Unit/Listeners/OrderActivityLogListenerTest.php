@@ -42,11 +42,11 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 훅 구독 수가 25개인지 확인
+     * 훅 구독 수가 26개인지 확인
      *
      * 기존 21 + `order.after_status_sync`(파생 전이 이력) 1 +
      * `order.tax_invoice_stale_after_cancel` · `order_option.after_sync_status` ·
-     * `order_shipping.tracking_updated` 3 = 25.
+     * `order_shipping.tracking_updated` 3 + `order.after_deposit_recorded`(입금 기록) 1 = 26.
      *
      * 뒤의 3건은 구독이 늘어날 때 이 개수가 함께 갱신되지 않아 이 테스트가 오래 red 였다
      * (#599 통합실측 세션2 에서 발견 — 실제 구독 25 vs 기대 22). 개수만 고치면 같은 일이
@@ -58,11 +58,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_get_subscribed_hooks_returns_all_25_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_26_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(25, $hooks);
+        $this->assertCount(26, $hooks);
+        // 입금 기록(결제 이후 단계 주문의 입금만 기록) — 26번째 구독
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_deposit_recorded', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.tax_invoice_stale_after_cancel', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_option.after_sync_status', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_shipping.tracking_updated', $hooks);
