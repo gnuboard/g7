@@ -39,7 +39,7 @@ import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, i
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { useTransitionState } from './TransitionContext';
-import { getLocalInitTracking, markLocalInitConsumed, resolveLocalInitAction } from './localInitSlot';
+import { getLocalInitTracking, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
@@ -1250,6 +1250,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         if (localInitPendingSyncRef.current !== syncKey) {
           localInitPendingSyncRef.current = syncKey;
           const mergeStrategy = initMergeMode || 'shallow';
+          // @since engine-v1.77.2: 변경 추적 폼의 데이터를 덮는 payload 일 때만 「변경 있음」을 초기화한다
+          const hasChangesReset: Record<string, any> = shouldResetHasChanges(initData) ? { hasChanges: false } : {};
           // engine-v1.49.2: pending baseline 으로 fresh globalState._local + 기존 pending 사용.
           // useLayoutEffect 클리어 직후 발화 시 pending 이 null 이면 빈 baseline 이 되어
           // globalState 의 직전 setState 결과가 흡수되지 않음. 이로 인해 후속 setLocal 의
@@ -1264,18 +1266,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             (window as any).__g7PendingLocalState = {
               loadingActions: currentPending.loadingActions || {},
               ...initData,
-              hasChanges: false,
+              ...hasChangesReset,
             };
           } else if (mergeStrategy === 'deep') {
             (window as any).__g7PendingLocalState = deepMergeState(currentPending, {
               ...initData,
-              hasChanges: false,
+              ...hasChangesReset,
             });
           } else {
             (window as any).__g7PendingLocalState = {
               ...currentPending,
               ...initData,
-              hasChanges: false,
+              ...hasChangesReset,
             };
           }
 
@@ -1284,11 +1286,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           const existingOverrides = (window as any).__g7SetLocalOverrideKeys;
           if (existingOverrides && typeof existingOverrides === 'object') {
             if (mergeStrategy === 'replace') {
-              (window as any).__g7SetLocalOverrideKeys = { ...initData, hasChanges: false };
+              (window as any).__g7SetLocalOverrideKeys = { ...initData, ...hasChangesReset };
             } else {
               (window as any).__g7SetLocalOverrideKeys = deepMergeState(existingOverrides, {
                 ...initData,
-                hasChanges: false,
+                ...hasChangesReset,
               });
             }
           }
@@ -1523,6 +1525,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
           // _merge 메타데이터 추출 (병합 전략: "replace" | "shallow" | "deep", 기본값: "shallow")
           const { _merge: initMergeMode, ...initDataWithoutMeta } = localInitData as Record<string, any>;
+          // @since engine-v1.77.2: 변경 추적 폼의 데이터를 덮는 payload 일 때만 「변경 있음」을 초기화한다
+          // (알림 목록 페이지 정보처럼 폼과 무관한 데이터가 다시 와도 편집 중인 폼의 저장 버튼을 끄지 않는다)
+          const hasChangesReset: Record<string, any> = shouldResetHasChanges(initDataWithoutMeta) ? { hasChanges: false } : {};
           const mergeStrategy = initMergeMode || 'shallow';
 
           // 새 데이터로 로컬 상태 병합 (기존 loadingActions 등 시스템 상태는 유지)
@@ -1533,20 +1538,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               return {
                 loadingActions: prev.loadingActions || {},
                 ...initDataWithoutMeta,
-                hasChanges: false,
+                ...hasChangesReset,
               };
             } else if (mergeStrategy === 'deep') {
               // deep: 중첩 객체 보존하면서 병합
               return deepMergeState(prev, {
                 ...initDataWithoutMeta,
-                hasChanges: false,
+                ...hasChangesReset,
               });
             } else {
               // shallow (기본값): 최상위 키만 덮어쓰기 (기존 키 보존)
               return {
                 ...prev,
                 ...initDataWithoutMeta,
-                hasChanges: false,
+                ...hasChangesReset,
               };
             }
           });
@@ -1566,11 +1571,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               const currentGlobalLocal = (prev as any)?._local || {};
               let globalLocalUpdate: Record<string, any>;
               if (mergeStrategy === 'replace') {
-                globalLocalUpdate = { ...initDataWithoutMeta, hasChanges: false };
+                globalLocalUpdate = { ...initDataWithoutMeta, ...hasChangesReset };
               } else if (mergeStrategy === 'deep') {
-                globalLocalUpdate = deepMergeState(currentGlobalLocal, { ...initDataWithoutMeta, hasChanges: false });
+                globalLocalUpdate = deepMergeState(currentGlobalLocal, { ...initDataWithoutMeta, ...hasChangesReset });
               } else {
-                globalLocalUpdate = { ...currentGlobalLocal, ...initDataWithoutMeta, hasChanges: false };
+                globalLocalUpdate = { ...currentGlobalLocal, ...initDataWithoutMeta, ...hasChangesReset };
               }
               return { ...prev, _local: globalLocalUpdate };
             });
@@ -1594,7 +1599,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // (localInitSlot.ts 의 `consumed → 교체` 규칙이 막고 있는 회귀).
           localInitHandledKeyRef.current = trackingKey;
 
-          const { _merge: _pruneMergeMode, ...pruneKeys } = localInitData as Record<string, any>;
+          // @since engine-v1.77.2: 적용(apply) 경로는 payload 와 함께 `hasChanges` 를 false 로 되돌린다.
+          // 정리 경로가 payload 키만 지우면 자동바인딩이 저장소 A 에 남긴 `hasChanges: true` 가 살아남아
+          // A 우선 병합으로 저장소 B 의 false 를 덮는다 — 탭 왕복 뒤 입력칸은 서버값인데 「저장하지 않은
+          // 변경」 표시만 남는 결함. 적용과 같은 범위를 비우도록 `hasChanges` 도 정리 대상에 넣는다.
+          // 단 적용과 같은 조건 — payload 가 변경 추적 폼의 데이터를 덮을 때만(`shouldResetHasChanges`).
+          const { _merge: _pruneMergeMode, ...payloadKeys } = localInitData as Record<string, any>;
+          const pruneKeys: Record<string, any> = shouldResetHasChanges(payloadKeys) ? { ...payloadKeys, hasChanges: false } : payloadKeys;
 
           // 상태 갱신은 updater 로 넘긴다 (@since engine-v1.54.8) — 같은 commit 에서
           // useLayoutEffect 가 큐에 넣은 제거가 아직 반영되기 전일 수 있으므로,
@@ -2863,6 +2874,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     }, [effectiveComponentDef.dataKey, effectiveComponentDef.trackChanges, effectiveComponentDef.debounce, effectiveComponentDef.id, handleSetState, extendedDataContext._local, dataContext._global, dataContext._globalSetState, parentFormContext]);
 
     /**
+     * 변경 추적 폼(컴포넌트 정의의 data-key) dataKey 등록 (@since engine-v1.77.2)
+     *
+     * `_localInit` 이 「변경 있음」을 초기화할지 판정하는 등록부(`shouldResetHasChanges`)에 올린다.
+     * 데이터 적용 effect(useEffect)보다 먼저 돌도록 useLayoutEffect 로 등록한다.
+     */
+    useLayoutEffect(() => {
+      if (!effectiveComponentDef.dataKey || !effectiveComponentDef.trackChanges) return undefined;
+
+      return registerTrackChangesRoot(String(effectiveComponentDef.dataKey));
+    }, [effectiveComponentDef.dataKey, effectiveComponentDef.trackChanges]);
+
+    /**
      * 이미 remount 키가 적용된 컴포넌트 ID를 추적합니다.
      * 중복 ID가 있는 경우 첫 번째만 remount 처리하기 위함입니다.
      */
@@ -3619,6 +3642,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         state: dynamicState,
       };
     }, [stableResolvedProps.dataKey, stableResolvedProps.trackChanges, stableResolvedProps.debounce, handleSetState, dynamicState]);
+
+    /**
+     * 변경 추적 폼(props 의 dataKey) dataKey 등록 (@since engine-v1.77.2)
+     *
+     * `_localInit` 이 「변경 있음」을 초기화할지 판정하는 등록부(`shouldResetHasChanges`)에 올린다.
+     * 데이터 적용 effect(useEffect)보다 먼저 돌도록 useLayoutEffect 로 등록한다.
+     */
+    useLayoutEffect(() => {
+      if (!stableResolvedProps.dataKey || !stableResolvedProps.trackChanges) return undefined;
+
+      return registerTrackChangesRoot(String(stableResolvedProps.dataKey));
+    }, [stableResolvedProps.dataKey, stableResolvedProps.trackChanges]);
 
     /**
      * DevTools Form 추적

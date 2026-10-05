@@ -361,7 +361,7 @@ HTTP/1.1 200
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 
-> 비밀번호 정책 정수 키(최소 길이 `security.password_min_length` 포함)와 `security.activity_log_retention_days` 는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
+> 로그인 보안 정수 키(`security.auth_token_lifetime`·`security.max_login_attempts`·`security.login_lockout_time`), 비밀번호 정책 정수 키(최소 길이 `security.password_min_length` 포함)와 `security.activity_log_retention_days` 는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 그래서 `security.auth_token_lifetime` 의 `"0"`(무한대)도 `0` 으로 받아들인다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
 
 **요청 예시**
 

@@ -5,6 +5,17 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.77.2] - 2026-10-05
+
+### Fixed
+
+- 입력칸을 고친 뒤 저장하지 않고 탭을 오가면(데이터 소스 `initLocal` + `refetchOnMount`, 예: 관리자 환경설정) 칸은 서버값으로 돌아오는데 「저장하지 않은 변경이 있습니다」 표시와 저장 버튼 활성만 남던 문제. 같은 데이터를 다른 렌더러가 먼저 적용하면 폼을 가진 렌더러는 정리(prune) 경로를 타는데, 이 경로가 데이터 키만 지우고 자동바인딩이 남긴 `hasChanges: true` 는 그대로 둬서 저장소 B 의 false 를 덮었습니다. engine-v1.54.7(정리 경로 도입)부터 있던 결함이며 7.0.x 릴리스에는 포함되지 않았습니다
+- 게시판·이커머스 설정의 알림 설정 탭에서 채널을 바꾼 뒤(저장 전) 알림 하나를 켜고 끄면, 채널 변경은 화면에 남아 있는데 저장 버튼이 꺼져 저장할 수 없던 문제. 적용 경로가 폼과 무관한 데이터(알림 목록 페이지 정보)가 와도 `hasChanges` 를 무조건 false 로 만들었고, 위 정리 경로의 잔존이 이를 일부만 가리고 있었습니다
+
+### Changed
+
+- `_localInit` 의 「변경 있음」(`hasChanges`) 초기화 범위: 적용·정리·대기 상태 사전 동기화 모두, 들어온 데이터가 **마운트된 변경 추적 폼(`data-key` + `data-track-changes`)의 dataKey 첫 키**를 담을 때만 초기화합니다. 변경 추적 폼이 없는 화면은 종전대로 항상 초기화합니다. 폼 dataKey 등록은 `localInitSlot.ts` 의 `registerTrackChangesRoot` / 판정은 `shouldResetHasChanges` (DynamicRenderer.tsx `_localInit` 처리, 회귀: `DynamicRenderer.localInitPruneHasChanges.test.tsx`, 트러블슈팅 state-global initLocal 사례 8)
+
 ## [engine-v1.77.1] - 2026-10-05
 
 ### Fixed

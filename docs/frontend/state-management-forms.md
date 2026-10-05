@@ -960,6 +960,9 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 ✅ trackChanges로 변경 추적 활성화: 부모 컴포넌트에 trackChanges: true 설정
 ✅ hasChanges 자동 관리: 입력 시 _local.hasChanges가 자동으로 true로 설정
 ✅ 초기 로드 시 리셋: initLocal 적용 시 hasChanges가 자동으로 false로 초기화
+   (engine-v1.77.2+: 그 initLocal 이 변경 추적 폼의 dataKey 첫 키를 담을 때만. 폼과 무관한 키만
+    싣는 initLocal — 예: 목록 페이지 정보 — 이 다시 와도 편집 중인 폼의 hasChanges 는 유지된다.
+    변경 추적 폼이 없는 화면은 종전대로 항상 초기화)
 ✅ 저장 성공 시 리셋: onSuccess 핸들러에서 hasChanges: false로 수동 리셋 필요
 ```
 

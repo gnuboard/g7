@@ -110,6 +110,50 @@ class PasswordPolicySettingsTest extends TestCase
     }
 
     /**
+     * 같은 보안 탭의 기존 숫자 칸(인증 토큰 유지시간·로그인 시도 횟수·잠금 시간)도 문자열을 정수로 저장한다 —
+     * 화면에서 고쳐 저장하면 `"45"` 로 굳던 결함(#736 전수 실측 O-2). 소비처는 `(int)` 로 읽어 동작은 같았지만
+     * 기본값(정수)과 저장값의 타입이 갈렸다.
+     *
+     * @scenario min_length_setting=raised
+     *
+     * @effects all_policy_keys_persist_with_integer_types
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_existing_security_number_fields_are_saved_as_integers(): void
+    {
+        $this->saveSecurity([
+            'auth_token_lifetime' => '45',
+            'max_login_attempts' => '6',
+            'login_lockout_time' => '7',
+        ])->assertOk();
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('security');
+        $this->assertSame(45, $stored['auth_token_lifetime']);
+        $this->assertSame(6, $stored['max_login_attempts']);
+        $this->assertSame(7, $stored['login_lockout_time']);
+    }
+
+    /**
+     * 인증 토큰 유지시간에 화면 입력칸이 보낸 `"0"`(무한대)도 저장된다 — 검증의 「0 은 허용」 조건이 정수 0 만
+     * 비교해, 문자열 `"0"` 은 「30 이상」 오류로 막히던 결함(#736 전수 실측 O-2 와 같은 원인).
+     *
+     * @scenario min_length_setting=raised
+     *
+     * @effects all_policy_keys_persist_with_integer_types
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_unlimited_token_lifetime_typed_on_screen_is_saved(): void
+    {
+        $this->saveSecurity(['auth_token_lifetime' => '0'])->assertOk();
+
+        $this->assertSame(0, app(ConfigRepositoryInterface::class)->getCategory('security')['auth_token_lifetime']);
+    }
+
+    /**
      * 범위를 벗어난 값과 모르는 선택지는 422 로 막는다.
      *
      * @effects out_of_range_values_rejected

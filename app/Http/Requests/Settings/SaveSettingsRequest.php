@@ -92,9 +92,14 @@ class SaveSettingsRequest extends FormRequest
     private const IP_RULE_TEXT_MAX = 255;
 
     /**
-     * 보안 탭의 정수 키 (정수 문자열 정규화 대상) — 비밀번호 정책·활동 로그 보관
+     * 보안 탭의 정수 키 (정수 문자열 정규화 대상) — 로그인 보안·비밀번호 정책·활동 로그 보관
      */
     private const SECURITY_INTEGER_FIELDS = [
+        // 같은 탭의 기존 숫자 칸 — 빠지면 화면에서 고친 값이 문자열 '45' 로 저장되고, 토큰 유지시간 '0'(무한대)은
+        // 「0 은 허용」 조건(정수 비교)을 못 넘어 422 가 된다(#736 전수 실측 O-2).
+        'auth_token_lifetime',
+        'max_login_attempts',
+        'login_lockout_time',
         // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
         'password_min_length',
         'password_repeated_chars_length',
