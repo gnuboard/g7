@@ -190,8 +190,13 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const onFilesChangeRef = useRef(onFilesChange);
   onFilesChangeRef.current = onFilesChange;
 
-  // 대기 파일 변경 시 콜백
+  // 대기 파일 변경 시 콜백 — 처음 그려질 때의 빈 목록은 알리지 않는다.
+  // 레이아웃이 이 이벤트를 「변경 있음」으로 받으므로, 마운트에서 부르면 폼 데이터 초기화(initLocal)
+  // 뒤에 마운트된 업로더가 수정 화면을 열자마자 저장 버튼을 켠다. 목록이 실제로 바뀐 때만 부른다.
+  const reportedPendingFilesRef = useRef(pendingFiles);
   useEffect(() => {
+    if (reportedPendingFilesRef.current === pendingFiles) return;
+    reportedPendingFilesRef.current = pendingFiles;
     onFilesChangeRef.current?.(pendingFiles);
   }, [pendingFiles]);
 

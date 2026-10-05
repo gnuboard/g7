@@ -93,7 +93,7 @@
 | `onUploadComplete` | Attachment[] | 업로드 완료 시 |
 | `onUploadError` | `{ error, file }` | 업로드 에러 시 |
 | `onRemove` | number (파일 ID) | 파일 삭제 시 |
-| `onFilesChange` | PendingFile[] | 대기 파일 변경 시 |
+| `onFilesChange` | PendingFile[] | 대기 파일을 더하거나 뺐을 때. 처음 그려질 때(빈 목록)는 부르지 않는다 — 「변경 있음」(`hasChanges`)을 켜는 데 그대로 써도 화면을 열자마자 켜지지 않는다 (admin_basic 1.1.0·basic 1.2.0) |
 | `onPrimaryChange` | number \| null | 대표 파일 변경 시 |
 
 ### 사용 예시

@@ -158,10 +158,23 @@
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
               <!-- 새로고침 — 고친 값을 버리고 서버 값으로 다시 채운다. 변경 표시와 검증 오류를 먼저 걷어야 저장 버튼이 잠기고
-                   지난 오류 문구가 새 값 옆에 남지 않는다. -->
+                   지난 오류 문구가 새 값 옆에 남지 않는다. 폼은 받은 응답으로 직접 채운다 — 데이터 소스 다시 받기(initLocal)는
+                   응답이 직전과 같으면 엔진이 적용을 건너뛰어 고친 값이 그대로 남는다. 그렇다고 데이터 소스에 `refetchOnMount` 를
+                   달면 탭을 오갈 때마다 다시 받아, 여러 탭을 고쳐 두고 한 번에 저장하는 이 화면의 흐름이 깨진다.
+                   채운 뒤 폼 감싸개를 다시 그린다(remount) — 입력칸이 고친 값을 감싸개 자신의 상태에도 들고 있어, 이것을 버려야
+                   칸과 저장 버튼이 새 값을 읽는다. -->
               <sequence>
                 <set-state target="local" :hasChanges="false" :errors="null"/>
-                <refetch-data-source dataSourceId="analytics_settings"/>
+                <api-call :auth_required="true" target="/api/admin/analytics/settings" method="GET">
+                  <success>
+                    <set-state target="local" form="{{response?.data}}" :hasChanges="false"/>
+                    <refetch-data-source dataSourceId="analytics_settings"/>
+                    <remount componentId="analytics_settings_content"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
               </sequence>
             </on>
             <icon name="refresh" class="text-xl"/>

@@ -1,0 +1,19 @@
+feature: brand_category_list_initlocal
+
+description: >
+  브랜드·카테고리 관리의 목록 데이터 소스가 init-local 에 form.name.* = "" 를 적어, 데이터 소스 initLocal 의
+  「응답 경로」 규칙에 따라 목록 응답 전체가 이름(카테고리는 설명까지) 칸에 들어가던 결함(트러블슈팅
+  state-global 사례 10). 등록 패널을 연 채 목록을 새로고침하면 다국어 입력이 문자열이 아닌 값을 받아 콘솔에
+  `trim is not a function` 이 나고 입력하던 이름이 덮였다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/brandCategoryListInitLocalNoFormMapping.test.ts
+  - tests/Playwright/specs/admin/ecommerce-brand-category-list-refresh.spec.ts
+
+axes:
+  screen: [brand, category]
+
+effects:
+  - list_refetch_keeps_form_name        # 목록을 다시 받아도 폼 이름·설명 칸은 그대로
+  - no_console_error_on_list_refresh    # 새로고침 시 다국어 입력 오류 0
+  - edit_panel_fills_name               # 회귀 대조군: 편집 패널은 고른 브랜드 이름을 채운다
