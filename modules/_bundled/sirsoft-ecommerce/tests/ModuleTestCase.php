@@ -237,8 +237,13 @@ abstract class ModuleTestCase extends TestCase
         // 빈 배열로 떨어진다. 그러면 KRW 소수 자릿수가 2로 읽혀 입금 확인 같은 금액 대조가 100배
         // 어긋난다(입금 30,000 이 3,000,000 으로 비교됨 — 단독 재실행은 통과하는 프로세스 순서 의존 실패).
         // 통화 서비스 싱글톤은 그 설정을 기억하므로 함께 비운다.
+        // 미러를 채우며 설정 서비스 싱글톤도 다시 만들어져 이 시점의 설정(테스트가 아직 파일을 쓰기 전의
+        // 기본값)을 기억한다. 비우지 않으면 테스트가 뒤에 쓴 설정 파일(예: 마일리지 사용 정책 완화)을
+        // 읽지 못해 배포 기본값(최소 1,000 / 상한 50,000)에 걸린다 — 위 isolateModuleSettings 와 같은 이유.
         g7_refresh_module_settings_config('sirsoft-ecommerce');
         $this->app->forgetInstance(CurrencyConversionService::class);
+        $this->app->forgetInstance(EcommerceSettingsService::class);
+        $this->app->forgetInstance(ModuleSettingsService::class);
 
         // 모델 static cache 초기화 (RefreshDatabase 의 트랜잭션 롤백과 static 상태 불일치 방지)
         // - ShippingType::$codeCache: getCachedByCode() 가 첫 호출 시 self::all() 결과를 캐시하는데,

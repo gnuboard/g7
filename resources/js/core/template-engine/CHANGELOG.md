@@ -5,7 +5,7 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
-## [engine-v1.76.0] - 2026-10-03
+## [engine-v1.76.0] - 2026-10-05
 
 ### Added
 
