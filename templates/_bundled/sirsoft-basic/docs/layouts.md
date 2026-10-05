@@ -7,12 +7,12 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 2개 |
-| `auth` | 5개 |
+| `auth` | 6개 |
 | `board` | 5개 |
 | `errors` | 6개 |
 | `mypage` | 15개 |
@@ -27,6 +27,7 @@
 | `_user_base` | `(root)` | partial | - |
 | `forgot_password` | `auth` | 화면 | `_user_base` |
 | `identity_challenge` | `auth` | 화면 | `_user_base` |
+| `identity_verify` | `auth` | 화면 | `_user_base` |
 | `login` | `auth` | 화면 | `_user_base` |
 | `register` | `auth` | 화면 | `_user_base` |
 | `reset_password` | `auth` | 화면 | `_user_base` |
@@ -274,6 +275,7 @@
 | `/forgot-password` | `auth/forgot_password` | - |
 | `/reset-password` | `auth/reset_password` | - |
 | `/identity/challenge` | `auth/identity_challenge` | - |
+| `/identity/verify` | `auth/identity_verify` | - |
 | `/boards` | `board/boards` | - |
 | `/boards/popular` | `board/popular` | - |
 | `/board/:slug` | `board/index` | - |
@@ -446,6 +448,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── forgot_password.g7.html (비밀번호 찾기)
 │   ├── reset_password.g7.html (비밀번호 재설정)
 │   ├── identity_challenge.g7.html (2단계 인증 챌린지 — #657)
+│   ├── identity_verify.g7.html (본인인증 메일 링크 착지 — 확인만, 결과는 인증을 시작한 화면이 받음)
 │   └── partials/auth/
 │       ├── _login_form.g7.html (로그인 폼)
 │       ├── _register_form.g7.html (회원가입 폼)

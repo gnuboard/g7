@@ -26,9 +26,10 @@ const TAB_SCOPED: Record<string, string[]> = {
   notificationDefinitions: ['notification_definitions'],
   availableChannels: ['notification_definitions'],
   identityProviders: ['identity'],
-  identityPurposes: ['identity'],
-  identityMessages: ['identity'],
-  adminIdentityPolicies: ['identity'],
+  identityPurposes: ['identity', 'notification_definitions'],
+  // 본인인증 정책별 문구(#699) — 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다. 운영자 정책 목록은 두 탭이 함께 쓴다.
+  identityPolicyDefinitions: ['notification_definitions'],
+  adminIdentityPolicies: ['identity', 'notification_definitions'],
   policies: ['identity'],
   sitemap_status: ['seo'],
   staticCacheStatus: ['general'],
@@ -38,6 +39,10 @@ const sources: AnyJson[] = layout.data_sources;
 const byId = (id: string) => sources.find(s => s.id === id);
 
 describe('admin_settings — 데이터소스 탭 스코프 게이팅', () => {
+  /**
+   * @scenario source_kind=shared
+   * @effects shared_settings_source_always_fetched
+   */
   it('공유 소스(settings)는 if 게이트 없이 항상 fetch 된다', () => {
     for (const id of SHARED_SOURCE_IDS) {
       const s = byId(id);
@@ -47,18 +52,30 @@ describe('admin_settings — 데이터소스 탭 스코프 게이팅', () => {
     }
   });
 
+  /**
+   * @scenario source_kind=lazy_detail
+   * @effects modal_detail_sources_stay_lazy
+   */
   it('모달 상세 소스는 auto_fetch:false 지연 로딩을 유지한다', () => {
     for (const id of LAZY_DETAIL_IDS) {
       expect(byId(id)!.auto_fetch).toBe(false);
     }
   });
 
+  /**
+   * @scenario source_kind=tab_scoped
+   * @effects tab_scoped_sources_have_if_gate
+   */
   it.each(Object.keys(TAB_SCOPED))('탭 전용 소스 %s 는 if 게이트를 가진다', (id) => {
     const s = byId(id);
     expect(s).toBeTruthy();
     expect(typeof s!.if).toBe('string');
   });
 
+  /**
+   * @scenario source_kind=tab_scoped
+   * @effects tab_scoped_source_gate_references_owner_tabs
+   */
   it.each(Object.entries(TAB_SCOPED))('%s 의 if 가 소유 탭(%s)을 참조한다', (id, tabs) => {
     const cond: string = byId(id)!.if;
     for (const tab of tabs as string[]) {
@@ -68,12 +85,20 @@ describe('admin_settings — 데이터소스 탭 스코프 게이팅', () => {
     expect(cond).toContain('activeSettingsTab');
   });
 
+  /**
+   * @scenario source_kind=tab_scoped
+   * @effects tab_scoped_sources_not_disabled
+   */
   it('탭 전용 소스를 auto_fetch:false 로 죽여두지 않는다', () => {
     for (const id of Object.keys(TAB_SCOPED)) {
       expect(byId(id)!.auto_fetch).not.toBe(false);
     }
   });
 
+  /**
+   * @scenario source_kind=tab_scoped
+   * @effects tab_switch_navigates_with_replace
+   */
   it('탭 전환은 navigate + replace:true 로 수행한다 (if 재평가 필요)', () => {
     const seqs: AnyJson[] = [];
     const walk = (n: any) => {

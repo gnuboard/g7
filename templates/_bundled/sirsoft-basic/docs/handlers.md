@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 33개 (정의: `src/handlers/index.ts`).
+핸들러 34개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -24,6 +24,7 @@
 | `redirectToLoginWithReturn` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
 | `markLocalOnce` | `sirsoft-basic.markLocalOnce` |
+| `rememberIdentityClaim` | `sirsoft-basic.rememberIdentityClaim` |
 | `toggleCartItemSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `selectAllCartItems` | (템플릿 전용 — 네임스페이스 없음) |
 | `setCartOption` | (템플릿 전용 — 네임스페이스 없음) |
@@ -119,6 +120,12 @@
    방법을 코어에 알립니다. 이것이 없으면 428 응답을 받은 화면이 인증 창을 띄우지 못합니다.
    모달을 쓸 수 없어 `/identity/challenge` 화면으로 폴백할 때는 `return_url` 에 현재 경로+쿼리만
    넘깁니다(절대 주소·해시 제외) — 챌린지 레이아웃이 읽는 이름이 `return_url` 입니다.
+   challenge 요청에는 428 이 알려 준 `policy_key` 를 함께 실어 서버가 운영자의 정책별 문구를 고르게 합니다.
+   **링크 방식**(비밀번호 재설정 목적)은 확인을 메일 링크가 하므로(다른 기기일 수 있음), 시작 응답의 일회용
+   `claim_secret` 으로 3초마다 `POST /api/identity/challenges/{id}/claim` 을 물어 토큰을 받으면 원래 요청을
+   이어 갑니다. 비밀값은 처리기 모듈 안에만 두고 전역 상태에 쓰지 않습니다 — 인증 창의 [다시 보내기]가 받은 새 건의
+   비밀값은 `sirsoft-basic.rememberIdentityClaim` 핸들러로 넘깁니다. 메일 링크(`/identity/verify?challenge=…&token=…`)는 `auth/identity_verify` 착지 화면이 받아
+   확인만 하고 결과를 알립니다.
 3. **iOS 판정 보정** — 서버 UA 판정이 놓치는 iPadOS(데스크탑 UA)를 클라이언트 신호로 바로잡아
    `appConfig.isIos` 에 반영합니다. 체크아웃의 애플페이 노출이 이 값을 봅니다.
 

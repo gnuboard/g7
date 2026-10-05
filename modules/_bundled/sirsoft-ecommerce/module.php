@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce;
 
 use App\Extension\AbstractModule;
-use App\Models\IdentityMessageDefinition;
+use App\Notifications\Identity\IdentityNotificationType;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Support\SiteUrl;
 use Illuminate\Database\Seeder;
@@ -1526,71 +1526,6 @@ class Module extends AbstractModule
     }
 
     /**
-     * 이커머스 모듈이 등록할 IDV 메시지 정의/템플릿.
-     *
-     * 코어 4종 fallback (signup/password_reset/self_update/sensitive_action) 외에
-     * 이 모듈이 신규 도입한 `checkout_verification` purpose 의 전용 메일 메시지를 제공합니다.
-     * 등록되지 않으면 IdentityMessageDispatcher 가 `provider_default` (가장 일반적인 fallback)
-     * 메일을 발송하므로 결제 도메인 컨텍스트가 사라집니다.
-     *
-     * 결제 도메인 정책 3건(payment.cancel/approve/confirm_deposit)은 purpose=sensitive_action
-     * 코어 메일을 그대로 사용해도 충분하므로 별도 등록하지 않습니다.
-     * (정책별 차별화가 필요하면 scope_type=SCOPE_POLICY + scope_value=policy_key 로 추가)
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public function getIdentityMessages(): array
-    {
-        return [
-            [
-                'provider_id' => 'g7:core.mail',
-                'scope_type' => IdentityMessageDefinition::SCOPE_PURPOSE,
-                'scope_value' => 'checkout_verification',
-                'name' => [
-                    'ko' => '결제 시 본인 확인',
-                    'en' => 'Checkout Verification',
-                ],
-                'description' => [
-                    'ko' => '결제 진행 전 본인/성인 확인 인증 코드 메일',
-                    'en' => 'Identity/adult verification code mail before checkout',
-                ],
-                'channels' => ['mail'],
-                'variables' => [
-                    ['key' => 'code', 'description' => '인증 코드 (text_code 흐름)'],
-                    ['key' => 'expire_minutes', 'description' => '만료까지 남은 분'],
-                    ['key' => 'purpose_label', 'description' => '인증 목적 라벨'],
-                    ['key' => 'app_name', 'description' => '사이트명'],
-                    ['key' => 'site_url', 'description' => '사이트 URL'],
-                    ['key' => 'recipient_email', 'description' => '수신자 이메일'],
-                ],
-                'templates' => [
-                    [
-                        'channel' => 'mail',
-                        'subject' => [
-                            'ko' => '[{app_name}] 결제 본인 확인 인증 코드',
-                            'en' => '[{app_name}] Checkout Verification Code',
-                        ],
-                        'body' => [
-                            'ko' => '<h1>결제 본인 확인</h1>'
-                                .'<p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p>'
-                                .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                                .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                                .'<p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p>'
-                                .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                            'en' => '<h1>Checkout Verification</h1>'
-                                .'<p>Please enter the code below to proceed with payment.</p>'
-                                .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                                .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                                .'<p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p>'
-                                .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    }
-
-    /**
      * 이커머스 모듈이 등록할 알림 정의.
      *
      * AbstractModule 계약에 따라 ModuleManager 가 activate/update 시 자동으로
@@ -1616,7 +1551,119 @@ class Module extends AbstractModule
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
+            $this->orderCustomEmailDefinition(),
+            $this->checkoutVerificationIdentityDefinition(),
         ], $this->claimNotificationDefinitions());
+    }
+
+    /**
+     * 주문 상세 「고객에게 메일 보내기」 알림 정의.
+     *
+     * 관리자가 주문 상세에서 직접 쓰는 메일이다. 7.1.0 전에는 알림 밖에서 `Mail::raw()` 로 보내
+     * 「알림 채널 관리」의 메일 토글·발송 로그를 거치지 않았다(#699). 훅으로 발화되지 않고
+     * OrderService::sendEmail() 이 직접 보낸다 — hooks 는 비운다. 제목·본문은 관리자 입력을
+     * 그대로 싣고({subject}·{message}), 운영자는 앞뒤 문구(꼬리말 등)를 편집할 수 있다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function orderCustomEmailDefinition(): array
+    {
+        return [
+            'type' => 'order_custom_email',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '주문 안내 메일 (관리자 작성)', 'en' => 'Order Message (Written by Admin)'],
+            'description' => [
+                'ko' => '주문 상세의 「고객에게 메일 보내기」로 관리자가 작성해 보내는 메일',
+                'en' => 'Mail an administrator writes and sends from the order detail page',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => [
+                ['key' => 'subject', 'description' => '관리자가 입력한 제목'],
+                ['key' => 'message', 'description' => '관리자가 입력한 본문 (줄바꿈 유지)'],
+                ['key' => 'order_number', 'description' => '주문번호'],
+                ['key' => 'customer_name', 'description' => '주문자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '{subject}',
+                        'en' => '{subject}',
+                    ],
+                    'body' => [
+                        'ko' => '<div style="font-family:\'Malgun Gothic\',sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+                            .'<div style="color:#333;line-height:1.7">{message}</div>'
+                            .'<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
+                            .'<p style="color:#999;font-size:12px">주문번호 {order_number} 관련 안내입니다. 본 메일은 <a href="{site_url}">{app_name}</a>에서 발송되었습니다.</p>'
+                            .'</div>',
+                        'en' => '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+                            .'<div style="color:#333;line-height:1.7">{message}</div>'
+                            .'<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
+                            .'<p style="color:#999;font-size:12px">This message is about order {order_number}. Sent from <a href="{site_url}">{app_name}</a>.</p>'
+                            .'</div>',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 결제 시 본인 확인(checkout_verification) 본인인증 알림 정의.
+     *
+     * 이 모듈이 도입한 `checkout_verification` 목적의 전용 메일 문구다. 7.1.0 부터 본인인증 메시지는
+     * 알림 정의(category=identity)이므로 `getIdentityMessages()` 대신 여기서 선언한다(#699).
+     * 정의가 없으면 코어 `identity.default` 범용 문구로 나가 결제 맥락이 사라진다.
+     * 결제 도메인 정책(payment.cancel/approve/confirm_deposit)은 코어 sensitive_action 문구로 충분해
+     * 따로 선언하지 않는다 — 정책별 문구가 필요하면 운영자가 알림 설정 > 본인인증에서 추가한다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function checkoutVerificationIdentityDefinition(): array
+    {
+        return [
+            'type' => IdentityNotificationType::forPurpose('checkout_verification'),
+            'category' => IdentityNotificationType::CATEGORY,
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => [
+                'ko' => '결제 시 본인 확인',
+                'en' => 'Checkout Verification',
+            ],
+            'description' => [
+                'ko' => '결제 진행 전 본인/성인 확인 인증 코드 메일',
+                'en' => 'Identity/adult verification code mail before checkout',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 결제 본인 확인 인증 코드',
+                        'en' => '[{app_name}] Checkout Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>결제 본인 확인</h1>'
+                            .'<p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Checkout Verification</h1>'
+                            .'<p>Please enter the code below to proceed with payment.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**

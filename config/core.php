@@ -1,5 +1,7 @@
 <?php
 
+use App\Notifications\Identity\IdentityNotificationType;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -444,8 +446,6 @@ return [
                     ['identifier' => 'core.admin.identity.policies.update', 'type' => 'admin', 'name' => ['ko' => '정책 수정', 'en' => 'Update IDV Policies'], 'description' => ['ko' => '본인인증 정책(라우트/훅별)을 CRUD 할 수 있습니다.', 'en' => 'Can CRUD identity verification policies by route/hook.'], 'order' => 4],
                     ['identifier' => 'core.admin.identity.logs.read', 'type' => 'admin', 'name' => ['ko' => '로그 열람', 'en' => 'View IDV Logs'], 'description' => ['ko' => '본인인증 이력을 조회할 수 있습니다.', 'en' => 'Can view identity verification logs.'], 'order' => 5],
                     ['identifier' => 'core.admin.identity.logs.purge', 'type' => 'admin', 'name' => ['ko' => '로그 파기', 'en' => 'Purge IDV Logs'], 'description' => ['ko' => '본인인증 이력을 파기(보관주기 외)할 수 있습니다.', 'en' => 'Can purge identity verification logs (retention-based).'], 'order' => 6],
-                    ['identifier' => 'core.admin.identity.messages.read', 'type' => 'admin', 'name' => ['ko' => '메시지 템플릿 조회', 'en' => 'View IDV Message Templates'], 'description' => ['ko' => '본인인증 메시지 정의/템플릿을 조회할 수 있습니다.', 'en' => 'Can view identity verification message definitions and templates.'], 'order' => 7],
-                    ['identifier' => 'core.admin.identity.messages.update', 'type' => 'admin', 'name' => ['ko' => '메시지 템플릿 수정', 'en' => 'Update IDV Message Templates'], 'description' => ['ko' => '본인인증 메시지 정의/템플릿을 수정할 수 있습니다.', 'en' => 'Can update identity verification message definitions and templates.'], 'order' => 8],
                 ],
             ],
             [
@@ -1477,6 +1477,235 @@ return [
                 ],
             ],
         ],
+        // ── 본인인증 알림 (category=identity) ─────────────────────────────────────
+        // 본인인증 메일(인증번호·검증 링크)도 알림 정의로 선언한다 — 채널 토글·발송 로그·훅을 함께 탄다.
+        // type 규칙은 IdentityNotificationType 이 소유한다:
+        //   identity.default (폴백) / identity.purpose.{purpose} / identity.policy.{정책 키}(운영자 추가, 100자 초과 시 해시)
+        // 발송은 IdentityMessageDispatcher 가 정책 → 목적 → 기본 순서로 해석해 GenericNotification 으로 보낸다.
+        // hooks 는 비운다 — 훅 리스너가 아니라 본인인증 발송 경로만 이 정의를 쓴다. 수신자는 인증 요청 대상으로 고정이라
+        // recipients 를 선언하지 않는다. variables 는 공통 SSoT(IdentityNotificationType::commonVariables).
+        'identity.default' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '메일 본인 확인 (기본)', 'en' => 'Mail Verification (default)'],
+            'description' => [
+                'ko' => '특정 목적이 매칭되지 않을 때 사용되는 기본 메일 템플릿',
+                'en' => 'Fallback mail template used when no specific purpose matches',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 본인 확인 인증 코드',
+                        'en' => '[{app_name}] Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<p>안녕하세요.</p>'
+                            .'<p>아래 인증 코드를 입력해 본인 확인을 완료해 주세요.</p>'
+                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p>본인이 요청하지 않았다면 이 메일을 무시해 주세요.</p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<p>Hello.</p>'
+                            .'<p>Please enter the verification code below to confirm your identity.</p>'
+                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p>If you did not request this, please ignore this email.</p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+        'identity.purpose.signup' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '회원가입 인증', 'en' => 'Signup Verification'],
+            'description' => [
+                'ko' => '회원가입 단계에서 이메일 본인 확인 시 발송',
+                'en' => 'Sent when verifying email during signup',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 회원가입 인증 코드',
+                        'en' => '[{app_name}] Signup Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{app_name} 회원가입 인증</h1>'
+                            .'<p>아래 인증 코드를 회원가입 화면에 입력해 주세요.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p>본인이 가입을 시도하지 않았다면 이 메일을 무시해 주세요.</p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>{app_name} Signup Verification</h1>'
+                            .'<p>Please enter the verification code below on the signup screen.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p>If you did not request this, please ignore this email.</p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+        'identity.purpose.password_reset' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '비밀번호 재설정 링크', 'en' => 'Password Reset Link'],
+            'description' => [
+                'ko' => '비밀번호 재설정 요청 시 발송되는 서명 링크 메일 (link 흐름)',
+                'en' => 'Signed-link email sent on password reset request (link flow)',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 비밀번호 재설정 안내',
+                        'en' => '[{app_name}] Password Reset Request',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>비밀번호 재설정</h1>'
+                            .'<p>비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 비밀번호를 재설정해 주세요.</p>'
+                            .'<p>이 링크는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center"><a href="{action_url}" style="display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;">비밀번호 재설정</a></td></tr></table>'
+                            .'<p>본인이 요청하지 않았다면 이 메일을 무시해 주세요.</p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Password Reset</h1>'
+                            .'<p>We received a password reset request. Click the button below to set a new password.</p>'
+                            .'<p>This link will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center"><a href="{action_url}" style="display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;">Reset Password</a></td></tr></table>'
+                            .'<p>If you did not request this, please ignore this email.</p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+        'identity.purpose.self_update' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '계정 정보 변경 인증', 'en' => 'Self-update Verification'],
+            'description' => [
+                'ko' => '계정 정보 변경 시 본인 확인 코드 메일',
+                'en' => 'Verification code mail when updating account info',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 계정 정보 변경 인증 코드',
+                        'en' => '[{app_name}] Account Update Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>계정 정보 변경 인증</h1>'
+                            .'<p>{purpose_label} 처리를 위해 아래 인증 코드를 입력해 주세요.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p><strong>본인이 변경을 시도하지 않았다면 즉시 비밀번호를 변경하시기 바랍니다.</strong></p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Account Update Verification</h1>'
+                            .'<p>Please enter the code below to proceed with {purpose_label}.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p><strong>If you did not initiate this change, please change your password immediately.</strong></p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+        'identity.purpose.sensitive_action' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '중요 작업 인증', 'en' => 'Sensitive Action Verification'],
+            'description' => [
+                'ko' => '결제, 주요 설정 변경 등 중요 작업 시 본인 확인 코드 메일',
+                'en' => 'Verification code mail for sensitive actions (payment, critical settings)',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 중요 작업 인증 코드',
+                        'en' => '[{app_name}] Sensitive Action Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>중요 작업 인증</h1>'
+                            .'<p>{purpose_label} 진행을 위해 아래 인증 코드를 입력해 주세요.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p><strong>본인이 시도하지 않았다면 즉시 고객 지원팀에 문의해 주세요.</strong></p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Sensitive Action Verification</h1>'
+                            .'<p>Please enter the code below to proceed with {purpose_label}.</p>'
+                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p><strong>If you did not initiate this action, please contact support immediately.</strong></p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
+        'identity.purpose.login' => [
+            'category' => 'identity',
+            // 인증을 요청한 사람에게만 보낸다(수신자 규칙 없음) — 역할로 사람을 뽑지 않으므로 customer.
+            'audience' => 'customer',
+            'hook_prefix' => 'core.identity',
+            'name' => ['ko' => '로그인 인증번호', 'en' => 'Login Verification Code'],
+            'description' => [
+                'ko' => '2단계 인증을 켰을 때 비밀번호 확인 뒤 보내는 로그인 인증번호 메일',
+                'en' => 'Login verification code mail sent after the password step when two-factor authentication is on',
+            ],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => IdentityNotificationType::commonVariables(),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'subject' => [
+                        'ko' => '[{app_name}] 로그인 인증번호 안내',
+                        'en' => '[{app_name}] Your Login Verification Code',
+                    ],
+                    'body' => [
+                        'ko' => '<p>안녕하세요.</p>'
+                            .'<p>로그인을 완료하려면 아래 인증번호를 입력해 주세요.</p>'
+                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>이 인증번호는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
+                            .'<p><strong>본인이 로그인을 시도하지 않았다면 즉시 비밀번호를 변경해 주세요.</strong></p>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<p>Hello.</p>'
+                            .'<p>Please enter the verification code below to complete your login.</p>'
+                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
+                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
+                            .'<p><strong>If you did not try to log in, please change your password immediately.</strong></p>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+            ],
+        ],
     ],
 
     /*
@@ -1593,202 +1822,6 @@ return [
             'enabled' => false,
             'applies_to' => 'admin',
             'fail_mode' => 'block',
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | 코어 본인인증(IDV) 메시지 정의/템플릿
-    |--------------------------------------------------------------------------
-    | IdentityMessageDefinitionSeeder 에서 사용됩니다. IdentityMessageSyncHelper 가
-    | upsert 하며, 운영자가 관리자 UI 에서 수정한 필드는 user_overrides JSON 에 보존됩니다.
-    | 모듈/플러그인 자체 IDV 메시지는 각자의 getIdentityMessages() 에서 선언합니다.
-    |
-    | 각 항목 키는 사람이 읽기 쉬운 식별자이며, 실제 unique 키는 (provider_id, scope_type, scope_value) 조합입니다.
-    | scope_type: 'provider_default' | 'purpose' | 'policy'
-    |
-    | 코어 변수(commonVariables) 는 모든 mail 정의 공통:
-    |   code, action_url, expire_minutes, purpose_label, app_name, site_url, recipient_email
-    */
-    'identity_messages' => [
-        'mail.provider_default' => [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'provider_default',
-            'scope_value' => '',
-            'name' => ['ko' => '메일 본인 확인 (기본)', 'en' => 'Mail Verification (default)'],
-            'description' => [
-                'ko' => '특정 목적이 매칭되지 않을 때 사용되는 기본 메일 템플릿',
-                'en' => 'Fallback mail template used when no specific purpose matches',
-            ],
-            'channels' => ['mail'],
-            'variables' => '__common__',
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => [
-                        'ko' => '[{app_name}] 본인 확인 인증 코드',
-                        'en' => '[{app_name}] Verification Code',
-                    ],
-                    'body' => [
-                        'ko' => '<p>안녕하세요.</p>'
-                            .'<p>아래 인증 코드를 입력해 본인 확인을 완료해 주세요.</p>'
-                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                            .'<p>본인이 요청하지 않았다면 이 메일을 무시해 주세요.</p>'
-                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                        'en' => '<p>Hello.</p>'
-                            .'<p>Please enter the verification code below to confirm your identity.</p>'
-                            .'<p style="font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                            .'<p>If you did not request this, please ignore this email.</p>'
-                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                    ],
-                ],
-            ],
-        ],
-
-        'mail.purpose.signup' => [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'signup',
-            'name' => ['ko' => '회원가입 인증', 'en' => 'Signup Verification'],
-            'description' => [
-                'ko' => '회원가입 단계에서 이메일 본인 확인 시 발송',
-                'en' => 'Sent when verifying email during signup',
-            ],
-            'channels' => ['mail'],
-            'variables' => '__common__',
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => [
-                        'ko' => '[{app_name}] 회원가입 인증 코드',
-                        'en' => '[{app_name}] Signup Verification Code',
-                    ],
-                    'body' => [
-                        'ko' => '<h1>{app_name} 회원가입 인증</h1>'
-                            .'<p>아래 인증 코드를 회원가입 화면에 입력해 주세요.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                            .'<p>본인이 가입을 시도하지 않았다면 이 메일을 무시해 주세요.</p>'
-                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                        'en' => '<h1>{app_name} Signup Verification</h1>'
-                            .'<p>Please enter the verification code below on the signup screen.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                            .'<p>If you did not request this, please ignore this email.</p>'
-                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                    ],
-                ],
-            ],
-        ],
-
-        'mail.purpose.password_reset' => [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'password_reset',
-            'name' => ['ko' => '비밀번호 재설정 링크', 'en' => 'Password Reset Link'],
-            'description' => [
-                'ko' => '비밀번호 재설정 요청 시 발송되는 서명 링크 메일 (link 흐름)',
-                'en' => 'Signed-link email sent on password reset request (link flow)',
-            ],
-            'channels' => ['mail'],
-            'variables' => '__common__',
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => [
-                        'ko' => '[{app_name}] 비밀번호 재설정 안내',
-                        'en' => '[{app_name}] Password Reset Request',
-                    ],
-                    'body' => [
-                        'ko' => '<h1>비밀번호 재설정</h1>'
-                            .'<p>비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 비밀번호를 재설정해 주세요.</p>'
-                            .'<p>이 링크는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center"><a href="{action_url}" style="display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;">비밀번호 재설정</a></td></tr></table>'
-                            .'<p>본인이 요청하지 않았다면 이 메일을 무시해 주세요.</p>'
-                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                        'en' => '<h1>Password Reset</h1>'
-                            .'<p>We received a password reset request. Click the button below to set a new password.</p>'
-                            .'<p>This link will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center"><a href="{action_url}" style="display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;">Reset Password</a></td></tr></table>'
-                            .'<p>If you did not request this, please ignore this email.</p>'
-                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                    ],
-                ],
-            ],
-        ],
-
-        'mail.purpose.self_update' => [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'self_update',
-            'name' => ['ko' => '계정 정보 변경 인증', 'en' => 'Self-update Verification'],
-            'description' => [
-                'ko' => '계정 정보 변경 시 본인 확인 코드 메일',
-                'en' => 'Verification code mail when updating account info',
-            ],
-            'channels' => ['mail'],
-            'variables' => '__common__',
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => [
-                        'ko' => '[{app_name}] 계정 정보 변경 인증 코드',
-                        'en' => '[{app_name}] Account Update Verification Code',
-                    ],
-                    'body' => [
-                        'ko' => '<h1>계정 정보 변경 인증</h1>'
-                            .'<p>{purpose_label} 처리를 위해 아래 인증 코드를 입력해 주세요.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                            .'<p><strong>본인이 변경을 시도하지 않았다면 즉시 비밀번호를 변경하시기 바랍니다.</strong></p>'
-                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                        'en' => '<h1>Account Update Verification</h1>'
-                            .'<p>Please enter the code below to proceed with {purpose_label}.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                            .'<p><strong>If you did not initiate this change, please change your password immediately.</strong></p>'
-                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                    ],
-                ],
-            ],
-        ],
-
-        'mail.purpose.sensitive_action' => [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'sensitive_action',
-            'name' => ['ko' => '중요 작업 인증', 'en' => 'Sensitive Action Verification'],
-            'description' => [
-                'ko' => '결제, 주요 설정 변경 등 중요 작업 시 본인 확인 코드 메일',
-                'en' => 'Verification code mail for sensitive actions (payment, critical settings)',
-            ],
-            'channels' => ['mail'],
-            'variables' => '__common__',
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => [
-                        'ko' => '[{app_name}] 중요 작업 인증 코드',
-                        'en' => '[{app_name}] Sensitive Action Verification Code',
-                    ],
-                    'body' => [
-                        'ko' => '<h1>중요 작업 인증</h1>'
-                            .'<p>{purpose_label} 진행을 위해 아래 인증 코드를 입력해 주세요.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p>'
-                            .'<p><strong>본인이 시도하지 않았다면 즉시 고객 지원팀에 문의해 주세요.</strong></p>'
-                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
-                        'en' => '<h1>Sensitive Action Verification</h1>'
-                            .'<p>Please enter the code below to proceed with {purpose_label}.</p>'
-                            .'<p style="font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;">{code}</p>'
-                            .'<p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p>'
-                            .'<p><strong>If you did not initiate this action, please contact support immediately.</strong></p>'
-                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
-                    ],
-                ],
-            ],
         ],
     ],
 

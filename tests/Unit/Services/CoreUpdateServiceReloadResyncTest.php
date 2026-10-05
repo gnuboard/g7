@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Services\CoreUpdateService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,10 @@ use Tests\TestCase;
  */
 class CoreUpdateServiceReloadResyncTest extends TestCase
 {
+    // reloadCoreConfigAndResync() 는 권한·메뉴·알림·본인인증 정책을 실제로 시드한다. 트랜잭션으로 감싸지 않으면 그 행이
+    // 테스트 DB 에 남아, 같은 프로세스의 뒤 테스트(빈 표를 전제하는 동기화·업그레이드 테스트)가 깨진다(#699 실측: 9건 잔존).
+    use RefreshDatabase;
+
     /**
      * stale 메모리 config 가 reloadCoreConfigAndResync() 호출 후 디스크 값으로 복원되는지 검증.
      *
@@ -30,6 +35,10 @@ class CoreUpdateServiceReloadResyncTest extends TestCase
      *   2. Config Repository 에 stale 값 강제 주입 (예: permissions=[])
      *   3. reloadCoreConfigAndResync() 호출 (sync/seeder 단계는 try/catch DB 의존이라 실패해도 본 검증과 무관)
      *   4. config('core.permissions') 가 다시 baseline 값으로 복원되었는지 확인
+     *
+     * @effects reloadCoreConfigAndResync_restores_stale_memory_config_from_disk
+     *
+     * @return void 반환값 없음
      */
     public function test_reload_restores_stale_memory_config_from_disk(): void
     {
@@ -48,8 +57,18 @@ class CoreUpdateServiceReloadResyncTest extends TestCase
         $service = new class extends CoreUpdateService
         {
             // sync 단계 격리 — config 재주입 검증에 무관한 부수 효과 회피
+            /**
+             * 역할·권한 동기화를 건너뜁니다 (config 재주입만 검증하기 위한 격리).
+             *
+             * @return void 반환값 없음
+             */
             public function syncCoreRolesAndPermissions(): void {}
 
+            /**
+             * 메뉴 동기화를 건너뜁니다 (config 재주입만 검증하기 위한 격리).
+             *
+             * @return void 반환값 없음
+             */
             public function syncCoreMenus(): void {}
         };
 
@@ -69,7 +88,11 @@ class CoreUpdateServiceReloadResyncTest extends TestCase
      *
      * 회귀 시나리오: 향후 누군가 reloadCoreConfigAndResync 본문에서 시더 호출 일부를 제거하면
      * upgrade 흐름에서 해당 도메인이 누락되는 결함이 잠복함. 본 테스트는 본문에 5종이 모두
-     * 등장하는지 확인하여 자동 차단.
+     * 등장하는지 확인하여 자동 차단. 7.1.0 부터는 옛 IDV 메시지 시더를 부르지 않는 것도 확인한다.
+     *
+     * @effects reloadCoreConfigAndResync_invokes_all_core_domain_seeders
+     *
+     * @return void 반환값 없음
      */
     public function test_reload_invokes_all_core_domain_seeders(): void
     {
@@ -90,13 +113,19 @@ class CoreUpdateServiceReloadResyncTest extends TestCase
         $this->assertStringContainsString('syncCoreMenus', $body, '메뉴 sync 호출 누락');
         $this->assertStringContainsString('NotificationDefinitionSeeder', $body, '알림 정의 시더 호출 누락');
         $this->assertStringContainsString('IdentityPolicySeeder', $body, 'IDV 정책 시더 호출 누락');
-        $this->assertStringContainsString('IdentityMessageDefinitionSeeder', $body, 'IDV 메시지 정의 시더 호출 누락');
+        // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity) — NotificationDefinitionSeeder 가 함께 동기화한다.
+        // 옛 IDV 메시지 시더는 호출하지 않는다(그 클래스는 7.0.x 부모 프로세스용 무동작 심으로만 남았다, #699).
+        $this->assertStringNotContainsString('IdentityMessageDefinitionSeeder', $body, '옛 IDV 메시지 시더를 다시 부르면 안 된다');
     }
 
     /**
      * CoreUpdateCommand step 9 가 reloadCoreConfigAndResync 사용 (syncCore* 직접 호출 금지) 정합성을
      * audit 룰 `core-update-command-direct-sync` 가 보장하므로, 본 테스트에서는 정적 정합성을
      * 룰 재실행으로 1회 더 확인 (1차 방어).
+     *
+     * @effects CoreUpdateCommand_resyncs_via_reloadCoreConfigAndResync_not_direct_sync
+     *
+     * @return void 반환값 없음
      */
     public function test_audit_rule_guards_against_direct_sync_call_regression(): void
     {

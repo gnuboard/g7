@@ -35,6 +35,8 @@ effects:
   - verification_token_absent_from_response
   - metadata_absent_from_response
   - challenge_screen_remaining_attempts_ui_works_via_query_fallback  # 프론트: 서버 attempts 없이도 남은 횟수 UI 동작
+  - polling_unknown_challenge_returns_404         # 없는 challenge id 조회는 404
+  - polling_reflects_current_status               # 폴링 응답 status 가 로그의 현재 상태(processing 등)를 그대로 반영
 
 test_files:
   - tests/Feature/Api/Identity/IdentityChallengeShowTest.php

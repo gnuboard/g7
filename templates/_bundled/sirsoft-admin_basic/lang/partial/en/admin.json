@@ -796,8 +796,7 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies",
-        "identity_message_definitions": "Identity Message Definitions"
+        "identity_policies": "Identity Policies"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -1010,8 +1009,7 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies",
-        "identity_message_definitions": "Identity Message Definitions"
+        "identity_policies": "Identity Policies"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -1739,83 +1737,13 @@
         "basic": "Basic",
         "providers": "Providers",
         "policies": "Policies",
-        "messages": "Message Templates"
+        "messages": "Messages"
       },
       "messages": {
-        "title": "Identity Verification Message Templates",
-        "intro": "Edit the subject and body used for identity verification emails. Both Korean and English can be entered, and you can restore the default at any time. Admin-created policies can be paired with their own messages.",
-        "empty": "No message definitions registered.",
-        "edit": "Edit",
-        "btn_add_definition": "Add Definition",
-        "btn_reset": "Reset to Default",
-        "btn_delete": "Delete",
-        "status_active": "Active",
-        "status_inactive": "Inactive",
-        "default_badge": "Default",
-        "body_preview": "Body Preview",
-        "total_count": "Total {count}",
-        "per_page_label": "Per page",
-        "channels": {
-          "mail": "Mail"
-        },
-        "toggle_success": "Message definition active state has been changed.",
-        "toggle_failed": "Failed to update active state.",
-        "badges": {
-          "default": "Default",
-          "customized": "Customized"
-        },
-        "add_modal": {
-          "title": "Add Message Definition",
-          "errors_title": "Input errors",
-          "provider": "Provider",
-          "scope_type": "Scope type",
-          "policy_key": "Policy key",
-          "policy_key_placeholder": "Select an admin policy",
-          "policy_empty": "No admin policies registered. Please add a policy in the Policies tab first.",
-          "policy_all_defined": "Every admin policy already has a message definition. Edit an existing definition's template or register a new policy.",
-          "name": "Name",
-          "subject": "Subject",
-          "body": "Body",
-          "variables_title": "Available variables",
-          "save_success": "Message definition added successfully.",
-          "save_failed": "Failed to add message definition."
-        },
-        "delete_modal": {
-          "title": "Delete Message Definition",
-          "target_label": "Target",
-          "confirm_message": "Are you sure you want to delete this message definition?",
-          "warning_message": "All linked channel templates will be removed. This action cannot be undone.",
-          "btn_confirm": "Delete",
-          "btn_confirming": "Deleting...",
-          "delete_success": "Message definition deleted successfully.",
-          "delete_failed": "Failed to delete message definition."
-        },
-        "reset_modal": {
-          "title": "Reset to Default",
-          "target_label": "Target",
-          "confirm_message": "Reset all channel templates of this definition to seed defaults?",
-          "warning_message": "All admin edits will be lost. This action cannot be undone.",
-          "btn_confirm": "Reset",
-          "btn_confirming": "Resetting...",
-          "reset_success": "Message definition restored to defaults.",
-          "reset_failed": "Failed to reset to defaults."
-        },
-        "modal": {
-          "title": "Edit Message Template",
-          "errors_title": "Input errors",
-          "variables_title": "Available Variables",
-          "subject": "Subject",
-          "body": "Body",
-          "reset": "Restore Default",
-          "reset_confirm": "All operator edits will be replaced with the seeded default. Continue?",
-          "reset_success": "Restored to seeded default.",
-          "reset_failed": "Failed to restore default.",
-          "save_success": "Message template saved.",
-          "save_failed": "Failed to save.",
-          "preview": "Preview",
-          "preview_failed": "Failed to load preview.",
-          "subject_label": "Subject",
-          "body_label": "Body"
+        "title": "Identity Verification Messages",
+        "moved_notice": {
+          "body": "Identity verification mail messages are now edited under Settings > Notifications, category \"Identity Verification\". The mail channel switch and delivery logs are managed there too.",
+          "link": "Edit in Notification Settings"
         }
       },
       "basic": {
@@ -2124,6 +2052,52 @@
         "validation_error": "Please check the input fields."
       },
       "recipients_label": "Recipients:",
+      "category": {
+        "label": "Category",
+        "all": "All",
+        "general": "General",
+        "identity": "Identity Verification"
+      },
+      "identity_scope": {
+        "default": "Common Default",
+        "purpose": "Purpose",
+        "policy": "Policy"
+      },
+      "identity_recipient_fixed": "Recipient: sent only to the person who requested verification (recipient rules are not used).",
+      "identity_empty": "No identity verification messages found.",
+      "btn_add_identity": "Add Policy Message",
+      "btn_delete": "Delete",
+      "identity_add": {
+        "title": "Add Policy Message",
+        "help": "Attach a dedicated mail message to an identity policy registered by an administrator. Policies without one use the purpose message, then the common default message.",
+        "errors_title": "Input Errors",
+        "policy_key": "Policy",
+        "policy_key_placeholder": "Select an administrator policy",
+        "policy_empty": "There are no administrator policies. Register one first under Identity Verification > Policies.",
+        "policy_all_defined": "Every administrator policy already has a dedicated message. Edit the existing message from the list.",
+        "variables_title": "Available Variables",
+        "name": "Name",
+        "subject": "Subject",
+        "body": "Body",
+        "save_success": "The policy message has been added.",
+        "save_failed": "Failed to add the policy message."
+      },
+      "identity_delete": {
+        "title": "Delete Policy Message",
+        "target_label": "Target",
+        "confirm_message": "Delete this policy message?",
+        "warning_message": "After deletion, verification mail for this policy is sent with the purpose message or the common default message. This cannot be undone.",
+        "btn_confirm": "Delete",
+        "btn_confirming": "Deleting...",
+        "delete_success": "The policy message has been deleted.",
+        "delete_failed": "Failed to delete the policy message."
+      },
+      "channel_off_confirm": {
+        "title": "Turn off the mail channel?",
+        "message": "Turning off the mail channel also stops identity verification mail (sign-up, password reset and profile change codes) and administrator two-factor mail. Administrators without an authenticator app will no longer be able to sign in.",
+        "btn_cancel": "Cancel",
+        "btn_confirm": "Turn Off Mail"
+      },
       "recipients": {
         "title": "Recipient Settings",
         "add_rule": "+ Add Recipient Rule",
@@ -3967,16 +3941,14 @@
       "plugin_manifest_preview_drawer": "Plugin Manifest Preview"
     },
     "admin_settings": {
-      "modal_identity_message_definition_add": "Add Identity Verification Message",
-      "modal_identity_message_definition_delete": "Delete Identity Verification Message",
-      "modal_identity_message_definition_reset": "Reset Identity Verification Message",
-      "modal_identity_message_template_form": "Edit Identity Verification Message Template",
-      "modal_identity_message_template_preview": "Preview Identity Verification Message Template",
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
       "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
       "modal_mail_template_form": "Edit Mail Template",
+      "modal_notification_channel_off_confirm": "Confirm Turning Off Mail Channel",
       "modal_notification_definition_reset": "Reset Notification Definition",
+      "modal_notification_identity_definition_add": "Add Identity Policy Message",
+      "modal_notification_identity_definition_delete": "Delete Identity Policy Message",
       "modal_notification_template_form": "Edit Notification Template",
       "modal_notification_template_preview": "Preview Notification Template",
       "settings_cache_delete_modal": "Clear Cache",

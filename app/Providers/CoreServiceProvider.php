@@ -29,8 +29,6 @@ use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
-use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -90,8 +88,6 @@ use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
 use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
-use App\Repositories\IdentityMessageDefinitionRepository;
-use App\Repositories\IdentityMessageTemplateRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JsonConfigRepository;
@@ -319,8 +315,6 @@ class CoreServiceProvider extends ServiceProvider
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
         $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
-        $this->app->bind(IdentityMessageDefinitionRepositoryInterface::class, IdentityMessageDefinitionRepository::class);
-        $this->app->bind(IdentityMessageTemplateRepositoryInterface::class, IdentityMessageTemplateRepository::class);
 
         // IdentityVerification Manager + 기본 MailProvider 등록
         $this->app->singleton(IdentityVerificationManager::class, function ($app) {

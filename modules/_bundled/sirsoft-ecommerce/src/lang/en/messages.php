@@ -200,6 +200,7 @@ return [
         'log_bulk_updated' => ':count orders have been bulk updated.',
         'email_sent' => 'Email has been sent successfully.',
         'email_send_failed' => 'Failed to send email.',
+        'email_channel_disabled' => 'The email cannot be sent because the mail channel is turned off or the mail settings/template are not ready. Check the mail channel and the "Order Message" template in E-commerce settings > Notifications.',
         'email_subject' => '[:app_name] Regarding Order :order_number',
         'fetch_success' => 'Order information retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve order information.',

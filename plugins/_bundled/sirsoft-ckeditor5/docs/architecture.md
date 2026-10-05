@@ -48,7 +48,7 @@
               ▼
           Services
               ├─ ImageUploadService        : before_upload → filter_upload_file → after_upload
-              └─ ImageReferenceScanService : 참조 판정 (코어 소스 6 + 훅 등록 소스)
+              └─ ImageReferenceScanService : 참조 판정 (코어 소스 4 + 훅 등록 소스)
               │
               ▼
           Repositories (Interface 경유)

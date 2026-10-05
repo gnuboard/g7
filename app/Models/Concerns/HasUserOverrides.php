@@ -194,6 +194,15 @@ trait HasUserOverrides
                 continue;
             }
 
+            // 모델 저장(save)은 바뀐 칸을 **직렬화한 값**으로 이 빌더에 넘긴다 — 배열 캐스트 칸은 JSON 문자열이다.
+            // 디코드하지 않으면 원래 값(null)과 문자열 `'[]'` 이 달라 보여, 아무것도 안 바꾼 저장이 수정으로 기록된다(#699).
+            if (is_string($incoming) && $this->hasCast($field, ['array', 'json', 'object', 'collection', 'encrypted:array', 'encrypted:json'])) {
+                $decoded = json_decode($incoming, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $incoming = $decoded;
+                }
+            }
+
             if (! UserOverrideValueComparator::same($this->{$field}, $incoming) && ! in_array($field, $current, true)) {
                 $current[] = $field;
             }

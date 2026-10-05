@@ -3,20 +3,21 @@
 namespace Tests\Feature\Auth;
 
 use App\Enums\UserStatus;
+use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
-use App\Extension\HookManager;
 use Plugins\Sirsoft\Totp\Identity\TotpIdentityProvider;
 use Plugins\Sirsoft\Totp\Repositories\Contracts\TotpCredentialRepositoryInterface;
 use Plugins\Sirsoft\Totp\Repositories\TotpCredentialRepository;
 use Plugins\Sirsoft\Totp\Services\TotpEnrollmentService;
 use Plugins\Sirsoft\Totp\Support\Totp;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -25,12 +26,13 @@ use Tests\TestCase;
  * 메일 2FA 경로는 `TwoFactorAuthTest` 가 이미 덮으므로 여기서는 **TOTP 축만** 다룹니다.
  *
  * 가장 중요한 것은 **교차 사용 회귀**입니다. 관리자 판정은 코드 확인 **뒤**에 이뤄지므로
- * (PO 확정 2026-09-07, 2026-09-17 재확정), 사용자 경로에서 받은 challenge 를 관리자
+ * (설계 확정 2026-09-07, 2026-09-17 재확정), 사용자 경로에서 받은 challenge 를 관리자
  * 엔드포인트로 완료해도 관리자가 아닌 사람은 403 을 받고 **그 사이 발급된 토큰이 회수**
  * 되어야 합니다. 프로바이더가 늘어나도 이 성질이 유지되는지가 이 테스트의 목적입니다.
  */
 class AdminTotpLoginTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private const PASSWORD = 'Passw0rd!2fa';
@@ -53,7 +55,7 @@ class AdminTotpLoginTest extends TestCase
 
         Mail::fake();
 
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        $this->prepareIdentityNotifications();
         $this->seed(RolePermissionSeeder::class);
 
         config(['g7_settings.core.security.two_factor_auth' => true]);
@@ -193,7 +195,7 @@ class AdminTotpLoginTest extends TestCase
      * 관리자 로그인을 시도합니다.
      *
      * @param  User  $user  대상 사용자
-     * @return \Illuminate\Testing\TestResponse 로그인 응답
+     * @return TestResponse 로그인 응답
      */
     private function adminLogin(User $user)
     {
@@ -207,7 +209,7 @@ class AdminTotpLoginTest extends TestCase
      * 사용자 로그인을 시도합니다.
      *
      * @param  User  $user  대상 사용자
-     * @return \Illuminate\Testing\TestResponse 로그인 응답
+     * @return TestResponse 로그인 응답
      */
     private function userLogin(User $user)
     {

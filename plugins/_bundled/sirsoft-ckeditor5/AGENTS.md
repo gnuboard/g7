@@ -87,7 +87,7 @@
 남는 URL 형태가 두 가지입니다.
 
 **미참조 이미지 정리**: `sirsoft-ckeditor5:prune-unused-images --scheduled`(일 1회, 설정
-`unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 6개
+`unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 4개(알림 템플릿·레이아웃 3종)
 테이블 + 모듈이 `image.filter_reference_sources` 로 등록한 소스를 훑어, **해시와 저장
 파일명 두 토큰을 OR 로** 검사합니다(한쪽만 보면 다른 형태로 저장된 이미지를 미참조로
 오판합니다). 보존기간(`unusedImageRetentionDays`, 기본 30일)이 지난 것만 대상이며,

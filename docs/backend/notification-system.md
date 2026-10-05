@@ -11,9 +11,31 @@
 4. 훅 기반 트리거: NotificationHookListener가 template별 독립 발송
 5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (4종 타입)
 6. 채널 확장: 채널 제공 확장은 코어 훅 `core.notification.channels` 하나에 답하고(도메인 비인지), 도메인은 `{hookPrefix}.notification.channels`로 좁힌다
+7. 전칭 규칙: 사용자·운영자에게 나가는 모든 발송 메시지는 알림 시스템의 정의·템플릿·채널 설정·디스패처를 경유한다.
+   별도 발송 경로·별도 메시지 정의 테이블을 만들지 않는다. 예외는 아래 「예외」 표에 이유와 함께 등재해야 한다
+8. 본인인증 메일(인증번호·인증 링크)도 알림 정의다 — category=identity (7.1.0~, 아래 「본인인증 알림」)
 ```
 
-> **본인인증(IDV) 메시지는 별도 시스템**: 본 알림 시스템과 완전히 분리된 IDV 전용 인프라가 [identity-messages.md](identity-messages.md) 에 있습니다. IDV는 `notification_*` 테이블 / `GenericNotification` 을 사용하지 않고, 자체 `identity_message_definitions` / `identity_message_templates` + `IdentityMessageDispatcher` 를 사용합니다.
+> **본인인증 메일도 이 시스템을 쓴다(7.1.0~)**: 예전의 별도 메시지 테이블(`identity_message_definitions`·`identity_message_templates`)은
+> 7.1.0 에서 알림 정의(`category = 'identity'`)로 통합되었습니다. 규칙·폴백·마스킹은 아래 [본인인증 알림](#본인인증-알림-categoryidentity) 절,
+> 확장 개발자용 요약은 [identity-messages.md](identity-messages.md) 에 있습니다.
+
+### 발송 경로 단일화
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|---|---|
+| 서비스·리스너에서 `Mail::to()->send()`·`Mail::raw()`·`Notification::route()` 로 직접 보내기, 기능 전용 `*_message_definitions`·`*_mail_templates` 테이블 만들기 | 알림 정의를 선언(`config('core.notification_definitions')` 또는 확장 `getNotificationDefinitions()`)하고 `GenericNotification` 을 `notify()`/`NotificationDispatcher` 로 보낸다 |
+
+직접 보내면 운영자가 끈 채널로도 메일이 나가고(채널 토글 무시), 발송 로그(`notification_logs`)가 남지 않으며, 문구를 관리 화면에서
+고칠 수 없습니다. 같은 이유로 기능마다 메시지 정의 테이블을 따로 두면 언어팩·기본값 복원·편집 화면을 기능 수만큼 다시 만들게 됩니다.
+
+**예외** — 아래만 알림 시스템을 거치지 않습니다. 새 예외는 이 표에 이유와 함께 추가합니다.
+
+| 대상 | 이유 |
+|---|---|
+| `SettingsService::sendTestMail()` (환경설정 > 메일 [테스트 메일 발송]) | 입력 중인 SMTP 설정 자체를 시험하는 기능이다 — 알림 채널이 꺼져 있어도, 저장 전 설정으로도 보내야 의미가 있다 |
+| `App\Models\MailTemplate` (호환 심) | 테이블 없는 빈 모델이다. 업데이트 도중 메모리에 남은 옛 코드가 클래스를 찾다 죽지 않게 남겨 둔 것으로, 발송·정의에 쓰지 않는다 |
+| `Database\Seeders\IdentityMessageDefinitionSeeder` (호환 심) | 아무것도 하지 않는 시더다. 7.0.x 에서 7.1.0 으로 올리는 업데이트 프로세스는 메모리에 남은 옛 코어 설정 재동기화 코드를 실행하고, 그 코드가 이 클래스를 만든다 — 클래스가 없으면 업데이트는 진행되지만 업데이트 로그에 재시딩 실패 경고가 남아 운영자를 오도하므로 이름만 남겼다. 본인인증 정의는 `NotificationDefinitionSeeder` 가 시드한다 |
 
 ---
 
@@ -44,6 +66,7 @@ After (현재):
 | hook_prefix | 훅 접두사: core.auth, sirsoft-ecommerce 등 |
 | extension_type | 확장 타입: core, module, plugin |
 | extension_identifier | 확장 식별자 |
+| category | 분류 (7.1.0~): `identity`(본인인증 메일 문구) 또는 null(일반 알림). 관리 화면 분류 칩·발송 로그 마스킹이 이 값을 본다 |
 | name | 다국어 이름 (JSON) |
 | variables | 사용 가능 변수 메타데이터 (JSON) |
 | channels | 활성 채널 배열 (JSON): ["mail", "database"] |
@@ -134,7 +157,7 @@ config('core.notification_definitions') 로드
 applyFilters('seed.notifications.translations', $definitions)
     ↓
 LanguagePackSeedInjector::injectNotifications($definitions)
-    ↓ 활성 코어 ja 언어팩의 seed/notifications.g7.html 로드
+    ↓ 활성 코어 ja 언어팩의 seed/notifications.json 로드
     ↓ 각 entry 에 ja 키 병합 (이미 존재하는 ko/en 보존)
     ↓
 applyFilters('core.notification.filter_seed_definitions', $list, $context)   ← 공통 시딩 훅 (7.1.0)
@@ -326,7 +349,7 @@ return [
 | report_received_admin | sirsoft-board.report.after_create |
 | report_action | sirsoft-board.report.after_action |
 
-### 이커머스 7종
+### 이커머스 (주문·문의 발췌)
 
 | type | hooks | 채널 |
 |------|-------|------|
@@ -343,10 +366,102 @@ return [
 >
 > 위 표는 주문·문의 축만 담은 발췌다. 이커머스 정의의 정본은 `module.php::getNotificationDefinitions()` 이며, 여기에 마일리지 소멸 예정 1종과 클레임(교환·반품·환불) 상태별 29종이 더 있다. 클레임 29종은 유형 × 고객 가시 상태의 곱이라 표로 옮기면 곧 낡으므로 옮기지 않는다 — 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` 를 읽는다.
 
-**발송 리스너**: `EcommerceNotificationListener` (방식 A — 직접 호출)
+**발송**: 이커머스는 직접 `notify()` 를 부르지 않습니다. 정의의 `hooks` 를 코어 `NotificationHookListener` 가 구독해 발송하고,
+`EcommerceNotificationDataListener`·`ClaimNotificationDataListener` 가 `sirsoft-ecommerce.notification.extract_data` 필터로 변수·컨텍스트를
+채웁니다. 받는 사람은 템플릿의 `recipients` 규칙이 정합니다. 상태 전이는 `OrderStatusNotificationListener`·`ClaimStatusNotificationListener` 가
+상태별 알림 훅으로 바꿔 발화합니다.
 
-게시판과 동일하게 각 훅 메서드에서 수신자를 결정하고 `$user->notify(new GenericNotification(...))` 직접 호출합니다.
-관리자 수신자는 `admin` Role 기반 조회 + superAdmin 폴백 패턴을 사용합니다.
+그 밖에 훅이 아니라 화면 조작으로 보내는 정의가 둘 있습니다 — 주문 상세 「고객에게 메일 보내기」의 `order_custom_email`(1.3.0~, 관리자가
+쓴 제목·본문을 `{subject}`·`{message}` 로 끼우는 틀)과 본인인증 문구 `identity.purpose.checkout_verification` 입니다. 둘 다 `hooks` 가
+비어 있고, 메일 채널이 꺼져 있으면 보내지 않습니다(주문 메일은 422 로 거절).
+
+---
+
+## 본인인증 알림 (category=identity)
+
+7.1.0 부터 본인인증 메일(인증번호·인증 링크)은 일반 알림과 같은 `notification_definitions`·`notification_templates` 행입니다.
+구분은 `category = 'identity'` 하나이고, 훅으로 발송하지 않으므로 `hooks` 는 비어 있습니다.
+
+### type 규칙
+
+| type | 뜻 | 소유 |
+|---|---|---|
+| `identity.default` | 공통 기본 문구 — 아래 둘이 없을 때 | 코어 |
+| `identity.purpose.{purpose}` | 인증 목적별 문구 — `signup`·`password_reset`·`self_update`·`sensitive_action`·`login`(관리자 2단계 인증), 확장 목적(예: 이커머스 `checkout_verification`) | 코어·확장 |
+| `identity.policy.{policy_key}` | 정책별 문구 — 운영자가 관리 화면에서 추가한다. type 이 100자를 넘으면 `identity.policy.~{sha1(policy_key) 앞 20자}` | 코어(`extension_identifier = 'admin'`) |
+
+규칙의 SSoT 는 `App\Notifications\Identity\IdentityNotificationType` 입니다(`default()`·`forPurpose()`·`forPolicy()`·`candidates()`). type 문자열을
+손으로 조립하지 않습니다 — 100자 해시 규칙이 갈립니다.
+
+### 문구 고르기 — 3단 폴백
+
+발송 시 `candidates($purpose, $policyKey)` 순서(정책 → 목적 → 기본)로 보고, **활성이고 `category = identity` 이며 메일 템플릿이 있는**
+첫 정의를 씁니다. 운영자가 목적별 문구를 꺼 두면 공통 기본 문구로 내려갑니다. 셋 다 없으면 훅 `core.identity.message.resolve_failed` 를
+발화하고 보내지 않습니다(발송 실패 → 인증 시작 502).
+
+### 발송 경로
+
+```text
+MailIdentityProvider::dispatchMessage()
+  → IdentityMessageDispatcher::dispatch()          (얇은 파사드 — 정의 고르기 + 받는 사람 고르기)
+      → GenericNotification(type, data, channel=mail)->withDeliveryReport($report)
+      → NotificationDispatcher (일반 알림과 같은 via() 필터: 채널 토글 · readiness · 템플릿 활성)
+      → notification_logs 기록 (code·action_url 마스킹)
+  ← $report->wasSent('mail')  → false 면 인증 시작 실패
+```
+
+- **받는 사람**: 컨텍스트의 `user_id` 회원 이메일이 인증 대상 주소와 같으면 그 `User`, 아니면 `GuestNotifiable`(대상 주소 + 현재 로케일)입니다.
+  가입 전 인증·이메일 변경 인증처럼 회원이 아닌 주소로 보내는 경우가 후자입니다.
+- **결과 판정 — `DeliveryReport`**: 라라벨 `notify()` 는 채널을 건너뛰어도 예외 없이 끝나므로, 디스패처가 채널별 결과(`sent`·`skipped`·`failed` + 사유)를
+  리포트에 적고 호출자가 읽습니다. 인증 메일이 실제로 나갔는지 확인하지 않고 「발송했습니다」 응답을 내면 사용자는 오지 않는 메일을 기다립니다.
+- **로그 마스킹**: `NotificationLogListener` 는 `category = identity` 발송의 제목·본문에서 `code`·`action_url` 값(HTML 이스케이프 형태 포함)을 `******` 로 바꿔 저장합니다.
+  발송 로그를 볼 수 있는 운영자가 남의 인증번호로 인증을 가로채지 못하게 하기 위해서입니다. 가리는 것은 로그 기록뿐이고 **발송 훅의 컨텍스트
+  원본은 그대로**입니다 — `core.notification.*` 훅을 구독해 제목·본문을 따로 저장하는 확장은 `category = identity` 일 때 `code`·`action_url`
+  (`IdentityNotificationType::sensitiveVariables()`) 값을 스스로 가려야 합니다.
+- **호환 훅**: `core.identity.message.before_send`·`after_send`·`send_failed`·`resolve_failed` 는 계속 발화합니다(@deprecated 7.1.0).
+  새 코드는 알림 공통 훅(`core.notification.*`)을 구독합니다.
+
+### 메일 채널 토글과 자기 잠금
+
+본인인증 메일은 「환경설정 > 알림 설정」의 **메일 채널 토글을 따릅니다**. 메일을 끄면 회원가입·비밀번호 찾기·정보 변경 인증번호와 관리자
+2단계 인증 메일이 모두 멈추고, OTP 앱(TOTP)을 등록하지 않은 관리자는 로그인할 수 없습니다(2단계 인증 메일 → 503). 관리 화면은 메일을
+켜짐 → 꺼짐으로 바꿔 저장할 때 확인 창을 띄웁니다.
+
+잠겼을 때 복구: 서버에서 `storage/app/settings/notifications.json` 의 `channels` 중 `"id": "mail"` 항목을 `"is_active": true` 로 고친 뒤
+`php artisan cache:clear` 를 실행합니다(설정을 캐시해 둔 서버는 `php artisan config:clear` 도). 다음 로그인부터 인증번호 메일이 다시 나갑니다.
+
+### 관리 화면 · API
+
+- 화면: 「환경설정 > 알림 설정」 분류 칩 「본인인증」(`?tab=notification_definitions&category=identity`). 편집·활성 토글·기본값 복원은 일반 알림과 같고,
+  수신자 규칙 영역 대신 「인증을 요청한 사람에게만」 고정 문구가 보입니다. 확장 소유 문구(예: 이커머스)는 그 확장의 설정 > 알림에 있습니다.
+- 정책별 문구 추가 `POST /api/admin/notification-definitions` (`category=identity` + 운영자 정책 `policy_key`) · 삭제 `DELETE /api/admin/notification-definitions/{id}`
+  (운영자가 추가한 정의만 — `abilities.can_delete`). 권한은 `core.settings.read`·`core.settings.update` 입니다.
+- 7.1.0 에서 제거: `/api/admin/identity/messages/*` 11개, 권한 `core.admin.identity.messages.read`·`update`.
+
+### 확장의 선언
+
+확장은 본인인증 목적별 문구를 `getNotificationDefinitions()` 에 일반 알림과 나란히 선언합니다.
+
+```php
+[
+    'type' => IdentityNotificationType::forPurpose('checkout_verification'), // identity.purpose.checkout_verification
+    'category' => 'identity',
+    'hook_prefix' => 'sirsoft-ecommerce',
+    'hooks' => [],
+    'channels' => ['mail'],
+    'variables' => IdentityNotificationType::commonVariables(),
+    'templates' => [['channel' => 'mail', 'subject' => [...], 'body' => [...]]],
+],
+```
+
+예전 getter `getIdentityMessages()` 는 @deprecated 입니다. 아직 구현한 확장은 설치·업데이트 때 `IdentityMessageDeclarationConverter` 가 알림 정의
+선언으로 바꿔 병합하지만(메일이 아닌 provider 의 선언은 경고 후 메일 템플릿으로 흡수, 알 수 없는 범위·다른 소유자의 type 과 겹치는 선언은 경고 후 건너뜀), 새 확장은 쓰지 않습니다.
+
+### 업그레이드 (7.1.0)
+
+`upgrades/data/7.1.0/migrations/07_MigrateIdentityMessagesToNotifications.php` 가 옛 테이블의 행을 위 규칙의 알림 정의로 옮깁니다 — 운영자가 고친
+문구(`user_overrides`·`updated_by`)는 그대로 두고, 운영자 정책 문구는 `core`/`admin` 정의로 만들며, 메일이 아닌 provider 행은 건너뜁니다. 옮긴 건수가
+맞지 않으면 옛 테이블을 지우지 않고 업그레이드를 멈춥니다. 맞으면 두 테이블과 권한 2개를 지웁니다.
 
 ---
 
@@ -587,9 +702,11 @@ $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTyp
 
 | 메서드 | URL | 설명 |
 |--------|-----|------|
-| GET | /api/admin/notification-definitions | 알림 정의 목록 |
+| GET | /api/admin/notification-definitions | 알림 정의 목록 (`category` 로 분류 필터) |
+| POST | /api/admin/notification-definitions | 본인인증 정책별 문구 추가 (7.1.0~) |
 | GET | /api/admin/notification-definitions/{id} | 알림 정의 상세 (templates 포함) |
 | PUT | /api/admin/notification-definitions/{id} | 채널/훅 수정 |
+| DELETE | /api/admin/notification-definitions/{id} | 운영자가 추가한 본인인증 정의 삭제 (7.1.0~) |
 | PATCH | /api/admin/notification-definitions/{id}/toggle-active | 활성 토글 |
 | POST | /api/admin/notification-definitions/{id}/reset | **정의 단위 일괄 기본값 복원** (소속 모든 채널 템플릿 리셋) |
 | PUT | /api/admin/notification-templates/{id} | 템플릿 수정 |
@@ -849,6 +966,9 @@ NotificationDispatcher::sendToNotifiable() — 모든 채널의 공통 게이트
 모든 채널(mail, database, 플러그인 추가 채널)이 자동으로 이 훅을 통과합니다.
 플러그인/모듈이 별도 조치 없이도 모든 채널 발송이 `notification_logs`에 자동 기록됩니다.
 커스텀 로깅이 필요하면 동일 훅을 별도 리스너에서 구독하면 됩니다.
+메일 발송 공통 훅 `core.mail.after_send`·`core.mail.send_failed` 는 로그 리스너가 구독하지 않습니다 — 알림 경유 메일은 위
+`after_channel_send`·`channel_send_failed` 로 이미 기록되므로 둘 다 구독하면 한 건이 두 번 남습니다(알림을 거치지 않는 예외인
+테스트 메일은 기록하지 않습니다).
 
 ### 코어 채널 체크 조건
 
@@ -896,6 +1016,8 @@ HookManager::addFilter('core.notification.channel_readiness', function ($result,
 ## 기존 시스템과의 호환
 
 - `mail_templates`, `board_mail_templates`, `ecommerce_mail_templates` 테이블 + 모델/시더/컨트롤러/Repository는 **7.0.0-beta.2 에서 일괄 제거됨**
+- 코어 `mail_templates`·`mail_send_logs` 는 생성 마이그레이션이 남아 신규 설치에 빈 테이블이 생기던 것을 7.1.0 에서 정리했다 — 생성 마이그레이션을 지우고 `08_DropLegacyMailTables` 스텝이 기존 설치의 빈 테이블을 지운다
+- 본인인증 메시지 테이블(`identity_message_definitions`·`identity_message_templates`)은 7.1.0 에서 알림 정의(`category=identity`)로 통합됨 — 위 「본인인증 알림」 참조
 - 운영 환경 데이터는 `Upgrade_7_0_0_beta_2` (코어) + `Upgrade_1_0_0_beta_2` (보드/이커머스) 가 `notification_definitions` + `notification_templates` 로 이관
 - `drop_*_mail_templates_table` 마이그레이션이 레거시 테이블을 제거 (down 시 스키마 복원)
 - 다국어 헬퍼 + 변수 치환 trait 은 `NotificationContentBehavior` 로 리네임되어 NotificationTemplate 전용으로 사용됨 (구 `MailTemplateBehavior`)

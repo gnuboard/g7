@@ -14,7 +14,7 @@ description: |
     - bulk_status_self_included: 본인이 섞인 일괄 처리 → 422(ExcludeCurrentUser) → 본인 행 선택 불가
     - bulk_status_partial_result: 제외된 대상(슈퍼 관리자·범위 밖)을 200 성공으로만 안내
     - env_locked_drivers_save / env_locked_mail_save / env_locked_test_mail: `.env` 잠금 비밀값이 빈 칸으로 와서 필수 422
-    - identity_message_definition_add: 정책 0건·이미 정의된 정책으로 저장 → 422
+    - identity_notification_definition_add: 본인인증 정책별 문구 추가 — 정책 0건·이미 문구가 있는 정책으로 저장 → 422
     - notification_read_batch_over_limit: 닫기 읽음 처리 100건 초과 → 422
     - user_search_empty_keyword: 빈 검색어로 회원 검색 → 422
     - extension_reactivate_language_packs: 확장 재활성화 뒤 언어팩 되살리기 창이 열리지 않던 배선 누락
@@ -42,7 +42,7 @@ axes:
     - env_locked_drivers_save
     - env_locked_mail_save
     - env_locked_test_mail
-    - identity_message_definition_add
+    - identity_notification_definition_add
     - notification_read_batch_over_limit
     - user_search_empty_keyword
     - extension_reactivate_language_packs

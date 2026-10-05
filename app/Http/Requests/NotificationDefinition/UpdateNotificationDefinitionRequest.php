@@ -40,11 +40,19 @@ class UpdateNotificationDefinitionRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
         ];
 
-        return HookManager::applyFilters(
+        $rules = HookManager::applyFilters(
             'core.notification_definition.update_validation_rules',
             $rules,
             $this->route('definition')
         );
+
+        // 7.0.x 본인인증 메시지 정의 수정 검증 필터 — 본인인증 분류 정의는 옛 이름으로도 거른다(@deprecated 7.1.0, 8.0 제거).
+        $definition = $this->route('definition');
+        if ($definition instanceof NotificationDefinition && $definition->category === 'identity') {
+            $rules = HookManager::applyFilters('core.identity.message_definition.update_validation_rules', $rules, $definition);
+        }
+
+        return $rules;
     }
 
     /**

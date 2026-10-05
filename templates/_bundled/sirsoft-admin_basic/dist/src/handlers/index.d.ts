@@ -12,6 +12,7 @@ import { downloadAttachmentHandler } from './downloadAttachment';
 import { downloadMarkupFileHandler } from './downloadMarkupFile';
 import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
+import { rememberIdentityClaimHandler } from './identityLauncher';
 /**
  * 핸들러 맵
  *
@@ -21,6 +22,7 @@ import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './dete
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export declare const handlerMap: {
+    readonly rememberIdentityClaim: typeof rememberIdentityClaimHandler;
     readonly detectAssetUrlMode: typeof detectAssetUrlModeHandler;
     readonly checkAssetUrlModeDrift: typeof checkAssetUrlModeDriftHandler;
     readonly setTheme: typeof setThemeHandler;

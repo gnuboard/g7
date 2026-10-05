@@ -93,7 +93,7 @@ class NotificationSyncHelper
      * 기존: user_overrides 에 없는 필드만 업데이트
      *
      * @param  array<string, mixed>  $data  definition 데이터 (type, hook_prefix, extension_type,
-     *                                      extension_identifier, name, description, variables,
+     *                                      extension_identifier, category, name, description, variables,
      *                                      channels, hooks, is_active, is_default, templates 포함 가능)
      * @return NotificationDefinition 동기화된 definition
      */
@@ -105,6 +105,8 @@ class NotificationSyncHelper
                 'hook_prefix' => $data['hook_prefix'],
                 'extension_type' => $data['extension_type'],
                 'extension_identifier' => $data['extension_identifier'],
+                // 분류 — 본인인증 알림은 'identity', 일반 알림은 null(선언 생략).
+                'category' => $data['category'] ?? null,
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'variables' => $data['variables'] ?? [],

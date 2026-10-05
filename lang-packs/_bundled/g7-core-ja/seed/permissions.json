@@ -219,14 +219,6 @@
     "name": "ログ削除",
     "description": "本人認証履歴を削除(保管周期外)できます。"
   },
-  "core.admin.identity.messages.read": {
-    "name": "メッセージテンプレート閲覧",
-    "description": "本人認証メッセージ定義/テンプレートを閲覧できます。"
-  },
-  "core.admin.identity.messages.update": {
-    "name": "メッセージテンプレート編集",
-    "description": "本人認証メッセージ定義/テンプレートを編集できます。"
-  },
   "core.settings": {
     "name": "環境設定",
     "description": "システム環境設定権限"

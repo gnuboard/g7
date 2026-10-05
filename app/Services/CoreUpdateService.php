@@ -25,7 +25,6 @@ use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\ScopedPermissionEnforcement;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Dotenv\Dotenv;
@@ -1582,9 +1581,8 @@ class CoreUpdateService
      * Repository 에 주입한 뒤 다음 도메인 동기화를 일괄 수행한다:
      *
      *   - syncCoreRolesAndPermissions / syncCoreMenus  ← config('core.permissions|roles|menus')
-     *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions')
+     *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions') (본인인증 알림 포함)
      *   - IdentityPolicySeeder                          ← config('core.identity_policies')
-     *   - IdentityMessageDefinitionSeeder               ← config('core.identity_messages')
      *
      * 모든 시더는 멱등 upsert + user_overrides 보존 패턴이라 정상 환경에서 재실행해도 무해.
      * 각 도메인은 독립 try/catch + Log::warning 으로 격리 — 한 도메인 실패가 다른 도메인을
@@ -1653,13 +1651,8 @@ class CoreUpdateService
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
         }
 
-        try {
-            if (Schema::hasTable('identity_message_definitions') && Schema::hasTable('identity_message_templates')) {
-                (new IdentityMessageDefinitionSeeder)->run();
-            }
-        } catch (\Throwable $e) {
-            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
-        }
+        // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)로 선언되어 위 NotificationDefinitionSeeder 가
+        // 함께 동기화한다 — 옛 IDV 메시지 시더 호출은 없어졌다(7.0.x 부모 프로세스용 호환 심은 시더 클래스에 남아 있다).
     }
 
     /**

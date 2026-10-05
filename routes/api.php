@@ -24,8 +24,6 @@ use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardControll
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
 use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
-use App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController;
-use App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController;
 use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
@@ -297,6 +295,11 @@ Route::prefix('identity')->group(function () {
         ->post('challenges/{challenge}/verify', [IdentityVerificationController::class, 'verify'])
         ->name('api.identity.challenges.verify');
 
+    // 링크 방식 확인 결과 받아 가기 — 시작 화면이 링크를 연 쪽의 확인을 2~3초 간격으로 묻는다. 비밀값이 자격이다.
+    Route::middleware(['throttle:60,1,identity_claim', 'optional.sanctum', 'permission:user,core.identity.verify'])
+        ->post('challenges/{challenge}/claim', [IdentityVerificationController::class, 'claim'])
+        ->name('api.identity.challenges.claim');
+
     Route::middleware(['throttle:30,1,identity_cancel', 'optional.sanctum', 'permission:user,core.identity.cancel'])
         ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
         ->name('api.identity.challenges.cancel');
@@ -482,43 +485,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
                 ->name('api.admin.identity.policies.reset-field');
         });
 
-        // IDV 메시지 정의/템플릿 관리
-        Route::prefix('messages')->group(function () {
-            Route::get('definitions', [AdminIdentityMessageDefinitionController::class, 'index'])
-                ->middleware('permission:admin,core.admin.identity.messages.read')
-                ->name('api.admin.identity.messages.definitions.index');
-            Route::post('definitions', [AdminIdentityMessageDefinitionController::class, 'store'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.definitions.store');
-            Route::get('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'show'])
-                ->middleware('permission:admin,core.admin.identity.messages.read')
-                ->name('api.admin.identity.messages.definitions.show');
-            Route::patch('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'update'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.definitions.update');
-            Route::delete('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'destroy'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.definitions.destroy');
-            Route::patch('definitions/{definition}/toggle-active', [AdminIdentityMessageDefinitionController::class, 'toggleActive'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.definitions.toggle-active');
-            Route::post('definitions/{definition}/reset', [AdminIdentityMessageDefinitionController::class, 'reset'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.definitions.reset');
-
-            Route::patch('templates/{template}', [AdminIdentityMessageTemplateController::class, 'update'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.templates.update');
-            Route::patch('templates/{template}/toggle-active', [AdminIdentityMessageTemplateController::class, 'toggleActive'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.templates.toggle-active');
-            Route::post('templates/{template}/reset', [AdminIdentityMessageTemplateController::class, 'reset'])
-                ->middleware('permission:admin,core.admin.identity.messages.update')
-                ->name('api.admin.identity.messages.templates.reset');
-            Route::post('templates/preview', [AdminIdentityMessageTemplateController::class, 'preview'])
-                ->middleware('permission:admin,core.admin.identity.messages.read')
-                ->name('api.admin.identity.messages.templates.preview');
-        });
     });
 
     // 관리자 알림
@@ -890,8 +856,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     // 알림 정의 관리
     Route::prefix('notification-definitions')->group(function () {
         Route::get('/', [AdminNotificationDefinitionController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.index');
+        // 본인인증 정책별 문구 추가·삭제 (category=identity, 운영자 추가 정의만 삭제 가능)
+        Route::post('/', [AdminNotificationDefinitionController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.store');
         Route::get('{definition}', [AdminNotificationDefinitionController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.show');
         Route::put('{definition}', [AdminNotificationDefinitionController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.update');
+        Route::delete('{definition}', [AdminNotificationDefinitionController::class, 'destroy'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.destroy');
         Route::patch('{definition}/toggle-active', [AdminNotificationDefinitionController::class, 'toggleActive'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.toggle-active');
         Route::post('{definition}/reset', [AdminNotificationDefinitionController::class, 'reset'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.reset');
     });

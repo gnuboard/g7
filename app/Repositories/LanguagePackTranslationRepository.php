@@ -5,8 +5,6 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\LanguagePackScope;
-use App\Models\IdentityMessageDefinition;
-use App\Models\IdentityMessageTemplate;
 use App\Models\LanguagePack;
 use App\Models\Menu;
 use App\Models\Module;
@@ -22,8 +20,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * 언어팩 활성/비활성 시 DB JSON 다국어 컬럼을 일괄 동기화하는 집계 Repository.
  *
- * 10 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
- * NotificationTemplate/IdentityMessageDefinition/IdentityMessageTemplate) 에 대한 영속
+ * 8 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
+ * NotificationTemplate) 에 대한 영속
  * 책임을 단일 진입점으로 캡슐화. Listener/Service 는 본 Repository 만 호출.
  *
  * 동작 정책은 인터페이스 PHPDoc 참조.
@@ -65,9 +63,6 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             }
             if (! empty($seedBundle['notifications'])) {
                 $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
-            }
-            if (! empty($seedBundle['identity_messages'])) {
-                $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
             }
             if (! empty($seedBundle['manifest'])) {
                 $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
@@ -140,8 +135,6 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                 $this->stripLocaleColumns($row, $locale, $columns, $audit);
             });
         }
-
-        $this->stripIdentityMessages($pack, $locale, $audit);
 
         return $audit;
     }
@@ -242,64 +235,6 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     }
 
     /**
-     * IDV 메시지 Definition × Template 의 다국어 컬럼을 병합합니다.
-     *
-     * @param  LanguagePack  $pack  적용할 언어팩
-     * @param  array<string, array<string, mixed>>  $seed  합성 키 → 컬럼별 번역 맵
-     * @param  string  $locale  적용할 로케일
-     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
-     */
-    protected function applyIdentityMessages(LanguagePack $pack, array $seed, string $locale, array &$audit): void
-    {
-        if (! in_array($pack->scope, [
-            LanguagePackScope::Core->value,
-            LanguagePackScope::Module->value,
-            LanguagePackScope::Plugin->value,
-        ], true)) {
-            return;
-        }
-
-        $defQuery = IdentityMessageDefinition::query();
-        if ($pack->scope === LanguagePackScope::Core->value) {
-            $defQuery->where('extension_type', 'core')->where('extension_identifier', 'core');
-        } else {
-            $extType = $pack->scope === LanguagePackScope::Module->value ? 'module' : 'plugin';
-            $defQuery->where('extension_type', $extType)
-                ->where('extension_identifier', $pack->target_identifier);
-        }
-
-        $defQuery->get()->each(function (IdentityMessageDefinition $def) use ($seed, $locale, &$audit) {
-            $compositeKey = $this->identityMessageCompositeKey($def);
-            $entry = ($compositeKey && isset($seed[$compositeKey])) ? $seed[$compositeKey] : null;
-            if (! $entry) {
-                return;
-            }
-
-            if (isset($entry['definition'])) {
-                $this->mergeLocaleColumns($def, $entry['definition'], $locale, ['name', 'description'], $audit);
-            }
-
-            $templates = $entry['templates'] ?? [];
-            if (empty($templates)) {
-                return;
-            }
-
-            IdentityMessageTemplate::query()
-                ->where('definition_id', $def->id)
-                ->whereIn('channel', array_keys($templates))
-                ->get()
-                ->each(function (IdentityMessageTemplate $tpl) use ($templates, $locale, &$audit) {
-                    $tplSeed = $templates[$tpl->channel] ?? null;
-                    if (! $tplSeed) {
-                        return;
-                    }
-                    $this->mergeLocaleColumns($tpl, $tplSeed, $locale, ['subject', 'body'], $audit);
-                });
-        });
-    }
-
-    /**
      * 확장 manifest 의 name/description JSON 컬럼에 locale 키를 병합합니다.
      *
      * @param  LanguagePack  $pack  적용할 언어팩
@@ -338,45 +273,6 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     }
 
     /**
-     * 비활성화 시 IDV 메시지 Definition × Template 의 locale 키를 제거합니다.
-     *
-     * @param  LanguagePack  $pack  비활성화된 언어팩
-     * @param  string  $locale  제거할 로케일
-     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
-     */
-    protected function stripIdentityMessages(LanguagePack $pack, string $locale, array &$audit): void
-    {
-        if (! in_array($pack->scope, [
-            LanguagePackScope::Core->value,
-            LanguagePackScope::Module->value,
-            LanguagePackScope::Plugin->value,
-        ], true)) {
-            return;
-        }
-
-        $defQuery = IdentityMessageDefinition::query();
-        if ($pack->scope === LanguagePackScope::Core->value) {
-            $defQuery->where('extension_type', 'core')->where('extension_identifier', 'core');
-        } else {
-            $extType = $pack->scope === LanguagePackScope::Module->value ? 'module' : 'plugin';
-            $defQuery->where('extension_type', $extType)
-                ->where('extension_identifier', $pack->target_identifier);
-        }
-
-        $defQuery->get()->each(function (IdentityMessageDefinition $def) use ($locale, &$audit) {
-            $this->stripLocaleColumns($def, $locale, ['name', 'description'], $audit);
-
-            IdentityMessageTemplate::query()
-                ->where('definition_id', $def->id)
-                ->get()
-                ->each(function (IdentityMessageTemplate $tpl) use ($locale, &$audit) {
-                    $this->stripLocaleColumns($tpl, $locale, ['subject', 'body'], $audit);
-                });
-        });
-    }
-
-    /**
      * 쿼리 빌더에 언어팩 scope 별 소유권 필터를 적용합니다.
      *
      * @param  Builder  $query  대상 쿼리 빌더
@@ -408,28 +304,6 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
 
         $query->where('extension_type', $type)
             ->where('extension_identifier', $pack->target_identifier);
-    }
-
-    /**
-     * IdentityMessageDefinition 의 provider_id+scope_type+scope_value 를 seed 키 형식으로 합성합니다.
-     *
-     * LanguagePackSeedInjector::identityMessageCompositeKey 와 동일 규칙.
-     *
-     * @param  IdentityMessageDefinition  $def  대상 정의
-     * @return string|null 합성 키 (합성 불가 시 null)
-     */
-    protected function identityMessageCompositeKey(IdentityMessageDefinition $def): ?string
-    {
-        $provider = $def->provider_id ?? null;
-        $scopeType = is_object($def->scope_type) ? $def->scope_type->value : $def->scope_type;
-        $scopeValue = $def->scope_value ?? '';
-        if (! $provider || ! $scopeType) {
-            return null;
-        }
-        $channel = str_contains($provider, '.mail') ? 'mail' : 'sms';
-        $suffix = $scopeValue !== '' ? "{$scopeType}.{$scopeValue}" : $scopeType;
-
-        return "{$channel}.{$suffix}";
     }
 
     /**

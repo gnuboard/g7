@@ -227,6 +227,27 @@ class IdentityPolicyService
     }
 
     /**
+     * challenge 를 연 정책으로 받아들일 수 있는 정책을 키로 찾습니다 — 있고, 켜져 있고, 목적이 같을 때만.
+     *
+     * 화면은 428 응답의 정책 키를 challenge 요청에 그대로 싣는다. 클라이언트가 보낸 값이므로 다른 목적의
+     * 정책이나 꺼진 정책을 대어 그 정책의 문구를 고르게 두지 않는다.
+     *
+     * @param  string|null  $key  정책 키
+     * @param  string  $purpose  challenge 목적
+     * @return IdentityPolicy|null 받아들일 수 있는 정책, 없으면 null
+     */
+    public function findUsableForChallenge(?string $key, string $purpose): ?IdentityPolicy
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        $policy = $this->policyRepository->findByKey($key);
+
+        return $policy !== null && $policy->enabled && $policy->purpose === $purpose ? $policy : null;
+    }
+
+    /**
      * 신규 정책을 생성합니다 (source_type='admin' 고정).
      *
      * @param  array<string, mixed>  $data  정책 데이터

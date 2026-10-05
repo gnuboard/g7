@@ -22,6 +22,7 @@ effects:
 
 test_files:
   - tests/Unit/Repositories/Concerns/SortableColumnsGateContractTest.php
+  - tests/Unit/Repositories/SortWhitelistGateParityTest.php
 
 notes: |
   테스트 클래스 주석의 `@scenario case=...` 는 이 매니페스트가 생기기 전의 파일 단위 표기다.

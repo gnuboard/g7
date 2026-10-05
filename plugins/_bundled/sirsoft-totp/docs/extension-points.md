@@ -207,7 +207,8 @@ _등록하는 알림 정의가 없습니다._
 <!-- @generated:notifications END -->
 
 <!-- @intent START -->
-알림 정의를 등록하지 않습니다. `plugin.php` 의 `getIdentityMessages()` 도 빈 배열입니다.
+알림 정의를 등록하지 않습니다 — 본인인증 알림(`category = 'identity'`)도 없고, `plugin.php` 의
+@deprecated `getIdentityMessages()` 오버라이드도 빈 배열입니다.
 
 서버가 아무것도 보내지 않는 수단이기 때문입니다. 코드는 사용자 단말의 앱이 만들고, 서버는
 challenge 를 열어 두고 제출된 코드를 대조할 뿐이라 발송할 메시지가 없습니다.

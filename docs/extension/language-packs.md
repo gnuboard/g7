@@ -183,7 +183,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 - `backend/{locale}/*.php` — Laravel `trans()` 파일 (코어/모듈/플러그인 PHP 다국어)
 - `frontend/{locale}.json` — 템플릿 풀 페이로드
 - `frontend/partial/{locale}/*.json` — 템플릿/모듈 partial 페이로드
-- `seed/{entity}.json` — 다국어 시드 (NotificationDefinition, IdentityMessageDefinition 등)
+- `seed/{entity}.json` — 다국어 시드 (NotificationDefinition — 본인인증 알림 포함, Permission, Role, Menu 등)
 
 ### 들여쓰기 규칙
 
@@ -267,10 +267,8 @@ foreach ($config['categories'] as $cat) { ... }
 | `core.permissions.config` | RolePermissionSeeder |
 | `core.roles.config` | RolePermissionSeeder |
 | `core.menus.config` | CoreAdminMenuSeeder |
-| `seed.notifications.translations` | NotificationDefinitionSeeder |
-| `seed.identity_messages.translations` | IdentityMessageDefinitionSeeder (본인인증 메일 메시지 정의 — provider × scope × scope_value 복합 키) |
+| `seed.notifications.translations` | NotificationDefinitionSeeder (본인인증 알림 `identity.*` 정의 포함 — type 키) |
 | `seed.{vendor-module}.{entity}.translations` | 모듈 시더 (예: `seed.sirsoft-ecommerce.shipping_types.translations`, `seed.sirsoft-ecommerce.notifications.translations`, `seed.sirsoft-board.board_types.translations`) |
-| `seed.{vendor-module}.identity_messages.translations` | 모듈/플러그인 IDV 메시지 정의 — `ModuleManager::syncModuleIdentityMessages` / `PluginManager::syncPluginIdentityMessages` 가 발화 |
 | `module.{id}.admin_menus.translations` | ModuleManager::createModuleMenus() — 모듈 admin_menus 동기화 시 |
 | `module.{id}.roles.translations` | ModuleManager::createModuleRoles() — 모듈 roles 동기화 시 |
 | `module.{id}.permissions.translations` | ModuleManager::createModulePermissions() — 모듈 권한 트리 동기화 시 |
@@ -281,8 +279,7 @@ foreach ($config['categories'] as $cat) { ... }
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:
-- `notifications.g7.html` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
-- `identity_messages.json` → `seed.{target}.identity_messages.translations` 필터 (Definition × Template × Channel — provider/scope_type/scope_value 복합 키 매칭)
+- `notifications.json` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조 — 확장의 본인인증 알림 `identity.purpose.*` 도 type 키로 여기 포함)
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
@@ -290,15 +287,15 @@ foreach ($config['categories'] as $cat) { ... }
 
 ### 복원 경로의 언어팩 병합
 
-[기본값 복원](알림 템플릿·본인인증 메시지)은 위 시딩 필터가 아니라 자체 기본값 필터
-(`core.notification.filter_default_definitions` / `core.identity.filter_default_message_definitions`)를
+[기본값 복원](알림 템플릿 — 본인인증 알림 포함)은 위 시딩 필터가 아니라 자체 기본값 필터
+(`core.notification.filter_default_definitions`)를
 탄다. 복원 기본값에는 **활성 언어팩 seed 로케일이 반드시 병합**되어야 한다 — 병합하지 않으면
 복원이 팩이 주입해 둔 로케일(ja 등)을 config 의 ko/en 만으로 대체해 영구 소실시키며,
-오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService·IdentityMessageTemplateService)가
+오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService)가
 필터 적용 후 시딩과 같은 주입기(SSoT)로 병합하며, 자동 검증(테스트)가 이 계약을 고정한다.
 
 시딩 필터의 페이로드는 **발화 주체의 원형 키를 보존**해야 한다 — 코어 알림 시더는 config
-원형(연관 배열, 키가 곧 type), 본인인증은 복합 키(`mail.purpose.signup` 등)가 매칭 키다.
+원형(연관 배열, 키가 곧 type — 본인인증 알림은 `identity.purpose.signup` 등)이 매칭 키다.
 키를 버리고 리스트로 만들면 주입기가 전 항목을 스킵해 팩 로케일이 오류 없이 주입되지 않는다.
 알림 주입기는 두 형태(문자열 키 우선, 없으면 type 필드)를 수용한다.
 
@@ -332,20 +329,19 @@ foreach ($config['categories'] as $cat) { ... }
 
 ### IDV 도메인 lang pack 커버리지
 
-`config/core.php` 의 본인인증 SSoT 4개 블록 중 lang pack seed 대상은 1개:
+`config/core.php` 에서 본인인증과 관련된 SSoT 3개 블록 중 lang pack seed 대상은 1개:
 
 | SSoT 블록 | lang pack seed | 사유 |
 |---|---|---|
-| `notification_definitions` | ✓ `seed/notifications.g7.html` | 정의/템플릿이 다국어 데이터 직접 보유 |
-| `identity_messages` | ✓ `seed/identity_messages.json` | 메일 본문/제목이 다국어 데이터 직접 보유 |
+| `notification_definitions` (본인인증 알림 `identity.*`, category=identity 포함) | ✓ `seed/notifications.json` | 정의/템플릿(메일 제목·본문)이 다국어 데이터 직접 보유 |
 | `identity_policies` | ❌ | `IdentityPolicy` 모델에 다국어 필드 부재 — 관리자 UI 라벨은 `lang/{locale}/identity.php` 또는 `frontend/partial/admin.json` 의 i18n 키로 처리 |
 | `identity_purposes` | ❌ | `label_key`/`description_key` 참조 패턴 — 실제 ja 라벨은 `frontend/partial/admin.json::identity.purposes.*` 키로 처리 |
 
-**`identity_messages.json` 스키마 예시**:
+**본인인증 알림 번역 예시** (`seed/notifications.json` 안의 한 항목):
 
 ```json
 {
-  "mail.purpose.signup": {
+  "identity.purpose.signup": {
     "definition": {
       "name": "会員登録認証",
       "description": "会員登録時のメール認証"
@@ -360,7 +356,7 @@ foreach ($config['categories'] as $cat) { ... }
 }
 ```
 
-복합 키는 `{channel}.{scope_type}.{scope_value}` 또는 `{channel}.provider_default` 형태 — config/core.php::identity_messages 의 array key 와 동일.
+키는 알림 정의 type(`identity.default` / `identity.purpose.{purpose}`) — `config/core.php::notification_definitions` 의 array key 와 동일. 7.1.0 에서 별도 `seed/identity_messages.json` 은 폐지되고 이 파일로 통합되었습니다.
 
 **확장 권한 트리 시드 키 포맷**: 권한은 ModuleManager 가 DB row identifier 를 `{module-id}.{cat-id}.{perm-id}` 로 prefix 하므로 시드도 동일 포맷을 사용합니다. 권한 노드 식별자는 `action`(이커머스 등) 또는 `identifier`(명시적) 둘 중 존재하는 키를 사용합니다.
 

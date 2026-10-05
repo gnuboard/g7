@@ -198,6 +198,8 @@
 - 고객 화면 신청 출처 뱃지(`enums.request_source.admin`)를 원본 변경(「판매자 접수」)에 맞춰 다시 번역했습니다.
 - 승인 이후 신청서 수정 거절 문구(`claim_not_editable`)를 원문 변경에 맞춰 다시 번역했습니다 — 「철회 후 다시 신청」 대신
   「변경이 필요하면 고객센터로 문의」를 안내합니다(승인 이후에는 철회도 할 수 없습니다).
+- 「주문 시 본인확인」 인증 메일 번역을 알림 번역(`seed/notifications.json`)으로 옮기고, 주문 상세 「고객에게 메일 보내기」 알림(`order_custom_email`)과
+  「메일 채널이 꺼져 있어 보낼 수 없다」 안내의 일본어 번역을 더했습니다.
 
 ### Removed
 
@@ -209,6 +211,7 @@
 - 관리자 클레임 상세의 「완료 처리는 완료 모달에서 진행해주세요」 안내(`admin.claim.detail.transition.use_complete_modal`)
   일본어 번역을 지웠습니다. 신청서 상태 변경 칸에 「완료」가 더 이상 서지 않아 그 안내가 뜰 자리가 없어졌습니다.
 - 원본에서 지운 번역을 함께 정리했습니다. 화면에 한 번도 나오지 않던 관리자 창 설명 문구 15개(`admin.*.modal.*.description`, `admin.product.labels.modal_description`)와, 걷어낸 쿠폰 목록 좁은 화면 카드의 라벨(`admin.promotion_coupon.mobile.*` 8개)입니다.
+- `seed/identity_messages.json` — 이커머스 1.3.0 에서 본인인증 문구가 알림 정의로 옮겨졌습니다.
 
 ## [1.1.4] - 2026-09-06
 

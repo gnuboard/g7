@@ -207,7 +207,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 12개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 52개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 알림 정의 | 54개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -322,10 +322,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 596개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 200개 | `vitest.config.ts` |
+| PHPUnit | 597개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 201개 | `vitest.config.ts` |
 | Playwright | 67개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 247개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 248개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -153,6 +153,11 @@ interface ChallengeResponseData {
   redirect_url?: string;
   /** 허용 최대 시도 횟수 — 0 은 무제한 (popup/SDK 형 provider). 코어 mail provider 는 환경설정값을 반영. */
   max_attempts?: number;
+  /**
+   * 링크 방식 challenge 에만 오는 일회용 비밀값 — 링크를 연 쪽(다른 기기일 수 있음)의 확인 결과를 이 화면이
+   * `POST /api/identity/challenges/{id}/claim` 으로 받아 갈 때 쓴다. 상태 조회 응답에는 실리지 않는다.
+   */
+  claim_secret?: string;
 }
 
 /**
@@ -167,6 +172,8 @@ async function startChallenge(
 ): Promise<ChallengeResponseData> {
   const body: Record<string, unknown> = { purpose: payload.purpose };
   if (payload.provider_id) body.provider_id = payload.provider_id;
+  // 428 이 알려 준 정책 — 서버가 그 정책별 문구를 고른다(켜져 있고 목적이 같을 때만).
+  if (payload.policy_key) body.policy_key = payload.policy_key;
   if (target) body.target = target;
 
   const url = payload.challenge_start_url || '/api/identity/challenges';
@@ -196,6 +203,7 @@ async function startChallenge(
     public_payload: data.public_payload,
     redirect_url: data.redirect_url,
     max_attempts: typeof data.max_attempts === 'number' ? data.max_attempts : undefined,
+    claim_secret: typeof data.claim_secret === 'string' ? data.claim_secret : undefined,
   };
 }
 
@@ -350,13 +358,114 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
   }
 
   // (6) 모달이 resolveIdentityChallenge 호출하면 deferred 가 resolve
+  // 링크 방식 — 확인은 메일 링크가 하므로 시작 응답의 비밀값으로 결과를 받아 간다(인증번호 방식은 묻지 않는다).
+  const stopClaim = startLinkClaimPolling(challenge, G7Core);
   const result = await deferred;
+  stopClaim();
 
   // 정리 — 카운트다운 중단 + subscribe 해제
   window.clearInterval(tickHandle);
   unsubscribe?.();
 
   return result;
+}
+
+/**
+ * 링크 방식 challenge 의 일회용 비밀값 — 건 번호별로 이 모듈 안에만 둔다. 전역 상태(`_global`)는 개발자 도구로 누구나
+ * 볼 수 있어 토큰을 받아 갈 수 있는 값을 두지 않는다(docs/frontend/security.md 「_global 상태 민감 정보 금지」).
+ */
+const claimSecrets = new Map<string, string>();
+
+/**
+ * [다시 보내기]가 새로 받은 링크 방식 비밀값을 기억합니다 — 인증 창이 새 건의 확인 결과를 받아 가게.
+ *
+ * @param action 액션 정의 (params.challenge_id · params.claim_secret)
+ * @param _context 실행 컨텍스트 (미사용)
+ * @return 기억했으면 true
+ */
+export function rememberIdentityClaimHandler(
+  action?: { params?: Record<string, unknown> } & Record<string, any>,
+  _context?: any,
+): boolean {
+  const id = typeof action?.params?.challenge_id === 'string' ? action.params.challenge_id : '';
+  const secret = typeof action?.params?.claim_secret === 'string' ? action.params.claim_secret : '';
+  if (!id || !secret) {
+    return false;
+  }
+  claimSecrets.set(id, secret);
+  return true;
+}
+
+/** 링크 방식 결과를 묻는 간격 — 서버 throttle(분당 60) 안에서 회원이 링크를 누른 뒤 곧 이어지게. */
+const CLAIM_INTERVAL_MS = 3000;
+
+/**
+ * 링크 방식 challenge 의 확인 결과를 받아 갈 때까지 주기적으로 묻습니다.
+ *
+ * 확인 결과의 토큰은 링크를 연 쪽에만 돌아가므로, 인증 창을 띄운 이 화면은 시작 응답으로 받은 일회용 비밀값으로
+ * 서버에 물어 받아 간다. 받으면 원래 요청(428 을 낸 요청)을 이어 가도록 resolve 하고 창을 닫는다. [다시 보내기]가
+ * 새 건을 만들면 전역 인증 상태의 건 번호로 갈아 묻고, 그 건의 비밀값은 `rememberIdentityClaimHandler` 가 넘겨 준다. 끝낼 수 없는 답(거절·이미 사용·만료)을 받은 건은
+ * 같은 건·같은 비밀값으로 다시 묻지 않는다.
+ *
+ * @param challenge 시작 응답
+ * @param G7Core 코어 전역 객체
+ * @return 묻기를 멈추는 함수
+ */
+function startLinkClaimPolling(challenge: ChallengeResponseData, G7Core: any): () => void {
+  if (challenge.render_hint !== 'link' || !challenge.claim_secret) {
+    return () => {};
+  }
+
+  let stopped = false;
+  let inFlight = false;
+  let deadKey: string | null = null;
+  claimSecrets.set(challenge.id, challenge.claim_secret);
+
+  const handle = setInterval(async () => {
+    if (stopped || inFlight) return;
+    const current = G7Core.state?.getGlobal?.()?.identityChallenge ?? {};
+    const id = String(current.challenge_id ?? challenge.id);
+    const secret = claimSecrets.get(id);
+    if (!secret) return;
+    if (`${id}:${secret}` === deadKey) return;
+
+    const url = `/api/identity/challenges/${encodeURIComponent(id)}/claim`;
+    inFlight = true;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...getLocaleHeader(),
+          ...getAuthHeader(url),
+        },
+        body: JSON.stringify({ claim_secret: secret }),
+      });
+      if (res.status === 202 || stopped) return;
+      const json = await res.json().catch(() => null);
+      const token = json?.data?.verification_token;
+      if (res.ok && typeof token === 'string' && token !== '') {
+        stopped = true;
+        clearInterval(handle);
+        await G7Core.dispatch({ handler: 'resolveIdentityChallenge', params: { result: 'verified', token } });
+        await G7Core.dispatch({ handler: 'closeModal', target: 'identity-challenge-modal' });
+        return;
+      }
+      deadKey = `${id}:${secret}`;
+    } catch {
+      /* 일시 오류 — 다음 주기에 다시 묻는다 */
+    } finally {
+      inFlight = false;
+    }
+  }, CLAIM_INTERVAL_MS);
+
+  return () => {
+    stopped = true;
+    clearInterval(handle);
+    claimSecrets.clear();
+  };
 }
 
 /**

@@ -154,10 +154,11 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 알림 정의 목록 — 알림 정의 탭 전용. `extension_identifier="core"` 로 **코어 정의만** 받는다
-       (확장이 들인 정의는 그 확장의 설정 화면 몫이다). -->
+  <!-- 알림 정의 목록 — 알림 정의 탭 전용. `extension_type="core"` 로 **코어 소유 정의만** 받는다 — 코어 선언(core)과
+       운영자가 추가한 본인인증 정책 문구(admin)가 함께 들어온다. 확장이 들인 정의는 그 확장의 설정 화면 몫이다.
+       `category` 는 분류 칩 값(빈 값=전체, general=일반 알림, identity=본인인증)이다. -->
   <data-source id="notificationDefinitions" label_key="$t:editor.data_source.notificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_identifier="core" template_channel="{{query.channel ?? 'mail'}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_type="core" category="{{query.category}}" template_channel="{{query.channel ?? 'mail'}}"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
@@ -177,39 +178,28 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 인증 목적 목록 — 정책·메시지가 함께 쓰는 선택지다.
+  <!-- 인증 목적 목록 — 정책 선택지와 알림 설정의 본인인증 카드 배지(목적 이름)가 함께 쓴다.
        **이 화면에서 유일하게 인증 없이 부르는 소스**다(목적 정의는 공개 값이다). -->
-  <data-source id="identityPurposes" label_key="$t:editor.data_source.identityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true">
+  <data-source id="identityPurposes" label_key="$t:editor.data_source.identityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 인증 메시지 정의 목록(메시지 하위 탭). 페이지 파라미터를 `messages_*` 로 따로 쓰는 것은
-       같은 탭 안에 정책 목록이 함께 있어 `page` 를 나눠 갖지 않으면 서로 밀어내기 때문이다. -->
-  <data-source id="identityMessages" label_key="$t:editor.data_source.identityMessages" type="api" endpoint="/api/admin/identity/messages/definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.messages_page || 1}}" per_page="{{query.messages_per_page || 20}}" sort_by="id" sort_order="asc"/>
+  <!-- 본인인증 정책별 문구가 이미 있는 정책 — 「정책별 문구 추가」 창이 선택지에서 빼는 데만 쓴다(알림 설정 탭).
+       서버의 중복 판정(type `identity.policy.{정책 키}`)과 같은 기준이다. 위 `notificationDefinitions` 는 분류·페이지가
+       걸려 있어 그것으로 거르면 다른 페이지의 정의가 빠진다. 운영자 정책 목록과 같은 한도(100건)로 한 번에 받는다. -->
+  <data-source id="identityPolicyDefinitions" label_key="$t:editor.data_source.identityPolicyDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <params extension_type="core" category="identity" :per_page="100"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
       </field>
     </fallback>
   </data-source>
-  <!-- 메시지 정의가 이미 있는 운영자 정책 — 「정의 추가」 창이 선택지에서 빼는 데만 쓴다.
-       서버의 중복 판정(제공자·범위 종류·범위 값 조합)과 **같은 조건**으로 받는다: 메일 제공자 +
-       정책 범위. 위 `identityMessages` 는 페이지가 나뉘어 있어 그것으로 거르면 다른 페이지의
-       정의가 빠진다. 정책 목록과 같은 한도(100건)로 한 번에 받는다. -->
-  <data-source id="identityMessagePolicyScopes" label_key="$t:editor.data_source.identityMessagePolicyScopes" type="api" endpoint="/api/admin/identity/messages/definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
-    <params provider_id="g7:core.mail" scope_type="policy" :per_page="100"/>
-    <fallback>
-      <field name="data">
-        <field name="data" :value="[]"/>
-      </field>
-    </fallback>
-  </data-source>
-  <!-- 관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭이 이것만 보여 준다).
+  <!-- 관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭과 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다).
        아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가
        다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다. -->
-  <data-source id="adminIdentityPolicies" label_key="$t:editor.data_source.adminIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+  <data-source id="adminIdentityPolicies" label_key="$t:editor.data_source.adminIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <params source_type="admin" :per_page="100"/>
     <fallback>
       <field name="data">
@@ -278,8 +268,7 @@
     <wait-for>availableChannels</wait-for>
     <wait-for>identityProviders</wait-for>
     <wait-for>identityPurposes</wait-for>
-    <wait-for>identityMessages</wait-for>
-    <wait-for>identityMessagePolicyScopes</wait-for>
+    <wait-for>identityPolicyDefinitions</wait-for>
     <wait-for>adminIdentityPolicies</wait-for>
     <wait-for>policies</wait-for>
     <wait-for>language_packs</wait-for>
@@ -409,24 +398,42 @@
                  처리하므로 여기서 파일을 다루지 않는다.
                  성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.
                  개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이
-                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식). -->
-            <sequence>
-              <emit-event event="upload:site_logo"/>
-              <set-state target="local" :isSaving="true" :errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
-                <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                  <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
-                  <toast type="success" message="$t:admin.settings.save_success"/>
-                  <refetch-data-source dataSourceId="settings"/>
-                  <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
-                </success>
-                <fail>
-                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                  <toast type="error" message="{{error.message ?? '$t:admin.settings.save_error'}}"/>
-                </fail>
-              </api-call>
-            </sequence>
+                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).
+                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —
+                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).
+                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다. -->
+            <switch on="{{((_global.activeSettingsTab || query.tab) === 'notification_definitions' &amp;&amp; (settings?.data?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active !== false &amp;&amp; (_local.form?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active === false) ? 'confirm_mail_off' : 'save'}}">
+              <case when="confirm_mail_off">
+                <sequence>
+                  <set-state target="global">
+                    <field name="notification_channel_off_modal">
+                      <field name="channels" value="{{_local.form?.notifications?.channels ?? []}}"/>
+                      <field name="isSaving" :value="false"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="modal_notification_channel_off_confirm"/>
+                </sequence>
+              </case>
+              <case when="save">
+                <sequence>
+                  <emit-event event="upload:site_logo"/>
+                  <set-state target="local" :isSaving="true" :errors="null"/>
+                  <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
+                    <success>
+                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                      <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
+                      <toast type="success" message="$t:admin.settings.save_success"/>
+                      <refetch-data-source dataSourceId="settings"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.save_error'}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </case>
+            </switch>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>
@@ -466,6 +473,12 @@
   <modal src="partials/admin_settings/_modal_notification_template_preview.g7.html"/>
   <!-- 알림 정의를 기본값으로 되돌리는 확인 창(고친 내용이 사라진다). -->
   <modal src="partials/admin_settings/_modal_notification_definition_reset.g7.html"/>
+  <!-- 본인인증 정책별 문구 추가 창(알림 설정 > 분류 「본인인증」) — 운영자 정책에 전용 문구를 붙인다. -->
+  <modal src="partials/admin_settings/_modal_notification_identity_definition_add.g7.html"/>
+  <!-- 본인인증 정책별 문구 삭제 확인 창(위에서 추가한 문구를 되돌리는 짝이다). -->
+  <modal src="partials/admin_settings/_modal_notification_identity_definition_delete.g7.html"/>
+  <!-- 메일 채널 끄기 확인 창 — 본인인증·2단계 인증 메일도 멈춘다는 경고를 보이고 저장 여부를 묻는다. -->
+  <modal src="partials/admin_settings/_modal_notification_channel_off_confirm.g7.html"/>
   <!-- 코어 업데이트 결과 창 — 실행 뒤 성공/실패와 로그를 보여 준다. -->
   <modal src="partials/admin_settings/_modal_core_update_result.g7.html"/>
   <!-- 코어 변경 이력 창 — 업데이트 전에 무엇이 바뀌는지 확인하는 자리다. -->
@@ -479,16 +492,6 @@
   <modal src="partials/admin_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 인증 정책 삭제 확인 창. -->
   <modal src="partials/admin_settings/_modal_identity_policy_delete.g7.html"/>
-  <!-- 인증 메시지 템플릿 편집 창(채널별 본문). -->
-  <modal src="partials/admin_settings/_modal_identity_message_template_form.g7.html"/>
-  <!-- 인증 메시지 미리보기 창. -->
-  <modal src="partials/admin_settings/_modal_identity_message_template_preview.g7.html"/>
-  <!-- 인증 메시지 정의를 새로 만드는 창 — 알림 쪽과 달리 정의 자체를 추가할 수 있다. -->
-  <modal src="partials/admin_settings/_modal_identity_message_definition_add.g7.html"/>
-  <!-- 인증 메시지 정의 삭제 확인 창(위에서 추가한 정의를 되돌리는 짝이다). -->
-  <modal src="partials/admin_settings/_modal_identity_message_definition_delete.g7.html"/>
-  <!-- 인증 메시지 정의를 기본값으로 되돌리는 확인 창. -->
-  <modal src="partials/admin_settings/_modal_identity_message_definition_reset.g7.html"/>
   <!-- 개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
   <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
   <!-- 개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->

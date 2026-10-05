@@ -65,12 +65,13 @@
               <api-call target="/api/identity/challenges" method="POST">
                 <success>
                   <set-state target="global" :identityChallenge.resending="false" identityChallenge.challenge_id="{{response.data.id}}" identityChallenge.expires_at="{{response.data.expires_at}}" identityChallenge.render_hint="{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}" :identityChallenge.attempts="0" identityChallenge.code=""/>
+                  <action handler="rememberIdentityClaim" challenge_id="{{response.data.id ?? ''}}" claim_secret="{{response.data.claim_secret ?? ''}}"/>
                   <toast type="success" message="$t:admin.identity.challenge.resend_success"/>
                 </success>
                 <fail>
                   <set-state target="global" :identityChallenge.resending="false" identityChallenge.error="{{error.message ?? '$t:admin.identity.challenge.error_generic'}}" :identityChallenge.resendCooldown="0"/>
                 </fail>
-                <body purpose="{{_global.identityChallenge?.purpose ?? 'sensitive_action'}}" provider_id="{{_global.identityChallenge?.provider_id ?? null}}" target="{{_global.identityChallenge?.target ?? null}}"/>
+                <body purpose="{{_global.identityChallenge?.purpose ?? 'sensitive_action'}}" provider_id="{{_global.identityChallenge?.provider_id ?? null}}" policy_key="{{_global.identityChallenge?.policy_key ?? null}}" target="{{_global.identityChallenge?.target ?? null}}"/>
               </api-call>
             </sequence>
           </on>

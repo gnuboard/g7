@@ -48,7 +48,7 @@
 | [enum.md](enum.md) | Enum 사용 규칙 | 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum) |
 | [exceptions.md](exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
 | [geoip.md](geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTim... |
-| [identity-messages.md](identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) | 알림 시스템(notification_*)과 완전 분리된 IDV 전용 템플릿 인프라 |
+| [identity-messages.md](identity-messages.md) | 본인인증 알림 (Identity Notifications) | 본인인증 메일 문구 = 알림 정의(notification_definitions) 중 ... |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
 | [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | VerificationProviderInterface 구현 + IdentityProv... |
 | [language-pack-service.md](language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactiva... |

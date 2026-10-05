@@ -151,7 +151,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [enum.md](backend/enum.md) | Enum 사용 규칙 |
 | [exceptions.md](backend/exceptions.md) | Custom Exception 다국어 처리 |
 | [geoip.md](backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) |
-| [identity-messages.md](backend/identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) |
+| [identity-messages.md](backend/identity-messages.md) | 본인인증 알림 (Identity Notifications) |
 | [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |
 | [identity-providers.md](backend/identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) |
 | [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
@@ -360,8 +360,8 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 44 · 모델 0 · 레이아웃 184 |
-| `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 48 · 모델 0 · 레이아웃 193 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 44 · 모델 0 · 레이아웃 182 |
+| `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 49 · 모델 0 · 레이아웃 194 |
 
 
 <!-- AUTO-GENERATED-END: docs-readme-full-list -->

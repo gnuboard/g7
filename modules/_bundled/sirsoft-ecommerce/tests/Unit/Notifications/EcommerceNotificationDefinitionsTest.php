@@ -36,6 +36,21 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         'order_completed_admin',
         'inquiry_received',
         'inquiry_replied',
+        'order_custom_email',
+        'identity.purpose.checkout_verification',
+    ];
+
+    /**
+     * 메일로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외 (#699).
+     *
+     * - order_custom_email: 주문 상세 「고객에게 메일 보내기」. 관리자가 쓴 글을 메일로 보내는 기능이라 사이트 내 알림 짝이 없다.
+     * - identity.purpose.checkout_verification: 결제 전 본인확인 인증번호 메일. 인증 메일은 메일 채널만 쓴다(본인인증 분류).
+     *
+     * @var array<int, string>
+     */
+    private const MAIL_ONLY_TYPES = [
+        'order_custom_email',
+        'identity.purpose.checkout_verification',
     ];
 
     /**
@@ -84,6 +99,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     public function test_all_definitions_have_both_channels(): void
     {
         foreach ($this->getModuleDefinitions() as $def) {
+            if (in_array($def['type'], self::MAIL_ONLY_TYPES, true)) {
+                // 예외 목록은 「메일만」 을 정확히 선언해야 한다 — 다른 채널이 붙으면 목록에서 빼고 일반 규칙을 따른다.
+                $this->assertSame(['mail'], $def['channels'], "{$def['type']}: 메일 전용 정의가 다른 채널을 선언했다");
+
+                continue;
+            }
             $this->assertContains('mail', $def['channels'], "{$def['type']}: mail 채널 누락");
             $this->assertContains('database', $def['channels'], "{$def['type']}: database 채널 누락");
         }
@@ -103,6 +124,9 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         foreach ($this->getModuleDefinitions() as $def) {
             $channels = array_column($def['templates'], 'channel');
             $this->assertContains('mail', $channels, "{$def['type']}: mail 템플릿 누락");
+            if (in_array($def['type'], self::MAIL_ONLY_TYPES, true)) {
+                continue;
+            }
             $this->assertContains('database', $channels, "{$def['type']}: database 템플릿 누락");
         }
     }
@@ -119,6 +143,9 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     public function test_database_templates_have_bilingual_content(): void
     {
         foreach ($this->getModuleDefinitions() as $def) {
+            if (in_array($def['type'], self::MAIL_ONLY_TYPES, true)) {
+                continue;
+            }
             $dbTemplate = collect($def['templates'])->firstWhere('channel', 'database');
             $this->assertNotNull($dbTemplate, "{$def['type']}: database 템플릿 없음");
 
@@ -167,10 +194,13 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
             }
         }
 
-        // 검증: 각 타입에 database 채널 템플릿 존재
+        // 검증: 각 타입에 database 채널 템플릿 존재 (메일 전용 정의는 정의 행만 확인)
         foreach ($this->expectedTypes as $type) {
             $definition = NotificationDefinition::where('type', $type)->first();
             $this->assertNotNull($definition, "정의 '{$type}' DB 미생성");
+            if (in_array($type, self::MAIL_ONLY_TYPES, true)) {
+                continue;
+            }
 
             $dbTemplate = NotificationTemplate::where('definition_id', $definition->id)
                 ->where('channel', 'database')

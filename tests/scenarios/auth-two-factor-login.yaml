@@ -66,6 +66,8 @@ effects:
   - challenge_response_has_no_token
   - challenge_response_has_no_user
   - delivery_failure_503_with_reason
+  - mail_channel_off_blocks_two_factor_503
+  - login_code_uses_login_definition
   - admin_login_returns_challenge_not_500
   - admin_two_factor_issues_token_for_admin
   - non_admin_two_factor_revokes_token

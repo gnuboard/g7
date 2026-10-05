@@ -793,8 +793,7 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー",
-        "identity_message_definitions": "本人認証メッセージ定義"
+        "identity_policies": "本人認証ポリシー"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -1007,8 +1006,7 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー",
-        "identity_message_definitions": "本人認証メッセージ定義"
+        "identity_policies": "本人認証ポリシー"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -1739,83 +1737,13 @@
         "basic": "基本",
         "providers": "プロバイダー",
         "policies": "ポリシー 管理",
-        "messages": "メッセージ テンプレート"
+        "messages": "メッセージ"
       },
       "messages": {
-        "title": "本人認証 メッセージ テンプレート",
-        "intro": "本人認証メールで使用する件名と本文を直接編集します。韓国語/英語の両方を入力できます。いつでもデフォルト値に戻すことができます。運営者が追加したポリシーには、別途メッセージをバンドルして登録できます。",
-        "empty": "登録されたメッセージ定義がありません。",
-        "edit": "編集",
-        "btn_add_definition": "定義 追加",
-        "btn_reset": "デフォルト値 復元",
-        "btn_delete": "削除",
-        "status_active": "有効",
-        "status_inactive": "無効",
-        "default_badge": "デフォルト",
-        "body_preview": "本文プレビュー",
-        "total_count": "合計 {count}件",
-        "per_page_label": "ページあたり",
-        "channels": {
-          "mail": "メール"
-        },
-        "toggle_success": "メッセージ定義の有効化ステータスが変更されました。",
-        "toggle_failed": "有効化ステータスの変更に失敗しました。",
-        "badges": {
-          "default": "デフォルト値",
-          "customized": "ユーザー編集"
-        },
-        "add_modal": {
-          "title": "メッセージ定義追加",
-          "errors_title": "入力エラー",
-          "provider": "プロバイダー",
-          "scope_type": "範囲タイプ",
-          "policy_key": "ポリシーキー",
-          "policy_key_placeholder": "管理者ポリシーを選択してください",
-          "policy_empty": "管理者ポリシーがありません。ポリシータブで先に登録してください。",
-          "name": "名前",
-          "subject": "タイトル",
-          "body": "本文",
-          "variables_title": "使用可能な変数",
-          "save_success": "メッセージ定義が追加されました。",
-          "save_failed": "メッセージ定義の追加に失敗しました。",
-          "policy_all_defined": "すべての運営者ポリシーに既にメッセージ定義があります。既存定義のテンプレートを編集するか、ポリシーを新たに登録してください。"
-        },
-        "delete_modal": {
-          "title": "メッセージ定義削除",
-          "target_label": "対象",
-          "confirm_message": "このメッセージ定義を削除してよろしいですか?",
-          "warning_message": "削除すると、関連するすべてのチャネルテンプレートが一緒に削除されます。この操作は取り消せません。",
-          "btn_confirm": "削除",
-          "btn_confirming": "削除中...",
-          "delete_success": "メッセージ定義が削除されました。",
-          "delete_failed": "メッセージ定義の削除に失敗しました。"
-        },
-        "reset_modal": {
-          "title": "デフォルト値を復元",
-          "target_label": "対象",
-          "confirm_message": "このメッセージ定義のすべてのチャネルテンプレートをシードデフォルト値に復元してよろしいですか?",
-          "warning_message": "管理者の編集内容がすべて削除され、この操作は取り消せません。",
-          "btn_confirm": "復元",
-          "btn_confirming": "復元中...",
-          "reset_success": "メッセージ定義がデフォルト値に復元されました。",
-          "reset_failed": "デフォルト値の復元に失敗しました。"
-        },
-        "modal": {
-          "title": "メッセージテンプレート編集",
-          "errors_title": "入力エラー",
-          "variables_title": "使用可能な変数",
-          "subject": "タイトル",
-          "body": "本文",
-          "reset": "デフォルト値で復元",
-          "reset_confirm": "管理者が編集した内容がすべてシードのデフォルト値に復元されます。続行してよろしいですか?",
-          "reset_success": "デフォルト値に復元されました。",
-          "reset_failed": "復元に失敗しました。",
-          "save_success": "メッセージテンプレートが保存されました。",
-          "save_failed": "保存に失敗しました。",
-          "preview": "プレビュー",
-          "preview_failed": "プレビューを読み込めませんでした。",
-          "subject_label": "タイトル",
-          "body_label": "本文"
+        "title": "本人認証メッセージ",
+        "moved_notice": {
+          "body": "本人認証メールの文面は「環境設定 > 通知設定」の分類「本人認証」で編集します。メールチャネルのオン・オフと送信ログもそちらで管理します。",
+          "link": "通知設定で編集する"
         }
       },
       "basic": {
@@ -2124,6 +2052,52 @@
         "is_active_label": "有効化"
       },
       "recipients_label": "受信者:",
+      "category": {
+        "label": "分類",
+        "all": "すべて",
+        "general": "一般通知",
+        "identity": "本人認証"
+      },
+      "identity_scope": {
+        "default": "共通デフォルト",
+        "purpose": "認証目的",
+        "policy": "ポリシー"
+      },
+      "identity_recipient_fixed": "宛先: 認証をリクエストした本人にのみ送信します(受信者ルールは使用しません)。",
+      "identity_empty": "本人認証の文面がありません。",
+      "btn_add_identity": "ポリシー別文面を追加",
+      "btn_delete": "削除",
+      "identity_add": {
+        "title": "ポリシー別文面を追加",
+        "help": "管理者が登録した本人認証ポリシーに専用のメール文面を設定します。設定していないポリシーは、認証目的別の文面 → 共通デフォルトの文面の順に使用します。",
+        "errors_title": "入力エラー",
+        "policy_key": "ポリシー",
+        "policy_key_placeholder": "管理者ポリシーを選択してください",
+        "policy_empty": "管理者ポリシーがありません。本人認証 > ポリシー管理で先に登録してください。",
+        "policy_all_defined": "すべての管理者ポリシーに専用の文面があります。一覧から該当する文面を編集してください。",
+        "variables_title": "使用可能な変数",
+        "name": "名前",
+        "subject": "件名",
+        "body": "本文",
+        "save_success": "ポリシー別文面を追加しました。",
+        "save_failed": "ポリシー別文面の追加に失敗しました。"
+      },
+      "identity_delete": {
+        "title": "ポリシー別文面を削除",
+        "target_label": "対象",
+        "confirm_message": "このポリシー別文面を削除しますか?",
+        "warning_message": "削除すると、このポリシーの認証メールは認証目的別の文面または共通デフォルトの文面で送信されます。この操作は元に戻せません。",
+        "btn_confirm": "削除",
+        "btn_confirming": "削除中...",
+        "delete_success": "ポリシー別文面を削除しました。",
+        "delete_failed": "ポリシー別文面の削除に失敗しました。"
+      },
+      "channel_off_confirm": {
+        "title": "メールチャネルをオフにしますか?",
+        "message": "メールチャネルをオフにすると、本人認証メール(会員登録・パスワード再設定・情報変更の認証番号)と管理者の2段階認証メールも送信されなくなります。認証アプリを登録していない管理者はログインできなくなります。",
+        "btn_cancel": "キャンセル",
+        "btn_confirm": "メールをオフにする"
+      },
       "recipients": {
         "title": "受信者設定",
         "add_rule": "+ 受信者ルール追加",
@@ -3199,15 +3173,13 @@
       "plugin_manifest_preview_drawer": "プラグイン マニフェスト プレビュー"
     },
     "admin_settings": {
-      "modal_identity_message_definition_add": "本人認証メッセージ定義追加",
-      "modal_identity_message_definition_delete": "本人認証メッセージ定義削除",
-      "modal_identity_message_definition_reset": "本人認証メッセージデフォルト復元",
-      "modal_identity_message_template_form": "本人認証メッセージテンプレート編集",
-      "modal_identity_message_template_preview": "本人認証メッセージテンプレートプレビュー",
       "identity_policy_delete_modal": "本人認証ポリシー削除確認",
       "identity_policy_form_modal": "本人認証ポリシー編集",
       "modal_mail_template_form": "メールテンプレート編集",
+      "modal_notification_channel_off_confirm": "メールチャネルのオフ確認",
       "modal_notification_definition_reset": "通知定義デフォルト復元",
+      "modal_notification_identity_definition_add": "本人認証ポリシー別文面を追加",
+      "modal_notification_identity_definition_delete": "本人認証ポリシー別文面を削除",
       "modal_notification_template_form": "通知テンプレート編集",
       "modal_notification_template_preview": "通知テンプレートプレビュー",
       "settings_cache_delete_modal": "キャッシュ削除確認",

@@ -13,6 +13,9 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
     /** `template_channel` 이 이 값이면 채널을 좁히지 않고 전 채널 템플릿을 싣는다. */
     public const TEMPLATE_CHANNEL_ALL = 'all';
 
+    /** 분류 필터 값 — 분류가 없는(null) 일반 알림 */
+    public const CATEGORY_GENERAL = 'general';
+
     use ResolvesSortSpec;
 
     /** 허용 정렬 컬럼 (NotificationDefinitionIndexRequest 와 동일 집합) */
@@ -126,6 +129,28 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
     }
 
     /**
+     * 알림 정의를 생성합니다.
+     *
+     * @param  array<string, mixed>  $data  정의 속성
+     * @return NotificationDefinition 생성된 정의
+     */
+    public function create(array $data): NotificationDefinition
+    {
+        return NotificationDefinition::create($data);
+    }
+
+    /**
+     * 알림 정의를 삭제합니다 (소속 템플릿은 FK cascade 로 함께 정리).
+     *
+     * @param  NotificationDefinition  $definition  삭제할 정의
+     * @return bool 삭제 여부
+     */
+    public function delete(NotificationDefinition $definition): bool
+    {
+        return (bool) $definition->delete();
+    }
+
+    /**
      * 페이지네이션 목록 조회.
      *
      * @param  array  $filters
@@ -169,6 +194,15 @@ class NotificationDefinitionRepository implements NotificationDefinitionReposito
 
         if (! empty($filters['extension_identifier'])) {
             $query->where('extension_identifier', $filters['extension_identifier']);
+        }
+
+        // 분류 — 'general' 은 분류 값이 없는 일반 알림, 그 밖은 같은 분류 값(예: identity).
+        if (! empty($filters['category'])) {
+            if ($filters['category'] === self::CATEGORY_GENERAL) {
+                $query->whereNull('category');
+            } else {
+                $query->where('category', $filters['category']);
+            }
         }
 
         if (isset($filters['is_active'])) {

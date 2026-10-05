@@ -21,7 +21,6 @@ class DatabaseSeeder extends Seeder
             CoreAdminMenuSeeder::class,
             NotificationDefinitionSeeder::class,
             IdentityPolicySeeder::class,
-            IdentityMessageDefinitionSeeder::class,
         ]);
 
         // 샘플 시더 (--sample 옵션 시에만 실행)

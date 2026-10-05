@@ -97,8 +97,11 @@ effects:
   - core_template_users_dropdown_seeds_selected_values
   - core_template_preview_stores_into_the_namespace
   - core_template_preview_modal_reads_the_namespace
+  - core_template_preview_follows_the_channel_editor
   - core_template_save_closes_refetches_and_clears
   - core_template_save_body_reads_the_namespace
+  # 꺼 둔 템플릿 편집·저장이 다시 켜지 않는다 — 옛 본인인증 메시지 창의 #727 W13 계약을 이식(#699)
+  - core_template_save_omits_is_active
 
 test_files:
   - tests/Feature/Api/Admin/NotificationTemplateControllerTest.php

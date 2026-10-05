@@ -139,7 +139,7 @@ $helper->sync(ShippingType::class, ['code' => 'parcel'], [
 - 시더 컨텍스트(`user_overrides.seeding` 플래그) 에서는 `updating` 이벤트가 자동 bypass 되어 user_overrides 가 추가 기록되지 않음
 - **합의 해제** — 표식이 있는 칸이라도 지금 값과 새 선언값이 같으면(위 비교 규칙) 표식을 지운다. 운영자 값과 새 버전 값이 같아졌으니 다음 버전의 변경부터 다시 들어온다. 판정은 `planUpgrade(array $newAttributes)` 한 곳에서 하고, 확장 역할 동기화 헬퍼도 이 판정을 쓴다.
 
-7.1.0 업그레이드 스텝 `PruneFalseUserOverrides` 가 과거에 값을 바꾸지 않은 저장으로 남은 거짓 표식(지금 값 = 7.1.0 코어 선언값)을 본인인증 정책·알림 템플릿·본인인증 메시지 템플릿에서 지우고, 표식이 비면 「기본」 표시를 되돌린다. 비교 기준은 실행 시점의 `config/core.php` 가 아니라 `upgrades/data/7.1.0/*.snapshot.json` 에 동결한 7.1.0 선언이라, 여러 버전을 한 번에 건너뛰어 업그레이드해도 결과가 같다.
+7.1.0 업그레이드 스텝 `PruneFalseUserOverrides` 가 과거에 값을 바꾸지 않은 저장으로 남은 거짓 표식(지금 값 = 7.1.0 코어 선언값)을 본인인증 정책·알림 템플릿·옛 본인인증 메시지 템플릿(아직 이관 전인 `identity_message_templates` — 뒤이은 스텝 `MigrateIdentityMessagesToNotifications` 가 정리된 표식째 본인인증 알림으로 옮기고 옛 표를 지운다)에서 지우고, 표식이 비면 「기본」 표시를 되돌린다. 비교 기준은 실행 시점의 `config/core.php` 가 아니라 `upgrades/data/7.1.0/*.snapshot.json` 에 동결한 7.1.0 선언이라, 여러 버전을 한 번에 건너뛰어 업그레이드해도 결과가 같다.
 
 ## 3. Mass Update 투명 추적
 

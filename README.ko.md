@@ -388,8 +388,8 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 - **정책 SSoT** — 정책 enable 토글이 라우트 코드 수정 없이 즉시 적용. 모든 API 라우트가 정책 DB 와 자동 매칭
 - **428 인터셉터** — 서버가 HTTP 428 응답을 반환하면 프론트엔드가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 자동 재실행
-- **선언형 등록** — 모듈/플러그인은 `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()` 만 선언하면 활성화/업데이트 시 자동 등록되며 운영자 편집값 보존
-- **메시지 템플릿** — 프로바이더와 (목적/정책)별로 다국어 제목/본문을 개별 정의. 정책 → 목적 → 프로바이더 기본값 순서로 fallback
+- **선언형 등록** — 모듈/플러그인은 `module.php::getIdentityPolicies()` / `getIdentityPurposes()` 와 인증 메시지용 알림 정의(`category => 'identity'`)만 선언하면 활성화/업데이트 시 자동 등록되며 운영자 편집값 보존
+- **메시지 템플릿** — 인증 메일은 알림 정의로, 환경설정 > 알림 설정에서 (목적/정책)별 다국어 제목/본문을 관리. 정책 → 목적 → 기본 순서로 fallback 하며 알림 채널 켜짐/꺼짐을 따름
 - **외부 Provider 슬롯** — 플러그인이 KCP·PortOne·토스인증·Stripe Identity 등을 G7 표준 Extension Point 패턴으로 자기 SDK UI 를 주입 가능
 - **이력 관리** — 관리자 화면에서 인증 수단 탭, 통합 검색, 상태/목적/채널/IP 멀티 필터, 보관주기(180일) 일괄 파기 제공
 

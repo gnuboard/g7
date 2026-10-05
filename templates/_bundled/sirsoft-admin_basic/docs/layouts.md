@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 182개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 136개 |
+| `partials` | 134개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -141,16 +141,14 @@
 | `_modal_core_changelog` | `partials` | partial | - |
 | `_modal_core_update_guide` | `partials` | partial | - |
 | `_modal_core_update_result` | `partials` | partial | - |
-| `_modal_identity_message_definition_add` | `partials` | partial | - |
-| `_modal_identity_message_definition_delete` | `partials` | partial | - |
-| `_modal_identity_message_definition_reset` | `partials` | partial | - |
-| `_modal_identity_message_template_form` | `partials` | partial | - |
-| `_modal_identity_message_template_preview` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
 | `_modal_mail_template_form` | `partials` | partial | - |
+| `_modal_notification_channel_off_confirm` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
+| `_modal_notification_identity_definition_add` | `partials` | partial | - |
+| `_modal_notification_identity_definition_delete` | `partials` | partial | - |
 | `_modal_notification_template_form` | `partials` | partial | - |
 | `_modal_notification_template_preview` | `partials` | partial | - |
 | `_modal_password_confirm` | `partials` | partial | - |
@@ -248,9 +246,8 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 씁니다. 목록은 유지를 골랐고 수정본이 있을 때만 보이며, 병합 결과 요약은 서버가 성공 문구 뒤에 붙여 보내므로 모달 마크업이
 따로 그리지 않습니다(규칙: 코어 `docs/extension/extension-update-system.md` §10).
 
-**본인인증 메시지 템플릿 편집 모달**(`_modal_identity_message_template_form`): 저장 요청 본문은 `subject`·`body` 뿐입니다.
-켜짐 여부(`is_active`)는 목록의 토글로만 바꿉니다 — 본문에 `is_active: true` 를 실으면 꺼 둔 템플릿이 저장할 때마다
-다시 켜집니다.
+**본인인증 메일 문구**(7.1.0~): 별도 편집 화면 없이 「알림 설정」 탭의 분류 칩 「본인인증」에서 일반 알림과 같은 카드·
+편집 모달로 다룹니다. 본인인증 탭의 「메시지」 하위 구획(`_tab_identity_messages`)은 그 자리로 가는 안내 상자만 남습니다.
 
 **에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
 `Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
@@ -385,6 +382,29 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 수신자 카드 목록은 `stack-tight`(세로 gap)로 감쌉니다. 카드는 유틸리티 `p-3` 을 가져 `row-stack` 의 자식 패딩
 규칙보다 우선하므로, `row-stack` 으로 감싸면 구분선만 생기고 카드 사이 간격은 0 이 되어 테두리가 맞붙습니다.
 이 모달은 게시판·이커머스·수출입은행 플러그인에도 사본이 있어 간격도 네 벌을 함께 맞춥니다.
+<!-- @intent END -->
+
+## 알림 설정 — 분류 칩 · 본인인증 문구 · 메일 채널 끄기 확인
+
+<!-- @intent START -->
+`_tab_notification_definitions` 은 분류 칩(전체 · 일반 알림 · 본인인증)을 `?category=` 쿼리로 들고, 목록 데이터 소스
+`notificationDefinitions` 에 그대로 넘깁니다(`extension_type="core"` — 코어 선언과 운영자가 추가한 정책별 문구가 함께
+옵니다). 본인인증 카드(`category === 'identity'`)는 일반 알림과 세 가지가 다릅니다.
+
+| 축 | 본인인증 카드 | 이유 |
+|---|---|---|
+| 수신자 | 수신자 규칙 영역을 감추고 「인증을 요청한 사람에게만」 고정 문구 | 인증 메일의 받는 사람은 요청자 하나뿐이라 규칙을 고르면 의미 없는 값만 쌓입니다 |
+| 기본값 복원 | 운영자가 추가한 정의(`extension_identifier === 'admin'`)는 감춤 | 되돌릴 선언 기본값이 없습니다 — 대신 [삭제] 를 씁니다 |
+| 삭제 | 서버가 준 `abilities.can_delete` 일 때만 | 판정(운영자 추가 · 본인인증 · 기본 아님)은 서버 몫입니다. 화면이 복제하면 둘이 갈립니다 |
+
+[정책별 문구 추가] 는 분류가 「본인인증」 이고 서버가 `abilities.can_create` 를 줄 때만 보입니다. 정책 선택지는
+`adminIdentityPolicies` 에서 이미 문구가 있는 정책(`identityPolicyDefinitions` — 분류·페이지가 안 걸린 별도 목록)을 뺀
+것입니다. 목록 데이터 소스로 거르면 다른 페이지에 있는 정의가 빠져 이미 있는 정책을 또 고르게 됩니다.
+
+탭 [저장] 은 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장할 때만 `_modal_notification_channel_off_confirm` 을 띄웁니다
+(7.1.0 부터 본인인증·관리자 2단계 인증 메일도 이 토글을 따릅니다). 창은 부모 화면 `_local` 을 읽지 못하므로 저장할 채널
+목록을 `_global.notification_channel_off_modal.channels` 에 담아 넘기고, [취소] 는 `$parent._local.form.notifications.channels`
+의 메일 항목을 켜짐으로 되돌립니다.
 <!-- @intent END -->
 
 ## 확장 오버라이드
@@ -524,16 +544,14 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_static_cache_republish.g7.html
 │           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
 │           ├── _tab_identity_basic.g7.html (기본 정책)
-│           ├── _tab_identity_messages.g7.html (인증 메시지)
+│           ├── _tab_identity_messages.g7.html (인증 메시지 — 알림 설정으로 옮겨졌다는 안내와 이동 링크)
 │           ├── _tab_identity_policies.g7.html (인증 정책)
 │           ├── _tab_identity_providers.g7.html (인증 수단)
 │           ├── _tab_language_packs.g7.html (언어팩)
 │           ├── _tab_mail_templates.g7.html (메일 템플릿)
-│           ├── _modal_identity_message_definition_add.g7.html
-│           ├── _modal_identity_message_definition_delete.g7.html
-│           ├── _modal_identity_message_definition_reset.g7.html
-│           ├── _modal_identity_message_template_form.g7.html
-│           ├── _modal_identity_message_template_preview.g7.html
+│           ├── _modal_notification_identity_definition_add.g7.html (알림 설정 > 본인인증 — 정책별 문구 추가)
+│           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
+│           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)
 │           ├── _modal_identity_policy_delete.g7.html
 │           ├── _modal_identity_policy_form.g7.html
 │           ├── _modal_mail_template_form.g7.html

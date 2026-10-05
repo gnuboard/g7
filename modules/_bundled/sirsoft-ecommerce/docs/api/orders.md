@@ -1838,10 +1838,12 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 메일 채널이 꺼져 있거나 준비되지 않았거나 알림 정의 `order_custom_email` 의 메일 템플릿이 꺼져 있어 보낼 수 없는 경우 (`messages.orders.email_channel_disabled`, `error.errors` 없음) |
+| 500 | Internal Server Error | 발송 중 예외 (`messages.orders.email_send_failed`, `error.errors.detail` 에 원인) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)에 대해 주문 관련 안내 이메일을 지정 주소(`email`)로 발송합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@sendEmail`이 `OrderService::sendEmail()`로 관리자가 작성한 메시지(`message`)를 전송합니다. 주문 관련 개별 안내가 필요할 때 관리자가 상세 화면에서 수동으로 메일을 보내는 용도입니다.
+**설명** 관리자가 특정 주문(`order`)에 대해 주문 관련 안내 이메일을 지정 주소(`email`)로 발송합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@sendEmail`이 `OrderService::sendEmail()`로 관리자가 작성한 메시지(`message`)를 전송합니다. 주문 관련 개별 안내가 필요할 때 관리자가 상세 화면에서 수동으로 메일을 보내는 용도입니다. 1.3.0 부터 발송은 알림 정의 `order_custom_email`(이커머스 설정 > 알림에서 제목·본문 틀 편집)을 거치므로, 메일 채널 설정·발송 로그(`notification_logs`)를 따릅니다 — 채널을 끄면 422 로 거절되고 아무것도 보내지 않습니다. 회원 주문은 그 회원 계정으로, 비회원·다른 주소는 그 주소로 보내며, 성공했을 때만 훅 `sirsoft-ecommerce.order.after_send_email` 이 발화합니다(활동 로그).
 
 
 ### POST /api/modules/sirsoft-ecommerce/orders/{orderNumber}/cancel-payment

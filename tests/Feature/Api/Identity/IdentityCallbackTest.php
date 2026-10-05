@@ -5,13 +5,12 @@ namespace Tests\Feature\Api\Identity;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Models\IdentityVerificationLog;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -24,6 +23,7 @@ use Tests\TestCase;
  */
 class IdentityCallbackTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     /**
@@ -34,13 +34,14 @@ class IdentityCallbackTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Notification::fake();
+        // 본인인증 메일도 알림이다(7.1.0) — Notification::fake() 는 그 발송 경로 자체를 건너뛰어
+        // challenge 가 failed 가 된다. 메일 격리는 Mail::fake() 로 충분하다.
         // 발송 경로가 실제 메일 전송기(설정의 SMTP)를 타면 연결 실패로 발급이 502 가 된다 — 메일은 가짜로 받는다.
         Mail::fake();
         // PermissionMiddleware 가 IDV 라우트에 권한 가드 적용 — guest 역할 권한 sync 필수
         $this->seed(RolePermissionSeeder::class);
         // 메일 본인인증은 메시지 정의가 없으면 발송을 건너뛰고 502 로 끝난다 — 발급이 성공해야 콜백을 검증할 수 있다.
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        $this->prepareIdentityNotifications();
     }
 
     /**

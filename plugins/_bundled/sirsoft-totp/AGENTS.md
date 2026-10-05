@@ -59,9 +59,10 @@
   `IdentityVerificationPurpose::Login` 만 참입니다. 가입·비밀번호 재설정은 아직 자격증명이
   없는 시점이라 인증 앱으로 확인할 수 없고, 열어 두면 운영자가 그 목적에 매핑해 흐름을
   막을 수 있습니다.
-- **새 purpose·메시지 템플릿을 만들지 않습니다.** `getIdentityPurposes()` ·
-  `getIdentityMessages()` 는 빈 배열입니다 — 코어 login 목적에 수단을 더할 뿐이고, 서버가
-  아무것도 보내지 않으므로 보낼 메시지도 없습니다.
+- **새 purpose·본인인증 알림을 만들지 않습니다.** `getIdentityPurposes()` 는 빈 배열이고
+  `getNotificationDefinitions()` 에 본인인증 알림(`category = 'identity'`)도 선언하지 않습니다
+  (@deprecated `getIdentityMessages()` 오버라이드도 빈 배열) — 코어 login 목적에 수단을 더할
+  뿐이고, 서버가 아무것도 보내지 않으므로 보낼 메시지도 없습니다.
 - **QR 이미지를 서버에서 굽지 않습니다.** 서버는 `Totp::otpauthUri()` 가 만든 otpauth URI
   문자열만 내려주고, QR 렌더는 화면 몫입니다.
 - **자격증명 테이블을 CASCADE 로 묶지 않습니다.** 탈퇴·삭제 시 정리는

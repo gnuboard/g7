@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (596)
+- [코어](#코어) (602)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -159,6 +159,7 @@
 | `core.identity.before_request` | action | 3 |  |
 | `core.identity.before_verify` | action | 3 |  |
 | `core.identity.challenge_expired` | action | 1 |  |
+| `core.identity.claim_validation_rules` | filter | 2 |  |
 | `core.identity.filter_default_message_definitions` | filter | 2 |  |
 | `core.identity.message.after_send` | action | 1 |  |
 | `core.identity.message.before_send` | action | 1 |  |
@@ -372,12 +373,18 @@
 | `core.notification.filter_list_params` | filter | 2 |  |
 | `core.notification.filter_seed_definitions` | filter | 2 |  |
 | `core.notification.index_validation_rules` | filter | 1 |  |
+| `core.notification_definition.after_create` | action | 2 |  |
+| `core.notification_definition.after_delete` | action | 1 |  |
 | `core.notification_definition.after_toggle_active` | action | 1 |  |
 | `core.notification_definition.after_update` | action | 2 |  |
+| `core.notification_definition.before_create` | action | 1 |  |
+| `core.notification_definition.before_delete` | action | 1 |  |
 | `core.notification_definition.before_toggle_active` | action | 1 |  |
 | `core.notification_definition.before_update` | action | 2 |  |
+| `core.notification_definition.filter_create_data` | filter | 1 |  |
 | `core.notification_definition.filter_update_data` | filter | 2 |  |
 | `core.notification_definition.index_validation_rules` | filter | 1 |  |
+| `core.notification_definition.store_validation_rules` | filter | 2 |  |
 | `core.notification_definition.update_validation_rules` | filter | 2 |  |
 | `core.notification_log.after_bulk_delete` | action | 2 |  |
 | `core.notification_log.after_delete` | action | 1 |  |
@@ -609,7 +616,6 @@
 | `core.user.upload_avatar_validation_rules` | filter | 1 |  |
 | `hook.context.capture` | filter | 1 |  |
 | `hook.context.restore` | action | 1 |  |
-| `seed.identity_messages.translations` | filter | 1 |  |
 | `sirsoft-core.user.after_bulk_update` | action | 3 |  |
 | `sirsoft-core.user.before_bulk_update` | action | 2 |  |
 | `sitemap.index.collect_for_resource` | filter | 4 |  |
@@ -654,14 +660,12 @@
 | `app/Extension/ModuleManager.php` | `module.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.permissions.translations` | 문자열 보간 조립 |
-| `app/Extension/ModuleManager.php` | `seed.*.identity_messages.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.admin_menus.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.permissions.translations` | 문자열 보간 조립 |
-| `app/Extension/PluginManager.php` | `seed.*.identity_messages.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
@@ -672,6 +676,5 @@
 | `app/Seo/Editor/SeoOgPreviewService.php` | `core.seo.filter_og_data`<br>`core.seo.filter_twitter_data` | buildKeyCascade() 호출부가 리터럴로 넘긴다 |
 | `app/Services/Analytics/ReportMailService.php` | `core.analytics.weekly_report_ready`<br>`core.analytics.monthly_report_ready` | 기간(weekly·monthly)별 리포트 |
 | `app/Services/DriverRegistryService.php` | `core.settings.available_*_drivers` | 드라이버 카테고리별 필터 |
-| `app/Services/IdentityMessageDispatcher.php` | `core.identity.message.send_*` | 본인인증 메시지 채널별 발송 |
 | `app/Services/NotificationChannelService.php` | `*.notification.channels` | 도메인 채널 후보 필터 — 알림 정의의 hook_prefix 로 조립(코어 core.notification.channels 다음) |
 | `database/seeders/Concerns/LoadsConfigSeedWithLangPackFilter.php` | `seed.*.translations` | 설정 시드 언어팩 필터 — 호출부가 키를 넘긴다(seed.notifications.translations 등) |

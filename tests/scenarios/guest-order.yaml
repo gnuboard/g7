@@ -136,9 +136,15 @@ effects:
   - order_creation_blocked_with_cart_unavailable_when_restricted_product_in_cart
   # 관리자 비회원 주문 기능 (단계 6)
   - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+  - admin_order_list_filters_by_member_type_member_when_user_id_is_present
+  - admin_order_list_rejects_unknown_member_type_with_422
   - admin_reset_guest_lookup_password_rejects_member_order_with_422
   - admin_reset_guest_lookup_password_updates_hash_for_guest_order
   - admin_reset_guest_lookup_password_logs_activity
+  - admin_reset_guest_lookup_password_enforces_min_length_8  # 회원가입 정책과 같은 min:8
+  - admin_reset_guest_lookup_password_accepts_letters_only  # 영문+숫자 조합 강제 없음
+  - admin_reset_guest_lookup_password_requires_authentication
+  - admin_reset_guest_lookup_password_revokes_existing_guest_token  # HMAC 입력에 비밀번호 해시 → 재설정 즉시 기존 토큰 무효
   - admin_reset_guest_lookup_password_modal_renders_dark_mode_variants_for_inputs_and_buttons
   # 비회원 알림 트리거 데이터 (단계 7 — 실제 발송은 후속 이슈)
   - order_exposes_orderer_email_and_is_guest_order_for_notification_recipients
@@ -201,9 +207,17 @@ scenarios:
     description: 관리자가 주문 목록에서 비회원 주문을 필터링하고, 비회원 조회 비밀번호를 재설정 (회원 주문은 재설정 거부)
     effects:
       - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+      - admin_order_list_filters_by_member_type_member_when_user_id_is_present
+      - admin_order_list_rejects_unknown_member_type_with_422
       - admin_reset_guest_lookup_password_rejects_member_order_with_422
       - admin_reset_guest_lookup_password_updates_hash_for_guest_order
       - admin_reset_guest_lookup_password_logs_activity
+      # 재설정 비밀번호 정책은 회원가입과 같은 min:8 이고 영문+숫자 조합을 강제하지 않는다
+      - admin_reset_guest_lookup_password_enforces_min_length_8
+      - admin_reset_guest_lookup_password_accepts_letters_only
+      - admin_reset_guest_lookup_password_requires_authentication
+      # 토큰 HMAC 입력에 비밀번호 해시가 섞여 있어 재설정 즉시 기존 verify 토큰이 무효가 된다(stateless revocation)
+      - admin_reset_guest_lookup_password_revokes_existing_guest_token
 
   - id: guest_order_notification_trigger_data
     description: 비회원 주문 이벤트에서 후속 이메일 발송 이슈가 사용할 주문자 이메일·주문번호 데이터를 확인 가능 (실제 발송은 본 이슈 범위 밖)

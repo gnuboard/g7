@@ -375,6 +375,16 @@
                                                                             "text": "{{def.type}}"
                                                                         },
                                                                         {
+                                                                            "comment": "본인인증 문구(category=identity) — 이커머스 정의 중 1건뿐이라 분류 칩 없이 배지만 단다(코어 알림 탭과 같은 키).",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{def.category === 'identity'}}",
+                                                                            "props": {
+                                                                                "className": "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                            },
+                                                                            "text": "$t:admin.settings.notification_definitions.category.identity"
+                                                                        },
+                                                                        {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
@@ -412,10 +422,20 @@
                                                                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
                                                                 {
+                                                                    "comment": "본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구.",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{def.category === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "text-tertiary mt-2"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.identity_recipient_fixed"
+                                                                },
+                                                                {
                                                                     "id": "ecommerce_recipients_badge_{{defIdx}}",
                                                                     "type": "basic",
                                                                     "name": "Div",
-                                                                    "if": "{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
+                                                                    "if": "{{def.category !== 'identity' && ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
                                                                     "props": {
                                                                         "className": "flex-center flex-wrap gap-1.5 mt-2"
                                                                     },

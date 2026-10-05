@@ -1244,6 +1244,7 @@ class SettingsService
             $subject = __('settings.test_mail_subject', ['app_name' => config('app.name')]);
             $body = __('settings.test_mail_body');
 
+            // audit:allow mail-send-must-go-through-notification-dispatcher reason: 입력 중인 SMTP 설정 자체를 시험하는 메일 — 알림 채널이 꺼져 있어도, 저장 전 설정으로도 보내야 의미가 있다(notification-system.md 「예외」 표)
             Mail::raw($body, function ($message) use ($toEmail, $subject) {
                 $message->to($toEmail)
                     ->subject($subject);

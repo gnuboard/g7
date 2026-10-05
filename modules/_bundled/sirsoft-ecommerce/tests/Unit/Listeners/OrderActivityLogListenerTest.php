@@ -24,6 +24,11 @@ class OrderActivityLogListenerTest extends ModuleTestCase
 {
     private OrderActivityLogListener $listener;
 
+    /**
+     * 관리자 경로 요청을 심고 활동 로그 리스너 인스턴스를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,11 +42,11 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 훅 구독 수가 25개인지 확인
+     * 훅 구독 수가 26개인지 확인
      *
      * 기존 21 + `order.after_status_sync`(파생 전이 이력) 1 +
      * `order.tax_invoice_stale_after_cancel` · `order_option.after_sync_status` ·
-     * `order_shipping.tracking_updated` 3 = 25.
+     * `order_shipping.tracking_updated` 3 + `order.after_deposit_recorded`(입금 기록) 1 = 26.
      *
      * 뒤의 3건은 구독이 늘어날 때 이 개수가 함께 갱신되지 않아 이 테스트가 오래 red 였다
      * (#599 통합실측 세션2 에서 발견 — 실제 구독 25 vs 기대 22). 개수만 고치면 같은 일이
@@ -50,12 +55,16 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario listener_subscription=hook_set
      *
      * @effects order_activity_log_listener_subscribes_the_expected_hook_set
+     *
+     * @return void 반환값 없음
      */
-    public function test_get_subscribed_hooks_returns_all_25_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_26_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(25, $hooks);
+        $this->assertCount(26, $hooks);
+        // 입금 기록(결제 이후 단계 주문의 입금만 기록) — 26번째 구독
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_deposit_recorded', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.tax_invoice_stale_after_cancel', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_option.after_sync_status', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_shipping.tracking_updated', $hooks);
@@ -88,9 +97,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
+     * 주문 수정 훅이 수정 전 스냅샷과 함께 오면 주문 수정 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_update_with_snapshot(): void
     {
@@ -113,9 +126,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 스냅샷 없이 주문 수정 훅이 오면 변경 내역(changes) 없이 활동 로그만 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_update_without_snapshot(): void
     {
@@ -133,9 +150,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 주문 삭제 훅이 오면 주문 삭제 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_delete_logs_activity(): void
     {
@@ -161,6 +182,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_update_creates_per_item_logs(): void
     {
@@ -186,6 +209,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_update_loggable_points_to_correct_order(): void
     {
@@ -213,6 +238,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_update_detects_changes_with_snapshots(): void
     {
@@ -243,6 +270,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_update_null_changes_without_snapshots(): void
     {
@@ -264,6 +293,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_status_update_creates_per_item_logs(): void
     {
@@ -287,6 +318,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_shipping_update_creates_per_item_logs(): void
     {
@@ -311,6 +344,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_shipping_update_detects_changes_with_snapshots(): void
     {
@@ -340,6 +375,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_update_description_params_includes_count(): void
     {
@@ -359,6 +396,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_status_update_description_params_includes_count(): void
     {
@@ -378,6 +417,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_bulk_shipping_update_description_params_includes_count(): void
     {
@@ -397,6 +438,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_bulk_status_change_description_params_includes_count(): void
     {
@@ -426,6 +469,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_order_status_change_generates_label_keys(): void
     {
@@ -451,6 +496,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_option
      *
      * @effects order_option_events_log_status_transitions_with_label_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_status_change_generates_label_keys(): void
     {
@@ -480,6 +527,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_order_status_enum_label_key(): void
     {
@@ -507,6 +556,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_shipping_address
      *
      * @effects shipping_address_change_logs_against_order_address
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_update_shipping_address_loggable_is_order_address(): void
     {
@@ -537,6 +588,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_shipping_address
      *
      * @effects shipping_address_change_logs_against_order_address
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_update_shipping_address_detects_changes(): void
     {
@@ -571,6 +624,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_shipping_address
      *
      * @effects shipping_address_change_logs_against_order_address
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_update_shipping_address_fallback_to_order(): void
     {
@@ -595,6 +650,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_option
      *
      * @effects order_option_events_log_status_transitions_with_label_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_status_change_logs_activity(): void
     {
@@ -620,6 +677,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * 일괄 변경 경로와 같은 계약(스냅샷 → ChangeDetector)으로 맞춘다.
      *
      * @effects order_option_status_change_log_carries_before_and_after_with_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_status_change_records_before_and_after_with_snapshot(): void
     {
@@ -647,6 +706,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * 상품 상태에 맞춰 부모 주문 상태가 자동으로 따라 바뀐 전이는 별도 줄(전/후 포함)로 남는다.
      *
      * @effects order_status_sync_log_carries_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_status_sync_records_the_derived_transition_with_before_and_after(): void
     {
@@ -674,6 +735,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_status_sync_skips_when_nothing_changed(): void
     {
@@ -690,6 +753,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_bulk_status_change_creates_per_item_logs(): void
     {
@@ -720,6 +785,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_bulk
      *
      * @effects bulk_events_log_per_item_with_correct_loggable_and_count
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_bulk_status_change_detects_changes_with_snapshots(): void
     {
@@ -759,6 +826,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_option
      *
      * @effects order_option_events_log_status_transitions_with_label_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_option_after_confirm_logs_activity(): void
     {
@@ -785,9 +854,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
+     * 주문 취소 훅이 취소 스냅샷과 함께 오면 주문 취소 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_cancel_logs_activity_with_snapshot(): void
     {
@@ -815,6 +888,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_partial_cancel_creates_order_and_per_option_logs(): void
     {
@@ -861,6 +936,8 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_partial_cancel_without_cancel_items(): void
     {
@@ -882,9 +959,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 쿠폰 복원 훅이 오면 복원된 쿠폰 발급 ID 목록을 활동 로그 속성에 남긴다.
+     *
      * @scenario log_handler=money_side_effect
      *
      * @effects coupon_and_mileage_side_effects_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_coupon_restore_logs_activity(): void
     {
@@ -902,9 +983,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 복원 훅이 오면 복원 금액을 통화 형식으로 활동 로그에 남긴다.
+     *
      * @scenario log_handler=money_side_effect
      *
      * @effects coupon_and_mileage_side_effects_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_mileage_restore_logs_activity(): void
     {
@@ -925,9 +1010,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
+     * 주문 생성 훅이 오면 주문번호를 담은 주문 생성 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_create_logs_activity(): void
     {
@@ -945,9 +1034,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제 완료 훅이 오면 결제 완료 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_payment_complete_logs_activity(): void
     {
@@ -963,9 +1056,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제 실패 훅이 오면 오류 코드·오류 메시지를 활동 로그 속성에 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_payment_failed_logs_activity(): void
     {
@@ -983,9 +1080,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 쿠폰 사용 훅이 오면 적용한 쿠폰 ID 목록을 활동 로그 속성에 남긴다.
+     *
      * @scenario log_handler=money_side_effect
      *
      * @effects coupon_and_mileage_side_effects_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_coupon_use_logs_activity(): void
     {
@@ -1003,9 +1104,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 사용 훅이 오면 사용 금액을 통화 형식으로 활동 로그에 남긴다.
+     *
      * @scenario log_handler=money_side_effect
      *
      * @effects coupon_and_mileage_side_effects_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_mileage_use_logs_activity(): void
     {
@@ -1022,9 +1127,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 적립 훅이 오면 적립 금액을 통화 형식으로 활동 로그에 남긴다.
+     *
      * @scenario log_handler=money_side_effect
      *
      * @effects coupon_and_mileage_side_effects_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_mileage_earn_logs_activity(): void
     {
@@ -1045,27 +1154,45 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
+     * 주문 메일 발송 훅이 실제 발행 페이로드로 오면 주문번호·주문 ID 를 활동 로그에 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_send_email_logs_activity(): void
     {
-        $data = ['order_id' => 10, 'order_number' => 'ORD-EMAIL', 'template' => 'order_confirmation'];
+        // 발행부(OrderService::sendEmail)가 실제로 넘기는 모양 — camelCase 키. 예전 테스트는 발행부에 없는
+        // snake_case 키를 직접 만들어 넣어, 활동 로그의 주문번호·주문 ID 가 늘 빈 값이던 결함을 놓쳤다(#699 검증 중 발견).
+        $data = [
+            'recipientEmail' => 'buyer@example.com',
+            'subject' => '배송 안내',
+            'body' => '본문',
+            'orderId' => 10,
+            'orderNumber' => 'ORD-EMAIL',
+            'extensionType' => 'module',
+            'extensionIdentifier' => 'sirsoft-ecommerce',
+        ];
 
         $this->listener->handleOrderAfterSendEmail($data);
 
         $log = ActivityLog::where('action', 'order.send_email')->first();
 
         $this->assertNotNull($log);
+        $this->assertSame('ORD-EMAIL', $log->description_params['order_number']);
         $this->assertEquals(10, $log->properties['order_id']);
-        $this->assertEquals('order_confirmation', $log->properties['template']);
     }
 
     /**
+     * 주문 메일 발송 훅의 페이로드가 비어 있어도 예외 없이 빈 속성으로 활동 로그를 남긴다.
+     *
      * @scenario log_handler=order_lifecycle
      *
      * @effects order_lifecycle_events_are_logged_with_before_and_after
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_order_after_send_email_handles_missing_keys(): void
     {
@@ -1083,9 +1210,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
+     * 기본 handle() 은 아무 일도 하지 않고 예외도 던지지 않는다.
+     *
      * @scenario log_handler=no_op
      *
      * @effects handler_stays_silent_when_there_is_nothing_to_log
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_does_nothing(): void
     {

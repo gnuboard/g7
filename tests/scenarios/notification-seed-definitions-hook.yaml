@@ -33,9 +33,14 @@ effects:
   - active_plugin_notification_resync_fires_seed_hook_only_for_active
   - active_module_notification_resync_fires_seed_hook_only_for_active
   - resync_preserves_user_overridden_templates
+  # 도메인별 언어팩 훅(seed.{id}.notifications.translations) 발화 — 확장 동기화 경로
+  - domain_lang_pack_filter_fires_on_module_notification_sync
+  - domain_lang_pack_filter_fires_on_plugin_notification_sync
+  - legacy_identity_declaration_converted_before_domain_lang_pack_filter
 
 test_files:
   - tests/Feature/Notifications/NotificationSeedDefinitionsHookTest.php
+  - tests/Feature/LanguagePack/ManagerSyncFilterTest.php
 
 validation:
   audit_rule: test-scenario-coverage

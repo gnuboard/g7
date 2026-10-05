@@ -796,8 +796,7 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책",
-        "identity_message_definitions": "본인인증 메시지 정의"
+        "identity_policies": "본인인증 정책"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -1010,8 +1009,7 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책",
-        "identity_message_definitions": "본인인증 메시지 정의"
+        "identity_policies": "본인인증 정책"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -1739,83 +1737,13 @@
         "basic": "기본",
         "providers": "프로바이더",
         "policies": "정책 관리",
-        "messages": "메시지 템플릿"
+        "messages": "메시지"
       },
       "messages": {
-        "title": "본인인증 메시지 템플릿",
-        "intro": "본인인증 메일에 사용할 제목과 본문을 직접 편집합니다. 한국어/영어를 모두 입력할 수 있고, 언제든 기본값으로 되돌릴 수 있습니다. 운영자가 추가한 정책에는 별도 메시지를 묶어 등록할 수 있습니다.",
-        "empty": "등록된 메시지 정의가 없습니다.",
-        "edit": "편집",
-        "btn_add_definition": "정의 추가",
-        "btn_reset": "기본값 복원",
-        "btn_delete": "삭제",
-        "status_active": "활성",
-        "status_inactive": "비활성",
-        "default_badge": "기본",
-        "body_preview": "본문 미리보기",
-        "total_count": "총 {count}건",
-        "per_page_label": "페이지당",
-        "channels": {
-          "mail": "메일"
-        },
-        "toggle_success": "메시지 정의 활성 상태가 변경되었습니다.",
-        "toggle_failed": "활성 상태 변경에 실패했습니다.",
-        "badges": {
-          "default": "기본값",
-          "customized": "사용자 수정"
-        },
-        "add_modal": {
-          "title": "메시지 정의 추가",
-          "errors_title": "입력 오류",
-          "provider": "프로바이더",
-          "scope_type": "범위 유형",
-          "policy_key": "정책 키",
-          "policy_key_placeholder": "운영자 정책을 선택하세요",
-          "policy_empty": "운영자 정책이 없습니다. 정책 탭에서 먼저 등록해 주세요.",
-          "policy_all_defined": "모든 운영자 정책에 이미 메시지 정의가 있습니다. 기존 정의의 템플릿을 수정하거나 정책을 새로 등록해 주세요.",
-          "name": "이름",
-          "subject": "제목",
-          "body": "본문",
-          "variables_title": "사용 가능한 변수",
-          "save_success": "메시지 정의가 추가되었습니다.",
-          "save_failed": "메시지 정의 추가에 실패했습니다."
-        },
-        "delete_modal": {
-          "title": "메시지 정의 삭제",
-          "target_label": "대상",
-          "confirm_message": "이 메시지 정의를 삭제하시겠습니까?",
-          "warning_message": "삭제하면 연결된 모든 채널 템플릿이 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.",
-          "btn_confirm": "삭제",
-          "btn_confirming": "삭제 중...",
-          "delete_success": "메시지 정의가 삭제되었습니다.",
-          "delete_failed": "메시지 정의 삭제에 실패했습니다."
-        },
-        "reset_modal": {
-          "title": "기본값 복원",
-          "target_label": "대상",
-          "confirm_message": "이 메시지 정의의 모든 채널 템플릿을 시드 기본값으로 복원하시겠습니까?",
-          "warning_message": "운영자 수정 내용이 모두 사라지며, 이 작업은 되돌릴 수 없습니다.",
-          "btn_confirm": "복원",
-          "btn_confirming": "복원 중...",
-          "reset_success": "메시지 정의가 기본값으로 복원되었습니다.",
-          "reset_failed": "기본값 복원에 실패했습니다."
-        },
-        "modal": {
-          "title": "메시지 템플릿 편집",
-          "errors_title": "입력 오류",
-          "variables_title": "사용 가능한 변수",
-          "subject": "제목",
-          "body": "본문",
-          "reset": "기본값으로 복원",
-          "reset_confirm": "운영자가 수정한 내용이 모두 시드 기본값으로 복원됩니다. 계속하시겠습니까?",
-          "reset_success": "기본값으로 복원되었습니다.",
-          "reset_failed": "복원에 실패했습니다.",
-          "save_success": "메시지 템플릿이 저장되었습니다.",
-          "save_failed": "저장에 실패했습니다.",
-          "preview": "미리보기",
-          "preview_failed": "미리보기를 불러오지 못했습니다.",
-          "subject_label": "제목",
-          "body_label": "본문"
+        "title": "본인인증 메시지",
+        "moved_notice": {
+          "body": "본인인증 메일 문구는 「환경설정 > 알림 설정」의 분류 「본인인증」에서 편집합니다. 메일 채널 켜기·끄기와 발송 로그도 그곳에서 함께 관리합니다.",
+          "link": "알림 설정에서 편집하기"
         }
       },
       "basic": {
@@ -2124,6 +2052,52 @@
         "is_active_label": "활성화"
       },
       "recipients_label": "수신자:",
+      "category": {
+        "label": "분류",
+        "all": "전체",
+        "general": "일반 알림",
+        "identity": "본인인증"
+      },
+      "identity_scope": {
+        "default": "공통 기본",
+        "purpose": "인증 목적",
+        "policy": "정책"
+      },
+      "identity_recipient_fixed": "받는 사람: 인증을 요청한 사람에게만 보냅니다(수신자 규칙을 쓰지 않습니다).",
+      "identity_empty": "본인인증 문구가 없습니다.",
+      "btn_add_identity": "정책별 문구 추가",
+      "btn_delete": "삭제",
+      "identity_add": {
+        "title": "정책별 문구 추가",
+        "help": "운영자가 등록한 본인인증 정책에 전용 메일 문구를 붙입니다. 붙이지 않은 정책은 인증 목적별 문구 → 공통 기본 문구 순으로 씁니다.",
+        "errors_title": "입력 오류",
+        "policy_key": "정책",
+        "policy_key_placeholder": "운영자 정책을 선택하세요",
+        "policy_empty": "운영자 정책이 없습니다. 본인인증 > 정책 관리에서 먼저 등록해 주세요.",
+        "policy_all_defined": "모든 운영자 정책에 이미 전용 문구가 있습니다. 목록에서 해당 문구를 편집해 주세요.",
+        "variables_title": "사용 가능한 변수",
+        "name": "이름",
+        "subject": "제목",
+        "body": "본문",
+        "save_success": "정책별 문구가 추가되었습니다.",
+        "save_failed": "정책별 문구 추가에 실패했습니다."
+      },
+      "identity_delete": {
+        "title": "정책별 문구 삭제",
+        "target_label": "대상",
+        "confirm_message": "이 정책별 문구를 삭제하시겠습니까?",
+        "warning_message": "삭제하면 이 정책의 인증 메일은 인증 목적별 문구 또는 공통 기본 문구로 발송됩니다. 이 작업은 되돌릴 수 없습니다.",
+        "btn_confirm": "삭제",
+        "btn_confirming": "삭제 중...",
+        "delete_success": "정책별 문구가 삭제되었습니다.",
+        "delete_failed": "정책별 문구 삭제에 실패했습니다."
+      },
+      "channel_off_confirm": {
+        "title": "메일 채널을 끌까요?",
+        "message": "메일 채널을 끄면 본인인증 메일(회원가입·비밀번호 찾기·정보 변경 인증번호)과 관리자 2단계 인증 메일도 보내지 않습니다. OTP 앱을 등록하지 않은 관리자는 로그인할 수 없게 됩니다.",
+        "btn_cancel": "취소",
+        "btn_confirm": "메일 끄기"
+      },
       "recipients": {
         "title": "수신자 설정",
         "add_rule": "+ 수신자 규칙 추가",
@@ -3967,16 +3941,14 @@
       "plugin_manifest_preview_drawer": "플러그인 매니페스트 미리보기"
     },
     "admin_settings": {
-      "modal_identity_message_definition_add": "본인인증 메시지 정의 추가",
-      "modal_identity_message_definition_delete": "본인인증 메시지 정의 삭제",
-      "modal_identity_message_definition_reset": "본인인증 메시지 기본값 복원",
-      "modal_identity_message_template_form": "본인인증 메시지 템플릿 편집",
-      "modal_identity_message_template_preview": "본인인증 메시지 템플릿 미리보기",
       "identity_policy_delete_modal": "본인인증 정책 삭제 확인",
       "identity_policy_form_modal": "본인인증 정책 편집",
       "ip_restriction_rule_form_modal": "IP 접근 제한 규칙 편집",
       "modal_mail_template_form": "메일 템플릿 편집",
+      "modal_notification_channel_off_confirm": "메일 채널 끄기 확인",
       "modal_notification_definition_reset": "알림 정의 기본값 복원",
+      "modal_notification_identity_definition_add": "본인인증 정책별 문구 추가",
+      "modal_notification_identity_definition_delete": "본인인증 정책별 문구 삭제",
       "modal_notification_template_form": "알림 템플릿 편집",
       "modal_notification_template_preview": "알림 템플릿 미리보기",
       "settings_cache_delete_modal": "캐시 삭제 확인",

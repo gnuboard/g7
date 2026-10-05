@@ -7,13 +7,13 @@ use App\Models\IdentityVerificationLog;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -31,6 +31,7 @@ use Tests\TestCase;
  */
 class TwoFactorAccountLockTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private const EMAIL = 'two-factor-lock@test.com';
@@ -39,6 +40,11 @@ class TwoFactorAccountLockTest extends TestCase
 
     private User $user;
 
+    /**
+     * 메일·본인인증 알림을 준비하고 2단계 인증·잠금 설정을 켠 뒤 테스트 사용자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,7 +53,7 @@ class TwoFactorAccountLockTest extends TestCase
 
         // 인증번호 메일 구성에 본인인증 메시지 정의가 필요하다. 없으면 challenge 가 발송
         // 실패로 표시되어, 잠금 게이트가 아니라 시드 부재를 측정하게 된다.
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        $this->prepareIdentityNotifications();
 
         $this->setSecuritySettings([
             'two_factor_auth' => true,
@@ -67,6 +73,12 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠금 전에 발급된 2단계 인증 challenge 로는 잠긴 계정에 로그인할 수 없다.
+     *
+     * @scenario session_issue_path=two_factor_complete, login_attempt_enabled=true, lock_state=active
+     *
+     * @effects challenge_issued_before_lock_cannot_complete_after_lock, two_factor_complete_rechecks_lock_before_auth_login, two_factor_locked_response_status_423, blocked_two_factor_attempt_issues_no_token
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_challenge_issued_before_the_lock_cannot_complete_login_after_the_lock(): void
@@ -101,6 +113,12 @@ class TwoFactorAccountLockTest extends TestCase
      *
      * 로그인 완료 훅이 실패 횟수·잠금 시각을 리셋하므로, 우회가 성공하면 공격의 흔적까지
      * 사라진다. 차단이 훅 이전에 일어나는지를 사후 상태로 확인한다.
+     *
+     * @scenario session_issue_path=two_factor_complete, login_attempt_enabled=true, lock_state=active
+     *
+     * @effects blocked_two_factor_attempt_does_not_reset_failed_attempts, blocked_two_factor_attempt_does_not_reset_locked_until, blocked_two_factor_attempt_issues_no_token
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_blocked_two_factor_attempt_does_not_reset_the_lock_state(): void
@@ -132,6 +150,12 @@ class TwoFactorAccountLockTest extends TestCase
      * 423 응답은 정상 로그인 경로와 같은 계약(해제 시각·잔여 시간·영구 여부)을 따른다.
      *
      * 화면은 두 경로를 구분하지 않으므로, 한쪽만 다른 모양이면 안내가 깨진다.
+     *
+     * @scenario session_issue_path=two_factor_complete, login_attempt_enabled=true, lock_state=active
+     *
+     * @effects two_factor_locked_response_status_423, two_factor_locked_response_payload_matches_login_endpoint
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_locked_response_matches_the_login_endpoint_contract(): void
@@ -159,6 +183,12 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠기지 않은 계정의 2단계 인증은 그대로 완료된다 (정상 흐름 회귀 방지).
+     *
+     * @scenario session_issue_path=two_factor_complete, login_attempt_enabled=true, lock_state=none
+     *
+     * @effects unlocked_account_completes_two_factor_normally
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function an_unlocked_account_still_completes_two_factor_normally(): void
@@ -176,6 +206,12 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠금 검사 설정이 꺼져 있으면 2단계 인증도 잠금을 보지 않는다 (설정 계약 일치).
+     *
+     * @scenario session_issue_path=two_factor_complete, login_attempt_enabled=false, lock_state=active
+     *
+     * @effects two_factor_lock_recheck_honors_login_attempt_enabled_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_lock_recheck_follows_the_login_attempt_setting(): void
@@ -199,6 +235,12 @@ class TwoFactorAccountLockTest extends TestCase
      *
      * 형제 결함 — `refreshToken` 은 유효한 세션이 전제라 신규 로그인 우회는 아니지만,
      * 관리자가 계정을 잠근 뒤에도 그 세션이 무기한 연장되면 잠금이 실효를 잃는다.
+     *
+     * @scenario session_issue_path=token_refresh, login_attempt_enabled=true, lock_state=active
+     *
+     * @effects token_refresh_rejects_locked_account
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_locked_account_cannot_refresh_its_token(): void
@@ -215,6 +257,12 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 잠기지 않은 계정의 토큰 재발급은 그대로 동작한다 (정상 흐름 회귀 방지).
+     *
+     * @scenario session_issue_path=token_refresh, login_attempt_enabled=true, lock_state=none
+     *
+     * @effects token_refresh_still_works_for_unlocked_account
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function an_unlocked_account_can_still_refresh_its_token(): void
@@ -234,6 +282,8 @@ class TwoFactorAccountLockTest extends TestCase
      *
      * 재발급 라우트는 `permission:user,core.auth.refresh` 미들웨어를 거치므로, 권한이 없으면
      * 잠금 게이트에 닿기 전에 403 이 되어 측정 대상이 바뀐다.
+     *
+     * @return void 반환값 없음
      */
     private function grantRefreshPermission(): void
     {
@@ -274,6 +324,8 @@ class TwoFactorAccountLockTest extends TestCase
 
     /**
      * 임계값까지 로그인을 실패시켜 계정을 잠급니다.
+     *
+     * @return void 반환값 없음
      */
     private function lockAccount(): void
     {
@@ -296,7 +348,7 @@ class TwoFactorAccountLockTest extends TestCase
      * 발급된 코드는 해시로만 저장되어 되읽을 수 없으므로, 기존 2단계 인증 테스트와 같은
      * 방식으로 알려진 값의 해시를 심어 "코드가 맞을 때" 를 재현합니다.
      *
-     * @param  string  $challengeId  challenge UUID
+     * @param  string  $challengeId  인증 요청(challenge) UUID
      * @return string 심어 둔 인증 코드
      */
     private function issuedCode(string $challengeId): string
@@ -317,6 +369,7 @@ class TwoFactorAccountLockTest extends TestCase
      * 코어 보안 설정을 덮어씁니다.
      *
      * @param  array<string, mixed>  $values  덮어쓸 설정 값
+     * @return void 반환값 없음
      */
     private function setSecuritySettings(array $values): void
     {

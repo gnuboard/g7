@@ -13,11 +13,17 @@ return [
     'definition_not_found' => 'Notification definition not found.',
     'definition_reset' => 'All templates of the notification definition have been reset to defaults.',
     'definition_reset_failed' => 'Failed to reset notification definition.',
+    'definition_created' => 'The identity policy message has been added.',
+    'definition_create_failed' => 'Failed to add the identity policy message.',
+    'definition_deleted' => 'The identity policy message has been deleted.',
+    'definition_delete_failed' => 'Failed to delete the identity policy message.',
+    'definition_delete_forbidden' => 'Only identity policy messages added by an administrator can be deleted.',
 
     // Channel dispatch skip
     'channel_skipped_no_template' => 'Skipped :channel channel for :type — no active template found.',
     'channel_disabled_by_extension' => 'Skipped because the channel is disabled in extension settings.',
     'channel_guest_not_allowed' => 'Skipped because this channel does not allow sending to guests.',
+    'channel_unavailable' => 'Skipped because the extension providing this channel is inactive or removed.',
 
     // Notification templates
     'template_updated' => 'Notification template has been updated.',

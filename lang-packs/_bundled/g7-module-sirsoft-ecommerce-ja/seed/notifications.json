@@ -830,5 +830,29 @@
         "body": "{requester_name}様の先交換({claim_number})の古い商品が期限({collection_due_date})を{overdue_days}日超過しました。"
       }
     }
+  },
+  "order_custom_email": {
+    "definition": {
+      "name": "注文案内メール（管理者作成）",
+      "description": "注文詳細の「顧客にメールを送る」で管理者が作成して送信するメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "{subject}",
+        "body": "<div style=\"font-family:'Meiryo',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><div style=\"color:#333;line-height:1.7\">{message}</div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">ご注文番号 {order_number} に関するご案内です。本メールは <a href=\"{site_url}\">{app_name}</a> から送信されました。</p></div>"
+      }
+    }
+  },
+  "identity.purpose.checkout_verification": {
+    "definition": {
+      "name": "決済時の本人確認",
+      "description": "決済進行前の本人/成人確認認証コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 決済本人確認認証コード",
+        "body": "<h1>決済本人確認</h1><p>決済を進行するために本人確認が必要です。以下の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
   }
 }

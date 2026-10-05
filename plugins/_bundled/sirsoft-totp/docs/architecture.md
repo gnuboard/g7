@@ -22,8 +22,8 @@
    코드를 얻을 수 있는 상태가 됐다"는 뜻입니다.
 2. challenge 의 `publicPayload` 에 `delivery: 'none'` 과 `code_length: 6` 을 싣습니다.
    프론트가 「인증번호 다시 받기」를 숨기고 부제를 앱 안내로 바꾸는 근거입니다.
-3. `getIdentityMessages()` 가 빈 배열입니다 — 보낼 메시지가 없으므로 템플릿도 두지
-   않습니다.
+3. 본인인증 알림(`category = 'identity'` 알림 정의)을 선언하지 않습니다 — 보낼 메시지가
+   없으므로 메일 문구도 두지 않습니다(@deprecated `getIdentityMessages()` 오버라이드도 빈 배열).
 
 **사용자별 등록 여부를 코어가 알아야 합니다.** 코어의 기존 판정 규칙
 (`canProviderChallengeUser()` 의 `filled($user->email)`)은 "설정은 켜졌지만 이 사용자는
@@ -58,7 +58,7 @@ bcrypt 해시 배열로 저장되고 `TotpCredential::$hidden` 이 둘 다 직�
 모델을 그대로 돌려주는 경로가 실수로 생겨도 그 자리에서 막힙니다.
 
 **의도적으로 하지 않는 것**: login 이외 purpose 지원(`supportsPurpose()` 가 Login 만
-참), 새 purpose·메시지 템플릿 선언, 서버측 QR 이미지 생성, 프로바이더 동작을 갈아 끼우는
+참), 새 purpose·본인인증 알림 선언, 서버측 QR 이미지 생성, 프로바이더 동작을 갈아 끼우는
 확장점(인증 통과 조건을 외부에서 바꿀 수 있는 자리는 그 자체가 우회 표면입니다).
 <!-- @intent END -->
 

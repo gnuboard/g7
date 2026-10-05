@@ -195,6 +195,113 @@
             "name": "Div",
             "children": [
                 {
+                    "comment": "분류 칩 — 일반 알림과 본인인증 알림(인증번호·검증 링크 메일)을 가른다. 값은 URL(query.category)에\n           남겨 새로고침·「본인인증」 탭의 안내 링크로 들어와도 같은 분류가 선택된다. 채널 하위탭과 독립이다\n           (채널을 바꿔도 분류는 그대로, 분류를 바꿔도 채널은 그대로). 칩이 많아지는 좁은 화면에서는 한 줄로\n           가로 스크롤한다. [정책별 문구 추가]는 분류가 본인인증일 때만 보인다 — 운영자가 추가한 본인인증 정책에\n           전용 문구를 붙이는 기능이라 일반 알림에는 해당하지 않는다.",
+                    "id": "notif_category_bar",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between"
+                    },
+                    "children": [
+                        {
+                            "id": "notif_category_chips",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 overflow-x-auto whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle flex-shrink-0"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.category.label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "iteration": {
+                                        "source": "[{\"value\":\"\",\"key\":\"all\"},{\"value\":\"general\",\"key\":\"general\"},{\"value\":\"identity\",\"key\":\"identity\"}]",
+                                        "item_var": "cat"
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "분류 전환 — 채널·항목 수 등 나머지 쿼리는 유지하고 페이지만 1로 되돌린다(분류마다 건수가 다르다).",
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/settings",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "transition_overlay_target": "notif_channel_content",
+                                                "query": {
+                                                    "category": "{{cat.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors"
+                                    },
+                                    "text": "{{$t('admin.settings.notification_definitions.category.' + cat.key)}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "notif_identity_add_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{(query.category ?? '') === 'identity' && notificationDefinitions?.data?.abilities?.can_create === true}}",
+                            "actions": [
+                                {
+                                    "comment": "정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.\n                 「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면\n                 옛 목록으로는 그 정책이 선택지에 남아 저장이 중복(422)으로 거절된다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "identityPolicyDefinitions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_notification_add_modal": {
+                                                    "form": {
+                                                        "policy_key": "",
+                                                        "name": null,
+                                                        "subject": null,
+                                                        "body": null
+                                                    },
+                                                    "editLang": "{{$locale}}",
+                                                    "errors": null,
+                                                    "isSaving": false
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_notification_identity_definition_add"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "text": "$t:admin.settings.notification_definitions.btn_add_identity"
+                        }
+                    ]
+                },
+                {
                     "id": "notif_list_info",
                     "type": "basic",
                     "name": "Div",
@@ -359,12 +466,13 @@
                                                                     },
                                                                     "children": [
                                                                         {
+                                                                            "comment": "제목은 서버가 내려준 로케일 객체(이름)를 쓴다 — 운영자가 추가한 본인인증 정책 문구는 화면 번역\n                         키가 없어서, 키 조회(types.{type})로는 원문 키가 그대로 노출된다.",
                                                                             "type": "basic",
                                                                             "name": "H4",
                                                                             "props": {
                                                                                 "className": "text-primary text-base font-medium"
                                                                             },
-                                                                            "text": "$t:admin.settings.notification_definitions.types.{{def.type}}"
+                                                                            "text": "{{$localized(def.name) || def.type}}"
                                                                         },
                                                                         {
                                                                             "type": "basic",
@@ -373,6 +481,24 @@
                                                                                 "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                                                             },
                                                                             "text": "{{def.type}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{def.category === 'identity'}}",
+                                                                            "props": {
+                                                                                "className": "max-w-full break-all bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                            },
+                                                                            "text": "{{def.type === 'identity.default' ? $t('admin.settings.notification_definitions.identity_scope.default') : (def.type ?? '').startsWith('identity.purpose.') ? $t('admin.settings.notification_definitions.identity_scope.purpose') + ': ' + ((identityPurposes?.data ?? []).find(p => p.id === (def.type ?? '').slice(17))?.label ?? (def.type ?? '').slice(17)) : $t('admin.settings.notification_definitions.identity_scope.policy') + ': ' + (def.policy_key ?? (def.type ?? '').slice(16))}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{def.category === 'identity'}}",
+                                                                            "props": {
+                                                                                "className": "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                            },
+                                                                            "text": "$t:admin.settings.notification_definitions.category.identity"
                                                                         },
                                                                         {
                                                                             "type": "basic",
@@ -412,10 +538,20 @@
                                                                     "text": "$t:admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
                                                                 {
+                                                                    "comment": "본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구.",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{def.category === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "text-tertiary mt-2"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.identity_recipient_fixed"
+                                                                },
+                                                                {
                                                                     "id": "recipients_badge_{{defIdx}}",
                                                                     "type": "basic",
                                                                     "name": "Div",
-                                                                    "if": "{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
+                                                                    "if": "{{def.category !== 'identity' && ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
                                                                     "props": {
                                                                         "className": "flex-center flex-wrap gap-1.5 mt-2"
                                                                     },
@@ -596,10 +732,10 @@
                                                                     "text": "$t:admin.settings.notification_definitions.btn_edit"
                                                                 },
                                                                 {
-                                                                    "comment": "기본 문안으로 되돌리기. 기본 정의가 아니거나 손댄 문안이 있을 때만 보인다",
+                                                                    "comment": "기본 문안으로 되돌리기. 기본 정의가 아니거나 손댄 문안이 있을 때만 보인다.\n                       운영자가 추가한 본인인증 정책 문구는 되돌릴 선언 기본값이 없어 보이지 않는다(대신 [삭제]).",
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{!def.is_default || def.has_customized_templates === true}}",
+                                                                    "if": "{{(!def.is_default || def.has_customized_templates === true) && !(def.category === 'identity' && def.extension_identifier === 'admin')}}",
                                                                     "actions": [
                                                                         {
                                                                             "type": "click",
@@ -610,7 +746,7 @@
                                                                                     "params": {
                                                                                         "target": "global",
                                                                                         "resetTargetId": "{{def.id}}",
-                                                                                        "resetTargetName": "$t:admin.settings.notification_definitions.types.{{def.type}}"
+                                                                                        "resetTargetName": "{{$localized(def.name) || def.type}}"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -626,6 +762,41 @@
                                                                         "className": "text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.btn_reset"
+                                                                },
+                                                                {
+                                                                    "comment": "운영자가 추가한 본인인증 정책 문구만 지울 수 있다(서버 판정을 abilities 로 받는다).",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{def.abilities?.can_delete === true}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "identity_notification_delete_modal": {
+                                                                                            "id": "{{def.id}}",
+                                                                                            "name": "{{$localized(def.name) || def.type}}",
+                                                                                            "isDeleting": false
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "modal_notification_identity_definition_delete"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.btn_delete"
                                                                 }
                                                             ]
                                                         }
@@ -690,7 +861,7 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "$t:admin.settings.notification_definitions.empty_message"
+                            "text": "{{(query.category ?? '') === 'identity' ? '$t:admin.settings.notification_definitions.identity_empty' : '$t:admin.settings.notification_definitions.empty_message'}}"
                         }
                     ]
                 },

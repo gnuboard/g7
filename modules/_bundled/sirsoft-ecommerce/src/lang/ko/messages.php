@@ -204,6 +204,7 @@ return [
         'log_bulk_updated' => ':count건의 주문이 일괄 변경되었습니다.',
         'email_sent' => '이메일이 발송되었습니다.',
         'email_send_failed' => '이메일 발송에 실패했습니다.',
+        'email_channel_disabled' => '메일 채널이 꺼져 있거나 메일 설정·템플릿이 준비되지 않아 보낼 수 없습니다. 이커머스 환경설정 > 알림에서 메일 채널과 「주문 안내 메일」 템플릿을 확인해 주세요.',
         'email_subject' => '[:app_name] 주문 :order_number 관련 안내',
         'fetch_success' => '주문 정보를 조회했습니다.',
         'fetch_failed' => '주문 정보 조회에 실패했습니다.',

@@ -1185,11 +1185,19 @@ return [
         'fail_mode_invalid' => '실패 모드는 block 또는 log_only여야 합니다.',
     ],
 
-    // 본인인증 메시지 정의 검증 메시지
-    'identity_message' => [
-        'provider_not_registered' => '등록되지 않은 IDV 프로바이더입니다.',
-        'scope_value_not_admin_policy' => '운영자가 추가한 정책(source_type=admin)의 키와 일치해야 합니다.',
-        'definition_already_exists' => '동일 (provider, scope_type, scope_value) 정의가 이미 존재합니다.',
+    // 본인인증 알림 — 알림 설정 > 본인인증 「정책별 문구 추가」
+    'identity_notification' => [
+        'policy_key_not_admin_policy' => '운영자가 추가한 본인인증 정책의 키를 선택해야 합니다.',
+        'definition_already_exists' => '이 정책에는 이미 본인인증 문구가 있습니다.',
+        'attributes' => [
+            'category' => '분류',
+            'policy_key' => '정책',
+            'description' => '설명',
+            'templates' => '메일 템플릿',
+            'name' => '문구 이름',
+            'subject' => '제목',
+            'body' => '본문',
+        ],
     ],
 
     // 레이아웃 버전 목록 조회
@@ -1351,6 +1359,7 @@ return [
         'layout' => '레이아웃',
         'module' => '모듈',
         'token' => '토큰',
+        'claim_secret' => '확인 결과 수령 값',
         'mailgun_domain' => 'Mailgun 도메인',
         'mailgun_secret' => 'Mailgun 시크릿',
         'ses_key' => 'SES 액세스 키',

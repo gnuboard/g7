@@ -254,6 +254,7 @@
                                                 "body": {
                                                     "purpose": "{{_global.identityChallenge?.purpose ?? 'signup'}}",
                                                     "provider_id": "{{_global.identityChallenge?.provider_id ?? null}}",
+                                                    "policy_key": "{{_global.identityChallenge?.policy_key ?? null}}",
                                                     "target": "{{_global.identityChallenge?.target ?? null}}"
                                                 }
                                             },
@@ -268,6 +269,13 @@
                                                         "identityChallenge.render_hint": "{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}",
                                                         "identityChallenge.attempts": 0,
                                                         "identityChallenge.code": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "sirsoft-basic.rememberIdentityClaim",
+                                                    "params": {
+                                                        "challenge_id": "{{response.data.id ?? ''}}",
+                                                        "claim_secret": "{{response.data.claim_secret ?? ''}}"
                                                     }
                                                 },
                                                 {
