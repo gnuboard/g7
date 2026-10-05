@@ -13,6 +13,7 @@ ActivityLogHandler가 `activity_logs` 테이블에 저장합니다.
 4. 변경 추적: $activityLogFields 정의 필수 + ChangeDetector → changes JSON (미정의 시 null)
 5. Bulk 작업 Per-Item 필수: N건 처리 시 N건 개별 로그 (집계 1건 금지), 삭제 시 loggable_type/loggable_id 직접 지정
 6. 새 모듈 추가 시: Listener + DescriptionResolver + module.php 등록 + lang + $activityLogFields
+7. 보관: 환경설정 > 보안 「활동 로그 보관 기간」(365~3650일)으로 자동 파기, 법정 최소 365일 · 권한·역할 변경 기록은 최소 3년 (7.1.0)
 ```
 
 ---
@@ -29,10 +30,11 @@ ActivityLogHandler가 `activity_logs` 테이블에 저장합니다.
 8. [모듈 리스너 등록](#모듈-리스너-등록)
 9. [모델별 로그 조회 API 패턴](#모델별-로그-조회-api-패턴)
 10. [Bulk 로깅 패턴 (Per-Item 필수)](#bulk-로깅-패턴-per-item-필수)
-11. [DB 스키마](#db-스키마)
-12. [인덱스](#인덱스)
-13. [금지 사항](#금지-사항)
-14. [개발자 체크리스트](#개발자-체크리스트)
+11. [보관 기간 (자동 파기)](#보관-기간-자동-파기)
+12. [DB 스키마](#db-스키마)
+13. [인덱스](#인덱스)
+14. [금지 사항](#금지-사항)
+15. [개발자 체크리스트](#개발자-체크리스트)
 
 ---
 
@@ -868,6 +870,26 @@ bulk delete 는 변경 전후 비교가 불필요하므로 ChangeDetector를 사
 대신 `properties.snapshot` 에 삭제 전 데이터를 보존합니다.
 
 ---
+
+## 보관 기간 (자동 파기)
+
+활동 로그는 접속기록이다 — 개인정보의 안전성 확보조치 기준 제8조는 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면
+2년), 제5조③은 권한 부여·변경·말소 내역 3년 보관을 요구한다. 매일 04:45 예약 실행되는 `activity-log:prune` 이 아래 규칙으로
+지운다(7.1.0).
+
+| 대상 | 보관 일수 | 근거 |
+| --- | --- | --- |
+| 일반 로그 | 환경설정 > 보안 「활동 로그 보관 기간」 `security.activity_log_retention_days` (365~3650, 기본 365) | 제8조 — 운영자가 2년 이상으로 늘릴 수 있다 |
+| 권한·역할 변경 기록 (`config('core.activity_log.long_retention_actions')`) | max(위 값, `core.activity_log.long_retention_days` = 1095) | 제5조③ |
+
+- 장기 보관 액션: `role.create`·`role.update`·`role.delete`·`role.sync_permissions`·`role.toggle_status`·`menu.sync_roles`·
+  `user.roles_update`(회원 등록·수정의 역할 변경)·`user.bulk_roles`(회원 역할 일괄 변경). 액션 이름이 정확히 일치해야 한다.
+- `--days=N` 으로 직접 줘도 365일 아래로는 내려가지 않는다(`ActivityLogService::LEGAL_MIN_RETENTION_DAYS`). 파기는 되돌릴 수 없으므로
+  법정 바닥은 저장 검증·판독부 클램프·파기 서비스 세 곳이 모두 건다.
+- `core.activity_log.before_prune($days)` · `after_prune($days, $count)` 의 `$days` 는 실제로 적용한 일반 로그 보관 일수,
+  `$count` 는 두 단계(일반·장기 보관 액션) 삭제 합계다.
+- 확장이 자기 권한 변경 액션을 3년 보관 대상에 넣으려면 `config/core.php` 의 목록에 액션 이름을 추가한다(설정 키가 아니라 코드 목록 — 운영자가 줄일 수 없게).
+- 운영자가 활동 로그를 직접 지우는 삭제 권한(`core.activities.delete`)은 이 규칙과 별개이며 현재 동작을 그대로 유지한다.
 
 ## DB 스키마
 

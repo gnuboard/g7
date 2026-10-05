@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
+use App\Http\Requests\Auth\CompletePasswordChangeRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\PostponePasswordChangeRequest;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\TwoFactorResendRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -37,6 +41,9 @@ class AuthController extends AdminBaseController
             'login',
             'verifyTwoFactor',
             'resendTwoFactor',
+            // 비밀번호 변경 단계도 토큰이 없는 상태에서 호출된다 — 주체는 변경 단계 식별자가 식별한다
+            'completePasswordChange',
+            'postponePasswordChange',
         ]);
     }
 
@@ -51,7 +58,8 @@ class AuthController extends AdminBaseController
         try {
             $data = $this->authService->login(
                 $request->validated()['email'],
-                $request->validated()['password']
+                $request->validated()['password'],
+                'admin'
             );
 
             // 2단계 인증이 켜져 있으면 아직 토큰도 사용자도 없다 — 관리자 판정은 코드 확인
@@ -59,6 +67,11 @@ class AuthController extends AdminBaseController
             // 로그인할 수 없어 설정을 되돌릴 수단이 사라진다.
             if ($data['two_factor_required'] ?? false) {
                 return $this->success($this->twoFactorRequiredMessageKey($data), $data);
+            }
+
+            // 비밀번호를 바꿔야 하는 관리자 — 아직 토큰이 없다. 비관리자는 서비스가 이 단계를 열지 않는다(A16).
+            if ($data['password_change_required'] ?? false) {
+                return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
             }
 
             $user = $data['user'];
@@ -82,6 +95,8 @@ class AuthController extends AdminBaseController
             return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
+        } catch (PasswordChangeUnavailableException $e) {
+            return $this->passwordChangeUnavailableResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }
@@ -103,8 +118,13 @@ class AuthController extends AdminBaseController
         try {
             $data = $this->authService->completeTwoFactor(
                 $validated['challenge_id'],
-                ['code' => $validated['code']]
+                ['code' => $validated['code']],
+                'admin'
             );
+
+            if ($data['password_change_required'] ?? false) {
+                return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
+            }
 
             $user = $data['user'];
 
@@ -127,8 +147,71 @@ class AuthController extends AdminBaseController
             return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
+        } catch (PasswordChangeUnavailableException $e) {
+            return $this->passwordChangeUnavailableResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.two_factor_failed');
+        }
+    }
+
+    /**
+     * 관리자 로그인 비밀번호 변경 단계에서 새 비밀번호를 받아 로그인을 마칩니다.
+     *
+     * 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 하는 회원이 로그인이 돌려준 변경 단계 식별자와
+     * 새 비밀번호를 보낸다. 성공 응답은 로그인 성공과 같은 모양이다.
+     *
+     * 관리자 여부는 서비스가 비밀번호를 쓰기 **전에** 확인한다 — 비관리자 식별자는 403 이고 비밀번호는 바뀌지 않는다.
+     *
+     * @param  CompletePasswordChangeRequest  $request  변경 단계 완료 요청
+     * @return JsonResponse 로그인 결과(사용자·토큰) 또는 403/422/423
+     */
+    public function completePasswordChange(CompletePasswordChangeRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        try {
+            $data = $this->authService->completePasswordChange(
+                $validated['challenge_id'],
+                $validated['password'],
+                'admin'
+            );
+
+            $data['user'] = new UserResource($data['user']);
+
+            return $this->success('auth.password_change_success', $data);
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
+        } catch (ValidationException $e) {
+            // 로그인 핸들러처럼 401 로 바꾸지 않는다 — 식별자 무효·처리 중·규칙 위반은 화면이 칸 단위로 안내한다.
+            return $this->validationError($e->errors(), 'auth.password_change_invalid_challenge');
+        }
+    }
+
+    /**
+     * 관리자 로그인 비밀번호 변경 단계에서 '다음에 변경' 을 골라 로그인을 마칩니다 ('다음에 변경 허용' 모드의 만료만).
+     *
+     * @param  PostponePasswordChangeRequest  $request  변경 연기 요청
+     * @return JsonResponse 로그인 결과(사용자·토큰·연기 종료일) 또는 403/422/423
+     */
+    public function postponePasswordChange(PostponePasswordChangeRequest $request): JsonResponse
+    {
+        try {
+            $data = $this->authService->postponePasswordChange(
+                $request->validated()['challenge_id'],
+                'admin'
+            );
+
+            $data['user'] = new UserResource($data['user']);
+
+            return $this->success('auth.password_change_postponed', $data);
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors(), 'auth.password_change_invalid_challenge');
         }
     }
 

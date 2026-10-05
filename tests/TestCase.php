@@ -142,6 +142,27 @@ abstract class TestCase extends BaseTestCase
             // 테스트는 자기 setUp 에서 `app.url` 을 명시한다.
             'app.url' => 'http://localhost',
             'g7_settings.core.general.site_url' => 'http://localhost',
+            // 비밀번호 정책(#736)도 전부 기본값(꺼짐)으로 고정한다. 개발 사이트에서 만료·작성 규칙을 켜 두면
+            // 로그인이 토큰 대신 변경 단계를 돌려주고, 가입·변경 테스트의 비밀번호가 조합·반복 규칙에 걸려
+            // 그 환경에서만 무더기로 깨진다. 정책을 검증하는 테스트는 해당 키를 자기 setUp 에서 명시한다.
+            'g7_settings.core.security.password_require_char_types' => false,
+            'g7_settings.core.security.password_block_identifier' => false,
+            'g7_settings.core.security.password_block_repeated_chars' => false,
+            'g7_settings.core.security.password_repeated_chars_length' => 4,
+            'g7_settings.core.security.password_block_sequential_chars' => false,
+            'g7_settings.core.security.password_sequential_chars_length' => 4,
+            'g7_settings.core.security.password_reuse_prevention_enabled' => false,
+            'g7_settings.core.security.password_reuse_count' => 3,
+            'g7_settings.core.security.password_expiry_enabled' => false,
+            'g7_settings.core.security.password_expiry_days' => 90,
+            'g7_settings.core.security.password_expiry_notice_days' => 7,
+            'g7_settings.core.security.password_expiry_scope' => 'all',
+            'g7_settings.core.security.password_expiry_action' => 'force',
+            'g7_settings.core.security.password_expiry_remind_days' => 30,
+            'g7_settings.core.security.password_expiry_batch_size' => 1000,
+            // 활동 로그 보관 기간(#736 D14) — 사이트 저장값이 파기 테스트로 새지 않게 기본값으로 고정
+            'g7_settings.core.security.activity_log_retention_days' => 365,
+            'g7_settings.core.security.password_expiry_started_at' => null,
         ]);
     }
 

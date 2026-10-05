@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Contracts\UniqueIdServiceInterface;
 use App\Enums\MenuPermissionType;
+use App\Enums\PasswordExpiryPolicy;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
@@ -136,6 +137,12 @@ class User extends Authenticatable implements HasLocalePreference
         'locked_until',
         'locked_permanently',
         'last_failed_login_at',
+        'password_changed_at',
+        'password_change_required',
+        'password_expiry_policy',
+        'password_expiry_notified_at',
+        'password_expired_processed_at',
+        'password_change_postponed_until',
     ];
 
     /**
@@ -171,6 +178,12 @@ class User extends Authenticatable implements HasLocalePreference
             'locked_until' => 'datetime',
             'locked_permanently' => 'boolean',
             'last_failed_login_at' => 'datetime',
+            'password_changed_at' => 'datetime',
+            'password_change_required' => 'boolean',
+            'password_expiry_policy' => PasswordExpiryPolicy::class,
+            'password_expiry_notified_at' => 'datetime',
+            'password_expired_processed_at' => 'datetime',
+            'password_change_postponed_until' => 'datetime',
         ];
     }
 
@@ -225,6 +238,16 @@ class User extends Authenticatable implements HasLocalePreference
     public function consents(): HasMany
     {
         return $this->hasMany(UserConsent::class);
+    }
+
+    /**
+     * 이전 비밀번호 해시 이력 관계 (재사용 금지 판정)
+     *
+     * @return HasMany 비밀번호 이력 관계
+     */
+    public function passwordHistories(): HasMany
+    {
+        return $this->hasMany(UserPasswordHistory::class);
     }
 
     /**

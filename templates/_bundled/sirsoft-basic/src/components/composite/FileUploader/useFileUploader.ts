@@ -176,8 +176,14 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   // ref로 URL 캐시 추적 (stale closure 방지 — cleanup/has 체크에서 항상 최신 참조)
   const authenticatedImageUrlsRef = useRef<Map<number, string>>(new Map());
 
-  // 대기 파일 변경 시 콜백
+  // 대기 파일 변경 시 콜백 — 처음 그려질 때의 빈 목록은 알리지 않는다.
+  // 레이아웃이 이 이벤트를 「변경 있음」으로 받으므로, 마운트에서 부르면 폼 데이터 초기화(initLocal)
+  // 뒤에 마운트된 업로더가 글쓰기·수정 화면을 열자마자 「변경 있음」을 켠다(이탈 경고가 그 값을 본다).
+  // 목록이 실제로 바뀐 때만 부른다 — 콜백 참조만 바뀐 렌더도 다시 알리지 않는다.
+  const reportedPendingFilesRef = useRef(pendingFiles);
   useEffect(() => {
+    if (reportedPendingFilesRef.current === pendingFiles) return;
+    reportedPendingFilesRef.current = pendingFiles;
     onFilesChange?.(pendingFiles);
   }, [pendingFiles, onFilesChange]);
 

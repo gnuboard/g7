@@ -1763,6 +1763,8 @@
     "privacyPreview": "Privacy processing target counts",
     "privacyManualRuns": "Privacy action manual run status",
     "privacyTargets": "Privacy action target list",
-    "analytics_row_trend": "Analytics item trend"
+    "analytics_row_trend": "Analytics item trend",
+    "passwordExpiryPreview": "Password expiry target counts",
+    "passwordExpiryManualRuns": "Password expiry manual run status"
   }
 }

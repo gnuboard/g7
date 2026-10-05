@@ -257,7 +257,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "새로고침 — 고친 값을 버리고 서버 값으로 다시 채운다. 변경 표시와 검증 오류를 먼저 걷어야 저장 버튼이 잠기고\n                   지난 오류 문구가 새 값 옆에 남지 않는다.",
+                                                "comment": "새로고침 — 고친 값을 버리고 서버 값으로 다시 채운다. 변경 표시와 검증 오류를 먼저 걷어야 저장 버튼이 잠기고\n                   지난 오류 문구가 새 값 옆에 남지 않는다. 폼은 받은 응답으로 직접 채운다 — 데이터 소스 다시 받기(initLocal)는\n                   응답이 직전과 같으면 엔진이 적용을 건너뛰어 고친 값이 그대로 남는다. 그렇다고 데이터 소스에 `refetchOnMount` 를\n                   달면 탭을 오갈 때마다 다시 받아, 여러 탭을 고쳐 두고 한 번에 저장하는 이 화면의 흐름이 깨진다.\n                   채운 뒤 폼 감싸개를 다시 그린다(remount) — 입력칸이 고친 값을 감싸개 자신의 상태에도 들고 있어, 이것을 버려야\n                   칸과 저장 버튼이 새 값을 읽는다.",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -270,9 +270,40 @@
                                                         }
                                                     },
                                                     {
-                                                        "handler": "refetchDataSource",
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/analytics/settings",
+                                                        "auth_required": true,
                                                         "params": {
-                                                            "dataSourceId": "analytics_settings"
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form": "{{response?.data}}",
+                                                                    "hasChanges": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "analytics_settings"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "remount",
+                                                                "params": {
+                                                                    "componentId": "analytics_settings_content"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
                                                         }
                                                     }
                                                 ]

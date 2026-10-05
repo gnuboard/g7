@@ -871,4 +871,29 @@ class UserRepository implements UserRepositoryInterface
             ->whereIn('tokenable_id', $ids)
             ->delete();
     }
+
+    /**
+     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
+     *
+     * 휴면·차단·탈퇴·인증대기는 로그인 관문에서 처리하고, 관리자 지정 대기자에게 만료 안내는 모순이다.
+     *
+     * @return Builder<User> 후보 쿼리
+     */
+    public function passwordExpiryCandidateQuery(): Builder
+    {
+        return User::query()
+            ->where('status', UserStatus::Active->value)
+            ->where('password_change_required', false);
+    }
+
+    /**
+     * 회원 ID 목록으로 제한한 쿼리를 반환합니다.
+     *
+     * @param  array<int, int>  $ids  회원 ID 배열
+     * @return Builder<User> 쿼리
+     */
+    public function queryByIds(array $ids): Builder
+    {
+        return User::query()->whereKey($ids);
+    }
 }

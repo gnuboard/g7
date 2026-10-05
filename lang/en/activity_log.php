@@ -91,6 +91,14 @@ return [
         'dormant_converted' => 'Marked Dormant',
         'dormant_withdrawn' => 'Dormant Account Withdrawn',
 
+        // Password policy (auth.password_*) — compound words that do not collide with existing segments
+        'password_change' => 'Password Changed',
+        'password_change_postpone' => 'Password Change Postponed',
+        'password_expiry_logout' => 'Signed Out on Password Expiry',
+
+        // Role change from the user create/edit form (user.roles_update, #736) — a compound distinct from bulk_roles
+        'roles_update' => 'Roles Changed',
+
         // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
         'manual_run_queued' => 'Privacy action manual run queued',
         'manual_run_finished' => 'Privacy action manual run finished',
@@ -127,6 +135,7 @@ return [
         'user_update_language' => 'User language setting changed',
         'user_bulk_update_status' => 'Users status bulk updated (:count items)',
         'user_bulk_roles' => 'User roles bulk changed (ID: :user_id)',
+        'user_roles_update' => 'User roles changed (ID: :user_id, added: :added, removed: :removed)',
 
         // Member notification inbox (admin deleting a member's received notifications)
         'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count items)',
@@ -185,6 +194,12 @@ return [
         'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',
         'auth_account_unlocked_by_password_reset' => 'Account unlocked by password reset (:email)',
+        'auth_password_change_self' => 'Password changed (by the member)',
+        'auth_password_change_by_admin' => 'Administrator set a member password (ID: :user_id)',
+        'auth_password_change_on_login_expired' => 'Password changed at sign-in (expired)',
+        'auth_password_change_on_login_admin_assigned' => 'Password changed at sign-in (set by an administrator)',
+        'auth_password_change_postpone' => 'Password change postponed (until :until)',
+        'auth_password_expiry_logout' => 'Signed out on password expiry (ID: :user_id, :count devices)',
 
         // Security — IP access restriction
         'security_ip_blocked' => 'IP access blocked (:ip → :path)',

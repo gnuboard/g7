@@ -33,6 +33,7 @@ describe('AuthManager', () => {
   });
 
   describe('싱글톤 패턴', () => {
+    /** @effects auth_manager_session_lifecycle */
     it('항상 동일한 인스턴스를 반환해야 합니다', () => {
       const instance1 = AuthManager.getInstance();
       const instance2 = AuthManager.getInstance();
@@ -41,6 +42,7 @@ describe('AuthManager', () => {
   });
 
   describe('checkAuth', () => {
+    /** @effects auth_manager_session_lifecycle */
     it('토큰이 없으면 false를 반환해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue(null);
 
@@ -50,6 +52,7 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('유효한 토큰이면 true를 반환하고 사용자 정보를 저장해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -71,6 +74,7 @@ describe('AuthManager', () => {
       expect(authManager.getAuthType()).toBe('admin');
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('관리자 인증과 일반 사용자 인증을 구분해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue('valid-token');
       mockApiClient.get.mockResolvedValue({
@@ -91,6 +95,7 @@ describe('AuthManager', () => {
       expect(mockApiClient.get).toHaveBeenCalledWith('/auth/user');
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('API 호출 실패 시 false를 반환해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue('valid-token');
       mockApiClient.get.mockRejectedValue(new Error('Network error'));
@@ -113,6 +118,7 @@ describe('AuthManager', () => {
       await authManager.checkAuth('admin');
     });
 
+    /** @effects auth_manager_token_refresh */
     it('토큰 갱신이 성공하면 true를 반환해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -125,6 +131,7 @@ describe('AuthManager', () => {
       expect(mockApiClient.setToken).toHaveBeenCalledWith('new-token');
     });
 
+    /** @effects auth_manager_token_refresh */
     it('토큰 갱신이 실패하면 false를 반환해야 합니다', async () => {
       mockApiClient.post.mockRejectedValue(new Error('Refresh failed'));
 
@@ -133,6 +140,7 @@ describe('AuthManager', () => {
       expect(result).toBe(false);
     });
 
+    /** @effects auth_manager_token_refresh */
     it('동시 갱신 요청은 하나의 요청으로 처리해야 합니다', async () => {
       mockApiClient.post.mockImplementation(() =>
         new Promise(resolve =>
@@ -156,6 +164,7 @@ describe('AuthManager', () => {
       expect(mockApiClient.post).toHaveBeenCalledTimes(1);
     });
 
+    /** @effects auth_manager_token_refresh */
     it('인증 타입이 없으면 false를 반환해야 합니다', async () => {
       // 인스턴스 리셋하여 인증 타입 없음
       AuthManager.resetInstance();
@@ -168,12 +177,14 @@ describe('AuthManager', () => {
   });
 
   describe('getLoginRedirectUrl', () => {
+    /** @effects auth_manager_redirect_urls */
     it('관리자 로그인 URL에 redirect 파라미터를 포함해야 합니다', () => {
       const url = authManager.getLoginRedirectUrl('admin', '/admin/dashboard');
 
       expect(url).toBe('/admin/login?redirect=%2Fadmin%2Fdashboard');
     });
 
+    /** @effects auth_manager_redirect_urls */
     it('일반 사용자 로그인 URL에 redirect 파라미터를 포함해야 합니다', () => {
       const url = authManager.getLoginRedirectUrl('user', '/profile');
 
@@ -182,6 +193,7 @@ describe('AuthManager', () => {
   });
 
   describe('getRedirectUrl', () => {
+    /** @effects auth_manager_redirect_urls */
     it('URL 파라미터에서 redirect 값을 읽어야 합니다', () => {
       // URL 파라미터 설정
       Object.defineProperty(window, 'location', {
@@ -196,6 +208,7 @@ describe('AuthManager', () => {
       expect(url).toBe('/admin/dashboard');
     });
 
+    /** @effects auth_manager_redirect_urls */
     it('redirect 파라미터가 없으면 기본 경로를 반환해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: {
@@ -211,6 +224,7 @@ describe('AuthManager', () => {
       expect(userUrl).toBe('/');
     });
 
+    /** @effects auth_manager_redirect_urls */
     it('외부 URL은 무시하고 기본 경로를 반환해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: {
@@ -236,6 +250,7 @@ describe('AuthManager', () => {
       await authManager.checkAuth('admin');
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('로그아웃 시 토큰과 사용자 정보를 삭제해야 합니다', async () => {
       // window.location.href mock
       const locationMock = { href: '' };
@@ -253,6 +268,7 @@ describe('AuthManager', () => {
       expect(authManager.getUser()).toBeNull();
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('로그아웃 이벤트를 발생시켜야 합니다', async () => {
       const locationMock = { href: '' };
       Object.defineProperty(window, 'location', {
@@ -270,6 +286,7 @@ describe('AuthManager', () => {
       expect(logoutHandler).toHaveBeenCalled();
     });
 
+    /** @effects auth_manager_session_lifecycle */
     it('로그아웃 후 로그인 페이지로 리다이렉트해야 합니다', async () => {
       // logout 구현이 returnUrl(`${pathname}${search}`) 을 redirect 쿼리로 포함하므로
       // mock 에 pathname/search 를 제공해야 URL 조립이 정상 동작
@@ -288,6 +305,7 @@ describe('AuthManager', () => {
   });
 
   describe('login', () => {
+    /** @effects login_result_discriminates_response_forms */
     it('로그인 성공 시 토큰을 저장하고 사용자 정보를 반환해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -314,6 +332,7 @@ describe('AuthManager', () => {
       expect(authManager.getUser()).toEqual(mockUser);
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('로그인 실패 시 에러를 throw해야 합니다', async () => {
       mockApiClient.post.mockRejectedValue(new Error('Invalid credentials'));
 
@@ -327,6 +346,7 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('options.headers가 있으면 ApiClient.post에 전달해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -355,6 +375,7 @@ describe('AuthManager', () => {
       );
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('options가 없으면 ApiClient.post에 config를 전달하지 않아야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -382,6 +403,7 @@ describe('AuthManager', () => {
       );
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('2단계 인증 응답에서는 토큰을 저장하지 않고 challenge 를 돌려줘야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -411,6 +433,7 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('updateConfig 로 바꾼 loginEndpoint 를 사용해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -428,6 +451,7 @@ describe('AuthManager', () => {
       );
     });
 
+    /** @effects login_result_discriminates_response_forms */
     it('네트워크 오류의 code 를 보존해야 합니다', async () => {
       const networkError: any = new Error('Network Error');
       networkError.code = 'ERR_NETWORK';
@@ -441,6 +465,7 @@ describe('AuthManager', () => {
   });
 
   describe('completeTwoFactor', () => {
+    /** @effects two_factor_completion_returns_login_result */
     it('코드 확인에 성공하면 토큰을 저장하고 로그인 상태가 되어야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -461,6 +486,7 @@ describe('AuthManager', () => {
         code: '135790',
       });
 
+      // 공개 계약(engine-v1.65.0~): 사용자만 돌려준다 — 안내 필드·변경 단계는 completeTwoFactorSession
       expect(result).toEqual(mockUser);
       expect(mockApiClient.post).toHaveBeenCalledWith(
         '/auth/login/two-factor',
@@ -472,6 +498,7 @@ describe('AuthManager', () => {
       expect(loginHandler).toHaveBeenCalled();
     });
 
+    /** @effects two_factor_completion_returns_login_result */
     it('관리자 타입은 관리자 전용 엔드포인트를 사용해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -490,6 +517,7 @@ describe('AuthManager', () => {
       );
     });
 
+    /** @effects two_factor_completion_returns_login_result */
     it('실패 시 서버 메시지를 실은 에러를 throw 해야 합니다', async () => {
       const error: any = new Error('Request failed');
       error.response = { status: 401, data: { message: '인증번호가 올바르지 않습니다.' } };
@@ -503,7 +531,221 @@ describe('AuthManager', () => {
     });
   });
 
+  describe('completeTwoFactorSession', () => {
+    /** @effects two_factor_completion_returns_login_result */
+    it('코드 확인에 성공하면 세션을 열고 사용자와 서버 안내 필드를 LoginResult 로 돌려줘야 합니다', async () => {
+      const mockUser: AuthUser = { id: 1, uuid: 'u-1', name: 'T', email: 't@e.com' };
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 'two-factor-token', user: mockUser, dormancy_restored: true },
+      });
+
+      const result = await authManager.completeTwoFactorSession('user', { challengeId: 'c', code: '135790' });
+
+      expect(result).toEqual({ status: 'authenticated', user: mockUser, extras: { dormancy_restored: true } });
+      expect(mockApiClient.setToken).toHaveBeenCalledWith('two-factor-token');
+      expect(authManager.isAuthenticated()).toBe(true);
+    });
+  });
+
+  describe('비밀번호 변경 단계 (engine-v1.77.0)', () => {
+    const changeStep = {
+      password_change_required: true,
+      challenge_id: 'pw-challenge',
+      reason: 'expired',
+      can_postpone: true,
+      postpone_days: 30,
+      expired_at: '2026-09-01T00:00:00+09:00',
+      expires_at: '2026-10-03T10:10:00+09:00',
+    };
+    const mockUser: AuthUser = { id: 1, uuid: 'u-1', name: 'T', email: 't@e.com' };
+
+    /** @effects password_change_step_returned_without_token */
+    it('login 이 비밀번호 변경 단계를 받으면 토큰을 저장하지 않고 challenge 를 돌려줘야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: changeStep });
+
+      const result = await authManager.login('admin', { email: 'a@e.com', password: 'p' });
+
+      expect(result).toEqual({
+        status: 'password_change_required',
+        challenge: {
+          challengeId: 'pw-challenge',
+          reason: 'expired',
+          canPostpone: true,
+          postponeDays: 30,
+          expiredAt: '2026-09-01T00:00:00+09:00',
+          expiresAt: '2026-10-03T10:10:00+09:00',
+        },
+      });
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('관리자 지정 사유는 연기 불가·만료일 없음으로 해석해야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { ...changeStep, reason: 'admin_assigned', can_postpone: false, postpone_days: null, expired_at: null },
+      });
+
+      const result = await authManager.login('user', { email: 'a@e.com', password: 'p' });
+
+      expect(result.status).toBe('password_change_required');
+      if (result.status === 'password_change_required') {
+        expect(result.challenge.reason).toBe('admin_assigned');
+        expect(result.challenge.canPostpone).toBe(false);
+        expect(result.challenge.postponeDays).toBeNull();
+        expect(result.challenge.expiredAt).toBeNull();
+      }
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('completeTwoFactorSession 이 비밀번호 변경 단계를 받으면 토큰 없이 그 형태를 돌려줘야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: changeStep });
+
+      const result = await authManager.completeTwoFactorSession('user', { challengeId: 'c', code: '123456' });
+
+      expect(result.status).toBe('password_change_required');
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('공개 API completeTwoFactor 는 비밀번호 변경 단계를 받으면 세션 없이 오류를 던져야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: changeStep });
+
+      await expect(
+        authManager.completeTwoFactor('user', { challengeId: 'c', code: '123456' })
+      ).rejects.toThrow('Password change required');
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('completeTwoFactorSession 응답의 2단계 인증 challenge 형태는 받지 않아야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { two_factor_required: true, challenge_id: 'x', provider_id: 'p', expires_at: null },
+      });
+
+      await expect(
+        authManager.completeTwoFactorSession('user', { challengeId: 'c', code: '123456' })
+      ).rejects.toThrow('Login failed');
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('login 성공 응답의 dormancy_restored 를 extras 로 보존해야 합니다 (D20)', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 't', user: mockUser, dormancy_restored: true },
+      });
+
+      const result = await authManager.login('user', { email: 'a@e.com', password: 'p' });
+
+      expect(result).toEqual({ status: 'authenticated', user: mockUser, extras: { dormancy_restored: true } });
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('dormancy_restored 가 없으면 결과에도 키가 없어야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: { token: 't', user: mockUser } });
+
+      const result = await authManager.login('user', { email: 'a@e.com', password: 'p' });
+
+      expect(result).toEqual({ status: 'authenticated', user: mockUser });
+      expect('extras' in result).toBe(false);
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('completePasswordChange 는 사용자 엔드포인트에 새 비밀번호를 보내고 세션을 열어야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 'new-token', user: mockUser, dormancy_restored: true },
+      });
+      const loginHandler = vi.fn();
+      authManager.on('login', loginHandler);
+
+      const result = await authManager.completePasswordChange('user', {
+        challengeId: 'pw-challenge',
+        password: 'NewPassw0rd!',
+        passwordConfirmation: 'NewPassw0rd!',
+      });
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/login/password-change',
+        { challenge_id: 'pw-challenge', password: 'NewPassw0rd!', password_confirmation: 'NewPassw0rd!' },
+        undefined
+      );
+      expect(mockApiClient.setToken).toHaveBeenCalledWith('new-token');
+      expect(result).toEqual({ status: 'authenticated', user: mockUser, extras: { dormancy_restored: true } });
+      expect(authManager.isAuthenticated()).toBe(true);
+      expect(loginHandler).toHaveBeenCalled();
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('관리자 completePasswordChange·postponePasswordChange 는 관리자 엔드포인트를 써야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: { token: 't', user: mockUser } });
+
+      await authManager.completePasswordChange(
+        'admin',
+        { challengeId: 'c', password: 'x', passwordConfirmation: 'x' },
+        { headers: { 'X-Test': '1' } }
+      );
+      await authManager.postponePasswordChange('admin', { challengeId: 'c' });
+
+      expect(mockApiClient.post).toHaveBeenNthCalledWith(
+        1,
+        '/auth/admin/login/password-change',
+        { challenge_id: 'c', password: 'x', password_confirmation: 'x' },
+        { headers: { 'X-Test': '1' } }
+      );
+      expect(mockApiClient.post).toHaveBeenNthCalledWith(
+        2,
+        '/auth/admin/login/password-change/postpone',
+        { challenge_id: 'c' },
+        undefined
+      );
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('postponePasswordChange 는 연기 종료일을 extras.postponed_until 로 보존해야 합니다', async () => {
+      mockApiClient.post.mockResolvedValue({
+        success: true,
+        data: { token: 't', user: mockUser, postponed_until: '2026-11-02T00:00:00+09:00' },
+      });
+
+      const result = await authManager.postponePasswordChange('user', { challengeId: 'c' });
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/auth/login/password-change/postpone',
+        { challenge_id: 'c' },
+        undefined
+      );
+      expect(result).toEqual({
+        status: 'authenticated',
+        user: mockUser,
+        extras: { postponed_until: '2026-11-02T00:00:00+09:00' },
+      });
+    });
+
+    /** @effects password_change_step_returned_without_token */
+    it('변경 실패(422) 는 서버 메시지·상태를 실은 오류를 던지고 세션을 열지 않아야 합니다', async () => {
+      const error: any = new Error('Request failed');
+      error.response = {
+        status: 422,
+        data: { message: '최근에 사용한 비밀번호입니다.', errors: { password: ['최근에 사용한 비밀번호입니다.'] } },
+      };
+      mockApiClient.post.mockRejectedValue(error);
+
+      await expect(
+        authManager.completePasswordChange('user', { challengeId: 'c', password: 'x', passwordConfirmation: 'x' })
+      ).rejects.toMatchObject({ message: '최근에 사용한 비밀번호입니다.', status: 422 });
+
+      expect(mockApiClient.setToken).not.toHaveBeenCalled();
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+  });
+
   describe('resendTwoFactor', () => {
+    /** @effects two_factor_resend_replaces_challenge */
     it('새 challenge 를 돌려주고 토큰은 건드리지 않아야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,

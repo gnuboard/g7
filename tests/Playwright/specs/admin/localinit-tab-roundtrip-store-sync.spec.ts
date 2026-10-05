@@ -9,7 +9,9 @@
  *          untouched_field_unaffected_by_tab_roundtrip,
  *          prune_never_reintroduces_values,
  *          readonly_permission_disables_inputs,
- *          tab_roundtrip_emits_no_console_errors
+ *          tab_roundtrip_emits_no_console_errors,
+ *          tab_roundtrip_clears_has_changes,
+ *          unrelated_refetch_keeps_has_changes
  *
  * 배경: `_localInit` 적용 여부를 전역 해시(`__g7LocalInitTracking`)로만 판정했는데, 실제 리셋
  * 대상인 `localDynamicState`(저장소 A)는 렌더러 인스턴스별이다. 먼저 effect 가 도는 인스턴스가
@@ -34,6 +36,10 @@
  *
  * 회귀 배경: 탭 왕복 후 initLocal 동기화가 편집 중이던 입력칸의 값을 되돌려, 먼저 편집한
  * 입력칸에만 옛 값이 남던 결함 (engine-v1.54.7 에서 수정).
+ *
+ * 후속(engine-v1.77.2, 트러블슈팅 state-global initLocal 사례 8): 같은 정리(prune) 경로가 「변경
+ * 있음」(hasChanges)은 남겨 탭 왕복 뒤 저장 버튼이 활성으로 남았고, 반대로 폼과 무관한 initLocal
+ * (알림 목록 페이지 정보) 재조회는 편집 중인 폼의 저장 버튼을 껐다. 두 축을 마지막 두 테스트가 잠근다.
  */
 import { test, expect, issueToken, issueScopedToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -243,4 +249,65 @@ test.describe('탭 왕복 후 저장소 A/B 동기화 (engine-v1.54.7)', () => {
 
     expect(errors).toEqual([]);
   });
+  /**
+   * @scenario edit_order=first_edited
+   *
+   * @effects tab_roundtrip_clears_has_changes
+   */
+  test('편집 후 탭을 왕복하면 칸이 서버값으로 돌아오고 저장 버튼도 비활성이 된다 (engine-v1.77.2)', async ({ page }) => {
+    await authenticatePage(page, issueToken(...SETTINGS_PERMISSIONS));
+    await gotoOrderTab(page);
+    const save = page.getByTestId('ecommerce-settings-save');
+    await expect(save).toBeDisabled();
+
+    const serverA = await page.locator(FIELD_A).inputValue();
+    await typeInto(page, FIELD_A, other(serverA));
+    await expect(save).toBeEnabled();
+
+    await tabRoundTrip(page);
+
+    await expect(page.locator(FIELD_A)).toHaveValue(serverA);
+    // 수정 전에는 폼 소유 렌더러 저장소 A 의 hasChanges=true 가 남아 활성이었다
+    await expect(save).toBeDisabled();
+  });
+
+  /**
+   * @scenario edit_order=untouched
+   *
+   * @effects unrelated_refetch_keeps_has_changes
+   */
+  test('알림 탭에서 채널을 바꾼 뒤 알림 정의를 켜고 꺼도 저장 버튼이 유지된다 (engine-v1.77.2)', async ({ page }) => {
+    await authenticatePage(page, issueToken(...SETTINGS_PERMISSIONS));
+    await page.goto('/admin/ecommerce/settings?tab=notification_definitions');
+    await expect.poll(async () => await page.locator('[role=switch]').count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(5);
+    const save = page.getByTestId('ecommerce-settings-save');
+    const channel = page.locator('[role=switch]').nth(2);
+    const definition = page.locator('[role=switch]').nth(4);
+    const before = await definition.getAttribute('aria-checked');
+
+    await channel.click(); // 저장해야 반영되는 채널 변경 → 「변경 있음」
+    await expect(save).toBeEnabled();
+
+    try {
+      // 정의 사용 스위치는 즉시 저장(PATCH) + 알림 목록 재조회(폼과 무관한 initLocal)
+      await Promise.all([
+        page.waitForResponse(r => r.request().method() === 'PATCH' && /toggle-active/.test(r.url())),
+        definition.click(),
+      ]);
+      await expect(definition).not.toHaveAttribute('aria-checked', before ?? '', { timeout: 10_000 });
+      await page.waitForTimeout(1_500);
+      // 수정 전에는 재조회가 hasChanges 를 지워 채널 변경을 저장할 수 없게 됐다
+      await expect(save).toBeEnabled();
+    } finally {
+      // 실데이터 원복 — 정의 스위치를 처음 상태로 되돌린다 (채널 변경은 저장하지 않으므로 버려진다)
+      if ((await definition.getAttribute('aria-checked')) !== before) {
+        await Promise.all([
+          page.waitForResponse(r => r.request().method() === 'PATCH' && /toggle-active/.test(r.url())),
+          definition.click(),
+        ]);
+        await expect(definition).toHaveAttribute('aria-checked', before ?? '', { timeout: 10_000 });
+      }
+    }
+  });
 });
+

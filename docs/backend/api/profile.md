@@ -69,6 +69,9 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | last_login_human | string\|null | `1일 전` | 마지막 로그인 시각의 상대 표현 (`diffForHumans()` 산물) |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 (사용자 시간대 기준) |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 |
+| password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
+| password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
+| password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
 
 > 위 필드에 더해 `core.user.filter_resource_data` 훅으로 확장 소유 필드가 병합된다 (게시판 모듈 `notify_*`, 마케팅 플러그인 `marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`, 이커머스 모듈 `ecommerce_*`). 전체 목록은 `GET /api/me` 문서 참조.
 
@@ -135,8 +138,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 아니오 | — | 비밀번호 |
-| current_password | body | string | 아니오 | — | 현재 비밀번호 (변경 전 확인용) |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -282,6 +285,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `s
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`core.profile.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
 

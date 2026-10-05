@@ -27,6 +27,23 @@
             "two_factor_scope": "all",
             "password_min_length": 8,
             "require_password_special_char": false,
+            "password_require_char_types": false,
+            "password_block_identifier": false,
+            "password_block_repeated_chars": false,
+            "password_repeated_chars_length": 4,
+            "password_block_sequential_chars": false,
+            "password_sequential_chars_length": 4,
+            "password_reuse_prevention_enabled": false,
+            "password_reuse_count": 3,
+            "password_expiry_enabled": false,
+            "password_expiry_days": 90,
+            "password_expiry_notice_days": 7,
+            "password_expiry_scope": "all",
+            "password_expiry_action": "force",
+            "password_expiry_remind_days": 30,
+            "password_expiry_batch_size": 1000,
+            "password_expiry_started_at": null,
+            "activity_log_retention_days": 365,
             "allow_internal_outbound_urls": false,
             "ip_restriction_enabled": false,
             "admin_allowed_ips": [],
@@ -253,8 +270,20 @@
             }
         },
         "security": {
-            "expose": false,
-            "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
+            "expose": true,
+            "_comment": "비밀번호 작성·재사용 규칙만 노출한다(가입·변경·재설정 화면 안내용). 만료·IP·2FA·토큰·잠금 키는 fields 에 선언하지 않아 내보내지 않는다 — 공격자에게 정책 정보 제공 위험",
+            "fields": {
+                "password_min_length": { "type": "integer", "sensitive": false },
+                "require_password_special_char": { "type": "boolean", "sensitive": false },
+                "password_require_char_types": { "type": "boolean", "sensitive": false },
+                "password_block_identifier": { "type": "boolean", "sensitive": false },
+                "password_block_repeated_chars": { "type": "boolean", "sensitive": false },
+                "password_repeated_chars_length": { "type": "integer", "sensitive": false },
+                "password_block_sequential_chars": { "type": "boolean", "sensitive": false },
+                "password_sequential_chars_length": { "type": "integer", "sensitive": false },
+                "password_reuse_prevention_enabled": { "type": "boolean", "sensitive": false },
+                "password_reuse_count": { "type": "integer", "sensitive": false }
+            }
         },
         "mail": {
             "expose": false,

@@ -787,6 +787,12 @@ return [
             'challenge_invalid' => '인증 요청 정보가 올바르지 않습니다.',
             'code_required' => '인증번호를 입력해주세요.',
         ],
+        // 로그인 비밀번호 변경 단계 (#736)
+        'password_change' => [
+            'challenge_required' => '비밀번호 변경 단계 정보가 없습니다. 처음부터 다시 로그인해주세요.',
+            'challenge_invalid' => '비밀번호 변경 단계 정보가 올바르지 않습니다.',
+            'password_confirmation_required' => '새 비밀번호 확인을 입력해주세요.',
+        ],
         'email' => [
             'required' => '이메일은 필수입니다.',
             'email' => '올바른 이메일 형식이 아닙니다.',
@@ -848,7 +854,18 @@ return [
             'type' => '저장할 수 없는 형식의 설정 값입니다.',
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
             'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
+            'server_only' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
         ],
+    ],
+
+    // 비밀번호 작성·재사용 규칙 (보안 설정에서 켜진 규칙만 적용)
+    'password_policy' => [
+        'char_types' => '비밀번호는 영문·숫자·특수문자 중 2종류 이상을 섞어야 합니다.',
+        'contains_identifier' => '비밀번호에 아이디(이메일 앞부분)를 넣을 수 없습니다.',
+        'repeated_chars' => '같은 문자를 :count번 이상 연속으로 쓸 수 없습니다.',
+        'sequential_chars' => '연속된 문자(1234·abcd·qwer 등)를 :count자 이상 쓸 수 없습니다.',
+        'reused' => '최근에 사용한 비밀번호입니다. 최근 :count개의 비밀번호는 다시 쓸 수 없습니다.',
+        'same_as_current' => '지금 쓰는 비밀번호와 다른 비밀번호를 입력해주세요.',
     ],
 
     // 사용자 관련 검증 메시지
@@ -1155,6 +1172,15 @@ return [
         'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
         'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
         'privacy_dormant_notice_days_lt_dormant_days' => '사전 통지 기간은 휴면 전환 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 전환과 통지가 같은 날 일어납니다.',
+        // 비밀번호 정책 (#736)
+        'password_policy_boolean' => ':attribute 값은 사용/사용 안 함 중 하나여야 합니다.',
+        'password_policy_integer' => ':attribute 값은 정수여야 합니다.',
+        'password_policy_min' => ':attribute 값은 :min 이상이어야 합니다.',
+        'password_policy_max' => ':attribute 값은 :max 이하여야 합니다.',
+        'activity_log_retention_days_min' => '활동 로그 보관 기간은 법정 최소 보관 기간인 :min일 이상이어야 합니다.',
+        'password_expiry_scope_in' => '적용 범위는 전체 회원·관리자만·지정한 역할·회원만 중 하나여야 합니다.',
+        'password_expiry_action_in' => '만료 시 동작은 변경해야 로그인·다음에 변경 허용 중 하나여야 합니다.',
+        'password_expiry_notice_days_lt_expiry_days' => '사전 안내일은 만료 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 만료와 안내가 같은 날 일어납니다.',
     ],
 
     // 본인인증 정책 검증 메시지
@@ -1422,6 +1448,26 @@ return [
         'login_lockout_time' => '로그인 차단 시간',
         'password_min_length' => '비밀번호 최소 길이',
         'require_password_special_char' => '비밀번호 특수문자 필수',
+        'password_require_char_types' => '영문·숫자·특수문자 2종류 이상',
+        'password_block_identifier' => '아이디 포함 금지',
+        'password_block_repeated_chars' => '같은 문자 연속 반복 금지',
+        'password_repeated_chars_length' => '반복 금지 글자 수',
+        'password_block_sequential_chars' => '연속 문자 금지',
+        'password_sequential_chars_length' => '연속 금지 글자 수',
+        'password_reuse_prevention_enabled' => '비밀번호 재사용 금지',
+        'password_reuse_count' => '재사용 금지 개수',
+        'password_expiry_enabled' => '비밀번호 만료 사용',
+        'password_expiry_days' => '비밀번호 만료 기간',
+        'password_expiry_notice_days' => '만료 사전 안내일',
+        'password_expiry_scope' => '비밀번호 만료 적용 범위',
+        'password_expiry_action' => '비밀번호 만료 시 동작',
+        'password_expiry_remind_days' => '변경 연기 기간',
+        'password_expiry_batch_size' => '1회 실행당 안내 상한',
+        'activity_log_retention_days' => '활동 로그 보관 기간',
+        'password_expiry_policy' => '비밀번호 만료',
+        'current_password' => '현재 비밀번호',
+        'password_confirmation' => '비밀번호 확인',
+        'challenge_id' => '변경 단계 식별자',
         'two_factor_auth' => '2단계 인증',
         'two_factor_scope' => '2단계 인증 적용 범위',
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',

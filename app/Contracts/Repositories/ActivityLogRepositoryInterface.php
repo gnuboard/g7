@@ -70,7 +70,17 @@ interface ActivityLogRepositoryInterface
      * 보존 기간이 지난 활동 로그를 삭제합니다.
      *
      * @param  int  $days  보존 기간 (일)
+     * @param  array<int, string>  $exceptActions  이 파기에서 빼는 액션(따로 더 오래 보관하는 액션)
      * @return int 삭제된 건수
      */
-    public function deleteOlderThan(int $days): int;
+    public function deleteOlderThan(int $days, array $exceptActions = []): int;
+
+    /**
+     * 지정한 액션의 로그 중 보존 기간이 지난 것만 삭제합니다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @param  array<int, string>  $actions  대상 액션 (비어 있으면 아무것도 지우지 않는다)
+     * @return int 삭제된 건수
+     */
+    public function deleteOlderThanForActions(int $days, array $actions): int;
 }

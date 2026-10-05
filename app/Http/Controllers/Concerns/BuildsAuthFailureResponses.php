@@ -54,6 +54,36 @@ trait BuildsAuthFailureResponses
     }
 
     /**
+     * 비밀번호 변경 단계 발급 실패 응답(503)을 구성합니다.
+     *
+     * 자격 증명은 올바르고 비밀번호를 바꿔야 하는데 단계를 열 수 없다 — 토큰을 그냥 주면 만료·임시
+     * 비밀번호 강제가 조용히 열리므로 막고, 401 로 뭉개지 않는다.
+     *
+     * @return JsonResponse 503 응답
+     *
+     * @since 7.1.0
+     */
+    protected function passwordChangeUnavailableResponse(): JsonResponse
+    {
+        return $this->error('auth.password_change_unavailable', 503);
+    }
+
+    /**
+     * 비밀번호 변경 단계 안내 메시지 키를 고릅니다 (만료 / 관리자가 정해 준 비밀번호).
+     *
+     * @param  array<string, mixed>  $data  login/completeTwoFactor 의 변경 단계 응답
+     * @return string 번역 키
+     *
+     * @since 7.1.0
+     */
+    protected function passwordChangeRequiredMessageKey(array $data): string
+    {
+        return ($data['reason'] ?? null) === 'admin_assigned'
+            ? 'auth.password_change_required_admin_assigned'
+            : 'auth.password_change_required';
+    }
+
+    /**
      * 2단계 인증 수단 미등록 차단 응답(401)을 구성합니다.
      *
      * 운영자가 메일 폴백을 껐고 이 사용자에게 쓸 수 있는 수단이 없을 때다. 통과시키면

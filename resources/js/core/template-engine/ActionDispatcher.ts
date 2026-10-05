@@ -22,7 +22,7 @@ import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
 import { evaluateComputedDefinitions } from './helpers/ComputedEvaluator';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
-import { AuthManager, AuthType } from '../auth/AuthManager';
+import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
@@ -154,6 +154,8 @@ export type ActionType =
   | 'login' // 로그인 (토큰 저장 포함)
   | 'loginTwoFactor' // 2단계 인증 코드 확인 (로그인 완료)
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
+  | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
+  | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -2088,7 +2090,7 @@ export class ActionDispatcher {
     action: ActionDefinition,
     dataContext?: any,
     componentContext?: { state?: any; setState?: (updates: any) => void; isolatedContext?: IsolatedContextValue | null }
-  ): (event: Event) => void {
+  ): (event?: Event) => void {
     logger.log('createHandler called for:', action.handler, action.type);
 
     // DevTools: 핸들러 생성 시점 상태 캡처 (stale closure 감지용)
@@ -2263,7 +2265,11 @@ export class ActionDispatcher {
       }
     };
 
-    return (event: Event) => this.runGuardingFormSubmit(event, run);
+    // engine-v1.77.1: 인자 없이 불려도 실행한다 — 컴포넌트가 콜백을 `onClose()` 처럼 이벤트 없이 부르면
+    // `run` 의 `event.type`·`preventDefault()` 가 TypeError 로 거부돼 액션이 실행되지 않았다
+    // (admin_basic Modal 의 Escape → closeModal 이 무반응 — #736 S2, 2025-12-19 부터). 액션 type 의
+    // 대체 이벤트를 넘긴다(target 없음 — 폼 submit 판정·$event.target 은 비어 있다).
+    return (event?: Event) => this.runGuardingFormSubmit(event ?? new Event(action.type || 'click'), run);
   }
 
   /**
@@ -2582,6 +2588,22 @@ export class ActionDispatcher {
 
         case 'loginTwoFactorResend':
           result = await this.handleLoginTwoFactorResend(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
+        case 'loginPasswordChange':
+          result = await this.handleLoginPasswordChange(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
+        case 'loginPasswordChangePostpone':
+          result = await this.handleLoginPasswordChangePostpone(
             resolvedTarget!,
             resolvedParams,
             context
@@ -4062,19 +4084,56 @@ export class ActionDispatcher {
         return {
           user: null,
           two_factor_required: true,
+          password_change_required: false,
           challenge_id: result.challenge.challengeId,
           provider_id: result.challenge.providerId,
           expires_at: result.challenge.expiresAt,
         };
       }
 
-      // `user` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 `response.user` 를 읽는다.
+      // `user`·`two_factor_required` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 읽는다.
       // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored` 등)도 함께 넘긴다 — 버리면 로그인 화면의
       // `<toast if="{{response.dormancy_restored}}">` 가 한 번도 뜨지 않는다 (engine-v1.76.0).
-      return { ...(result.extras ?? {}), user: result.user, two_factor_required: false };
+      return { ...this.toLoginStepResponse(result), two_factor_required: false };
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
+  }
+
+  /**
+   * 로그인 결과(인증 완료 / 비밀번호 변경 단계)를 레이아웃이 읽는 응답 모양으로 바꿉니다.
+   *
+   * 로그인·2단계 인증 확인·비밀번호 변경·연기 네 핸들러가 같은 모양을 돌려주도록 단일
+   * 지점에 둔다 — 갈라지면 한 경로에서만 `dormancy_restored`(휴면 해제 안내)나 변경 단계
+   * 필드가 빠진다(engine-v1.76.0 이전에는 `dormancy_restored` 를 버려 휴면 해제 토스트가
+   * 한 번도 뜨지 않았다).
+   *
+   * @param result AuthManager 로그인 결과 (2단계 인증 형태 제외)
+   * @returns 레이아웃 `response`
+   * @since engine-v1.77.0
+   */
+  private toLoginStepResponse(result: LoginResult): Record<string, any> {
+    if (result.status === 'password_change_required') {
+      return {
+        user: null,
+        password_change_required: true,
+        challenge_id: result.challenge.challengeId,
+        reason: result.challenge.reason,
+        can_postpone: result.challenge.canPostpone,
+        postpone_days: result.challenge.postponeDays,
+        expired_at: result.challenge.expiredAt,
+        expires_at: result.challenge.expiresAt,
+      };
+    }
+
+    if (result.status !== 'authenticated') {
+      // 다음 단계 응답에서 2단계 인증 challenge 는 오지 않는다(AuthManager 가 받지 않음).
+      throw new ActionError('Unexpected login step result');
+    }
+
+    // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored`·연기 기한 `postponed_until` 등)는 서버가 실었을
+    // 때만 키가 있다 — 레이아웃은 `response.dormancy_restored` 로 안내한다 (engine-v1.76.0).
+    return { ...(result.extras ?? {}), user: result.user, password_change_required: false };
   }
 
   /**
@@ -4106,14 +4165,103 @@ export class ActionDispatcher {
       : '/api/auth/login/two-factor';
 
     try {
-      const session = await AuthManager.getInstance().completeTwoFactorSession(
+      const result = await AuthManager.getInstance().completeTwoFactorSession(
         authType,
         { challengeId: String(body.challenge_id), code: String(body.code) },
         this.buildAuthRequestOptions(endpoint, context)
       );
 
-      // 비밀번호 단계와 같은 안내 필드를 넘긴다 — 2단계 인증 사이트에서만 해제 안내가 빠지지 않게 (engine-v1.76.0).
-      return { ...(session.extras ?? {}), user: session.user };
+      // 코드가 맞아도 비밀번호 변경 단계가 올 수 있다 — `response.password_change_required` 로 가른다.
+      return this.toLoginStepResponse(result);
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * loginPasswordChange 액션을 처리합니다.
+   *
+   * 로그인 비밀번호 변경 단계에서 새 비밀번호를 정하고 로그인을 완료합니다. 성공하면
+   * 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급합니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id, password, password_confirmation 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.77.0
+   */
+  private async handleLoginPasswordChange(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.challenge_id) {
+      throw new ActionError(
+        'loginPasswordChange requires challenge_id in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/password-change'
+      : '/api/auth/login/password-change';
+
+    try {
+      // 빈 비밀번호도 서버로 보낸다 — 규칙 위반 문구(422 `errors.password`)는 서버가 정한다.
+      const result = await AuthManager.getInstance().completePasswordChange(
+        authType,
+        {
+          challengeId: String(body.challenge_id),
+          password: String(body.password ?? ''),
+          passwordConfirmation: String(body.password_confirmation ?? ''),
+        },
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return this.toLoginStepResponse(result);
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * loginPasswordChangePostpone 액션을 처리합니다.
+   *
+   * 로그인 비밀번호 변경 단계를 미루고('다음에 변경') 로그인을 완료합니다. 만료 시 동작이
+   * '다음에 변경 허용' 일 때만 서버가 받아 줍니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.77.0
+   */
+  private async handleLoginPasswordChangePostpone(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.challenge_id) {
+      throw new ActionError(
+        'loginPasswordChangePostpone requires challenge_id in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/password-change/postpone'
+      : '/api/auth/login/password-change/postpone';
+
+    try {
+      const result = await AuthManager.getInstance().postponePasswordChange(
+        authType,
+        { challengeId: String(body.challenge_id) },
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return this.toLoginStepResponse(result);
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }

@@ -97,6 +97,8 @@ return [
             // 옵션으로 켤 수 없다. `--handler=` 는 대상을 좁히기만 하므로 안전장치를 무력화하지 않는다.
             'privacy:process-retention' => ['options' => ['dry-run', 'handler', 'scheduled']],
             'privacy:process-dormant' => ['options' => ['dry-run', 'scheduled']],
+            // 비밀번호 만료(#736) — 토글은 커맨드가 재확인하고, 옵션은 건수 확인·기록용뿐이다.
+            'auth:process-password-expiry' => ['options' => ['dry-run', 'scheduled']],
 
             // 방문자 통계 — 집계·정리·점검은 비파괴이거나 서비스가 하한을 소유한다.
             // 전체 삭제(analytics:purge)·소급 익명화(analytics:anonymize)·확장 통계 정리

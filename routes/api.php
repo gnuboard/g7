@@ -329,6 +329,12 @@ Route::prefix('auth')->group(function () {
         // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
         Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
             ->name('api.auth.login.two-factor.resend');
+        // 비밀번호 변경 단계 — 만료·관리자 지정 비밀번호는 로그인이 돌려준 변경 단계 식별자와 새 비밀번호로만
+        // 로그인이 완료된다(연기는 '다음에 변경 허용' 모드의 만료만). 로그인과 같은 제한을 적용한다.
+        Route::post('login/password-change', [UserAuthController::class, 'completePasswordChange'])
+            ->name('api.auth.login.password-change');
+        Route::post('login/password-change/postpone', [UserAuthController::class, 'postponePasswordChange'])
+            ->name('api.auth.login.password-change.postpone');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -360,6 +366,13 @@ Route::prefix('auth')->group(function () {
         Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login.two-factor.resend');
+        // 관리자 비밀번호 변경 단계 — 사용자 경로와 같은 제한. 식별자는 발급 경로에 묶여 교차 사용이 422 다.
+        Route::post('login/password-change', [AdminAuthController::class, 'completePasswordChange'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.password-change');
+        Route::post('login/password-change/postpone', [AdminAuthController::class, 'postponePasswordChange'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.password-change.postpone');
     });
 });
 
@@ -708,6 +721,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('privacy')->group(function () {
         Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
         Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.dormant-targets');
+        // 비밀번호 만료 대상 명단 (#736) — 휴면 명단과 같은 권한(설정 읽기 + 회원 읽기). 보안 탭이 같은 명단 창을 쓴다.
+        Route::get('password-expiry-targets/{stage}', [AdminPrivacyTargetController::class, 'passwordExpiry'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.password-expiry-targets');
 
         // 관리자 직권 실행 (#636 후속) — 카드의 「지금 실행」. 대상(보유기간 핸들러·휴면 단계·확장 조치)은
         // 수집기가 키로 찾고, 실행 권한(설정 수정 + 도메인 수정, 전체 범위)은 대상이 선언해 컨트롤러가
@@ -730,6 +745,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
+        // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
+        Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');

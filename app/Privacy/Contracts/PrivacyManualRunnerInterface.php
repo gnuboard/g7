@@ -32,6 +32,10 @@ use App\Privacy\ManualRun\PrivacyManualRunRegistry;
  * 손으로 돌리는 운영을 허용한다(2026-09-25 확정). 토글 값은 화면의 안내 문구에만 쓴다.
  * 대신 권한({@see permissions()})이 접수 시점에 검사된다.
  *
+ * 예외: 처리 결과의 효력이 토글에 묶인 조치(비밀번호 만료 — 꺼져 있으면 로그인 관문이 변경을 요구하지
+ * 않는다)는 {@see PrivacyManualRunRequiresEnabledInterface} 를 함께 구현한다. 그러면 꺼져 있을 때 코어가
+ * 접수를 409 로 거절한다.
+ *
  * ## 건수와 실행은 같은 모집단이다
  *
  * {@see count()} 는 확인 창에 보이는 숫자이고 {@see run()} 은 그 모집단을 처리한다. 두 메서드는
@@ -66,7 +70,8 @@ interface PrivacyManualRunnerInterface
     public function permissions(): array;
 
     /**
-     * 자동 실행 토글이 켜져 있는지 반환합니다 (화면 안내용 — 직권 실행은 이 값을 보지 않는다).
+     * 자동 실행 토글이 켜져 있는지 반환합니다 (화면 안내용 — 직권 실행은 이 값을 보지 않는다.
+     * {@see PrivacyManualRunRequiresEnabledInterface} 를 구현한 대상만 꺼져 있으면 접수가 거절된다).
      *
      * @return bool 자동 실행 활성 여부
      */

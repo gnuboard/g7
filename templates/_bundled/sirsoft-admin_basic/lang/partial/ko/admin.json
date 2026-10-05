@@ -357,7 +357,21 @@
       "validation_error": "입력 정보를 확인해주세요.",
       "error_loading_user": "사용자 정보를 불러오는 중 오류가 발생했습니다.",
       "no_edit_permission": "이 사용자의 정보를 수정할 권한이 없습니다.",
-      "go_to_detail": "상세보기로 이동"
+      "go_to_detail": "상세보기로 이동",
+      "password_policy": {
+        "admin_assigned_notice": "저장하면 이 회원은 다음 로그인 때 비밀번호를 바꿔야 합니다. 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않습니다.",
+        "create_notice": "등록한 회원은 첫 로그인 때 비밀번호를 바꿔야 합니다.",
+        "current_password": "현재 비밀번호",
+        "current_password_hint": "내 계정의 비밀번호를 바꾸려면 현재 비밀번호를 입력해야 합니다.",
+        "expiry": "비밀번호 만료",
+        "expiry_inherit": "역할·사이트 설정 따름",
+        "expiry_apply": "적용",
+        "expiry_exempt": "제외",
+        "expiry_hint": "회원 개별 설정이 역할·사이트 설정보다 우선합니다.",
+        "status_applies": "현재 판정: 적용 · 만료 예정 {{date}} (D-{{days}})",
+        "status_expired": "현재 판정: 적용 · 만료됨",
+        "status_not_applies": "현재 판정: 적용 안 됨"
+      }
     },
     "detail": {
       "page_title": "사용자 정보 상세",
@@ -406,6 +420,19 @@
         "total": "총 알림",
         "unread": "안 읽음",
         "view_inbox": "알림함 보기"
+      },
+      "password": {
+        "title": "비밀번호",
+        "changed_at": "마지막 변경",
+        "expires_at": "만료 예정",
+        "not_applies": "적용 안 됨",
+        "expired": "만료됨 ({{date}})",
+        "expires_value": "{{date}} (D-{{days}})",
+        "change_required": "다음 로그인 때 변경 필요",
+        "yes": "예",
+        "no": "아니오",
+        "postponed_until": "연기 종료",
+        "policy": "만료 개별 설정"
       }
     },
     "filter": {
@@ -1246,7 +1273,12 @@
       "menus_admin_locked_hint": "관리자 역할은 모든 메뉴에 항상 접근합니다.",
       "menus_select_all": "전체 선택",
       "menus_clear_all": "전체 해제",
-      "menus_inactive_badge": "비활성"
+      "menus_inactive_badge": "비활성",
+      "password_expiry": "비밀번호 만료",
+      "password_expiry_inherit": "사이트 설정 따름",
+      "password_expiry_apply": "적용",
+      "password_expiry_exempt": "제외",
+      "password_expiry_hint": "이 역할을 가진 회원에게 적용할지 정합니다. 회원 개별 설정이 우선하고, 한 회원의 역할끼리 「적용」과 「제외」가 다르면 「적용」을 따릅니다."
     },
     "modals": {
       "delete_title": "역할 삭제",
@@ -1730,6 +1762,98 @@
           "apply": "적용",
           "apply_hint": "적용한 규칙은 화면 아래 「저장」을 눌러야 실제로 저장됩니다."
         }
+      },
+      "password_policy": {
+        "title": "비밀번호 정책",
+        "desc": "새로 정하는 비밀번호가 따라야 할 규칙과 재사용 제한입니다.",
+        "char_types": "문자 종류 조합",
+        "char_types_label": "영문·숫자·특수문자 중 2종류 이상 섞어 쓰게 함",
+        "char_types_hint": "예: abcd1234(영문+숫자)는 통과하고 abcdefgh(영문만)는 거절합니다.",
+        "block_identifier": "아이디 포함 금지",
+        "block_identifier_label": "이메일 앞부분(아이디)이 들어간 비밀번호 금지",
+        "block_identifier_hint": "이메일 @ 앞부분이 3자 이상일 때만 검사하며, 대소문자는 구분하지 않습니다.",
+        "block_repeated": "같은 문자 반복 금지",
+        "block_repeated_label": "같은 문자를 이어서 반복한 비밀번호 금지",
+        "block_repeated_hint": "예: 4로 두면 aaaa·1111 처럼 같은 문자가 4개 이어진 비밀번호를 쓸 수 없습니다. (3~6)",
+        "repeated_length_aria": "반복 금지 글자 수",
+        "block_sequential": "연속 문자 금지",
+        "block_sequential_label": "1234·abcd·qwer 처럼 이어지는 문자가 들어간 비밀번호 금지",
+        "block_sequential_hint": "숫자·알파벳·자판 배열을 거꾸로 이어 쓴 것(4321·dcba)도 막습니다. (3~6)",
+        "sequential_length_aria": "연속 금지 글자 수",
+        "length_suffix": "글자부터 금지",
+        "reuse": "재사용 금지",
+        "reuse_desc": "최근에 쓴 비밀번호를 다시 쓰지 못하게 합니다.",
+        "reuse_count": "다시 쓸 수 없는 최근 비밀번호 수",
+        "reuse_count_hint": "현재 비밀번호를 포함해 셉니다(1~10). 관리자가 회원 등록·수정 화면에서 정해 준 비밀번호는 검사하지 않고, 그 회원은 다음 로그인 때 비밀번호를 바꿔야 합니다."
+      },
+      "password_expiry": {
+        "title": "비밀번호 만료",
+        "desc": "정한 기간이 지난 비밀번호를 바꾸게 하고, 만료 전에 미리 안내합니다.",
+        "enabled": "비밀번호 만료 사용",
+        "enabled_desc": "켜면 그날부터 기간을 계산합니다. 껐다가 다시 켜면 다시 켠 날부터 계산합니다.",
+        "started_at": "기준 시작일",
+        "started_at_pending": "저장하면 그 시각부터 계산합니다.",
+        "started_at_hint": "켜기 전부터 쓰던 비밀번호도 이 날을 마지막 변경일로 보고 계산합니다.",
+        "days": "만료 기간 (일)",
+        "days_hint": "30~730일. 마지막으로 비밀번호를 바꾼 날부터 이 기간이 지나면 만료됩니다.",
+        "notice_days": "사전 안내 (만료 며칠 전)",
+        "notice_days_hint": "1~30일, 만료 기간보다 짧아야 합니다. 이 날 안내 메일과 사이트 알림을 한 번 보냅니다.",
+        "scope": "적용 범위",
+        "scope_all": "전체 회원",
+        "scope_admin": "관리자만",
+        "scope_selected": "지정한 역할·회원만",
+        "scope_hint": "역할 수정·회원 등록/수정 화면의 「비밀번호 만료」 설정이 이 범위보다 우선합니다.",
+        "scope_selected_hint": "역할 수정·회원 등록/수정 화면에서 「적용」으로 고른 역할·회원에게만 적용됩니다.",
+        "action": "만료 시 동작",
+        "action_force": "변경해야 로그인",
+        "action_remind": "다음에 변경 허용",
+        "action_force_hint": "만료일에 그 회원의 로그인이 모두 해제되고, 다시 로그인할 때 새 비밀번호를 정해야 합니다.",
+        "action_remind_hint": "로그인할 때 변경을 권하고, 「다음에 변경」을 고르면 정한 기간 뒤 다시 안내합니다. 로그인은 막지 않습니다.",
+        "remind_days": "다시 안내 (일 뒤)",
+        "remind_days_hint": "1~90일. 「다음에 변경」을 고른 회원에게 이 기간 뒤 다시 변경을 요구합니다.",
+        "batch_size": "1회 실행당 처리 상한 (명)",
+        "batch_size_hint": "사전 안내·만료 처리에 각각 적용됩니다. 만료가 가까운 회원부터 처리하고 남은 인원은 다음 실행에서 처리합니다. 0을 입력하면 제한 없이 처리합니다.",
+        "schedule_notice": "매일 05:15 에 스케줄러가 안내 메일과 사이트 알림을 보냅니다. 메일 설정과 알림 설정의 「비밀번호 만료 사전 안내」·「비밀번호 만료」가 켜져 있어야 발송됩니다. 개인정보 처리방침에 비밀번호 변경 주기를 미리 알려 두세요.",
+        "rows": {
+          "notice": "만료 사전 안내",
+          "expire": "만료 처리"
+        },
+        "target_count": "대상 {{count}}명",
+        "targets_title": {
+          "notice": "비밀번호 만료 사전 안내 대상",
+          "expire": "비밀번호 만료 처리 대상"
+        },
+        "run_disabled_hint": "비밀번호 만료를 켜고 저장해야 「지금 실행」을 쓸 수 있습니다.",
+        "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}명 처리",
+        "run": {
+          "editor_label": "비밀번호 만료 직권 실행 확인",
+          "modal_title": {
+            "notice": "비밀번호 만료 사전 안내 — 직권 실행",
+            "expire": "비밀번호 만료 처리 — 직권 실행"
+          },
+          "confirm_desc": {
+            "notice": "스케줄러를 기다리지 않고 지금 한 번 안내를 보냅니다.",
+            "expire": "만료 알림을 보내고, 「변경해야 로그인」 설정이면 그 회원의 로그인을 모두 해제합니다."
+          },
+          "count_label": "처리 예정",
+          "count_value": "전체 대상 {{total}}명 중 이번 실행 {{count}}명",
+          "batch_label": "1회 처리 상한",
+          "batch_value": "{{count}}명",
+          "remaining_label": "남은 인원",
+          "remaining_value": "{{count}}명은 다음 실행에서 처리",
+          "expire_mode": "만료 알림 + 로그인 해제(변경해야 로그인 설정일 때)",
+          "disabled_notice": "비밀번호 만료가 꺼져 있어 실행할 수 없습니다. 켜고 저장한 뒤 실행하세요.",
+          "expire_warning": "로그인이 해제된 회원은 다시 로그인할 때 새 비밀번호를 정해야 합니다.",
+          "queue_hint": "실행은 큐에 접수되며, 끝나면 카드에 결과가 표시됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다."
+        }
+      },
+      "activity_log_retention": {
+        "title": "활동 로그(접속기록) 보관",
+        "desc": "관리자·회원의 접속과 작업 기록(활동 로그)을 보관할 기간입니다. 기간이 지난 기록은 매일 04:45 자동으로 삭제됩니다.",
+        "days": "보관 기간",
+        "days_suffix": "일",
+        "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
+        "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다."
       }
     },
     "identity": {
@@ -2035,7 +2159,9 @@
         "analytics_monthly_report": "방문자 통계 월간 리포트",
         "dormant_pre_notice": "휴면 전환 사전 안내",
         "dormant_converted": "휴면 전환 완료",
-        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내"
+        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내",
+        "password_expiry_notice": "비밀번호 만료 사전 안내",
+        "password_expired": "비밀번호 만료"
       },
       "channels_label": "채널:",
       "edit_modal": {

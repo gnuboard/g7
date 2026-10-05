@@ -35,6 +35,8 @@ class RoleResource extends BaseApiResource
                 ? $this->resource->isDeletable()
                 : true,
             'is_active' => $this->getValue('is_active', true),
+            // 비밀번호 만료 (#736) — 역할 폼 선택칸이 읽는다(inherit·apply·exempt)
+            'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
             'users_count' => $this->when(
                 $this->resource->users_count !== null,
                 fn () => $this->resource->users_count
@@ -268,5 +270,21 @@ class RoleResource extends BaseApiResource
         }
 
         return $node;
+    }
+
+    /**
+     * 비밀번호 만료 설정 값을 문자열로 반환합니다.
+     *
+     * @return string inherit | apply | exempt
+     */
+    private function passwordExpiryPolicyValue(): string
+    {
+        $policy = $this->getValue('password_expiry_policy');
+
+        if ($policy instanceof \BackedEnum) {
+            return (string) $policy->value;
+        }
+
+        return is_string($policy) && $policy !== '' ? $policy : 'inherit';
     }
 }

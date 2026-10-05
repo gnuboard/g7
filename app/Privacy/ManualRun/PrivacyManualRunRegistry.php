@@ -5,15 +5,17 @@ namespace App\Privacy\ManualRun;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyManualRunnerInterface;
+use App\Privacy\Contracts\PrivacyManualRunReadableInterface;
 use App\Privacy\DormantAccountService;
 use App\Privacy\PrivacyRetentionManager;
+use App\Services\PasswordExpiryService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * 개인정보 조치 직권 실행 대상 수집기
  *
- * 코어 기본 대상(보유기간 핸들러마다 하나 + 휴면 4단계)과 확장이
+ * 코어 기본 대상(보유기간 핸들러마다 하나 + 휴면 4단계 + 비밀번호 만료 2단계)과 확장이
  * `core.privacy.manual_run_targets` 필터로 더한 대상을 키로 모은다. 접수 API·큐 작업·상태
  * 조회가 모두 이 수집기에서 대상을 찾는다 — 큐 작업은 대상을 직렬화하지 않고 실행 시점에
  * 키로 다시 찾으므로, 그사이 확장이 비활성화되면 실행하지 않고 실패로 기록된다.
@@ -37,10 +39,12 @@ class PrivacyManualRunRegistry
     /**
      * @param  PrivacyRetentionManager  $retentionManager  보유기간 핸들러 수집기
      * @param  DormantAccountService  $dormantAccountService  휴면 생명주기 서비스
+     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      */
     public function __construct(
         private PrivacyRetentionManager $retentionManager,
         private DormantAccountService $dormantAccountService,
+        private PasswordExpiryService $passwordExpiryService,
     ) {}
 
     /**
@@ -63,6 +67,12 @@ class PrivacyManualRunRegistry
 
         foreach (DormantAccountService::STAGES as $stage) {
             $runner = new DormantStageRunner($stage, $this->dormantAccountService);
+            $runners[$runner->key()] = $runner;
+        }
+
+        // 비밀번호 만료 2단계 (#736) — 보안 탭의 「지금 실행」. 개인정보 조치와 같은 접수·진행 장치를 쓴다.
+        foreach (PasswordExpiryService::STAGES as $stage) {
+            $runner = new PasswordExpiryStageRunner($stage, $this->passwordExpiryService);
             $runners[$runner->key()] = $runner;
         }
 
@@ -120,6 +130,43 @@ class PrivacyManualRunRegistry
             ));
         } catch (Throwable $e) {
             Log::warning('개인정보 직권 실행 권한 조회 실패 — 거부', [
+                'key' => $this->identify($runner) ?? get_class($runner),
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return $this->retentionManager->canViewTargetList($permissions, $user);
+    }
+
+    /**
+     * 관리자가 이 대상의 실행 기록(접수자 이름 포함)을 볼 수 있는지 판정합니다.
+     *
+     * 실행할 수 있으면 볼 수 있다. 그 밖에는 {@see PrivacyManualRunReadableInterface} 를 단 대상만 열람 권한으로
+     * 판정한다(판정식은 실행과 같다 — 모두 가져야 하고 범위가 전체). 권한 조회가 던지면 거부한다.
+     *
+     * @param  PrivacyManualRunnerInterface  $runner  대상
+     * @param  User|null  $user  관리자
+     * @return bool 실행 기록 열람 가능 여부
+     */
+    public function canViewRun(PrivacyManualRunnerInterface $runner, ?User $user): bool
+    {
+        if ($this->canRun($runner, $user)) {
+            return true;
+        }
+
+        if (! $runner instanceof PrivacyManualRunReadableInterface) {
+            return false;
+        }
+
+        try {
+            $permissions = array_values(array_filter(
+                $runner->readPermissions(),
+                fn ($permission) => is_string($permission) && $permission !== '',
+            ));
+        } catch (Throwable $e) {
+            Log::warning('개인정보 직권 실행 기록 열람 권한 조회 실패 — 거부', [
                 'key' => $this->identify($runner) ?? get_class($runner),
                 'error' => $e->getMessage(),
             ]);

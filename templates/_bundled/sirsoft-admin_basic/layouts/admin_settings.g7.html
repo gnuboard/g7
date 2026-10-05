@@ -146,6 +146,37 @@
   <data-source id="privacyTargets" label_key="$t:editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
     <params :per_page="20"/>
   </data-source>
+  <!-- 비밀번호 만료 대상 건수 뱃지(보안 탭, #736) — 배치·명단과 같은 조건식이라 화면 숫자와 처리 건수가 어긋나지 않는다.
+       만료가 꺼져 있어도 저장값으로 센다(켜기 전에 규모를 보는 자리). `enabled` 는 저장된 값이라 「지금 실행」 잠금에 쓴다. -->
+  <data-source id="passwordExpiryPreview" label_key="$t:editor.data_source.passwordExpiryPreview" type="api" endpoint="/api/admin/settings/password-expiry-preview" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="null"/>
+    </fallback>
+  </data-source>
+  <!-- 비밀번호 만료 직권 실행 상태(보안 탭) — 개인정보 탭 `privacyManualRuns` 와 같은 방식이다. 접수된 작업이 끝나지 않았으면
+       3초마다 다시 받고, 끝나면 멈추고 건수를 다시 받는다. 판정은 응답값으로만 한다(직전에 넣은 전역 값은 이 성공 핸들러에서
+       낡은 값으로 읽힌다). 권한이 없는 대상은 서버가 `can_run=false` 로 가린다. -->
+  <data-source id="passwordExpiryManualRuns" label_key="$t:editor.data_source.passwordExpiryManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="password_expiry:notice,password_expiry:expire" since="{{_global.passwordExpiryRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" passwordExpiryRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="password_expiry_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="passwordExpiryManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="password_expiry_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="passwordExpiryPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :passwordExpiryRunWatchSince="null"/>
+    </success>
+  </data-source>
   <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
   <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
@@ -277,6 +308,8 @@
     <wait-for>trustedProxy</wait-for>
     <wait-for>privacyPreview</wait-for>
     <wait-for>privacyManualRuns</wait-for>
+    <wait-for>passwordExpiryPreview</wait-for>
+    <wait-for>passwordExpiryManualRuns</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -401,7 +434,8 @@
                  처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).
                  알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —
                  본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).
-                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다. -->
+                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.
+                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736). -->
             <switch on="{{((_global.activeSettingsTab || query.tab) === 'notification_definitions' &amp;&amp; (settings?.data?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active !== false &amp;&amp; (_local.form?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active === false) ? 'confirm_mail_off' : 'save'}}">
               <case when="confirm_mail_off">
                 <sequence>
@@ -425,6 +459,7 @@
                       <toast type="success" message="$t:admin.settings.save_success"/>
                       <refetch-data-source dataSourceId="settings"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" dataSourceId="passwordExpiryPreview"/>
                     </success>
                     <fail>
                       <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
@@ -496,4 +531,6 @@
   <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
   <!-- 개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
   <modal src="partials/admin_settings/_modal_privacy_run.g7.html"/>
+  <!-- 비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다. -->
+  <modal src="partials/admin_settings/_modal_password_expiry_run.g7.html"/>
 </layout>

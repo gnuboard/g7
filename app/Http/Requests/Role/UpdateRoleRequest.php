@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Enums\PasswordExpiryPolicy;
 use App\Enums\ScopeType;
 use App\Extension\HookManager;
 use App\Models\Menu;
@@ -72,6 +73,8 @@ class UpdateRoleRequest extends FormRequest
             'name' => ['sometimes', 'required', new LocaleRequiredTranslatable(maxLength: 100)],
             'description' => ['nullable', new TranslatableField(maxLength: 500)],
             'is_active' => 'sometimes|boolean',
+            // 비밀번호 만료 (#736) — 사이트 설정 따름(기본)·적용·제외. 회원 개별 설정이 우선이고, 한 회원의 역할끼리 부딪치면 적용.
+            'password_expiry_policy' => ['sometimes', 'nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'permissions' => 'nullable|array',
             'permissions.*.id' => ['required', 'integer', Rule::exists(Permission::class, 'id')],
             'permissions.*.scope_type' => ['nullable', Rule::enum(ScopeType::class)],
@@ -94,6 +97,7 @@ class UpdateRoleRequest extends FormRequest
         return [
             'menu_ids' => __('validation.attributes.menu_ids'),
             'menu_ids.*' => __('validation.attributes.menu_ids'),
+            'password_expiry_policy' => __('validation.attributes.password_expiry_policy'),
         ];
     }
 
@@ -112,6 +116,8 @@ class UpdateRoleRequest extends FormRequest
             'menu_ids.array' => __('validation.role.menu_ids.array'),
             'menu_ids.*.integer' => __('validation.role.menu_ids.integer'),
             'menu_ids.*.exists' => __('validation.role.menu_ids.exists'),
+            'password_expiry_policy.string' => __('user.validation.password_expiry_policy_invalid'),
+            'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
         ];
     }
 }

@@ -394,7 +394,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |
 | `FileInput` | 파일 입력 (검증 포함) | accept, maxSize, onChange, onError, buttonText, placeholder, disabled | - |
-| `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`), size (`sm`\|`md`\|`lg`) | - |
+| `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`), size (`sm`\|`md`\|`lg`), lockRepeatClick (boolean — 첫 클릭 즉시 잠가 처리 중 `disabled` 가 그려지기 전의 두 번째 클릭 무시. 접수형 실행 버튼에 `:lockRepeatClick="true"`) | - |
 
 #### 테이블
 

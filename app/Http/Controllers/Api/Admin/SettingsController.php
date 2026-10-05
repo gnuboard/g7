@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
 use App\Http\Requests\Settings\RestoreSettingsRequest;
@@ -18,6 +19,7 @@ use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
+use App\Services\PasswordExpiryService;
 use App\Services\SettingsService;
 use App\Support\EnvPriority;
 use App\Support\TrustedProxyDiagnostic;
@@ -42,6 +44,7 @@ class SettingsController extends AdminBaseController
      * @param  ExtensionStaticCacheService  $staticCacheService  초기 화면 정적 게시
      * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
+     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -50,7 +53,8 @@ class SettingsController extends AdminBaseController
         private OutboundProxyTester $outboundProxyTester,
         private ExtensionStaticCacheService $staticCacheService,
         private PrivacyRetentionManager $privacyRetentionManager,
-        private DormantAccountService $dormantAccountService
+        private DormantAccountService $dormantAccountService,
+        private PasswordExpiryService $passwordExpiryService
     ) {
         parent::__construct();
     }
@@ -245,6 +249,21 @@ class SettingsController extends AdminBaseController
                 ...$this->dormantAccountService->preview(),
             ],
         ]);
+    }
+
+    /**
+     * 비밀번호 만료 처리 대상 건수를 미리 봅니다 (#736 — 데이터를 바꾸지 않음).
+     *
+     * 배치가 실제로 쓰는 것과 **같은 쿼리**로 사전 안내·만료 처리 대상을 센다. 기능이 꺼져 있어도
+     * 저장값으로 센다 — 켜기 전에 규모를 보는 자리다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분하고,
+     * `can_view_targets` 는 요청 관리자가 명단(설정 읽기 + 회원 읽기, 전체 범위)을 볼 수 있는지다.
+     *
+     * @param  PasswordExpiryPreviewRequest  $request  현재 요청 (명단 권한 판정용, 입력 없음)
+     * @return JsonResponse {enabled, started_at, notice, expire, batch_size, can_view_targets}
+     */
+    public function passwordExpiryPreview(PasswordExpiryPreviewRequest $request): JsonResponse
+    {
+        return $this->success('common.success', $this->passwordExpiryService->preview($request->user()));
     }
 
     /**

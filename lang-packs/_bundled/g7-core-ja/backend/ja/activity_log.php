@@ -76,6 +76,12 @@ return [
         'dormant_restored' => '休眠解除',
         'dormant_converted' => '休眠に変更',
         'dormant_withdrawn' => '休眠アカウント退会処理',
+        'password_change' => 'パスワード変更',
+        'password_change_postpone' => 'パスワード変更の延期',
+        'password_expiry_logout' => 'パスワード有効期限切れによるログイン解除',
+
+        // 会員登録・編集でのロール変更 (user.roles_update, #736)
+        'roles_update' => 'ロール変更',
         'manual_run_queued' => '個人情報措置職権実行受付',
         'manual_run_finished' => '個人情報措置職権実行終了',
         'analytics' => [
@@ -149,6 +155,12 @@ return [
         'auth_account_locked_permanently' => 'アカウント無期限ロック (:attempts回失敗、管理者による解除またはパスワード再設定が必要)',
         'auth_account_unlocked' => 'アカウントロック解除 (:email)',
         'auth_account_unlocked_by_password_reset' => 'パスワード再設定によるアカウントロック解除 (:email)',
+        'auth_password_change_self' => 'パスワード変更（本人）',
+        'auth_password_change_by_admin' => '管理者が会員のパスワードを設定 (ID: :user_id)',
+        'auth_password_change_on_login_expired' => 'ログイン時のパスワード変更（使用期間満了）',
+        'auth_password_change_on_login_admin_assigned' => 'ログイン時のパスワード変更（管理者が設定したパスワード）',
+        'auth_password_change_postpone' => 'パスワード変更の延期（:until まで）',
+        'auth_password_expiry_logout' => 'パスワード有効期限切れによるログイン解除 (ID: :user_id, :count台)',
         'schedule_index' => 'スケジュール一覧の閲覧',
         'schedule_show' => 'スケジュール詳細の閲覧 (ID: :schedule_id)',
         'schedule_create' => 'スケジュールの作成 (ID: :schedule_id)',
@@ -245,6 +257,7 @@ return [
         'privacy_manual_run_completed' => '個人情報措置職権実行完了 (:target, :count件)',
         'privacy_manual_run_failed' => '個人情報措置職権実行失敗 (:target)',
         'user_bulk_roles' => 'ユーザーのロール一括変更 (ID: :user_id)',
+        'user_roles_update' => 'ユーザーのロール変更 (ID: :user_id, 追加: :added, 解除: :removed)',
     ],
     'fields' => [
         'name' => '名前',

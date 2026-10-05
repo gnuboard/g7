@@ -429,6 +429,8 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `login` | 로그인 (토큰 저장) | 인증 타입 (admin/user) | body (email, password) |
 | `loginTwoFactor` | 2단계 인증번호 확인 → 로그인 완료 (토큰 저장, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id, code) |
 | `loginTwoFactorResend` | 인증번호 재발송 (기존 challenge 취소 후 새로 발행, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id) |
+| `loginPasswordChange` | 로그인 비밀번호 변경 단계 완료 → 새 토큰 발급 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id, password, password_confirmation) |
+| `loginPasswordChangePostpone` | 로그인 비밀번호 변경 단계 연기 → 로그인 완료 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `logout` | 로그아웃 | - | - |
 | `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
@@ -470,7 +472,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleId |
 | `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginId |
 
-> **이 표는 전수다 (44종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 27 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
+> **이 표는 전수다 (49종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 32 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
 
 > **상세 문서**: 각 핸들러별 상세 사용법은 [actions-handlers.md](actions-handlers.md) 참조
 

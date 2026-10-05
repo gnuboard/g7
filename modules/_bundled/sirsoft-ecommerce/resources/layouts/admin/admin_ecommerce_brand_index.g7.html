@@ -2,7 +2,7 @@
   같은 패널을 등록 모드로 바꿔서 처리한다. 두 패널은 별도 조회 없이 `brands` 한 응답을 나눠 쓴다. -->
 <layout name="admin_ecommerce_brand_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.brand.title" description="$t:sirsoft-ecommerce.admin.brand.description"/>
-  <!-- 목록·상세 양쪽이 함께 쓰는 단일 출처. 검색·정렬은 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 다시 받고, 저장 후에도 `refetchOnMount` 로 최신값을 되받는다 -->
+  <!-- 목록·상세 양쪽이 함께 쓰는 단일 출처. 검색·정렬은 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 다시 받고, 저장 후에도 `refetchOnMount` 로 최신값을 되받는다. 폼(form) 초기값은 여기 init-local 로 두지 않는다 — 데이터 소스의 init-local 은 기본값이 아니라 「응답 경로 → 폼 경로」 매핑이라 빈 값("")이 응답 전체로 읽혀, 목록을 받을 때마다 입력 중인 이름 칸을 목록 응답으로 덮었다. 빈 폼은 「추가」 버튼이 심는다 -->
   <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
     <params sort="{{query.sort}}" search="{{query.search}}"/>
     <error-handling>
@@ -13,14 +13,6 @@
         <show-error-page target="content"/>
       </default>
     </error-handling>
-    <init-local>
-      <field name="form">
-        <field name="name">
-          <field name="ko" value=""/>
-          <field name="en" value=""/>
-        </field>
-      </field>
-    </init-local>
   </data-source>
   <init-local>
     <field name="selectedBrandId" :value="null"/>

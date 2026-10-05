@@ -258,6 +258,90 @@
             "comment": "개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다."
         },
         {
+            "id": "passwordExpiryPreview",
+            "label_key": "$t:editor.data_source.passwordExpiryPreview",
+            "type": "api",
+            "endpoint": "/api/admin/settings/password-expiry-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            },
+            "comment": "비밀번호 만료 대상 건수 뱃지(보안 탭, #736) — 배치·명단과 같은 조건식이라 화면 숫자와 처리 건수가 어긋나지 않는다.\n       만료가 꺼져 있어도 저장값으로 센다(켜기 전에 규모를 보는 자리). `enabled` 는 저장된 값이라 「지금 실행」 잠금에 쓴다."
+        },
+        {
+            "id": "passwordExpiryManualRuns",
+            "label_key": "$t:editor.data_source.passwordExpiryManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "password_expiry:notice,password_expiry:expire",
+                "since": "{{_global.passwordExpiryRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "passwordExpiryRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "password_expiry_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "passwordExpiryManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "password_expiry_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "passwordExpiryPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "passwordExpiryRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "비밀번호 만료 직권 실행 상태(보안 탭) — 개인정보 탭 `privacyManualRuns` 와 같은 방식이다. 접수된 작업이 끝나지 않았으면\n       3초마다 다시 받고, 끝나면 멈추고 건수를 다시 받는다. 판정은 응답값으로만 한다(직전에 넣은 전역 값은 이 성공 핸들러에서\n       낡은 값으로 읽힌다). 권한이 없는 대상은 서버가 `can_run=false` 로 가린다."
+        },
+        {
             "id": "appKey",
             "label_key": "$t:editor.data_source.appKey",
             "type": "api",
@@ -505,7 +589,9 @@
             "staticCacheStatus",
             "trustedProxy",
             "privacyPreview",
-            "privacyManualRuns"
+            "privacyManualRuns",
+            "passwordExpiryPreview",
+            "passwordExpiryManualRuns"
         ]
     },
     "init_actions": [
@@ -955,7 +1041,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.",
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).",
                                         "type": "click",
                                         "handler": "switch",
                                         "params": {
@@ -1041,6 +1127,13 @@
                                                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'privacy'}}",
                                                                 "params": {
                                                                     "dataSourceId": "privacyPreview"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "passwordExpiryPreview"
                                                                 }
                                                             }
                                                         ],
@@ -1201,6 +1294,10 @@
         {
             "comment": "개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
             "partial": "partials/admin_settings/_modal_privacy_run.json"
+        },
+        {
+            "comment": "비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다.",
+            "partial": "partials/admin_settings/_modal_password_expiry_run.json"
         }
     ]
 }

@@ -109,9 +109,10 @@ class UserController extends AdminBaseController
             // withAdminInfo()를 호출하여 관리자용 상세 정보 및 모듈 훅 데이터 포함
             $resource = new UserResource($user);
 
+            // 비밀번호 상태(만료 판정)는 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13).
             return $this->success(
                 'user.fetch_success',
-                $resource->withAdminInfo()
+                array_merge($resource->withAdminInfo(), ['password_status' => $resource->passwordStatusArray()])
             );
         } catch (Exception $e) {
             return $this->error('user.fetch_failed', 500, $e->getMessage());

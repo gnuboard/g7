@@ -66,15 +66,39 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     (value as string) ?? (defaultValue as string) ?? ''
   );
 
+  // 이 입력이 onChange 로 내보낸 값 (외부 value 가 따라잡으면 비운다)
+  const emittedValuesRef = useRef<string[]>([]);
+
+  /**
+   * 내보낸 값을 기록합니다 (늦게 돌아온 메아리 판별용).
+   *
+   * @param emitted 내보낸 값
+   */
+  const rememberEmitted = (emitted: string) => {
+    emittedValuesRef.current.push(emitted);
+    if (emittedValuesRef.current.length > 50) {
+      emittedValuesRef.current.shift();
+    }
+  };
+
   // 외부 value prop이 변경되면 로컬 값도 동기화 (text input에만 적용)
-  // 단, 사용자가 입력 중(포커스 상태)이면 동기화 건너뜀 (debounce 대기 중 stale value 플리커 방지)
+  // 포커스 중에는 내 입력이 debounce 로 늦게 돌아온 값(내가 내보낸 값)이면 건너뛴다(stale value 플리커 방지).
+  // 내가 내보낸 적 없는 값으로 바뀌면 외부가 바꾼 것이므로 포커스 중이어도 따른다 — 종전에는 포커스 중 동기화를
+  // 통째로 건너뛰어, 같은 화면끼리 이동해 폼이 비워져도 칸에 이전 입력이 남았다(#736 S2: 회원 수정 화면 비밀번호).
   useEffect(() => {
     if (!isCheckableType && !isComposingRef.current && value !== undefined) {
+      const next = value as string;
+      const emitted = emittedValuesRef.current;
       const isFocused = internalRef.current && document.activeElement === internalRef.current;
-      if (isFocused) {
+      if (isFocused && emitted.includes(next)) {
+        // 마지막으로 내보낸 값까지 따라잡았으면 기록을 비운다
+        if (emitted[emitted.length - 1] === next) {
+          emittedValuesRef.current = [];
+        }
         return;
       }
-      setLocalValue(value as string);
+      emittedValuesRef.current = [];
+      setLocalValue(next);
     }
   }, [value, isCheckableType]);
 
@@ -90,6 +114,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         // 현재 input의 실제 값을 사용
         const currentValue = (e.target as HTMLInputElement).value;
         setLocalValue(currentValue);
+        rememberEmitted(currentValue);
 
         // 새로운 ChangeEvent 생성
         const changeEvent = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
@@ -118,6 +143,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       if (isComposingRef.current) {
         return;
       }
+      rememberEmitted(newValue);
       if (onChange) {
         onChange(e);
       }

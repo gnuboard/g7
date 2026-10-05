@@ -153,8 +153,15 @@
     "change_password_processing": "変更中...",
     "change_password_success": "パスワードが変更されました",
     "change_password_failed": "パスワード変更に失敗しました",
-    "password_min_length": "パスワードは8文字以上である必要があります",
-    "back_to_profile": "自分の情報に戻る"
+    "back_to_profile": "自分の情報に戻る",
+    "password_status": {
+      "changed_at": "最終変更 {{date}}",
+      "expires_at": "有効期限 {{date}}",
+      "days_left": "D-{{days}}",
+      "expired": "期限切れ",
+      "other_devices_logged_out": "他の端末ではログアウトされました。この端末はログイン状態が維持されます。",
+      "changed_toast": "パスワードが変更されました。他の端末ではログアウトされました。"
+    }
   },
   "orders": {
     "title": "注文履歴",

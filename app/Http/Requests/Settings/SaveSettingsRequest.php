@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Settings;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Enums\PasswordExpiryAction;
+use App\Enums\PasswordExpiryScope;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
@@ -90,6 +92,27 @@ class SaveSettingsRequest extends FormRequest
     private const IP_RULE_TEXT_MAX = 255;
 
     /**
+     * 보안 탭의 정수 키 (정수 문자열 정규화 대상) — 로그인 보안·비밀번호 정책·활동 로그 보관
+     */
+    private const SECURITY_INTEGER_FIELDS = [
+        // 같은 탭의 기존 숫자 칸 — 빠지면 화면에서 고친 값이 문자열 '45' 로 저장되고, 토큰 유지시간 '0'(무한대)은
+        // 「0 은 허용」 조건(정수 비교)을 못 넘어 422 가 된다(#736 전수 실측 O-2).
+        'auth_token_lifetime',
+        'max_login_attempts',
+        'login_lockout_time',
+        // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
+        'password_min_length',
+        'password_repeated_chars_length',
+        'password_sequential_chars_length',
+        'password_reuse_count',
+        'password_expiry_days',
+        'password_expiry_notice_days',
+        'password_expiry_remind_days',
+        'password_expiry_batch_size',
+        'activity_log_retention_days',
+    ];
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 권한 체크는 permission 미들웨어 체인이 담당하므로 항상 true 반환
@@ -147,6 +170,63 @@ class SaveSettingsRequest extends FormRequest
         $this->normalizeAllowedExtensions();
         $this->normalizeIpRestrictionLists();
         $this->normalizePrivacyIntegerFields();
+        $this->normalizeSecurityIntegerFields();
+    }
+
+    /**
+     * 보안 탭 비밀번호 정책 정수 키의 숫자 문자열을 정수로 정규화합니다.
+     *
+     * 개인정보 탭(`normalizePrivacyIntegerFields`)과 같은 이유다 — 숫자 입력칸이 보낸 `"3"` 이
+     * 그대로 저장되면 기본값(정수)과 저장값(문자열)의 타입이 갈린다. 빈 문자열·비수치는 남겨
+     * 검증이 잡게 한다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    private function normalizeSecurityIntegerFields(): void
+    {
+        $security = $this->input('security');
+
+        if (! is_array($security)) {
+            return;
+        }
+
+        $changed = false;
+
+        foreach (self::SECURITY_INTEGER_FIELDS as $field) {
+            if (! array_key_exists($field, $security)) {
+                continue;
+            }
+
+            $value = $security[$field];
+
+            if (is_string($value) && $value !== '' && ctype_digit($value)) {
+                $security[$field] = (int) $value;
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $this->merge(['security' => $security]);
+        }
+    }
+
+    /**
+     * 보안 탭 비밀번호 정책 정수 키의 검증 규칙을 반환합니다.
+     *
+     * 경계는 `config('core.settings_limits.security_{key}_min|_max')` 가 SSoT 다 — 화면(`_meta.limits`)과
+     * 판독부 클램프도 같은 값을 읽는다.
+     *
+     * @param  string  $key  security 카테고리 안의 키
+     * @return array<int, string> 검증 규칙
+     */
+    private function securityIntegerRules(string $key): array
+    {
+        return [
+            'nullable',
+            'integer',
+            'min:'.config("core.settings_limits.security_{$key}_min"),
+            'max:'.config("core.settings_limits.security_{$key}_max"),
+        ];
     }
 
     /**
@@ -449,6 +529,27 @@ class SaveSettingsRequest extends FormRequest
                 'max:'.config('core.settings_limits.security_password_min_length_max', 64),
             ],
             'security.require_password_special_char' => ['nullable', 'boolean'],
+            // 비밀번호 작성·재사용·만료 정책 (#736). 신규 키라 미전송(기존 클라이언트)을 허용한다 —
+            // getTabRules(required 화)를 쓰지 않아 다른 필드만 고친 부분 저장이 깨지지 않는다.
+            // `password_expiry_started_at` 은 규칙을 두지 않는다 — 서버 전용 값이라 요청으로는 저장되지
+            // 않고(validated() 에서 빠진다), 꺼짐→켜짐 전이 때 RecordPasswordExpiryStartListener 가 기록한다.
+            'security.password_require_char_types' => ['nullable', 'boolean'],
+            'security.password_block_identifier' => ['nullable', 'boolean'],
+            'security.password_block_repeated_chars' => ['nullable', 'boolean'],
+            'security.password_repeated_chars_length' => $this->securityIntegerRules('password_repeated_chars_length'),
+            'security.password_block_sequential_chars' => ['nullable', 'boolean'],
+            'security.password_sequential_chars_length' => $this->securityIntegerRules('password_sequential_chars_length'),
+            'security.password_reuse_prevention_enabled' => ['nullable', 'boolean'],
+            'security.password_reuse_count' => $this->securityIntegerRules('password_reuse_count'),
+            'security.password_expiry_enabled' => ['nullable', 'boolean'],
+            'security.password_expiry_days' => $this->securityIntegerRules('password_expiry_days'),
+            'security.password_expiry_notice_days' => $this->securityIntegerRules('password_expiry_notice_days'),
+            'security.password_expiry_scope' => ['nullable', 'string', Rule::in(PasswordExpiryScope::values())],
+            'security.password_expiry_action' => ['nullable', 'string', Rule::in(PasswordExpiryAction::values())],
+            'security.password_expiry_remind_days' => $this->securityIntegerRules('password_expiry_remind_days'),
+            'security.password_expiry_batch_size' => $this->securityIntegerRules('password_expiry_batch_size'),
+            // 활동 로그(접속기록) 보관 기간 — 하한 365 는 법정 최소(#736 D14). 파기 서비스도 같은 바닥을 다시 건다.
+            'security.activity_log_retention_days' => $this->securityIntegerRules('activity_log_retention_days'),
             'security.two_factor_auth' => ['nullable', 'boolean'],
             // 적용 범위. 미전송(기존 클라이언트)은 기본값 'all' 유지 — 레거시 저장값
             // (two_factor_auth=true 단독)의 "전체" 의미가 그대로 보존된다.
@@ -830,7 +931,55 @@ class SaveSettingsRequest extends FormRequest
 
             $this->validateIpRestrictionSelfLockout($validator);
             $this->validatePrivacyDormantThresholds($validator);
+            $this->validatePasswordExpiryThresholds($validator);
         });
+    }
+
+    /**
+     * 비밀번호 만료 사전 안내일이 만료 기간보다 짧은지 검사합니다.
+     *
+     * 휴면(`validatePrivacyDormantThresholds`)과 같은 구조다 — 안내일이 기간과 같거나 길면 안내 창이
+     * 만료 이후로 접혀 사전 안내 없이 만료와 안내가 같은 날 일어난다. 저장은 탭 몫만 보내므로
+     * 저장값 위에 제출분을 얹어 "저장 후 설정" 으로 판정한다. 형식 오류가 있으면 그것만 먼저 보고한다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     * @return void 검증기에 오류를 직접 더한다
+     */
+    private function validatePasswordExpiryThresholds(Validator $validator): void
+    {
+        if ($this->input('_tab') !== 'security') {
+            return;
+        }
+
+        $submitted = $this->input('security');
+
+        if (! is_array($submitted)) {
+            return;
+        }
+
+        foreach (array_keys($validator->errors()->messages()) as $field) {
+            if (str_starts_with($field, 'security.password_expiry_')) {
+                return;
+            }
+        }
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('security');
+        $effective = array_merge(is_array($stored) ? $stored : [], $submitted);
+
+        // 만료를 켜지 않았으면 기간 순서는 아직 아무 일도 하지 않는다 — 켤 때 막는다.
+        if (! filter_var($effective['password_expiry_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $expiryDays = (int) ($effective['password_expiry_days'] ?? 0);
+        $noticeDays = (int) ($effective['password_expiry_notice_days'] ?? 0);
+
+        if ($noticeDays >= $expiryDays) {
+            $validator->errors()->add(
+                'security.password_expiry_notice_days',
+                __('validation.settings.password_expiry_notice_days_lt_expiry_days')
+            );
+        }
     }
 
     /**
@@ -1137,6 +1286,41 @@ class SaveSettingsRequest extends FormRequest
             'security.login_lockout_time.integer' => __('validation.settings.login_lockout_time_integer'),
             'security.login_lockout_time.min' => __('validation.settings.login_lockout_time_min'),
             'security.login_lockout_time.max' => __('validation.settings.login_lockout_time_max'),
+            // 비밀번호 정책 (#736) — 경계 숫자는 규칙의 :min/:max 가 채운다
+            'security.password_require_char_types.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_block_identifier.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_block_repeated_chars.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_repeated_chars_length.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_repeated_chars_length.min' => __('validation.settings.password_policy_min'),
+            'security.password_repeated_chars_length.max' => __('validation.settings.password_policy_max'),
+            'security.password_block_sequential_chars.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_sequential_chars_length.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_sequential_chars_length.min' => __('validation.settings.password_policy_min'),
+            'security.password_sequential_chars_length.max' => __('validation.settings.password_policy_max'),
+            'security.password_reuse_prevention_enabled.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_reuse_count.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_reuse_count.min' => __('validation.settings.password_policy_min'),
+            'security.password_reuse_count.max' => __('validation.settings.password_policy_max'),
+            'security.password_expiry_enabled.boolean' => __('validation.settings.password_policy_boolean'),
+            'security.password_expiry_days.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_expiry_days.min' => __('validation.settings.password_policy_min'),
+            'security.password_expiry_days.max' => __('validation.settings.password_policy_max'),
+            'security.password_expiry_notice_days.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_expiry_notice_days.min' => __('validation.settings.password_policy_min'),
+            'security.password_expiry_notice_days.max' => __('validation.settings.password_policy_max'),
+            'security.password_expiry_scope.string' => __('validation.settings.password_expiry_scope_in'),
+            'security.password_expiry_scope.in' => __('validation.settings.password_expiry_scope_in'),
+            'security.password_expiry_action.string' => __('validation.settings.password_expiry_action_in'),
+            'security.password_expiry_action.in' => __('validation.settings.password_expiry_action_in'),
+            'security.password_expiry_remind_days.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_expiry_remind_days.min' => __('validation.settings.password_policy_min'),
+            'security.password_expiry_remind_days.max' => __('validation.settings.password_policy_max'),
+            'security.password_expiry_batch_size.integer' => __('validation.settings.password_policy_integer'),
+            'security.password_expiry_batch_size.min' => __('validation.settings.password_policy_min'),
+            'security.password_expiry_batch_size.max' => __('validation.settings.password_policy_max'),
+            'security.activity_log_retention_days.integer' => __('validation.settings.password_policy_integer'),
+            'security.activity_log_retention_days.min' => __('validation.settings.activity_log_retention_days_min'),
+            'security.activity_log_retention_days.max' => __('validation.settings.password_policy_max'),
             // IP 접근 제한 (자기 잠금 문구는 withValidator() 가 현재 IP 를 넣어 직접 부착한다)
             'security.ip_restriction_enabled.boolean' => __('validation.settings.ip_restriction_enabled_boolean'),
             'security.admin_allowed_ips.array' => __('validation.settings.admin_allowed_ips_array'),
@@ -1427,6 +1611,22 @@ class SaveSettingsRequest extends FormRequest
             'security.login_lockout_time' => __('validation.attributes.login_lockout_time'),
             'security.password_min_length' => __('validation.attributes.password_min_length'),
             'security.require_password_special_char' => __('validation.attributes.require_password_special_char'),
+            'security.password_require_char_types' => __('validation.attributes.password_require_char_types'),
+            'security.password_block_identifier' => __('validation.attributes.password_block_identifier'),
+            'security.password_block_repeated_chars' => __('validation.attributes.password_block_repeated_chars'),
+            'security.password_repeated_chars_length' => __('validation.attributes.password_repeated_chars_length'),
+            'security.password_block_sequential_chars' => __('validation.attributes.password_block_sequential_chars'),
+            'security.password_sequential_chars_length' => __('validation.attributes.password_sequential_chars_length'),
+            'security.password_reuse_prevention_enabled' => __('validation.attributes.password_reuse_prevention_enabled'),
+            'security.password_reuse_count' => __('validation.attributes.password_reuse_count'),
+            'security.password_expiry_enabled' => __('validation.attributes.password_expiry_enabled'),
+            'security.password_expiry_days' => __('validation.attributes.password_expiry_days'),
+            'security.password_expiry_notice_days' => __('validation.attributes.password_expiry_notice_days'),
+            'security.password_expiry_scope' => __('validation.attributes.password_expiry_scope'),
+            'security.password_expiry_action' => __('validation.attributes.password_expiry_action'),
+            'security.password_expiry_remind_days' => __('validation.attributes.password_expiry_remind_days'),
+            'security.password_expiry_batch_size' => __('validation.attributes.password_expiry_batch_size'),
+            'security.activity_log_retention_days' => __('validation.attributes.activity_log_retention_days'),
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
             'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),

@@ -1,0 +1,29 @@
+<!-- 보안 탭 — 「활동 로그(접속기록) 보관」 카드 (#736 D14). 접근 제한 카드 뒤, 앱 키 카드 앞에 들어간다.
+  활동 로그 자동 파기(매일 04:45)가 이 기간을 따른다. 하한 365일은 개인정보의 안전성 확보조치 기준 제8조(접속기록 1년)의
+  법정 최소라 저장 검증도 파기 서비스도 같은 바닥을 건다 — 칸의 min/max 는 서버 한계(`_meta.limits`)를 그대로 읽는다.
+  권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관한다는 것을 안내 상자로 알린다(실제 판정은 서버 설정 목록).
+  반응형 프리셋을 쓰지 않는다 — 칸 하나와 안내 상자라 폭에 따라 바뀌는 배치가 없다.
+  e2e:allow 화면 축은 tests/Playwright/specs/admin/settings-activity-log-retention.spec.ts 가 지난다 -->
+<partial description="환경설정 보안 탭 - 활동 로그 보관 카드">
+  <div data-ref="card_activity_log_retention" class="card-stack-item">
+    <h3 class="card-title">$t:admin.settings.security.activity_log_retention.title</h3>
+    <div class="card-description">$t:admin.settings.security.activity_log_retention.desc</div>
+    <div class="row-stack">
+      <div data-ref="field_activity_log_retention_days" class="">
+        <label class="form-label">$t:admin.settings.security.activity_log_retention.days</label>
+        <div class="flex-center gap-2">
+          <input type="number" name="security.activity_log_retention_days" placeholder="365" min="{{_local?.form?._meta?.limits?.security_activity_log_retention_days_min ?? 365}}" max="{{_local?.form?._meta?.limits?.security_activity_log_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.activity_log_retention_days'] ? 'input-error' : ''}}"/>
+          <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.security.activity_log_retention.days_suffix</span>
+        </div>
+        <span data-if="{{_local.errors?.['security.activity_log_retention_days']}}" class="form-error">{{_local.errors?.['security.activity_log_retention_days']?.[0] ?? ''}}</span>
+        <p class="text-hint mt-1">$t:admin.settings.security.activity_log_retention.days_hint|min={{_local?.form?._meta?.limits?.security_activity_log_retention_days_min ?? 365}}|max={{_local?.form?._meta?.limits?.security_activity_log_retention_days_max ?? 3650}}</p>
+      </div>
+      <div data-ref="activity_log_retention_legal_notice" class="alert-info">
+        <div class="flex gap-3">
+          <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+          <p class="text-label-subtle">$t:admin.settings.security.activity_log_retention.legal_notice</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

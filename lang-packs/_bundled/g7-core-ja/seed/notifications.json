@@ -47,6 +47,38 @@
       }
     }
   },
+  "password_expiry_notice": {
+    "definition": {
+      "name": "パスワード有効期限の事前通知",
+      "description": "パスワードの使用期間がまもなく終了するユーザーに事前に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワード有効期限 {days_left}日前のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>お客様のパスワードの使用期間は<strong>{expires_at}</strong>に終了します。</p><p>期限前に変更してください。期限切れ後はログイン時に新しいパスワードを設定する必要があります。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">パスワードを変更する</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワード有効期限の{days_left}日前です",
+        "body": "{name}様、パスワードは{expires_at}に有効期限が切れます。期限前に変更してください。"
+      }
+    }
+  },
+  "password_expired": {
+    "definition": {
+      "name": "パスワード有効期限切れ",
+      "description": "パスワードの使用期間が終了したことを知らせる通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワードの使用期間が終了しました",
+        "body": "<h1>{name}様、こんにちは。</h1><p>お客様のパスワードの使用期間は<strong>{expired_at}</strong>に終了しました。</p><p>次回ログイン時に新しいパスワードを設定する画面が表示されます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワードの有効期限が切れました",
+        "body": "パスワードの使用期間は{expired_at}に終了しました。次回ログイン時に新しいパスワードを設定してください。"
+      }
+    }
+  },
   "sitemap_regenerated": {
     "definition": {
       "name": "サイトマップ再生成完了",

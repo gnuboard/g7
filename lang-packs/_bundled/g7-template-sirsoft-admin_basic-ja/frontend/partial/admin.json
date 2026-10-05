@@ -337,7 +337,21 @@
       "validation_error": "入力情報を確認してください。",
       "error_loading_user": "ユーザー情報の読み込み中にエラーが発生しました。",
       "no_edit_permission": "このユーザーの情報を編集する権限がありません。",
-      "go_to_detail": "詳細ページに移動"
+      "go_to_detail": "詳細ページに移動",
+      "password_policy": {
+        "admin_assigned_notice": "保存すると、この会員は次回ログイン時にパスワードを変更する必要があります。管理者が設定したパスワードは再利用の検査を行いません。",
+        "create_notice": "登録した会員は初回ログイン時にパスワードを変更する必要があります。",
+        "current_password": "現在のパスワード",
+        "current_password_hint": "自分のアカウントのパスワードを変更するには現在のパスワードを入力する必要があります。",
+        "expiry": "パスワードの有効期限",
+        "expiry_inherit": "ロール・サイト設定に従う",
+        "expiry_apply": "適用",
+        "expiry_exempt": "除外",
+        "expiry_hint": "会員個別の設定がロール・サイト設定より優先されます。",
+        "status_applies": "現在の判定: 適用 · 期限 {{date}} (D-{{days}})",
+        "status_expired": "現在の判定: 適用 · 期限切れ",
+        "status_not_applies": "現在の判定: 適用されない"
+      }
     },
     "detail": {
       "page_title": "ユーザー情報の詳細",
@@ -386,7 +400,20 @@
         "unread": "未読",
         "view_inbox": "通知ボックスを表示"
       },
-      "dormant_at": "休眠転換日"
+      "dormant_at": "休眠転換日",
+      "password": {
+        "title": "パスワード",
+        "changed_at": "最終変更",
+        "expires_at": "有効期限",
+        "not_applies": "適用されない",
+        "expired": "期限切れ ({{date}})",
+        "expires_value": "{{date}} (D-{{days}})",
+        "change_required": "次回ログイン時に変更が必要",
+        "yes": "はい",
+        "no": "いいえ",
+        "postponed_until": "延期終了",
+        "policy": "有効期限の個別設定"
+      }
     },
     "bulk_status_change": "ステータス変更",
     "filter": {
@@ -1244,7 +1271,12 @@
       "menus_admin_locked_hint": "管理者ロールは常にすべてのメニューにアクセスできます。",
       "menus_select_all": "すべて選択",
       "menus_clear_all": "すべて解除",
-      "menus_inactive_badge": "無効"
+      "menus_inactive_badge": "無効",
+      "password_expiry": "パスワードの有効期限",
+      "password_expiry_inherit": "サイト設定に従う",
+      "password_expiry_apply": "適用",
+      "password_expiry_exempt": "除外",
+      "password_expiry_hint": "このロールを持つ会員に適用するかを決めます。会員個別の設定が優先され、1人の会員のロール同士で「適用」と「除外」が異なる場合は「適用」に従います。"
     },
     "modals": {
       "delete_title": "ロール削除",
@@ -1730,6 +1762,98 @@
           "apply": "適用",
           "apply_hint": "適用したルールは、画面下の「保存」をクリックして初めて実際に保存されます。"
         }
+      },
+      "password_policy": {
+        "title": "パスワードポリシー",
+        "desc": "新しく設定するパスワードが従うべきルールと再利用の制限です。",
+        "char_types": "文字種の組み合わせ",
+        "char_types_label": "英字・数字・記号のうち2種類以上を混ぜて使う",
+        "char_types_hint": "例: abcd1234(英字+数字)は通過し、abcdefgh(英字のみ)は拒否します。",
+        "block_identifier": "ID の含有禁止",
+        "block_identifier_label": "メールアドレスの前半(ID)を含むパスワードを禁止",
+        "block_identifier_hint": "メールアドレスの @ の前が3文字以上のときのみ検査し、大文字・小文字は区別しません。",
+        "block_repeated": "同じ文字の連続禁止",
+        "block_repeated_label": "同じ文字を続けて繰り返したパスワードを禁止",
+        "block_repeated_hint": "例: 4 にすると aaaa・1111 のように同じ文字が4つ続くパスワードは使えません。(3〜6)",
+        "repeated_length_aria": "連続禁止の文字数",
+        "block_sequential": "連続文字の禁止",
+        "block_sequential_label": "1234・abcd・qwer のように続く文字を含むパスワードを禁止",
+        "block_sequential_hint": "数字・アルファベット・キー配列を逆順に続けたもの(4321・dcba)も禁止します。(3〜6)",
+        "sequential_length_aria": "連続文字禁止の文字数",
+        "length_suffix": "文字以上で禁止",
+        "reuse": "再利用の禁止",
+        "reuse_desc": "最近使ったパスワードを再び使えないようにします。",
+        "reuse_count": "再利用できない最近のパスワード数",
+        "reuse_count_hint": "現在のパスワードを含めて数えます(1〜10)。管理者が会員の登録・編集画面で設定したパスワードは検査せず、その会員は次回ログイン時にパスワードを変更する必要があります。"
+      },
+      "password_expiry": {
+        "title": "パスワードの有効期限",
+        "desc": "設定した期間が過ぎたパスワードを変更させ、期限切れの前に事前に案内します。",
+        "enabled": "パスワードの有効期限を使用",
+        "enabled_desc": "オンにした日から期間を計算します。オフにして再びオンにすると、その日から計算します。",
+        "started_at": "基準開始日",
+        "started_at_pending": "保存するとその時点から計算します。",
+        "started_at_hint": "オンにする前から使っていたパスワードも、この日を最終変更日とみなして計算します。",
+        "days": "有効期間 (日)",
+        "days_hint": "30〜730日。最後にパスワードを変更した日からこの期間が過ぎると期限切れになります。",
+        "notice_days": "事前案内 (期限の何日前)",
+        "notice_days_hint": "1〜30日、有効期間より短くする必要があります。この日に案内メールとサイト通知を1回送ります。",
+        "scope": "適用範囲",
+        "scope_all": "全会員",
+        "scope_admin": "管理者のみ",
+        "scope_selected": "指定したロール・会員のみ",
+        "scope_hint": "ロール編集・会員の登録/編集画面の「パスワードの有効期限」設定がこの範囲より優先されます。",
+        "scope_selected_hint": "ロール編集・会員の登録/編集画面で「適用」を選んだロール・会員にのみ適用されます。",
+        "action": "期限切れ時の動作",
+        "action_force": "変更しないとログイン不可",
+        "action_remind": "後で変更を許可",
+        "action_force_hint": "期限切れの日にその会員のログインがすべて解除され、次回ログイン時に新しいパスワードを設定する必要があります。",
+        "action_remind_hint": "ログイン時に変更を勧め、「後で変更」を選ぶと設定した期間後に再度案内します。ログインは妨げません。",
+        "remind_days": "再案内 (日後)",
+        "remind_days_hint": "1〜90日。「後で変更」を選んだ会員に、この期間後に再び変更を求めます。",
+        "batch_size": "1回の実行あたりの処理上限 (人)",
+        "batch_size_hint": "事前案内・期限切れ処理にそれぞれ適用されます。期限が近い会員から処理し、残りは次回の実行で処理します。0を入力すると制限なく処理します。",
+        "schedule_notice": "毎日 05:15 にスケジューラーが案内メールとサイト通知を送ります。メール設定と通知設定の「パスワード有効期限の事前案内」・「パスワードの有効期限切れ」がオンになっている必要があります。個人情報処理方針でパスワードの変更周期を事前にお知らせください。",
+        "rows": {
+          "notice": "有効期限の事前案内",
+          "expire": "期限切れ処理"
+        },
+        "target_count": "対象 {{count}}人",
+        "targets_title": {
+          "notice": "パスワード有効期限の事前案内対象",
+          "expire": "パスワード期限切れ処理対象"
+        },
+        "run_disabled_hint": "パスワードの有効期限をオンにして保存すると「今すぐ実行」を使えます。",
+        "last_completed": "最後の職権実行：{{at}}·{{by}}·{{count}}人処理",
+        "run": {
+          "editor_label": "パスワード有効期限の手動実行の確認",
+          "modal_title": {
+            "notice": "パスワード有効期限の事前案内 — 手動実行",
+            "expire": "パスワード期限切れ処理 — 手動実行"
+          },
+          "confirm_desc": {
+            "notice": "スケジューラーを待たずに今すぐ1回案内を送ります。",
+            "expire": "期限切れ通知を送り、「変更しないとログイン不可」の設定ならその会員のログインをすべて解除します。"
+          },
+          "count_label": "処理予定",
+          "count_value": "全対象 {{total}}人のうち今回の実行 {{count}}人",
+          "batch_label": "1回の処理上限",
+          "batch_value": "{{count}}人",
+          "remaining_label": "残り",
+          "remaining_value": "{{count}}人は次回の実行で処理",
+          "expire_mode": "期限切れ通知 + ログイン解除(変更しないとログイン不可の設定時)",
+          "disabled_notice": "パスワードの有効期限がオフのため実行できません。オンにして保存してから実行してください。",
+          "expire_warning": "ログインが解除された会員は、次回ログイン時に新しいパスワードを設定する必要があります。",
+          "queue_hint": "実行はキューに受け付けられ、終わるとカードに結果が表示されます。同じ対象に受け付けられた作業が終わる前に再度実行することはできません。"
+        }
+      },
+      "activity_log_retention": {
+        "title": "アクティビティログ(アクセス記録)の保管",
+        "desc": "管理者・会員のアクセスと操作の記録(アクティビティログ)を保管する期間です。期間を過ぎた記録は毎日 04:45 に自動で削除されます。",
+        "days": "保管期間",
+        "days_suffix": "日",
+        "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
+        "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
       }
     },
     "identity": {
@@ -2035,7 +2159,9 @@
         "analytics_monthly_report": "訪問者統計月間レポート",
         "dormant_pre_notice": "休眠転換事前通知",
         "dormant_converted": "休眠転換完了",
-        "dormant_withdraw_notice": "休眠アカウント退会予定通知"
+        "dormant_withdraw_notice": "休眠アカウント退会予定通知",
+        "password_expiry_notice": "パスワード有効期限の事前通知",
+        "password_expired": "パスワード有効期限切れ"
       },
       "channels_label": "チャネル:",
       "edit_modal": {

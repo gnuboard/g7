@@ -142,6 +142,20 @@ describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
     });
 
     /**
+     * 더블클릭: 실행 버튼 `disabled` 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다
+     * (#736 S2 P10 — 만료·개인정보 두 확인 창 모두). 버튼이 첫 클릭 즉시 스스로 잠근다.
+     *
+     * @scenario target_kind=dormant_stage, toggle=off, actor=runner
+     *
+     * @effects confirm_modal_execute_locks_repeat_click
+     */
+    it('확인 창 실행 버튼은 연타 잠금을 켜고, 처리 중에는 disabled 로 넘긴다', () => {
+        const execute = findById(runModal, 'privacy_run_execute') as any;
+        expect(execute?.props?.lockRepeatClick).toBe(true);
+        expect(String(execute?.props?.disabled)).toContain('_global.privacyRun?.submitting');
+    });
+
+    /**
      * @scenario target_kind=retention_handler, toggle=on, actor=runner
      *
      * @effects card_shows_active_status_and_last_result

@@ -9,6 +9,7 @@
 ### Added
 
 - 본인인증 메일 링크를 연 화면(본인 확인 결과 안내)의 일본어 문구를 추가했습니다.
+- 로그인 비밀번호 변경 단계·비밀번호 규칙 안내·마이페이지 비밀번호 상태 문구(`auth.password_change.*`·`auth.password_rules.*`·`mypage.profile.password_status.*`)를 일본어로 번역했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 없음).
 - 권한이 없어 내용이 가려진 비밀 댓글 자리에 뜨는 안내 문구(`board.comment.secret_comment` — 「비밀 댓글입니다.」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내만 한국어로 보입니다.
 - 구매할 수 있는 옵션이 없는 상품 안내(`product.no_purchasable_option`)의 일본어 번역을 추가했습니다.
 - 휴면이 풀린 로그인에 뜨는 안내 문구를 일본어로 번역했습니다(`auth.dormancy_restored`). 없으면 일본어 로케일의 회원이 자기 계정이 잠겼다 풀린 사실을 한국어 안내로만 보게 됩니다.
@@ -52,6 +53,7 @@
 
 ### Removed
 
+- 호스트 템플릿에서 지운 `mypage.profile.password_min_length` 번역을 함께 지웠습니다.
 - 쓰이지 않던 레거시 반응 컴포넌트(`PostReactions`)가 템플릿에서 빠지면서, 그 컴포넌트만 쓰던
   일본어 문구도 함께 걷어냈습니다 — 반응 이름 5종(`board.reaction.{like,laugh,agree,thanks,wow}`),
   편집기 속성·컴포넌트 라벨(`editor.control.pr_*`·`editor.component.post_reactions`·
@@ -61,6 +63,7 @@
 
 ### Changed
 
+- 비밀번호 입력의 「n종류 이상 조합」 안내를 영문·숫자·기호 세 종류 기준 문구로 바꿨습니다(`auth.password_input.rules.minTypes`).
 - 언어팩을 전량 재생성하면서 기존 일본어 문구 669건이 최신 번역으로 바뀌었습니다 — 「会社概要」→「企業情報」, 「秘密の投稿です」→「非公開投稿」 처럼 뜻은 같고 표현이 달라진 것이 대부분입니다. ko 원본에서 이미 지워진 고아 키 3건(`mypage.scrap.notice`·`notice_sub`·`scrapped_at`)을 이 팩에서도 걷어내려면 전량 재생성이 필요했습니다.
 
 - 휴면이 풀린 로그인에 뜨는 안내 문구의 일본어 낱말을 「休眠」으로 맞췄습니다(`auth.dormancy_restored`). 「休止状態が解除されました」였는데, 그 회원이 받은 휴면 전환 안내 메일은 「休眠」이라 같은 사건이 다른 일처럼 읽혔습니다.

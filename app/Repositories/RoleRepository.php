@@ -74,6 +74,21 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
+     * 역할 ID 목록을 식별자로 바꿉니다 (없는 ID 는 건너뜁니다).
+     *
+     * @param  array<int, int>  $ids  역할 ID 목록
+     * @return array<int, string> 역할 ID => 식별자
+     */
+    public function getIdentifiersByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return Role::whereIn('id', array_values($ids))->pluck('identifier', 'id')->all();
+    }
+
+    /**
      * 식별자로 역할에 소속된 사용자들을 조회합니다.
      *
      * 역할이 없거나 소속 사용자가 없으면 빈 컬렉션을 반환합니다.

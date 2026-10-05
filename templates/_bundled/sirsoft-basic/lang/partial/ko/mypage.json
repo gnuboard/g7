@@ -153,8 +153,15 @@
         "change_password_processing": "변경 중...",
         "change_password_success": "비밀번호가 변경되었습니다.",
         "change_password_failed": "비밀번호 변경에 실패했습니다.",
-        "password_min_length": "비밀번호는 8자 이상이어야 합니다.",
-        "back_to_profile": "내 정보로 돌아가기"
+        "back_to_profile": "내 정보로 돌아가기",
+        "password_status": {
+            "changed_at": "마지막 변경 {{date}}",
+            "expires_at": "만료 예정 {{date}}",
+            "days_left": "D-{{days}}",
+            "expired": "만료됨",
+            "other_devices_logged_out": "다른 기기에서는 로그아웃되었습니다. 이 기기는 로그인 상태가 유지됩니다.",
+            "changed_toast": "비밀번호가 변경되었습니다. 다른 기기에서는 로그아웃되었습니다."
+        }
     },
     "orders": {
         "title": "주문내역",

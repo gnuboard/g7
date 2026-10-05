@@ -180,6 +180,42 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 "오늘 전환된다" 는 메일을 받은 다음 날 전환되는 식의 불일치가 생깁니다. 계산 기준은 **집행
 쿼리와 같은 시점**(통지 시각 + `privacy.dormant_notice_days`)입니다.
 
+### 비밀번호 정책 훅 (7.1.0)
+
+비밀번호를 **바꾸는** 경로(재설정·마이페이지·정보수정·관리자 수정·로그인 변경 단계)는 코어의 변경 기록 지점
+한 곳을 지나며 `core.auth.password_change_recorded` 를 발행합니다. 새 회원을 **만드는** 경로(가입·관리자 등록·설치)는
+변경일만 기록하고 이 훅을 발행하지 않습니다 — 그 시점이 필요하면 `core.auth.after_register`(가입)·`core.user.after_create`
+(관리자 등록)를 구독합니다. 기존 `core.auth.after_password_changed($user)` 는 인자를 바꾸지 않고 바꾸는 경로 5곳에서
+그대로 발행합니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.auth.password_change_recorded` | action | `(User $user, array $context)` — `source`(`self`·`reset`·`admin`·`login_required`) · `actor_id` · `sessions_revoked`(폐기한 토큰 수) · 로그인 변경 단계면 `reason` | 비밀번호가 바뀐 뒤 — 트랜잭션 안이면 커밋 뒤 |
+| `core.auth.password_change_required` | action | `(User $user, array $context)` — `reason`(`expired`·`admin_assigned`) · `guard`(`user`·`admin`) | 로그인 관문이 변경 단계 식별자를 발급할 때 |
+| `core.auth.password_change_postponed` | action | `(User $user, array $context)` — `until`(ISO8601) · `until_display`(수신자 시간대 날짜) | '다음에 변경 허용' 모드에서 회원이 변경을 미뤘을 때 |
+| `core.auth.password_expiry_notice` | action | `(User $user, array $context)` — `expires_at`(수신자 시간대 `Y-m-d`) · `days_left` | 만료 처리 배치의 사전 안내 (주기당 1회) |
+| `core.auth.password_expired` | action | `(User $user, array $context)` — `expired_at`(수신자 시간대 `Y-m-d`) · `sessions_revoked`(폐기한 토큰 수 — '다음에 변경 허용' 모드면 0) | 만료 처리 배치의 만료일 처리 (주기당 1회) |
+| `core.auth.password_change_validation_rules` | filter | `(array $rules, FormRequest $request)` | 로그인 변경 단계 완료 요청 검증 |
+| `core.auth.password_change_postpone_validation_rules` | filter | `(array $rules, FormRequest $request)` | 로그인 변경 단계 연기 요청 검증 |
+| `core.settings.password_expiry_preview_validation_rules` | filter | `(array $rules, FormRequest $request)` | 보안 탭 만료 대상 건수 요청 검증 |
+
+코어 알림 정의 `password_expiry_notice`·`password_expired` 가 두 배치 훅을 구독하고, 치환값은
+`core.auth.notification.extract_data` 필터가 채웁니다. 날짜는 배치가 수신자 시간대로 계산해 싣습니다 — 리스너가
+다시 계산하면 집행 시점과 하루 어긋날 수 있습니다. 배치 훅은 표지(이번 주기 처리 기록)를 먼저 남긴 뒤 발행하고,
+발행이 던지면 표지를 되돌립니다(휴면 사전 안내와 같은 규칙) — 큐 안에서 실패한 발송은 표지를 되돌리지 못합니다.
+
+### 회원 역할 변경 훅 (7.1.0)
+
+회원 등록·수정(`UserService::createUser`·`updateUser`)으로 역할이나 최고관리자 지정이 **실제로 바뀌면**
+`core.user.after_update_roles` 를 발행합니다. 바뀐 것이 없으면(같은 역할로 다시 저장, 역할을 싣지 않는 정보수정) 발행하지
+않습니다. 여러 회원의 역할을 한꺼번에 바꾸는 일괄 경로는 짝 훅 `core.user.after_bulk_update_roles` 가 따로 알립니다.
+코어 활동 로그가 이 훅으로 `user.roles_update` 를 남기며, 이 기록은 권한 부여·변경 기록이라 활동 로그 보관 기간과
+관계없이 최소 3년 보관됩니다(`config('core.activity_log.long_retention_actions')`).
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.user.after_update_roles` | action | `(User $user, array $changes, string $source)` — `$changes` = `attached`(붙은 역할 ID 목록) · `detached`(떨어진 역할 ID 목록) · `is_super`(최고관리자 지정이 바뀌었으면 `['from' => bool, 'to' => bool]`, 아니면 `null`), `$source` = `create`·`update` | 등록은 `core.user.after_create` 뒤, 수정은 커밋 뒤 `core.user.after_update` 뒤 |
+
 ### 관리자 회원 목록 확장 필터 훅
 
 관리자 회원 목록(`GET /api/admin/users`)에 모듈·플러그인이 자기 필터를 더하는 경로다. 값은 화면이

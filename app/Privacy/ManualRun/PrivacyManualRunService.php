@@ -5,11 +5,14 @@ namespace App\Privacy\ManualRun;
 use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
 use App\Enums\PrivacyManualRunStatus;
 use App\Exceptions\PrivacyManualRunConflictException;
+use App\Exceptions\PrivacyManualRunDisabledException;
 use App\Extension\HookManager;
 use App\Jobs\RunPrivacyManualActionJob;
 use App\Models\PrivacyManualRun;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyManualRunnerInterface;
+use App\Privacy\Contracts\PrivacyManualRunReadableInterface;
+use App\Privacy\Contracts\PrivacyManualRunRequiresEnabledInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -24,7 +27,8 @@ use Throwable;
  * 2. 실행({@see execute()}) — 큐 작업이 부른다. 스케줄러 배치와 공유하는 락을 잡고, 기록을
  *    처리 중으로 선점한 뒤 대상을 직권 실행하고 완료/실패를 기록한다.
  *
- * 직권 실행은 자동 실행 토글을 보지 않는다 — 권한은 접수 시점에 컨트롤러가 검사했다.
+ * 직권 실행은 자동 실행 토글을 보지 않는다 — 권한은 접수 시점에 컨트롤러가 검사했다. 예외는
+ * {@see PrivacyManualRunRequiresEnabledInterface} 를 단 대상으로, 토글이 꺼져 있으면 접수를 거절한다.
  * 접수·종료 사실은 액션 훅으로 알리고, 코어 활동 로그 리스너가 받아 기록한다.
  */
 class PrivacyManualRunService
@@ -92,10 +96,17 @@ class PrivacyManualRunService
      * @return PrivacyManualRun 접수된 기록 (처리 대기)
      *
      * @throws PrivacyManualRunConflictException 같은 대상에 진행 중 작업이 있을 때
+     * @throws PrivacyManualRunDisabledException 토글이 켜져 있어야 하는 대상인데 꺼져 있을 때
      */
     public function queue(PrivacyManualRunnerInterface $runner, bool $skipWaiting, User $actor): PrivacyManualRun
     {
         $key = $runner->key();
+
+        // 처리 결과의 효력이 토글에 묶인 대상은 꺼진 채 처리하면 안내와 동작이 어긋난다(#736).
+        if ($runner instanceof PrivacyManualRunRequiresEnabledInterface && ! $this->safeEnabled($runner)) {
+            throw new PrivacyManualRunDisabledException($key);
+        }
+
         $skipWaiting = $skipWaiting && $runner->supportsSkipWaiting();
 
         $run = Cache::lock('privacy-manual-run-queue:'.$key, self::QUEUE_LOCK_SECONDS)
@@ -245,7 +256,9 @@ class PrivacyManualRunService
      * 화면 카드용 대상별 상태를 모읍니다.
      *
      * 권한이 없거나 등록되지 않은 대상은 `can_run=false`·`run=null` 로 가린다 — 실행 기록에는
-     * 접수자 이름이 있으므로 실행할 수 없는 관리자에게 보이지 않는다.
+     * 접수자 이름이 있으므로 실행할 수 없는 관리자에게 보이지 않는다. 다만 열람 표지
+     * ({@see PrivacyManualRunReadableInterface})를 단 대상은 열람 권한만 있어도
+     * `run` 을 준다(`can_run` 은 그대로 false — 화면은 버튼을 비활성으로 그린다).
      *
      * @param  array<int, string>  $keys  대상 키 목록
      * @param  User|null  $user  관리자
@@ -269,7 +282,7 @@ class PrivacyManualRunService
                 'run' => null,
             ];
 
-            if ($canRun) {
+            if ($canRun || ($runner !== null && $this->registry->canViewRun($runner, $user))) {
                 $visible[] = $key;
             }
         }

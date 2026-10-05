@@ -16,8 +16,10 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\Concerns\UserOverrideValueComparator;
 use App\Models\IdentityPolicy;
+use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Request;
 
 /**
  * 본인인증 정책 해석/강제 Service.
@@ -161,6 +163,158 @@ class IdentityPolicyService
             renderHint: $this->resolveRenderHint($policy),
             returnRequest: $context['return_request'] ?? null,
         );
+    }
+
+    /**
+     * 정책 키로 찾은 활성 정책을 HTTP 요청 문맥으로 강제합니다.
+     *
+     * 라우트 미들웨어가 아닌 자리(예: 정보수정 API 가 비밀번호를 함께 바꿀 때)에서 같은 정책을
+     * 같은 판정으로 걸 때 쓴다 — 판정 로직을 미들웨어와 따로 두지 않는다(이중화 금지).
+     * 정책이 없거나 꺼져 있으면 아무 일도 하지 않는다.
+     *
+     * @param  string  $policyKey  정책 키 (identity_policies.key)
+     * @param  Request  $request  HTTP 요청
+     * @return void 반환값 없음
+     *
+     * @throws IdentityVerificationRequiredException 정책 위반 시
+     *
+     * @since 7.1.0
+     */
+    public function enforceForRequest(string $policyKey, Request $request): void
+    {
+        $policy = $this->policyRepository->findByKey($policyKey);
+
+        if (! $policy || ! $policy->enabled) {
+            return;
+        }
+
+        $this->enforcePolicyForRequest($policy, $request);
+    }
+
+    /**
+     * 단일 정책을 HTTP 요청 문맥으로 강제합니다 (token bypass → grace 윈도우 → exception).
+     *
+     * `EnforceIdentityPolicy` 미들웨어와 `enforceForRequest()` 가 함께 쓰는 한 곳이다.
+     *
+     * @param  IdentityPolicy  $policy  강제할 정책
+     * @param  Request  $request  HTTP 요청
+     * @return void 반환값 없음
+     *
+     * @throws IdentityVerificationRequiredException 정책 위반 시
+     *
+     * @since 7.1.0
+     */
+    public function enforcePolicyForRequest(IdentityPolicy $policy, Request $request): void
+    {
+        // verification_token 우회 — IdentityGuardInterceptor 가 verify 직후 토큰을 query/body 에 부착해
+        // 원 요청을 재실행할 때 grace_minutes 윈도우와 무관하게 통과시킨다.
+        // 검사 순서: ① 토큰이 verified + 미소비 + purpose 일치 → ② target_hash 매칭 (요청 email vs 토큰 발급 시 email).
+        $token = (string) $request->input('verification_token', '');
+        if ($token !== '') {
+            $verifiedLog = $this->logRepository->findVerifiedForToken($token, $policy->purpose);
+            if ($verifiedLog !== null && $this->requestTokenTargetMatches($verifiedLog, $request)) {
+                return;
+            }
+        }
+
+        $context = [
+            'http_method' => $request->getMethod(),
+            'user_roles' => $this->collectRequestUserRoles($request),
+            'user_is_admin' => $this->resolveRequestUserIsAdmin($request),
+            'target_email' => $this->resolveRequestTargetEmail($request),
+            'origin_type' => IdentityOriginType::Route->value,
+            'origin_identifier' => $request->route()?->getName() ?: $request->path(),
+            'origin_policy_key' => $policy->key,
+            'return_request' => [
+                'method' => $request->getMethod(),
+                // 보안: 경로+쿼리만 — 요청 Host·scheme 을 실으면 클라이언트 재요청이 교차 출처로 인증 정보를 보낼 수 있다.
+                'url' => $request->getRequestUri(),
+            ],
+        ];
+
+        $user = $request->user();
+
+        $this->enforce($policy, $user instanceof User ? $user : null, $context);
+    }
+
+    /**
+     * 토큰이 가리키는 challenge 의 target_hash 가 현재 요청의 식별자(이메일)와 일치하는지 확인합니다.
+     *
+     * 인증 사용자: user.email 우선, 게스트: 요청 body 의 email.
+     * 요청에 식별자가 전혀 없으면 검사를 건너뛰고 통과시킵니다 — 이 경우 다운스트림 listener 가
+     * 자기 도메인의 식별자로 매칭을 강제해야 합니다.
+     *
+     * @param  IdentityVerificationLog  $log  토큰이 가리키는 verified 로그
+     * @param  Request  $request  HTTP 요청
+     * @return bool target_hash 일치 여부 (식별자 미존재 시 true)
+     */
+    private function requestTokenTargetMatches(IdentityVerificationLog $log, Request $request): bool
+    {
+        $user = $request->user();
+        $email = $user instanceof User && $user->email
+            ? $user->email
+            : (string) $request->input('email', '');
+
+        if ($email === '') {
+            return true;
+        }
+
+        return $log->target_hash === hash('sha256', mb_strtolower($email));
+    }
+
+    /**
+     * 현재 요청 사용자의 역할 식별자 목록을 수집합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return array<int, string> 역할 식별자 배열
+     */
+    private function collectRequestUserRoles(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        return $user->roles()->pluck('identifier')->all();
+    }
+
+    /**
+     * 현재 요청 사용자의 admin 여부를 permission 기반으로 판정합니다 (User::isAdmin() 위임).
+     * 게스트는 항상 false.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool admin 여부
+     */
+    private function resolveRequestUserIsAdmin(Request $request): bool
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        try {
+            return (bool) $user->isAdmin();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 게스트 라우트(register/forgot/reset)에서 폼 입력 email 을 정책 컨텍스트에 노출합니다.
+     * 인증 사용자의 경우는 resolveTargetHash() 가 user->email 을 우선 사용합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return string|null 요청 input.email 또는 null
+     */
+    private function resolveRequestTargetEmail(Request $request): ?string
+    {
+        $email = $request->input('email');
+
+        if (is_string($email) && $email !== '') {
+            return $email;
+        }
+
+        return null;
     }
 
     /**

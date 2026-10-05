@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ActivityLogType;
@@ -19,7 +20,6 @@ use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * 코어 서비스 훅 구독 리스너
@@ -38,11 +38,13 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 Repository
      * @param  UserRepositoryInterface  $userRepository  사용자 Repository (bulk lookup)
      * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 Repository (bulk lookup)
+     * @param  RoleRepositoryInterface  $roleRepository  역할 Repository (역할 ID → 식별자)
      */
     public function __construct(
         protected ActivityLogRepositoryInterface $activityLogRepository,
         protected UserRepositoryInterface $userRepository,
         protected ScheduleRepositoryInterface $scheduleRepository,
+        protected RoleRepositoryInterface $roleRepository,
     ) {}
 
     /**
@@ -63,6 +65,8 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_search' => ['method' => 'handleUserAfterSearch', 'priority' => 20],
             'sirsoft-core.user.after_bulk_update' => ['method' => 'handleUserAfterBulkUpdate', 'priority' => 20],
             'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
+            // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우(#736 D23) — 권한 부여·변경 기록이라 3년 보관 대상
+            'core.user.after_update_roles' => ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
 
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
@@ -72,7 +76,11 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.auth.after_register' => ['method' => 'handleAuthRegister', 'priority' => 20],
             // 두 번째 인자에 재설정 토큰이 든 URL 이 실린다 — 큐로 보내면 토큰이 작업 테이블에 한 부 더 저장되므로 동기 실행
             'core.auth.after_reset_password_request' => ['method' => 'handleAuthForgotPassword', 'priority' => 20, 'sync' => true],
-            'core.auth.after_password_changed' => ['method' => 'handleAuthResetPassword', 'priority' => 20],
+            // 비밀번호 변경은 경로·행위자를 아는 기록 훅에서 남긴다(#736). 종전 `after_password_changed` 구독은
+            // 인자가 회원뿐이라 관리자 지정·로그인 단계 변경까지 전부 "비밀번호 재설정" 으로 적었다.
+            'core.auth.password_change_recorded' => ['method' => 'handlePasswordChangeRecorded', 'priority' => 20],
+            'core.auth.password_change_postponed' => ['method' => 'handlePasswordChangePostponed', 'priority' => 20],
+            'core.auth.password_expired' => ['method' => 'handlePasswordExpired', 'priority' => 20],
             'core.auth.record_consents' => ['method' => 'handleAuthRecordConsents', 'priority' => 20],
             'core.auth.login_failed' => ['method' => 'handleAuthLoginFailed', 'priority' => 20],
             'core.auth.account_locked' => ['method' => 'handleAuthAccountLocked', 'priority' => 20],
@@ -378,6 +386,47 @@ class CoreActivityLogListener implements HookListenerInterface
         }
     }
 
+    /**
+     * 회원 등록·수정으로 역할·최고관리자 지정이 바뀐 뒤 로그 기록 (#736 D23)
+     *
+     * 붙은·떨어진 역할은 식별자로 남긴다 — 역할 ID 는 역할을 지우고 다시 만들면 다른 역할을 가리킨다.
+     * 지금은 없는 역할(기록 사이에 삭제)은 ID 문자열로 남긴다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  array{attached?: array<int, int>, detached?: array<int, int>, is_super?: array{from: bool, to: bool}|null}  $changes  변경분
+     * @param  string  $source  'create' | 'update'
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterUpdateRoles(User $user, array $changes, string $source = 'update'): void
+    {
+        $attached = array_map('intval', $changes['attached'] ?? []);
+        $detached = array_map('intval', $changes['detached'] ?? []);
+        $identifiers = $this->roleRepository->getIdentifiersByIds(array_merge($attached, $detached));
+        $toIdentifiers = static fn (array $ids): array => array_values(array_map(
+            static fn (int $id): string => (string) ($identifiers[$id] ?? $id),
+            $ids,
+        ));
+
+        $added = $toIdentifiers($attached);
+        $removed = $toIdentifiers($detached);
+
+        $this->logActivity('user.roles_update', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_roles_update',
+            'description_params' => [
+                'user_id' => $user->id,
+                'added' => $added === [] ? '-' : implode(', ', $added),
+                'removed' => $removed === [] ? '-' : implode(', ', $removed),
+            ],
+            'properties' => [
+                'source' => $source,
+                'added' => $added,
+                'removed' => $removed,
+                'is_super' => $changes['is_super'] ?? null,
+            ],
+        ]);
+    }
+
     // ═══════════════════════════════════════════
     // Auth 핸들러
     // ═══════════════════════════════════════════
@@ -445,20 +494,92 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 비밀번호 재설정 로그 기록
+     * 비밀번호 변경 기록 로그
      *
-     * 재설정 링크(비로그인)로 바꾸면 행위자는 회원 본인이고, 관리자가 회원 정보 수정에서 바꾸면
-     * 그 관리자다 — 관리자가 한 일을 회원이 한 것으로 적지 않는다.
+     * 경로(source)로 문구를 가른다 — 메일 재설정은 종전 `auth.reset_password`, 그 밖(본인 변경·관리자 지정·
+     * 로그인 단계 변경)은 `auth.password_change`. 행위자는 훅이 넘긴 `actor_id` 를 쓴다(큐 실행이라 요청의
+     * 인증 문맥보다 명시값이 정확하다). 관리자가 정해 준 경우 관리자가 한 일을 회원이 한 것으로 적지 않는다.
      *
-     * @param  User  $user  비밀번호가 바뀐 사용자
+     * @param  User  $user  비밀번호가 바뀐 회원
+     * @param  array  $context  {source, actor_id, sessions_revoked, reason?}
      * @return void 반환값 없음
      */
-    public function handleAuthResetPassword(User $user): void
+    public function handlePasswordChangeRecorded(User $user, array $context = []): void
     {
-        $this->logActivity('auth.reset_password', [
+        $source = (string) ($context['source'] ?? '');
+        $actorId = $context['actor_id'] ?? $user->id;
+
+        if ($source === 'reset') {
+            $this->logActivity('auth.reset_password', [
+                'loggable' => $user,
+                'description_key' => 'activity_log.description.auth_reset_password',
+                'user_id' => $actorId,
+            ]);
+
+            return;
+        }
+
+        [$descriptionKey, $params] = match ($source) {
+            'admin' => ['activity_log.description.auth_password_change_by_admin', ['user_id' => $user->uuid]],
+            'login_required' => [
+                ($context['reason'] ?? null) === 'admin_assigned'
+                    ? 'activity_log.description.auth_password_change_on_login_admin_assigned'
+                    : 'activity_log.description.auth_password_change_on_login_expired',
+                [],
+            ],
+            default => ['activity_log.description.auth_password_change_self', []],
+        };
+
+        $this->logActivity('auth.password_change', [
             'loggable' => $user,
-            'description_key' => 'activity_log.description.auth_reset_password',
-            'user_id' => Auth::id() ?? $user->id,
+            'log_type' => $source === 'admin' ? ActivityLogType::Admin : ActivityLogType::User,
+            'description_key' => $descriptionKey,
+            'description_params' => $params,
+            'properties' => [
+                'source' => $source,
+                'sessions_revoked' => (int) ($context['sessions_revoked'] ?? 0),
+            ],
+            'user_id' => $actorId,
+        ]);
+    }
+
+    /**
+     * 비밀번호 만료 변경 연기 로그 ('다음에 변경 허용' 모드에서 회원이 연기를 고름)
+     *
+     * @param  User  $user  연기한 회원
+     * @param  array  $context  {until}
+     * @return void 반환값 없음
+     */
+    public function handlePasswordChangePostponed(User $user, array $context = []): void
+    {
+        $this->logActivity('auth.password_change_postpone', [
+            'loggable' => $user,
+            'log_type' => ActivityLogType::User,
+            'description_key' => 'activity_log.description.auth_password_change_postpone',
+            'description_params' => ['until' => (string) ($context['until_display'] ?? $context['until'] ?? '')],
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * 비밀번호 만료일 처리 로그 — 로그인 토큰을 폐기한 경우에만 남긴다('변경해야 로그인' 모드)
+     *
+     * @param  User  $user  만료된 회원
+     * @param  array  $context  {expired_at, sessions_revoked: 폐기한 토큰 수}
+     * @return void 반환값 없음
+     */
+    public function handlePasswordExpired(User $user, array $context = []): void
+    {
+        if (empty($context['sessions_revoked'])) {
+            return;
+        }
+
+        $this->logActivity('auth.password_expiry_logout', [
+            'loggable' => $user,
+            'log_type' => ActivityLogType::System,
+            'description_key' => 'activity_log.description.auth_password_expiry_logout',
+            'description_params' => ['user_id' => $user->uuid, 'count' => (int) $context['sessions_revoked']],
+            'user_id' => null,
         ]);
     }
 

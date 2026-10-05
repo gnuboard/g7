@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 182개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 185개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 134개 |
+| `partials` | 137개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -152,6 +152,7 @@
 | `_modal_notification_template_form` | `partials` | partial | - |
 | `_modal_notification_template_preview` | `partials` | partial | - |
 | `_modal_password_confirm` | `partials` | partial | - |
+| `_modal_password_expiry_run` | `partials` | partial | - |
 | `_modal_privacy_run` | `partials` | partial | - |
 | `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
@@ -170,7 +171,9 @@
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
+| `_tab_security_activity_log` | `partials` | partial | - |
 | `_tab_security_ip_restriction` | `partials` | partial | - |
+| `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |
@@ -270,8 +273,8 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 전환으로 처리합니다. 이 화면은 `_admin_base` 를 상속하지 않는 독립 레이아웃이라 모달을 쓸 수
 없고, Toast 호스트도 이 레이아웃이 직접 마운트합니다.
 
-- 1단계(이메일·비밀번호) 블록은 `if: "{{!_local.twoFactor?.required}}"`, 2단계(인증번호) 블록은
-  그 부정형입니다. 두 `if` 는 언제나 상보여야 합니다. 상태는 `_global` 이 아니라 **`_local`** 입니다.
+- 2단계(인증번호) 블록은 `if: "{{_local.twoFactor?.required}}"` 이고, 1단계(이메일·비밀번호) 블록은 그 부정형에
+  비밀번호 변경 단계의 부정까지 더합니다(아래 「비밀번호 변경 단계」 절). 단계 `if` 는 언제나 상보여야 합니다. 상태는 `_global` 이 아니라 **`_local`** 입니다.
 - 제출 시퀀스의 `login` 과 `loginTwoFactor` 도 같은 쌍으로 상호배타입니다. `loginTwoFactor` 쪽
   `if` 가 빠지면 인증번호 단계에서 Enter 를 눌렀을 때 새 challenge 가 발급되어 흐름이 끊깁니다.
 - 인증번호 입력은 controlled 입니다(`value` + `onChange` 의 `setState` 쌍). `events: {}` 래퍼는
@@ -290,6 +293,46 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
   - 그 외(메일 등): 종전 화면 그대로입니다.
   - 분기 기준은 **provider 목록을 늘려도 따라오도록** 코어가 내려주는 값을 그대로 씁니다 —
     수단이 추가될 때마다 화면에 조건을 덧대지 않습니다.
+
+### `admin_login.json` 의 비밀번호 변경 단계 (#736, engine-v1.77.0)
+
+비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 로그인·인증번호 확인 응답이 토큰 대신 변경 단계를 돌려줍니다
+(`response.password_change_required`). 2단계 인증과 같은 짜임의 **3단계**로 처리합니다(상태 `_local.passwordChange`).
+
+- 세 단계의 블록 `if` 와 제출 액션(`login`·`loginTwoFactor`·`loginPasswordChange`)의 `if` 는 상호배타입니다 — 1단계는
+  `!twoFactor.required && !passwordChange.required`. `init` 이 `passwordChange` 를 `null` 로 둡니다.
+- 성공 분기는 `response.password_change_required` 를 먼저 봅니다(이동·휴면 토스트는 그 응답이 아닐 때만).
+- 노랑 안내 상자의 사유는 응답대로 — 만료(변경해야 로그인) / 만료(다음에 변경 허용 — `postpone_days` 일 뒤 다시 안내) / 관리자 지정.
+  「다음에 변경」은 `can_postpone` 일 때만 그립니다.
+- 422 `errors.challenge_id`(시간 초과·무효)는 단계를 비우고 1단계 오류 자리에 「처음부터 다시 로그인」 안내를 싣습니다. 규칙 위반·같은 값·
+  재사용은 칸 아래, 잠금(423)·관리자 아님(403)은 단계 상단 오류에 싣습니다.
+- 켜진 비밀번호 규칙은 `_global.settings.security.*` 로 한 줄 안내합니다(관리자 화면에는 `PasswordInput` 이 없다). 관리자 재설정
+  화면(`admin_reset_password`)·회원 등록/수정 화면도 같은 줄을 씁니다.
+- 휴면 해제 토스트는 모든 최종 성공 지점에 있습니다 — engine-v1.76.0 전에는 엔진이 `dormancy_restored` 를 버려 뜨지 않았습니다.
+
+### 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드 (#736)
+
+`partials/admin_settings/_tab_security_password_policy` 조각이 보안 설정 카드 뒤·접근 제한 카드 앞에 들어갑니다(최소 길이·특수문자 칸도
+이 조각으로 옮겼다 — data-ref 유지). 체크박스는 자동 바인딩을 끄고 change 로 직접 담고, 조건부 칸은 느슨하게 참 판정합니다. 숫자 칸의
+min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(사전 안내·만료 처리)은 개인정보 탭 휴면 행과 같은 모양이고 꺼져 있어도
+보입니다 — 건수(`passwordExpiryPreview`)·「대상 보기」(개인정보 명단 창 재사용, 명단 권한이 있으면 0명이어도)·「지금 실행」(전용 확인 창
+`_modal_password_expiry_run`, 저장 안 한 변경·처리 중·**저장된 만료 꺼짐**이면 잠김 — 서버도 409)·마지막 실행 결과 줄
+(`passwordExpiryManualRuns`, 진행 중이면 3초 폴링). 저장 성공 시 보안 탭이면 건수를 다시 받습니다.
+
+### 보안 탭 「활동 로그(접속기록) 보관」 카드
+
+`partials/admin_settings/_tab_security_activity_log` 조각이 접근 제한 카드 뒤·앱 키 카드 앞에 들어갑니다. 보관 기간 숫자 칸 하나
+(`security.activity_log_retention_days`, min/max 는 `_meta.limits.security_activity_log_retention_days_*` — 하한 365일은 법정 최소)와
+법정 안내 상자(접속기록 1·2년, 권한·역할 변경 기록은 이 값과 관계없이 3년)입니다. 저장은 보안 탭 공용 저장 버튼이 함께 보냅니다.
+반응형 프리셋은 쓰지 않습니다.
+
+### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
+
+- 회원 수정에서 **본인** 계정의 새 비밀번호를 입력하면 「현재 비밀번호」 칸이 나타납니다(서버도 같은 확인·재사용 검사). **다른 회원**의
+  비밀번호를 정하면(등록 포함) 「다음 로그인 때 비밀번호를 바꿔야 한다」 안내가 뜹니다.
+- 상세의 「비밀번호」 구획(마지막 변경·만료 예정·다음 로그인 때 변경 필요·연기 종료·만료 개별 설정)과 같은 자리·같은 순서로 수정 화면에도
+  「비밀번호」 구획이 섭니다(#599 상세↔수정 정합). 기록 칸은 잠긴 글자이고 「비밀번호 만료」(따름/적용/제외) 선택만 고칩니다.
+- 역할 폼의 「비밀번호 만료」(사이트 설정 따름/적용/제외)는 저장 본문에 `password_expiry_policy` 로 실립니다.
 
 **금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
 
@@ -525,6 +568,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_notification_definitions.g7.html (알림 정의)
 │           ├── _tab_security.g7.html (보안)
 │           ├── _tab_security_ip_restriction.g7.html (보안 > IP 접근 제한 카드)
+│           ├── _tab_security_password_policy.g7.html (보안 > 비밀번호 정책 카드 — 작성 규칙·재사용 금지·만료)
+│           ├── _modal_password_expiry_run.g7.html (보안 — 비밀번호 만료 지금 실행 확인 창)
+│           ├── _tab_security_activity_log.g7.html (보안 > 활동 로그(접속기록) 보관 카드)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)

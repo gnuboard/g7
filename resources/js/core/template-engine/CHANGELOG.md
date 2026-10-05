@@ -5,6 +5,37 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.77.2] - 2026-10-05
+
+### Fixed
+
+- 입력칸을 고친 뒤 저장하지 않고 탭을 오가면(데이터 소스 `initLocal` + `refetchOnMount`, 예: 관리자 환경설정) 칸은 서버값으로 돌아오는데 「저장하지 않은 변경이 있습니다」 표시와 저장 버튼 활성만 남던 문제. 같은 데이터를 다른 렌더러가 먼저 적용하면 폼을 가진 렌더러는 정리(prune) 경로를 타는데, 이 경로가 데이터 키만 지우고 자동바인딩이 남긴 `hasChanges: true` 는 그대로 둬서 저장소 B 의 false 를 덮었습니다. engine-v1.54.7(정리 경로 도입)부터 있던 결함이며 7.0.x 릴리스에는 포함되지 않았습니다
+- 게시판·이커머스 설정의 알림 설정 탭에서 채널을 바꾼 뒤(저장 전) 알림 하나를 켜고 끄면, 채널 변경은 화면에 남아 있는데 저장 버튼이 꺼져 저장할 수 없던 문제. 적용 경로가 폼과 무관한 데이터(알림 목록 페이지 정보)가 와도 `hasChanges` 를 무조건 false 로 만들었고, 위 정리 경로의 잔존이 이를 일부만 가리고 있었습니다
+
+### Changed
+
+- `_localInit` 의 「변경 있음」(`hasChanges`) 초기화 범위: 적용·정리·대기 상태 사전 동기화 모두, 들어온 데이터가 **마운트된 변경 추적 폼(`data-key` + `data-track-changes`)의 dataKey 첫 키**를 담을 때만 초기화합니다. 변경 추적 폼이 없는 화면은 종전대로 항상 초기화합니다. 폼 dataKey 등록은 `localInitSlot.ts` 의 `registerTrackChangesRoot` / 판정은 `shouldResetHasChanges` (DynamicRenderer.tsx `_localInit` 처리, 회귀: `DynamicRenderer.localInitPruneHasChanges.test.tsx`, 트러블슈팅 state-global initLocal 사례 8)
+
+## [engine-v1.77.1] - 2026-10-05
+
+### Fixed
+
+- 컴포넌트가 액션 콜백을 이벤트 없이 부르면(관리자 모달의 Escape → `onClose()`) 핸들러가 `event.type`·`preventDefault()` 를 읽다 TypeError 로 거부돼 액션이 실행되지 않던 문제. 모달이 Escape 로 닫히지 않고 콘솔에 오류가 남았습니다. 인자가 없으면 액션 type 의 대체 이벤트(대상 없음)로 실행합니다 — 인자가 있는 호출은 그대로입니다. 2025-12-19(로거 도입)부터 있던 결함입니다 (ActionDispatcher.ts `createHandler`, 회귀: `ActionDispatcher.eventlessHandler.test.ts`)
+
+## [engine-v1.77.0] - 2026-10-05
+
+### Added
+
+- 로그인 결과에 「비밀번호 변경 단계」 형태를 추가했습니다. 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 서버가 로그인·2단계 인증 확인에 토큰 대신 변경 단계(`password_change_required: true` + `challenge_id`·`reason`·`can_postpone`·`postpone_days`·`expired_at`·`expires_at`)를 돌려줍니다. `LoginResult` 에 `{ status: 'password_change_required'; challenge: PasswordChangeChallenge }` 가 생기고, 이 형태에서는 토큰을 저장하지 않습니다 (AuthManager.ts `resolveLoginPayload`)
+- `AuthManager.completePasswordChange(type, { challengeId, password, passwordConfirmation })`·`postponePasswordChange(type, { challengeId })` 와 엔드포인트 설정 `passwordChangeEndpoint`·`passwordChangePostponeEndpoint`(관리자 `/auth/admin/login/password-change[/postpone]`, 사용자 `/auth/login/password-change[/postpone]`) (AuthManager.ts)
+- 액션 핸들러 `loginPasswordChange`(body `challenge_id`·`password`·`password_confirmation`)·`loginPasswordChangePostpone`(body `challenge_id`) — 성공하면 `{ user, password_change_required: false, ...서버 안내 필드(dormancy_restored·postponed_until 등) }` — 안내 필드는 engine-v1.76.0 의 `LoginResult.extras` 와 같은 방식으로 서버가 실었을 때만 있습니다. 마크업 태그 `<login-password-change>`·`<login-password-change-postpone>`, 레이아웃 편집기 「기타」 분류에도 등록 (ActionDispatcher.ts·ActionHandlerManifest·coreActionRecipes)
+- `login`·`loginTwoFactor` 응답에 `password_change_required` 를 싣습니다 — 변경 단계면 `true` 와 단계 정보(`user: null`), 아니면 `false`
+
+### Changed
+
+- `AuthManager.completeTwoFactorSession()`(engine-v1.76.0)이 인증번호가 맞아도 비밀번호 변경 단계를 돌려줄 수 있습니다 — 결과 타입 `TwoFactorSession` 이 `status` 로 가르는 두 형태(`authenticated` 의 `user`·`extras` / `password_change_required` 의 `challenge`)가 됐습니다. 공개 API `completeTwoFactor()` 는 종전대로 사용자를 돌려주며, 비밀번호 변경 단계가 오면 세션을 열지 않고 오류를 던집니다 — 그 단계를 처리하려면 `completeTwoFactorSession()` 을 씁니다 (AuthManager.ts)
+- **템플릿 제작자 조치**: 로그인 화면이 `navigate if="{{!response.two_factor_required}}"` 처럼 「2단계 인증이 아니면 로그인 성공」으로 판정하면 변경 단계 응답(`user: null`, 토큰 없음)을 성공으로 오판해 이동합니다. `login`·`loginTwoFactor` 성공 분기에서 `response.password_change_required` 를 먼저 보고 변경 단계 화면으로 바꾸고, 그 단계의 제출은 `loginPasswordChange`(연기 허용 시 `loginPasswordChangePostpone`)로 보냅니다. 세 단계의 `if` 는 상호배타로 둡니다 — 작성 규칙은 `docs/frontend/auth-system.md` 「비밀번호 변경 요구 로그인」
+
 ## [engine-v1.76.0] - 2026-10-05
 
 ### Added

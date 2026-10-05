@@ -120,6 +120,11 @@ class RoleService
         $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
         unset($data['menu_ids']);
 
+        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+            unset($data['password_expiry_policy']);
+        }
+
         // 권한 상승 상한을 **역할 생성 전에** 검사한다. 생성 뒤에 검사하면 거부된 요청이
         // 권한 0개짜리 고아 역할 행을 남긴다(사용자 경로와 동일한 "가드 → 쓰기" 순서).
         if (! empty($permissions)) {
@@ -173,6 +178,11 @@ class RoleService
         // 접근 가능 메뉴 분리 (보내지 않았으면 메뉴를 건드리지 않는다)
         $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
         unset($data['menu_ids']);
+
+        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+            unset($data['password_expiry_policy']);
+        }
 
         // 권한 상승 상한을 **속성 업데이트 전에** 검사한다. update 뒤에 검사하면
         // 403 을 받은 요청이 name/is_active 변경만 반영된 상태를 남긴다.

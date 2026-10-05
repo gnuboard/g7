@@ -1330,6 +1330,14 @@
       "label": "Resend code",
       "param_body": "Challenge info"
     },
+    "login_password_change": {
+      "label": "Finish login with new password",
+      "param_body": "Change request info"
+    },
+    "login_password_change_postpone": {
+      "label": "Postpone password change",
+      "param_body": "Change request info"
+    },
     "logout": {
       "label": "Handle logout",
       "param_target": "Destination"

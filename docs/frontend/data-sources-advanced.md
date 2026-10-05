@@ -1309,6 +1309,8 @@ actualData = response.data.data ?? response.data
 3. `_merge: "deep"`으로 기존 `_local.checkout` 값 보존 + API 값 병합
 4. 페이지 새로고침 시 저장된 쿠폰 선택 정보가 자동 복원됨
 
+> ⚠️ 데이터 소스 `initLocal` 맵의 값은 **응답 경로**다 — 레이아웃 수준 `initLocal` 처럼 기본값을 적는 자리가 아니다. 빈 문자열 `""` 은 「응답 전체」로 읽혀, 그 칸에 응답 전체가 들어간다(예: 목록을 다시 받을 때마다 목록 응답이 폼 이름 칸에 들어가 다국어 입력이 깨진다). 빈 기본값은 레이아웃 수준 `initLocal` 이나 폼을 여는 액션에서 심고, 응답 전체가 필요하면 `"{{data}}"` 로 명시한다.
+
 ### initIsolated 문법 (engine-v1.14.0+)
 
 `initIsolated`는 API 응답 데이터를 격리된 상태(`_isolated`)에 자동으로 복사합니다. `isolatedState` 속성이 정의된 컴포넌트와 함께 사용합니다.

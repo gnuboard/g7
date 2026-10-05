@@ -51,6 +51,24 @@ return [
         'security_max_login_attempts_max' => 100,
         'security_login_lockout_time_min' => 0,
         'security_login_lockout_time_max' => 1440,
+        // 비밀번호 정책 (#736) — 판독부(PasswordPolicy·PasswordExpiryService)도 이 값으로 양쪽 클램프한다
+        'security_password_repeated_chars_length_min' => 3,
+        'security_password_repeated_chars_length_max' => 6,
+        'security_password_sequential_chars_length_min' => 3,
+        'security_password_sequential_chars_length_max' => 6,
+        'security_password_reuse_count_min' => 1,
+        'security_password_reuse_count_max' => 10,
+        'security_password_expiry_days_min' => 30,
+        'security_password_expiry_days_max' => 730,
+        'security_password_expiry_notice_days_min' => 1,
+        'security_password_expiry_notice_days_max' => 30,
+        'security_password_expiry_remind_days_min' => 1,
+        'security_password_expiry_remind_days_max' => 90,
+        'security_password_expiry_batch_size_min' => 0,
+        'security_password_expiry_batch_size_max' => 100000,
+        // 활동 로그(접속기록) 보관 기간 — 최소 365 는 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년(#736 D14)
+        'security_activity_log_retention_days_min' => 365,
+        'security_activity_log_retention_days_max' => 3650,
 
         // 고급 (캐시 TTL)
         'advanced_cache_ttl_min' => 0,
@@ -115,6 +133,31 @@ return [
     'pagination' => [
         'result_cap' => 10000,
         'max_page' => 1000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 활동 로그 자동 파기 (activity-log:prune)
+    |--------------------------------------------------------------------------
+    | 일반 로그는 환경설정 > 보안 「활동 로그 보관 기간」(security.activity_log_retention_days,
+    | 365~3650일)을 따르고, 아래 액션은 그 값과 관계없이 최소 long_retention_days 일 보관합니다.
+    | 개인정보의 안전성 확보조치 기준 제5조③ — 권한 부여·변경·말소 내역 3년 보관(#736 D14).
+    |
+    | - long_retention_actions: 역할 정의·권한 구성·회원 역할 변경 기록 (정확히 일치하는 액션 이름)
+    | - long_retention_days:    그 액션의 최소 보관 일수
+    */
+    'activity_log' => [
+        'long_retention_actions' => [
+            'role.create',
+            'role.update',
+            'role.delete',
+            'role.sync_permissions',
+            'role.toggle_status',
+            'menu.sync_roles',
+            'user.roles_update',
+            'user.bulk_roles',
+        ],
+        'long_retention_days' => 1095,
     ],
 
     /*
@@ -1003,6 +1046,105 @@ return [
                     'subject' => ['ko' => '비밀번호가 변경되었습니다', 'en' => 'Your password has been changed'],
                     'body' => ['ko' => '{name}님, 비밀번호가 변경되었습니다. 본인이 변경하지 않았다면 즉시 고객 지원팀에 문의하시기 바랍니다.', 'en' => '{name}, your password has been changed. If you did not make this change, please contact support immediately.'],
                     'click_url' => '/mypage/change-password',
+                ],
+            ],
+        ],
+        // 비밀번호 만료 사전 안내 (#736) — `auth:process-password-expiry` 가 만료 N일 전 주기마다 1통 보낸다.
+        // action_url 은 수신자에 따라 다르다(관리자 = 회원 수정 화면, 회원 = 마이페이지 비밀번호 변경).
+        'password_expiry_notice' => [
+            'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
+            'name' => ['ko' => '비밀번호 만료 사전 안내', 'en' => 'Password Expiry Advance Notice'],
+            'description' => ['ko' => '비밀번호 사용 기간이 곧 끝나는 회원에게 미리 보내는 안내', 'en' => 'Notice sent before a password reaches the end of its validity period'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.auth.password_expiry_notice'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'action_url', 'description' => '비밀번호 변경 화면 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+                ['key' => 'expires_at', 'description' => '비밀번호 만료일'],
+                ['key' => 'days_left', 'description' => '만료까지 남은 일수'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 비밀번호 만료 {days_left}일 전 안내',
+                        'en' => '[{app_name}] Your password expires in {days_left} days',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{name}님, 안녕하세요.</h1>'
+                            .'<p>회원님의 비밀번호 사용 기간이 <strong>{expires_at}</strong>에 끝납니다.</p>'
+                            .'<p>만료 전에 변경해 주세요. 만료 후에는 로그인할 때 새 비밀번호를 설정해야 합니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">비밀번호 변경하기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Hello, {name}.</h1>'
+                            .'<p>Your password expires on <strong>{expires_at}</strong>.</p>'
+                            .'<p>Please change it before then. After it expires, you will be asked to set a new password when you sign in.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Change password</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '비밀번호 만료 {days_left}일 전입니다', 'en' => 'Your password expires in {days_left} days'],
+                    'body' => [
+                        // 받는 회원 이름으로 시작한다(2026-10-04 결정, 디자인 캔버스 사이트 알림)
+                        'ko' => '{name}님, 비밀번호가 {expires_at}에 만료됩니다. 만료 전에 변경해 주세요.',
+                        'en' => '{name}, your password expires on {expires_at}. Please change it before then.',
+                    ],
+                    'click_url' => '{action_url}',
+                ],
+            ],
+        ],
+        // 비밀번호 만료 (#736) — 만료일 처리에서 1통. '변경해야 로그인' 모드면 같은 처리에서 로그인 토큰도 폐기된다.
+        'password_expired' => [
+            'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
+            'name' => ['ko' => '비밀번호 만료', 'en' => 'Password Expired'],
+            'description' => ['ko' => '비밀번호 사용 기간이 끝났음을 알리는 고지', 'en' => 'Notice sent when a password has expired'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.auth.password_expired'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'action_url', 'description' => '로그인 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+                ['key' => 'expired_at', 'description' => '비밀번호 만료일'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 비밀번호 사용 기간이 만료되었습니다',
+                        'en' => '[{app_name}] Your password has expired',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{name}님, 안녕하세요.</h1>'
+                            .'<p>회원님의 비밀번호 사용 기간이 <strong>{expired_at}</strong> 에 끝났습니다.</p>'
+                            .'<p>다음 로그인 때 새 비밀번호를 설정하는 단계가 표시됩니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">로그인하기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Hello, {name}.</h1>'
+                            .'<p>Your password expired on <strong>{expired_at}</strong>.</p>'
+                            .'<p>You will be asked to set a new password the next time you sign in.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Sign in</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '비밀번호가 만료되었습니다', 'en' => 'Your password has expired'],
+                    'body' => [
+                        'ko' => '비밀번호 사용 기간이 {expired_at} 에 끝났습니다. 다음 로그인 때 새 비밀번호를 설정해 주세요.',
+                        'en' => 'Your password expired on {expired_at}. Please set a new password the next time you sign in.',
+                    ],
+                    'click_url' => '{action_url}',
                 ],
             ],
         ],

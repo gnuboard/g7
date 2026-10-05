@@ -239,4 +239,25 @@ interface UserRepositoryInterface
      * @return int 삭제된 토큰 수
      */
     public function deleteTokensByUserIds(array $ids): int;
+
+    /**
+     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
+     *
+     * 적용 범위·날짜 조건은 호출자(`PasswordExpiryService`)가 덧붙인다.
+     *
+     * @return Builder<User> 후보 쿼리
+     *
+     * @since 7.1.0
+     */
+    public function passwordExpiryCandidateQuery(): Builder;
+
+    /**
+     * 회원 ID 목록으로 제한한 쿼리를 반환합니다 (배치 상한으로 고른 대상을 청크 처리할 때).
+     *
+     * @param  array<int, int>  $ids  회원 ID 배열
+     * @return Builder<User> 쿼리
+     *
+     * @since 7.1.0
+     */
+    public function queryByIds(array $ids): Builder;
 }

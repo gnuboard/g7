@@ -17,6 +17,8 @@ return [
 
     // 개인정보 조치 직권 실행 — 대상당 작업 하나
     'privacy_manual_run_conflict' => '같은 대상에 처리 대기 중이거나 처리 중인 직권 실행이 이미 있습니다. 끝난 뒤 다시 실행하세요.',
+    // 토글이 켜져 있어야 하는 대상(비밀번호 만료)이 꺼져 있을 때
+    'privacy_manual_run_disabled' => '이 기능이 꺼져 있어 지금 실행할 수 없습니다. 설정에서 기능을 켜고 저장한 뒤 다시 실행하세요.',
 
     // 낙관적 잠금 — 동시 저장 충돌
     'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (리소스: :resource, 현재 버전: :current, 보낸 버전: :expected)',
