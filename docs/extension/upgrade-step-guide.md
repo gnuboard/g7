@@ -317,6 +317,8 @@ beta.1 의 `CoreUpdateService::syncCoreMailTemplates()` 가 `App\Models\MailTemp
 
 이 경우 shim 파일은 "upgrade step 의 의존성" 이지만 **이전 버전(beta.1) 이 메모리에 올리는 대상** 이므로 upgrade step 밖의 신규 파일로 작성되어야 했다. upgrade step 내부에서 `class_exists` 체크만으로 충분.
 
+후속 (7.1.0): `mail_templates`·`mail_send_logs` 생성 마이그레이션이 남아 신규 설치에도 빈 표가 생기던 문제는 7.1.0 에서 생성 마이그레이션을 지우고, 기존 설치는 데이터 마이그레이션 `DropLegacyMailTables` 가 안전할 때만(행 0건, 또는 발송 이력 이관 확인) 드랍하는 것으로 정리했다. `App\Models\MailTemplate` shim 파일은 호환을 위해 남아 있다(@deprecated).
+
 ### 사례 B — vendor 소유권 복원 (sudo + 비대칭 환경)
 
 beta.1 의 `runComposerInstall(base_path())` 가 sudo 에서 vendor/ 를 root 로 재생성. beta.2 upgrade step 이 storage/ 디렉토리 기준으로 원본 웹서버 계정(www-data) 을 추정하여 vendor/ 복원.
@@ -629,7 +631,7 @@ upgrade step 이 수행하는 데이터 변경은 단순 "마이그레이션" �
 
 ## 12. Declarative artifacts 일회성 보정 패턴
 
-번들 모듈/플러그인의 **declarative 시드** (예: `getIdentityPolicies()`, `getIdentityMessageDefinitions()`, `getNotificationDefinitions()`) 는 정상 흐름에서 `ExecuteBundledUpdatesCommand` 의 spawn 자식 프로세스가 신버전 `ModuleManager::syncDeclarativeArtifacts()` 를 호출해 시드한다. 따라서 미래 release 의 회귀 차단은 spawn 구조에 의해 자동 보장되며 추가 추상화 불필요.
+번들 모듈/플러그인의 **declarative 시드** (예: `getIdentityPolicies()`, `getNotificationDefinitions()` — 본인인증 알림 포함. 옛 `getIdentityMessages()` 는 @deprecated 7.1.0 으로, 선언이 있으면 알림 정의로 변환되어 함께 동기화된다) 는 정상 흐름에서 `ExecuteBundledUpdatesCommand` 의 spawn 자식 프로세스가 신버전 `ModuleManager::syncDeclarativeArtifacts()` 를 호출해 시드한다. 따라서 미래 release 의 회귀 차단은 spawn 구조에 의해 자동 보장되며 추가 추상화 불필요.
 
 ### 일회성 사후 보정이 필요한 transition
 

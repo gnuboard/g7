@@ -22,6 +22,9 @@ return [
         'invalid_code' => '認証コードが正しくありません。',
         'invalid_verification_token' => '無効な本人認証トークンです。',
         'missing_target' => '認証対象 (メール·電話番号) が必要です。',
+        'claim_denied' => '本人確認の結果を受け取れません。認証をやり直してください。',
+        'claim_already_used' => 'この本人確認はすでに使用されています。認証をやり直してください。',
+        'claim_unavailable' => '本人確認の期限が切れたか、完了していません。認証をやり直してください。',
         'target_mismatch' => '認証された対象とリクエストされた対象が一致しません。',
         'purpose_not_supported' => '選択されたプロバイダーはこの目的をサポートしていません。',
         'provider_unavailable' => '本人認証プロバイダーを使用できません。',
@@ -36,6 +39,7 @@ return [
     'messages' => [
         'challenge_requested' => '本人認証コードを送信しました。',
         'challenge_verified' => '本人確認が完了しました。',
+        'challenge_pending' => 'メールのリンクによる本人確認を待っています。',
         'challenge_cancelled' => '本人認証リクエストがキャンセルされました。',
     ],
     'logs' => [
@@ -102,13 +106,6 @@ return [
             'module' => 'モジュール',
             'plugin' => 'プラグイン',
             'admin' => '管理者',
-        ],
-    ],
-    'message' => [
-        'scope_type' => [
-            'provider_default' => 'Provider デフォルト',
-            'purpose' => 'Purpose 別',
-            'policy' => 'Policy 別',
         ],
     ],
 ];

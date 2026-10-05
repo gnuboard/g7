@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Identity;
 
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Mail;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -21,6 +25,9 @@ use Tests\TestCase;
  */
 class ChallengeSendFailureIsReportedTest extends TestCase
 {
+    use CapturesSentMail;
+    use DatabaseTransactions;
+
     /**
      * 컨트롤러 소스를 읽어 돌려줍니다.
      *
@@ -87,6 +94,40 @@ class ChallengeSendFailureIsReportedTest extends TestCase
                 "[{$locale}] 원문 키가 그대로 보이면 안 됩니다."
             );
         }
+    }
+
+    /**
+     * 「알림 채널 관리」에서 메일을 끄면 챌린지 요청은 502 로 답한다 (#699).
+     *
+     * 본인인증 메일은 7.1.0 부터 알림 시스템을 거쳐 채널 토글을 따른다. 메일을 꺼서 보내지 못한 것도
+     * 「보내지 못했으면 그 자리에서 말한다」 계약의 실패다 — 201 로 포장하지 않는다.
+     *
+     * @scenario dispatch=failed
+     *
+     * @effects mail_channel_off_answers_502
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mail_channel_off_is_answered_with_502(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        Mail::fake();
+        $this->prepareIdentityNotifications();
+        $this->setCoreMailChannelActive(false);
+
+        $response = $this->postJson('/api/identity/challenges', [
+            'purpose' => 'sensitive_action',
+            'target' => ['email' => 'channel-off@example.test'],
+        ]);
+
+        $response->assertStatus(502);
+        $this->assertSame(__('identity.errors.challenge_dispatch_failed'), $response->json('message'));
+
+        $this->setCoreMailChannelActive(true);
+        $this->postJson('/api/identity/challenges', [
+            'purpose' => 'sensitive_action',
+            'target' => ['email' => 'channel-on@example.test'],
+        ])->assertStatus(201);
     }
 
     /**

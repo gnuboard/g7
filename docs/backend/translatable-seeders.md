@@ -85,8 +85,8 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 ## 자동 검증
 
 다음을 차단한다:
-- 코어 시더 (NotificationDefinitionSeeder/IdentityMessageDefinitionSeeder) — `applyFilters('seed.X.translations', ...)` 발화 필수
-- ModuleManager/PluginManager — `sync*Definitions/*Messages` 본문에 `applyFilters` 발화 필수
+- 코어 시더 (NotificationDefinitionSeeder — 본인인증 알림 `identity.*` 포함) — `applyFilters('seed.X.translations', ...)` 발화 필수
+- ModuleManager/PluginManager — `sync*NotificationDefinitions` 본문에 `applyFilters` 발화 필수
 - 확장 entity 시더 (`(modules|plugins)/_bundled/<id>/database/seeders/<X>Seeder.php`) — 다국어 JSON 컬럼 시드 시 `TranslatableSeederInterface` 구현 + `HasTranslatableSeeder` trait 사용 필수
 
 면제 대상 (단일 entity 패턴 미적용):
@@ -97,7 +97,7 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 ## 코어 시더와의 차이
 
 - **확장 entity 시더** (BoardType/ShippingCarrier 등): 시더 자체가 데이터 SSoT → `TranslatableSeederInterface` + `HasTranslatableSeeder`
-- **코어 시더** (NotificationDefinition/IdentityMessageDefinition/Permission/Role/Menu): `config/core.php` 가 데이터 SSoT → 시더는 `LoadsConfigSeedWithLangPackFilter` trait 의 `loadConfigSeed(<configKey>, <filterName>)` 호출
+- **코어 시더** (NotificationDefinition/Permission/Role/Menu): `config/core.php` 가 데이터 SSoT → 시더는 `LoadsConfigSeedWithLangPackFilter` trait 의 `loadConfigSeed(<configKey>, <filterName>)` 호출
 
 두 패턴 모두 `seed.{X}.translations` 필터를 발화하므로 자동 검증 결과는 동일.
 

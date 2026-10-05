@@ -153,9 +153,21 @@
                             ]
                         },
                         {
+                            "comment": "본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다 — 수신자 규칙을 고칠 자리가 없어 편집 영역을 감추고 안내만 둔다.",
+                            "id": "ecommerce_template_recipients_fixed",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.ecommerce_notification_template_form_modal?.definition?.category === 'identity'}}",
+                            "props": {
+                                "className": "text-tertiary px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md"
+                            },
+                            "text": "$t:admin.settings.notification_definitions.identity_recipient_fixed"
+                        },
+                        {
                             "id": "ecommerce_template_recipients_section",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{_global.ecommerce_notification_template_form_modal?.definition?.category !== 'identity'}}",
                             "props": {
                                 "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
                             },

@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderEmailChannelUnavailableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
@@ -323,6 +324,13 @@ class OrderController extends AdminBaseController
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (OrderEmailChannelUnavailableException $e) {
+            // 메일 채널 꺼짐·미준비·템플릿 비활성 — 요청은 올바르나 사이트 설정 때문에 보낼 수 없다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.email_channel_disabled',
+                422
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

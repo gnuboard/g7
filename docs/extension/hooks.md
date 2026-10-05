@@ -1339,6 +1339,31 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 | `core.module.after_deactivate` | `core.modules.after_deactivate` | 없음 | 생명주기 훅은 복수형(core.modules.*)이다 |
 | `core.plugin.after_activate` | `core.plugins.after_activate` | 없음 | 생명주기 훅은 복수형(core.plugins.*)이다 |
 | `core.plugin.after_deactivate` | `core.plugins.after_deactivate` | 없음 | 생명주기 훅은 복수형(core.plugins.*)이다 |
+| `core.identity.message.before_send` | `core.notification.before_channel_send` | 있음 | 본인인증 메일이 알림 시스템으로 통합됨(7.1.0) — 호환용으로 계속 발화. 4종 공통으로 인자에서 `template_id`·`rendered` 가 빠지고 `definition_id` 는 알림 정의 ID, `notification_type` 추가. 건너뛴 발송도 `send_failed`(`delivery_status` = `skipped`) |
+| `core.identity.message.after_send` | `core.notification.after_channel_send` | 있음 | 〃 |
+| `core.identity.message.send_failed` | `core.notification.channel_send_failed` | 있음 | 〃 |
+| `core.identity.message.resolve_failed` | — | 있음 | 〃 — 정책·목적·기본 문구가 모두 없을 때만 발화하며 알림 쪽 대응 훅은 없다 |
+
+**7.1.0 사용 중단 — 본인인증 메시지 관리 훅 23종** — 본인인증 메시지 전용 관리 기능이 알림 정의(`category = identity`)로 합쳐졌다.
+옛 이름은 **본인인증 분류의 정의·템플릿을 다룰 때만** 새 알림 훅과 같은 시점·같은 인자 개수로 계속 발화한다(공개 배포 발화 이력 있음,
+8.0 제거). 인자로 넘어가는 대상이 옛 본인인증 메시지 모델에서 알림 정의(`NotificationDefinition`)·템플릿(`NotificationTemplate`) 모델로
+바뀌었으므로, 모델 속성을 읽는 구독자는 그에 맞게 고친다. 새 구독은 오른쪽 알림 훅으로 한다.
+
+| 사용 중단 훅 (본인인증 분류에서만 발화) | 대체 |
+|---------|---------|
+| `core.identity.message_definition.{before,after}_create` · `filter_create_data` · `store_validation_rules` | `core.notification_definition.{before,after}_create` · `filter_create_data` · `store_validation_rules` |
+| `core.identity.message_definition.{before,after}_delete` | `core.notification_definition.{before,after}_delete` |
+| `core.identity.message_definition.{before,after}_update` · `filter_update_data` · `update_validation_rules` · `index_validation_rules`(목록이 `category=identity` 일 때) · `{before,after}_toggle_active` | `core.notification_definition.*` 같은 이름 |
+| `core.identity.message_template.{before,after}_update` · `filter_update_data` · `update_validation_rules` · `{before,after}_toggle_active` | `core.notification_template.*` 같은 이름 |
+| `core.identity.message_template.{before,after}_reset` · `reset_no_default` | 알림 템플릿·정의 기본값 복원 경로(대응 알림 훅 없음) |
+| `core.identity.filter_default_message_definitions` | `core.notification.filter_default_definitions` (옛 이름은 본인인증 분류 기본값 목록만 받는다) |
+
+**7.1.0 에서 발화가 멈춘 이름** — 이름을 조립하던 발화처라 공개 훅 목록의 고정 이름이 아니다.
+
+| 멈춘 이름 | 옮길 곳 |
+|---------|---------|
+| `core.identity.message.send_{channel}` | `core.notification.before_channel_send` / `after_channel_send` |
+| `seed.identity_messages.translations` · `seed.{확장}.identity_messages.translations` | `seed.notifications.translations` · `seed.{확장}.notifications.translations` |
 
 ---
 

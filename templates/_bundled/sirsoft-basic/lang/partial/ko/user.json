@@ -97,6 +97,14 @@
             "external_subtitle": "잠시 후 본인인증 서비스로 자동 이동됩니다.",
             "manual_redirect": "수동으로 이동하기",
             "error_generic": "인증에 실패했습니다. 다시 시도해주세요."
+        },
+        "verify_link": {
+            "title": "본인 확인",
+            "verifying": "본인 확인 중입니다…",
+            "verified_title": "본인 확인이 끝났습니다",
+            "verified_body": "처음 인증을 시작한 화면으로 돌아가면 자동으로 이어집니다. 이 창은 닫아도 됩니다.",
+            "failed_title": "확인할 수 없는 링크입니다",
+            "failed_body": "링크가 만료되었거나 이미 사용되었습니다. 처음 화면에서 메일을 다시 받아 주세요."
         }
     },
     "home": {

@@ -13,11 +13,17 @@ return [
     'definition_not_found' => '알림 정의를 찾을 수 없습니다.',
     'definition_reset' => '알림 정의의 모든 템플릿이 기본값으로 복원되었습니다.',
     'definition_reset_failed' => '알림 정의 초기화에 실패했습니다.',
+    'definition_created' => '본인인증 정책별 문구가 추가되었습니다.',
+    'definition_create_failed' => '본인인증 정책별 문구 추가에 실패했습니다.',
+    'definition_deleted' => '본인인증 정책별 문구가 삭제되었습니다.',
+    'definition_delete_failed' => '본인인증 정책별 문구 삭제에 실패했습니다.',
+    'definition_delete_forbidden' => '운영자가 추가한 본인인증 정책별 문구만 삭제할 수 있습니다.',
 
     // 채널 발송 건너뛰기
     'channel_skipped_no_template' => ':channel 채널에 :type 타입의 활성 템플릿이 없어 발송을 건너뛰었습니다.',
     'channel_disabled_by_extension' => '확장 환경설정에서 해당 채널이 비활성화되어 있어 발송을 건너뛰었습니다.',
     'channel_guest_not_allowed' => '해당 채널은 비회원 발송을 허용하지 않아 발송을 건너뛰었습니다.',
+    'channel_unavailable' => '해당 채널을 제공하는 확장이 비활성 또는 삭제되어 발송을 건너뛰었습니다.',
 
     // 알림 템플릿
     'template_updated' => '알림 템플릿이 수정되었습니다.',

@@ -1,8 +1,8 @@
 {
-    "comment": "본인인증 탭의 **메시지** 하위 구획 — 메시지 정의를 카드로 늘어놓고, 각 카드에서 편집·복원·삭제 창을 연다.\n  카드 버튼은 하나같이 **대상을 전역에 담고 창을 여는** 두 단계다(창들은 그 전역만 본다).\n  페이지·항목수는 `messages_*` 라는 자기 쿼리 키를 쓴다 — 같은 인증 탭 안의 정책 목록과 `page` 를\n  나눠 갖지 않으면 한쪽을 넘길 때 다른 쪽이 함께 밀린다.\n  채널 탭이 메일 하나뿐이라 지금은 고를 것이 없다(자리를 잡아 둔 형태).\n  코어 기본 정의는 \"기본\" 배지가 붙고 삭제 대신 복원만 열린다 — 삭제 버튼은 운영자 정의에서만 나온다.",
+    "comment": "본인인증 탭의 **메시지** 하위 구획 — 7.1.0 부터 안내 상자 하나만 남는다.\n  본인인증 메일 문구는 알림 정의(category=identity)가 되어 「환경설정 > 알림 설정」의 분류 「본인인증」에서 편집·\n  정책별 문구 추가·삭제·기본값 복원을 한다(채널 토글·발송 로그를 함께 쓰기 위해서다). 운영자가 옛 자리로 찾아와도\n  길을 잃지 않도록 그 화면으로 가는 링크를 둔다 — 링크는 분류 칩까지 미리 골라 둔 주소다.",
     "meta": {
         "is_partial": true,
-        "description": "환경설정 본인인증 메시지 정의 서브탭 — 알림 템플릿 관리 화면 패리티 (채널 서브탭 + 페이지당 + 정의 추가 + 카드 펼침 + 페이지네이션)"
+        "description": "환경설정 본인인증 메시지 서브탭 — 알림 설정(분류: 본인인증)으로 옮겨졌다는 안내와 이동 링크"
     },
     "id": "identity_section_messages",
     "type": "basic",
@@ -22,637 +22,61 @@
                     "type": "basic",
                     "name": "H3",
                     "text": "$t:admin.settings.identity.messages.title"
-                },
+                }
+            ]
+        },
+        {
+            "id": "identity_messages_moved_notice",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            },
+            "children": [
                 {
                     "type": "basic",
                     "name": "P",
-                    "text": "$t:admin.settings.identity.messages.intro"
-                }
-            ]
-        },
-        {
-            "id": "identity_messages_channel_sub_tabs",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "채널 탭 — 지금은 메일 하나뿐이라 누를 곳이 하나다. 값 자체는 목록 조회 조건에 쓰이지\n               않는다(채널이 늘어나면 그때 조건으로 이어야 한다).",
-                            "type": "click",
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "activeIdentityMessageChannel": "mail"
-                            }
-                        }
-                    ],
                     "props": {
-                        "type": "button",
-                        "className": "{{(_local.activeIdentityMessageChannel ?? 'mail') === 'mail' ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
+                        "className": "text-body"
                     },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "fa-solid fa-envelope",
-                                "className": "text-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.settings.identity.messages.channels.mail"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "identity_messages_list_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex-between py-3"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "text-label-subtle"
-                    },
-                    "text": "$t:admin.settings.identity.messages.total_count|count={{identityMessages?.data?.meta?.total ?? identityMessages?.data?.pagination?.total ?? 0}}"
+                    "text": "$t:admin.settings.identity.messages.moved_notice.body"
                 },
                 {
+                    "id": "identity_messages_moved_link",
                     "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-center gap-2"
-                    },
-                    "children": [
+                    "name": "A",
+                    "actions": [
                         {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-label-subtle"
-                            },
-                            "text": "$t:admin.settings.identity.messages.per_page_label"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Select",
+                            "comment": "같은 화면 안 이동이라 새로고침 없이 탭·분류만 바꾼다 — 알림 설정 탭이 분류 「본인인증」 으로 열린다.",
+                            "type": "click",
+                            "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "페이지당 항목 수 — 자기 쿼리 키(`messages_*`)를 쓰고 페이지는 1로 되돌린다.\n                 나머지 쿼리(탭 등)는 유지해야 하므로 반드시 합쳐 이동한다.",
-                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "activeSettingsTab": "notification_definitions"
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 본인인증 탭의 쿼리를 알림 설정 탭이 물려받으면 엉뚱한 분류·쪽이 열린다. 탭과 분류만 명시해 연다(설정 화면 탭 전환과 같은 규칙).",
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/admin/settings",
-                                        "replace": true,
-                                        "mergeQuery": true,
                                         "query": {
-                                            "messages_per_page": "{{$event.target.value}}",
-                                            "messages_page": 1
+                                            "tab": "notification_definitions",
+                                            "category": "identity"
                                         }
                                     }
-                                }
-                            ],
-                            "props": {
-                                "name": "identityMessagesPerPage",
-                                "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
-                                "value": "{{String(query.messages_per_page || 20)}}",
-                                "options": [
-                                    {
-                                        "value": "10",
-                                        "label": "10"
-                                    },
-                                    {
-                                        "value": "20",
-                                        "label": "20"
-                                    },
-                                    {
-                                        "value": "50",
-                                        "label": "50"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "정의 추가 창 열기 — **창 상태를 여기서 통째로 만들어 넣는다**(창은 자기 초기값을 갖지\n                 않는다). 그래서 고정값(제공자·범위 종류·채널)도 이 자리에 있고, 다국어 칸은 빈 값으로\n                 시작한다. 편집 언어는 지금 보고 있는 언어로 연다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "identity_message_definition_add_modal": {
-                                                    "editLang": "{{$locale}}",
-                                                    "form": {
-                                                        "provider_id": "g7:core.mail",
-                                                        "scope_type": "policy",
-                                                        "scope_value": "",
-                                                        "name": {},
-                                                        "channels": [
-                                                            "mail"
-                                                        ],
-                                                        "subject": {},
-                                                        "body": {}
-                                                    },
-                                                    "errors": null,
-                                                    "isSaving": false
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "modal_identity_message_definition_add"
-                                        },
-                                        {
-                                            "comment": "이미 메시지가 정의된 정책 목록을 새로 받는다 — 다른 화면에서 정의를 지웠거나 만든\n                   직후라도 창의 선택지가 서버의 중복 판정과 맞게(받는 동안은 저장이 잠겨 있다).",
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "identityMessagePolicyScopes"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
-                                "disabled": "{{identityMessages?.data?.abilities?.can_create !== true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "fa-solid fa-plus",
-                                        "className": "text-xs"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.settings.identity.messages.btn_add_definition"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "identity_messages_list",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "iteration": {
-                        "source": "{{identityMessages?.data?.data ?? []}}",
-                        "item_var": "def",
-                        "index_var": "defIdx"
-                    },
-                    "props": {
-                        "className": "admin-card mb-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex-start gap-3"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex-shrink-0 pt-0.5"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Button",
-                                            "actions": [
-                                                {
-                                                    "comment": "카드 펼치기/접기 — 펼친 카드를 **id 를 키로 한 객체**에 모은다(배열이 아니라).\n                     기존 객체를 복사해 이 id 만 뒤집으므로 여러 카드를 동시에 펼쳐 둘 수 있다.",
-                                                    "type": "click",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "expandedIdentityMessages": "{{Object.assign({}, _local.expandedIdentityMessages ?? {}, {[def.id]: !(_local.expandedIdentityMessages ?? {})[def.id]})}}"
-                                                    }
-                                                }
-                                            ],
-                                            "props": {
-                                                "type": "button",
-                                                "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Icon",
-                                                    "props": {
-                                                        "name": "{{(_local.expandedIdentityMessages ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
-                                                        "size": "sm"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex-1 min-w-0"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "flex-1 min-w-0"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "flex-center flex-wrap gap-2 mb-1"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "H4",
-                                                                    "props": {
-                                                                        "className": "text-primary text-base font-medium"
-                                                                    },
-                                                                    "text": "{{def.name?.[$locale] ?? def.name?.ko ?? (def.provider_id + ' / ' + def.scope_type)}}"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
-                                                                    },
-                                                                    "text": "{{def.scope_type === 'provider_default' ? 'provider_default' : (def.scope_type + ':' + def.scope_value)}}"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full"
-                                                                    },
-                                                                    "text": "{{def.is_active ? '$t:admin.settings.identity.messages.status_active' : '$t:admin.settings.identity.messages.status_inactive'}}"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "if": "{{def.is_default}}",
-                                                                    "props": {
-                                                                        "className": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full"
-                                                                    },
-                                                                    "text": "$t:admin.settings.identity.messages.default_badge"
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "P",
-                                                            "props": {
-                                                                "className": "text-label-subtle truncate"
-                                                            },
-                                                            "text": "{{def.templates?.[0]?.subject?.[$locale] ?? def.templates?.[0]?.subject?.ko ?? ''}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "if": "{{(def.variables ?? []).length > 0}}",
-                                                            "props": {
-                                                                "className": "flex flex-wrap gap-1 mt-2"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "iteration": {
-                                                                        "source": "{{def.variables ?? []}}",
-                                                                        "item_var": "v"
-                                                                    },
-                                                                    "props": {
-                                                                        "className": "text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "text": "{"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "text": "{{v.key}}"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "text": "}"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "flex-center gap-3 flex-shrink-0"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "composite",
-                                                            "name": "Toggle",
-                                                            "actions": [
-                                                                {
-                                                                    "comment": "사용 여부 토글 — **성공이든 실패든 목록을 다시 받는다**. 실패 쪽에서도 받는 것이\n                         요점이다(스위치가 눌린 모양으로 남지 않게 서버 값으로 되맞춘다).",
-                                                                    "type": "change",
-                                                                    "handler": "apiCall",
-                                                                    "target": "{{'/api/admin/identity/messages/definitions/' + def.id + '/toggle-active'}}",
-                                                                    "auth_required": true,
-                                                                    "params": {
-                                                                        "method": "PATCH"
-                                                                    },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "message": "$t:admin.settings.identity.messages.toggle_success",
-                                                                                "variant": "success"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "refetchDataSource",
-                                                                            "params": {
-                                                                                "dataSourceId": "identityMessages"
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "message": "{{error.message ?? '$t:admin.settings.identity.messages.toggle_failed'}}",
-                                                                                "variant": "error"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "refetchDataSource",
-                                                                            "params": {
-                                                                                "dataSourceId": "identityMessages"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "props": {
-                                                                "size": "sm",
-                                                                "checked": "{{def.is_active}}",
-                                                                "disabled": "{{!(def.abilities?.can_update ?? false)}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "actions": [
-                                                                {
-                                                                    "comment": "템플릿 편집 창 열기 — 추가 창과 같이 **창 상태를 여기서 만들어 넣는다**.\n     정의 쪽(변수 목록 포함)과 템플릿 쪽(제목·본문)을 나눠 담는 것은 창이 그 둘을 다르게 쓰기 때문이다\n     — 정의는 보여만 주고 템플릿만 고친다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "identity_message_template_form_modal": {
-                                                                                    "editLang": "{{$locale}}",
-                                                                                    "definition": {
-                                                                                        "id": "{{def.id}}",
-                                                                                        "name": "{{def.name ?? ''}}",
-                                                                                        "provider_id": "{{def.provider_id ?? ''}}",
-                                                                                        "scope_type": "{{def.scope_type ?? ''}}",
-                                                                                        "scope_value": "{{def.scope_value ?? ''}}",
-                                                                                        "variables": "{{def.variables ?? []}}"
-                                                                                    },
-                                                                                    "template": {
-                                                                                        "id": "{{def.templates?.[0]?.id}}",
-                                                                                        "subject": "{{def.templates?.[0]?.subject ?? ''}}",
-                                                                                        "body": "{{def.templates?.[0]?.body ?? ''}}"
-                                                                                    },
-                                                                                    "isSaving": false,
-                                                                                    "errors": null
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "modal_identity_message_template_form"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "disabled": "{{!(def.abilities?.can_update ?? false)}}",
-                                                                "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
-                                                            },
-                                                            "text": "$t:admin.settings.identity.messages.edit"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{!def.is_default}}",
-                                                            "actions": [
-                                                                {
-                                                                    "comment": "기본값 복원 창 열기 — 대상 id 와 **이름까지** 담는다(창이 무엇을 되돌리는지 되보여 준다).\n     기본 정의(`is_default`)에는 이 버튼이 나오지 않는다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "resetIdentityMessageTargetId": "{{def.id}}",
-                                                                                "resetIdentityMessageTargetName": "{{def.name?.[$locale] ?? def.name?.ko ?? ''}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "modal_identity_message_definition_reset"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "disabled": "{{!(def.abilities?.can_update ?? false)}}",
-                                                                "className": "text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                                                            },
-                                                            "text": "$t:admin.settings.identity.messages.btn_reset"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{def.abilities?.can_delete && def.scope_type === 'policy'}}",
-                                                            "actions": [
-                                                                {
-                                                                    "comment": "삭제 창 열기 — **운영자가 추가한 정의(policy 범위)에서만** 이 버튼이 나온다.\n     복원 창과 같이 대상 id·이름을 담고 연다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "deleteIdentityMessageTargetId": "{{def.id}}",
-                                                                                "deleteIdentityMessageTargetName": "{{def.name?.[$locale] ?? def.name?.ko ?? ''}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "modal_identity_message_definition_delete"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                                            },
-                                                            "text": "$t:admin.settings.identity.messages.btn_delete"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{(_local.expandedIdentityMessages ?? {})[def.id]}}",
-                                            "props": {
-                                                "className": "mt-3 pt-3"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "text-tertiary font-medium mb-2 block"
-                                                    },
-                                                    "text": "$t:admin.settings.identity.messages.body_preview"
-                                                },
-                                                {
-                                                    "type": "composite",
-                                                    "name": "HtmlContent",
-                                                    "props": {
-                                                        "content": "{{def.templates?.[0]?.body?.[$locale] ?? def.templates?.[0]?.body?.ko ?? ''}}",
-                                                        "isHtml": true,
-                                                        "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "identity_messages_empty",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{(identityMessages?.data?.data ?? []).length === 0}}",
-            "props": {
-                "className": "admin-card"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "fa-solid fa-envelope",
-                        "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
-                    }
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-label-subtle"
-                    },
-                    "text": "$t:admin.settings.identity.messages.empty"
-                }
-            ]
-        },
-        {
-            "id": "identity_messages_pagination",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-center mt-4"
-            },
-            "children": [
-                {
-                    "type": "composite",
-                    "name": "Pagination",
-                    "actions": [
-                        {
-                            "comment": "페이지 이동 — 자기 쿼리 키를 쓰고 나머지(탭·항목수)는 유지한다.",
-                            "type": "action",
-                            "event": "onPageChange",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/admin/settings",
-                                "replace": true,
-                                "mergeQuery": true,
-                                "query": {
-                                    "messages_page": "{{$args[0]}}"
-                                }
-                            }
                         }
                     ],
                     "props": {
-                        "currentPage": "{{identityMessages?.data?.meta?.current_page ?? identityMessages?.data?.pagination?.current_page ?? 1}}",
-                        "totalPages": "{{identityMessages?.data?.meta?.last_page ?? identityMessages?.data?.pagination?.last_page ?? null}}",
-                        "hasMorePages": "{{identityMessages?.data?.meta?.has_more_pages ?? identityMessages?.data?.pagination?.has_more_pages ?? false}}"
-                    }
+                        "href": "/admin/settings?tab=notification_definitions&category=identity",
+                        "className": "flex-shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                    },
+                    "text": "$t:admin.settings.identity.messages.moved_notice.link"
                 }
             ]
         }

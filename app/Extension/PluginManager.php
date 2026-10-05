@@ -33,7 +33,7 @@ use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\IdentityMessageSyncHelper;
+use App\Extension\Helpers\IdentityMessageDeclarationConverter;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
@@ -525,9 +525,6 @@ class PluginManager implements PluginManagerInterface
 
                 // IDV 정책 자동 동기화 (identity_policies 테이블)
                 $this->syncPluginIdentityPolicies($plugin);
-
-                // IDV 메시지 정의/템플릿 자동 동기화
-                $this->syncPluginIdentityMessages($plugin);
 
                 // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
                 $this->syncPluginNotificationDefinitions($plugin);
@@ -1116,19 +1113,6 @@ class PluginManager implements PluginManagerInterface
                                 ->cleanupStalePolicies('plugin', $plugin->getIdentifier(), []);
                         } catch (\Throwable $e) {
                             Log::warning('IDV 정책 정리 실패 (uninstall plugin)', [
-                                'plugin' => $plugin->getIdentifier(),
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-
-                    // IDV 메시지 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
-                    if (Schema::hasTable('identity_message_definitions')) {
-                        try {
-                            app(IdentityMessageSyncHelper::class)
-                                ->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), []);
-                        } catch (\Throwable $e) {
-                            Log::warning('IDV 메시지 정리 실패 (uninstall plugin)', [
                                 'plugin' => $plugin->getIdentifier(),
                                 'error' => $e->getMessage(),
                             ]);
@@ -2353,8 +2337,8 @@ class PluginManager implements PluginManagerInterface
      *   4. 관리자 메뉴 (`getAdminMenus`)
      *   5. stale cleanup (현재 선언에 없는 기존 레코드 제거)
      *   6. IDV 정책 (`getIdentityPolicies`)
-     *   7. IDV 메시지 정의/템플릿 (`getIdentityMessages`)
-     *   8. 알림 정의/템플릿 (`getNotificationDefinitions`)
+     *   7. 알림 정의/템플릿 (`getNotificationDefinitions`) — 본인인증 알림 포함.
+     *      옛 `getIdentityMessages()` 선언은 7.1.0 부터 여기서 알림 정의로 변환·합류한다(호환층).
      *
      * 각 sync 메서드는 helper 내부의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출
      * 무해 (멱등).
@@ -2370,7 +2354,6 @@ class PluginManager implements PluginManagerInterface
         $this->createPluginMenus($plugin);
         $this->cleanupStalePluginEntries($plugin);
         $this->syncPluginIdentityPolicies($plugin);
-        $this->syncPluginIdentityMessages($plugin);
         $this->syncPluginNotificationDefinitions($plugin);
     }
 
@@ -2530,67 +2513,43 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
-     * 플러그인이 선언한 IDV 메시지 정의/템플릿을 동기화합니다.
+     * (호환층) 확장의 `getIdentityMessages()` 선언을 알림 정의 선언에 합칩니다.
      *
-     * `AbstractPlugin::getIdentityMessages()` 결과를 순회하며
-     * `IdentityMessageSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
-     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
+     * 7.1.0 부터 본인인증 메시지는 알림 정의(category=identity)다. 옛 계약으로 선언한 확장도 동작하도록
+     * 변환해 합치되, 같은 type 을 `getNotificationDefinitions()` 가 이미 선언했으면 그쪽을 따른다.
      *
-     * @param  PluginInterface  $plugin  IDV 메시지를 동기화할 플러그인 인스턴스
-     * @return void 반환값 없음
+     * @deprecated 7.1.0 — 8.0 에서 `getIdentityMessages()` 지원과 함께 제거.
+     *
+     * @param  PluginInterface  $plugin  대상 플러그인
+     * @param  array<int|string, array<string, mixed>>  $definitions  알림 정의 선언
+     * @return array<int|string, array<string, mixed>> 본인인증 메시지가 합쳐진 선언
      */
-    protected function syncPluginIdentityMessages(PluginInterface $plugin): void
+    protected function mergeLegacyIdentityMessages(PluginInterface $plugin, array $definitions): array
     {
         if (! method_exists($plugin, 'getIdentityMessages')) {
-            return;
-        }
-
-        if (! Schema::hasTable('identity_message_definitions')) {
-            return; // 마이그레이션 미실행 환경 보호
+            return $definitions;
         }
 
         $messages = $plugin->getIdentityMessages();
-
-        // 언어팩 시스템: 활성 플러그인 언어팩의 seed/identity_messages.json 으로 다국어 키 병합.
-        $messages = HookManager::applyFilters(
-            "seed.{$plugin->getIdentifier()}.identity_messages.translations",
-            $messages
-        );
-
-        // 데이터 손실 방어막 — 자세한 배경은 ModuleManager::syncModuleIdentityPolicies 의 동일 가드 주석 참조.
-        if (empty($messages)) {
-            if ($this->hasExistingIdentityMessageDefinitions('plugin', $plugin->getIdentifier())) {
-                Log::warning('IDV 메시지 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
-                    'plugin' => $plugin->getIdentifier(),
-                ]);
-            }
-
-            return;
+        if (! is_array($messages) || $messages === []) {
+            return $definitions;
         }
 
-        $helper = app(IdentityMessageSyncHelper::class);
-        $definedScopes = [];
+        $declaredTypes = array_filter(array_map(
+            static fn ($d) => is_array($d) ? ($d['type'] ?? null) : null,
+            $definitions
+        ));
 
-        foreach ($messages as $data) {
-            $data['extension_type'] = 'plugin';
-            $data['extension_identifier'] = $plugin->getIdentifier();
+        $converted = app(IdentityMessageDeclarationConverter::class)
+            ->convert($messages, 'plugin', $plugin->getIdentifier());
 
-            $definition = $helper->syncDefinition($data);
-            $definedScopes[] = [
-                'provider_id' => $definition->provider_id,
-                'scope_type' => $definition->scope_type->value,
-                'scope_value' => $definition->scope_value,
-            ];
-
-            $definedChannels = [];
-            foreach ($data['templates'] ?? [] as $template) {
-                $helper->syncTemplate($definition->id, $template);
-                $definedChannels[] = $template['channel'];
+        foreach ($converted as $declaration) {
+            if (! in_array($declaration['type'], $declaredTypes, true)) {
+                $definitions[] = $declaration;
             }
-            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
         }
 
-        $helper->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), $definedScopes);
+        return $definitions;
     }
 
     /**
@@ -2620,6 +2579,10 @@ class PluginManager implements PluginManagerInterface
         }
 
         $definitions = $plugin->getNotificationDefinitions();
+
+        // (호환층, @deprecated 7.1.0 — 8.0 제거) 7.0.x 계약 `getIdentityMessages()` 로 선언한 본인인증 메시지를
+        // 알림 정의(category=identity)로 바꿔 합류시킨다. 언어팩 필터보다 먼저 합쳐야 type 키로 번역이 붙는다.
+        $definitions = $this->mergeLegacyIdentityMessages($plugin, $definitions);
 
         // 언어팩 시스템: 활성 플러그인 언어팩의 seed/notifications.json 으로 다국어 키 병합.
         $definitions = HookManager::applyFilters(
@@ -2676,25 +2639,6 @@ class PluginManager implements PluginManagerInterface
             return DB::table('identity_policies')
                 ->where('source_type', $sourceType)
                 ->where('source_identifier', $sourceIdentifier)
-                ->exists();
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    /**
-     * 해당 source 가 기존에 등록한 IDV 메시지 정의가 있는지 확인합니다 (데이터 손실 방어용).
-     *
-     * @param  string  $extensionType  확장 종류
-     * @param  string  $extensionIdentifier  확장 식별자
-     * @return bool 기존 메시지 정의가 하나라도 있으면 true
-     */
-    protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
-    {
-        try {
-            return DB::table('identity_message_definitions')
-                ->where('extension_type', $extensionType)
-                ->where('extension_identifier', $extensionIdentifier)
                 ->exists();
         } catch (\Throwable) {
             return false;

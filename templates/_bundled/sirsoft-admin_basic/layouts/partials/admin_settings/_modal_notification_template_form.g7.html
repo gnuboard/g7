@@ -25,13 +25,15 @@
         </div>
         <div data-ref="template_type_channel" class="flex-center flex-wrap gap-2">
           <span class="text-label-subtle font-medium">$t:admin.settings.notification_definitions.edit_modal.type_label</span>
-          <span class="text-primary text-sm font-semibold">$t:admin.settings.notification_definitions.types.{{_global.notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-primary text-sm font-semibold">{{$localized(_global.notification_template_form_modal?.definition?.name) || (_global.notification_template_form_modal?.definition?.type ?? '')}}</span>
           <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.notification_template_form_modal?.definition?.type ?? ''}}</span>
           <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
           <span class="text-label-subtle">$t:admin.settings.notification_definitions.edit_modal.channel_label</span>
           <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.name ?? _global.notification_template_form_modal?.template?.channel ?? ''}}</span>
         </div>
-        <div data-ref="template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
+        <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다 — 수신자 규칙을 고칠 자리가 없어 편집 영역을 감추고 안내만 둔다. -->
+        <p data-ref="template_recipients_fixed" data-if="{{_global.notification_template_form_modal?.definition?.category === 'identity'}}" class="text-tertiary px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md">$t:admin.settings.notification_definitions.identity_recipient_fixed</p>
+        <div data-ref="template_recipients_section" data-if="{{_global.notification_template_form_modal?.definition?.category !== 'identity'}}" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
           <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
           <div class="stack-tight">
             <div data-each="rcpt, rcptIdx in {{_global.notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">

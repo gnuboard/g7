@@ -21,6 +21,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
 {
     private ImageReferenceScanService $service;
 
+    /**
+     * 참조 판정 서비스를 컨테이너에서 꺼내 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,23 +53,42 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
-     * 코어 소유 참조 소스(메일 템플릿 본문)에 임의 내용을 담은 행을 만듭니다.
+     * 코어 소유 참조 소스(알림 템플릿 본문)에 임의 내용을 담은 행을 만듭니다.
      *
      * @param  string  $content  본문
+     * @return void 반환값 없음
      */
     private function seedCoreSourceContent(string $content): void
     {
-        DB::table('mail_templates')->insert([
+        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다(#699).
+        $definitionId = DB::table('notification_definitions')->insertGetId([
             'type' => 'reference-scan-test-'.uniqid(),
+            'hook_prefix' => 'core.test',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'name' => json_encode(['ko' => '참조 스캔 테스트']),
+            'variables' => '[]',
+            'channels' => '["mail"]',
+            'hooks' => '[]',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('notification_templates')->insert([
+            'definition_id' => $definitionId,
+            'channel' => 'mail',
             'subject' => json_encode(['ko' => '참조 스캔 테스트']),
-            'body' => $content,
+            'body' => json_encode(['ko' => $content]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
     }
 
     /**
+     * 확장이 훅으로 등록하지 않으면 참조 소스는 코어 테이블(template_layouts·notification_templates)뿐이고 board_posts 는 없다.
+     *
      * @effects reference_sources_default_core_only
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function default_sources_are_core_only_when_no_extension_registers(): void
@@ -77,7 +101,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
+     * 확장이 참조 소스 filter 훅으로 pages 테이블을 덧붙이면 소스 목록에 포함된다.
+     *
      * @effects reference_sources_hook_append
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extensions_can_append_sources_through_the_filter_hook(): void
@@ -93,7 +121,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
+     * 본문에 해시 API 폴백 URL 이 있으면 그 업로드는 참조로 판정된다.
+     *
      * @effects reference_match_hash_api_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function hash_form_url_in_content_counts_as_referenced(): void
@@ -105,7 +137,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
+     * 해시가 없는 디스크 직접 URL 도 저장 파일명으로 매칭돼 참조로 판정된다.
+     *
      * @effects reference_match_direct_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function direct_disk_url_in_content_counts_as_referenced(): void
@@ -120,7 +156,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
+     * 이미지를 담지 않은 본문만 있으면 업로드는 미참조로 판정된다.
+     *
      * @effects reference_unreferenced
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function content_without_the_image_leaves_it_unreferenced(): void
@@ -135,6 +175,8 @@ class ImageReferenceScanServiceTest extends PluginTestCase
      * LIKE 와일드카드가 들어간 파일명이 임의 문자로 해석되면 무관한 본문이 매칭된다.
      *
      * @effects reference_like_escape
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function like_wildcards_in_the_filename_do_not_match_arbitrary_content(): void
@@ -156,6 +198,8 @@ class ImageReferenceScanServiceTest extends PluginTestCase
      * 발견 통로다. skip 동작과 경고를 함께 고정한다.
      *
      * @effects reference_invalid_source_skipped, reference_invalid_source_warns
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function invalid_source_declarations_are_skipped_without_breaking_the_scan(): void
@@ -196,7 +240,11 @@ class ImageReferenceScanServiceTest extends PluginTestCase
     }
 
     /**
+     * 일괄 판정(mapReferenced)은 업로드 id 마다 참조 여부를 따로 돌려준다 — 참조 1건 true, 미참조 1건 false.
+     *
      * @effects reference_map_batch
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function map_referenced_reports_each_upload_separately(): void

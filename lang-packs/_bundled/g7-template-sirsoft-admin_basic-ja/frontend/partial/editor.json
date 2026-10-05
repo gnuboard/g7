@@ -1612,7 +1612,7 @@
     "dashboard_templates": "ダッシュボードテンプレート",
     "extension_versions": "拡張バージョン履歴",
     "identityLogs": "本人認証ログ",
-    "identityMessages": "本人認証メッセージ",
+    "identityPolicyDefinitions": "本人認証ポリシー別文面があるポリシー",
     "identityProviders": "本人認証プロバイダー",
     "identityPurposes": "本人認証目的",
     "installed_modules": "インストール済みモジュール",
@@ -1685,7 +1685,6 @@
     "privacyTargets": "個人情報対策対象リスト",
     "privacyManualRuns": "個人情報措置職権実行ステータス",
     "analytics_row_trend": "訪問者統計の項目推移",
-    "identityMessagePolicyScopes": "メッセージが定義された本人認証ポリシー",
     "role_menus_tree": "アクセス可能なメニューツリー"
   },
   "array_group": {

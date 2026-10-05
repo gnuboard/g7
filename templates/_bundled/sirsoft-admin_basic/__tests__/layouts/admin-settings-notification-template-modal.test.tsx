@@ -234,5 +234,26 @@ describe('환경설정 > 알림 템플릿 편집 모달 회귀 (옵션 K)', () =
       expect(modalStr).toContain('_global.notification_template_form_modal?.template?.body');
       expect(modalStr).toContain('_global.notification_template_form_modal?.recipients');
     });
+
+    /**
+     * 옛 본인인증 메시지 편집 창의 계약(#727 W13)을 이식한 것 — 7.1.0(#699)부터 본인인증 문구도 이 창으로 고친다.
+     *
+     * @effects core_template_save_omits_is_active
+     */
+    it('저장 본문에 is_active 를 싣지 않는다 — 꺼 둔 템플릿을 편집·저장해도 다시 켜지지 않는다', () => {
+      const saves: any[] = [];
+      const walk = (n: any): void => {
+        if (Array.isArray(n)) return n.forEach(walk);
+        if (n && typeof n === 'object') {
+          if (n.handler === 'apiCall' && n.params?.method === 'PUT' && String(n.target ?? '').includes('/api/admin/notification-templates/')) {
+            saves.push(n);
+          }
+          Object.values(n).forEach(walk);
+        }
+      };
+      walk(modalPartial);
+      expect(saves.length, '템플릿 저장 요청이 없습니다.').toBe(1);
+      expect(Object.keys(saves[0].params.body)).not.toContain('is_active');
+    });
   });
 });

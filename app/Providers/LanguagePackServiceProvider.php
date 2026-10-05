@@ -136,10 +136,6 @@ class LanguagePackServiceProvider extends ServiceProvider
             return $injector->injectNotifications(is_array($definitions) ? $definitions : []);
         });
 
-        HookManager::addFilter('seed.identity_messages.translations', function ($definitions) use ($injector) {
-            return $injector->injectIdentityMessages(is_array($definitions) ? $definitions : []);
-        });
-
         $this->registerExtensionSeedFilters($injector);
 
         // 프론트엔드 다국어 데이터 병합 (TemplateService::getLanguageDataWithModules 의 마지막 단계)
@@ -188,13 +184,6 @@ class LanguagePackServiceProvider extends ServiceProvider
                 if ($entity === 'notifications') {
                     HookManager::addFilter("seed.{$target}.notifications.translations", function ($definitions) use ($injector, $target) {
                         return $injector->injectExtensionNotifications(is_array($definitions) ? $definitions : [], $target);
-                    });
-
-                    continue;
-                }
-                if ($entity === 'identity_messages') {
-                    HookManager::addFilter("seed.{$target}.identity_messages.translations", function ($definitions) use ($injector, $target) {
-                        return $injector->injectExtensionIdentityMessages(is_array($definitions) ? $definitions : [], $target);
                     });
 
                     continue;

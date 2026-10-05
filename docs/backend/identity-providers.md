@@ -232,6 +232,6 @@ public static function providerMatrix(): array
 
 - [identity-policies.md](identity-policies.md) — 정책 시스템 전체 흐름
 - [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다) — 콜백·링크 주소 생성 규칙
-- [identity-messages.md](identity-messages.md) — 메시지 템플릿 (provider 발송 콘텐츠)
+- [identity-messages.md](identity-messages.md) — 본인인증 알림 (메일 provider 발송 문구 — 알림 정의 category=identity)
 - [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md) — 프론트엔드 launcher/모달 UI
 - [../extension/module-identity-settings.md](../extension/module-identity-settings.md) — 모듈/플러그인 IDV 정책 등록

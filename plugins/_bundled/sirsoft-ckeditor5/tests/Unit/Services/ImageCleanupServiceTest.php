@@ -23,6 +23,11 @@ class ImageCleanupServiceTest extends PluginTestCase
 {
     private ImageCleanupService $service;
 
+    /**
+     * 행 disk 혼재 검사용 가짜 CDN 디스크를 등록하고 스토리지 캐시를 비운 뒤 정리 서비스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class ImageCleanupServiceTest extends PluginTestCase
         $this->service = app(ImageCleanupService::class);
     }
 
+    /**
+     * 다음 테스트로 디스크 해석 결과가 새지 않도록 업로드 모델의 스토리지 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Ckeditor5ImageUpload::flushStorageCache();
@@ -86,22 +96,41 @@ class ImageCleanupServiceTest extends PluginTestCase
      * 코어 참조 소스에 본문을 심습니다.
      *
      * @param  string  $content  본문
+     * @return void 반환값 없음
      */
     private function seedReference(string $content): void
     {
-        DB::table('mail_templates')->insert([
+        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다(#699).
+        $definitionId = DB::table('notification_definitions')->insertGetId([
             'type' => 'cleanup-test-'.uniqid(),
+            'hook_prefix' => 'core.test',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'name' => json_encode(['ko' => '정리 테스트']),
+            'variables' => '[]',
+            'channels' => '["mail"]',
+            'hooks' => '[]',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('notification_templates')->insert([
+            'definition_id' => $definitionId,
+            'channel' => 'mail',
             'subject' => json_encode(['ko' => '정리 테스트']),
-            'body' => $content,
+            'body' => json_encode(['ko' => $content]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
     }
 
     /**
+     * 보존기간이 지난 미참조 업로드는 정리 한 회차에 파일과 기록이 함께 지워진다.
+     *
      * @scenario age=past_retention, disk_state=default_local, url_variant=absent
      *
      * @effects prune_deletes_file_and_record
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unreferenced_upload_past_retention_loses_both_file_and_record(): void
@@ -117,9 +146,13 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * 알림 템플릿 본문이 해시 API URL 로 가리키는 업로드는 보존기간이 지나도 지우지 않고 참조 건수로 센다.
+     *
      * @scenario age=past_retention, disk_state=default_local, url_variant=hash_api_fallback
      *
      * @effects prune_keeps_referenced_hash_form
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function referenced_by_hash_url_is_kept(): void
@@ -135,9 +168,13 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * 본문이 디스크 직접 URL(저장 파일명)로 가리키는 업로드도 참조로 판정돼 지우지 않는다.
+     *
      * @scenario age=past_retention, disk_state=default_local, url_variant=direct_url_uuid
      *
      * @effects prune_keeps_referenced_direct_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function referenced_by_direct_disk_url_is_kept(): void
@@ -152,9 +189,13 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * 보존기간 안의 업로드는 후보 조회 단계에서 빠져 scanned 가 0 이고 기록이 남는다.
+     *
      * @scenario age=within_retention, disk_state=default_local, url_variant=absent
      *
      * @effects prune_keeps_within_retention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function upload_within_retention_is_not_a_candidate(): void
@@ -168,7 +209,11 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * dry-run 은 삭제 대상을 items 로 보고만 하고 파일과 기록을 그대로 둔다.
+     *
      * @effects prune_dry_run_no_delete
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dry_run_reports_targets_without_deleting(): void
@@ -185,7 +230,11 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * 처리 한도가 1 이면 가장 오래된 후보만 지우고 더 최근 후보는 남긴다.
+     *
      * @effects prune_limit_oldest_first
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function limit_processes_the_oldest_candidates_first(): void
@@ -206,6 +255,8 @@ class ImageCleanupServiceTest extends PluginTestCase
      * @scenario age=past_retention, disk_state=file_missing, url_variant=absent
      *
      * @effects prune_missing_file_removes_record
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function record_without_a_file_is_still_removed(): void
@@ -224,6 +275,8 @@ class ImageCleanupServiceTest extends PluginTestCase
      * @scenario age=past_retention, disk_state=secondary_disk, url_variant=absent
      *
      * @effects prune_respects_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function deletion_follows_the_disk_recorded_on_each_row(): void
@@ -245,7 +298,11 @@ class ImageCleanupServiceTest extends PluginTestCase
     }
 
     /**
+     * 화면과 커맨드가 공유하는 단건 삭제(deleteUpload)가 보존기간과 무관하게 파일과 기록을 함께 지운다.
+     *
      * @effects delete_upload_shared_by_ui_and_command
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function delete_upload_removes_file_and_record_for_a_single_row(): void
@@ -267,6 +324,8 @@ class ImageCleanupServiceTest extends PluginTestCase
      * @scenario age=past_retention, disk_state=default_local, url_variant=absent
      *
      * @effects prune_delete_failure_keeps_record
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function file_delete_failure_keeps_the_record_and_counts_as_failed(): void

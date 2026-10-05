@@ -3,16 +3,21 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Models\User;
+use App\Notifications\DeliveryReport;
+use App\Notifications\GenericNotification;
+use App\Notifications\GuestNotifiable;
+use App\Support\SiteUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Modules\Sirsoft\Ecommerce\Enums\DeliveryMemoPresetEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderEmailChannelUnavailableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderModificationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderOptionNotConfirmableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
@@ -746,12 +751,22 @@ class OrderService
     }
 
     /**
-     * 주문 관련 이메일을 발송합니다.
+     * 주문 관련 안내 메일을 고객에게 발송합니다 (주문 상세 「고객에게 메일 보내기」).
      *
-     * @param  Order  $order  주문 모델
-     * @param  string  $email  수신자 이메일
-     * @param  string  $message  이메일 본문
+     * 알림 정의 `order_custom_email` 로 알림 시스템을 거쳐 보낸다 — 이커머스 「알림 채널」의 메일 토글·
+     * 메일 설정 준비 상태·발송 로그(notification_logs)가 이 메일에도 적용된다(#699). 7.1.0 전에는
+     * `Mail::raw()` 로 알림 밖에서 보내 채널을 꺼도 나갔고 발송 로그도 남지 않았다.
+     *
+     * 수신자: 주문 회원의 이메일과 같으면 회원(언어·발송 로그 연결), 아니면 입력한 주소의 비회원.
+     * 성공했을 때만 `sirsoft-ecommerce.order.after_send_email` 훅을 발화한다(활동 로그가 구독).
+     *
+     * @param  Order  $order  주문
+     * @param  string  $email  수신 이메일
+     * @param  string  $message  관리자가 입력한 본문 (평문 — 줄바꿈 유지, HTML 은 이스케이프)
      * @return void
+     *
+     * @throws OrderEmailChannelUnavailableException 메일 채널 꺼짐·미준비·템플릿 비활성으로 건너뛰었을 때
+     * @throws OrderProcessingException 발송 중 오류가 났을 때
      */
     public function sendEmail(Order $order, string $email, string $message): void
     {
@@ -761,12 +776,34 @@ class OrderService
             'order_number' => $order->order_number,
         ]);
 
-        Mail::raw($message, function ($mail) use ($email, $subject) {
-            $mail->to($email)->subject($subject);
-            $mail->getHeaders()->addTextHeader('X-G7-Source', 'order_email');
-            $mail->getHeaders()->addTextHeader('X-G7-Extension-Type', 'module');
-            $mail->getHeaders()->addTextHeader('X-G7-Extension-Id', 'sirsoft-ecommerce');
-        });
+        $report = new DeliveryReport;
+        $notification = (new GenericNotification(
+            type: 'order_custom_email',
+            hookPrefix: 'sirsoft-ecommerce',
+            data: [
+                'subject' => $subject,
+                'message' => nl2br(e($message)),
+                'order_number' => $order->order_number,
+                'customer_name' => (string) ($order->getOrdererName() ?? ''),
+                'app_name' => $appName,
+                'site_url' => SiteUrl::absolute('/'),
+            ],
+            extensionType: 'module',
+            extensionIdentifier: 'sirsoft-ecommerce',
+            channel: 'mail',
+        ))->withDeliveryReport($report);
+
+        $this->resolveEmailRecipient($order, $email)->notifyNow($notification);
+
+        $status = $report->statusFor('mail');
+
+        if ($status === DeliveryReport::FAILED) {
+            throw new OrderProcessingException((string) $report->reasonFor('mail'));
+        }
+
+        if ($status !== DeliveryReport::SENT) {
+            throw new OrderEmailChannelUnavailableException($report->reasonFor('mail'));
+        }
 
         HookManager::doAction('sirsoft-ecommerce.order.after_send_email', [
             'recipientEmail' => $email,
@@ -778,6 +815,27 @@ class OrderService
             'extensionIdentifier' => 'sirsoft-ecommerce',
             'source' => 'order_email',
         ]);
+    }
+
+    /**
+     * 주문 메일 수신자를 결정합니다.
+     *
+     * 주문 회원의 이메일과 입력 주소가 같으면 회원으로 보낸다(회원 언어로 렌더, 발송 로그에 회원 연결).
+     * 그 밖(비회원 주문·다른 주소)은 그 주소의 비회원 수신자로 보낸다.
+     *
+     * @param  Order  $order  주문
+     * @param  string  $email  수신 이메일
+     * @return User|GuestNotifiable 수신자
+     */
+    private function resolveEmailRecipient(Order $order, string $email): User|GuestNotifiable
+    {
+        $user = $order->user;
+
+        if ($user instanceof User && mb_strtolower((string) $user->email) === mb_strtolower($email)) {
+            return $user;
+        }
+
+        return new GuestNotifiable($email, $order->getOrdererName(), app()->getLocale());
     }
 
     /**

@@ -25,6 +25,11 @@ class GenericNotification extends BaseNotification
     public const RECIPIENT_PHONE_KEY = '_recipient_phone';
 
     /**
+     * 채널별 발송 결과를 받을 보고서 (호출자가 붙였을 때만 기록 — 없으면 동작 변화 없음).
+     */
+    private ?DeliveryReport $deliveryReport = null;
+
+    /**
      * @param  string  $type  알림 타입 (welcome, order_confirmed 등)
      * @param  string  $hookPrefix  훅 접두사 (core.auth, sirsoft-ecommerce 등)
      * @param  array  $data  변수 데이터 (['name' => '홍길동', ...])
@@ -90,6 +95,8 @@ class GenericNotification extends BaseNotification
                 // 저장된 채널 설정·템플릿은 남아 있어 죽은 채널로 발송·"건너뜀" 로깅이 발생한다. 살아 있지
                 // 않은 채널은 "존재하지 않는 것"으로 취급해 조용히 제외한다(skipped 기록 대상 아님).
                 if (! $channelService->isChannelAvailable($this->channel)) {
+                    $this->deliveryReport?->markSkipped($this->channel, __('notification.channel_unavailable'));
+
                     return [];
                 }
 
@@ -156,6 +163,8 @@ class GenericNotification extends BaseNotification
                 // 사용 가능한 채널 목록에 없는 채널(비활성/삭제된 확장이 제공하던 채널)은 로그 없이
                 // 조용히 제외한다 — 죽은 채널을 "건너뜀"으로 기록하지 않는다(채널 지정 경로와 동일 정책).
                 if (! $channelService->isChannelAvailable($channel)) {
+                    $this->deliveryReport?->markSkipped($channel, __('notification.channel_unavailable'));
+
                     continue;
                 }
 
@@ -255,6 +264,13 @@ class GenericNotification extends BaseNotification
      */
     private function logSkippedChannels(array $skippedChannels, object $notifiable): void
     {
+        foreach ($skippedChannels as $skipped) {
+            $this->deliveryReport?->markSkipped(
+                $skipped['channel'],
+                __($skipped['reason'] ?? 'notification.readiness.unknown')
+            );
+        }
+
         // 게스트는 user FK 가 없으므로 recipient_user_id 는 null, 식별은 email 로 한다.
         $isGuest = $notifiable instanceof GuestRecipientInterface && $notifiable->isGuest();
         $recipientUserId = $isGuest ? null : ($notifiable->getKey() ?? null);
@@ -297,6 +313,8 @@ class GenericNotification extends BaseNotification
         $ownerType = ExtensionOwnerType::tryFrom($this->extensionType) ?? ExtensionOwnerType::Core;
 
         if (! $template || ! $template->is_active) {
+            $this->deliveryReport?->markSkipped('mail', __('notification.template_inactive'));
+
             return DbTemplateMail::skipped(
                 recipientEmail: $notifiable->email ?? '',
                 templateType: $this->type,
@@ -378,6 +396,32 @@ class GenericNotification extends BaseNotification
         }
 
         throw new \BadMethodCallException("Method [{$method}] does not exist on ".static::class);
+    }
+
+    /**
+     * 채널별 발송 결과를 받을 보고서를 붙입니다.
+     *
+     * 붙이면 채널 제외(via)·템플릿 비활성(toMail)·발송 성공/예외(NotificationDispatcher)
+     * 지점이 결과를 기록한다. 붙이지 않으면 기존 동작과 같다.
+     *
+     * @param  DeliveryReport  $report  결과 보고서
+     * @return static 보고서가 붙은 같은 알림
+     */
+    public function withDeliveryReport(DeliveryReport $report): static
+    {
+        $this->deliveryReport = $report;
+
+        return $this;
+    }
+
+    /**
+     * 붙어 있는 발송 결과 보고서를 반환합니다.
+     *
+     * @return DeliveryReport|null 보고서 (붙이지 않았으면 null)
+     */
+    public function getDeliveryReport(): ?DeliveryReport
+    {
+        return $this->deliveryReport;
     }
 
     /**

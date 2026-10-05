@@ -23,7 +23,7 @@ use Tests\TestCase;
  *
  * 회귀 차단:
  * - syncModuleNotificationDefinitions / syncPluginNotificationDefinitions
- * - syncModuleIdentityMessages / syncPluginIdentityMessages
+ * - (호환층) getIdentityMessages() 선언 — 7.1.0 부터 알림 정의로 변환돼 같은 notifications 필터를 탄다(#699)
  *
  * 모듈/플러그인 IDV 정책 (`syncModuleIdentityPolicies` 등) 은 IdentityPolicy 모델에 다국어 필드
  * (name/description) 가 부재하므로 lang pack seed 적용 대상 외 — 본 테스트 범위 외.
@@ -47,11 +47,11 @@ class ManagerSyncFilterTest extends TestCase
         return new class($identifier, $payload, $getter) extends AbstractModule
         {
             /**
-             * 가상 모듈의 식별자와 돌려줄 페이로드를 받습니다.
+             * 식별자·페이로드·대상 getter 이름을 보관합니다.
              *
-             * @param  string  $id  식별자
-             * @param  array  $payload  돌려줄 페이로드
-             * @param  string  $getter  페이로드를 돌려줄 메서드 이름
+             * @param  string  $id  확장 식별자 (경로 basename)
+             * @param  array  $payload  getter 가 반환할 페이로드
+             * @param  string  $getter  페이로드를 돌려줄 getter 이름
              */
             public function __construct(
                 private string $id,
@@ -60,7 +60,7 @@ class ManagerSyncFilterTest extends TestCase
             ) {}
 
             /**
-             * 임시 디렉터리 아래 식별자 경로를 모듈 경로로 씁니다.
+             * 식별자를 basename 으로 하는 임시 경로를 돌려줍니다 (식별자 결정용).
              *
              * @return string 모듈 경로
              */
@@ -70,9 +70,9 @@ class ManagerSyncFilterTest extends TestCase
             }
 
             /**
-             * 지정한 메서드일 때만 페이로드를 알림 정의로 돌려줍니다.
+             * 대상 getter 가 알림 정의면 페이로드를, 아니면 빈 배열을 돌려줍니다.
              *
-             * @return array 알림 정의
+             * @return array 알림 정의 선언
              */
             public function getNotificationDefinitions(): array
             {
@@ -80,9 +80,9 @@ class ManagerSyncFilterTest extends TestCase
             }
 
             /**
-             * 지정한 메서드일 때만 페이로드를 본인인증 메시지로 돌려줍니다.
+             * 대상 getter 가 옛 본인인증 메시지면 페이로드를, 아니면 빈 배열을 돌려줍니다.
              *
-             * @return array 본인인증 메시지
+             * @return array 옛 본인인증 메시지 선언
              */
             public function getIdentityMessages(): array
             {
@@ -104,11 +104,11 @@ class ManagerSyncFilterTest extends TestCase
         return new class($identifier, $payload, $getter) extends AbstractPlugin
         {
             /**
-             * 가상 플러그인의 식별자와 돌려줄 페이로드를 받습니다.
+             * 식별자·페이로드·대상 getter 이름을 보관합니다.
              *
-             * @param  string  $id  식별자
-             * @param  array  $payload  돌려줄 페이로드
-             * @param  string  $getter  페이로드를 돌려줄 메서드 이름
+             * @param  string  $id  확장 식별자 (경로 basename)
+             * @param  array  $payload  getter 가 반환할 페이로드
+             * @param  string  $getter  페이로드를 돌려줄 getter 이름
              */
             public function __construct(
                 private string $id,
@@ -117,7 +117,7 @@ class ManagerSyncFilterTest extends TestCase
             ) {}
 
             /**
-             * 임시 디렉터리 아래 식별자 경로를 플러그인 경로로 씁니다.
+             * 식별자를 basename 으로 하는 임시 경로를 돌려줍니다 (식별자 결정용).
              *
              * @return string 플러그인 경로
              */
@@ -127,9 +127,9 @@ class ManagerSyncFilterTest extends TestCase
             }
 
             /**
-             * 지정한 메서드일 때만 페이로드를 알림 정의로 돌려줍니다.
+             * 대상 getter 가 알림 정의면 페이로드를, 아니면 빈 배열을 돌려줍니다.
              *
-             * @return array 알림 정의
+             * @return array 알림 정의 선언
              */
             public function getNotificationDefinitions(): array
             {
@@ -137,9 +137,9 @@ class ManagerSyncFilterTest extends TestCase
             }
 
             /**
-             * 지정한 메서드일 때만 페이로드를 본인인증 메시지로 돌려줍니다.
+             * 대상 getter 가 옛 본인인증 메시지면 페이로드를, 아니면 빈 배열을 돌려줍니다.
              *
-             * @return array 본인인증 메시지
+             * @return array 옛 본인인증 메시지 선언
              */
             public function getIdentityMessages(): array
             {
@@ -151,9 +151,9 @@ class ManagerSyncFilterTest extends TestCase
     /**
      * Manager 의 protected sync 메서드를 reflection 으로 호출.
      *
-     * @param  object  $manager  모듈 또는 플러그인 매니저
-     * @param  string  $method  부를 동기화 메서드 이름
-     * @param  object  $arg  넘길 확장 인스턴스
+     * @param  object  $manager  ModuleManager 또는 PluginManager
+     * @param  string  $method  호출할 sync 메서드 이름
+     * @param  object  $arg  동기화 대상 확장
      * @return void 반환값 없음
      */
     private function invokeSync(object $manager, string $method, object $arg): void
@@ -165,9 +165,11 @@ class ManagerSyncFilterTest extends TestCase
     }
 
     /**
-     * 모듈 알림 정의 동기화가 언어팩 필터를 부른다.
+     * 모듈 알림 정의 동기화가 seed.{id}.notifications.translations 필터에 선언 목록을 넘긴다.
      *
-     * @effects module_notification_definitions_fires_lang_pack_filter
+     * @scenario owner=module
+     *
+     * @effects domain_lang_pack_filter_fires_on_module_notification_sync, module_notification_definitions_fires_lang_pack_filter
      *
      * @return void 반환값 없음
      */
@@ -204,16 +206,18 @@ class ManagerSyncFilterTest extends TestCase
     }
 
     /**
-     * 모듈 본인인증 메시지 동기화가 언어팩 필터를 부른다.
+     * (호환층) 모듈의 옛 본인인증 메시지 선언은 identity.purpose.{목적} 알림 정의로 변환된 뒤 같은 notifications 번역 필터를 거친다.
      *
-     * @effects module_identity_messages_fires_lang_pack_filter
+     * @scenario owner=module
+     *
+     * @effects legacy_identity_declaration_converted_before_domain_lang_pack_filter, module_identity_messages_fires_lang_pack_filter
      *
      * @return void 반환값 없음
      */
     public function test_module_identity_messages_fires_lang_pack_filter(): void
     {
         $captured = null;
-        HookManager::addFilter('seed.test-module.identity_messages.translations', function ($defs) use (&$captured) {
+        HookManager::addFilter('seed.test-module.notifications.translations', function ($defs) use (&$captured) {
             $captured = $defs;
 
             return $defs;
@@ -223,22 +227,25 @@ class ManagerSyncFilterTest extends TestCase
             [
                 'provider_id' => 'g7:core.mail',
                 'scope_type' => 'purpose',
-                'scope_value' => 'signup',
+                'scope_value' => 'fake_signup',
                 'name' => ['ko' => '회원가입'],
                 'templates' => [],
             ],
         ], 'getIdentityMessages');
 
-        $this->invokeSync($this->app->make(ModuleManager::class), 'syncModuleIdentityMessages', $module);
+        $this->invokeSync($this->app->make(ModuleManager::class), 'syncModuleNotificationDefinitions', $module);
 
-        $this->assertNotNull($captured, 'seed.{id}.identity_messages.translations 필터가 발화되지 않음');
-        $this->assertSame('signup', $captured[0]['scope_value'] ?? null);
+        // 옛 선언은 알림 정의(type 키)로 변환된 뒤 notifications 번역 필터를 거친다 — 팩이 type 키로 번역을 붙인다.
+        $this->assertNotNull($captured, '변환된 본인인증 선언이 seed.{id}.notifications.translations 필터를 거치지 않음');
+        $this->assertSame('identity.purpose.fake_signup', $captured[0]['type'] ?? null);
     }
 
     /**
-     * 플러그인 알림 정의 동기화가 언어팩 필터를 부른다.
+     * 플러그인 알림 정의 동기화가 seed.{id}.notifications.translations 필터에 선언 목록을 넘긴다.
      *
-     * @effects plugin_notification_definitions_fires_lang_pack_filter
+     * @scenario owner=plugin
+     *
+     * @effects domain_lang_pack_filter_fires_on_plugin_notification_sync, plugin_notification_definitions_fires_lang_pack_filter
      *
      * @return void 반환값 없음
      */
@@ -275,16 +282,18 @@ class ManagerSyncFilterTest extends TestCase
     }
 
     /**
-     * 플러그인 본인인증 메시지 동기화가 언어팩 필터를 부른다.
+     * (호환층) 플러그인의 옛 본인인증 메시지 선언(메일 외 provider 포함)도 알림 정의로 변환된 뒤 notifications 번역 필터를 거친다.
      *
-     * @effects plugin_identity_messages_fires_lang_pack_filter
+     * @scenario owner=plugin
+     *
+     * @effects legacy_identity_declaration_converted_before_domain_lang_pack_filter, plugin_identity_messages_fires_lang_pack_filter
      *
      * @return void 반환값 없음
      */
     public function test_plugin_identity_messages_fires_lang_pack_filter(): void
     {
         $captured = null;
-        HookManager::addFilter('seed.test-plugin.identity_messages.translations', function ($defs) use (&$captured) {
+        HookManager::addFilter('seed.test-plugin.notifications.translations', function ($defs) use (&$captured) {
             $captured = $defs;
 
             return $defs;
@@ -300,10 +309,10 @@ class ManagerSyncFilterTest extends TestCase
             ],
         ], 'getIdentityMessages');
 
-        $this->invokeSync($this->app->make(PluginManager::class), 'syncPluginIdentityMessages', $plugin);
+        $this->invokeSync($this->app->make(PluginManager::class), 'syncPluginNotificationDefinitions', $plugin);
 
-        $this->assertNotNull($captured, 'seed.{id}.identity_messages.translations 필터가 플러그인에서 발화되지 않음');
-        $this->assertSame('sensitive_action', $captured[0]['scope_value'] ?? null);
+        $this->assertNotNull($captured, '변환된 본인인증 선언이 플러그인 notifications 번역 필터를 거치지 않음');
+        $this->assertSame('identity.purpose.sensitive_action', $captured[0]['type'] ?? null);
     }
 
     /**
@@ -314,7 +323,7 @@ class ManagerSyncFilterTest extends TestCase
      * Manager DB 저장 직전이 호출하는 `applyFilters("{scope}.{id}.manifest.translations", ...)`
      * 와 동일 경로 — Manager 결선이 끊기면 라벨이 영영 ko 폴백된다.
      *
-     * @return iterable<string, array{string, string}> 확장 종류와 대상 식별자
+     * @return iterable<string, array{string, string}> 케이스명 => [scope, 대상 확장 식별자]
      */
     public static function manifestScopeProvider(): iterable
     {
@@ -324,11 +333,14 @@ class ManagerSyncFilterTest extends TestCase
     }
 
     /**
-     * 활성 언어팩의 manifest 번역 필터가 자동 등록돼 이름과 설명에 ja 를 넣는다.
+     * 활성 ja 팩의 seed/manifest.json 이 있으면 ServiceProvider 가 scope 별 manifest 번역 필터를
+     * 자동 등록하고, 그 필터가 name·description 에 ja 를 넣으면서 ko·en 은 그대로 둔다.
      *
-     * @effects manifest_translations_filter_auto_registered_and_injects_ja
+     * @effects manifest_filter_auto_registered_for_module_scope, manifest_filter_auto_registered_for_plugin_scope,
+     *   manifest_filter_auto_registered_for_template_scope, ja_injected_into_name_and_description_when_pack_present,
+     *   ko_en_preserved_after_ja_injection, manifest_translations_filter_auto_registered_and_injects_ja
      *
-     * @param  string  $scope  확장 종류(plugin, module, template)
+     * @param  string  $scope  언어팩 scope (plugin|module|template)
      * @param  string  $target  대상 확장 식별자
      * @return void 반환값 없음
      */

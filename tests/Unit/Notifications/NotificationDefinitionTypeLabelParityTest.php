@@ -178,11 +178,19 @@ class NotificationDefinitionTypeLabelParityTest extends TestCase
     /**
      * 코어 소유 알림 정의 타입 전수를 config 에서 읽는다
      *
+     * 본인인증 분류(`category = identity`, 7.1.0~ #699)는 뺀다 — 그 카드는 처음부터 서버가 주는 로케일 이름
+     * (`$localized(def.name)`)으로 그리고, 운영자가 추가하는 정책별 문구(`identity.policy.{키}`)는 정적 라벨을
+     * 가질 수 없어 이 네임스페이스로 덮을 수 없다. 이름의 다국어는 정의 선언과 언어팩 seed 가 공급한다.
+     *
      * @return array<int, string> 타입 문자열 목록
      */
     private function coreDefinitionTypes(): array
     {
-        $types = array_keys((array) config('core.notification_definitions'));
+        $definitions = (array) config('core.notification_definitions');
+        $types = array_keys(array_filter(
+            $definitions,
+            fn ($definition) => ($definition['category'] ?? null) !== 'identity'
+        ));
 
         // 모집단 검증 — config 구조가 바뀌어 빈 배열이 되면 초록이 무의미하다.
         $this->assertGreaterThanOrEqual(

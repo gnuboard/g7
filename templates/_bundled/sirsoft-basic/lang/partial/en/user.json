@@ -97,6 +97,14 @@
             "external_subtitle": "You will be redirected to the identity verification service shortly.",
             "manual_redirect": "Redirect manually",
             "error_generic": "Verification failed. Please try again."
+        },
+        "verify_link": {
+            "title": "Identity Verification",
+            "verifying": "Verifying…",
+            "verified_title": "Verification complete",
+            "verified_body": "Go back to the screen where you started verification — it will continue automatically. You can close this window.",
+            "failed_title": "This link cannot be verified",
+            "failed_body": "The link has expired or was already used. Request a new email from the original screen."
         }
     },
     "home": {

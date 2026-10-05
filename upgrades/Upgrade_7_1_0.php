@@ -47,6 +47,14 @@ use App\Extension\AbstractUpgradeStep;
  *       06_PurgeOrphanPluginLayouts.php
  *         삭제된 플러그인이 남긴 레이아웃 행을 지운다(#712). 7.0.x 의 플러그인 비활성화·삭제는 레이아웃 정리에 모듈용
  *         조회를 써서 플러그인 레이아웃이 남았다. 설치 기록이 없는 플러그인의 행만 대상이다.
+ *       07_MigrateIdentityMessagesToNotifications.php
+ *         본인인증 메일 문구를 알림 정의(category=identity)로 옮기고 옛 표(`identity_message_definitions/templates`)를
+ *         드랍한다(#699). 재시딩이 만든 코어 선언 행에는 운영자 수정분만 옮기고, 운영자 정책 문구·비활성 확장 문구는
+ *         새로 만든다. 옮긴 건수와 옛 표 건수가 맞을 때만 드랍하며, 권한 `core.admin.identity.messages.*` 를 지운다
+ *         (알림 설정 권한 `core.settings.*` 로 대체). 03 이 먼저 거짓 수정 표식을 지운 뒤에 돈다.
+ *       08_DropLegacyMailTables.php
+ *         7.0.0-beta.2 부터 쓰이지 않는 `mail_templates`(0건일 때)·`mail_send_logs`(0건이거나 알림 발송 로그로 이관이
+ *         끝났을 때)를 드랍한다(#699). 행이 남아 있으면 경고만 남기고 보존한다.
  *
  * 신규 테이블 11개(방문자 통계 원장·집계·운영)는 일반 마이그레이션이 만들고, 설정
  * 기본값·권한·메뉴 정의·알림 정의는 코어 업데이트 흐름의 비파괴 동기화가 반영하므로

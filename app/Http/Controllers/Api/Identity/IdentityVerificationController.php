@@ -8,6 +8,7 @@ use App\Enums\IdentityVerificationStatus;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Identity\CancelChallengeRequest;
+use App\Http\Requests\Identity\ClaimChallengeRequest;
 use App\Http\Requests\Identity\IdentityCallbackRequest;
 use App\Http\Requests\Identity\ProvidersIndexRequest;
 use App\Http\Requests\Identity\PurposesIndexRequest;
@@ -67,6 +68,12 @@ class IdentityVerificationController extends PublicBaseController
             $providerId = null;
         }
 
+        // 428 이 알려 준 정책 — 메일 발송부가 그 정책별 문구를 고르고 이력에 출처 정책을 남긴다.
+        $originPolicy = $this->policyService->findUsableForChallenge(
+            $validated['policy_key'] ?? null,
+            (string) $validated['purpose'],
+        );
+
         $challenge = $this->service->start(
             purpose: (string) $validated['purpose'],
             target: $target,
@@ -75,6 +82,7 @@ class IdentityVerificationController extends PublicBaseController
                 'user_agent' => substr((string) $request->userAgent(), 0, 512),
                 'origin_type' => IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
+                'origin_policy_key' => $originPolicy?->key,
             ],
             providerId: $providerId,
         );
@@ -93,11 +101,40 @@ class IdentityVerificationController extends PublicBaseController
             return $this->error('identity.errors.challenge_dispatch_failed', 502);
         }
 
+        // 링크 방식은 확인을 메일 링크가 하므로, 시작한 화면이 결과를 받아 갈 일회용 비밀값을 이 응답에만 싣는다.
+        $claimSecret = $this->service->issueClaimSecret($challenge->id);
+
         return $this->success(
             'identity.messages.challenge_requested',
-            (new ChallengeResource($challenge))->toArray($request),
+            (new ChallengeResource($challenge))->toArray($request) + array_filter(['claim_secret' => $claimSecret], fn ($v) => $v !== null),
             201,
         );
+    }
+
+    /**
+     * 링크 방식 challenge 의 확인 결과를 시작한 화면이 받아 갑니다. POST /api/identity/challenges/{challenge}/claim
+     *
+     * 확인이 끝났고 비밀값이 맞으면 verification_token 을 한 번만 돌려준다(200). 아직이면 202(pending),
+     * 비밀값이 틀리면 403, 이미 받아 갔으면 409, 만료·실패·취소면 422.
+     *
+     * @param  ClaimChallengeRequest  $request  검증된 요청 (claim_secret)
+     * @param  IdentityVerificationLog  $challenge  라우트 모델 바인딩으로 resolve 된 challenge 로그
+     * @return JsonResponse 결과
+     */
+    public function claim(ClaimChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
+    {
+        $result = $this->service->claim($challenge->id, (string) $request->validated()['claim_secret']);
+
+        return match ($result['status']) {
+            IdentityVerificationStatus::Verified->value => $this->success('identity.messages.challenge_verified', [
+                'status' => 'verified',
+                'verification_token' => $result['verification_token'],
+            ]),
+            'pending' => $this->success('identity.messages.challenge_pending', ['status' => 'pending'], 202),
+            'denied' => $this->error('identity.errors.claim_denied', 403),
+            'claimed' => $this->error('identity.errors.claim_already_used', 409),
+            default => $this->error('identity.errors.claim_unavailable', 422, ['status' => $result['status']]),
+        };
     }
 
     /**

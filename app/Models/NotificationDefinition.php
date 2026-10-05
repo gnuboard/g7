@@ -80,6 +80,7 @@ class NotificationDefinition extends Model
         'hook_prefix',
         'extension_type',
         'extension_identifier',
+        'category',
         'name',
         'description',
         'variables',

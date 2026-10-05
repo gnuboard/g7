@@ -1192,11 +1192,19 @@ return [
         'fail_mode_invalid' => 'Fail mode must be block or log_only.',
     ],
 
-    // Identity message definition validation
-    'identity_message' => [
-        'provider_not_registered' => 'The IDV provider is not registered.',
-        'scope_value_not_admin_policy' => 'The scope value must match the key of an admin-created policy (source_type=admin).',
-        'definition_already_exists' => 'A definition with the same (provider, scope_type, scope_value) already exists.',
+    // Identity notifications — Notification settings > Identity "Add policy message"
+    'identity_notification' => [
+        'policy_key_not_admin_policy' => 'Select the key of an identity policy added by an administrator.',
+        'definition_already_exists' => 'This policy already has an identity verification message.',
+        'attributes' => [
+            'category' => 'category',
+            'policy_key' => 'policy',
+            'description' => 'description',
+            'templates' => 'mail template',
+            'name' => 'message name',
+            'subject' => 'subject',
+            'body' => 'body',
+        ],
     ],
 
     // Layout version list
@@ -1358,6 +1366,7 @@ return [
         'layout' => 'layout',
         'module' => 'module',
         'token' => 'token',
+        'claim_secret' => 'verification claim value',
         'mailgun_domain' => 'Mailgun domain',
         'mailgun_secret' => 'Mailgun secret',
         'ses_key' => 'SES access key',

@@ -5,12 +5,13 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserStatus;
 use App\Models\Role;
 use App\Models\User;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
  */
 class TwoFactorScopeTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private User $member;
@@ -43,7 +45,7 @@ class TwoFactorScopeTest extends TestCase
 
         // 인증번호 메일 구성에는 본인인증 메시지 정의가 필요하다 — 없으면 게이트 동작이
         // 아니라 시드 부재("발송 실패")를 측정하게 된다.
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        $this->prepareIdentityNotifications();
         $this->seed(RolePermissionSeeder::class);
 
         $this->member = User::factory()->create([
@@ -87,7 +89,7 @@ class TwoFactorScopeTest extends TestCase
      * 사용자 로그인 엔드포인트로 로그인을 시도합니다.
      *
      * @param  User  $user  대상 사용자
-     * @return \Illuminate\Testing\TestResponse 로그인 응답
+     * @return TestResponse 로그인 응답
      */
     private function login(User $user)
     {

@@ -325,20 +325,45 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     /**
      * 훅 인자에서 changed_fields 를 추출합니다 (정책 conditions.changed_fields 매칭용).
      *
+     * `before_update` 류 훅은 (아직 값을 채우지 않은 모델, 저장할 데이터) 로 발화한다 — 모델의 getDirty() 는
+     * 이 시점에 비어 있으므로, 비어 있으면 함께 넘어온 데이터 배열을 모델의 현재 값과 비교해 바뀐 칸을 뽑는다.
+     * getDirty() 만 보던 판정은 회원 정보 수정에서 늘 빈 목록이 되어 연락처 변경 정책이 발화하지 않았다.
+     *
      * @param  array<int, mixed>  $args  훅 인자
      * @return array<int, string> 변경 필드명 배열
      */
     protected function extractChangedFields(array $args): array
     {
+        $model = null;
+        $data = null;
+
         foreach ($args as $arg) {
             if (is_array($arg) && isset($arg['changed_fields'])) {
                 return (array) $arg['changed_fields'];
             }
-            if (is_object($arg) && method_exists($arg, 'getDirty')) {
-                return array_keys($arg->getDirty());
+            if ($model === null && is_object($arg) && method_exists($arg, 'getDirty')) {
+                $model = $arg;
+            } elseif ($data === null && is_array($arg)) {
+                $data = $arg;
             }
         }
 
-        return [];
+        if ($model === null) {
+            return [];
+        }
+
+        $dirty = array_keys($model->getDirty());
+        if ($dirty !== [] || $data === null || ! method_exists($model, 'getAttribute')) {
+            return $dirty;
+        }
+
+        $changed = [];
+        foreach ($data as $field => $value) {
+            if (is_string($field) && $model->getAttribute($field) != $value) {
+                $changed[] = $field;
+            }
+        }
+
+        return $changed;
     }
 }

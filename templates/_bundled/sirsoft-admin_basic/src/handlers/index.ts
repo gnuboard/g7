@@ -34,6 +34,7 @@ import { downloadMarkupFileHandler } from './downloadMarkupFile';
 import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 // 자산 URL 방식 자동 감지 (이슈 #486) — 브라우저에서 프로브 쌍을 던져 재판정
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
+import { rememberIdentityClaimHandler } from './identityLauncher';
 
 /**
  * 핸들러 맵
@@ -44,6 +45,8 @@ import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './dete
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export const handlerMap = {
+  // 본인인증 링크 방식 — [다시 보내기]가 받은 새 건의 일회용 비밀값을 처리기에 넘긴다(전역 상태에 두지 않는다).
+  rememberIdentityClaim: rememberIdentityClaimHandler,
   // 언어: setLocale은 엔진 레벨(ActionDispatcher)에서 빌트인으로 처리
   detectAssetUrlMode: detectAssetUrlModeHandler,
   // 대시보드 진단 — 저장된 방식과 실제 환경을 대조해 불일치만 알린다 (저장하지 않음)

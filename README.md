@@ -394,8 +394,8 @@ Every verification point — signup, password reset, sensitive operations, the m
 
 - **Policy as the single source of truth** — toggling a policy takes effect immediately without editing route code. Every API route matches against the policy database automatically
 - **428 interceptor** — when the server returns HTTP 428, the frontend opens a verification modal automatically and replays the original request once verification succeeds
-- **Declarative registration** — modules and plugins declare `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()`, and those are registered automatically on activation or update while preserving operator edits
-- **Message templates** — define multilingual subjects and bodies per provider and per purpose/policy, falling back in the order policy → purpose → provider default
+- **Declarative registration** — modules and plugins declare `module.php::getIdentityPolicies()` / `getIdentityPurposes()`, plus verification messages as notification definitions (`category => 'identity'`), and those are registered automatically on activation or update while preserving operator edits
+- **Message templates** — verification mail is a notification definition managed under Settings > Notifications with multilingual subjects and bodies per purpose/policy, falling back in the order policy → purpose → default and following the notification channel switches
 - **External provider slots** — plugins can inject their own SDK UI for services such as KCP, PortOne, Toss verification, or Stripe Identity through the standard G7 extension-point pattern
 - **History management** — the admin screen offers tabs per verification method, unified search, multi-filters for status/purpose/channel/IP, and bulk destruction by retention period (180 days)
 

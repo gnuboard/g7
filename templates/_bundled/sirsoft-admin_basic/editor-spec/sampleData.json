@@ -2357,158 +2357,24 @@
         }
       }
     },
-    "identityMessages": {
+    "identityPolicyDefinitions": {
+      "success": true,
       "data": {
         "data": [
           {
-            "number": 1,
             "id": 1,
-            "provider_id": "g7:core.mail",
-            "scope_type": "provider_default",
-            "scope_value": "",
-            "channels": ["mail"],
+            "type": "identity.policy.admin.sample.policy",
+            "category": "identity",
             "extension_type": "core",
-            "extension_identifier": "core",
-            "is_active": true,
-            "is_default": true,
-            "user_overrides": null,
+            "extension_identifier": "admin",
             "name": {
-              "ko": "메일 본인 확인 (기본)",
-              "en": "Mail Verification (default)"
+              "ko": "샘플 제목",
+              "en": "Sample"
             },
-            "description": {
-              "ko": "특정 목적이 매칭되지 않을 때 사용되는 기본 메일 템플릿",
-              "en": "Fallback mail template used when no specific purpose matches"
-            },
-            "variables": [
-              {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-              },
-              {
-                "key": "action_url",
-                "description": "검증 링크 URL (link 흐름)"
-              },
-              {
-                "key": "expire_minutes",
-                "description": "만료까지 남은 분"
-              }
-            ],
-            "templates": [
-              {
-                "id": 1,
-                "definition_id": 1,
-                "channel": "mail",
-                "is_active": true,
-                "is_default": true,
-                "user_overrides": null,
-                "subject": {
-                  "ko": "[{app_name}] 본인 확인 인증 코드",
-                  "en": "[{app_name}] Verification Code"
-                },
-                "body": {
-                  "ko": "<p>인증 코드 {code} 를 입력해 주세요. {expire_minutes}분 뒤 만료됩니다.</p>",
-                  "en": "<p>Enter the code {code}. It expires in {expire_minutes} minutes.</p>"
-                },
-                "abilities": {
-                  "can_update": false,
-                  "can_delete": false
-                }
-              }
-            ]
-          },
-          {
-            "number": 2,
-            "id": 2,
-            "provider_id": "g7:core.mail",
-            "scope_type": "purpose",
-            "scope_value": "signup",
-            "channels": ["mail"],
-            "extension_type": "core",
-            "extension_identifier": "core",
             "is_active": true,
-            "is_default": true,
-            "user_overrides": null,
-            "name": {
-              "ko": "회원가입 인증",
-              "en": "Signup Verification"
-            },
-            "description": {
-              "ko": "회원가입 단계에서 이메일 본인 확인 시 발송",
-              "en": "Sent when verifying email during signup"
-            },
-            "variables": [
-              {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-              },
-              {
-                "key": "action_url",
-                "description": "검증 링크 URL (link 흐름)"
-              },
-              {
-                "key": "expire_minutes",
-                "description": "만료까지 남은 분"
-              }
-            ],
-            "templates": [
-              {
-                "id": 2,
-                "definition_id": 2,
-                "channel": "mail",
-                "is_active": true,
-                "is_default": true,
-                "user_overrides": null,
-                "subject": {
-                  "ko": "[{app_name}] 회원가입 인증 코드",
-                  "en": "[{app_name}] Signup Verification Code"
-                },
-                "body": {
-                  "ko": "<p>인증 코드 {code} 를 입력해 주세요. {expire_minutes}분 뒤 만료됩니다.</p>",
-                  "en": "<p>Enter the code {code}. It expires in {expire_minutes} minutes.</p>"
-                },
-                "abilities": {
-                  "can_update": false,
-                  "can_delete": false
-                }
-              }
-            ]
+            "is_default": false
           }
-        ],
-        "pagination": {
-          "current_page": 1,
-          "per_page": 20,
-          "from": 1,
-          "to": 2,
-          "has_more_pages": false,
-          "last_page": 1,
-          "total": 2
-        },
-        "abilities": {
-          "can_create": true,
-          "can_update": true
-        }
-      }
-    },
-    "identityMessagePolicyScopes": {
-      "data": {
-        "data": [
-          {
-            "key": "policy.checkout_verification",
-            "name": "주문 결제 본인인증",
-            "channel": "mail",
-            "provider_id": "g7:core.mail",
-            "scope_type": "policy",
-            "scope_value": "sirsoft-ecommerce.checkout.before_pay",
-            "enabled": true
-          }
-        ],
-        "meta": {
-          "current_page": 1,
-          "last_page": 1,
-          "per_page": 100,
-          "total": 1
-        }
+        ]
       }
     },
     "installed_plugins": {

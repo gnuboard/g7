@@ -57,6 +57,14 @@
         "title": "$t:user.identity.challenge.title"
       }
     },
+    {
+      "path": "/identity/verify",
+      "layout": "auth/identity_verify",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.identity.verify_link.title"
+      }
+    },
 
     {
       "_comment": "=== 게시판 ===",

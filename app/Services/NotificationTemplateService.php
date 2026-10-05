@@ -7,6 +7,7 @@ use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
 use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\NotificationTemplate;
+use App\Notifications\Identity\IdentityNotificationType;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -80,13 +81,22 @@ class NotificationTemplateService
     {
         $snapshot = $template->toArray();
 
+        $legacyIdentity = $this->isIdentityTemplate($template);
+
         HookManager::doAction('core.notification_template.before_update', $template, $data);
+        if ($legacyIdentity) {
+            // 7.0.x 본인인증 메시지 관리 훅 — 공개 훅은 메이저에서만 지우므로 본인인증 분류에서는 옛 이름도 같은 인자로 함께 발화한다(@deprecated 7.1.0, 8.0 제거).
+            HookManager::doAction('core.identity.message_template.before_update', $template, $data);
+        }
 
         $data = HookManager::applyFilters(
             'core.notification_template.filter_update_data',
             $data,
             $template
         );
+        if ($legacyIdentity) {
+            $data = HookManager::applyFilters('core.identity.message_template.filter_update_data', $data, $template);
+        }
 
         if ($userId) {
             $data['updated_by'] = $userId;
@@ -112,6 +122,9 @@ class NotificationTemplateService
         }
 
         HookManager::doAction('core.notification_template.after_update', $updated, $data, $snapshot);
+        if ($legacyIdentity) {
+            HookManager::doAction('core.identity.message_template.after_update', $updated, $data);
+        }
 
         return $updated;
     }
@@ -124,7 +137,13 @@ class NotificationTemplateService
      */
     public function toggleActive(NotificationTemplate $template): NotificationTemplate
     {
+        $legacyIdentity = $this->isIdentityTemplate($template);
+
         HookManager::doAction('core.notification_template.before_toggle_active', $template);
+        if ($legacyIdentity) {
+            // 7.0.x 본인인증 메시지 관리 훅 — 공개 훅은 메이저에서만 지우므로 본인인증 분류에서는 옛 이름도 같은 인자로 함께 발화한다(@deprecated 7.1.0, 8.0 제거).
+            HookManager::doAction('core.identity.message_template.before_toggle_active', $template);
+        }
 
         $updated = $this->templateRepository->update($template, [
             'is_active' => ! $template->is_active,
@@ -136,6 +155,9 @@ class NotificationTemplateService
         }
 
         HookManager::doAction('core.notification_template.after_toggle_active', $updated);
+        if ($legacyIdentity) {
+            HookManager::doAction('core.identity.message_template.after_toggle_active', $updated);
+        }
 
         return $updated;
     }
@@ -149,6 +171,12 @@ class NotificationTemplateService
      */
     public function resetToDefault(NotificationTemplate $template, array $defaultData): NotificationTemplate
     {
+        $legacyIdentity = $this->isIdentityTemplate($template);
+        if ($legacyIdentity) {
+            // 7.0.x 본인인증 메시지 관리 훅 — 공개 훅은 메이저에서만 지우므로 본인인증 분류에서는 옛 이름도 같은 인자로 함께 발화한다(@deprecated 7.1.0, 8.0 제거).
+            HookManager::doAction('core.identity.message_template.before_reset', $template);
+        }
+
         // 복원은 사용자 수정이 아니므로 seeding 컨텍스트로 감싸 HasUserOverrides 의
         // updating 자동 기록을 비활성화한다. 이 가드가 없으면 복원되는 trackable 필드
         // (subject/body/click_url/recipients)가 dirty 로 감지되어 user_overrides 가
@@ -166,6 +194,10 @@ class NotificationTemplateService
         $definition = $updated->definition;
         if ($definition) {
             $this->invalidateCache($definition->type, $updated->channel);
+        }
+
+        if ($legacyIdentity) {
+            HookManager::doAction('core.identity.message_template.after_reset', $updated);
         }
 
         return $updated;
@@ -197,6 +229,18 @@ class NotificationTemplateService
             $definitions,
             ['type' => $type, 'channel' => $channel]
         );
+
+        // 7.0.x 본인인증 메시지 기본값 필터 — 본인인증 분류만 옛 이름으로도 거른다(@deprecated 7.1.0, 8.0 제거).
+        $identityDefaults = array_values(array_filter($definitions, fn ($d) => ($d['category'] ?? null) === IdentityNotificationType::CATEGORY));
+        if ($identityDefaults !== []) {
+            $filtered = HookManager::applyFilters('core.identity.filter_default_message_definitions', $identityDefaults, []);
+            if (is_array($filtered)) {
+                $definitions = array_merge(
+                    array_values(array_filter($definitions, fn ($d) => ($d['category'] ?? null) !== IdentityNotificationType::CATEGORY)),
+                    $filtered
+                );
+            }
+        }
 
         // 활성 언어팩 seed 로케일 병합 — 시딩(seed.notifications.translations)과 같은 SSoT.
         // 이 병합이 없으면 [기본값 복원]이 팩이 주입해 둔 로케일(ja 등)을 config 의
@@ -315,5 +359,29 @@ class NotificationTemplateService
     private function getCacheKey(string $type, string $channel): string
     {
         return $this->cachePrefix.$type.'.'.$channel;
+    }
+
+    /**
+     * 기본값이 없어 복원하지 못한 본인인증 템플릿을 옛 훅으로 알립니다(@deprecated 7.1.0, 8.0 제거).
+     *
+     * @param  NotificationTemplate  $template  복원하지 못한 템플릿
+     * @return void 반환값 없음
+     */
+    public function notifyLegacyResetWithoutDefault(NotificationTemplate $template): void
+    {
+        if ($this->isIdentityTemplate($template)) {
+            HookManager::doAction('core.identity.message_template.reset_no_default', $template);
+        }
+    }
+
+    /**
+     * 템플릿이 본인인증 분류 정의에 속하는지 판정합니다(옛 본인인증 메시지 훅 병행 발화용).
+     *
+     * @param  NotificationTemplate  $template  대상 템플릿
+     * @return bool 본인인증 분류면 true
+     */
+    private function isIdentityTemplate(NotificationTemplate $template): bool
+    {
+        return $template->definition?->category === IdentityNotificationType::CATEGORY;
     }
 }

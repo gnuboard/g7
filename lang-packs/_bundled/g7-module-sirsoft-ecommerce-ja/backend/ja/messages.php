@@ -183,6 +183,7 @@ return [
         'log_bulk_updated' => ':count件の注文が一括変更されました。',
         'email_sent' => 'メールが送信されました。',
         'email_send_failed' => 'メール送信に失敗しました。',
+        'email_channel_disabled' => 'メールチャネルがオフになっているか、メール設定・テンプレートの準備ができていないため送信できません。ECサイト設定 > 通知でメールチャネルと「注文案内メール」テンプレートを確認してください。',
         'email_subject' => '[:app_name]注文:order_number関連のお知らせ',
         'fetch_success' => '注文情報を照会しました。',
         'fetch_failed' => '注文情報照会に失敗しました。',

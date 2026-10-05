@@ -10,7 +10,7 @@
  * - admin_role_list — 보호 역할 행 메뉴·토글 잠금(서버 abilities)과 안내
  * - admin_user_list — 선택 0건 일괄 처리(모바일 드롭다운·확인 창), 본인 행 선택, 일괄 결과 안내
  * - admin_user_form — 역할 부여 권한 없는 등록(역할 칸 필수 표시·안내)
- * - _modal_identity_message_definition_add — 운영자 정책 0건·이미 정의된 정책
+ * - _modal_notification_identity_definition_add — 본인인증 정책별 문구 추가: 운영자 정책 0건·이미 문구가 있는 정책
  * - 회원 검색 드롭다운 2곳 — 빈 검색어 요청
  */
 
@@ -18,8 +18,8 @@ import { describe, it, expect } from 'vitest';
 import roleListLayout from '../../layouts/admin_role_list.json';
 import userListLayout from '../../layouts/admin_user_list.json';
 import userFormLayout from '../../layouts/admin_user_form.json';
-import identityMessageAddModal from '../../layouts/partials/admin_settings/_modal_identity_message_definition_add.json';
-import identityMessagesTab from '../../layouts/partials/admin_settings/_tab_identity_messages.json';
+import identityNotificationAddModal from '../../layouts/partials/admin_settings/_modal_notification_identity_definition_add.json';
+import notificationDefinitionsTab from '../../layouts/partials/admin_settings/_tab_notification_definitions.json';
 import adminSettingsLayout from '../../layouts/admin_settings.json';
 import activityLogFilter from '../../layouts/partials/admin_activity_log_list/_partial_filter.json';
 import notificationTemplateForm from '../../layouts/partials/admin_settings/_modal_notification_template_form.json';
@@ -201,59 +201,75 @@ describe('회원 등록 — 역할 부여 권한 없이', () => {
   });
 });
 
-describe('본인인증 메시지 「정의 추가」', () => {
+describe('본인인증 정책별 문구 추가 (알림 설정 > 본인인증)', () => {
   const ctxBase = (overrides: Record<string, unknown> = {}) => ({
     adminIdentityPolicies: { data: { data: [{ key: 'policy_a' }, { key: 'policy_b' }] } },
-    identityMessagePolicyScopes: { data: { data: [{ scope_value: 'policy_a' }] } },
-    _global: { identity_message_definition_add_modal: { form: { scope_value: '' } } },
+    identityPolicyDefinitions: { data: { data: [{ type: 'identity.policy.policy_a', policy_key: 'policy_a' }] } },
+    _global: { identity_notification_add_modal: { form: { policy_key: '' } } },
     ...overrides,
   });
 
   /**
-   * @scenario defect=identity_message_definition_add
+   * 서버는 같은 정책에 두 번째 정의를 중복(422)으로 거절한다 — 판정은 type `identity.policy.{정책 키}` 다.
+   *
+   * @scenario defect=identity_notification_definition_add
    * @effects defined_policies_excluded_from_options
    */
-  it('이미 메시지 정의가 있는 정책은 선택지에서 빠진다', () => {
-    const select = collect(identityMessageAddModal, (n) => n.name === 'Select')[0];
+  it('이미 문구가 있는 정책은 선택지에서 빠진다', () => {
+    const select = collect(identityNotificationAddModal, (n) => n.name === 'Select')[0];
     expect(evaluate(select.props.options, ctxBase())).toEqual([{ value: 'policy_b', label: 'policy_b' }]);
+    // 고를 정책이 하나도 없으면 선택 칸 대신 안내가 뜬다
+    expect(evaluate(select.if, ctxBase({ identityPolicyDefinitions: { data: { data: [{ policy_key: 'policy_a' }, { policy_key: 'policy_b' }] } } }))).toBe(false);
+    // 100자를 넘는 키는 type 이 해시(`identity.policy.~…`)라 type 으로는 못 맞춘다 — 서버가 실어 주는 policy_key 로 뺀다
+    const longKey = 'admin.' + 'x'.repeat(90);
+    expect(
+      evaluate(select.props.options, ctxBase({
+        adminIdentityPolicies: { data: { data: [{ key: longKey }, { key: 'policy_b' }] } },
+        identityPolicyDefinitions: { data: { data: [{ type: 'identity.policy.~0123456789abcdef0123', policy_key: longKey }] } },
+      })),
+    ).toEqual([{ value: 'policy_b', label: 'policy_b' }]);
   });
 
   /**
-   * @scenario defect=identity_message_definition_add
+   * @scenario defect=identity_notification_definition_add
    * @effects save_disabled_without_selectable_policy
    */
   it('고를 정책이 없거나 고르지 않았으면 저장이 비활성이다', () => {
-    const save = byId(identityMessageAddModal, 'identity_message_add_save_button');
+    const save = byId(identityNotificationAddModal, 'identity_notification_add_save_button');
+    const pick = (key: string) => ({ _global: { identity_notification_add_modal: { form: { policy_key: key } } } });
 
     // 고르지 않음
     expect(evaluate(save.props.disabled, ctxBase())).toBe(true);
     // 운영자 정책 0건
     expect(evaluate(save.props.disabled, ctxBase({ adminIdentityPolicies: { data: { data: [] } } }))).toBe(true);
-    // 이미 정의된 정책을 고른 채 남아 있음
-    expect(
-      evaluate(save.props.disabled, ctxBase({ _global: { identity_message_definition_add_modal: { form: { scope_value: 'policy_a' } } } })),
-    ).toBe(true);
+    // 이미 문구가 있는 정책을 고른 채 남아 있음
+    expect(evaluate(save.props.disabled, ctxBase(pick('policy_a')))).toBe(true);
     // 정상 선택
+    expect(evaluate(save.props.disabled, ctxBase(pick('policy_b')))).toBe(false);
+    // 저장 중에는 다시 누를 수 없다
     expect(
-      evaluate(save.props.disabled, ctxBase({ _global: { identity_message_definition_add_modal: { form: { scope_value: 'policy_b' } } } })),
-    ).toBe(false);
+      evaluate(save.props.disabled, ctxBase({ _global: { identity_notification_add_modal: { form: { policy_key: 'policy_b' }, isSaving: true } } })),
+    ).toBe(true);
   });
 
   /**
-   * @scenario defect=identity_message_definition_add
+   * @scenario defect=identity_notification_definition_add
    * @effects defined_policies_excluded_from_options
    */
-  it('정의된 정책 목록은 서버의 중복 판정과 같은 조건(메일 제공자·정책 범위)으로 받고, 창을 열 때 다시 받는다', () => {
-    const source = collect(adminSettingsLayout, (n) => n.id === 'identityMessagePolicyScopes' && n.endpoint)[0];
-    expect(source, '정의된 정책 목록 데이터소스가 없습니다.').toBeDefined();
-    expect(source.endpoint).toBe('/api/admin/identity/messages/definitions');
-    expect(source.params.provider_id).toBe('g7:core.mail');
-    expect(source.params.scope_type).toBe('policy');
+  it('문구가 있는 정책 목록은 서버의 중복 판정과 같은 조건(코어·본인인증 분류)으로 받고, 창을 열 때와 저장 뒤 다시 받는다', () => {
+    const source = collect(adminSettingsLayout, (n) => n.id === 'identityPolicyDefinitions' && n.endpoint)[0];
+    expect(source, '문구가 있는 정책 목록 데이터소스가 없습니다.').toBeDefined();
+    expect(source.endpoint).toBe('/api/admin/notification-definitions');
+    expect(source.params.extension_type).toBe('core');
+    expect(source.params.category).toBe('identity');
+    // 목록 화면의 분류·페이지와 묶이면 다른 페이지의 정의가 빠진다 — 한 번에 받는다
+    expect(source.params.page).toBeUndefined();
 
-    const refetches = collect(identityMessagesTab, (n) => n.handler === 'refetchDataSource' && n.params?.dataSourceId === 'identityMessagePolicyScopes');
-    expect(refetches.length, '창을 열 때 다시 받는 동작이 없습니다.').toBeGreaterThan(0);
+    const openButton = byId(notificationDefinitionsTab, 'notif_identity_add_button');
+    const onOpen = collect(openButton, (n) => n.handler === 'refetchDataSource' && n.params?.dataSourceId === 'identityPolicyDefinitions');
+    expect(onOpen.length, '창을 열 때 다시 받는 동작이 없습니다.').toBeGreaterThan(0);
 
-    const afterSave = collect(identityMessageAddModal, (n) => n.handler === 'refetchDataSource' && n.params?.dataSourceId === 'identityMessagePolicyScopes');
+    const afterSave = collect(identityNotificationAddModal, (n) => n.handler === 'refetchDataSource' && n.params?.dataSourceId === 'identityPolicyDefinitions');
     expect(afterSave.length, '저장 뒤 다시 받는 동작이 없습니다.').toBeGreaterThan(0);
   });
 });

@@ -5,10 +5,11 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 22개 (정의: `src/handlers/index.ts`).
+핸들러 23개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
+| `rememberIdentityClaim` | (템플릿 전용 — 네임스페이스 없음) |
 | `detectAssetUrlMode` | (템플릿 전용 — 네임스페이스 없음) |
 | `checkAssetUrlModeDrift` | (템플릿 전용 — 네임스페이스 없음) |
 | `setTheme` | (템플릿 전용 — 네임스페이스 없음) |

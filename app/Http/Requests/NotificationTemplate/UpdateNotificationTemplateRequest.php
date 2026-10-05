@@ -3,6 +3,7 @@
 namespace App\Http\Requests\NotificationTemplate;
 
 use App\Extension\HookManager;
+use App\Models\NotificationTemplate;
 use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -64,11 +65,19 @@ class UpdateNotificationTemplateRequest extends FormRequest
             }
         }
 
-        return HookManager::applyFilters(
+        $rules = HookManager::applyFilters(
             'core.notification_template.update_validation_rules',
             $rules,
             $this->route('template')
         );
+
+        // 7.0.x 본인인증 메시지 템플릿 수정 검증 필터 — 본인인증 분류 템플릿은 옛 이름으로도 거른다(@deprecated 7.1.0, 8.0 제거).
+        $template = $this->route('template');
+        if ($template instanceof NotificationTemplate && $template->definition?->category === 'identity') {
+            $rules = HookManager::applyFilters('core.identity.message_template.update_validation_rules', $rules, $template);
+        }
+
+        return $rules;
     }
 
     /**

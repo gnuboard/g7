@@ -4,11 +4,10 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Identity;
 
 use App\Enums\IdentityVerificationStatus;
 use App\Exceptions\IdentityVerificationRequiredException;
-use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
-use App\Models\IdentityMessageDefinition;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\Role;
@@ -44,6 +43,13 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         'sirsoft-ecommerce.checkout.before_pay',
     ];
 
+    /**
+     * 선언된 정책 4종이 module 출처로 동기화되고(코어 공용 단언), 네 정책 모두 hook 범위(scope)로 저장된다.
+     *
+     * @effects declared_policies_sync_as_hook_scope_for_module_source
+     *
+     * @return void 반환값 없음
+     */
     public function test_identity_policies_are_synced_for_module_source(): void
     {
         $this->assertIdentityPoliciesSyncedForExtension(
@@ -59,6 +65,13 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 결제 시 확인 정책(checkout.before_pay)은 checkout_verification 목적·self 대상·grace 30분으로 동기화된다.
+     *
+     * @effects checkout_policy_declares_checkout_verification_purpose_for_self
+     *
+     * @return void 반환값 없음
+     */
     public function test_checkout_before_pay_uses_checkout_verification_purpose(): void
     {
         $this->syncEcommerceIdentityPolicies();
@@ -73,6 +86,13 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertSame(30, (int) $policy->grace_minutes);
     }
 
+    /**
+     * 모듈이 선언한 checkout_verification 목적이 본인인증 매니저에 등록되고, 허용 채널에 email 과 sms 가 모두 들어 있다.
+     *
+     * @effects checkout_verification_purpose_registers_email_and_sms_channels
+     *
+     * @return void 반환값 없음
+     */
     public function test_checkout_verification_purpose_registered(): void
     {
         $manager = app(IdentityVerificationManager::class);
@@ -94,6 +114,10 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * 모듈 i18n 표준 (docs/extension/module-i18n.md) 적용 검증:
      * `getIdentityPurposes()` 의 label/description 이 `sirsoft-ecommerce::identity.purposes.*`
      * lang 키 형식이며, `__()` 로 해석되어 ko/en 라벨이 정상 반환되는지 확인.
+     *
+     * @effects checkout_verification_purpose_label_resolves_via_module_lang
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_verification_purpose_label_resolves_via_module_lang(): void
     {
@@ -133,8 +157,12 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
     }
 
     /**
-     * 이커머스 모듈이 getIdentityMessages() 로 checkout_verification purpose 메시지를 선언하고,
-     * IdentityMessageSyncHelper 로 동기화 시 DB(identity_message_definitions) 에 적재되는지 검증.
+     * 이커머스 모듈의 checkout_verification 본인인증 문구가 알림 정의(category=identity)로 선언되고,
+     * 알림 정의 동기화로 notification_definitions/templates 에 적재된다 (#699 — 옛 identity_message_* 대체).
+     *
+     * @effects checkout_verification_message_declared_as_identity_notification_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_verification_message_definition_synced(): void
     {
@@ -143,37 +171,42 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
             $this->getModuleBasePath(),
         );
 
-        $messages = $module->getIdentityMessages();
-        $this->assertNotEmpty($messages, 'checkout_verification 전용 메시지가 선언되어야 함');
+        $this->assertSame([], $module->getIdentityMessages(), '7.1.0 부터 옛 계약(getIdentityMessages)으로는 선언하지 않는다');
 
-        $helper = app(IdentityMessageSyncHelper::class);
-        foreach ($messages as $data) {
-            $data['extension_type'] = 'module';
-            $data['extension_identifier'] = 'sirsoft-ecommerce';
-            $definition = $helper->syncDefinition($data);
-            foreach ($data['templates'] ?? [] as $template) {
-                $helper->syncTemplate($definition->id, $template);
-            }
+        $declarations = array_values(array_filter(
+            $module->getNotificationDefinitions(),
+            fn (array $d) => ($d['type'] ?? null) === 'identity.purpose.checkout_verification'
+        ));
+        $this->assertCount(1, $declarations, 'checkout_verification 전용 본인인증 알림 정의가 선언되어야 함');
+        $this->assertSame('identity', $declarations[0]['category']);
+        $this->assertSame([], $declarations[0]['hooks']);
+
+        $helper = app(NotificationSyncHelper::class);
+        $data = array_merge($declarations[0], ['extension_type' => 'module', 'extension_identifier' => 'sirsoft-ecommerce']);
+        $definition = $helper->syncDefinition($data);
+        foreach ($data['templates'] as $template) {
+            $helper->syncTemplate($definition->id, $template);
         }
 
-        $this->assertDatabaseHas('identity_message_definitions', [
-            'provider_id' => 'g7:core.mail',
-            'scope_value' => 'checkout_verification',
+        $this->assertDatabaseHas('notification_definitions', [
+            'type' => 'identity.purpose.checkout_verification',
+            'category' => 'identity',
             'extension_type' => 'module',
             'extension_identifier' => 'sirsoft-ecommerce',
         ]);
-
-        $defId = IdentityMessageDefinition::query()
-            ->where('extension_identifier', 'sirsoft-ecommerce')
-            ->where('scope_value', 'checkout_verification')
-            ->value('id');
-
-        $this->assertDatabaseHas('identity_message_templates', [
-            'definition_id' => $defId,
+        $this->assertDatabaseHas('notification_templates', [
+            'definition_id' => $definition->id,
             'channel' => 'mail',
         ]);
     }
 
+    /**
+     * checkout.before_pay 를 재동기화해도 운영자가 바꾼 enabled·grace_minutes 값이 선언 기본값으로 덮이지 않는다.
+     *
+     * @effects policy_user_overrides_preserved_on_resync
+     *
+     * @return void 반환값 없음
+     */
     public function test_user_overrides_preserved_on_resync(): void
     {
         $this->assertIdentityPolicyUserOverridesPreserved(
@@ -183,6 +216,11 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 이커머스 모듈이 선언한 본인인증 정책을 코어 동기화 헬퍼로 적재하고, 선언에서 빠진 옛 정책을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function syncEcommerceIdentityPolicies(): void
     {
         $helper = app(IdentityPolicySyncHelper::class);
@@ -206,6 +244,12 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
     // Part B-2/B-3 enforce 매트릭스 + 라이프사이클 (이커머스 정책 4건)
     // ===========================================================================
 
+    /**
+     * 정책을 동기화한 뒤 지정 키의 정책을 활성화해 돌려줍니다.
+     *
+     * @param  string  $key  활성화할 정책 키
+     * @return IdentityPolicy 활성화된 정책
+     */
     private function enabledPolicy(string $key): IdentityPolicy
     {
         $this->syncEcommerceIdentityPolicies();
@@ -217,11 +261,21 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         return $policy->fresh();
     }
 
+    /**
+     * 역할이 없는 일반 회원을 만듭니다.
+     *
+     * @return User 생성된 일반 회원
+     */
     private function regularUser(): User
     {
         return User::factory()->create();
     }
 
+    /**
+     * 권한 시더를 실행하고 admin 역할을 붙인 슈퍼 관리자를 만듭니다.
+     *
+     * @return User 생성된 관리자
+     */
     private function adminUser(): User
     {
         $this->seed(RolePermissionSeeder::class);
@@ -237,7 +291,15 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         return $admin->fresh();
     }
 
-    /** D2 — checkout.before_pay 가 enabled+self 일 때 일반 사용자에게 enforce 발동 */
+    /**
+     * D2 — checkout.before_pay 가 활성(self)일 때 인증 이력이 없는 일반 회원의 enforce 는 IdentityVerificationRequiredException 을 던진다.
+     *
+     * @scenario policy=checkout, enabled=on, actor=member, verified_state=unverified
+     *
+     * @effects checkout_policy_enforces_for_self_member
+     *
+     * @return void 반환값 없음
+     */
     public function test_checkout_before_pay_enforces_for_self(): void
     {
         $policy = $this->enabledPolicy('sirsoft-ecommerce.checkout.before_pay');
@@ -247,7 +309,15 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->regularUser(), []);
     }
 
-    /** D9 — checkout.before_pay 가 self 정책이라 admin 은 우회 */
+    /**
+     * D9 — checkout.before_pay 는 self 정책이라 활성 상태여도 관리자의 enforce 는 예외 없이 통과한다.
+     *
+     * @scenario policy=checkout, enabled=on, actor=admin, verified_state=unverified
+     *
+     * @effects checkout_passes_for_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_checkout_before_pay_skips_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-ecommerce.checkout.before_pay');
@@ -257,7 +327,13 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
-    /** D10 — payment.approve / confirm_deposit 는 admin 정책이라 일반 사용자 우회 */
+    /**
+     * D10 — payment.approve 는 admin 정책이라 활성 상태여도 일반 회원의 enforce 는 예외 없이 통과한다.
+     *
+     * @effects approve_policy_skips_regular_user
+     *
+     * @return void 반환값 없음
+     */
     public function test_payment_approve_skips_for_regular_user(): void
     {
         $policy = $this->enabledPolicy('sirsoft-ecommerce.payment.approve');
@@ -267,6 +343,15 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * payment.confirm_deposit 는 admin 정책이라 활성 상태에서 인증 이력이 없는 관리자의 enforce 는 IdentityVerificationRequiredException 을 던진다.
+     *
+     * @scenario policy=confirm_deposit, enabled=on, actor=admin, verified_state=unverified
+     *
+     * @effects confirm_deposit_policy_enforces_for_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_payment_confirm_deposit_enforces_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-ecommerce.payment.confirm_deposit');
@@ -276,7 +361,13 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->adminUser(), []);
     }
 
-    /** D11 — payment.cancel 는 both, self/admin 양쪽 enforce */
+    /**
+     * D11 — payment.cancel 은 both 정책이라 인증 이력이 없으면 일반 회원과 관리자 모두의 enforce 가 예외를 던진다.
+     *
+     * @effects cancel_policy_enforces_for_self_and_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_payment_cancel_enforces_for_both_self_and_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-ecommerce.payment.cancel');
@@ -304,6 +395,14 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * 2) verified 로그 fixture 작성 (TestIdentityProvider 호출과 동등)
      * 3) verified 직후 enforce 통과
      * 4) (grace>0) 시간 경과 후 enforce 다시 throw
+     *
+     * @effects verified_log_passes_enforce_until_grace_expires
+     *
+     * @param  string  $policyKey  검증할 정책 키
+     * @param  string  $purpose  verified 로그에 기록할 인증 목적
+     * @param  string  $userType  대상 사용자 유형 (admin 이면 관리자, 그 외는 일반 회원)
+     * @param  int  $graceMinutes  정책 grace 분 (0 이면 만료 후 재차단 검증을 생략)
+     * @return void 반환값 없음
      */
     #[DataProvider('ecommerceLifecycleProvider')]
     public function test_ecommerce_policy_full_service_lifecycle(string $policyKey, string $purpose, string $userType, int $graceMinutes): void
@@ -337,6 +436,11 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 정책 4종의 (정책 키, 인증 목적, 대상 사용자 유형, grace 분) 조합을 공급합니다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: int}> 케이스 이름별 테스트 인자
+     */
     public static function ecommerceLifecycleProvider(): array
     {
         return [
@@ -347,6 +451,14 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 지정 시각에 인증 완료된 본인인증 로그를 직접 기록합니다 (TestIdentityProvider 호출과 동등한 fixture).
+     *
+     * @param  User  $user  인증한 사용자
+     * @param  string  $purpose  인증 목적
+     * @param  Carbon  $when  인증 완료 시각
+     * @return void 반환값 없음
+     */
     private function seedVerifiedLog(User $user, string $purpose, Carbon $when): void
     {
         IdentityVerificationLog::create([
@@ -379,6 +491,8 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * @scenario policy=cancel, enabled=on, actor=admin, verified_state=unverified
      *
      * @effects cancel_path_fires_when_enabled_and_unverified, dummy_payment_hooks_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_path_fires_before_cancel_hook(): void
     {
@@ -414,6 +528,8 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * @scenario policy=confirm_deposit, enabled=on, actor=admin, verified_state=unverified
      *
      * @effects confirm_deposit_fires_on_dedicated_action_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_path_fires_hook(): void
     {
@@ -446,6 +562,8 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * @scenario policy=cancel, enabled=off, actor=admin, verified_state=unverified
      *
      * @effects disabled_policy_keeps_existing_flow
+     *
+     * @return void 반환값 없음
      */
     public function test_disabled_policy_keeps_existing_flow(): void
     {
@@ -459,7 +577,15 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
-    /** D12 — checkout.before_pay grace=30 윈도우 내 인증 이력이 있으면 enforce skip */
+    /**
+     * D12 — checkout.before_pay(grace 30분)는 20분 전에 인증 완료된 로그가 있으면 enforce 를 예외 없이 통과시킨다.
+     *
+     * @scenario policy=checkout, enabled=on, actor=member, verified_state=within_grace
+     *
+     * @effects grace_window_skips_enforce
+     *
+     * @return void 반환값 없음
+     */
     public function test_checkout_before_pay_grace_window_skips(): void
     {
         $user = $this->regularUser();

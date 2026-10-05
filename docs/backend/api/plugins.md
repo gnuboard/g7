@@ -2061,7 +2061,7 @@ _단건 응답: `data` 객체의 필드._
 | storage_directories | array | `[]` | `storage/app/plugins/{identifier}` 하위 1-depth 디렉토리 목록 (name/size_bytes/size_formatted) |
 | vendor_directory | object\|null | `{"items":[…],"total_size_bytes":1048576,"total_size_formatted":"1 MB"}` | Composer vendor/ 및 composer.lock 정보 (없으면 null) |
 | extension_directory | object\|null | `{"path":"plugins/sirsoft-daum_postcode","size_bytes":524288,"size_formatted":"512 KB"}` | 확장 설치 디렉토리 경로와 용량 (없으면 null) |
-| shared_records | array | `[{"table":"permissions","label_key":"permissions","count":3}]` | 코어 공유 테이블에 적재된 이 플러그인 소유 레코드 (permissions/menus/notification_definitions/identity_policies/identity_message_definitions, 0건 항목은 제외) |
+| shared_records | array | `[{"table":"permissions","label_key":"permissions","count":3}]` | 코어 공유 테이블에 적재된 이 플러그인 소유 레코드 (permissions/menus/notification_definitions/identity_policies, 0건 항목은 제외) |
 | total_table_size_bytes | integer | `16384` | 삭제 대상 테이블 총 용량 (바이트) |
 | total_table_size_formatted | string | `16 KB` | 테이블 총 용량 표기 |
 | total_storage_size_bytes | integer | `0` | 스토리지 디렉토리 총 용량 (바이트) |

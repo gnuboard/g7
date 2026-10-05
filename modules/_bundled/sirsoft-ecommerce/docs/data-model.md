@@ -209,7 +209,7 @@
 | `ecommerce_product_categories` | 상품↔카테고리 다대다 피벗 (관계로만 접근) |
 | `ecommerce_promotion_coupon_products` · `ecommerce_promotion_coupon_categories` | 쿠폰의 적용/제외 대상 피벗 — 한 쿠폰이 포함·제외 두 방향을 함께 갖습니다 |
 | `ecommerce_product_logs` | 상품 변경 이력 적재 전용 (읽기는 집계 쿼리로) |
-| `ecommerce_mail_templates` | 알림 본문 템플릿. 알림 정의 10종이 여기서 본문을 찾습니다 |
+| `ecommerce_mail_templates` | 초기 설계의 메일 템플릿 테이블 — 코어 알림 시스템(`notification_templates`) 통합 뒤 `drop_ecommerce_mail_templates_table`(2026-04-13)이 드롭해 이름만 마이그레이션 이력에 남았습니다. 알림 본문(본인인증 문구 `identity.purpose.checkout_verification`·고객 메일 `order_custom_email` 포함)은 `getNotificationDefinitions()` 선언이 코어 `notification_definitions`·`notification_templates` 에 동기화됩니다. 신규 코드에서 이 이름을 참조하지 않습니다 |
 
 테이블을 추가·변경할 때 **DB CASCADE 에 삭제를 맡기지 않습니다.** 주문·상품 삭제는 훅 발행·
 파일 정리·활동 로그가 함께 일어나야 하므로 Service 가 명시적으로 지웁니다 — CASCADE 로 지우면

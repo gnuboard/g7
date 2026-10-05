@@ -2,6 +2,10 @@
 
 namespace App\Http\Resources;
 
+use App\Models\IdentityPolicy;
+use App\Models\NotificationDefinition;
+use App\Notifications\Identity\IdentityNotificationType;
+use App\Services\NotificationDefinitionService;
 use Illuminate\Http\Request;
 
 class NotificationDefinitionResource extends BaseApiResource
@@ -15,6 +19,29 @@ class NotificationDefinitionResource extends BaseApiResource
             'can_update' => 'core.settings.update',
             'can_delete' => 'core.settings.update',
         ];
+    }
+
+    /**
+     * 권한 맵에 행 조건을 더해 abilities 를 계산합니다.
+     *
+     * 삭제는 운영자가 추가한 본인인증 정책 문구(category=identity, 선언 기본값 아님)만 허용한다 —
+     * 코어·확장이 선언한 정의는 재시딩으로 되살아나므로 지울 수 없고, 일반 알림은 삭제 개념이 없다.
+     *
+     * @param  Request  $request  HTTP 요청 객체
+     * @return array<string, bool> 액션별 허용 여부
+     */
+    protected function resolveAbilities(Request $request): array
+    {
+        $abilities = parent::resolveAbilities($request);
+
+        if (array_key_exists('can_delete', $abilities)) {
+            // 삭제 API 와 같은 판정을 쓴다 — 선언 정의는 문구를 고쳐 「기본」 이 풀려도 지울 수 없다(운영자 추가 정의만).
+            $abilities['can_delete'] = $abilities['can_delete']
+                && $this->resource instanceof NotificationDefinition
+                && app(NotificationDefinitionService::class)->isDeletable($this->resource);
+        }
+
+        return $abilities;
     }
 
     /**
@@ -34,6 +61,11 @@ class NotificationDefinitionResource extends BaseApiResource
             'hook_prefix' => $this->getValue('hook_prefix'),
             'extension_type' => $this->getValue('extension_type'),
             'extension_identifier' => $this->getValue('extension_identifier'),
+            // 분류 — 'identity'(본인인증 알림) 또는 null(일반 알림). 화면의 분류 칩·수신자 고정 표시가 읽는다.
+            'category' => $this->getValue('category'),
+            // 본인인증 정책별 문구가 붙은 정책 키 — 화면은 해시로 줄인 type(100자 초과)을 되돌릴 수 없어
+            // 「이미 문구가 있는 정책」 판정에 이 값을 쓴다. 정책별 type 이 아니면 null.
+            'policy_key' => $this->resolvePolicyKey(),
             'name' => $this->getValue('name'),
             'description' => $this->getValue('description'),
             'variables' => $this->getValue('variables'),
@@ -90,5 +122,27 @@ class NotificationDefinitionResource extends BaseApiResource
         }
 
         return $labels;
+    }
+
+    /**
+     * 본인인증 정책별 정의의 정책 키를 구합니다.
+     *
+     * 해시로 줄인 type 일 때만 운영자 정책 키를 조회해 맞춰 본다 — 100자를 넘는 정책 키는 드물어
+     * 목록의 대부분 행은 조회 없이 끝난다.
+     *
+     * @return string|null 정책 키 (정책별 type 이 아니면 null)
+     */
+    private function resolvePolicyKey(): ?string
+    {
+        $type = (string) $this->getValue('type');
+        if (! str_starts_with($type, IdentityNotificationType::PREFIX.'policy.')) {
+            return null;
+        }
+
+        $candidates = str_starts_with($type, IdentityNotificationType::PREFIX.'policy.~')
+            ? IdentityPolicy::query()->where('source_type', 'admin')->pluck('key')
+            : [];
+
+        return IdentityNotificationType::policyKeyFromType($type, $candidates);
     }
 }

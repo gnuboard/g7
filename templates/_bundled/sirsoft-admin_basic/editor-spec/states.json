@@ -1397,10 +1397,10 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(identity_message_definition_add_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(identity_notification_add_modal) — [정책별 문구 추가] 버튼이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
-        "match": "modal_identity_message_definition_add"
+        "match": "modal_notification_identity_definition_add"
       },
       "items": [
         {
@@ -1409,23 +1409,19 @@
           "default": true,
           "initialState": {
             "global": {
-              "identity_message_definition_add_modal": {
+              "identity_notification_add_modal": {
                 "editLang": "ko",
                 "errors": null,
                 "form": {
                   "body": {
-                    "ko": "샘플 설명 문구입니다.",
-                    "en": "Sample description."
+                    "ko": "샘플 설명 문구입니다."
                   },
                   "name": {
-                    "ko": "샘플 메시지 정의",
-                    "en": "Sample message definition"
+                    "ko": "샘플 제목"
                   },
-                  "provider_id": 1,
-                  "scope_value": "샘플 값",
+                  "policy_key": "admin.sample.policy",
                   "subject": {
-                    "ko": "샘플 제목",
-                    "en": "Sample subject"
+                    "ko": "샘플 제목"
                   }
                 },
                 "isSaving": false
@@ -1436,10 +1432,10 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(deleteIdentityMessageTargetId, deleteIdentityMessageTargetName, isDeletingIdentityMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(identity_notification_delete_modal) — 목록 행의 [삭제] 버튼이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
-        "match": "modal_identity_message_definition_delete"
+        "match": "modal_notification_identity_definition_delete"
       },
       "items": [
         {
@@ -1448,19 +1444,21 @@
           "default": true,
           "initialState": {
             "global": {
-              "deleteIdentityMessageTargetName": "샘플 제목",
-              "isDeletingIdentityMessage": false,
-              "deleteIdentityMessageTargetId": 1
+              "identity_notification_delete_modal": {
+                "id": 1,
+                "isDeleting": false,
+                "name": "샘플 제목"
+              }
             }
           }
         }
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isResettingIdentityMessage, resetIdentityMessageTargetId, resetIdentityMessageTargetName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(notification_channel_off_modal) — [저장]이 메일 채널 끄기를 감지해 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
-        "match": "modal_identity_message_definition_reset"
+        "match": "modal_notification_channel_off_confirm"
       },
       "items": [
         {
@@ -1469,85 +1467,15 @@
           "default": true,
           "initialState": {
             "global": {
-              "resetIdentityMessageTargetName": "샘플 제목",
-              "isResettingIdentityMessage": false,
-              "resetIdentityMessageTargetId": 1
-            }
-          }
-        }
-      ]
-    },
-    {
-      "comment": "모달 본문이 읽는 전역 상태(appName, identity_message_template_form_modal, siteUrl) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "modal_identity_message_template_form"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "identity_message_template_form_modal": {
-                "definition": {
-                  "name": {
-                    "ko": "샘플 한국어 문구"
-                  },
-                  "provider_id": 1,
-                  "scope_type": "sample",
-                  "scope_value": "샘플 값",
-                  "variables": [
-                    {
-                      "key": "code"
-                    },
-                    {
-                      "key": "expire_minutes"
-                    },
-                    {
-                      "key": "app_name"
-                    }
-                  ]
-                },
-                "editLang": "ko",
-                "errors": null,
-                "isSaving": false,
-                "template": {
-                  "body": {
-                    "ko": "샘플 설명 문구입니다.",
-                    "en": "Sample description."
-                  },
-                  "id": 1,
-                  "subject": {
-                    "ko": "샘플 제목",
-                    "en": "Sample subject"
+              "notification_channel_off_modal": {
+                "channels": [
+                  {
+                    "id": "mail",
+                    "is_active": false,
+                    "sort_order": 1
                   }
-                }
-              },
-              "appName": "샘플 제목",
-              "siteUrl": "/sample"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "comment": "모달 본문이 읽는 전역 상태(identity_message_template_preview_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "modal_identity_message_template_preview"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "identity_message_template_preview_modal": {
-                "body": "샘플 설명 문구입니다.",
-                "subject": "샘플 제목"
+                ],
+                "isSaving": false
               }
             }
           }

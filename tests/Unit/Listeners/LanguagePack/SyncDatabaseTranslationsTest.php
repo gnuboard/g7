@@ -5,9 +5,9 @@ namespace Tests\Unit\Listeners\LanguagePack;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Listeners\LanguagePack\SyncDatabaseTranslations;
-use App\Models\IdentityMessageDefinition;
-use App\Models\IdentityMessageTemplate;
 use App\Models\LanguagePack;
+use App\Models\NotificationDefinition;
+use App\Models\NotificationTemplate;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +30,11 @@ class SyncDatabaseTranslationsTest extends TestCase
 
     private string $packIdentifier = 'test-core-ja';
 
+    /**
+     * 리스너를 해석하고 테스트 언어팩의 seed 디렉터리를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +44,11 @@ class SyncDatabaseTranslationsTest extends TestCase
         File::ensureDirectoryExists($this->packRoot.'/seed');
     }
 
+    /**
+     * 테스트 언어팩 디렉터리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->packRoot);
@@ -73,6 +83,13 @@ class SyncDatabaseTranslationsTest extends TestCase
         ]);
     }
 
+    /**
+     * (Case A) 행에 없는 로케일은 활성화 훅이 seed 값으로 추가하고 기존 ko 값은 그대로 둔다.
+     *
+     * @effects activation_adds_absent_pack_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_a_adds_locale_when_absent(): void
     {
         $perm = Permission::query()->create([
@@ -95,6 +112,13 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertSame('설명', $perm->description['ko']);
     }
 
+    /**
+     * (Case B) user_overrides 에 dot-path(name.ja)로 등록된 필드는 활성화 훅이 덮지 않고, 등록되지 않은 필드(description)는 seed 값을 받는다.
+     *
+     * @effects activation_preserves_user_overridden_locale_field
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_b_skips_locale_when_user_overrides_registered(): void
     {
         // Permission 은 HasUserOverrides 미사용이므로 Role 로 검증 (Role/Menu/Notification 모두 동일 정책)
@@ -122,6 +146,13 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertSame('説明', $role->description['ja']);
     }
 
+    /**
+     * (Case C) user_overrides 가 없으면 기존 로케일 값을 seed 값으로 덮어쓴다.
+     *
+     * @effects activation_overwrites_locale_without_overrides
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_c_overwrites_locale_when_no_overrides(): void
     {
         $perm = Permission::query()->create([
@@ -144,6 +175,13 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertSame('신버전', $perm->name['ja']);
     }
 
+    /**
+     * 비활성화 훅은 팩 로케일(ja) 키를 지우고 ko·en 키는 남긴다.
+     *
+     * @effects deactivation_strips_pack_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_strips_locale(): void
     {
         $perm = Permission::query()->create([
@@ -168,6 +206,13 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertArrayHasKey('en', $perm->name);
     }
 
+    /**
+     * 비활성화 훅은 user_overrides 에 등록된 로케일 필드(name.ja)는 지우지 않는다.
+     *
+     * @effects deactivation_preserves_user_overridden_locale_field
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_preserves_locale_when_user_overrides_registered(): void
     {
         // dot-path 리스트 = 실제 생산 형식 (test_case_b 주석 참조)
@@ -190,16 +235,24 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertSame('사용자수정ja', $role->name['ja']);
     }
 
+    /**
+     * 본인인증 알림 정의(category=identity)도 seed/notifications.json 의 type 키로 정의 name·description 과 메일 템플릿 subject·body 에 ja 를 병합하고 ko 는 보존한다.
+     *
+     * @effects activation_merges_identity_notification_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_merges_identity_message_locale_into_definition_and_template(): void
     {
-        // Definition: provider_id=g7:core.mail + scope_type=purpose + scope_value=signup → seed key `mail.purpose.signup`
-        $def = IdentityMessageDefinition::query()->create([
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'signup',
+        // 본인인증 알림(7.1.0~)은 알림 정의 type 키로 seed/notifications.json 에서 번역을 받는다 (#699).
+        $def = NotificationDefinition::query()->create([
+            'type' => 'identity.purpose.signup',
+            'hook_prefix' => 'core.identity',
+            'category' => 'identity',
             'name' => ['ko' => '회원가입 인증', 'en' => 'Signup Verification'],
             'description' => ['ko' => '회원가입 단계 인증', 'en' => 'Signup-stage verification'],
             'channels' => ['mail'],
+            'hooks' => [],
             'variables' => [],
             'extension_type' => 'core',
             'extension_identifier' => 'core',
@@ -207,7 +260,7 @@ class SyncDatabaseTranslationsTest extends TestCase
             'is_default' => true,
         ]);
 
-        $tpl = IdentityMessageTemplate::query()->create([
+        $tpl = NotificationTemplate::query()->create([
             'definition_id' => $def->id,
             'channel' => 'mail',
             'subject' => ['ko' => '인증 코드', 'en' => 'Verification code'],
@@ -216,8 +269,8 @@ class SyncDatabaseTranslationsTest extends TestCase
             'is_default' => true,
         ]);
 
-        File::put($this->packRoot.'/seed/identity_messages.json', json_encode([
-            'mail.purpose.signup' => [
+        File::put($this->packRoot.'/seed/notifications.json', json_encode([
+            'identity.purpose.signup' => [
                 'definition' => [
                     'name' => '会員登録認証',
                     'description' => '会員登録段階の認証',
@@ -259,15 +312,23 @@ class SyncDatabaseTranslationsTest extends TestCase
         $this->assertSame('회원가입 인증', $def->name['ko']);
     }
 
+    /**
+     * 비활성화 훅은 본인인증 알림 정의 name 의 ja 키를 지우고 ko 값은 남긴다.
+     *
+     * @effects deactivation_strips_identity_notification_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_strips_identity_message_locale(): void
     {
-        $def = IdentityMessageDefinition::query()->create([
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => 'purpose',
-            'scope_value' => 'signup',
+        $def = NotificationDefinition::query()->create([
+            'type' => 'identity.purpose.signup',
+            'hook_prefix' => 'core.identity',
+            'category' => 'identity',
             'name' => ['ko' => '회원가입 인증', 'en' => 'Signup', 'ja' => '会員登録認証'],
             'description' => ['ko' => '설명', 'en' => 'Desc'],
             'channels' => ['mail'],
+            'hooks' => [],
             'variables' => [],
             'extension_type' => 'core',
             'extension_identifier' => 'core',
@@ -275,7 +336,7 @@ class SyncDatabaseTranslationsTest extends TestCase
             'is_default' => true,
         ]);
 
-        File::put($this->packRoot.'/seed/identity_messages.json', json_encode([]));
+        File::put($this->packRoot.'/seed/notifications.json', json_encode([]));
         $pack = LanguagePack::query()->create([
             'identifier' => $this->packIdentifier,
             'vendor' => 'test',

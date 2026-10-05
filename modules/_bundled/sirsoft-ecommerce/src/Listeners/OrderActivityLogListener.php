@@ -263,6 +263,8 @@ class OrderActivityLogListener implements HookListenerInterface
     /**
      * 주문 이메일 발송 후 로그 기록
      *
+     * 발행부(OrderService::sendEmail)의 페이로드 키는 camelCase(`orderNumber`·`orderId`)다.
+     *
      * @param  array  $data  이메일 발송 데이터
      * @return void 반환값 없음
      */
@@ -271,9 +273,9 @@ class OrderActivityLogListener implements HookListenerInterface
         $this->logActivity('order.send_email', [
 
             'description_key' => 'sirsoft-ecommerce::activity_log.description.order_send_email',
-            'description_params' => ['order_number' => $data['order_number'] ?? ''],
+            'description_params' => ['order_number' => $data['orderNumber'] ?? ''],
             'properties' => [
-                'order_id' => $data['order_id'] ?? null,
+                'order_id' => $data['orderId'] ?? null,
                 'template' => $data['template'] ?? null,
             ],
         ]);

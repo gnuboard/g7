@@ -244,17 +244,18 @@ public function getIdentityPolicies(): array
 - `app/Models/IdentityPolicy.php` — `HasUserOverrides` 트레이트로 운영자 수정값 보존
 - `config/core.php` `identity_policies` — 코어 기본 정책 선언
 
-## 9.1 정책 ↔ 메시지 템플릿 연계
+## 9.1 정책 ↔ 본인인증 알림 연계
 
-정책이 트리거하는 본인인증 메일 문구는 별도의 IDV 메시지 템플릿 시스템에서 관리합니다 (알림 시스템과 분리). `IdentityMessageDispatcher` 가 정책 컨텍스트를 받아 가장 구체적인 템플릿을 fallback 체인으로 해석합니다.
+정책이 트리거하는 본인인증 메일 문구는 알림 시스템의 본인인증 알림(`notification_definitions.category = 'identity'` + 메일 채널 `notification_templates`)으로 관리합니다. `IdentityMessageDispatcher` 가 정책 컨텍스트를 받아 가장 구체적인 정의를 fallback 체인으로 고른 뒤 알림 발송 경로(`NotificationDispatcher`)로 보냅니다. 후보는 활성 + category identity + 메일 템플릿이 있는 정의만입니다.
 
 ```text
-policy:{policy_key}  →  purpose:{purpose}  →  provider_default
+identity.policy.{policy_key}  →  identity.purpose.{purpose}  →  identity.default
 ```
 
-- 정책별 커스텀 문구가 필요하면 `(provider_id, scope_type='policy', scope_value=$policy->key)` 정의를 추가
-- 그 외에는 기본 5종(provider_default + 4 purposes)이 자동 적용
-- 운영자 편집 UI: 환경설정 → 본인인증 → "메시지 템플릿" 서브탭
+- 정책별 커스텀 문구가 필요하면 type `identity.policy.{policy_key}` 정의를 추가 (type 이 100자를 넘으면 `identity.policy.~{sha1 앞 20자}`)
+  - 운영자는 운영자 정책(`source_type=admin`)에 한해 관리자 화면에서 추가·삭제할 수 있습니다 (`POST /api/admin/notification-definitions` — `category=identity`, `policy_key`)
+- 그 외에는 코어 기본 6종(`identity.default` + 목적 5종: signup·password_reset·self_update·sensitive_action·login)과 확장이 선언한 목적별 정의가 적용
+- 운영자 편집 UI: 환경설정 → 알림 설정 → 분류 「본인인증」
 
 상세: [identity-messages.md](identity-messages.md)
 

@@ -1,0 +1,197 @@
+{
+    "comment": "메일 채널 끄기 확인 창(알림 설정 탭 [저장]). 메일 토글을 켜짐 → 꺼짐으로 바꾸고 저장할 때만 뜬다.\n\n  7.1.0 부터 본인인증 메일(회원가입·비밀번호 찾기·정보 변경·관리자 2단계 인증)도 이 토글을 따른다. 메일을 끄면\n  TOTP 를 등록하지 않은 관리자는 인증번호를 받지 못해 로그인할 수 없으므로, 끄기 전에 한 번 묻는다.\n  - [취소] = 저장하지 않고 화면의 메일 토글을 켜짐으로 되돌린다(부모 화면 폼을 직접 고친다).\n  - [끄기] = 창을 연 순간의 채널 목록으로 저장한다(창은 부모 화면 상태를 못 읽어 그 목록을 전역으로 받아 온다).\n  사이트 내 알림 채널은 본인인증과 무관해 이 창을 띄우지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 설정 — 메일 채널 끄기 확인 모달 (본인인증 메일 중단 경고)",
+        "editor_label": "$t:admin.modal_label.admin_settings.modal_notification_channel_off_confirm"
+    },
+    "id": "modal_notification_channel_off_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.notification_definitions.channel_off_confirm.title",
+        "size": "sm",
+        "closeOnOverlayClick": false
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "alert-danger"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-error-soft"
+                    },
+                    "text": "$t:admin.settings.notification_definitions.channel_off_confirm.message"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "channel_off_cancel_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 저장을 멈추고 부모 화면의 메일 토글을 켜짐으로 되돌린다(다른 채널 변경은 그대로 둔다).\n               부모 폼 커밋 규칙대로 두 자리에 같은 값을 쓴다 — 전역 쪽(저장이 읽는 자리)을 빼면 화면 토글은 켜졌는데\n               다음 [저장] 이 꺼진 채로 보낸다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "_local.form.notifications.channels": "{{(_global.notification_channel_off_modal?.channels ?? []).map(c => c.id === 'mail' ? Object.assign({}, c, {is_active: true}) : c)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local.form.notifications.channels",
+                                        "value": "{{(_global.notification_channel_off_modal?.channels ?? []).map(c => c.id === 'mail' ? Object.assign({}, c, {is_active: true}) : c)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notification_channel_off_modal": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_notification_channel_off_confirm"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.notification_channel_off_modal?.isSaving ?? false}}"
+                    },
+                    "text": "$t:admin.settings.notification_definitions.channel_off_confirm.btn_cancel"
+                },
+                {
+                    "id": "channel_off_confirm_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "끄기 — 화면 [저장]과 같은 요청(알림 채널 묶음)을 보낸다. 성공하면 부모 화면의 「고친 것 있음」 표시를\n               끄고 설정을 다시 받는다. 실패하면 창을 열어 둔 채 서버 문구를 띄운다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notification_channel_off_modal.isSaving": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/settings",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "_tab": "notifications",
+                                            "notifications": {
+                                                "channels": "{{_global.notification_channel_off_modal?.channels ?? []}}"
+                                            }
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "isSaving": false,
+                                                "hasChanges": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "settings": "{{result.data.settings}}",
+                                                "uploadSettings": "{{result.data.settings.upload}}",
+                                                "notification_channel_off_modal": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.settings.save_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "settings"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "modal_notification_channel_off_confirm"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notification_channel_off_modal.isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.settings.save_error'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.notification_channel_off_modal?.isSaving ?? false}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.notification_channel_off_modal?.isSaving}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.notification_channel_off_modal?.isSaving ? '$t:common.saving' : '$t:admin.settings.notification_definitions.channel_off_confirm.btn_confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

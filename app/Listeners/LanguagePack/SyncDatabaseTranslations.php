@@ -46,7 +46,6 @@ class SyncDatabaseTranslations
             'roles',
             'menus',
             'notifications',
-            'identity_messages',
             'manifest',
         ]);
 
@@ -71,6 +70,7 @@ class SyncDatabaseTranslations
     /**
      * 언어팩 디렉토리의 seed/{entity}.json 묶음을 로드합니다.
      *
+     * @param  LanguagePack  $pack  seed 를 읽을 언어팩
      * @param  array<int, string>  $entities  로드할 엔티티 이름 목록
      * @return array<string, array<string, mixed>> 엔티티별 seed 데이터 (없으면 미포함)
      */
@@ -90,7 +90,8 @@ class SyncDatabaseTranslations
     /**
      * 단일 seed 파일을 로드합니다.
      *
-     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/identity_messages/manifest)
+     * @param  LanguagePack  $pack  seed 를 읽을 언어팩
+     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/manifest)
      * @return array<string, mixed>|null seed 데이터 또는 null
      */
     private function loadSeed(LanguagePack $pack, string $entity): ?array
@@ -108,8 +109,9 @@ class SyncDatabaseTranslations
      * Repository 가 누적한 감사 항목을 language_pack 채널 로그로 라우팅합니다.
      *
      * @param  string  $action  최상위 동작 (activated/deactivated)
+     * @param  LanguagePack  $pack  대상 언어팩
      * @param  array<int, array<string, mixed>>  $audit  Repository 가 반환한 감사 항목 배열
-     * @return void
+     * @return void 반환값 없음
      */
     private function emitAudit(string $action, LanguagePack $pack, array $audit): void
     {

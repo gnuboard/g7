@@ -201,6 +201,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
             linkToken: $linkToken,
             ttlMinutes: $ttlMinutes,
             expiresAt: $expiresAt,
+            userId: $target instanceof User ? $target->id : null,
         );
 
         $this->logRepository->updateById($log->id, [
@@ -420,7 +421,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * IDV 전용 메시지 디스패처를 통해 메일을 발송합니다.
+     * 본인인증 메시지 디스패처(알림 시스템 경유)를 통해 메일을 발송합니다.
      *
      * @param  string  $email  수신자 이메일 주소
      * @param  string  $purpose  인증 목적
@@ -431,6 +432,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
      * @param  string|null  $linkToken  link 흐름 시 서명 링크용 raw 토큰
      * @param  int  $ttlMinutes  인증 유효 시간(분) — 메일 본문 안내용
      * @param  Carbon  $expiresAt  challenge 만료 시각
+     * @param  int|null  $userId  챌린지 사용자 ID (비회원이면 null) — 수신 주소가 그 회원의 이메일이면 회원으로 보낸다
      * @return bool 발송 성공 여부
      */
     protected function dispatchMessage(
@@ -443,6 +445,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
         ?string $linkToken,
         int $ttlMinutes,
         Carbon $expiresAt,
+        ?int $userId = null,
     ): bool {
         try {
             $actionUrl = $linkToken !== null
@@ -468,6 +471,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
                 context: [
                     'challenge_id' => $challengeId,
                     'render_hint' => $renderHint,
+                    'user_id' => $userId,
                 ],
             );
         } catch (\Throwable $e) {

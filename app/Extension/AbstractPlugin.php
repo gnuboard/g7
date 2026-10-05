@@ -29,6 +29,7 @@ use ReflectionClass;
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
     use ReportsLifecycleFailure;
+
     // 설정 레이아웃 소스 우선순위(`.g7.html` → 짝 `.json`)를 저장소 규약 한 곳에서 받는다.
     use ResolvesLayoutInstallSource;
 
@@ -605,22 +606,29 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 이 플러그인이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
+     * (deprecated) 이 플러그인이 등록할 본인인증 메시지 선언을 반환합니다 — 7.0.x 계약.
      *
-     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
-     * `PluginManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
-     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
-     * uninstall(deleteData=true) 시 자동 정리됩니다.
+     * 7.1.0 부터 본인인증 메시지는 알림 정의(`notification_definitions`, category=identity)다.
+     * 새 선언은 `getNotificationDefinitions()` 에 `category => 'identity'` 로 적는다:
+     * ```php
+     * 'identity.purpose.checkout_verification' => [ // type 규칙: identity.purpose.{목적} / identity.policy.{정책 키}
+     *     'category' => 'identity',
+     *     'hook_prefix' => '{확장 식별자}',
+     *     'hooks' => [],
+     *     'channels' => ['mail'],
+     *     'name' => ['ko' => '...', 'en' => '...'],
+     *     'variables' => IdentityNotificationType::commonVariables(),
+     *     'templates' => [['channel' => 'mail', 'subject' => [...], 'body' => [...]]],
+     * ],
+     * ```
      *
-     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
-     * `user_overrides` JSON 으로 보존됩니다.
+     * 이 메서드가 비어 있지 않으면 PluginManager 가 알림 정의 동기화 때 변환해 합류시킨다
+     * (scope_type/scope_value → type, 메일 외 provider 는 메일 채널로 흡수, 다른 소유자와 type 이 겹치면
+     * 건너뜀). 옛 표(`identity_message_definitions/templates`)는 7.1.0 업그레이드에서 없어졌다.
      *
-     * `extension_type='plugin'`, `extension_identifier=$this->getIdentifier()` 는
-     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     * @deprecated 7.1.0 — 8.0 에서 제거. `getNotificationDefinitions()` 에 category=identity 로 선언한다.
      *
-     * 반환 형식: AbstractModule::getIdentityMessages() 와 동일.
-     *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 옛 형식 선언 (provider_id, scope_type, scope_value, name, templates …)
      */
     public function getIdentityMessages(): array
     {
@@ -630,7 +638,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 이 플러그인이 등록할 알림 정의/템플릿 선언을 반환합니다.
      *
-     * `getIdentityMessages()` 와 동일한 패턴으로 `PluginManager` 가 activate/update 시
+     * `getIdentityPolicies()` 와 같은 선언형 패턴으로 `PluginManager` 가 activate/update 시
      * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
      * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
      * uninstall(deleteData=true) 시에도 자동 정리됩니다.

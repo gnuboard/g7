@@ -26,6 +26,7 @@ effects:
   - failed_dispatch_is_not_reported_as_success        # 실패를 201 로 포장하지 않는다
   - failed_dispatch_message_exists_in_all_locales     # 실패 문구가 ko·en 에 있다
   - successful_dispatch_still_returns_created         # 정상 발송은 201 을 유지한다
+  - mail_channel_off_answers_502                      # 메일 채널을 끄면 502 (본인인증 메일도 채널 토글을 따른다, #699)
 
 test_files:
   - tests/Feature/Identity/ChallengeSendFailureIsReportedTest.php

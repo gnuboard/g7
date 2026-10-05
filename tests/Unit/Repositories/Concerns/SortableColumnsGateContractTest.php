@@ -37,7 +37,6 @@ class SortableColumnsGateContractTest extends TestCase
      */
     private const GATE_MAP = [
         'app/Repositories/ActivityLogRepository.php' => 'app/Http/Requests/ActivityLog/ActivityLogIndexRequest.php',
-        'app/Repositories/IdentityMessageDefinitionRepository.php' => 'app/Http/Requests/Admin/Identity/AdminIdentityMessageDefinitionIndexRequest.php',
         'app/Repositories/MenuRepository.php' => 'app/Http/Requests/Menu/MenuListRequest.php',
         'app/Repositories/NotificationDefinitionRepository.php' => 'app/Http/Requests/NotificationDefinition/NotificationDefinitionIndexRequest.php',
         'app/Repositories/NotificationLogRepository.php' => 'app/Http/Requests/NotificationLog/NotificationLogIndexRequest.php',

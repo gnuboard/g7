@@ -207,7 +207,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 12개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 52개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 알림 정의 | 54개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
