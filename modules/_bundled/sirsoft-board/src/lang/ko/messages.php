@@ -365,6 +365,15 @@ return [
         'blind_success' => ':count개의 게시글을 블라인드 처리했습니다. (건너뜀 :skipped개)',
         'restore_success' => ':count개의 게시글을 복구했습니다. (건너뜀 :skipped개)',
         'action_failed' => '게시글 일괄 처리에 실패했습니다.',
+        // 건너뛴 항목의 사유 — 일괄 처리 결과 창이 글마다 그대로 보인다
+        'skip_reasons' => [
+            'already_deleted' => '이미 삭제된 글',
+            'has_replies' => '답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)',
+            'already_blinded' => '이미 블라인드된 글',
+            'already_published' => '이미 게시 상태인 글',
+            'unknown_action' => '알 수 없는 처리',
+            'error' => '처리 중 오류',
+        ],
     ],
 
     // 게시판 유형 작업 메시지
@@ -466,5 +475,12 @@ return [
     ],
     'dashboard' => [
         'fetch_success' => '대시보드 데이터를 조회했습니다.',
+    ],
+    // 알림 수신자 규칙 「관련 사용자」의 관계 이름 — 알림 설정 화면이 관계 키 대신 보인다.
+    'notification_relations' => [
+        'post_author' => '게시글 작성자',
+        'parent_comment_author' => '원 댓글 작성자',
+        'original_post_author' => '원글 작성자',
+        'board_managers' => '게시판 관리자',
     ],
 ];

@@ -80,6 +80,11 @@ export interface CustomAssetsModalProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   /** 모달 닫기 */
   onClose: () => void;
+  /**
+   * 창 바깥(백드롭) 클릭에 쓸 닫기 요청을 등록한다 — 등록한 함수는 저장하지 않은 편집을 확인한 뒤 닫는다.
+   * 창이 사라지면 null 로 풀어 준다.
+   */
+  onRegisterCloseRequest?: (handler: (() => void) | null) => void;
 }
 
 const wrap: React.CSSProperties = {
@@ -400,8 +405,16 @@ interface AssetBuffer {
   base: string;
 }
 
+/**
+ * 아직 저장하지 않은 새 파일의 버퍼 키 — 경로에는 NUL 이 올 수 없어 실제 파일 경로와 겹치지 않는다.
+ *
+ * 새 파일 본문을 «입력 중인 경로» 에 매달면 경로 칸을 고치는 순간 본문이 옛 경로 버퍼에 숨고, 경로보다 본문을
+ * 먼저 쓰면 입력이 버려진다. 본문은 경로와 따로 두고 저장에 성공했을 때 그 경로로 옮긴다.
+ */
+const NEW_FILE_BUFFER_KEY = '\u0000new-file';
+
 export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactElement {
-  const { templateIdentifier, t, onClose } = props;
+  const { templateIdentifier, t, onClose, onRegisterCloseRequest } = props;
 
   const targets = useMemo(() => buildTargets(templateIdentifier), [templateIdentifier]);
   const [targetKey, setTargetKey] = useState(`template:${templateIdentifier}`);
@@ -433,7 +446,10 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
    */
   const [buffers, setBuffers] = useState<Record<string, AssetBuffer>>({});
 
-  const draft = selected ? (buffers[selected.path]?.value ?? '') : '';
+  // 새 파일은 전용 버퍼를 그린다 — 빈 값으로 그리면 키마다 빈 값에 한 글자가 붙어 버퍼에 마지막 글자만
+  // 남는다(실측 2026-10-03: 한 줄을 쳐서 저장하니 「}」 1바이트).
+  const bufferKey = selected ? selected.path : NEW_FILE_BUFFER_KEY;
+  const draft = buffers[bufferKey]?.value ?? '';
   const dirtyPaths = useMemo(
     () => Object.entries(buffers).filter(([, b]) => b.value !== b.base).map(([path]) => path),
     [buffers],
@@ -513,7 +529,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
       return;
     }
 
-    const value = selected ? draft : (buffers[path]?.value ?? '');
+    const value = draft;
 
     setIsBusy(true);
     const ok = await assets.save(path, value);
@@ -524,7 +540,16 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     }
 
     // 저장에 성공하면 기준선을 옮긴다 — 그래야 dirty 표시가 사라지고 다시 열 때 서버 본문을 받는다.
-    setBuffers((current) => ({ ...current, [path]: { value, base: value } }));
+    // 새 파일이었으면 전용 버퍼를 그 경로로 옮긴다.
+    setBuffers((current) => {
+      const next = { ...current, [path]: { value, base: value } };
+
+      if (!selected) {
+        delete next[NEW_FILE_BUFFER_KEY];
+      }
+
+      return next;
+    });
 
     if (!selected) {
       setNewPath('');
@@ -538,7 +563,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
         loaded: true,
       });
     }
-  }, [assets, selected, newPath, draft, buffers]);
+  }, [assets, selected, newPath, draft]);
 
   const handleDelete = useCallback(async () => {
     if (!selected) return;
@@ -623,6 +648,13 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     onClose();
   }, [confirmDiscard, onClose]);
 
+  // 백드롭 클릭도 [✕]·Esc 와 같은 확인을 거치게 닫기 요청을 모달 루트에 넘긴다.
+  useEffect(() => {
+    onRegisterCloseRequest?.(handleClose);
+
+    return () => onRegisterCloseRequest?.(null);
+  }, [onRegisterCloseRequest, handleClose]);
+
   // 내용 검색 — 파일명 거르기와 **열린 파일의 본문**은 클라이언트가 즉시 하고(아래 `localHits`),
   // 열리지 않은 파일의 본문 검색만 서버에 맡긴다.
   useEffect(() => {
@@ -682,7 +714,9 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     () =>
       normalizedQuery.length < 2
         ? []
-        : Object.entries(buffers).map(([path, buffer]) => scanBufferForHits(path, buffer.value, normalizedQuery)),
+        : Object.entries(buffers)
+            .filter(([path]) => path !== NEW_FILE_BUFFER_KEY)
+            .map(([path, buffer]) => scanBufferForHits(path, buffer.value, normalizedQuery)),
     [buffers, normalizedQuery],
   );
   const mergedHits = useMemo(() => {
@@ -926,13 +960,11 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
                   ref={textareaRef}
                   value={draft}
                   onChange={(event) => {
-                    const path = selected?.path ?? newPath.trim();
-
-                    if (!path) return;
+                    const key = bufferKey;
 
                     setBuffers((current) => ({
                       ...current,
-                      [path]: { value: event.target.value, base: current[path]?.base ?? '' },
+                      [key]: { value: event.target.value, base: current[key]?.base ?? '' },
                     }));
                   }}
                   onKeyDown={(event) => {
@@ -940,9 +972,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
                     // 옮기면 쓸 수 없다. Shift+Tab 은 그 줄 머리의 공백 2칸을 거둔다.
                     if (event.key !== 'Tab') return;
 
-                    const path = selected?.path ?? newPath.trim();
-
-                    if (!path) return;
+                    const key = bufferKey;
 
                     event.preventDefault();
 
@@ -951,7 +981,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
                     const apply = (next: string, cursor: number): void => {
                       setBuffers((current) => ({
                         ...current,
-                        [path]: { value: next, base: current[path]?.base ?? '' },
+                        [key]: { value: next, base: current[key]?.base ?? '' },
                       }));
                       requestAnimationFrame(() => {
                         target.selectionStart = target.selectionEnd = cursor;

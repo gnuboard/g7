@@ -24,7 +24,7 @@ function endpointOf(id: string): string {
 }
 
 describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_posts_search_field_offers_three_targets
     it('내 글 검색 대상이 제목+내용·제목·내용 셋이다', () => {
         const select = findById(myPosts, 'my_posts_search_field_select');
@@ -34,7 +34,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         ]);
     });
 
-    // @scenario surface=mypage_activity, tab=comments
+    // @scenario tab=comments
     // @effects mypage_comments_search_field_offers_content_and_post_title
     it('내 댓글 검색 대상은 댓글 내용과 원글 제목 둘이다 — 내 글과 축이 다르다', () => {
         const select = findById(myComments, 'my_comments_search_field_select');
@@ -44,7 +44,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         ]);
     });
 
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_posts_search_field_defaults_to_title_content
     it('내 글 기본값은 제목+내용이다', () => {
         const select = findById(myPosts, 'my_posts_search_field_select');
@@ -53,7 +53,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         expect(endpointOf('myPosts')).toMatch(/search_field=\{\{_global\.myPostsSearchField \?\? 'title_content'\}\}/);
     });
 
-    // @scenario surface=mypage_activity, tab=comments
+    // @scenario tab=comments
     // @effects mypage_comments_search_field_defaults_to_content
     it('내 댓글 기본값은 댓글 내용이다', () => {
         const select = findById(myComments, 'my_comments_search_field_select');
@@ -62,7 +62,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         expect(endpointOf('myComments')).toMatch(/search_field=\{\{_global\.myCommentsSearchField \?\? 'content'\}\}/);
     });
 
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_activity_endpoints_are_separate
     it('두 탭이 서로 다른 엔드포인트를 쓴다 — 댓글은 전용 목록이 있다', () => {
         expect(endpointOf('myPosts')).toContain('/me/board-activities');
@@ -70,7 +70,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         expect(endpointOf('myComments')).toContain('/me/my-comments');
     });
 
-    // @scenario surface=mypage_activity, tab=comments
+    // @scenario tab=comments
     // @effects mypage_activity_state_is_namespaced_per_tab
     it('검색·정렬·쪽수를 탭마다 따로 들고 있다 — 탭을 오가도 섞이지 않는다', () => {
         const postsEndpoint = endpointOf('myPosts');
@@ -86,7 +86,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         }
     });
 
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_activity_select_only_stores_value
     it('셀렉트는 담아만 두고 조회는 검색이 한다 — 고르는 즉시 목록이 튀지 않는다', () => {
         for (const [partial, id, key] of [
@@ -100,7 +100,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         }
     });
 
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_activity_every_reset_clears_search_field
     it('검색어를 비우는 자리는 «전부» 검색 대상도 함께 되돌린다', () => {
         // 모집단을 손으로 적지 않는다 — 레이아웃에서 「검색어를 빈 문자열로 되돌리는 setState」를
@@ -123,7 +123,7 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
         }
     });
 
-    // @scenario surface=mypage_activity, tab=posts
+    // @scenario tab=posts
     // @effects mypage_activity_search_field_labels_have_ko_en
     it('두 축의 라벨이 ko·en 양쪽에 있다', () => {
         for (const lang of [koLang, enLang]) {
@@ -134,5 +134,18 @@ describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
                 expect(lang.board_activities?.comment_search_fields?.[key]).toBeTruthy();
             }
         }
+    });
+});
+
+describe('마이페이지 게시판 활동 — 검색 0건 안내', () => {
+    // @scenario tab=posts
+    // @effects mypage_filtered_empty_says_no_results
+    it('내 글·내 댓글은 검색어나 게시판을 건 채 0건이면 검색 결과 없음을 낸다', () => {
+        const posts = JSON.stringify(myPosts);
+        const comments = JSON.stringify(myComments);
+        expect(posts.includes('{{!!_global.myPostsSearchApplied || !!_global.myPostsBoard}}')).toBe(true);
+        expect(comments.includes('{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}')).toBe(true);
+        expect(posts.includes('$t:board.no_search_results')).toBe(true);
+        expect(comments.includes('$t:board.no_search_results')).toBe(true);
     });
 });

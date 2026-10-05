@@ -62,9 +62,15 @@ effects:
   # 백엔드
   - admin_member_notifications_requires_read_permission
   - admin_member_notifications_lists_all_members
+  # 「종류」는 data.type 의 알림 정의 이름 — type 열(모든 행이 같은 알림 클래스명)이 아니다.
+  - admin_member_notifications_type_label_from_definition
   - admin_member_notifications_read_only_cannot_delete
+  # 행 메뉴 「삭제」는 행의 abilities.can_delete 로 켜진다 — 행에 없으면 모든 줄이 비활성
+  - admin_member_notifications_row_abilities_enable_row_delete
   - admin_member_notifications_filters_by_user_uuid
   - admin_member_notifications_search_type_branches
+  # 검색어의 % · _ 는 글자 그대로 — 회원 목록 검색과 같은 기준
+  - admin_member_notifications_search_escapes_like_wildcards
   - admin_member_notifications_read_filter
   - admin_member_notifications_date_range
   - admin_member_notifications_destroy_requires_delete_permission
@@ -74,6 +80,7 @@ effects:
   - admin_member_notification_bulk_delete_writes_activity_log
   # 없는 회원 id 는 «빈 알림함» 이 아니라 422 — 오탈자와 0건을 구분할 수 있어야 한다.
   - admin_member_notification_rejects_unknown_user_id
+  - admin_member_notification_validation_messages_use_attribute_names
   - admin_user_detail_includes_notifications_summary
   - admin_user_list_omits_notifications_summary
   # 레이아웃 — 목록

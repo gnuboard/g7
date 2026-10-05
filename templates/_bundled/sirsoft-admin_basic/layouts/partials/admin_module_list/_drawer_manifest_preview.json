@@ -26,13 +26,14 @@
             "name": "FileInput",
             "actions": [
                 {
-                    "comment": "고른 파일을 전역에 담는다. 파일 객체와 이름을 따로 두는 것은, 이름은 화면에 보여 주고\n             객체는 아래 요청 본문에 실어야 하는데 표현식에서 객체의 이름을 다시 꺼내면\n             파일이 바뀌었을 때 표시가 늦기 때문이다.",
+                    "comment": "고른 파일을 전역에 담는다. 파일 객체와 이름을 따로 두는 것은, 이름은 화면에 보여 주고\n             객체는 아래 요청 본문에 실어야 하는데 표현식에서 객체의 이름을 다시 꺼내면\n             파일이 바뀌었을 때 표시가 늦기 때문이다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다.",
                     "type": "change",
                     "handler": "setState",
                     "params": {
                         "target": "global",
                         "modulePreviewFile": "{{$event.target.value}}",
-                        "modulePreviewFileName": "{{$event.target.value?.name}}"
+                        "modulePreviewFileName": "{{$event.target.value?.name}}",
+                        "modulePreviewResult": null
                     }
                 }
             ],
@@ -196,7 +197,7 @@
                                     "props": {
                                         "className": "text-success-soft"
                                     },
-                                    "text": "$t:defer:extensions.manifest_preview.icon_present|path={{_global.modulePreviewResult?.icon?.path ?? ''}}"
+                                    "text": "$t:extensions.manifest_preview.icon_present|path={{_global.modulePreviewResult?.icon?.path ?? ''}}"
                                 },
                                 {
                                     "type": "basic",

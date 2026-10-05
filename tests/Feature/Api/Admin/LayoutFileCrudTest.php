@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Rules\SafeCustomAssetPath;
 use App\Support\LayoutMarkup\PartialReferenceNotation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,11 @@ class LayoutFileCrudTest extends TestCase
 
     private string $readerToken;
 
+    /**
+     * 편집 권한 관리자와 읽기 전용 관리자의 토큰, 테스트용 관리자 템플릿을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,9 +62,13 @@ class LayoutFileCrudTest extends TestCase
 
     // ── 생성 ──────────────────────────────────────────────────────────────
     /**
+     * 본문 없이 만들면 `components` 를 갖춘 기본 골격(버전 1.0.0)으로 템플릿 출처 레이아웃 행이 생긴다.
+     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_creates_a_compilable_skeleton
+     *
+     * @return void 반환값 없음
      */
     public function test_creates_layout_with_default_skeleton_when_content_is_omitted(): void
     {
@@ -91,6 +101,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_creates_a_compilable_skeleton
+     *
+     * @return void 반환값 없음
      */
     public function test_creates_a_document_even_for_a_partial_shaped_name(): void
     {
@@ -115,6 +127,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_creates_a_compilable_skeleton
+     *
+     * @return void 반환값 없음
      */
     public function test_a_created_file_can_be_saved_immediately(): void
     {
@@ -142,9 +156,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 파일을 만들면 만든 직후의 본문이 판본 1건으로 기록된다.
+     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_creation_records_a_baseline_version(): void
     {
@@ -166,6 +184,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_deletes_softly
+     *
+     * @return void 반환값 없음
      */
     public function test_recreating_a_soft_deleted_name_restores_the_row(): void
     {
@@ -196,6 +216,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_rename_respects_optimistic_lock
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_target_conflicts_with_a_soft_deleted_name(): void
     {
@@ -215,9 +237,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 이미 있는 이름으로 만들면 422 와 `name_taken` 사유로 거부된다.
+     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_duplicate_name(): void
     {
@@ -235,12 +261,14 @@ class LayoutFileCrudTest extends TestCase
      * 문자열 포함 검사(`str_contains('..')`)는 정상 이름을 막으면서 인코딩된 탈출은 놓친다 —
      * 그래서 세그먼트마다 본다({@see SafeCustomAssetPath} 와 같은 방식).
      *
-     * @dataProvider invalidNameProvider
-     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @param  string  $name  규칙을 벗어난 레이아웃 이름
+     * @return void 반환값 없음
      */
+    #[DataProvider('invalidNameProvider')]
     public function test_rejects_invalid_names(string $name): void
     {
         $this->withHeaders($this->headers($this->editorToken))
@@ -250,7 +278,59 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 본문을 실어 만든 파일은 본문의 `layout_name` 을 파일 이름으로 맞춥니다.
+     *
+     * 코드 편집기의 «새 이름으로 저장» 은 지워진 파일의 편집분(`<layout name="옛이름">`)을 그대로 실어 보낸다.
+     * 이름변경이 하는 것처럼 맞추지 않으면 파일 이름과 다른 이름의 산출물이 저장되고, 그 마크업을 다시 저장할
+     * 때마다 옛 이름이 되살아난다(실측 2026-10-03: 새 이름으로 살린 파일의 `layout_name` 이 지워진 옛 파일 이름으로 남았다).
+     *
+     * @scenario operation=create, target=layout
+     *
+     * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
+     */
+    public function test_creating_with_content_aligns_layout_name_to_file_name(): void
+    {
+        $markup = "<layout name=\"probe_old\" version=\"1.0.0\">\n  <div>rescued</div>\n</layout>\n";
+
+        $this->withHeaders($this->headers($this->editorToken))
+            ->postJson($this->base(), ['name' => 'probe_rescued', 'content' => $markup])
+            ->assertStatus(201);
+
+        $layout = TemplateLayout::query()->where('name', 'probe_rescued')->firstOrFail();
+        $this->assertSame('probe_rescued', $layout->content['layout_name'] ?? null);
+    }
+
+    /**
+     * 이름이 규칙을 벗어나면 그 이유 하나만 돌려줍니다.
+     *
+     * 화면은 새 파일을 만들 때 본문을 빈 문자열로 보낸다(서버가 골격을 채운다). 이름이 틀리면 골격을 만들 수
+     * 없어 「본문 필수」가 덤으로 붙었고, 응답 문구 끝에 원인과 무관한 나머지 오류 수 꼬리가 붙었다.
+     *
+     * @scenario operation=create, target=layout
+     *
+     * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalid_name_reports_only_the_name_error(): void
+    {
+        $response = $this->withHeaders($this->headers($this->editorToken))
+            ->postJson($this->base(), ['name' => 'zz probe', 'content' => ''])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['name'])
+            ->assertJsonMissingValidationErrors(['content']);
+
+        $message = (string) $response->json('message');
+        $this->assertStringNotContainsString('more error', $message);
+        $this->assertStringNotContainsString('개 오류)', $message);
+    }
+
+    /**
+     * 이름 규칙을 벗어나는 레이아웃 이름 사례를 제공한다.
+     *
+     * @return array<string, array{0: string}> 사례 이름별 잘못된 레이아웃 이름
      */
     public static function invalidNameProvider(): array
     {
@@ -268,9 +348,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 255자를 넘는 이름은 검증 오류(422)로 거부된다.
+     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_name_longer_than_255(): void
     {
@@ -281,9 +365,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 레이아웃 편집 권한이 없는 관리자는 파일을 만들 수 없다(403).
+     *
      * @scenario operation=create, target=layout
      *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_creation_requires_edit_permission(): void
     {
@@ -294,9 +382,13 @@ class LayoutFileCrudTest extends TestCase
 
     // ── 삭제 ──────────────────────────────────────────────────────────────
     /**
+     * 삭제는 soft delete 로 처리되어 일반 조회에서는 빠지고 행은 남는다.
+     *
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_deletes_softly
+     *
+     * @return void 반환값 없음
      */
     public function test_deletes_layout_softly(): void
     {
@@ -318,6 +410,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_records_file_operations_in_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_file_operations_are_recorded_in_activity_log(): void
     {
@@ -344,9 +438,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 모듈이 제공한 레이아웃은 삭제가 422 와 출처 차단 사유로 막히고 행이 그대로 남는다.
+     *
      * @scenario operation=delete, target=module_owned
      *
      * @effects code_editor_blocks_deleting_module_owned_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_deleting_a_layout_provided_by_a_module(): void
     {
@@ -361,9 +459,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * `extends` 로 참조되는 부모 레이아웃은 삭제가 막히고, 응답에 참조하는 레이아웃과 참조 종류가 실린다.
+     *
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_shows_what_blocks_a_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_deleting_a_parent_referenced_by_extends(): void
     {
@@ -386,9 +488,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 다른 레이아웃이 partial 로 참조하는 조각은 삭제가 막히고, 응답에 참조하는 레이아웃과 참조 종류가 실린다.
+     *
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_shows_what_blocks_a_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_deleting_a_partial_referenced_by_another_layout(): void
     {
@@ -421,6 +527,8 @@ class LayoutFileCrudTest extends TestCase
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_shows_what_blocks_a_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_prefix_sharing_names_are_not_counted_as_references(): void
     {
@@ -441,9 +549,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 레이아웃 편집 권한이 없는 관리자는 파일을 지울 수 없다(403).
+     *
      * @scenario operation=delete, target=layout
      *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_deletion_requires_edit_permission(): void
     {
@@ -456,9 +568,13 @@ class LayoutFileCrudTest extends TestCase
 
     // ── 이름변경 ──────────────────────────────────────────────────────────
     /**
+     * 이름변경은 같은 행의 이름과 본문 `layout_name` 을 함께 바꾸고 판본 이력을 그대로 잇는다.
+     *
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_rename_keeps_version_history
+     *
+     * @return void 반환값 없음
      */
     public function test_renames_layout_and_keeps_version_history(): void
     {
@@ -489,9 +605,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 잠금 번호가 맞지 않는 이름변경은 409 로 거부되고 원래 이름의 행이 남는다.
+     *
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_rename_respects_optimistic_lock
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_rejects_stale_lock_version(): void
     {
@@ -508,9 +628,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 이미 있는 이름으로 바꾸려 하면 409 와 `name_taken` 사유로 거부된다.
+     *
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_rejects_existing_target_name(): void
     {
@@ -527,9 +651,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 경로를 벗어나는 새 이름(`../evil`)은 `new_name` 검증 오류(422)로 거부된다.
+     *
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_rejects_invalid_file_names
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_rejects_invalid_name(): void
     {
@@ -545,9 +673,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 모듈이 제공한 레이아웃은 이름변경이 422 와 출처 차단 사유로 막힌다.
+     *
      * @scenario operation=rename, target=module_owned
      *
      * @effects code_editor_blocks_deleting_module_owned_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_renaming_a_layout_provided_by_a_module(): void
     {
@@ -563,9 +695,13 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 레이아웃 편집 권한이 없는 관리자는 이름을 바꿀 수 없다(403).
+     *
      * @scenario operation=rename, target=layout
      *
      * @effects code_editor_can_create_rename_and_delete_files
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_requires_edit_permission(): void
     {
@@ -581,19 +717,35 @@ class LayoutFileCrudTest extends TestCase
 
     // ── 헬퍼 ──────────────────────────────────────────────────────────────
 
+    /**
+     * 테스트 템플릿의 레이아웃 API 기준 경로를 돌려준다.
+     *
+     * @return string 레이아웃 API 기준 경로
+     */
     private function base(): string
     {
         return "/api/admin/templates/{$this->template->identifier}/layouts";
     }
 
     /**
-     * @return array<string, string>
+     * 토큰을 실은 Bearer 인증 헤더와 JSON 수락 헤더를 만든다.
+     *
+     * @param  string  $token  인증 토큰
+     * @return array<string, string> 인증 헤더
      */
     private function headers(string $token): array
     {
         return ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
     }
 
+    /**
+     * 테스트 템플릿에 잠금 번호 0 인 레이아웃 행을 만든다.
+     *
+     * @param  string  $name  레이아웃 이름
+     * @param  LayoutSourceType  $sourceType  레이아웃 출처 유형
+     * @param  string|null  $sourceIdentifier  출처 식별자 (null 이면 테스트 템플릿 식별자)
+     * @return TemplateLayout 생성된 레이아웃
+     */
     private function makeLayout(
         string $name,
         LayoutSourceType $sourceType = LayoutSourceType::Template,
@@ -616,7 +768,10 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
-     * @param  array<int, string>  $permissions
+     * 주어진 권한을 가진 관리자 역할을 만들어 새 사용자에게 붙인다.
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 관리자 사용자
      */
     private function createAdminUser(array $permissions): User
     {

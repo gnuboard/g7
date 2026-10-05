@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 게시글 삭제 연쇄 처리 테스트 (#413-69-②)
@@ -16,19 +17,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 삭제 전 사용자가 따로 지운 댓글/첨부(trigger_type='user')는 영향 없음
  * - 게시글 복원 시 cascade 항목만 restore, 사용자가 먼저 지운 것은 trashed 유지
  * - 삭제 경로(관리자/사용자/신고) 무관하게 cascade 동작
- *
- * @group board
- * @group admin
  */
+#[Group('board')]
+#[Group('admin')]
 class PostDeleteCascadeTest extends BoardTestCase
 {
     private PostService $postService;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'post-delete-cascade';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -40,6 +51,11 @@ class PostDeleteCascadeTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -84,6 +100,8 @@ class PostDeleteCascadeTest extends BoardTestCase
      * @scenario delete_trigger=admin
      *
      * @effects live_comment_cascade_soft_deleted,live_attachment_cascade_soft_deleted,cascade_trigger_type_marked,delete_and_restore_wrapped_in_transaction
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_post_cascades_to_comments_and_attachments(): void
     {
@@ -107,6 +125,8 @@ class PostDeleteCascadeTest extends BoardTestCase
      * 게시글 삭제 전 사용자가 따로 지운 댓글/첨부(trigger_type='user')는 cascade 의 영향을 받지 않는다.
      *
      * @effects user_pre_deleted_comment_untouched,user_pre_deleted_attachment_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_pre_deleted_items_are_not_overwritten_by_cascade(): void
     {
@@ -135,6 +155,8 @@ class PostDeleteCascadeTest extends BoardTestCase
      * 게시글 복원 시 cascade 항목만 복원되고, 사용자가 먼저 지운 것은 trashed 로 유지된다 (우려 차단).
      *
      * @effects cascaded_comment_restored_on_post_restore,cascaded_attachment_restored_on_post_restore,user_pre_deleted_comment_stays_trashed,user_pre_deleted_attachment_stays_trashed
+     *
+     * @return void 반환값 없음
      */
     public function test_restoring_post_only_restores_cascaded_items(): void
     {
@@ -174,6 +196,8 @@ class PostDeleteCascadeTest extends BoardTestCase
      * @scenario delete_trigger=user
      *
      * @effects live_comment_cascade_soft_deleted,live_attachment_cascade_soft_deleted,cascade_trigger_type_marked
+     *
+     * @return void 반환값 없음
      */
     public function test_cascade_works_for_user_delete_path(): void
     {

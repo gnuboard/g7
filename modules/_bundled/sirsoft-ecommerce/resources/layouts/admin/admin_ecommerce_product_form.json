@@ -765,11 +765,30 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Img",
+                                                        "if": "{{copy_source?.data?.thumbnail_url}}",
                                                         "props": {
-                                                            "src": "{{copy_source?.data?.thumbnail_url ?? '/images/placeholder.png'}}",
-                                                            "alt": "{{copy_source?.data?.name?.ko ?? copy_source?.data?.name}}",
+                                                            "src": "{{copy_source?.data?.thumbnail_url}}",
+                                                            "alt": "{{$localized(copy_source?.data?.name)}}",
                                                             "className": "w-16 h-16 object-cover rounded-lg flex-shrink-0"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!copy_source?.data?.thumbnail_url}}",
+                                                        "props": {
+                                                            "className": "flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "image",
+                                                                    "className": "text-2xl text-gray-400 dark:text-gray-500"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "type": "basic",
@@ -791,7 +810,7 @@
                                                                 "props": {
                                                                     "className": "text-primary font-medium truncate"
                                                                 },
-                                                                "text": "{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}"
+                                                                "text": "{{$localized(copy_source?.data?.name) || '-'}}"
                                                             },
                                                             {
                                                                 "type": "basic",

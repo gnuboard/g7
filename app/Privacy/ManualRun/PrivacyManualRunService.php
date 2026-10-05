@@ -119,8 +119,6 @@ class PrivacyManualRunService
                 ]);
             });
 
-        RunPrivacyManualActionJob::dispatch($run->id);
-
         Log::info('개인정보 조치 직권 실행 접수', [
             'run_id' => $run->id,
             'target' => $key,
@@ -129,7 +127,21 @@ class PrivacyManualRunService
             'scheduled' => false,
         ]);
 
-        HookManager::doAction(self::QUEUED_HOOK, $run, $this->safeLabel($runner));
+        // 접수 기록을 발행보다 먼저 남긴다 — 동기 큐는 dispatch 안에서 작업까지 끝내므로, 뒤에 두면
+        // 활동 로그에 「완료」가 「접수」보다 먼저 쌓여 일어난 순서와 거꾸로 읽힌다.
+        // 구독자가 실패해도 작업은 발행한다 — 여기서 멈추면 기록이 「대기」로 남아 기준 시간이 지날 때까지
+        // 같은 대상의 재접수가 충돌로 막힌다. 실패는 기록만 하고 넘어간다.
+        try {
+            HookManager::doAction(self::QUEUED_HOOK, $run, $this->safeLabel($runner));
+        } catch (Throwable $e) {
+            Log::warning('개인정보 조치 직권 실행 접수 훅 실패', [
+                'run_id' => $run->id,
+                'target' => $key,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        RunPrivacyManualActionJob::dispatch($run->id);
 
         return $run;
     }
@@ -212,7 +224,7 @@ class PrivacyManualRunService
      *
      * @param  int  $runId  실행 기록 ID
      * @param  string  $error  실패 사유
-     * @return void
+     * @return void 반환값 없음
      */
     public function failFromJob(int $runId, string $error): void
     {
@@ -297,7 +309,7 @@ class PrivacyManualRunService
      * 버려진 진행 중 기록을 실패로 닫습니다.
      *
      * @param  PrivacyManualRun  $run  기록
-     * @return void
+     * @return void 반환값 없음
      */
     private function closeStale(PrivacyManualRun $run): void
     {
@@ -315,7 +327,7 @@ class PrivacyManualRunService
      * @param  PrivacyManualRunnerInterface|null  $runner  대상 (없으면 라벨은 키)
      * @param  array<string, mixed>  $data  갱신 데이터
      * @param  string  $expectedStatus  이 상태일 때만 닫는다 (기본 처리 중)
-     * @return void
+     * @return void 반환값 없음
      */
     private function finish(PrivacyManualRun $run, ?PrivacyManualRunnerInterface $runner, array $data, string $expectedStatus = 'running'): void
     {

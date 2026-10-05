@@ -290,7 +290,13 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $orderSettings['cash_receipt_provider'] = $this->getCashReceiptProvider();
         }
 
-        if (isset($orderSettings['bank_accounts'], $orderSettings['banks'])) {
+        // 은행 목록은 회원 환불 신청서와 같은 출처(getBankList — 운영자가 비웠으면 모듈 기본 목록)로 낸다.
+        // 원본을 그대로 내보내면 운영자가 목록을 비운 상점에서 관리자 대리 접수·주문 취소·환불 실행 창이
+        // 「등록된 은행이 없다」며 환불 계좌를 고를 수 없고, 주문서·입금 계좌에는 은행명 대신 코드("004")가
+        // 섰다 — 같은 상점의 회원 신청서는 기본 목록 16곳을 보여 주는데도(실측 2026-10-03).
+        $orderSettings['banks'] = $this->getBankList();
+
+        if (isset($orderSettings['bank_accounts'])) {
             $banks = collect($orderSettings['banks']);
             $orderSettings['bank_accounts'] = array_map(function ($account) use ($banks) {
                 $bank = $banks->firstWhere('code', $account['bank_code'] ?? '');

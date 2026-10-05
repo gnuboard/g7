@@ -1,0 +1,22 @@
+feature: 쇼핑몰 편집기 창 상태가 실제 창을 가리키고 창이 읽는 상태를 채운다
+
+description: |
+  레이아웃 편집기 상태 표본 전수 순회에서 회원 배송지 목록의 창 세 개(단건 삭제, 선택 삭제, 오류)가 빈 채로 열렸다.
+  배송지 화면을 조각으로 나누면서 창 id 가 범용 이름(modal_delete_confirm, modal_bulk_delete_confirm, modal_error)이
+  됐는데 편집기 상태는 형제 목록과 같은 modal_addresses_* 를 가리켰고, 표본이 채우는 전역 값도 조각 이전의 이름이었다.
+  범용 id 는 상품, 분류, 배너, 쿠폰 삭제 창과도 겹친다. 창 id 를 modal_addresses_* 로 되돌리고 표본을 창이 읽는 이름으로 맞춘다.
+
+axes:
+  target: [modal_scope, address_modals]
+
+effects:
+  - ecommerce_editor_modal_state_scopes_point_to_existing_modals
+  - ecommerce_address_modals_use_list_scoped_ids
+  - ecommerce_address_modal_states_seed_what_modals_read
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-editor-modal-state-scope.test.ts
+
+notes: |
+  브라우저 실측: 레이아웃 편집기 ?edit=__modal__/modal_addresses_delete(host sirsoft-ecommerce.admin_ecommerce_user_address_index)
+  에서 확인 문장에 수령인·회원 이름, 선택 삭제 창에 3건, 실제 배송지 목록에서 삭제 확인 창 열림·취소.

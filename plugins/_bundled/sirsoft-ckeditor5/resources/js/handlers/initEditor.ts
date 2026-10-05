@@ -12,9 +12,9 @@ import { attachExternalContentSync } from './externalContentSync';
 import {
     CKEDITOR5_CSS_ID,
     ckeditorCssUrl,
-    ckeditorScriptUrl,
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
+import { ensureCkeditorGlobal } from './ckeditorGlobal';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
@@ -229,41 +229,6 @@ async function loadCkeditorCss(): Promise<void> {
         console.warn('[ckeditor5] CSS 로드 실패:', error);
         notifyEditorAssetFailure('ckeditor5-css', t('editor.asset.style_label', '편집기 스타일'), () => loadCkeditorCss());
     }
-}
-
-/**
- * CKEditor 전역이 확보되었는지 확인하고, 없으면 한 번 더 로드를 시도합니다.
- *
- * 레이아웃 `scripts[]` 가 이미 본체를 로드하지만, 그 로드가 끝내 실패했을 수 있다.
- * 코어 로더(`TemplateApp.loadLayoutScripts`)는 실패해도 다른 스크립트를 계속 진행하므로
- * 여기까지 도달하고, 그때 `window.CKEDITOR` 는 없다.
- *
- * @return Promise<bool> 전역이 확보되면 true
- */
-async function ensureCkeditorGlobal(): Promise<boolean> {
-    if ((window as any).CKEDITOR) {
-        return true;
-    }
-
-    const loadScript = (window as any)?.G7Core?.asset?.loadScript;
-
-    if (typeof loadScript !== 'function') {
-        return false;
-    }
-
-    try {
-        await loadScript(
-            ckeditorScriptUrl(),
-            { id: 'ckeditor5-vendor-umd' },
-            { label: 'ckeditor5 UMD' }
-        );
-    } catch (error) {
-        console.warn('[ckeditor5] 편집기 본체를 불러오지 못했습니다:', error);
-
-        return false;
-    }
-
-    return Boolean((window as any).CKEDITOR);
 }
 
 /**
@@ -1408,7 +1373,15 @@ export async function initEditorHandler(
     // 편집기 본체 확보 — 실패하면 평문 입력으로 내려앉는다.
     // `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 도 렌더되지 않으므로,
     // 여기서 폴백을 세우지 않으면 사용자에게는 빈 div 만 남아 글을 쓸 수 없다.
-    if (!(await ensureCkeditorGlobal())) {
+    const editorReady = await ensureCkeditorGlobal();
+
+    // 기다리는 사이 컴포넌트가 해제됐으면(레이아웃 편집기 미리보기가 스크립트 목록을 다시 정하며 다시
+    // 마운트하는 경우 등) 떨어져 나간 옛 컨테이너에 편집기도 폴백도 세우지 않는다 — 다시 마운트된 쪽이 초기화한다.
+    if (!container.isConnected) {
+        return;
+    }
+
+    if (!editorReady) {
         // 자산 확보 시도(await) 동안 폼 데이터가 도착했을 수 있으므로 **여기서 다시** 해석한다.
         // await 이전에 캡처된 값을 그대로 쓰면 수정 화면에서 폴백이 빈 채로 서고, 폴백이
         // `form.{name}` 에 빈 문자열을 써 넣어 저장된 본문이 조용히 지워진다.

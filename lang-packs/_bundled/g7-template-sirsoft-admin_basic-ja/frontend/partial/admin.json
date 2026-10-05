@@ -203,7 +203,15 @@
       "last_login_at_desc": "最後のログイン 最新順",
       "last_login_at_asc": "最後のログイン 古い順",
       "name_asc": "名前 昇順",
-      "name_desc": "名前 降順"
+      "name_desc": "名前 降順",
+      "email_asc": "メール 昇順",
+      "email_desc": "メール 降順",
+      "country_asc": "国 昇順",
+      "country_desc": "国 降順",
+      "language_asc": "言語 昇順",
+      "language_desc": "言語 降順",
+      "status_asc": "状態 昇順",
+      "status_desc": "状態 降順"
     },
     "modals": {
       "delete_title": "ユーザーの削除",
@@ -2582,9 +2590,9 @@
     },
     "layout_edit": {
       "title": "レイアウト編集",
-      "description": "JSONファイルを編集してページレイアウトを構成します",
+      "description": "画面マークアップ（.g7.html）を編集してページレイアウトを構成します",
       "page_title": "レイアウト編集",
-      "page_description": "JSONファイルを編集してページレイアウトを構成します",
+      "page_description": "画面マークアップ（.g7.html）を編集してページレイアウトを構成します",
       "preview": "プレビュー",
       "save": "保存",
       "saving": "保存中...",
@@ -3568,7 +3576,7 @@
     "visitors": {
       "title": "訪問者",
       "description": "人単位で集約された訪問記録。1 人の訪問者を選択すると、アクティビティタイムラインが表示されます。",
-      "search_placeholder": "訪問者キー·IP·会員番号 (Enter)",
+      "search_placeholder": "訪問者キー·IP·会員番号(#123 はその会員のみ) (Enter)",
       "type_label": "タイプ",
       "types": {
         "all": "すべて",

@@ -74,17 +74,23 @@ export interface EditorModalOptions {
   avoidRect?: { left: number; top: number; width: number; height: number };
   /** 모달이 닫힐 때 호출 (백드롭/ESC/명시 close 모두) */
   onClose?: () => void;
+  /**
+   * 백드롭 클릭을 바로 닫지 않고 이 함수에 맡긴다(closeOnBackdrop 이 true 일 때만). 창이 저장하지 않은 편집을
+   * 확인한 뒤 스스로 닫도록 할 때 쓴다 — 지정하지 않으면 종전처럼 바로 닫는다.
+   */
+  onRequestClose?: () => void;
 }
 
 interface InternalEntry
   extends Required<
     Omit<
       EditorModalOptions,
-      'id' | 'onClose' | 'width' | 'height' | 'maxHeightRatio' | 'avoidRect'
+      'id' | 'onClose' | 'onRequestClose' | 'width' | 'height' | 'maxHeightRatio' | 'avoidRect'
     >
   > {
   id: string;
   onClose?: () => void;
+  onRequestClose?: () => void;
   width: number | string;
   height: number | string;
   maxHeightRatio: number;
@@ -162,6 +168,7 @@ export function EditorModalProvider({ children, t }: EditorModalProviderProps): 
       draggable: options.draggable ?? false,
       avoidRect: options.avoidRect,
       onClose: options.onClose,
+      onRequestClose: options.onRequestClose,
     };
     setStack((prev) => {
       // 같은 id 재오픈은 덮어쓰기 (idempotent)
@@ -534,6 +541,10 @@ function ModalLayer({ entry, depth, hidden, onClose }: ModalLayerProps): React.R
     // draggable 모달은 백드롭이 pointerEvents:none 이라 이 핸들러가 호출되지 않지만,
     // 안전상 currentTarget 일치 검사 유지.
     if (e.target !== e.currentTarget) return;
+    if (entry.onRequestClose) {
+      entry.onRequestClose();
+      return;
+    }
     onClose();
   };
 

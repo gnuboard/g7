@@ -58,6 +58,14 @@ class PlaywrightSeedDormant extends Command
     private const TEST_EMAIL_PREFIX = 'playwright_dormant_';
 
     /**
+     * 관리자 메모에 남기는 시드 표지 — 이메일이 바뀐 뒤에도 정리 대상을 찾는 두 번째 표지다.
+     *
+     * `withdrawn` 단계 계정은 「지금 실행」이 이메일을 `withdrawn_{id}@removed.invalid` 로 바꾸라고
+     * 심는다. 잔여정보 파기는 관리자 메모를 지우지 않으므로 파기 뒤에도 이 값으로 찾는다.
+     */
+    private const TEST_MEMO_MARKER = 'playwright:seed-dormant fixture';
+
+    /**
      * 만들 수 있는 단계 — 개인정보 탭의 「대상 보기」 다섯 개가 각각 한 단계를 연다.
      *
      * @var list<string>
@@ -142,6 +150,7 @@ class PlaywrightSeedDormant extends Command
             'email_verified_at' => now(),
             'status' => UserStatus::Active->value,
             'created_at' => now()->subDays($dormantDays + 60),
+            'admin_memo' => self::TEST_MEMO_MARKER,
         ];
 
         // `+=` 가 아니라 array_merge 다 — `+=` 는 **이미 있는 키를 덮지 않으므로** 기본값으로 둔
@@ -201,12 +210,14 @@ class PlaywrightSeedDormant extends Command
      *
      * 알려진 비밀번호를 가진 계정을 실측 뒤에 남기지 않는다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function purgeTestUsers(): void
     {
+        // 이메일 접두사만 보면 실측이 잔여정보를 파기한 계정(이메일이 바뀐 계정)이 개발 DB 에 남는다.
         $deleted = User::query()
             ->where('email', 'like', self::TEST_EMAIL_PREFIX.'%')
+            ->orWhere('admin_memo', self::TEST_MEMO_MARKER)
             ->delete();
 
         $this->info("휴면 실측 테스트 계정 {$deleted}건을 제거했습니다.");

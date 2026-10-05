@@ -21,9 +21,10 @@
             },
             "children": [
                 {
+                    "comment": "안내 문구는 적용 전에만 — 적용하면 선택이 비워져 「0명에게…」로 바뀌므로 결과 화면에서는 결과 카드가 대신 말한다",
                     "type": "basic",
                     "name": "P",
-                    "if": "{{_global.userBulkRoleMode !== 'remove'}}",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode !== 'remove'}}",
                     "props": {
                         "className": "text-gray-700 dark:text-gray-300"
                     },
@@ -32,7 +33,7 @@
                 {
                     "type": "basic",
                     "name": "P",
-                    "if": "{{_global.userBulkRoleMode === 'remove'}}",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}",
                     "props": {
                         "className": "text-gray-700 dark:text-gray-300"
                     },
@@ -216,7 +217,7 @@
                     "if": "{{!_global.userBulkRoleResult}}",
                     "actions": [
                         {
-                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외된 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
+                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외된 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -260,14 +261,14 @@
                                                 }
                                             },
                                             {
+                                                "handler": "closeModal",
+                                                "if": "{{(response.data?.skipped_count ?? 0) === 0}}"
+                                            },
+                                            {
                                                 "handler": "refetchDataSource",
                                                 "params": {
                                                     "dataSourceId": "users"
                                                 }
-                                            },
-                                            {
-                                                "handler": "closeModal",
-                                                "if": "{{(response.data?.skipped_count ?? 0) === 0}}"
                                             }
                                         ]
                                     },

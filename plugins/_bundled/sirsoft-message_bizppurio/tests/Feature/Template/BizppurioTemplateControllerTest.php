@@ -32,6 +32,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
      * 지정 권한을 가진 admin 사용자를 만듭니다.
      *
      * @param  array<int, string>  $permissionIds  부여할 권한 식별자
+     * @return User 권한이 부여된 관리자
      */
     private function adminWith(array $permissionIds): User
     {
@@ -66,6 +67,9 @@ class BizppurioTemplateControllerTest extends PluginTestCase
 
     /**
      * 사용자 토큰 헤더를 만듭니다.
+     *
+     * @param  User  $user  토큰을 발급할 사용자
+     * @return array<string, string> 인증 헤더
      */
     private function authHeaders(User $user): array
     {
@@ -77,6 +81,9 @@ class BizppurioTemplateControllerTest extends PluginTestCase
 
     /**
      * 알림 정의 1건을 만듭니다 (notification_type 존재 검증 대상).
+     *
+     * @param  string  $type  알림 정의 타입
+     * @return NotificationDefinition 생성된 알림 정의
      */
     private function definition(string $type = 'welcome'): NotificationDefinition
     {
@@ -95,6 +102,8 @@ class BizppurioTemplateControllerTest extends PluginTestCase
 
     /**
      * kapi 자격증명·발신프로필 키를 플러그인 설정에 저장합니다 (검수 신청 경로용).
+     *
+     * @return void 반환값 없음
      */
     private function seedKakaoSettings(): void
     {
@@ -108,7 +117,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     /**
      * 유효한 BA×NONE content 를 만듭니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> BA, NONE 유형 content 페이로드
      */
     private function baseContent(): array
     {
@@ -121,6 +130,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 권한이 없는 관리자는 템플릿 목록을 볼 수 없다(403).
+     *
+     * @effects list_requires_view_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_권한_없는_관리자는_목록을_볼_수_없다(): void
     {
         $user = $this->adminWith([]);
@@ -128,6 +144,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->getJson(self::BASE, $this->authHeaders($user))->assertStatus(403);
     }
 
+    /**
+     * view 권한으로 목록을 조회하면 알림 정의 라벨이 조인되고 페이지네이션 계약이 실린다.
+     *
+     * @effects list_joins_definition_label_with_pagination
+     *
+     * @return void 반환값 없음
+     */
     public function test_view_권한으로_목록을_조회하면_정의_라벨이_조인된다(): void
     {
         $this->definition();
@@ -146,6 +169,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertArrayHasKey('last_page', $response->json('data.pagination'), '페이지네이션 계약(last_page 노출).');
     }
 
+    /**
+     * 목록은 상태 필터와 알림 타입 검색을 지원한다.
+     *
+     * @effects list_supports_status_filter_and_search
+     *
+     * @return void 반환값 없음
+     */
     public function test_목록은_상태_필터와_검색을_지원한다(): void
     {
         $this->definition('welcome');
@@ -165,6 +195,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.templates.0.notification_type', 'order_confirmed');
     }
 
+    /**
+     * 목록 검색은 알림 정의의 한글 표시명으로도 매칭된다.
+     *
+     * @effects list_search_matches_localized_definition_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_목록_검색은_정의_표시명_한글로도_매칭된다(): void
     {
         // 회귀 배경(§6.3 실측): nd.name 은 translatable JSON 컬럼이라 raw LIKE 는
@@ -183,6 +220,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.templates.0.notification_type', 'welcome');
     }
 
+    /**
+     * 알 수 없는 상태 값으로 목록을 거르면 422 다.
+     *
+     * @effects unknown_status_filter_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_알_수_없는_상태_필터는_422다(): void
     {
         $user = $this->adminWith([self::VIEW]);
@@ -190,6 +234,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->getJson(self::BASE.'?status=nope', $this->authHeaders($user))->assertStatus(422);
     }
 
+    /**
+     * map 은 notification_type 을 키로 한 상태, content 존재 여부, SMS 본문 요약을 내려준다.
+     *
+     * @effects map_returns_summary_keyed_by_notification_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_map은_notification_type_키_요약을_내려준다(): void
     {
         $this->definition();
@@ -217,6 +268,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         );
     }
 
+    /**
+     * view 권한만으로는 템플릿을 생성할 수 없다(403).
+     *
+     * @effects create_requires_manage_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_생성은_manage_권한이_필요하다(): void
     {
         $this->definition();
@@ -226,6 +284,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertStatus(403);
     }
 
+    /**
+     * 템플릿을 생성하면 draft 상태로 저장된다.
+     *
+     * @effects create_starts_as_draft
+     *
+     * @return void 반환값 없음
+     */
     public function test_생성하면_draft_상태다(): void
     {
         $this->definition();
@@ -241,6 +306,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertDatabaseHas('bizppurio_templates', ['notification_type' => 'welcome']);
     }
 
+    /**
+     * 존재하지 않는 알림 정의로는 템플릿을 생성할 수 없다(422).
+     *
+     * @effects unknown_definition_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_존재하지_않는_알림_정의로는_생성할_수_없다(): void
     {
         $user = $this->adminWith([self::MANAGE]);
@@ -251,7 +323,11 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 같은 알림 정의로 두 번째 행을 만들면 422 로 거절한다(알림당 1행).
+     *
      * @effects notification_type_unique_one_row_per_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_알림당_1행_unique가_강제된다(): void
     {
@@ -267,7 +343,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     /**
      * FormRequest 유형 매트릭스 (§3.2 표 그대로).
      *
-     * @return array<string, array{0: array<string, mixed>, 1: string|null}>
+     * @return array<string, array{0: array<string, mixed>, 1: string|null}> 케이스별 content 와 기대 오류 필드
      */
     public static function contentMatrixProvider(): array
     {
@@ -481,6 +557,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
      *
      * @param  array<string, mixed>  $content  content 페이로드
      * @param  string|null  $errorField  기대 검증 오류 필드 (null=통과)
+     * @return void 반환값 없음
      */
     #[DataProvider('contentMatrixProvider')]
     public function test_content_유형_매트릭스(array $content, ?string $errorField): void
@@ -500,6 +577,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         }
     }
 
+    /**
+     * 수정 요청도 생성과 같은 유형별 조건부 필수를 건다(EX 는 부가정보 필수).
+     *
+     * @effects ex_mi_require_template_extra
+     *
+     * @return void 반환값 없음
+     */
     public function test_수정_매트릭스도_store와_대칭이다(): void
     {
         $this->definition();
@@ -515,7 +599,11 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 유형을 바꾼 뒤 남은 다른 유형의 필드와 빈 값은 서버가 정돈해 저장한다.
+     *
      * @effects server_prunes_irrelevant_type_fields_before_save
+     *
+     * @return void 반환값 없음
      */
     public function test_유형_전환_잔여_필드는_서버가_정돈해_저장한다(): void
     {
@@ -542,6 +630,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('templateHeader', $content, '빈 문자열 선택 필드는 제거돼야 한다.');
     }
 
+    /**
+     * 검수 중(requested) 행의 content 수정은 422 로 막힌다.
+     *
+     * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_requested_상태의_content_수정은_422다(): void
     {
         $this->definition();
@@ -557,6 +652,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         ], $this->authHeaders($user))->assertStatus(422);
     }
 
+    /**
+     * 없는 행에 대한 상세, 수정, 검수 신청, 삭제는 모두 404 다.
+     *
+     * @effects missing_row_returns_404
+     *
+     * @return void 반환값 없음
+     */
     public function test_없는_행은_404다(): void
     {
         $user = $this->adminWith([self::VIEW, self::MANAGE]);
@@ -567,6 +669,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->deleteJson(self::BASE.'/999999', [], $this->authHeaders($user))->assertStatus(404);
     }
 
+    /**
+     * 발송 설정 저장(delivery upsert)은 행이 없으면 draft 행을 만들어 저장한다.
+     *
+     * @effects delivery_upsert_creates_draft_row_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_delivery_upsert는_행이_없으면_draft로_만든다(): void
     {
         $this->definition();
@@ -581,6 +690,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.template.sms_only', true);
     }
 
+    /**
+     * 발송 설정 저장은 존재하지 않는 알림 정의를 422 로 거부한다.
+     *
+     * @effects unknown_definition_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_delivery_upsert는_없는_알림_정의를_거부한다(): void
     {
         $user = $this->adminWith([self::MANAGE]);
@@ -589,6 +705,15 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * 검수 신청에 성공하면 requested 가 되고 codeCheck, add, request 순서로 kapi 를 부른다.
+     *
+     * @scenario content_variant=ba_none, transition=draft_to_requested
+     *
+     * @effects first_request_calls_add_then_request_with_full_content_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_신청_성공시_requested가_되고_kapi_시퀀스를_수행한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);
@@ -616,6 +741,8 @@ class BizppurioTemplateControllerTest extends PluginTestCase
      * `template/request` 의 comment 로 원문 그대로 실린다.
      *
      * @effects inspection_request_carries_reviewer_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_검수_신청의_comment는_kapi_request에_실리고_500자를_넘으면_422다(): void
     {
@@ -650,9 +777,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 이미지형(AD, IMAGE) content 가 검수 신청 add 페이로드에 그대로 실린다.
+     *
      * @scenario content_variant=ad_image, transition=draft_to_requested
      *
      * @effects image_requires_image_url, first_request_calls_add_then_request_with_full_content_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_이미지형_content가_검수_신청_페이로드에_그대로_실린다(): void
     {
@@ -689,9 +820,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 복합형 아이템리스트(MI, ITEM_LIST) content 가 검수 신청 add 페이로드에 그대로 실린다.
+     *
      * @scenario content_variant=mi_item_list, transition=draft_to_requested
      *
      * @effects item_list_requires_two_to_ten_items, ex_mi_require_template_extra, first_request_calls_add_then_request_with_full_content_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_복합_아이템리스트형_content가_검수_신청_페이로드에_그대로_실린다(): void
     {
@@ -734,7 +869,11 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 검수 신청 중 kapi 가 실패하면 카카오 사유와 결과코드를 errors 로 표면화한다.
+     *
      * @effects kapi_failure_reason_surfaced_in_errors_bizppurio_message
+     *
+     * @return void 반환값 없음
      */
     public function test_검수_신청시_kapi_실패_사유가_errors로_표면화된다(): void
     {
@@ -759,7 +898,11 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * content 가 없는 행의 검수 신청은 kapi 호출 없이 422 상태 가드에 걸린다.
+     *
      * @effects request_without_content_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_content_없는_행의_검수_신청은_422_상태_가드다(): void
     {
@@ -774,6 +917,15 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * 검수 중인 행의 신청을 취소하면 draft 로 돌아간다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_cancel
+     *
+     * @effects cancel_request_returns_to_draft
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수중_행의_신청_취소는_draft로_복귀한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);
@@ -793,6 +945,15 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.template.status', 'draft');
     }
 
+    /**
+     * 승인을 취소하면 승인 스냅샷을 유지한 채 draft 로 돌아간다.
+     *
+     * @scenario content_variant=ba_none, transition=approved_cancel
+     *
+     * @effects cancel_approval_returns_to_draft_keeping_snapshot
+     *
+     * @return void 반환값 없음
+     */
     public function test_승인_취소는_스냅샷을_유지한채_draft로_복귀한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);
@@ -816,6 +977,15 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertNotNull($response->json('data.template.approved_content'), '승인 스냅샷은 유지된다.');
     }
 
+    /**
+     * 수동 새로고침은 카카오 detail 의 상태(ACT)를 행에 반영해 승인으로 바꾼다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects manual_sync_updates_single_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync는_카카오_상태를_반영한다(): void
     {
         Http::fake([
@@ -841,6 +1011,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.template.is_approved', true);
     }
 
+    /**
+     * 삭제 가능한 상태의 행을 지우면 카카오측도 함께 지우고 그 여부를 응답에 명시한다.
+     *
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_삭제는_카카오측_동반_삭제_여부를_응답에_명시한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);
@@ -862,6 +1039,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertDatabaseCount('bizppurio_templates', 0);
     }
 
+    /**
+     * 카카오측 삭제가 불가한 상태면 DB 행만 지우고 건너뛴 사유를 응답에 명시한다.
+     *
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_삭제_불가_상태면_db만_삭제하고_사유를_명시한다(): void
     {
         Http::fake();
@@ -883,6 +1067,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * view 권한만으로는 생성, 수정, 신청, 취소, 해제, 새로고침, 삭제, 발송 설정, 이미지 업로드 경로에 접근할 수 없다.
+     *
+     * @effects view_permission_cannot_reach_mutation_routes
+     *
+     * @return void 반환값 없음
+     */
     public function test_view_권한만으로는_변경_경로에_접근할_수_없다(): void
     {
         $this->definition();
@@ -902,6 +1093,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->postJson(self::BASE.'/image', [], $headers)->assertStatus(403);
     }
 
+    /**
+     * 상세 조회는 content 와 반려 사유(inspection_detail)를 함께 돌려준다.
+     *
+     * @effects detail_returns_content_with_rejection_reasons
+     *
+     * @return void 반환값 없음
+     */
     public function test_상세는_content와_반려사유를_함께_반환한다(): void
     {
         $this->definition();
@@ -921,6 +1119,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
             ->assertJsonPath('data.template.inspection_detail.0.content', '변수 표기가 규격과 다릅니다.');
     }
 
+    /**
+     * 검증 오류 문구는 내부 필드 경로 대신 한글 라벨을 쓴다.
+     *
+     * @effects validation_messages_use_korean_field_labels
+     *
+     * @return void 반환값 없음
+     */
     public function test_검증_오류_문구는_영문_필드경로_대신_한글_라벨을_쓴다(): void
     {
         $this->definition();
@@ -943,12 +1148,26 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertStringContainsString('아이템', $messages, '한글 라벨(attributes)이 적용되어야 한다.');
     }
 
+    /**
+     * 없는 행의 상세 조회는 view 권한으로도 404 다.
+     *
+     * @effects missing_row_returns_404
+     *
+     * @return void 반환값 없음
+     */
     public function test_없는_상세는_404다(): void
     {
         $this->getJson(self::BASE.'/999999', $this->authHeaders($this->adminWith([self::VIEW])))
             ->assertStatus(404);
     }
 
+    /**
+     * 휴면 해제는 kapi release 를 부른 뒤 카카오측 실제 상태를 다시 읽어 반영한다.
+     *
+     * @effects dormant_release_calls_kapi_and_restores_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_휴면_해제는_kapi_release를_호출하고_상태를_되돌린다(): void
     {
         // 휴면 해제는 kapi release 후 detail 을 다시 읽어 카카오측 실제 상태를 반영한다 —
@@ -979,6 +1198,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         $this->assertSame('approved', $template->fresh()->status->value, '카카오가 ACT 로 응답하면 승인 상태로 반영한다.');
     }
 
+    /**
+     * 휴면이 아닌 행의 휴면 해제는 kapi 호출 없이 422 다.
+     *
+     * @effects release_outside_dormant_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_휴면이_아닌_행의_휴면_해제는_422다(): void
     {
         Http::fake();
@@ -1001,6 +1227,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
      * @param  int  $width  가로 픽셀
      * @param  int  $height  세로 픽셀
      * @param  string  $extension  확장자(jpg/png/gif)
+     * @return UploadedFile 가짜 이미지 파일
      */
     private function fakeImage(int $width, int $height, string $extension = 'png'): UploadedFile
     {
@@ -1008,9 +1235,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 이미지 업로드는 multipart 로 kapi 에 프록시되고 카카오 이미지 URL 을 돌려준다.
+     *
      * @scenario content_variant=ad_image, transition=draft_to_requested
      *
      * @effects image_upload_proxies_to_kapi_and_returns_url
+     *
+     * @return void 반환값 없음
      */
     public function test_이미지_업로드는_kapi로_프록시되고_url을_반환한다(): void
     {
@@ -1044,9 +1275,14 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 규격을 벗어난 이미지는 kapi 호출 없이 422 로 거절한다.
+     *
      * @scenario content_variant=ad_image, transition=draft_to_requested
      *
      * @effects image_upload_rejects_out_of_spec_file_before_kapi
+     *
+     * @param  string  $case  위반 유형(mime, width, ratio, size)
+     * @return void 반환값 없음
      */
     #[DataProvider('invalidImageProvider')]
     public function test_규격을_벗어난_이미지는_kapi_호출_없이_422가_된다(string $case): void
@@ -1076,7 +1312,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     /**
      * 규격 위반 케이스 목록.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, string>> 케이스명별 위반 유형
      */
     public static function invalidImageProvider(): array
     {
@@ -1088,6 +1324,13 @@ class BizppurioTemplateControllerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 이미지 업로드는 manage 권한을 요구하며 view 권한이면 kapi 호출 없이 403 이다.
+     *
+     * @effects image_upload_requires_manage_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_이미지_업로드는_manage_권한을_요구한다(): void
     {
         Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);

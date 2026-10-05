@@ -101,6 +101,18 @@ effects:
   - test_bundled_target_overrides_parent_protected_path                    # 4종 확장 전수 (dataProvider)
   - test_target_equal_to_protected_is_still_excluded                       # target==protected 는 여전히 제외 (방어 유지)
   - test_incremental_apply_reflects_changed_bundled_extension_file         # computeApplyList→applyUpdate end-to-end 반영
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - unchanged_file_is_excluded_from_apply_list
+  - new_file_is_added_to_apply_list
+  - size_differing_file_is_changed
+  - same_size_different_content_file_is_changed
+  - excluded_file_is_not_in_apply_list
+  - protected_path_file_is_not_in_apply_list
+  - bundled_target_overrides_parent_protected_path
+  - target_equal_to_protected_is_still_excluded
+  - apply_list_merges_added_and_changed_sorted
+  - single_file_target_is_classified
+  - symlink_is_excluded_and_flagged
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php

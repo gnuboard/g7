@@ -4,8 +4,9 @@
 <partial description="회원 역할 일괄 변경 모달" editor_label="$t:admin.modal_label.user_list.bulk_roles_modal">
   <modal data-type="composite" data-ref="bulk_roles_modal" title="{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}" size="md">
     <div class="space-y-4">
-      <p data-if="{{_global.userBulkRoleMode !== 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.add_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
-      <p data-if="{{_global.userBulkRoleMode === 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.remove_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      <!-- 안내 문구는 적용 전에만 — 적용하면 선택이 비워져 「0명에게…」로 바뀌므로 결과 화면에서는 결과 카드가 대신 말한다 -->
+      <p data-if="{{!_global.userBulkRoleResult && _global.userBulkRoleMode !== 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.add_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      <p data-if="{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}" class="text-gray-700 dark:text-gray-300">$t:admin.users.bulk_roles.remove_desc|count={{(_global.selectedIds_admin_users || []).length}}</p>
       <div data-ref="bulk_roles_field" data-if="{{!_global.userBulkRoleResult}}">
         <label class="form-label">$t:admin.users.bulk_roles.roles_label</label>
         <tag-input data-type="composite" data-ref="bulk_roles_input" value="{{_global.userBulkRoleIds ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}" placeholder="$t:admin.users.bulk_roles.roles_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue">
@@ -41,7 +42,8 @@
       <button data-ref="bulk_roles_apply" data-if="{{!_global.userBulkRoleResult}}" type="button" disabled="{{_global.isProcessing || (_global.userBulkRoleIds ?? []).length === 0}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <!-- 역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —
-               제외된 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아
+               제외된 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을
+               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아
                300ms 디바운스로 연타를 한 번으로 모은다. -->
           <sequence :debounce="300">
             <set-state target="global" :isProcessing="true" :userBulkRoleError="null"/>
@@ -50,8 +52,8 @@
                 <sequence>
                   <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]" userBulkRoleResult="{{response.data}}"/>
                   <toast type="success" message="{{response.message}}"/>
-                  <refetch-data-source dataSourceId="users"/>
                   <close-modal if="{{(response.data?.skipped_count ?? 0) === 0}}"/>
+                  <refetch-data-source dataSourceId="users"/>
                 </sequence>
               </success>
               <fail>

@@ -33,6 +33,10 @@ effects:
   - bulk_role_entry_from_pc_and_mobile
   - bulk_role_entry_locked_without_selection
   - last_role_skipped
+  # 역할 칸에서 검색어를 치거나 화살표로 옮긴 옵션을 Enter 로 고른다(태그 입력 Enter 가드가 막던 결함)
+  - bulk_role_keyboard_enter_selects_role
+  # 적용 직후 창 머리의 「선택한 회원 0명에게…」 가 비치지 않는다(결과 화면은 안내를 숨기고, 제외 0명이면 재요청 전에 닫는다)
+  - bulk_role_result_hides_zero_count_desc
 
 test_files:
   - tests/Feature/Api/Admin/UserBulkRolesTest.php

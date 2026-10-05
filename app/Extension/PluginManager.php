@@ -1499,7 +1499,9 @@ class PluginManager implements PluginManagerInterface
             'metadata' => $metadata,
             'requires_core' => $plugin->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
-            'permissions' => $plugin->getPermissions(),
+            // 선언은 {name, description, categories} 계층이지만 상세 창은 분류 배열을 그린다 —
+            // 모듈 정보(ModuleManager::getModuleInfo)와 같은 모양으로 categories 만 내보낸다.
+            'permissions' => $plugin->getPermissions()['categories'] ?? [],
             'roles' => $plugin->getRoles(),
             'config' => $plugin->getConfigValues(),
             'hooks' => $this->normalizeHooksToArray($plugin->getHooks()),
@@ -1555,7 +1557,7 @@ class PluginManager implements PluginManagerInterface
                 'metadata' => $pluginMetadata,
                 'requires_core' => $plugin->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
-                'permissions' => $plugin->getPermissions(),
+                'permissions' => $plugin->getPermissions()['categories'] ?? [],
                 'roles' => $plugin->getRoles(),
                 'config' => $plugin->getConfigValues(),
                 'hooks' => $this->normalizeHooksToArray($plugin->getHooks()),
@@ -1583,7 +1585,7 @@ class PluginManager implements PluginManagerInterface
             'metadata' => $metadata,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
-            'permissions' => $metadata['permissions'] ?? [],
+            'permissions' => $metadata['permissions']['categories'] ?? $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
             'config' => $metadata['config'] ?? [],
             'hooks' => $this->normalizeHooksToArray($metadata['hooks'] ?? []),
@@ -2285,7 +2287,7 @@ class PluginManager implements PluginManagerInterface
      * 여기서는 권한·역할만 대상으로 한다.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
      *
-     * @param  PluginInterface  $plugin
+     * @param  PluginInterface  $plugin  정리 기준이 되는 플러그인 정의
      * @return void 반환값 없음
      */
     protected function cleanupStalePluginEntries(PluginInterface $plugin): void
@@ -2664,9 +2666,9 @@ class PluginManager implements PluginManagerInterface
     /**
      * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
      *
-     * @param  string  $sourceType
-     * @param  string  $sourceIdentifier
-     * @return bool
+     * @param  string  $sourceType  정책을 등록한 출처 종류
+     * @param  string  $sourceIdentifier  정책을 등록한 출처 식별자
+     * @return bool 기존 정책이 하나라도 있으면 true
      */
     protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
     {
@@ -2683,9 +2685,9 @@ class PluginManager implements PluginManagerInterface
     /**
      * 해당 source 가 기존에 등록한 IDV 메시지 정의가 있는지 확인합니다 (데이터 손실 방어용).
      *
-     * @param  string  $extensionType
-     * @param  string  $extensionIdentifier
-     * @return bool
+     * @param  string  $extensionType  확장 종류
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @return bool 기존 메시지 정의가 하나라도 있으면 true
      */
     protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
@@ -2702,9 +2704,9 @@ class PluginManager implements PluginManagerInterface
     /**
      * 해당 source 가 기존에 등록한 알림 정의가 있는지 확인합니다 (데이터 손실 방어용).
      *
-     * @param  string  $extensionType
-     * @param  string  $extensionIdentifier
-     * @return bool
+     * @param  string  $extensionType  확장 종류
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @return bool 기존 알림 정의가 하나라도 있으면 true
      */
     protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
@@ -3959,7 +3961,7 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $pluginName  플러그인명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  bool  $force
+     * @param  bool  $force  true 면 활성 디렉토리가 이미 있어도 원본으로 덮어쓴다
      * @return void 반환값 없음
      */
     protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null, bool $force = false): void
@@ -4049,7 +4051,7 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $pluginFile  plugin.php 파일 경로
      * @param  string  $pluginClass  원본 클래스 FQCN
      * @param  string  $pluginDir  플러그인 디렉토리 경로
-     * @return ?PluginInterface
+     * @return ?PluginInterface 새로 읽은 플러그인 인스턴스(읽지 못하면 null)
      */
     protected function evalFreshPlugin(string $pluginFile, string $pluginClass, string $pluginDir): ?PluginInterface
     {
@@ -4936,7 +4938,7 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $operation  'install' | 'update'
      * @param  VendorMode|null  $previousMode  이전 설치 모드 (update 시 상속용)
      * @param  \Closure|null  $onProgress  진행 콜백
-     * @return VendorInstallResult
+     * @return VendorInstallResult vendor 구성 결과
      *
      * @throws VendorInstallException
      */
@@ -4986,8 +4988,8 @@ class PluginManager implements PluginManagerInterface
     /**
      * DB에 기록된 이전 vendor 설치 모드를 조회합니다 (update 시 상속용).
      *
-     * @param  string  $identifier
-     * @return ?VendorMode
+     * @param  string  $identifier  플러그인 식별자
+     * @return ?VendorMode 이전 설치 모드(기록이 없거나 알 수 없는 값이면 null)
      */
     private function getPreviousVendorMode(string $identifier): ?VendorMode
     {

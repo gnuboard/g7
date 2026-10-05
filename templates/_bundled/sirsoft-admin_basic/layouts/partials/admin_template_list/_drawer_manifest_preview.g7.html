@@ -6,8 +6,8 @@
     <p class="text-label mb-4">$t:admin.templates.modal.preview.description</p>
     <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.templates.tabs.no_file_selected" class="w-full">
       <on type="change">
-        <!-- 고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다. -->
-        <set-state target="global" templatePreviewFile="{{$event.target.value}}" templatePreviewFileName="{{$event.target.value?.name}}"/>
+        <!-- 고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다. -->
+        <set-state target="global" templatePreviewFile="{{$event.target.value}}" templatePreviewFileName="{{$event.target.value?.name}}" :templatePreviewResult="null"/>
       </on>
     </file-input>
     <button data-if="{{_global.templatePreviewFile}}" type="button" disabled="{{_global.isTemplatePreviewLoading}}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
@@ -40,7 +40,7 @@
           <icon name="{{_global.templatePreviewResult?.manifest?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
         </div>
         <div class="min-w-0">
-          <p data-if="{{_global.templatePreviewResult?.icon?.present && _global.templatePreviewResult?.icon?.valid}}" class="text-success-soft">$t:defer:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}</p>
+          <p data-if="{{_global.templatePreviewResult?.icon?.present && _global.templatePreviewResult?.icon?.valid}}" class="text-success-soft">$t:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}</p>
           <p data-if="{{_global.templatePreviewResult?.icon?.present && !_global.templatePreviewResult?.icon?.valid}}" class="text-warning-soft">$t:extensions.manifest_preview.icon_invalid</p>
           <p data-if="{{!_global.templatePreviewResult?.icon?.present}}" class="text-label-subtle">$t:extensions.manifest_preview.icon_missing</p>
           <div data-each="w in _global.templatePreviewResult?.icon?.warnings" class="text-label-subtle text-xs mt-1">

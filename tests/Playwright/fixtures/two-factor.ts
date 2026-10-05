@@ -192,8 +192,10 @@ function mailSettingsPath(): string {
 /**
  * 메일 설정을 SMTP 싱크로 돌린다.
  *
- * 값 3개만 줄 단위로 치환한다 — 재직렬화하면 운영자 파일의 서식이 통째로 바뀐다.
- * `encryption` 을 비우는 이유는 싱크가 STARTTLS 를 제공하지 않기 때문이다.
+ * 값 4개만 줄 단위로 치환한다 — 재직렬화하면 운영자 파일의 서식이 통째로 바뀐다.
+ * `mailer` 를 smtp 로 바꾸는 이유는 사이트가 API 메일러(Mailgun·SES 등)를 쓰면 host·port 를 바꿔도
+ * 메일이 싱크가 아니라 실제 서비스로 나가 발송이 실패하고 로그인이 503 으로 막히기 때문이다
+ * (그런 설정은 `host` 가 null 이기도 하다). `encryption` 을 비우는 이유는 싱크가 STARTTLS 를 제공하지 않기 때문이다.
  *
  * @param port 싱크 포트
  * @returns 백업 파일 경로 (설정 파일이 없으면 null)
@@ -209,8 +211,9 @@ function redirectMailToSink(port: number): string | null {
 
   const original = readFileSync(path, 'utf-8');
   const swapped = original
-    .replace(/"host"(\s*):(\s*)"[^"]*"/, `"host"$1:$2"127.0.0.1"`)
-    .replace(/"port"(\s*):(\s*)\d+/, `"port"$1:$2${port}`)
+    .replace(/"mailer"(\s*):(\s*)("[^"]*"|null)/, '"mailer"$1:$2"smtp"')
+    .replace(/"host"(\s*):(\s*)("[^"]*"|null)/, `"host"$1:$2"127.0.0.1"`)
+    .replace(/"port"(\s*):(\s*)(\d+|null|"[^"]*")/, `"port"$1:$2${port}`)
     .replace(/"encryption"(\s*):(\s*)("[^"]*"|null)/, '"encryption"$1:$2""');
 
   writeFileSync(path, swapped, 'utf-8');

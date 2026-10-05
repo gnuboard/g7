@@ -922,7 +922,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
-                                                "comment": "정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을\n                   방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).\n                   페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.\n                   대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다).",
+                                                "comment": "정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을\n                   방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).\n                   옵션은 표 머리글로 정렬할 수 있는 열마다 오름·내림 두 개씩 둔다 — 하나라도 빠지면\n                   그 머리글로 정렬했을 때 이 칸이 빈 칸으로 보인다.\n                   페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.\n                   대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다).",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -965,6 +965,38 @@
                                                 {
                                                     "value": "name_desc",
                                                     "label": "$t:admin.users.sort.name_desc"
+                                                },
+                                                {
+                                                    "value": "email_asc",
+                                                    "label": "$t:admin.users.sort.email_asc"
+                                                },
+                                                {
+                                                    "value": "email_desc",
+                                                    "label": "$t:admin.users.sort.email_desc"
+                                                },
+                                                {
+                                                    "value": "country_asc",
+                                                    "label": "$t:admin.users.sort.country_asc"
+                                                },
+                                                {
+                                                    "value": "country_desc",
+                                                    "label": "$t:admin.users.sort.country_desc"
+                                                },
+                                                {
+                                                    "value": "language_asc",
+                                                    "label": "$t:admin.users.sort.language_asc"
+                                                },
+                                                {
+                                                    "value": "language_desc",
+                                                    "label": "$t:admin.users.sort.language_desc"
+                                                },
+                                                {
+                                                    "value": "status_asc",
+                                                    "label": "$t:admin.users.sort.status_asc"
+                                                },
+                                                {
+                                                    "value": "status_desc",
+                                                    "label": "$t:admin.users.sort.status_desc"
                                                 }
                                             ]
                                         }

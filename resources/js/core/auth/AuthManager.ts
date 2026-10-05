@@ -66,8 +66,28 @@ export interface TwoFactorChallenge {
  * @since engine-v1.65.0
  */
 export type LoginResult =
-  | { status: 'authenticated'; user: AuthUser }
+  | { status: 'authenticated'; user: AuthUser; extras?: LoginExtras }
   | { status: 'two_factor_required'; challenge: TwoFactorChallenge };
+
+/**
+ * 세션을 연 로그인 응답에 서버가 덧붙인 안내 필드 (토큰·사용자 제외)
+ *
+ * 예: 휴면이 풀린 로그인에만 실리는 `dormancy_restored`. 서버가 실었을 때만 키가 있다 —
+ * 레이아웃이 그 키의 존재를 조건으로 안내를 띄우기 때문이다.
+ *
+ * @since engine-v1.76.0
+ */
+export type LoginExtras = Record<string, unknown>;
+
+/**
+ * 2단계 인증을 마친 세션
+ *
+ * @since engine-v1.76.0
+ */
+export interface TwoFactorSession {
+  user: AuthUser;
+  extras?: LoginExtras;
+}
 
 /**
  * 인증된 사용자 정보
@@ -100,11 +120,27 @@ type EventHandler = (...args: any[]) => void;
  */
 interface LoginResponseData {
   token?: string;
+  token_type?: string;
   user?: AuthUser;
   two_factor_required?: boolean;
   challenge_id?: string;
   provider_id?: string;
   expires_at?: string | null;
+  [key: string]: unknown;
+}
+
+/**
+ * 세션을 연 응답에서 토큰·사용자·2단계 표지를 뺀 나머지 필드를 고릅니다.
+ *
+ * 토큰은 ApiClient 가 보관한다 — 레이아웃 상태(`response`)로 흘려보내지 않는다.
+ *
+ * @param data 로그인·2단계 인증 응답의 data
+ * @returns 남은 필드 (없으면 undefined — 결과 모양을 종전과 같게 둔다)
+ */
+function pickLoginExtras(data: LoginResponseData): LoginExtras | undefined {
+  const { token: _token, token_type: _tokenType, user: _user, two_factor_required: _twoFactor, ...rest } = data;
+
+  return Object.keys(rest).length > 0 ? rest : undefined;
 }
 
 /**
@@ -336,10 +372,11 @@ export class AuthManager {
         // 두 필드가 모두 있을 때만 세션을 연다 — 한쪽만 보고 진행하면 undefined 토큰이
         // 저장되어 이후 모든 요청이 401 이 된다.
         if (response.data.token && response.data.user) {
-          return {
-            status: 'authenticated',
-            user: this.establishSession(type, response.data.token, response.data.user),
-          };
+          const user = this.establishSession(type, response.data.token, response.data.user);
+          // 서버가 덧붙인 안내(휴면 해제 등)를 버리면 화면이 그 사실을 알 길이 없다 (engine-v1.76.0).
+          const extras = pickLoginExtras(response.data);
+
+          return extras ? { status: 'authenticated', user, extras } : { status: 'authenticated', user };
         }
       }
 
@@ -354,6 +391,8 @@ export class AuthManager {
   /**
    * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
    *
+   * 서버가 덧붙인 안내 필드가 필요하면 {@link completeTwoFactorSession} 을 쓴다.
+   *
    * @param type - 인증 타입
    * @param payload - challenge 식별자와 사용자가 받은 인증번호
    * @param options - 추가 옵션 (headers 등)
@@ -365,6 +404,26 @@ export class AuthManager {
     payload: { challengeId: string; code: string },
     options?: { headers?: Record<string, string> }
   ): Promise<AuthUser> {
+    return (await this.completeTwoFactorSession(type, payload, options)).user;
+  }
+
+  /**
+   * 2단계 인증 코드를 확인하고 로그인을 완료한 세션을 돌려줍니다.
+   *
+   * {@link completeTwoFactor} 의 반환(사용자만)은 공개 계약이라 그대로 두고, 서버가 덧붙인 안내
+   * 필드(휴면 해제 등)를 함께 받아야 하는 호출자 — `loginTwoFactor` 핸들러 — 가 이 메서드를 쓴다.
+   *
+   * @param type - 인증 타입
+   * @param payload - challenge 식별자와 사용자가 받은 인증번호
+   * @param options - 추가 옵션 (headers 등)
+   * @returns 인증된 사용자와 서버 안내 필드
+   * @since engine-v1.76.0
+   */
+  async completeTwoFactorSession(
+    type: AuthType,
+    payload: { challengeId: string; code: string },
+    options?: { headers?: Record<string, string> }
+  ): Promise<TwoFactorSession> {
     const apiClient = getApiClient();
     const config = this.config.get(type);
 
@@ -385,7 +444,10 @@ export class AuthManager {
       );
 
       if (response.success && response.data?.token && response.data?.user) {
-        return this.establishSession(type, response.data.token, response.data.user);
+        const user = this.establishSession(type, response.data.token, response.data.user);
+        const extras = pickLoginExtras(response.data);
+
+        return extras ? { user, extras } : { user };
       }
 
       throw new Error('Login failed');
@@ -708,7 +770,7 @@ export class AuthManager {
 
     if (redirectUrl) {
       // 보안: 같은 도메인 경로만 허용. `startsWith('/')` 만으로는 `//evil.com`·`/\evil.com` 이
-      // 통과해 오프사이트로 나가므로 sink 와 같은 판정(navPolicy)을 쓴다(KVE-2026-2348).
+      // 통과해 오프사이트로 나가므로 sink 와 같은 판정(navPolicy)을 쓴다.
       try {
         const decoded = decodeURIComponent(redirectUrl);
         const safe = sanitizeNavPath(decoded);

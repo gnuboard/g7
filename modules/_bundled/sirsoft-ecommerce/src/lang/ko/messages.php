@@ -217,6 +217,7 @@ return [
         'guest_password_reset_not_guest' => '비회원 주문만 조회 비밀번호를 재설정할 수 있습니다.',
         'deposit_confirmed' => '입금이 확인되어 결제완료 처리되었습니다.',
         'deposit_recorded' => '입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.',
+        'deposit_recorded_status_kept' => '입금 내역과 결제금액을 기록했습니다. 이미 결제 이후 단계인 주문이라 주문 상태는 그대로 유지됩니다.',
         'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
         'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
         'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
@@ -1363,5 +1364,9 @@ return [
     // 대시보드
     'dashboard' => [
         'fetch_success' => '대시보드 데이터를 조회했습니다.',
+    ],
+    // 알림 수신자 규칙 「관련 사용자」의 관계 이름 — 알림 설정 화면이 관계 키 대신 보인다.
+    'notification_relations' => [
+        'author' => '문의 작성자',
     ],
 ];

@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_1_0;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -18,12 +19,16 @@ use PHPUnit\Framework\Attributes\Test;
  * - 이미 값이 있는 행은 건드리지 않는다
  * - 외부 이미지만 있는 행은 null 유지
  * - 재실행해도 결과가 동일하다 (멱등)
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class ContentThumbnailBackfillTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'content-thumbnail-backfill';
@@ -31,6 +36,8 @@ class ContentThumbnailBackfillTest extends BoardTestCase
 
     /**
      * 1.1.0 백필 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runBackfill(): void
     {
@@ -40,9 +47,13 @@ class ContentThumbnailBackfillTest extends BoardTestCase
     }
 
     /**
+     * 본문 썸네일이 비어 있던 옛 게시글은 본문의 첫 내부 이미지로 채워진다.
+     *
      * @scenario backfill=legacy_row
      *
      * @effects backfill_fills_legacy_rows
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function legacy_rows_are_backfilled_with_first_internal_image(): void
@@ -64,9 +75,13 @@ class ContentThumbnailBackfillTest extends BoardTestCase
     }
 
     /**
+     * 이미 썸네일이 있는 게시글은 건드리지 않는다.
+     *
      * @scenario backfill=already_filled
      *
      * @effects backfill_fills_legacy_rows
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function already_filled_rows_are_untouched(): void
@@ -86,9 +101,13 @@ class ContentThumbnailBackfillTest extends BoardTestCase
     }
 
     /**
+     * 본문에 외부 이미지만 있는 게시글은 썸네일이 빈 채로 남는다.
+     *
      * @scenario backfill=external_only
      *
      * @effects backfill_keeps_external_only_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function external_only_rows_stay_null(): void
@@ -114,6 +133,8 @@ class ContentThumbnailBackfillTest extends BoardTestCase
      * @scenario backfill=text_mode
      *
      * @effects text_mode_content_never_caches
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function text_mode_rows_are_not_backfilled(): void
@@ -132,9 +153,13 @@ class ContentThumbnailBackfillTest extends BoardTestCase
     }
 
     /**
+     * 두 번 실행해도 결과가 같다.
+     *
      * @scenario backfill=idempotent
      *
      * @effects backfill_idempotent_second_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function second_run_is_idempotent(): void

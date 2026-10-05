@@ -42,7 +42,7 @@ const DEFAULT_DEBOUNCE_MS = 2000;
 const DEFAULT_MAX_BYTES = 2 * 1024 * 1024;
 
 /**
- * 초안 수명 — 이보다 오래된 것은 읽지도, 다시 쓰지도 않는다 (PO 결정 2026-09-12).
+ * 초안 수명 — 이보다 오래된 것은 읽지도, 다시 쓰지도 않는다 (결정 2026-09-12).
  *
  * 수명이 없으면 초안은 영원히 남는다. 실측 2026-09-12: 전날 19:21 에 남은 초안 3건이
  * 11시간 뒤에도 «저장하지 않은 편집 N건이 있습니다» 배너에 그대로 올라왔다. 그 배너는
@@ -138,7 +138,7 @@ function trimToLimit(drafts: FileDraftMap, maxBytes: number): FileDraftMap {
 }
 
 /**
- * 미저장 편집분을 브라우저에 적어 두고 되살립니다 (PO 결정 D-4).
+ * 미저장 편집분을 브라우저에 적어 두고 되살립니다 (결정 D-4).
  *
  * ## 자동 복원하지 않는 이유
  *
@@ -187,13 +187,14 @@ export function useFileDrafts({
   const pendingWriteRef = useRef(false);
 
   /**
-   * 이 문서가 **의도적으로 지운** 키.
+   * 이 문서가 **의도적으로 지운** 키와 그 시각.
    *
    * 아래 `flush()` 는 저장소를 다시 읽어 병합하므로, 지운 키를 기억해 두지 않으면 병합이
    * 그것을 도로 살려 낸다(저장에 성공해 지운 초안이 다음 진입에서 다시 «복원할까요» 로
-   * 뜬다). 삭제는 병합보다 세다.
+   * 뜬다). 삭제는 병합보다 세다 — 다만 **지운 시점까지 적힌 것에만** 세다. 지운 뒤 다른 탭이
+   * 같은 파일을 고쳐 새로 적은 초안까지 지우면 그 탭의 편집분이 말없이 사라진다.
    */
-  const removedRef = useRef<Set<string>>(new Set());
+  const removedRef = useRef<Map<string, number>>(new Map());
 
   /**
    * 초안을 저장소에 적습니다.
@@ -203,8 +204,8 @@ export function useFileDrafts({
    * 말없이 지웠고(실측 2026-09-12: 한 탭에서 지운 초안이 다른 탭의 언마운트 flush 로
    * 되살아나고, 주입한 초안은 반대로 사라졌다), 그 소실은 사용자가 알아챌 방법이 없었다.
    *
-   * 병합 규칙은 «내 변경이 이긴다» 다 — 저장소 위에 내 맵을 얹고, 내가 지운 키만 덜어낸다.
-   * 다른 탭이 적은 초안은 내 맵에 흡수되어 함께 살아남는다.
+   * 병합 규칙은 «더 나중에 적힌 쪽이 이긴다» 다 — 같은 키는 저장 시각(`savedAt`)이 늦은 쪽을 남기고,
+   * 내가 지운 키는 지운 시각보다 늦게 적힌 초안이 없을 때만 덜어낸다. 다른 탭이 적은 초안은 함께 살아남는다.
    */
   const flush = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -212,8 +213,24 @@ export function useFileDrafts({
     }
 
     try {
-      const merged: FileDraftMap = { ...readDrafts(storageKey), ...draftsRef.current };
-      removedRef.current.forEach((key) => delete merged[key]);
+      const stored = readDrafts(storageKey);
+      const merged: FileDraftMap = { ...stored };
+
+      // 같은 키는 **더 나중에 적힌 쪽**이 이긴다. 내 맵에는 진입 때 읽어 둔 남의 초안 사본도 섞여
+      // 있어서, «내 맵이 이긴다» 로 덮으면 그 뒤 다른 탭이 적은 새 초안이 옛 사본으로 되돌아간다
+      // (실측 2026-10-03).
+      for (const [key, mine] of Object.entries(draftsRef.current)) {
+        const theirs = stored[key];
+        merged[key] = theirs && theirs.savedAt > mine.savedAt ? theirs : mine;
+      }
+
+      removedRef.current.forEach((removedAt, key) => {
+        if (merged[key] && merged[key].savedAt > removedAt) {
+          return;
+        }
+
+        delete merged[key];
+      });
 
       const trimmed = trimToLimit(merged, maxBytes);
       draftsRef.current = trimmed;
@@ -248,7 +265,7 @@ export function useFileDrafts({
 
   const forgetDraft = useCallback(
     (key: string) => {
-      removedRef.current.add(key);
+      removedRef.current.set(key, Date.now());
 
       const next = { ...draftsRef.current };
       delete next[key];
@@ -273,8 +290,9 @@ export function useFileDrafts({
   const forgetAllDrafts = useCallback(() => {
     // 저장소에만 있고 내 맵에는 없던 키(다른 탭이 적은 것)까지 확실히 지운다 — [버리기] 는
     // "지금 배너에 보이는 것" 이 아니라 이 네임스페이스 전체를 버리겠다는 뜻이다.
-    Object.keys(readDrafts(storageKey)).forEach((key) => removedRef.current.add(key));
-    Object.keys(draftsRef.current).forEach((key) => removedRef.current.add(key));
+    const removedAt = Date.now();
+    Object.keys(readDrafts(storageKey)).forEach((key) => removedRef.current.set(key, removedAt));
+    Object.keys(draftsRef.current).forEach((key) => removedRef.current.set(key, removedAt));
 
     draftsRef.current = {};
     setPendingDrafts({});

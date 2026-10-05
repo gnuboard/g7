@@ -10,7 +10,7 @@ description: |
 
   고침은 평면 배열을 **컴포넌트가** 폴더 트리로 세우는 것이다. 백엔드 응답 스키마는 그대로 두고
   이름의 슬래시로 폴더를 만든다 — 폴더는 실체가 아니라 이름의 일부이므로, 파일이 사라지면 빈 폴더도
-  함께 사라진다(PO 결정 D-2).
+  함께 사라진다(결정 D-2).
 
 axes:
   depth: [root, one_level, two_levels]
@@ -47,6 +47,11 @@ effects:
   - file_tree_picker_sheet_covers_the_viewport       # 모바일 시트는 전체 화면, 아래에서 올라온다 (§7.5)
   - file_tree_picker_overlay_closes_on_escape        # Esc 로 오버레이·스크림이 닫힌다
   - file_tree_picker_focuses_search_on_nonce         # 단축키(mod+k·mod+shift+f)가 검색창에 포커스 — 서랍이면 먼저 연다
+  - extension_override_badge_is_visible_in_the_tree # 확장 덮어쓰기 표지가 트리에 보인다
+  - code_editor_tree_reads_dirty_keys # 트리가 미저장 표시를 작업 영역의 dirty 키에서 읽는다
+  - code_editor_tree_hides_actions_without_permission # 편집 권한이 없으면 트리의 파일 조작 버튼을 감춘다
+  - extension_select_sets_selected_node_kind # 확장 조각을 고르면 선택 노드 종류가 extension 이 된다
+  - code_editor_new_folder_is_client_side_only # 새 폴더는 서버 호출 없이 트리에만 생긴다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTree.test.tsx

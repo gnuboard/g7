@@ -1244,6 +1244,10 @@ return [
         'bucket_bounds' => '구간 경계는 :min~:max 사이의 정수를 작은 것부터 겹치지 않게 쉼표로 적어야 합니다.',
     ],
 
+    // 검증 실패 요약(422 응답 message)의 나머지 오류 수 꼬리 — Laravel 원문 「(and :count more error)」(단수)와 「…errors)」(복수)를 대신한다
+    'summary_more_error' => '(외 :count개 오류)',
+    'summary_more_errors' => '(외 :count개 오류)',
+
     // 검증 속성명 (validation.attributes)
     'attributes' => [
         'since' => '기준 시각',

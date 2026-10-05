@@ -52,13 +52,15 @@ axes:
     - navigation_resets_reaction_overrides
     # 활성 표시는 색상만, 클릭 순간은 두 분기 모두 눌림(active:scale-95) — 레이아웃 계약
     - reaction_active_button_color_only_highlight
-    # 끈 기능의 정보가 응답 본문에 남지 않는지 (PO 지시 2026-09-16)
+    # 끈 기능의 정보가 응답 본문에 남지 않는지 (2026-09-16 결정)
     - use_reaction_off_payload_omits_reaction
     - deactivated_type_excluded_from_payload
 
 effects:
   # 등록/전환/해제 + 카운트 증감 정합성
   - register_inserts_row_and_increments_count
+  - admin_list_includes_reaction_total_when_enabled
+  - list_reaction_type_lookup_does_not_scale_with_rows # 목록의 활성 반응 유형 조회 수가 행 수에 비례하지 않는다
   - switch_updates_row_and_adjusts_both_counts
   - remove_deletes_row_and_decrements_count
   - reaction_count_never_negative

@@ -307,6 +307,10 @@
       "reason_label": "사유 (선택)",
       "reason_placeholder": "처리 사유를 입력하세요",
       "processing": "처리 중..."
+    },
+    "skipped": {
+      "title": "건너뛴 게시글",
+      "description": "아래 {{count}}개 게시글은 처리하지 않았습니다."
     }
   }
 }

@@ -5,7 +5,7 @@
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
-        "description": "{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"
+        "description": "{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"
     },
     "data_sources": [
         {

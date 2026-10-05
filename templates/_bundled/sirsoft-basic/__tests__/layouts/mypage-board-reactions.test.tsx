@@ -276,3 +276,13 @@ describe('내 반응 — 해제 모달', () => {
         }
     });
 });
+
+describe('내 반응 — 검색 0건 안내', () => {
+    // @scenario case=subtab_lists_rows_in_three_states
+    // @effects mypage_filtered_empty_says_no_results
+    it('검색·게시판·유형·대상 중 하나라도 걸려 있으면 검색 결과 없음을 낸다', () => {
+        const json = JSON.stringify(myReactions);
+        expect(json.includes('!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType')).toBe(true);
+        expect(json.includes('$t:board.no_search_results')).toBe(true);
+    });
+});

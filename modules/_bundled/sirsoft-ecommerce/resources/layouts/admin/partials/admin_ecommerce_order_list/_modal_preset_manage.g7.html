@@ -2,7 +2,7 @@
   삭제·새로 저장은 각각 **다른 창**을 열고 이 창은 닫히지 않은 채 그 위에 겹친다 — 그래서 대상
   프리셋을 `_global` 에 먼저 담고 연다(창끼리는 서로의 `_local` 을 보지 못한다). -->
 <partial description="Order List - Preset Management Modal">
-  <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description" size="md">
+  <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" size="md">
     <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty</div>
     <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
       <div data-each="presetItem in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">

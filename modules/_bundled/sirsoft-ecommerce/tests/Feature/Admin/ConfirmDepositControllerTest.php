@@ -21,6 +21,11 @@ class ConfirmDepositControllerTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 주문 수정 권한을 가진 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +34,9 @@ class ConfirmDepositControllerTest extends ModuleTestCase
 
     /**
      * 무통장·미결제 주문 + 입금자명/입금액 동봉 헬퍼
+     *
+     * @param  int  $totalDue  결제예정금액
+     * @return Order 입금대기 상태의 무통장 주문
      */
     private function makeDbankOrder(int $totalDue = 30000): Order
     {
@@ -61,6 +69,12 @@ class ConfirmDepositControllerTest extends ModuleTestCase
         return $order->fresh();
     }
 
+    /**
+     * 주문번호로 입금확인 엔드포인트 경로를 만듭니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return string 입금확인 API 경로
+     */
     private function url(Order $order): string
     {
         return "/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/confirm-deposit";
@@ -72,6 +86,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_confirm_syncs_option_status_via_complete_payment, manual_deposit_confirm_records_depositor_name
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_succeeds_and_marks_paid(): void
     {
@@ -105,6 +121,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_records_payment_only_without_order_transition
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_records_payment_only_when_not_marking_complete(): void
     {
@@ -149,6 +167,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_reconciles_payment_only_for_already_completed_order
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_reconciles_payment_for_status_completed_but_unpaid_order(): void
     {
@@ -163,6 +183,44 @@ class ConfirmDepositControllerTest extends ModuleTestCase
 
         $response->assertOk();
         $this->assertEquals(PaymentStatusEnum::PAID, $order->fresh()->payment->payment_status);
+    }
+
+    /**
+     * 상태를 상품준비중까지 먼저 올려 둔 주문에 입금을 기록하면, 체크 여부와 무관하게
+     * 상태는 그대로이고 주문 결제금액이 채워지며 응답도 그 결과를 말한다 (실측 2026-10-03).
+     *
+     * 종전에는 미체크면 「주문 상태는 결제대기로 유지됩니다」, 체크면 「결제완료 처리되었습니다」 로
+     * 응답해 실제(상품준비중 유지)와 어긋났고, 주문 결제금액이 0 으로 남아 환불 예정액이 0원이었다.
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_fills_order_paid_amount_when_status_already_past_payment, manual_deposit_does_not_regress_order_already_past_payment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_confirm_deposit_on_order_already_past_payment_keeps_status_and_says_so(): void
+    {
+        foreach ([false, true] as $markComplete) {
+            $order = $this->makeDbankOrder(30000);
+            $order->update(['order_status' => OrderStatusEnum::PREPARING]);
+
+            $response = $this->actingAs($this->adminUser)
+                ->patchJson($this->url($order->fresh()), [
+                    'amount' => 30000,
+                    'mark_order_complete' => $markComplete,
+                ]);
+
+            $response->assertOk();
+            $fresh = $order->fresh();
+            $this->assertEquals(OrderStatusEnum::PREPARING, $fresh->order_status, '결제 이후 주문이 결제완료로 되돌아갔습니다.');
+            $this->assertEquals(30000.0, (float) $fresh->total_paid_amount, '입금을 기록했는데 주문 결제금액이 0 입니다.');
+            $this->assertEquals(0.0, (float) $fresh->total_due_amount);
+            $this->assertSame(
+                __('sirsoft-ecommerce::messages.orders.deposit_recorded_status_kept'),
+                $response->json('message'),
+                'mark_order_complete='.var_export($markComplete, true).' 응답이 실제 결과(상태 유지)와 다릅니다.'
+            );
+        }
     }
 
     /**
@@ -183,6 +241,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_reconciles_order_totals_when_payment_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_reconciles_order_totals_when_payment_already_paid(): void
     {
@@ -249,6 +309,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
      *
      * @effects manual_deposit_reconciles_order_totals_when_bulk_status_skips_payment_complete
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_that_skips_payment_complete_still_reconciles_order_totals(): void
     {
@@ -288,6 +350,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_confirm_rejects_amount_mismatch_422
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_rejects_amount_mismatch(): void
     {
@@ -308,7 +372,9 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      *
      * @scenario terminal_path=manual_deposit_confirm, payment_method=card_pg, option_mix=all_active, actor=admin
      *
-     * @effects manual_deposit_confirm_rejects_amount_mismatch_422
+     * @effects manual_deposit_confirm_rejects_non_dbank_order_422
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_rejects_non_dbank_order(): void
     {
@@ -334,6 +400,8 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
      * @effects manual_deposit_rejects_when_payment_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_rejects_when_payment_already_paid(): void
     {
@@ -357,7 +425,9 @@ class ConfirmDepositControllerTest extends ModuleTestCase
      *
      * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
      *
-     * @effects manual_deposit_confirm_syncs_option_status_via_complete_payment
+     * @effects manual_deposit_confirm_requires_orders_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_deposit_requires_orders_update_permission(): void
     {

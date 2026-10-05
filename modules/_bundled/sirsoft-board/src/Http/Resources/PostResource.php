@@ -183,7 +183,7 @@ class PostResource extends BaseApiResource
      * 폼 응답에 본문 원문(과 첨부 목록)을 실어도 되는지 판정합니다.
      *
      * 폼 응답은 상세 조회의 비밀 게이트를 거치지 않아, 비밀번호 없이 비회원 비밀글 수정 폼을
-     * 부르거나 남의 비밀글에 답글 폼을 열면 원문이 그대로 나가던 결함(KVE-2026-2375)을 막습니다.
+     * 부르거나 남의 비밀글에 답글 폼을 열면 원문이 그대로 나가던 보안 결함을 막습니다.
      * 비밀글이 아니면 그대로 싣고, 비밀글이면 상세와 같은 SecretContentGate 를 거칩니다.
      *
      * 게시판 관리 권한자(Admin: admin.manage / User: manager)는 남의 글 수정 폼을 열 수 있는
@@ -245,7 +245,7 @@ class PostResource extends BaseApiResource
             // 없다. 캐시 컬럼(board_posts.reaction_counts)의 합이라 목록에서 COUNT 를 돌리지 않는다.
             // 반응을 끈 게시판에서는 키 자체를 싣지 않는다 — 캐시 컬럼을
             // 통째로 더하던 기존 식은 비활성 유형의 잔여 카운트까지 합산해 상세(0)와 어긋났다.
-            ...$this->getReactionTotalForList(),
+            ...$this->getReactionTotalForList($request),
 
             // 썸네일 이미지 (첫 번째 이미지 첨부파일)
             'thumbnail' => $this->getThumbnailUrlFromRelations(),
@@ -362,8 +362,8 @@ class PostResource extends BaseApiResource
      */
     private function getThumbnailUrlFromRelations(): ?string
     {
-        // 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
-        // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다(KVE-2026-1894).
+        // 보안: 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
+        // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다.
         // 판정은 첨부 목록과 같은 SecretContentGate(SSoT)를 쓴다. 필드는 남기고 값만 가린다.
         // 본문 캐시 폴백도 반드시 이 게이트 뒤 — 에디터 이미지는 공개 hash 서빙이라
         // 첨부와 달리 서빙측 차단이 없어, 이 게이트가 유일한 차단선이다.
@@ -577,9 +577,10 @@ class PostResource extends BaseApiResource
      * 게시판이 켠 활성 유형의 카운트만 더한다 — 유형을 비활성으로 돌린 뒤에도 캐시
      * 컬럼에는 옛 카운트가 남아 있어, 통째로 더하면 상세(활성 유형만 집계)와 어긋난다.
      *
+     * @param  Request  $request  HTTP 요청 (활성 유형 id 를 요청 안에서 한 번만 계산해 둔다)
      * @return array<string, int> `reaction_total` 한 칸 또는 빈 배열
      */
-    private function getReactionTotalForList(): array
+    private function getReactionTotalForList(Request $request): array
     {
         $board = $this->relationLoaded('board') ? $this->board : null;
 
@@ -590,11 +591,36 @@ class PostResource extends BaseApiResource
         $stored = $this->reaction_counts ?? [];
         $total = 0;
 
-        foreach (BoardResource::buildReactionTypeOptions($board->active_reaction_types ?? []) as $option) {
-            $total += (int) ($stored[(string) $option['id']] ?? 0);
+        foreach ($this->activeReactionTypeIds($request, $board) as $typeId) {
+            $total += (int) ($stored[$typeId] ?? 0);
         }
 
         return ['reaction_total' => $total];
+    }
+
+    /**
+     * 게시판이 켠 활성 반응 유형의 id 를 같은 요청 안에서 한 번만 조회해 돌려줍니다.
+     *
+     * 목록은 같은 게시판 글을 수십 행 그리는데, 행마다 유형 옵션을 새로 만들면 행 수만큼 유형 조회와
+     * 아이콘 첨부 적재가 반복된다. 게시판 id 와 켠 유형 목록을 키로 요청 속성에 담아 두고 다시 쓴다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  object  $board  게시판 모델
+     * @return array<int, string> 활성 반응 유형 id 목록 (카운트 키와 같은 문자열)
+     */
+    private function activeReactionTypeIds(Request $request, object $board): array
+    {
+        $codes = $board->active_reaction_types ?? [];
+        $key = 'sirsoft-board.active_reaction_type_ids.'.$board->id.':'.implode(',', $codes);
+
+        if (! $request->attributes->has($key)) {
+            $request->attributes->set($key, array_map(
+                fn (array $option): string => (string) $option['id'],
+                BoardResource::buildReactionTypeOptions($codes)
+            ));
+        }
+
+        return $request->attributes->get($key);
     }
 
     /**
@@ -882,7 +908,7 @@ class PostResource extends BaseApiResource
      * 주어진 게시글의 비밀 원문 열람 권한을 판정합니다 (SSoT 진입점).
      *
      * PostResource 외 경로(이커머스 문의 연동 훅, 댓글 목록/리소스, 첨부 서빙)가
-     * 동일 규칙으로 서버측 마스킹을 수행하도록 공유합니다(KVE-2026-1914).
+     * 동일 규칙으로 서버측 마스킹을 수행하도록 공유합니다.
      *
      * @param  Post  $post  대상 게시글
      * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
@@ -900,8 +926,8 @@ class PostResource extends BaseApiResource
     /**
      * 권한에 따라 필터링된 제목을 반환합니다.
      *
+     * @param  Request  $request  현재 요청
      * @param  string|null  $slug  게시판 슬러그
-     * @param  mixed  $request
      * @return string 필터링된 제목
      */
     private function getFilteredTitle(Request $request, ?string $slug): string

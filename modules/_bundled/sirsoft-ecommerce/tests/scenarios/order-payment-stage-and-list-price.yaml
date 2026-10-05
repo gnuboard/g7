@@ -1,0 +1,21 @@
+feature: 주문 결제 이후 판정과 주문 상품 정가 규칙의 단일 원천
+
+description: |
+  「결제 이후」 판정(결제완료 ~ 구매확정, 주문취소 제외)은 OrderStatusEnum::isPastPayment() 하나가 정한다.
+  입금 기록 서비스, 상태 전이의 결제금액 정합화, 주문 상세 응답 is_past_payment(관리자 입금확인 창)가 이것을 쓴다.
+  주문 상품 정가는 OrderOption::resolveListPriceFromSnapshots(옵션 스냅샷 정가 → 상품 정가 + 옵션 조정액 → null)이 정하고,
+  정가 근거가 없을 때의 판매 단가 대체는 resolveListOrUnitPriceFromSnapshots 가 정한다. 주문 상세와 클레임 비교 카드가
+  같은 규칙을 써서 상품 정가가 없는 주문에서도 두 화면 값이 같다.
+
+axes:
+  rule: [payment_stage, list_price]
+
+exclusions: []
+
+effects:
+  - order_status_past_payment_is_single_enum_rule
+  - order_option_list_price_rule_is_single
+  - order_option_list_price_fallback_matches_order_detail
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderPaymentStageAndListPriceRuleTest.php

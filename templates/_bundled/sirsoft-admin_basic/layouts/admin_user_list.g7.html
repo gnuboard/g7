@@ -338,10 +338,20 @@
               <option value="last_login_at_asc">$t:admin.users.sort.last_login_at_asc</option>
               <option value="name_asc">$t:admin.users.sort.name_asc</option>
               <option value="name_desc">$t:admin.users.sort.name_desc</option>
+              <option value="email_asc">$t:admin.users.sort.email_asc</option>
+              <option value="email_desc">$t:admin.users.sort.email_desc</option>
+              <option value="country_asc">$t:admin.users.sort.country_asc</option>
+              <option value="country_desc">$t:admin.users.sort.country_desc</option>
+              <option value="language_asc">$t:admin.users.sort.language_asc</option>
+              <option value="language_desc">$t:admin.users.sort.language_desc</option>
+              <option value="status_asc">$t:admin.users.sort.status_asc</option>
+              <option value="status_desc">$t:admin.users.sort.status_desc</option>
             </options>
             <on type="change">
               <!-- 정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을
                    방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).
+                   옵션은 표 머리글로 정렬할 수 있는 열마다 오름·내림 두 개씩 둔다 — 하나라도 빠지면
+                   그 머리글로 정렬했을 때 이 칸이 빈 칸으로 보인다.
                    페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.
                    대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다). -->
               <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">

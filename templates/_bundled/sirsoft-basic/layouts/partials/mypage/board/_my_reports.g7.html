@@ -85,7 +85,7 @@
           <on type="click">
             <!-- 검색 — 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
             <sequence>
-              <set-state target="global" :myReportsPage="1"/>
+              <set-state target="global" :myReportsPage="1" myReportsSearchApplied="{{_global.myReportsSearch ?? ''}}"/>
               <refetch-data-source dataSourceId="myReports"/>
             </sequence>
           </on>
@@ -95,7 +95,7 @@
           <on type="click">
             <!-- 초기화 — 게시판·상태·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
-              <set-state target="global" myReportsBoard="" myReportsStatus="" myReportsTargetType="" myReportsSearch="" myReportsSearchField="title_content" myReportsSort="latest" :myReportsPage="1"/>
+              <set-state target="global" myReportsBoard="" myReportsStatus="" myReportsTargetType="" myReportsSearch="" myReportsSearchApplied="" myReportsSearchField="title_content" myReportsSort="latest" :myReportsPage="1"/>
               <refetch-data-source dataSourceId="myReports"/>
             </sequence>
           </on>
@@ -118,14 +118,14 @@
               <!-- 신고 대상이 이미 사라진 경우 -->
               <span data-if="{{report.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reports.target_deleted</span>
             </div>
-            <!-- 신고한 글·댓글. 살아 있으면 눌러서 원글로 간다 -->
+            <!-- 신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다 -->
             <button data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
                 <navigate path="/board/{{report.board_slug}}/{{report.post_id}}"/>
               </on>
-              {{report.excerpt ?? report.title ?? ''}}
+              {{raw:report.title ?? report.excerpt ?? ''}}
             </button>
-            <span data-if="{{report.target_deleted || !report.board_slug || !report.post_id}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{report.excerpt ?? report.title ?? ''}}</span>
+            <span data-if="{{report.target_deleted || !report.board_slug || !report.post_id}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{raw:report.title ?? report.excerpt ?? ''}}</span>
             <!-- 내가 고른 사유와 덧붙인 설명 -->
             <div class="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
               <icon name="flag" size="sm" class="mt-0.5 flex-shrink-0"/>
@@ -144,7 +144,7 @@
                   <set-state target="global">
                     <field name="reportCancelModal">
                       <field name="id" value="{{report.id}}"/>
-                      <field name="title" value="{{report.excerpt ?? report.title ?? ''}}"/>
+                      <field name="title" value="{{report.title ?? report.excerpt ?? ''}}"/>
                     </field>
                   </set-state>
                   <open-modal target="report_cancel_modal"/>
@@ -158,7 +158,9 @@
       <!-- 신고 없음 -->
       <div data-testid="my-reports-empty" data-if="{{(myReports?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
         <icon name="flag" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
-        <p class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reports.empty</p>
+        <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
+        <p data-if="{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reports.empty</p>
+        <p data-if="{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
       </div>
     </div>
     <!-- 페이지네이션 -->

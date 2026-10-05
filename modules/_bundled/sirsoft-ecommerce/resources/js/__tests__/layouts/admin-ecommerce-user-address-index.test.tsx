@@ -72,7 +72,7 @@ describe('관리자 회원 배송지 목록 — 셸', () => {
         expect(layout.permissions).toContain('sirsoft-ecommerce.user-addresses.read');
     });
 
-    // @scenario list=user_address, search_field=member
+    // @scenario list=user_address
     // @effects ecommerce_admin_list_search_action_resets_page_and_carries_member_scope
     it('검색은 페이지를 되돌리고 회원 한정을 함께 옮긴다', () => {
         expect(searchAction.handler).toBe('navigate');
@@ -212,7 +212,7 @@ describe('관리자 회원 배송지 목록 — 표', () => {
         expect(layout.computed.canManage).toMatch(/abilities\?\.can_manage === true/);
     });
 
-    // @scenario list=user_address, member_cell=click
+    // @scenario list=user_address
     // @effects ecommerce_admin_list_member_name_opens_context_menu_not_navigation
     it('회원 이름은 곧바로 떠나지 않고 두 갈래 메뉴를 연다', () => {
         // 지우려고 조건을 세워 둔 목록에서 한 칸 잘못 누르면 그 조건을 다시 세워야 했다.
@@ -276,7 +276,7 @@ describe('관리자 회원 배송지 목록 — 표', () => {
             const call = flattenActions(modal).find((a: any) => a.handler === 'apiCall');
             const onError = flattenActions(call.onError);
 
-            expect(onError.some((a: any) => a.handler === 'openModal' && a.target === 'modal_error')).toBe(true);
+            expect(onError.some((a: any) => a.handler === 'openModal' && a.target === 'modal_addresses_error')).toBe(true);
         }
     });
 

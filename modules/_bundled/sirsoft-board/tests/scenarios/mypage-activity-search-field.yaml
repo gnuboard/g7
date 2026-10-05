@@ -46,6 +46,7 @@ exclusions:
   - { tab: activities, search_field: post_title, reason: "집계 탭 — 검색 없음" }
 
 effects:
+  - mypage_filtered_empty_says_no_results
   # 백엔드 — 검색 갈래
   - mypage_my_posts_search_field_title_content
   - mypage_my_posts_search_field_title_only

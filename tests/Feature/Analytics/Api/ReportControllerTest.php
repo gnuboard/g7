@@ -143,6 +143,82 @@ class ReportControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 유입 종류·기기 종류 리포트도 저장 코드가 아니라 화면 이름으로 나가는지 확인합니다.
+     *
+     * 유입 경로 「유입 유형」 표·도넛과 환경 「기기」 탭은 `label_display` 를 그대로 그린다. 이 두 차원이
+     * 변환 갈래에 없어 `direct`·`desktop` 같은 코드값이 화면에 나왔다(방문자 목록은 같은 코드를 번역한다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects report_rows_carry_display_labels
+     */
+    public function test_referrer_type_and_device_type_rows_carry_display_labels(): void
+    {
+        $this->dimensionRow(StatsDimension::ReferrerType->value, 'direct');
+        $this->dimensionRow(StatsDimension::DeviceType->value, 'desktop');
+
+        $service = app(ReportService::class);
+        $today = now('UTC')->toDateString();
+
+        // ja 문구는 언어팩이 설치돼야 생긴다(테스트 환경에는 없어 기본 언어로 떨어진다) — 코어 원본 두 언어로 잰다.
+        $labels = [];
+        foreach (['ko', 'en'] as $locale) {
+            $labels['referrer'][$locale] = $service->report('referrer_type', $today, $today, ['locale' => $locale])['rows'][0]['label_display'];
+            $labels['device'][$locale] = $service->report('device_type', $today, $today, ['locale' => $locale])['rows'][0]['label_display'];
+        }
+
+        $this->assertSame(['ko' => '직접 유입', 'en' => 'Direct'], $labels['referrer']);
+        $this->assertSame(['ko' => '데스크톱', 'en' => 'Desktop'], $labels['device']);
+
+        // 저장 라벨은 기계가 읽는 값 그대로 — 검색·추이 조회가 이 값으로 행을 찾는다
+        $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/reports/referrer_type?preset=today')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.label', 'direct');
+
+        // 알 수 없는 코드는 원값 그대로 둔다
+        $this->dimensionRow(StatsDimension::ReferrerType->value, 'mystery', ['visits' => 1]);
+        $rows = $service->report('referrer_type', $today, $today, ['locale' => 'ko'])['rows'];
+        $this->assertContains('mystery', array_column($rows, 'label_display'));
+    }
+
+    /**
+     * 유입 종류·기기 종류의 「항목 검색」이 화면에 보이는 이름으로도 찾는지 확인합니다.
+     *
+     * 표에는 「직접 유입」이 보이는데 검색은 저장 코드(`direct`)만 맞춰 보면, 보이는 글자로 찾을 때 0건이 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects report_search_matches_what_the_screen_shows
+     */
+    public function test_code_dimension_search_matches_the_display_name(): void
+    {
+        $this->dimensionRow(StatsDimension::ReferrerType->value, 'direct');
+        $this->dimensionRow(StatsDimension::ReferrerType->value, 'search', ['visits' => 3]);
+        $this->dimensionRow(StatsDimension::DeviceType->value, 'mobile');
+        $this->dimensionRow(StatsDimension::DeviceType->value, 'desktop', ['visits' => 2]);
+
+        $admin = $this->readAdmin();
+        $labels = fn (string $report, string $q): array => array_column(
+            $this->actingAs($admin)
+                ->withHeaders(['Accept-Language' => 'ko'])
+                ->getJson('/api/admin/analytics/reports/'.$report.'?preset=today&q='.rawurlencode($q))
+                ->json('data.data'),
+            'label',
+        );
+
+        $this->assertSame(['direct'], $labels('referrer_type', '직접'), '화면 이름으로 찾는다');
+        $this->assertSame(['search'], $labels('referrer_type', '검색엔진'));
+        $this->assertSame(['direct'], $labels('referrer_type', 'dir'), '저장 코드로 찾던 것은 종전대로');
+        $this->assertSame(['mobile'], $labels('device_type', '휴대'));
+        $this->assertSame([], $labels('device_type', '없는기기'));
+    }
+
+    /**
      * 페이지 라벨이 화면에서 읽히는 글자로 나가는지 확인합니다.
      *
      * 저장 라벨은 기계가 읽는 값이라 인코딩된 채 두고, 화면용 라벨만 풉니다.

@@ -3141,7 +3141,9 @@
           "onSearchContent": { "type": "function", "required": false, "description": "내용 검색 (Ctrl+Shift+F)" },
           "onExit": { "type": "function", "required": false, "description": "나가기 (Esc)" },
           "knownKeys": { "type": "array", "required": false, "description": "서버 목록에 있는 파일 키 전부 — 여기 없는 열린 탭은 «없는 파일» 로 읽기 전용이 된다. 비어 있으면 판정하지 않는다" },
-          "onSaveAs": { "type": "function", "required": false, "description": "«없는 파일» 의 편집분을 새 이름으로 살린다 ({target:{value}}) => void" },
+          "onSaveAs": { "type": "function", "required": false, "description": "«없는 파일» 의 편집분을 새 이름으로 살린다 ({target:{value, key}}) => void — key 는 살리는 원래 파일의 키(생성 성공 뒤 retiredKey 로 돌려준다)" },
+          "retiredKey": { "type": "string", "required": false, "description": "부모가 «끝났다» 고 알린 키 — 새 이름으로 살린 없는 파일의 탭과 초안을 거둔다" },
+          "lastSave": { "type": "object", "required": false, "description": "방금 성공한 내 저장 {key, value, revision} — 서버가 정규화해 돌려준 그 판본을 충돌이 아니라 내 저장으로 받아들인다" },
           "className": { "type": "string", "required": false, "default": "", "description": "추가 클래스명" }
         }
       },

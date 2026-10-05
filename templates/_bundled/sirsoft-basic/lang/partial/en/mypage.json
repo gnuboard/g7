@@ -412,14 +412,14 @@
             "total_posts": "Posts Written",
             "total_comments": "Comments Written",
             "total_views": "Total Views",
-            "total_reactions": "Reactions left",
-            "total_reports": "Reports filed"
+            "total_reactions": "Reactions Left",
+            "total_reports": "Reports Filed"
         },
         "tabs": {
             "my_posts": "My Posts",
             "my_comments": "My Comments",
-            "my_reactions": "My reactions",
-            "my_reports": "My reports"
+            "my_reactions": "My Reactions",
+            "my_reports": "My Reports"
         },
         "filter": {
             "all_boards": "All"

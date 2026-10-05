@@ -2,6 +2,9 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Models\Post;
@@ -10,7 +13,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 반응 응답 게이트 테스트 (PO 지시 2026-09-16).
+ * 반응 응답 게이트 테스트 (2026-09-16 결정).
  *
  * 「반응 기능이나 특정 반응을 더 이상 쓰지 않기로 했는데 API 에는 반응 정보가 포함돼
  * 나가면 곤란하다」 — 끈 기능의 정보가 응답 본문에 남지 않는지를 표면마다 잠근다.
@@ -56,8 +59,8 @@ class ReactionPayloadGateTest extends BoardTestCase
      *
      * 반응을 끄거나 유형을 비활성으로 돌려도 캐시 컬럼의 옛 카운트는 그대로 남는다 —
      * 누출은 바로 그 잔여 값이 응답에 실려 나가는 것이므로, 잔여 값을 심어 재현한다.
-     * @param $counts counts 값
      *
+     * @param  $counts  counts 값
      * @return int 정수 식별자
      */
     private function createPostWithCounts(array $counts): int
@@ -81,8 +84,7 @@ class ReactionPayloadGateTest extends BoardTestCase
     /**
      * 테스트을(를) 돕는 헬퍼입니다.
      *
-     * @param $postId postId 값
-     *
+     * @param  $postId  postId 값
      * @return string 문자열
      */
     private function detailUrl(int $postId): string
@@ -109,7 +111,82 @@ class ReactionPayloadGateTest extends BoardTestCase
     }
 
     /**
-     * 반응 OFF — 목록 응답에 reaction_total 키 자체가 없다 (PO 결정: 0 이 아니라 키 제거).
+     * 관리자 게시글 목록 — 「반응」 열이 읽는 reaction_total 이 사용자 목록과 같은 합계로 실린다.
+     *
+     * 목록 저장소는 board 관계를 싣지 않아 컨트롤러가 붙여 줘야 한다. 관리자 목록은 붙이지 않아
+     * 키가 빠졌고, 화면은 `row.reaction_total || 0` 이라 반응이 있는 글도 늘 0 으로 보였다
+     * (브라우저 실측 2026-10-03: 비추천 1건이 있는 글이 관리자 목록에서 0).
+     *
+     * @scenario case=register_first_like
+     *
+     * @effects admin_list_includes_reaction_total_when_enabled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_list_includes_reaction_total_when_enabled(): void
+    {
+        $this->createPostWithCounts([(string) $this->likeId => 3, (string) $this->dislikeId => 2]);
+
+        $adminRole = Role::where('identifier', 'admin')->firstOrFail();
+        $identifier = "sirsoft-board.{$this->board->slug}.admin.posts.read";
+        $permission = Permission::firstOrCreate(
+            ['identifier' => $identifier],
+            ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => 'admin'],
+        );
+        $adminRole->permissions()->syncWithoutDetaching([$permission->id]);
+
+        $admin = User::factory()->create(['is_super' => true, 'status' => 'active']);
+        $admin->roles()->attach($adminRole->id);
+
+        $row = $this->actingAs($admin)
+            ->getJson("/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts")
+            ->assertOk()
+            ->json('data.data.0');
+
+        $this->assertSame(5, $row['reaction_total'] ?? null);
+    }
+
+    /**
+     * 목록 — 활성 반응 유형 조회 수가 행 수에 비례하지 않는다.
+     *
+     * 행마다 반응 합계를 내려면 게시판이 켠 활성 유형이 필요한데, 행마다 새로 조회하면 목록 한 쪽에
+     * 유형 조회와 아이콘 첨부 적재가 행 수만큼 붙는다. 같은 요청 안에서는 한 번만 조회해 다시 쓴다.
+     *
+     * @scenario case=register_first_like
+     *
+     * @effects list_reaction_type_lookup_does_not_scale_with_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_reaction_type_lookup_does_not_scale_with_rows(): void
+    {
+        $countLookups = function (): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->getJson($this->listUrl())->assertOk();
+            $queries = DB::getQueryLog();
+            DB::disableQueryLog();
+
+            return count(array_filter(
+                $queries,
+                fn (array $query): bool => str_contains($query['query'], 'board_reaction_types')
+            ));
+        };
+
+        $this->createPostWithCounts([(string) $this->likeId => 1]);
+        $withOneRow = $countLookups();
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->createPostWithCounts([(string) $this->likeId => 1]);
+        }
+        $withFiveRows = $countLookups();
+
+        $this->assertGreaterThan(0, $withOneRow);
+        $this->assertSame($withOneRow, $withFiveRows);
+    }
+
+    /**
+     * 반응 OFF — 목록 응답에 reaction_total 키 자체가 없다 (결정: 0 이 아니라 키 제거).
      *
      * @scenario case=use_reaction_off_payload_omits_reaction
      *

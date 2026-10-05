@@ -6,6 +6,9 @@
   <modal data-type="composite" data-ref="report_cancel_modal" id="report_cancel_modal" title="$t:mypage.board_activities.reports.cancel_title" icon="flag" iconClassName="text-red-500" size="sm">
     <div data-testid="report-cancel-modal" class="space-y-4">
       <p class="text-gray-600 dark:text-gray-400">$t:mypage.board_activities.reports.cancel_confirm</p>
+      <!-- 어느 신고를 거두는지 — 목록이 담아 둔 대상(글은 제목, 댓글은 본문 요약)을 그대로 보인다.
+           반응 해제 창과 같은 자리이며, 여러 건을 차례로 취소할 때 엉뚱한 행을 누르지 않게 한다. -->
+      <p data-testid="report-cancel-target" data-if="{{!!_global.reportCancelModal?.title}}" class="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg line-clamp-2">{{raw:_global.reportCancelModal?.title}}</p>
       <p class="text-sm text-gray-500 dark:text-gray-500">$t:mypage.board_activities.reports.cancel_notice</p>
       <div class="flex justify-end gap-3">
         <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">

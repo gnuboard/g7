@@ -10,8 +10,6 @@
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title",
         "size": "sm",
-        "titleIcon": "alert-circle",
-        "titleIconColor": "warning",
         "footer": [
             {
                 "type": "basic",

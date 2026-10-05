@@ -69,6 +69,9 @@ effects:
   - zero_accepted_on_settings
   - negative_rejected
   - over_max_rejected
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - empty_allowed_extensions_does_not_produce_empty_mimes_rule
+  - null_allowed_extensions_does_not_produce_empty_mimes_rule
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php

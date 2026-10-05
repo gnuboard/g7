@@ -85,6 +85,7 @@
 | `challenge_id` | string | 인증번호 확인에 그대로 전달할 식별자 |
 | `provider_id` | string | 인증번호를 보낸 프로바이더 |
 | `expires_at` | string \| null | 인증 요청 만료 시각 (ISO8601) |
+| `dormancy_restored` | boolean | 휴면 계정이 이 로그인으로 풀렸으면 `true` (서버가 실었을 때만 있음, engine-v1.76.0+). `loginTwoFactor` 의 결과에도 같은 필드가 실린다 |
 
 분기를 두지 않으면 인증이 끝나기 전에 홈으로 이동하거나, 빈 사용자 정보가 상태에 실립니다.
 

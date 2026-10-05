@@ -26,13 +26,14 @@
             "name": "FileInput",
             "actions": [
                 {
-                    "comment": "고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다.",
+                    "comment": "고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다.",
                     "type": "change",
                     "handler": "setState",
                     "params": {
                         "target": "global",
                         "templatePreviewFile": "{{$event.target.value}}",
-                        "templatePreviewFileName": "{{$event.target.value?.name}}"
+                        "templatePreviewFileName": "{{$event.target.value?.name}}",
+                        "templatePreviewResult": null
                     }
                 }
             ],
@@ -196,7 +197,7 @@
                                     "props": {
                                         "className": "text-success-soft"
                                     },
-                                    "text": "$t:defer:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}"
+                                    "text": "$t:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}"
                                 },
                                 {
                                     "type": "basic",

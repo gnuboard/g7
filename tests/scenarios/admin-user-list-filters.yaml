@@ -39,6 +39,7 @@ test_files:
   - tests/Feature/Database/UsersFilterIndexesMigrationTest.php
   - tests/Unit/Services/UserListQueryExtensionHookTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/adminUserListFilterSection.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/adminUserListSortSelect.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/namedActionsAdminFilters.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/loadVisibleFiltersHandler.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/setDateRangeHandler.test.ts
@@ -79,6 +80,7 @@ effects:
   - admin_user_list_date_filters_use_indexable_ranges
   - admin_user_list_rows_fire_no_resource_hook
   - admin_user_list_sort_status_language_country
+  - admin_user_list_sort_select_mirrors_header_sort
   - admin_user_list_statistics_follow_list_scope
   - user_list_filter_params_hook_fires
   - user_list_query_extension_closures_applied
@@ -87,6 +89,8 @@ effects:
   - user_country_name_exposed_on_detail_and_profile
   # 프론트
   - filter_section_slot_structure
+  # 열 선택기의 선택지·기본 열은 표가 실제로 그리는 열과 같다(표에 없는 「ID」 가 「필수」 로 켜져 있던 결함)
+  - column_selector_matches_grid_columns
   - date_quick_uses_date_format
   - visible_filters_restored_from_storage
   - ext_filter_channel_assembled

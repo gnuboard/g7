@@ -1,4 +1,4 @@
-<!-- [게시판 면 — notification_tab_core.json 과 동일 패턴, target/컴포넌트 id 만 게시판 전용] 알림 설정 '비즈뿌리오' 통합 탭 오버레이(#597 §3.3, 제품 결정 2026-08-23 개정). ① 탭 상단 상태 배너(문제 있을 때만: readiness/테스트 모드) + 안내 박스 ② 요약 데이터소스 bizppurioTemplates(GET templates/map)는 탭 진입 시 init_actions 로 조회 — 행 하단 상태 요약(notification_row_footer.json)과 [편집] 모달 섹션(notification_template_form_sections.json)이 공유한다 ③ 작성 셀렉트용 카테고리·발신프로필 데이터소스. 알림톡 작성/검수/SMS 본문 편집 UI 는 코어 [편집] 모달에 주입되므로 이 오버레이는 더 이상 모달을 등록하지 않는다. -->
+<!-- [게시판 면 — notification_tab_core.json 과 동일 패턴, target/컴포넌트 id 만 게시판 전용] 알림 설정 '비즈뿌리오' 통합 탭 오버레이(제품 결정 2026-08-23 개정). ① 탭 상단 상태 배너(문제 있을 때만: readiness/테스트 모드) + 안내 박스 ② 요약 맵(bizppurioTemplates)과 작성 셀렉트용 카테고리·발신프로필 데이터소스는 [편집] 모달 섹션 확장점(notification_template_form_sections)이 함께 싣는다 — 같은 모달을 둔 플러그인 설정 화면에도 실리게 하려고 오버레이에서 옮겼다. 알림톡 작성/검수/SMS 본문 편집 UI 는 코어 [편집] 모달에 주입되므로 이 오버레이는 더 이상 모달을 등록하지 않는다. -->
 <extension target-layout="admin_board_settings" priority="320">
   <inject target-id="board_notif_channel_content" position="prepend_child">
     <div data-ref="bizppurio_board_status_banner" data-if="{{['sms','alimtalk'].includes(query.channel ?? '') &amp;&amp; (((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false) || ((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true))}}" class="mt-4 mb-3 space-y-2">
@@ -25,44 +25,4 @@
       <span class="text-sm text-blue-800 dark:text-blue-200">$t:sirsoft-message_bizppurio.template.tab_guide</span>
     </div>
   </inject>
-  <!-- 행 라이프사이클 표시용 요약 맵(notification_type 키). auto_fetch:false — 설정 페이지 전 탭 자동 호출 방지, 비즈뿌리오 탭 진입 시 init_actions 로 조회. -->
-  <data-source id="bizppurioTemplates" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/templates/map" method="GET" :auto_fetch="false" :auth_required="true">
-    <fallback>
-      <field name="data">
-        <field name="templates" :value="{}"/>
-      </field>
-    </fallback>
-  </data-source>
-  <!-- 작성 모달 카테고리 셀렉트(kapi category/all 위임). 모달 열 때만 조회. 자격증명 미설정 422 는 suppress + fallback. -->
-  <data-source id="bizppurioCategories" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/categories" method="GET" :auto_fetch="false" :auth_required="true">
-    <error-handling>
-      <default>
-        <suppress/>
-      </default>
-    </error-handling>
-    <fallback>
-      <field name="data">
-        <field name="categories" :value="[]"/>
-        <field name="load_failed" :value="true"/>
-      </field>
-    </fallback>
-  </data-source>
-  <!-- 작성 모달 발신프로필 참고 셀렉트(kapi profile/use 위임). 모달 열 때만 조회. 실패는 suppress + fallback. -->
-  <data-source id="bizppurioProfiles" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/profiles" method="GET" :auto_fetch="false" :auth_required="true">
-    <error-handling>
-      <default>
-        <suppress/>
-      </default>
-    </error-handling>
-    <fallback>
-      <field name="data">
-        <field name="profiles" :value="[]"/>
-        <field name="load_failed" :value="true"/>
-      </field>
-    </fallback>
-  </data-source>
-  <init>
-    <!-- 비즈뿌리오 탭 진입 시 요약 맵 조회(행 라이프사이클 표시용). 다른 탭에선 자동 호출 안 됨(auto_fetch:false). -->
-    <refetch-data-source dataSourceId="bizppurioTemplates"/>
-  </init>
 </extension>

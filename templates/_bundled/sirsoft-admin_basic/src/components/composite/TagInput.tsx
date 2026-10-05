@@ -466,6 +466,15 @@ export const TagInput: React.FC<TagInputProps> = ({
     [value]
   );
 
+  // 메뉴 열림 여부 — Enter 를 react-select 에 맡길지 정한다(메뉴는 비제어라 콜백으로만 안다)
+  const menuOpenRef = useRef(false);
+  const handleMenuOpen = useCallback(() => {
+    menuOpenRef.current = true;
+  }, []);
+  const handleMenuClose = useCallback(() => {
+    menuOpenRef.current = false;
+  }, []);
+
   // Enter/Tab 키 처리 (태그 생성 또는 잘못된 동작 방지)
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -490,9 +499,23 @@ export const TagInput: React.FC<TagInputProps> = ({
         return;
       }
 
-      // Enter 키: 빈 입력 또는 중복 값 방지
+      // Enter 키:
+      // 1) 친 값이 이미 태그면 아무것도 하지 않는다 — react-select 는 선택된 옵션을 다시 고르면 해제하므로,
+      //    막지 않으면 같은 값을 한 번 더 입력하는 순간 기존 태그가 사라진다.
+      // 2) 메뉴가 열려 있으면 react-select 가 포커스된 옵션을 고르거나 새 값을 만든다 — 가로채지 않는다.
+      //    비-creatable 모드는 입력값을 제어하지 않아 inputValue 가 늘 빈 값이므로, 이 값만 보고 막으면
+      //    검색어를 친 뒤·화살표로 옮긴 뒤의 Enter 선택이 모두 사라진다.
+      // 3) 메뉴가 닫힌 빈 입력의 Enter 는 폼 제출로 번지지 않게 막는다.
       if (event.key === 'Enter') {
-        if (!currentInput || (value && value.includes(currentInput))) {
+        if (currentInput && value && value.includes(currentInput)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (menuOpenRef.current) {
+          return;
+        }
+        if (!currentInput) {
           event.preventDefault();
           event.stopPropagation();
         }
@@ -551,6 +574,8 @@ export const TagInput: React.FC<TagInputProps> = ({
   const baseProps = {
     options: allOptions,
     onKeyDown: handleKeyDown,
+    onMenuOpen: handleMenuOpen,
+    onMenuClose: handleMenuClose,
     placeholder,
     noOptionsMessage: () => noOptionsMessage,
     isDisabled: disabled,

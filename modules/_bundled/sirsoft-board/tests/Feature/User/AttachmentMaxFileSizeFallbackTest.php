@@ -9,6 +9,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 첨부 업로드 용량 상한의 기본값 폴백 회귀 테스트 (#703)
@@ -16,10 +17,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 회귀 배경: 게시판의 최대 파일 크기가 비어 있으면(null — 기본값 따름) 게시글 저장 검증은 게시판
  * 환경설정 기본값을 쓰는데, 첨부 업로드 검증만 10MB 리터럴로 떨어졌다. 기본값을 10MB 보다 크게 둔
  * 사이트에서는 게시글 저장은 허용하는 크기의 파일이 업로드 단계에서 먼저 거절됐다.
- *
- * @group board
- * @group attachment
  */
+#[Group('board')]
+#[Group('attachment')]
 class AttachmentMaxFileSizeFallbackTest extends BoardTestCase
 {
     /**

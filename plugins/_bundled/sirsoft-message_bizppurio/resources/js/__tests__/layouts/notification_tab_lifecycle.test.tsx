@@ -150,23 +150,28 @@ describe('lifecycle UI — 파일 분리(Overlay vs ExtensionPoint 3종)', () =>
 });
 
 describe('lifecycle UI — 데이터소스 3종', () => {
-    const sources = ((overlay as { data_sources?: Array<Record<string, unknown>> }).data_sources ?? []);
+    // 데이터소스는 오버레이가 아니라 [편집] 모달 섹션 확장점 조각이 싣는다 — 같은 모달을 둔 플러그인 설정 화면
+    // (GDPR, 환율)에도 실리게 하려고 옮겼다(notification_template_plugin_hosts.test.ts).
+    const sources = ((sections as { data_sources?: Array<Record<string, unknown>> }).data_sources ?? []);
 
     it('bizppurioTemplates / bizppurioCategories / bizppurioProfiles 3종을 등록한다', () => {
         expect(sources.map((d) => d.id)).toEqual(['bizppurioTemplates', 'bizppurioCategories', 'bizppurioProfiles']);
+        expect((overlay as { data_sources?: unknown[] }).data_sources ?? []).toEqual([]);
     });
 
-    it('3종 모두 auto_fetch:false — 설정 페이지 다른 탭에서 자동 호출되지 않는다', () => {
-        for (const ds of sources) expect(ds.auto_fetch, `${ds.id} auto_fetch`).toBe(false);
+    it('카테고리·발신프로필은 auto_fetch:false — 섹션이 마운트될 때만 받는다', () => {
+        for (const id of ['bizppurioCategories', 'bizppurioProfiles']) {
+            expect(sources.find((d) => d.id === id)?.auto_fetch, `${id} auto_fetch`).toBe(false);
+        }
     });
 
-    it('요약 맵은 GET templates/map 이고 탭 진입 init_actions 로만 조회된다', () => {
+    it('요약 맵은 GET templates/map 이고 화면을 열 때 한 번 받는다(오버레이 init 없이)', () => {
         const map = sources.find((d) => d.id === 'bizppurioTemplates');
         expect(map?.endpoint).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/map');
         expect(map?.method).toBe('GET');
+        expect(map?.auto_fetch).toBe(true);
         const inits = (overlay as { init_actions?: AnyNode[] }).init_actions ?? [];
-        const refetch = inits.find((a) => a.handler === 'refetchDataSource');
-        expect((refetch?.params as { dataSourceId?: string })?.dataSourceId).toBe('bizppurioTemplates');
+        expect(inits.find((a) => a.handler === 'refetchDataSource')).toBeUndefined();
     });
 
     it('카테고리·발신프로필은 실패를 suppress 하고 load_failed fallback 을 둔다(자격증명 미설정 422 방어)', () => {

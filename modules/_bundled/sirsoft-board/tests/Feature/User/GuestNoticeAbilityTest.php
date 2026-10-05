@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 비회원 글쓰기 화면의 공지 옵션 노출 회귀 테스트 (#703)
@@ -17,9 +18,8 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * 같은 폼 메타 응답의 첨부 최대 크기도 업로드 검증과 같은 기본값 폴백을 따라야 한다(업로더 안내·
  * 클라이언트 차단 기준이 서버와 어긋나지 않도록).
- *
- * @group board
  */
+#[Group('board')]
 class GuestNoticeAbilityTest extends BoardTestCase
 {
     /**

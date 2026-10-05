@@ -223,7 +223,15 @@
       "last_login_at_desc": "Recent Login",
       "last_login_at_asc": "Oldest Login",
       "name_asc": "Name A→Z",
-      "name_desc": "Name Z→A"
+      "name_desc": "Name Z→A",
+      "email_asc": "Email A→Z",
+      "email_desc": "Email Z→A",
+      "country_asc": "Country A→Z",
+      "country_desc": "Country Z→A",
+      "language_asc": "Language A→Z",
+      "language_desc": "Language Z→A",
+      "status_asc": "Status A→Z",
+      "status_desc": "Status Z→A"
     },
     "modals": {
       "delete_title": "Delete User",
@@ -2582,9 +2590,9 @@
     },
     "layout_edit": {
       "title": "Layout Edit",
-      "description": "Edit JSON files to configure page layouts",
+      "description": "Edit layout markup (.g7.html) to configure page layouts",
       "page_title": "Layout Edit",
-      "page_description": "Edit JSON files to configure page layouts",
+      "page_description": "Edit layout markup (.g7.html) to configure page layouts",
       "preview": "Preview",
       "save": "Save",
       "saving": "Saving...",
@@ -3435,7 +3443,7 @@
     "visitors": {
       "title": "Visitors",
       "description": "Visit records grouped per person. Pick one to see the action timeline.",
-      "search_placeholder": "Visitor key, IP or member ID (Enter)",
+      "search_placeholder": "Visitor key, IP or member ID (#123 for that member only) (Enter)",
       "type_label": "Type",
       "types": {
         "all": "All",

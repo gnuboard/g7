@@ -298,6 +298,25 @@ describe('회원 목록 필터 조각 — 구조', () => {
   });
 });
 
+describe('회원 목록 열 선택기 — 표와 대조', () => {
+  // 열 선택기에 표가 그리지 않는 열(`id`)이 「필수」 로 들어 있어, 선택지에는 켜진 채 보이는데 표에는 아무것도
+  // 나오지 않았다(브라우저 실측: 선택기 "ID 필수", 표 머리글 이름·역할·이메일·작업).
+  // @scenario filter_axis=status, outcome=narrows
+  // @effects column_selector_matches_grid_columns
+  it('선택지와 기본 열은 모두 표(users_data_grid)가 그리는 열이다', () => {
+    const selector = collect(filterSection, (n) => n?.name === 'ColumnSelector')[0];
+    const grid = collect(userList, (n) => n?.name === 'DataGrid' && n?.id === 'users_data_grid')[0];
+    const gridFields = new Set<string>((grid?.props?.columns ?? []).map((c: any) => c.field));
+
+    expect(selector).toBeTruthy();
+    expect(gridFields.size).toBeGreaterThan(0);
+
+    const options = (selector.props.columns as any[]).map((c) => c.field);
+    expect(options.filter((f) => !gridFields.has(f))).toEqual([]);
+    expect((selector.props.defaultColumns as string[]).filter((f) => !gridFields.has(f))).toEqual([]);
+  });
+});
+
 describe('회원 목록 필터 조각 — 렌더', () => {
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure

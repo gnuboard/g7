@@ -166,6 +166,26 @@ describe('알림 템플릿 편집 창 — 관련 사용자 관계 선택', () =>
   });
 
   /**
+   * 선택지는 정의가 실어 준 관계 이름(`relation_labels`)을 보인다 — 운영자에게 `post_author` 같은 키를 내밀지 않는다.
+   * 이름이 없는 관계만 키를 그대로 쓴다.
+   *
+   * @scenario case=named
+   * @effects recipient_relation_select_shows_relation_names
+   */
+  it('관계 선택지는 relation_labels 의 이름을 쓰고, 이름이 없으면 키를 쓴다', () => {
+    const options = evalBinding(relationSelect.props.options, {
+      _global: {
+        [NS]: { definition: { relations: ['post_author', 'board_managers'], relation_labels: { post_author: '게시글 작성자' } } },
+      },
+    }) as unknown as Json[];
+
+    expect(options.slice(1)).toEqual([
+      { value: 'post_author', label: '게시글 작성자' },
+      { value: 'board_managers', label: 'board_managers' },
+    ]);
+  });
+
+  /**
    * 저장된 관계가 정의의 선언 밖이면 경고를 띄우고, 선언 안이거나 비어 있으면 띄우지 않는다.
    *
    * @scenario case=undeclared
@@ -203,9 +223,12 @@ describe('알림 템플릿 편집 창 — 다중 선택 트리거 문구', () =>
 });
 
 describe('환율 알림 템플릿 편집 창 — 코어 모달 계약 정합', () => {
+  // 서식 편집기 슬롯은 설치 언어마다 하나라, 그 슬롯이 맡은 언어(`bodyLoc`)를 편집 언어와 같게 둔다.
   const channelsCtx = (editor: string | undefined) => ({
     koreaeximNotificationChannels: { data: { channels: [{ id: 'ext_channel', name: 'Ext', template_editor: editor }] } },
-    _global: { [NS]: { template: { channel: 'ext_channel' }, definition: { relations: [] } } },
+    _global: { [NS]: { editLang: 'ko', template: { channel: 'ext_channel' }, definition: { relations: [] } } },
+    $locale: 'ko',
+    bodyLoc: 'ko',
   });
 
   /**

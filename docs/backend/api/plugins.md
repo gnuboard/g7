@@ -1785,7 +1785,7 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | is_installed | boolean | `true` | 설치 여부 |
 | has_settings | boolean | `true` | 설정 UI 제공 여부 |
 | settings_route | string\|null | `/admin/plugins/sirsoft-daum_postcode/settings` | 설정 페이지 경로 |
-| permissions | array | `[]` | 연결된 권한 목록 |
+| permissions | array | `[]` | 권한 분류 목록 — 항목마다 `identifier`·`name`·`permissions`(`action`·`name`). 모듈 상세와 같은 모양이다 |
 | roles | array | `[]` | 플러그인이 정의한 역할 목록 |
 | hooks | array | `[]` | 훅 설정 정보 |
 | config | array | `[]` | 플러그인 설정 값 맵 |

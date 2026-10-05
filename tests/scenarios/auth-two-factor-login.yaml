@@ -85,7 +85,15 @@ effects:
   - invalid_code_retries_until_success
   - session_state_cleared_after_two_factor_success
   - double_submit_sends_single_verify_request
+  - enter_key_on_code_step_sends_verify_only # 인증번호 단계의 Enter 는 확인만 보내고 비밀번호 단계를 다시 부르지 않는다
+  - code_step_intact_on_mobile_width_and_ja_locale # 375px 폭과 일본어 로케일에서 키 원문 없이 버튼이 화면 안에 놓인다
   - public_verify_throttle_isolated_from_other_guest_routes
+  - layout_handler_exposes_challenge_fields
+  - layout_handler_keeps_user_contract_on_normal_login
+  - layout_handler_completes_two_factor_with_challenge_and_code
+  - layout_handler_skips_request_without_required_input
+  - layout_handler_surfaces_server_message
+  - layout_handler_resend_returns_new_challenge
 
 test_files:
   - tests/Feature/Auth/TwoFactorAuthTest.php
@@ -94,3 +102,4 @@ test_files:
   - tests/Feature/Identity/IdentityLoginPurposeGateTest.php
   - tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php
   - tests/Playwright/specs/auth/two-factor-login.spec.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginTwoFactor.test.ts

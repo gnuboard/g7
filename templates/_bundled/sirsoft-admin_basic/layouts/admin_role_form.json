@@ -778,10 +778,11 @@
                                         "text": "$t:admin.roles.form.menus_admin_locked_hint"
                                     },
                                     {
+                                        "comment": "읽기 전용 안내는 메뉴 조회 결과가 온 뒤에만 판정한다 — 받기 전(값 없음)에 그리면 최고관리자에게도 잠깐 「권한이 없어」가 비친다. 조회 403 은 대체값이 남아 안내가 보인다.",
                                         "id": "menus_readonly_hint",
                                         "type": "basic",
                                         "name": "Div",
-                                        "if": "{{_local.form?.identifier !== 'admin' && role_menus_tree?.data?.abilities?.can_update !== true}}",
+                                        "if": "{{_local.form?.identifier !== 'admin' && role_menus_tree != null && role_menus_tree?.data?.abilities?.can_update !== true}}",
                                         "props": {
                                             "className": "text-tertiary mb-3"
                                         },

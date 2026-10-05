@@ -5,7 +5,7 @@ import { CodeWorkspace } from '../CodeWorkspace';
 import { useFileDrafts } from '../../../hooks/useFileDrafts';
 
 /**
- * CodeWorkspace — 초안 영속 (PO 결정 D-4).
+ * CodeWorkspace — 초안 영속 (결정 D-4).
  *
  * ## 왜 자동 복원하지 않는가
  *
@@ -387,7 +387,7 @@ describe('CodeWorkspace — 버려진 초안 쓰기 재시도', () => {
 });
 
 /**
- * 초안 저장소 공유 — 브라우저 실측 2026-09-12 (PO 제보 후속).
+ * 초안 저장소 공유 — 브라우저 실측 2026-09-12 (제보 후속).
  *
  * 종전 `flush()` 는 메모리의 맵을 통째로 `setItem` 해 저장소를 갈아치웠다. 그래서
  * **편집기를 두 탭에 띄우면 한쪽이 다른 쪽 초안을 말없이 지웠다.** 실측에서 양방향으로
@@ -454,10 +454,88 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
     // 병합이 저장소에 남아 있던 옛 값을 되살려서는 안 된다.
     expect(storedDrafts()['layout:a']).toBeUndefined();
   });
+
+  /**
+   * 진입 때 읽어 둔 **남의 초안 사본**은 내 변경이 아니다 — 그 뒤 다른 탭이 같은 키에 더 새 초안을 적었으면
+   * 그쪽이 남아야 한다. 종전 병합은 «내 맵이 이긴다» 라 옛 사본이 새 초안을 덮었다(실측 2026-10-03:
+   * 다른 탭이 남긴 새 초안이, 진입 때 읽어 둔 옛 「broken」 사본으로 되돌아갔다).
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=reload
+   * @effects code_workspace_keeps_newer_draft_from_other_tab
+   */
+  it('진입 때 읽어 둔 옛 사본이 그 뒤 다른 탭이 적은 새 초안을 덮지 않는다', () => {
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:other': { value: 'old-copy', savedAt: Date.now(), baseRevision: 1 } }),
+    );
+
+    render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={3} draftNamespace={NAMESPACE} />,
+    );
+
+    // 마운트 뒤 다른 탭이 같은 키에 더 새 초안을 적는다.
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:other': { value: 'newer-from-other-tab', savedAt: Date.now() + 60_000, baseRevision: 1 } }),
+    );
+
+    fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'mine' } });
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(storedDrafts()['layout:a'].value).toBe('mine');
+    expect(storedDrafts()['layout:other'].value).toBe('newer-from-other-tab');
+  });
+
+  /**
+   * 내가 지운 키라도, 지운 **뒤에** 다른 탭이 새로 적은 초안은 지우지 않는다 — 삭제는 지운 시점까지의 것에만
+   * 이긴다. 그렇지 않으면 한 탭이 저장으로 지운 파일을 다른 탭이 계속 고칠 때 그 탭의 초안이 사라진다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=reload
+   * @effects code_workspace_keeps_newer_draft_from_other_tab
+   */
+  it('내가 지운 뒤 다른 탭이 새로 적은 같은 키 초안은 남긴다', () => {
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={3} draftNamespace={NAMESPACE} />,
+    );
+
+    fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'typed' } });
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    // 저장 성공 — 이 문서는 layout:a 초안을 지운다.
+    rerender(
+      <CodeWorkspace fileKey="layout:a" serverValue="typed" serverRevision={4} draftNamespace={NAMESPACE} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(storedDrafts()['layout:a']).toBeUndefined();
+
+    // 그 뒤 다른 탭이 같은 파일을 고쳐 새 초안을 적는다.
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:a': { value: 'other-tab-after-save', savedAt: Date.now() + 60_000, baseRevision: 4 } }),
+    );
+
+    // 이 문서가 다른 파일을 고쳐 쓰기를 한 번 더 돌린다.
+    rerender(
+      <CodeWorkspace fileKey="layout:b" serverValue="<layout name=&quot;b&quot;/>" serverRevision={1} draftNamespace={NAMESPACE} />,
+    );
+    fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'b-edit' } });
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(storedDrafts()['layout:b'].value).toBe('b-edit');
+    expect(storedDrafts()['layout:a']?.value).toBe('other-tab-after-save');
+  });
 });
 
 /**
- * 초안 수명 — PO 결정 2026-09-12.
+ * 초안 수명 — 결정 2026-09-12.
  *
  * 실측에서 전날 19:21 초안 3건이 11시간 뒤에도 배너에 올라왔다. 수명이 없으면 초안은
  * 영원히 남아, 진짜 최근 편집분이 그 안에 묻힌다.
@@ -510,14 +588,14 @@ describe('CodeWorkspace — 초안 수명', () => {
 });
 
 /**
- * 없어진 파일의 초안 — 브라우저 실측 2026-09-12 (PO 제보).
+ * 없어진 파일의 초안 — 브라우저 실측 2026-09-12 (제보).
  *
  * 초안은 파일보다 오래 산다. 복원이 «없는 파일» 의 탭을 세웠고, 그 탭을 누르면
  * `GET .../layouts/<없는이름>` 이 404 를 냈다. 화면에는 빈 편집기와 코어의 범용 문구
  * «요청한 리소스를 찾을 수 없습니다» 만 남았고, 복원했다고 알린 편집분은 어디에도 없었다
  * (실측: 편집기 길이 0 · 탭의 미저장 ● 없음 · 초안은 저장소에 그대로).
  *
- * PO 결정 2026-09-12 — 조용히 버리지 않는다. «없는 파일» 로 표시하고 본문은 읽기 전용으로
+ * 결정 2026-09-12 — 조용히 버리지 않는다. «없는 파일» 로 표시하고 본문은 읽기 전용으로
  * 보여 준 뒤 [새 이름으로 저장] / [버리기] 를 준다.
  */
 describe('CodeWorkspace — 없어진 파일의 초안', () => {
@@ -586,9 +664,112 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
     // 복원한 편집분이 실제로 보인다(실측에서는 길이 0 이었다).
     expect((screen.getByTestId('editor-textarea') as HTMLTextAreaElement).value).toBe('<!--GHOST-->');
 
-    // [새 이름으로 저장] 이 그 본문을 들고 나간다.
+    // [새 이름으로 저장] 이 그 본문과 원래 키를 들고 나간다 — 키는 살린 뒤 이 탭을 닫으라고 되돌려 받는 표지다.
     fireEvent.click(screen.getByTestId('missing-save-as'));
-    expect(onSaveAs).toHaveBeenCalledWith({ target: { value: '<!--GHOST-->' } });
+    expect(onSaveAs).toHaveBeenCalledWith({ target: { value: '<!--GHOST-->', key: 'layout:gone' } });
+  });
+
+  /**
+   * 새 이름으로 살린 뒤에도 없는 파일 탭과 그 초안이 남으면, 이미 살린 편집분이 다음 진입에서 또 «저장하지 않은
+   * 편집 1건» 으로 뜨고 「새 이름으로 저장하거나 버리십시오」 를 다시 묻는다(실측 2026-10-03). 부모가 생성 성공 뒤
+   * `retiredKey` 로 그 키를 알리면 탭을 닫고 초안을 지운다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_retires_rescued_missing_file
+   */
+  it('새 이름으로 살린 뒤 retiredKey 로 알리면 없는 파일 탭을 닫고 초안을 지운다', () => {
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
+    );
+
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={3} knownKeys={KNOWN} draftNamespace={NAMESPACE} />,
+    );
+    fireEvent.click(screen.getByTestId('draft-restore'));
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:gone"
+        serverValue={SERVER_A}
+        serverKey="layout:a"
+        serverRevision={3}
+        knownKeys={KNOWN}
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    expect(screen.getByTestId('file-tab-layout:gone')).toBeTruthy();
+
+    // 생성 성공 — 부모가 새 파일을 고르고, 살린 키를 알린다.
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:rescued"
+        serverValue="<layout name=&quot;rescued&quot;/>"
+        serverKey="layout:rescued"
+        serverRevision={1}
+        knownKeys={[...KNOWN, 'layout:rescued']}
+        retiredKey="layout:gone"
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(screen.queryByTestId('file-tab-layout:gone')).toBeNull();
+    expect(storedDrafts()['layout:gone']).toBeUndefined();
+  });
+
+  /**
+   * 살리기 알림은 한 번만 처리한다. 알림(`retiredKey`)이 남아 있는 채로 같은 이름의 파일을 새로 만들어 열고
+   * 다른 파일로 옮기면, 파일을 옮길 때마다 도는 효과가 옛 알림으로 그 새 탭을 다시 닫았다(검토 지적 2026-10-04).
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_retires_rescued_missing_file
+   */
+  it('처리한 살리기 알림은 같은 키로 새로 연 탭을 파일을 옮길 때 다시 닫지 않는다', () => {
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:gone" serverValue={SERVER_A} serverRevision={3} knownKeys={[...KNOWN, 'layout:gone']} draftNamespace={NAMESPACE} />,
+    );
+    // 살리기 성공 — 부모가 새 파일을 고르고 옛 키를 알린다.
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:rescued"
+        serverValue={SERVER_A}
+        serverRevision={1}
+        knownKeys={[...KNOWN, 'layout:rescued']}
+        retiredKey="layout:gone"
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    expect(screen.queryByTestId('file-tab-layout:gone')).toBeNull();
+
+    // 같은 이름의 파일을 새로 만들어 연다 — 알림은 그대로 남아 있다.
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:gone"
+        serverValue="<layout name=&quot;gone&quot;/>"
+        serverKey="layout:gone"
+        serverRevision={1}
+        knownKeys={[...KNOWN, 'layout:rescued', 'layout:gone']}
+        retiredKey="layout:gone"
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    expect(screen.getByTestId('file-tab-layout:gone')).toBeTruthy();
+
+    // 다른 파일로 옮겨도 새로 연 탭은 남는다.
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:a"
+        serverValue={SERVER_A}
+        serverKey="layout:a"
+        serverRevision={3}
+        knownKeys={[...KNOWN, 'layout:rescued', 'layout:gone']}
+        retiredKey="layout:gone"
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    expect(screen.getByTestId('file-tab-layout:gone')).toBeTruthy();
   });
 
   /** @effects code_workspace_missing_file_is_read_only */

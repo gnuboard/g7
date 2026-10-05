@@ -62,6 +62,8 @@ class OrderResource extends BaseApiResource
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(취소옵션 ∧ 잔여 활성옵션). 별도 order_status 아님.
             // 주문 상태는 잔여 활성 옵션 기준으로 결정되고, "일부 취소됨" 표시는 이 플래그로 한다 (partial_cancelled 제거).
             'is_partially_cancelled' => $this->isPartiallyCancelled(),
+            // 결제 이후 단계(결제완료 ~ 구매확정) — 관리자 입금확인 창이 상태 문자열 대신 이 값으로 안내를 가른다.
+            'is_past_payment' => $this->order_status?->isPastPayment() ?? false,
             'order_device' => $this->order_device,
             'order_device_label' => $this->order_device ? $this->order_device->label() : null,
             'is_first_order' => $this->is_first_order,
@@ -162,12 +164,12 @@ class OrderResource extends BaseApiResource
 
             // 정가 합계 (스냅샷 기준)
             'total_list_price' => $this->whenLoaded('options', fn () => $this->roundToOrderCurrency($this->options->sum(function ($opt) {
-                $listPrice = $opt->option_snapshot['list_price'] ?? $opt->product_snapshot['list_price'] ?? $opt->unit_price;
+                $listPrice = $opt->getSnapshotListPrice() ?? $opt->unit_price;
 
                 return $listPrice * $opt->quantity;
             }), $orderCurrency), 0),
             'total_list_price_formatted' => $this->whenLoaded('options', fn () => $this->formatOrderCurrency($this->options->sum(function ($opt) {
-                $listPrice = $opt->option_snapshot['list_price'] ?? $opt->product_snapshot['list_price'] ?? $opt->unit_price;
+                $listPrice = $opt->getSnapshotListPrice() ?? $opt->unit_price;
 
                 return $listPrice * $opt->quantity;
             }), $orderCurrency), $this->formatOrderCurrency(0, $orderCurrency)),

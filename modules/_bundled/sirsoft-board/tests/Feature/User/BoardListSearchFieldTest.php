@@ -6,6 +6,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 게시판 목록 검색 대상 구분 테스트 (사용자)
@@ -20,18 +21,28 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * @scenario surface=board_list,search_field=title
  *
  * @effects board_list_search_field_title_only, board_list_search_field_content_only
- *
- * @group board
- * @group user
- * @group search
  */
+#[Group('board')]
+#[Group('user')]
+#[Group('search')]
 class BoardListSearchFieldTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'board-list-search-field';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -43,6 +54,11 @@ class BoardListSearchFieldTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +72,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list,search_field=title
      *
      * @effects board_list_search_field_title_only
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_search_field_title_only(): void
     {
@@ -73,6 +91,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list,search_field=content
      *
      * @effects board_list_search_field_content_only
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_search_field_content_only(): void
     {
@@ -90,6 +110,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list,search_field=author
      *
      * @effects board_list_search_field_author_only
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_search_field_author_only(): void
     {
@@ -114,6 +136,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list,search_field=title_content
      *
      * @effects board_list_search_field_title_content_uses_fulltext
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_search_field_title_content_default(): void
     {
@@ -139,6 +163,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list
      *
      * @effects board_list_rejects_invalid_search_field
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_rejects_invalid_search_field(): void
     {
@@ -152,6 +178,8 @@ class BoardListSearchFieldTest extends BoardTestCase
      * @scenario surface=board_list
      *
      * @effects board_list_without_search_field_keeps_all_behaviour
+     *
+     * @return void 반환값 없음
      */
     public function test_user_list_without_search_field_keeps_all_behaviour(): void
     {

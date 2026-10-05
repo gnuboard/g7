@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.title",
-        "description": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.description",
         "size": "md"
     },
     "children": [

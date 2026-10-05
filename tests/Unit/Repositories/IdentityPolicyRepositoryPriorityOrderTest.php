@@ -5,6 +5,7 @@ namespace Tests\Unit\Repositories;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Models\IdentityPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -14,16 +15,20 @@ use Tests\TestCase;
  * 동률 priority 정책의 반환 순서가 비결정적이었다. 같은 scope+target 에 동률 정책이 둘 이상이면
  * 어느 정책이 먼저 enforce 되는지(어떤 purpose 로 challenge 되는지)가 캐시/실행계획에 좌우됐다.
  * id 2차 정렬키를 추가해 동률이어도 항상 동일한 순서(먼저 생성된 정책 우선)가 되는지 검증한다.
- *
- * @group identity
- * @group unit
  */
+#[Group('identity')]
+#[Group('unit')]
 class IdentityPolicyRepositoryPriorityOrderTest extends TestCase
 {
     use RefreshDatabase;
 
     private IdentityPolicyRepositoryInterface $repository;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,6 +39,7 @@ class IdentityPolicyRepositoryPriorityOrderTest extends TestCase
      * 정책을 생성합니다.
      *
      * @param  array<string, mixed>  $overrides  덮어쓸 속성
+     * @return IdentityPolicy 만든 정책
      */
     private function makePolicy(array $overrides = []): IdentityPolicy
     {
@@ -54,6 +60,12 @@ class IdentityPolicyRepositoryPriorityOrderTest extends TestCase
 
     /**
      * 우선순위가 다르면 높은 priority 가 먼저 온다 (기존 동작 보존).
+     *
+     * @scenario lookup=scope_target, record_condition=priority_differs
+     *
+     * @effects higher_priority_comes_first
+     *
+     * @return void 반환값 없음
      */
     public function test_higher_priority_comes_first(): void
     {
@@ -68,6 +80,12 @@ class IdentityPolicyRepositoryPriorityOrderTest extends TestCase
 
     /**
      * 동률 priority 면 id 오름차순(먼저 생성된 정책 우선)으로 결정적 정렬된다.
+     *
+     * @scenario lookup=scope_target, record_condition=priority_tied
+     *
+     * @effects tied_priority_is_ordered_deterministically_by_id
+     *
+     * @return void 반환값 없음
      */
     public function test_tied_priority_is_ordered_deterministically_by_id(): void
     {
@@ -91,6 +109,12 @@ class IdentityPolicyRepositoryPriorityOrderTest extends TestCase
 
     /**
      * getRouteScopeIndex 도 동일한 결정적 정렬을 적용한다 (미들웨어 enforce 순서).
+     *
+     * @scenario lookup=route_index, record_condition=priority_tied
+     *
+     * @effects route_scope_index_is_ordered_deterministically
+     *
+     * @return void 반환값 없음
      */
     public function test_route_scope_index_is_ordered_deterministically(): void
     {

@@ -559,10 +559,10 @@
       </div>
       <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
         <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+        <!-- 보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다 -->
         <column-selector data-type="composite" data-ref="column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
           <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
           <prop name="columns">
-            <item field="id" header="$t:admin.users.columns.id" :required="true"/>
             <item field="name" header="$t:admin.users.columns.name" :required="true"/>
             <item field="role" header="$t:admin.users.columns.role" :required="true"/>
             <item field="email" header="$t:admin.users.columns.email" :required="true"/>
@@ -576,7 +576,6 @@
             <item field="last_login_at" header="$t:admin.users.columns.last_login_at"/>
           </prop>
           <prop name="defaultColumns">
-            <item>id</item>
             <item>name</item>
             <item>role</item>
             <item>email</item>

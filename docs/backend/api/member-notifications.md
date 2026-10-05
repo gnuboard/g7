@@ -43,7 +43,7 @@
 | page | query | integer | 아니오 | min 1 | 페이지 번호 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | search_type | query | string | 아니오 | `all`, `recipient`, `subject`, `body` | 검색 대상. **넷 다 실제로 동작합니다** — `recipient` 는 회원 이름·이메일, `subject`/`body` 는 `data` JSON 안의 값 |
-| search | query | string | 아니오 | max 255 | 검색어 (부분 일치) |
+| search | query | string | 아니오 | max 255 | 검색어 (부분 일치). `%`·`_` 는 글자 그대로 찾습니다(회원 목록 검색과 같은 기준) |
 | read | query | string | 아니오 | `all`, `read`, `unread` | 읽음 상태 필터 |
 | user_id | query | integer | 아니오 | min 1 | 회원 ID 로 한정 |
 | user_uuid | query | string(uuid) | 아니오 | uuid | 회원 uuid 로 한정. 없는 uuid 면 **빈 결과**(전체로 되돌아가지 않음) |
@@ -52,7 +52,7 @@
 | sort_by | query | string | 아니오 | `created_at`, `read_at` | 정렬 기준 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 |
 
-> 확장이 파라미터를 추가할 수 있습니다 (`core.member_notification.index_validation_rules`).
+> 확장이 파라미터를 추가할 수 있습니다 — 검증 규칙 `core.member_notification.index_validation_rules`, 항목명 `core.member_notification.index_validation_attributes`. 항목명을 더하지 않으면 422 문구에 내부 키가 그대로 나온다.
 
 **요청 예시**
 
@@ -76,14 +76,15 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.abilities` + `data
 | member.name | string | `알림함회원E2E` | 회원 이름. 탈퇴 회원이면 익명 표기로 치환 |
 | member.email | string\|null | `e2e-inbox-member@example.test` | 회원 이메일. 노출 게이트를 통과한 관리자 응답에만 실립니다 |
 | member.is_withdrawn | boolean | `false` | 탈퇴 여부 |
-| type | string | `App\Notifications\GenericNotification` | 알림 클래스 |
-| type_label | string | `App\Notifications\GenericNotification` | 표시 라벨. 알림 정의에 등록된 종류면 그 라벨, 없으면 클래스명 그대로 |
+| type | string | `new_order_admin` | 알림 종류 키 (`data.type`, 알림 정의의 type). 없으면 알림 클래스명 |
+| type_label | string | `신규 주문 관리자 알림` | 표시 라벨. 알림 정의에 등록된 종류면 요청 로케일의 정의 이름, 없으면 종류 키 그대로 |
 | subject | string\|null | `다른 제목 2` | 제목 (`data.subject`) |
 | body_excerpt | string\|null | `엡실론 알림본문 이 든 본문입니다.` | 본문 발췌 (태그 제거 후 120자, 넘으면 `…`). 전문은 싣지 않습니다 |
 | url | string\|null | `/mypage/notifications` | 연결 주소 (`data.click_url`) |
 | read_at | string\|null | `2026-09-14 19:22:44` | 읽은 시각 (뷰어 시간대 적용). 안 읽었으면 `null` |
 | is_read | boolean | `true` | 읽음 여부 (화면 배지가 이 값을 읽습니다) |
 | created_at | string | `2026-09-14 20:22:44` | 수신 시각 (뷰어 시간대 적용) |
+| abilities.can_delete (행) | boolean | `true` | 행마다 실리는 삭제 권한(컬렉션 값과 같음). 표의 행 메뉴 「삭제」가 이 값으로 켜집니다 |
 | abilities.can_delete | boolean | `true` | 삭제 권한 보유 여부. 화면의 체크 칸·일괄 버튼이 이 값으로 열립니다 |
 
 **응답 예시**
@@ -103,14 +104,15 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.abilities` + `data
           "email": "e2e-inbox-member@example.test",
           "is_withdrawn": false
         },
-        "type": "App\\Notifications\\GenericNotification",
-        "type_label": "App\\Notifications\\GenericNotification",
+        "type": "new_order_admin",
+        "type_label": "신규 주문 관리자 알림",
         "subject": "다른 제목 2",
         "body_excerpt": "엡실론 알림본문 이 든 본문입니다.",
         "url": "/mypage/notifications",
         "read_at": null,
         "is_read": false,
-        "created_at": "2026-09-14 20:22:44"
+        "created_at": "2026-09-14 20:22:44",
+        "abilities": { "can_delete": true }
       }
     ],
     "abilities": { "can_delete": true },

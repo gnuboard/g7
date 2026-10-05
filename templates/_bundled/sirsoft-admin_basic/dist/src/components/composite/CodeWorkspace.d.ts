@@ -20,6 +20,19 @@ export interface CodeWorkspaceProps {
     serverValue?: string;
     /** 그 파일의 서버 판본 (`lock_version`) */
     serverRevision?: number;
+    /**
+     * 방금 성공한 **내 저장** — 어느 파일(`key`)에 어떤 본문(`value`)을 보냈고 서버가 어떤 판본(`revision`)을
+     * 매겼는지. 저장을 보낼 때 `revision` 없이 적고, 성공 응답의 `lock_version` 으로 채운다.
+     *
+     * 서버는 저장한 마크업을 다시 역변환해 돌려주므로 공백·속성 표기가 정규화된다. 그 본문은 내 버퍼와
+     * 글자가 달라, 이 정보가 없으면 «판본이 오르고 내용이 다르다» 가 곧 «남이 고쳤다» 가 되어 내 저장
+     * 직후마다 충돌 바가 섰다(실측 2026-10-04: 태그 안 공백 세 칸 저장 → 「yours v2 → server v3」).
+     */
+    lastSave?: {
+        key?: string;
+        value?: string;
+        revision?: number | null;
+    } | null;
     /** 탭에 보일 이름 — 없으면 키에서 뽑는다 */
     fileLabel?: string;
     /** 본문을 불러오는 중 (편집기를 언마운트하지 않는다 — 모델이 날아간다) */
@@ -38,6 +51,13 @@ export interface CodeWorkspaceProps {
      * 중에 열린 탭을 전부 없는 파일로 몰아 버리는 사고를 막는다.
      */
     knownKeys?: string[];
+    /**
+     * 부모가 «끝났다» 고 알린 키 — 새 이름으로 살린 없는 파일이다. 그 탭을 닫고 초안을 지운다.
+     *
+     * 살린 뒤에도 탭과 초안이 남으면 이미 살린 편집분이 다음 진입에서 또 «저장하지 않은 편집» 으로
+     * 뜨고 같은 물음을 되풀이한다(실측 2026-10-03). 편집기는 생성이 성공했는지 모르므로 부모가 알린다.
+     */
+    retiredKey?: string;
     markers?: CodeEditorMarker[];
     /** 검색 결과·오류 패널에서 온 이동 좌표 */
     revealAt?: CodeEditorReveal;
@@ -87,6 +107,7 @@ export interface CodeWorkspaceProps {
     onSaveAs?: (event: {
         target: {
             value: string;
+            key: string;
         };
     }) => void;
     onSaveAll?: () => void;
@@ -122,6 +143,7 @@ export interface CodeWorkspaceProps {
  * | 재방문 · dirty | **`serverValue` 를 무시하고 버퍼를 보여준다** |
  * | 재방문 · clean | `serverValue` 로 갱신 (남이 고친 최신본 반영) |
  * | `serverRevision` 증가 + dirty | 충돌 바 — 자동 덮어쓰기 금지 |
+ * | 그 판본이 `lastSave` (내 저장) + 서버 정규화로 글자만 다름 | 서버 본문으로 clean. 저장 뒤 더 친 글자가 있으면 기준선만 옮겨 dirty 유지 |
  * | 저장 성공 (판본 증가 + clean 전환) | 초안 삭제 |
  * | 탭 상한 초과 | 오래된 **clean** 탭부터 해제. dirty 탭은 절대 자동으로 닫지 않는다 |
  */

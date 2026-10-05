@@ -365,6 +365,15 @@ return [
         'blind_success' => ':count post(s) blinded. (:skipped skipped)',
         'restore_success' => ':count post(s) restored. (:skipped skipped)',
         'action_failed' => 'Failed to process posts in bulk.',
+        // Reasons for skipped items — shown per post in the bulk result dialog
+        'skip_reasons' => [
+            'already_deleted' => 'Already deleted',
+            'has_replies' => 'Has replies (the reply deletion policy blocks deleting it)',
+            'already_blinded' => 'Already blinded',
+            'already_published' => 'Already published',
+            'unknown_action' => 'Unknown action',
+            'error' => 'An error occurred while processing',
+        ],
     ],
 
     // Board type management messages
@@ -465,5 +474,12 @@ return [
     ],
     'dashboard' => [
         'fetch_success' => 'Dashboard data retrieved successfully.',
+    ],
+    // Relation names for the "related user" recipient rule — shown on the notification settings screen instead of keys.
+    'notification_relations' => [
+        'post_author' => 'Post author',
+        'parent_comment_author' => 'Parent comment author',
+        'original_post_author' => 'Original post author',
+        'board_managers' => 'Board managers',
     ],
 ];

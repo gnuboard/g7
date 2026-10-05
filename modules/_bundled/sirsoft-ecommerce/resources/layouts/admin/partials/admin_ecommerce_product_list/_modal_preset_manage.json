@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.title",
-        "description": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.description",
         "size": "md"
     },
     "children": [

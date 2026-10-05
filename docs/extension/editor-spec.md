@@ -207,6 +207,8 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 `draggable`(드래그/팔레트 배치 가능한 컴포넌트 이름) + `containers`(컨테이너별 `accepts` 자식 허용 목록). 병합 시 `draggable` 은 union, `containers` 는 key 병합. `accepts: []` 는 명시적 자식 거부, 엔트리 없는 컴포넌트는 어떤 자식도 받지 않는다(폴백 없음).
 
+확장이 팔레트에 등재한 자기 컴포넌트(`{확장식별자}.{이름}`)는 템플릿 nesting 에 이름이 없으므로, 로더가 병합 뒤 템플릿이 `Div` 를 받는 자리(끌어 놓기 목록에 `Div` 가 있으면 루트, `accepts` 에 `Div` 가 있는 컨테이너)를 함께 준다. 템플릿이 그 이름을 어느 컨테이너 `accepts` 에 직접 적었으면 컨테이너 자리는 그 선언만 따르고, 끌어 놓기 목록에는 `Div` 규칙대로 더한다([extension-components.md](extension-components.md) 「팔레트 등재」).
+
 ### sampleData — 캔버스 프리뷰 샘플 데이터
 
 편집 모드 캔버스 렌더 시 데이터소스 응답을 결정한다. `byDataSourceId`(데이터소스 id 우선) → `byEndpointPattern`(엔드포인트 패턴 매칭) 순. 로더가 출처별 `bySource` 맵으로도 보존해 같은 id 를 여러 확장이 다른 shape 로 정의한 충돌을 해소한다. 샘플의 shape 은 실제 API Resource 가 바인딩하는 필드와 일치시킨다.
@@ -223,7 +225,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 `initialState` 의 네 갈래:
 
-- `local`/`global`: `_local`/`_global` baseline 위 부분 머지(사용자/검증 결과에 따른 화면 변종).
+- `local`/`global`: `_local`/`_global` baseline 위 부분 머지(사용자/검증 결과에 따른 화면 변종). 창(`modal`) 묶음에서 `local` 은 창을 연 화면의 로컬로도 쓰인다 — 창 편집 미리보기는 런타임 openModal 처럼 `{_local, _global, _computed}` 를 창의 `$parent` 로 넘기므로, 창이 `{{$parent._local.*}}` 로 읽는 값도 `local` 에 적는다. `$parent._computed.*` 는 그 `local` 위에서 호스트 레이아웃의 `computed` 정의로 계산된다.
 - `query`: URL 쿼리 컨텍스트 오버라이드 — baseline(빈 객체) 위 부분 머지. 편집기는 평소 query 가 비어 있어 `{{query.tab}}`/`{{query.error}}` 같은 진입 맥락 분기 변종을 이 패치 없이는 미리볼 수 없다(예 `settings` 화면의 `query.tab=general|seo` 서브탭).
 - `route`: path param 컨텍스트 오버라이드(`{{route.id}}` 유무 = 수정↔신규 작성 모드 변종). `null` 값을 주면 해당 토큰을 **제거**해 `sampleRouteParams` 자동 채움을 무력화한다(예 `users/:id/edit` 의 `route.id: null` → 신규 작성 모드). 통째 교체가 아니라 baseline 위 머지다.
 

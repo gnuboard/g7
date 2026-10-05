@@ -8,6 +8,7 @@ use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
 use App\Http\Requests\Layout\UpdateLayoutRequest;
 use App\Rules\NoExternalUrls;
 use Illuminate\Support\Facades\Config;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class NoExternalUrlsTest extends TestCase
@@ -1120,14 +1121,13 @@ class NoExternalUrlsTest extends TestCase
     /**
      * 액션이 실행되거나 값이 sink 로 흐르는 모든 키에서 외부 URL 이 차단되는지 검증합니다.
      *
-     * @dataProvider newlyTraversedKeyProvider
-     *
      * @param  array<string, mixed>  $layout  검사 대상 레이아웃
      *
      * @effects external_url_rejected_in_every_sink_key
      *
      * @return void 반환값 없음
      */
+    #[DataProvider('newlyTraversedKeyProvider')]
     public function test_blocks_external_url_in_newly_traversed_keys(array $layout): void
     {
         $this->assertTrue($this->blocks($layout), '신규 순회 키의 외부 URL 은 차단되어야 합니다');

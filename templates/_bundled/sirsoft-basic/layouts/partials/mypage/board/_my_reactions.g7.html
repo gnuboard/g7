@@ -87,7 +87,7 @@
           <on type="click">
             <!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
             <sequence>
-              <set-state target="global" :myReactionsPage="1"/>
+              <set-state target="global" :myReactionsPage="1" myReactionsSearchApplied="{{_global.myReactionsSearch ?? ''}}"/>
               <set-state target="global" :myReactionsSelectedIds="[]"/>
               <refetch-data-source dataSourceId="myReactions"/>
             </sequence>
@@ -98,7 +98,7 @@
           <on type="click">
             <!-- 초기화 — 게시판·유형·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
-              <set-state target="global" myReactionsBoard="" myReactionsTypeId="" myReactionsTargetType="" myReactionsSearch="" myReactionsSearchField="title_content" myReactionsSort="latest" :myReactionsPage="1"/>
+              <set-state target="global" myReactionsBoard="" myReactionsTypeId="" myReactionsTargetType="" myReactionsSearch="" myReactionsSearchApplied="" myReactionsSearchField="title_content" myReactionsSort="latest" :myReactionsPage="1"/>
               <set-state target="global" :myReactionsSelectedIds="[]"/>
               <refetch-data-source dataSourceId="myReactions"/>
             </sequence>
@@ -140,7 +140,7 @@
         <on type="click">
           <!-- 조건 초기화 — 게시판·유형·대상·검색어·정렬·쪽을 기본값으로 되돌리고 선택을 비운 뒤 다시 받는다 -->
           <sequence>
-            <set-state target="global" myReactionsBoard="" myReactionsTypeId="" myReactionsTargetType="" myReactionsSearch="" myReactionsSearchField="title_content" myReactionsSort="latest" :myReactionsPage="1"/>
+            <set-state target="global" myReactionsBoard="" myReactionsTypeId="" myReactionsTargetType="" myReactionsSearch="" myReactionsSearchApplied="" myReactionsSearchField="title_content" myReactionsSort="latest" :myReactionsPage="1"/>
             <set-state target="global" :myReactionsSelectedIds="[]"/>
             <refetch-data-source dataSourceId="myReactions"/>
           </sequence>
@@ -390,7 +390,9 @@
     <!-- 반응 없음 -->
     <div data-testid="my-reactions-empty" data-if="{{(myReactions?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
       <icon name="heart" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
-      <p class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.empty</p>
+      <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
+      <p data-if="{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.empty</p>
+      <p data-if="{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
       <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
           <navigate path="/boards"/>

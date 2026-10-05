@@ -8,9 +8,9 @@ use App\Models\User;
 use App\Notifications\GenericNotification;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -27,6 +27,11 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
 
     private MailIdentityProvider $provider;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,8 +53,16 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
      * GenericNotification 의 via() 채널 평가는 NotificationDefinition/readiness 체인 의존이라
      * 테스트 환경에서 별도 시드 없이는 fake 캡처가 불가 — 회로 자체 검증으로 충분.
      *
-     * @dataProvider purposesProvider
+     * @scenario policy_stage=challenge_delivery, verification_progress=issued
+     *
+     * @effects mail_provider_circuit_for_purpose
+     *
+     * @param  string  $purpose  인증 목적
+     * @param  string  $expectedRenderHint  기대 표시 방식
+     * @param  string  $expectedHashKey  해시를 저장할 메타데이터 키
+     * @return void 반환값 없음
      */
+    #[DataProvider('purposesProvider')]
     public function test_mail_provider_circuit_for_purpose(string $purpose, string $expectedRenderHint, string $expectedHashKey): void
     {
         $user = User::factory()->create();
@@ -73,6 +86,11 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
         );
     }
 
+    /**
+     * 인증 목적별 기대 표시 방식과 저장 칼럼을 돌려줍니다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string}> 목적, 표시 방식, 칼럼
+     */
     public static function purposesProvider(): array
     {
         return [
@@ -86,6 +104,12 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
     /**
      * 코드 발송 회로 — 발송된 challenge 가 DB 로그에 'sent' 상태로 기록되는지 추가 확인.
      * 메일 본문 평문 코드는 보안상 hash 만 저장하므로 실재만 검증.
+     *
+     * @scenario policy_stage=challenge_delivery, verification_progress=issued
+     *
+     * @effects mail_provider_logs_challenge_with_sent_status
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_provider_logs_challenge_with_sent_status(): void
     {

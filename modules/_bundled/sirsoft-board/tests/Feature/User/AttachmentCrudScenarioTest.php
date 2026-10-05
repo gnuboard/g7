@@ -5,12 +5,13 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 첨부파일 CRUD 전수 시나리오 테스트
@@ -21,19 +22,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 업로드 후 게시글 작성 시 attachments_count 반영
  * - 업로드 권한 없는 사용자 차단
  * - 첨부파일 삭제 및 attachments_count 감소
- *
- * @group board
- * @group attachment
  */
+#[Group('board')]
+#[Group('attachment')]
 class AttachmentCrudScenarioTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'attachment-crud';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class AttachmentCrudScenarioTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +83,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * 업로드 권한 있는 회원은 첨부파일을 업로드할 수 있다
+     *
+     * @scenario operation=upload, file_upload_setting=enabled
+     *
+     * @effects member_with_upload_permission_can_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_member_with_upload_permission_can_upload(): void
     {
@@ -83,6 +105,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * 업로드 권한 없는 사용자는 첨부파일을 업로드할 수 없다
+     *
+     * @scenario operation=upload, file_upload_setting=enabled
+     *
+     * @effects user_without_upload_permission_cannot_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_upload_permission_cannot_upload(): void
     {
@@ -99,6 +127,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * 비회원도 업로드 권한이 있으면 첨부파일을 업로드할 수 있다
+     *
+     * @scenario operation=upload, file_upload_setting=enabled
+     *
+     * @effects guest_with_upload_permission_can_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_with_upload_permission_can_upload(): void
     {
@@ -118,6 +152,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * use_file_upload=false 게시판에서는 파일 첨부가 차단된다
+     *
+     * @scenario operation=upload, file_upload_setting=disabled
+     *
+     * @effects upload_blocked_when_board_disables_file_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_blocked_when_board_disables_file_upload(): void
     {
@@ -135,6 +175,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * use_file_upload=false 게시판에서 파일과 함께 게시글 작성이 차단된다
+     *
+     * @scenario operation=post_create, file_upload_setting=disabled
+     *
+     * @effects post_with_file_blocked_when_board_disables_file_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_post_with_file_blocked_when_board_disables_file_upload(): void
     {
@@ -159,6 +205,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * 첨부파일을 삭제하면 DB에서 제거된다
+     *
+     * @scenario operation=delete, file_upload_setting=enabled
+     *
+     * @effects can_delete_attachment
+     *
+     * @return void 반환값 없음
      */
     public function test_can_delete_attachment(): void
     {
@@ -195,6 +247,12 @@ class AttachmentCrudScenarioTest extends BoardTestCase
 
     /**
      * 게시글에 첨부파일이 없으면 attachments_count가 0이다
+     *
+     * @scenario operation=post_create, file_upload_setting=enabled
+     *
+     * @effects post_without_file_has_zero_attachments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_post_without_file_has_zero_attachments_count(): void
     {

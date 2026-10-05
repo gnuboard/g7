@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Services\PostScrapService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 스크랩 관리 API 테스트
@@ -32,11 +33,10 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * @scenario endpoint=admin_scrap_index,actor=admin
  *
  * @effects admin_scrap_index_requires_view_permission, admin_scrap_index_lists_all_members
- *
- * @group board
- * @group admin
- * @group scrap
  */
+#[Group('board')]
+#[Group('admin')]
+#[Group('scrap')]
 class AdminPostScrapTest extends BoardTestCase
 {
     private User $admin;
@@ -47,11 +47,22 @@ class AdminPostScrapTest extends BoardTestCase
 
     private User $memberB;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'admin-scrap-api';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -65,6 +76,11 @@ class AdminPostScrapTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -94,6 +110,8 @@ class AdminPostScrapTest extends BoardTestCase
      * scraps.view 없는 일반 회원 → 403.
      *
      * @effects admin_scrap_index_requires_view_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_forbidden_without_view_permission(): void
     {
@@ -106,6 +124,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 전 회원의 스크랩이 최근 스크랩순으로 한 목록에 나온다.
      *
      * @effects admin_scrap_index_lists_all_members
+     *
+     * @return void 반환값 없음
      */
     public function test_index_lists_all_users_scraps_recent_first(): void
     {
@@ -126,6 +146,8 @@ class AdminPostScrapTest extends BoardTestCase
      * user_id 필터 → 해당 회원의 스크랩만.
      *
      * @effects admin_scrap_index_filters_by_user
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_id(): void
     {
@@ -144,6 +166,8 @@ class AdminPostScrapTest extends BoardTestCase
      * user_uuid 필터가 동작하고, 존재하지 않는 uuid 는 빈 결과다 (전체 노출 아님).
      *
      * @effects admin_scrap_index_filters_by_user_uuid, admin_scrap_index_unknown_uuid_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_uuid_and_unknown_uuid_returns_empty(): void
     {
@@ -167,6 +191,8 @@ class AdminPostScrapTest extends BoardTestCase
      * board_id 필터 → 해당 게시판의 스크랩만.
      *
      * @effects admin_scrap_index_filters_by_board
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_board_id(): void
     {
@@ -191,6 +217,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 스크랩일 범위 필터 (종료일은 그날 23:59:59 까지 포함).
      *
      * @effects admin_scrap_index_filters_by_date_range
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_scrapped_at_range(): void
     {
@@ -217,6 +245,8 @@ class AdminPostScrapTest extends BoardTestCase
      * post_title → 제목만 매칭 (본문 매칭은 제외).
      *
      * @effects admin_scrap_search_post_title
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_post_title_only(): void
     {
@@ -235,6 +265,8 @@ class AdminPostScrapTest extends BoardTestCase
      * post_content → 본문만 매칭 (제목 매칭은 제외).
      *
      * @effects admin_scrap_search_post_content
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_post_content_only(): void
     {
@@ -253,6 +285,8 @@ class AdminPostScrapTest extends BoardTestCase
      * board_name → 게시판명(로케일 JSON)으로 매칭.
      *
      * @effects admin_scrap_search_board_name
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_board_name(): void
     {
@@ -277,6 +311,8 @@ class AdminPostScrapTest extends BoardTestCase
      * member → 회원 이름 또는 이메일로 매칭.
      *
      * @effects admin_scrap_search_member
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_member_by_name_and_email(): void
     {
@@ -302,6 +338,8 @@ class AdminPostScrapTest extends BoardTestCase
      * author_name → 비회원 작성자명으로 매칭.
      *
      * @effects admin_scrap_search_author_name
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_author_name(): void
     {
@@ -326,6 +364,8 @@ class AdminPostScrapTest extends BoardTestCase
      * all → 제목·내용·게시판명·회원·작성자명 어디든 매칭되면 잡힌다.
      *
      * @effects admin_scrap_search_all
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_all_matches_any_field(): void
     {
@@ -351,6 +391,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 삭제된 원글도 제목을 내고 상태는 deleted 로 구분한다 (관리자 화면 정책).
      *
      * @effects admin_scrap_row_exposes_deleted_post_title_and_status
+     *
+     * @return void 반환값 없음
      */
     public function test_index_marks_deleted_post_with_status_and_keeps_title(): void
     {
@@ -376,6 +418,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 게시판의 use_scrap·is_active 상태를 행에 실어 화면이 「스크랩 꺼짐」 배지를 낼 수 있게 한다.
      *
      * @effects admin_scrap_row_exposes_board_flags
+     *
+     * @return void 반환값 없음
      */
     public function test_index_exposes_board_use_scrap_false_and_is_active(): void
     {
@@ -395,6 +439,8 @@ class AdminPostScrapTest extends BoardTestCase
      * sort_order=asc → 오래된 스크랩이 먼저.
      *
      * @effects admin_scrap_index_sort_order_asc
+     *
+     * @return void 반환값 없음
      */
     public function test_index_sort_order_asc(): void
     {
@@ -414,6 +460,8 @@ class AdminPostScrapTest extends BoardTestCase
      * per_page 상한(100) 초과 → 422.
      *
      * @effects admin_scrap_index_rejects_per_page_over_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_index_rejects_per_page_over_100(): void
     {
@@ -430,6 +478,8 @@ class AdminPostScrapTest extends BoardTestCase
      * view 만 있는 운영자의 삭제 시도 → 403.
      *
      * @effects admin_scrap_destroy_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_forbidden_with_view_only(): void
     {
@@ -446,6 +496,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 관리자는 남의 스크랩을 삭제할 수 있고 scrap_count 도 함께 준다.
      *
      * @effects admin_scrap_destroy_removes_and_decrements_count
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_removes_other_users_scrap_and_decrements_count(): void
     {
@@ -466,6 +518,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 없는 스크랩 삭제 → 404.
      *
      * @effects admin_scrap_destroy_missing_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_returns_404_for_missing(): void
     {
@@ -483,6 +537,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 다른 질문에 답하므로 둘 다 검증한다 (설계: A-1.8, 실측 매트릭스 §8.2 T4b).
      *
      * @effects admin_scrap_destroy_fires_after_toggle_with_owner_id, admin_scrap_destroy_logs_actor
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_writes_unscrap_activity_log_with_owner_id(): void
     {
@@ -523,6 +579,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 일괄 삭제 → deleted_count 반환, 행 제거.
      *
      * @effects admin_scrap_bulk_destroy_returns_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_returns_deleted_count(): void
     {
@@ -542,6 +600,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 존재하지 않는 ID 가 섞이면 422 (관리자 경로는 목록이 낡았음을 드러낸다).
      *
      * @effects admin_scrap_bulk_destroy_rejects_unknown_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_rejects_unknown_ids_422(): void
     {
@@ -558,6 +618,8 @@ class AdminPostScrapTest extends BoardTestCase
      * view 만 있는 운영자의 일괄 삭제 → 403.
      *
      * @effects admin_scrap_bulk_destroy_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_forbidden_with_view_only(): void
     {
@@ -578,6 +640,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 관리자 회원 상세 응답에 board_scraps 요약이 실린다.
      *
      * @effects admin_user_detail_includes_scrap_summary
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_user_detail_includes_board_scraps_summary(): void
     {
@@ -596,6 +660,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 프로필(/api/me)에는 board_scraps 를 싣지 않는다 — 부팅 경로에 집계 비용을 얹지 않는다.
      *
      * @effects profile_endpoint_omits_scrap_summary
+     *
+     * @return void 반환값 없음
      */
     public function test_profile_endpoint_omits_board_scraps(): void
     {
@@ -611,6 +677,8 @@ class AdminPostScrapTest extends BoardTestCase
      * 모듈이 스크랩 권한 2종과 관리 메뉴를 선언한다 (설치본 동기화의 근거).
      *
      * @effects module_declares_scrap_permissions_and_menu
+     *
+     * @return void 반환값 없음
      */
     public function test_module_declares_scraps_permissions_and_menu(): void
     {

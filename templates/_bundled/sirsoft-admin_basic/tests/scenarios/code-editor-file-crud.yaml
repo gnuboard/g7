@@ -24,7 +24,7 @@ exclusions:
 
 axis_notes:
   operation: >-
-    `create_folder` 는 뺐다 — 폴더는 **가상**이라(PO 결정 D-2) 서버 연산이 없고 파일이 저장되는
+    `create_folder` 는 뺐다 — 폴더는 **가상**이라(결정 D-2) 서버 연산이 없고 파일이 저장되는
     순간 이름의 `/` 로 확정된다. 만들 것이 없는 연산을 축으로 세울 수 없다.
   target: >-
     layout = 템플릿 소유 레이아웃 행, module_owned = 모듈·플러그인이 제공한 원본(삭제·이름변경 차단),
@@ -47,6 +47,8 @@ effects:
   - code_editor_rename_respects_optimistic_lock          # 낡은 잠금 번호는 409
   - code_editor_new_folder_is_virtual_until_a_file_is_saved # 폴더는 서버 왕복이 없다
   - custom_asset_editor_renames_through_the_api          # 커스텀 자산도 이름변경을 얻는다
+  - code_editor_registers_file_modals # 새 파일·이름변경·삭제 창이 화면에 등록돼 있다
+  - layout_save_calls_the_layout_put_endpoint # 저장은 레이아웃 PUT 경로로 나간다
 
 test_files:
   - tests/Feature/Api/Admin/LayoutFileCrudTest.php

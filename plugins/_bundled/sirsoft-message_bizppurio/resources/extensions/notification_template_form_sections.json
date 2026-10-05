@@ -1,7 +1,68 @@
 {
-    "comment": "코어 알림 템플릿 [편집] 모달 본문에 주입되는 비즈뿌리오 섹션(제품 결정 2026-08-23 — 행 하단 별도 버튼/모달 폐지, 편집 모달 통합). 3면(코어/게시판/이커머스)이 같은 extension_point 를 노출하므로 파일 1본으로 공유한다. ① 알림톡 템플릿: 승인 2단 배지 + 상태 액션(새로고침/신청 취소/승인 취소 후 수정/휴면 해제) + 작성 폼(draft/rejected) 또는 잠금 요약 ② 문자(SMS): 대체/단독 토글 + 로케일별 본문(검수 대상 아님). 저장은 notification_template_form_footer_actions 의 통합 [저장]이 담당한다. 상태는 _global.bz_tpl_modal / bz_sms_modal / bz_tpl_ui / bz_tpl_upload 에 담고 섹션 마운트(lifecycle.onMount) 시 요약 맵(bizppurioTemplates)으로 시딩한다. 코어 제목/본문 입력은 채널 메타 hidden_template_editor 로 코어 모달이 스스로 숨긴다.",
+    "comment": "코어 알림 템플릿 [편집] 모달 본문에 주입되는 비즈뿌리오 섹션(제품 결정 2026-08-23 — 행 하단 별도 버튼/모달 폐지, 편집 모달 통합). 같은 extension_point 를 노출하는 화면(코어, 게시판, 쇼핑몰 설정과 GDPR, 환율 플러그인 설정)이 이 파일 하나를 공유한다. ① 알림톡 템플릿: 승인 2단 배지 + 상태 액션(새로고침/신청 취소/승인 취소 후 수정/휴면 해제) + 작성 폼(draft/rejected) 또는 잠금 요약 ② 문자(SMS): 대체/단독 토글 + 로케일별 본문(검수 대상 아님). 저장은 notification_template_form_footer_actions 의 통합 [저장]이 담당한다. 상태는 _global.bz_tpl_modal / bz_sms_modal / bz_tpl_ui / bz_tpl_upload 에 담고 섹션 마운트(lifecycle.onMount) 시 요약 맵(bizppurioTemplates)으로 시딩한다. 코어 제목/본문 입력은 채널 메타 hidden_template_editor 로 코어 모달이 스스로 숨긴다.",
     "extension_point": "notification_template_form_sections",
     "priority": 320,
+    "data_sources": [
+        {
+            "id": "bizppurioTemplates",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/templates/map",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "templates": {}
+                }
+            },
+            "comment": "요약 맵(notification_type 키) — 섹션 마운트 시 상태 시딩과 행 하단 상태 요약(notification_row_footer)이 함께 읽는다. 이 확장점을 둔 화면(코어·게시판·쇼핑몰 설정, GDPR·환율 플러그인 설정)마다 레이아웃에 한 번 병합되고, 화면을 열 때 한 번 받는다. 종전에는 코어·게시판·쇼핑몰 설정 오버레이에만 있어 같은 모달을 둔 플러그인 설정 화면에서는 늘 비어 있었다. 메시지 조회 권한이 없는 관리자도 이 화면들을 열 수 있으므로 권한 없음(403)은 알림 없이 넘기고, 서버 오류 같은 다른 실패는 평소대로 알린다. 어느 쪽이든 섹션은 빈 맵으로 그린다."
+        },
+        {
+            "id": "bizppurioCategories",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/categories",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "errorHandling": {
+                "default": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "categories": [],
+                    "load_failed": true
+                }
+            },
+            "comment": "작성 모달 카테고리 셀렉트(kapi category/all 위임). 모달 열 때만 조회. 자격증명 미설정 422 는 suppress + fallback."
+        },
+        {
+            "id": "bizppurioProfiles",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/profiles",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "errorHandling": {
+                "default": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "profiles": [],
+                    "load_failed": true
+                }
+            },
+            "comment": "작성 모달 발신프로필 참고 셀렉트(kapi profile/use 위임). 모달 열 때만 조회. 실패는 suppress + fallback."
+        }
+    ],
     "components": [
         {
             "id": "bizppurio_tpl_sections",

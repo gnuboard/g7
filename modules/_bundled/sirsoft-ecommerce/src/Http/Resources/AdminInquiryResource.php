@@ -117,7 +117,8 @@ class AdminInquiryResource extends BaseApiResource
         }
 
         // 로드돼 있을 때만 읽는다 — 여기서 관계를 부르면 행마다 쿼리가 하나씩 붙는다.
-        // 목록은 관계를 싣지 않으므로(무등록 morph 별칭이 eager load 를 죽인다) 대개 null 이고,
+        // 목록 저장소가 풀리는 타입의 행에만 원글을 묶어 싣는다(ProductInquiryRepository::
+        // loadResolvableInquirables). 원글이 지워졌거나 타입이 풀리지 않으면 null 이고,
         // 화면은 그 경우 "본문을 불러올 수 없습니다" 로 그린다.
         $source = $this->relationLoaded('inquirable') ? $this->inquirable : null;
 

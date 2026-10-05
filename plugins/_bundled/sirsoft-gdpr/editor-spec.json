@@ -1042,7 +1042,7 @@
             "id": "template_edit",
             "label": "$t:editor.state.notification_template_edit",
             "default": true,
-            "comment": "수신자 유형 4종(trigger_user/related_user/role/specific_users)은 서로 배타 입력칸이라 한 건씩 넣어 모두 열어 둔다.",
+            "comment": "수신자 유형은 서로 배타 입력칸이라 한 건씩 넣어 모두 열어 둔다. 역할·특정 회원은 여러 개를 고르는 칸이라 값이 배열이다. 관련 사용자는 연간 통지 정의가 관계를 선언하지 않아 실제 화면에 나오지 않으므로 넣지 않는다.",
             "initialState": {
               "global": {
                 "gdpr_notification_template_form_modal": {
@@ -1066,7 +1066,8 @@
                       {
                         "key": "notice_sections"
                       }
-                    ]
+                    ],
+                    "relations": []
                   },
                   "template": {
                     "id": 1,
@@ -1086,13 +1087,15 @@
                       "type": "trigger_user"
                     },
                     {
-                      "type": "related_user",
-                      "value": "manager"
-                    },
-                    {
                       "type": "role",
-                      "value": "admin",
-                      "display_name": "최고 관리자",
+                      "value": [
+                        "admin",
+                        "operator"
+                      ],
+                      "display_names": [
+                        "최고 관리자",
+                        "운영자"
+                      ],
                       "exclude_trigger_user": false
                     },
                     {

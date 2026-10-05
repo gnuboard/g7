@@ -298,7 +298,8 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "myReportsPage": 1
+                                                "myReportsPage": 1,
+                                                "myReportsSearchApplied": "{{_global.myReportsSearch ?? ''}}"
                                             }
                                         },
                                         {
@@ -332,6 +333,7 @@
                                                 "myReportsStatus": "",
                                                 "myReportsTargetType": "",
                                                 "myReportsSearch": "",
+                                                "myReportsSearchApplied": "",
                                                 "myReportsSearchField": "title_content",
                                                 "myReportsSort": "latest",
                                                 "myReportsPage": 1
@@ -437,7 +439,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "신고한 글·댓글. 살아 있으면 눌러서 원글로 간다",
+                                            "comment": "신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다",
                                             "type": "basic",
                                             "name": "Button",
                                             "if": "{{!report.target_deleted && !!report.board_slug && !!report.post_id}}",
@@ -453,7 +455,7 @@
                                             "props": {
                                                 "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
-                                            "text": "{{report.excerpt ?? report.title ?? ''}}"
+                                            "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
                                         },
                                         {
                                             "type": "basic",
@@ -462,7 +464,7 @@
                                             "props": {
                                                 "className": "block text-sm text-gray-500 dark:text-gray-400 line-clamp-2"
                                             },
-                                            "text": "{{report.excerpt ?? report.title ?? ''}}"
+                                            "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
                                         },
                                         {
                                             "comment": "내가 고른 사유와 덧붙인 설명",
@@ -542,7 +544,7 @@
                                                                 "target": "global",
                                                                 "reportCancelModal": {
                                                                     "id": "{{report.id}}",
-                                                                    "title": "{{report.excerpt ?? report.title ?? ''}}"
+                                                                    "title": "{{report.title ?? report.excerpt ?? ''}}"
                                                                 }
                                                             }
                                                         },
@@ -585,12 +587,23 @@
                             }
                         },
                         {
+                            "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
                             "type": "basic",
                             "name": "P",
+                            "if": "{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}",
                             "props": {
                                 "className": "text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:mypage.board_activities.reports.empty"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:board.no_search_results"
                         }
                     ]
                 }

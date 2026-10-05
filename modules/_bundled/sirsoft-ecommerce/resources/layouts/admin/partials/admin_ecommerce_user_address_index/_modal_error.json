@@ -4,7 +4,7 @@
         "is_partial": true,
         "description": "User Address - Error Modal"
     },
-    "id": "modal_error",
+    "id": "modal_addresses_error",
     "type": "composite",
     "name": "Modal",
     "props": {

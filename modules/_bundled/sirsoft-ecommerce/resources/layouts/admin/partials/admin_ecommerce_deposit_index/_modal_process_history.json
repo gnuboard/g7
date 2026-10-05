@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title",
-        "description": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.description",
         "size": "lg"
     },
     "children": [

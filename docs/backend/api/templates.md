@@ -92892,7 +92892,7 @@ HTTP/1.1 200
                             "author": "sirsoft",
                             "type": "admin",
                             "status": "active",
-                            "preview_image": "/images/placeholder.png",
+                            "preview_image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "changelog": [
                                 "1.0.0 최초 릴리스"
                             ],
@@ -93020,7 +93020,7 @@ HTTP/1.1 200
                             "name": "이서연",
                             "nickname": "서연",
                             "email": "seoyeon.lee@example.com",
-                            "avatar": "/images/placeholder.png",
+                            "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "language": "ko",
                             "language_label": "한국어",
                             "country": "KR",
@@ -189074,7 +189074,7 @@ HTTP/1.1 200
                             "author": "sirsoft",
                             "type": "admin",
                             "status": "active",
-                            "preview_image": "/images/placeholder.png",
+                            "preview_image": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "changelog": [
                                 "1.0.0 최초 릴리스"
                             ],
@@ -189202,7 +189202,7 @@ HTTP/1.1 200
                             "name": "이서연",
                             "nickname": "서연",
                             "email": "seoyeon.lee@example.com",
-                            "avatar": "/images/placeholder.png",
+                            "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                             "language": "ko",
                             "language_label": "한국어",
                             "country": "KR",

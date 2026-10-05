@@ -1,16 +1,19 @@
 <!-- gdpr 설정 — 알림 템플릿 편집 창. **누구에게 · 무엇을 · 어느 언어로** 보낼지를 한 창에서 정한다.
-  
-  수신자는 종류가 여럿이라(주문자·역할·특정 회원 …) 배열로 다루고, 종류에 따라 값 칸이
-  달라진다 — 역할이면 역할 검색, 회원이면 회원 다중 선택이다. 둘 다 목록이 클 수 있어
-  미리 받아 두지 않고 입력할 때마다 API 를 친다(300ms 로 묶는다).
-  
-  제목·본문은 언어별이고, 언어 탭은 `$locales` 에서 만들어지므로 **설치된 언어 수만큼** 늘어난다.
-  값을 담을 때 `Object.assign({}, …)` 로 새 객체를 만드는 이유는 언어 묶음을 제자리에서 고치면
-  변경이 감지되지 않기 때문이다.
-  
+
+  이 창은 코어 알림 템플릿 편집 창(sirsoft-admin_basic `_modal_notification_template_form`)과 **같은 계약**을 쓴다 —
+  저장은 같은 코어 API(`PUT /api/admin/notification-templates/{id}`)로 나가므로, 코어 창이 지키는 규칙을 여기서
+  빠뜨리면 이 창에서만 422 가 나거나 수신자가 조용히 0명이 된다. 코어 창을 고치면 이 창도 함께 고친다.
+
+  수신자는 종류가 여럿이라(발생시킨 본인·관련 사용자·역할·특정 회원) 배열로 다루고, 종류에 따라 값 칸이
+  달라진다 — 역할·회원은 여러 개를 고르는 검색 선택기, 관련 사용자는 그 정의가 선언한 관계 선택이다.
+  목록이 클 수 있어 미리 받아 두지 않고 입력할 때마다 API 를 친다(300ms 로 묶는다).
+
+  제목·본문은 언어별이고, 본문 편집기는 **채널이 정한다**(`template_editor`: rich·plain·none) — none 채널은
+  코어 제목·본문·저장을 숨기고 그 채널을 소유한 확장이 슬롯으로 편집 UI 와 저장 버튼을 댄다.
+
   폼이 전부 `_global.gdpr_notification_template_form_modal` 아래 있는 것은 창이 별도
   컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다. -->
-<partial description="알림 채널별 템플릿과 수신자 편집">
+<partial description="개인정보 연간 통지 채널별 템플릿과 수신자 편집">
   <modal data-type="composite" data-ref="modal_gdpr_notification_template_edit" title="$t:sirsoft-gdpr.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="gdpr_template_form_container" data-blur-until-loaded="{{_global.gdpr_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
@@ -35,158 +38,187 @@
         </div>
         <div data-ref="gdpr_template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
           <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
-          <div>
+          <div class="stack-tight">
             <div data-each="rcpt, rcptIdx in {{_global.gdpr_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
                 <button type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <on type="click">
-                    <!-- 수신자 줄 삭제. 배열에서 그 자리만 걷어낸다. -->
+                    <!-- 이 규칙 한 줄을 뺀다 — 자리(index)로 걸러 **새 배열을 만들어** 갈아 끼운다. -->
                     <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
                   </on>
                   <icon name="fa-solid fa-xmark" size="sm"/>
                 </button>
               </div>
-              <div>
-                <div>
-                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.type_label</label>
-                  <select value="{{rcpt.type ?? ''}}" class="w-full text-sm">
-                    <options>
-                      <option value="trigger_user">$t:admin.settings.notification_definitions.recipients.types.trigger_user</option>
-                      <option value="related_user">$t:admin.settings.notification_definitions.recipients.types.related_user</option>
-                      <option value="role">$t:admin.settings.notification_definitions.recipients.types.role</option>
-                      <option value="specific_users">$t:admin.settings.notification_definitions.recipients.types.specific_users</option>
-                    </options>
+              <div class="row-stack">
+                <div class="row-stack">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.type_label</label>
+                    <!-- 선언된 relation 이 없는 정의에서 「관련 사용자」를 고르면 수신자가 **0명**이 되고 로그도 남지 않는다 — 그 정의가 지원하는 relation 키를 서버가 실어 줄 때만 이 선택지를 세운다. -->
+                    <select value="{{rcpt.type ?? ''}}" class="w-full text-sm" options="{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}">
+                      <on type="change">
+                        <!-- 규칙 종류 전환 — 이 줄을 **새 종류의 빈 규칙**으로 갈아 끼운다. 앞 종류의 값(`value`·`display_names`)과
+                             관계(`relation`)는 새 종류에서 뜻을 잃는다: 회원 UUID 가 역할 칸에 남으면 그대로 역할 식별자로 저장돼
+                             수신자가 0명이 되고 예외도 로그도 남지 않는다. 「행위자 제외」는 역할·특정 회원에서만 뜻이 있어
+                             그 두 종류 사이에서만 이어 간다(발생시킨 본인 규칙에 남으면 그 본인이 빠져 역시 0명이 된다).
+                             관련 사용자는 서버가 relation 을 필수로 받으므로 그 정의가 선언한 첫 관계를 채워 둔다. -->
+                        <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? { type: $event.target.value, ...((($event.target.value === 'role') || ($event.target.value === 'specific_users')) &amp;&amp; ((r.type === 'role') || (r.type === 'specific_users')) &amp;&amp; r.exclude_trigger_user ? { exclude_trigger_user: true } : {}), ...(($event.target.value === 'related_user') ? { relation: (_global.gdpr_notification_template_form_modal?.definition?.relations ?? [])[0] ?? '' } : {}) } : r)}}"/>
+                      </on>
+                    </select>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'related_user'}}" class="row-stack">
+                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.relation_label</label>
+                  <!-- 예전에는 읽기 전용 막대였다 — 「관련 사용자」를 골라도 관계를 지정할 방법이 없어 수신자가 0명이 됐다. 선택지는 그 정의가 선언한 relation 키다(리스너가 `context.related_users` 에 실제로 넣어 주는 키). -->
+                  <select value="{{rcpt.relation ?? ''}}" class="w-full text-sm" options="{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.gdpr_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}">
                     <on type="change">
-                      <!-- 수신자 종류. 종류를 바꾸면 아래 값 칸이 통째로 달라지므로 이전 값은 의미를 잃는다. -->
-                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"/>
+                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, relation: $event.target.value} : r)}}"/>
                     </on>
                   </select>
+                  <!-- 저장된 관계가 이 정의의 선언 밖이면(정의가 관계를 바꿨거나 옛 규칙) 서버가 저장을 422 로 거절한다 — 선택칸은 빈칸으로만 보여 이유를 알 수 없으므로 여기서 밝힌다. -->
+                  <p data-if="{{((rcpt.relation ?? '') !== '') &amp;&amp; !(_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}" class="text-warning-soft mt-1">$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}</p>
                 </div>
-                <div data-if="{{rcpt.type === 'related_user'}}">
-                  <div>
-                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.relation_label</label>
-                    <span class="text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">{{rcpt.relation ?? ''}}</span>
-                  </div>
+                <div data-if="{{rcpt.type === 'role'}}" class="row-stack">
+                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
+                  <!-- 역할은 여러 개를 고를 수 있다. 서버가 `value` 를 언제나 배열로 실어 주므로(문자열로 저장된 기존 규칙도 읽을 때 배열이 된다) 화면은 사용자 칸과 같은 모양을 쓴다 — 화면에서 문자열/배열을 가르면 그 판정이 두 벌이 되고, 한쪽만 고쳐졌을 때 값이 조용히 덮인다. 선택값이 비어 있을 때 `.map` 을 그냥 돌리지 않고 길이를 먼저 본다 — 실측에서 빈 선택값이 라벨이 배열인 유령 항목 하나를 만들었고, 운영자가 검색어 첫 글자를 치는 순간 드롭다운이 통째로 사라졌다. 라벨을 문자열로 좁히는 것은 그 두 번째 방어선이다. -->
+                  <searchable-dropdown data-type="composite" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.role_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.roles_selected_count" class="w-full">
+                    <on event="onSearch">
+                      <!-- 역할 검색 — 300ms 로 묶어 타이핑마다 다녀오지 않는다.
+                           결과는 **선택기와 분리된 자리**(`roleSearchResults`)에 담고, 화면에서 고른 값과
+                           합쳐 목록을 만든다(그래야 검색어를 바꿔도 고른 것이 사라지지 않는다).
+                           실패하면 결과를 비워 옛 목록이 남지 않게 한다. -->
+                      <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
+                        <success>
+                          <set-state target="global" gdpr_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="global" :gdpr_notification_template_form_modal.roleSearchResults="[]"/>
+                        </fail>
+                        <query search="{{$args[0]}}" :per_page="50"/>
+                      </api-call>
+                    </on>
+                    <on event="onChange">
+                      <!-- 고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다. -->
+                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                    </on>
+                  </searchable-dropdown>
                 </div>
-                <div data-if="{{rcpt.type === 'role'}}">
-                  <div>
-                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
-                    <searchable-dropdown data-type="composite" value="{{rcpt.value ?? ''}}" options="{{[...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" class="w-full">
-                      <on event="onSearch">
-                        <!-- 역할 검색. 응답을 드롭다운이 읽는 형태로 접고, 실패하면 이전 결과를 비운다 — 남기면 검색어와 맞지 않는 목록이 붙어 있게 된다. -->
-                        <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
-                          <success>
-                            <set-state target="global" gdpr_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
-                          </success>
-                          <fail>
-                            <set-state target="global" :gdpr_notification_template_form_modal.roleSearchResults="[]"/>
-                          </fail>
-                          <query search="{{$args[0]}}" :per_page="50"/>
-                        </api-call>
-                      </on>
-                      <on event="onChange">
-                        <!-- 역할 선택. 배열의 그 줄만 다시 만들어 값을 넣는다(반복 항목은 제자리에서 못 고친다). -->
-                        <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
-                      </on>
-                    </searchable-dropdown>
-                  </div>
-                </div>
-                <div data-if="{{rcpt.type === 'specific_users'}}">
-                  <div>
-                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
-                    <searchable-dropdown data-type="composite" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" class="w-full">
-                      <on event="onSearch">
-                        <!-- 회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다. -->
-                        <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
-                          <success>
-                            <set-state target="global" gdpr_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
-                          </success>
-                          <fail>
-                            <set-state target="global" :gdpr_notification_template_form_modal.userSearchResults="[]"/>
-                          </fail>
-                          <query keyword="{{$args[0]}}"/>
-                        </api-call>
-                      </on>
-                      <on event="onChange">
-                        <!-- 회원 선택(다중). 고른 목록이 통째로 그 줄의 값이 된다. -->
-                        <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
-                      </on>
-                    </searchable-dropdown>
-                  </div>
+                <div data-if="{{rcpt.type === 'specific_users'}}" class="row-stack">
+                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
+                  <searchable-dropdown data-type="composite" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count" class="w-full">
+                    <on event="onSearch">
+                      <!-- 회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)
+                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다. -->
+                      <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                        <success>
+                          <set-state target="global" gdpr_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="global" :gdpr_notification_template_form_modal.userSearchResults="[]"/>
+                        </fail>
+                        <query keyword="{{$args[0]}}"/>
+                      </api-call>
+                    </on>
+                    <on event="onChange">
+                      <!-- 고른 회원 목록(배열)을 이 규칙 줄에 담는다. -->
+                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                    </on>
+                  </searchable-dropdown>
                 </div>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="flex-center gap-2">
-                  <toggle data-type="composite" label="$t:admin.settings.notification_definitions.recipients.exclude_trigger_user" checked="{{rcpt.exclude_trigger_user ?? false}}">
+                  <toggle data-type="composite" checked="{{rcpt.exclude_trigger_user ?? false}}">
                     <on type="change">
-                      <!-- 수신자 사용 여부. 끄면 그 줄만 발송 대상에서 빠지고 설정은 남는다. -->
+                      <!-- 행위자 제외 — 그 일을 벌인 본인에게는 보내지 않는다(자기 행동을 자기가 통보받지
+                           않게). 역할·특정 회원 규칙에만 있는 칸이고, 현재 값을 뒤집어 담는다. -->
                       <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"/>
                     </on>
                   </toggle>
+                  <span class="text-secondary text-xs">$t:admin.settings.notification_definitions.recipients.exclude_trigger_user</span>
                 </div>
               </div>
             </div>
           </div>
           <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium">
             <on type="click">
-              <!-- 수신자 줄 추가. 빈 줄을 붙이고 종류는 그 줄에서 고른다. -->
+              <!-- 규칙 한 줄 추가 — 기본 종류(행위자 본인)로 만들어 끝에 붙인다. -->
               <set-state target="global" gdpr_notification_template_form_modal.recipients="{{[...(_global.gdpr_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/>
             </on>
             $t:admin.settings.notification_definitions.recipients.add_rule
           </button>
         </div>
-        <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
+        <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
         <extension-point name="notification_template_form_sections" data-ref="gdpr_template_form_sections_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
-        <div data-ref="gdpr_template_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
+        <div data-ref="gdpr_template_lang_tabs" data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="flex border-b border-gray-200 dark:border-gray-700">
           <button data-each="loc in {{$locales}}" type="button" class="{{(_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
             <on type="click">
-              <!-- 언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다. -->
+              <!-- 편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.
+     값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다. -->
               <set-state target="global" gdpr_notification_template_form_modal.editLang="{{loc}}"/>
             </on>
             {{_global.appConfig?.localeNames?.[loc] ?? loc}}
           </button>
         </div>
-        <div data-ref="gdpr_template_subject_input">
+        <div data-ref="gdpr_template_subject_input" data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="row-stack">
           <div>
             <label class="form-label">
               <span>$t:sirsoft-gdpr.notification_definitions.edit_modal.subject</span>
               <span class="text-required">*</span>
             </label>
-            <input type="text" aria-label="$t:sirsoft-gdpr.notification_definitions.edit_modal.subject" value="{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}">
+            <input type="text" aria-label="$t:sirsoft-gdpr.notification_definitions.edit_modal.subject" value="{{_global.gdpr_notification_template_form_modal?.template?.subject?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
               <on type="change">
-                <!-- 제목(현재 언어). 언어 묶음을 새 객체로 만들어 담는다 — 제자리에서 고치면 변경이 감지되지 않는다. -->
+                <!-- 제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다. -->
                 <set-state target="global" gdpr_notification_template_form_modal.template.subject="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.subject, {[_global.gdpr_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
               </on>
             </input>
           </div>
         </div>
-        <div data-ref="gdpr_template_body_input">
+        <div data-ref="gdpr_template_body_input" data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="row-stack">
           <div>
             <label class="form-label">
               <span>$t:sirsoft-gdpr.notification_definitions.edit_modal.body</span>
               <span class="text-required">*</span>
             </label>
-            <html-editor data-type="composite" placeholder="$t:sirsoft-gdpr.notification_definitions.edit_modal.body" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
-              <on type="change">
-                <!-- 본문(현재 언어). 위지윅이라 값이 HTML 문자열로 들어온다. -->
-                <set-state target="global" gdpr_notification_template_form_modal.template.body="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.body, {[_global.gdpr_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
-              </on>
-            </html-editor>
+            <!-- 본문 편집기는 **채널이 정한다**. 메일 본문은 HTML 로 나가고 사이트내 알림은 평문으로 그려지므로, 한 편집기로 두 채널을 다루면 관리자 미리보기와 사용자 화면이 서로 다른 문자열을 보여 준다. 리치는 확장 슬롯이라 CKEditor 가 없으면 기존 입력으로 폴백한다 — 슬롯을 직접 `composite/HtmlEditor` 로 부르면 CKEditor 가 영영 붙지 않는다. -->
+            <div>
+              <!-- 서식 편집기는 언어마다 하나씩 두고 편집 중인 언어의 것만 세운다. 편집기는 마운트 때 본문과 쓰기 경로를 한 번만 받으므로, 한 인스턴스를 언어 사이에 돌려 쓰면 탭을 바꿔도 이전 언어 본문이 보이고 입력이 **이전 언어** 칸에 저장된다(실측 2026-10-03). 노드 id 에 언어를 넣는 것으로는 다시 서지 않는다 — 엔진은 자식 key 를 바인딩 전 원문 id 로 잡는다. 탭을 바꾸면 이전 언어의 슬롯이 내려가고(data-if) 새 언어의 슬롯이 그 언어 본문·쓰기 경로로 새로 선다. 편집기 이름도 언어별이라 내려가는 편집기와 서는 편집기가 같은 컨테이너를 두고 다투지 않는다. -->
+              <div data-each="bodyLoc in {{$locales}}">
+                <extension-point name="html_editor" data-ref="gdpr_template_body_rich_{{bodyLoc}}" data-if="{{((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'rich') &amp;&amp; (_global.gdpr_notification_template_form_modal?.editLang ?? $locale) === bodyLoc}}" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}" :multilingual="false" :trackChanges="false" writeScope="global" writePath="gdpr_notification_template_form_modal.template.body.{{bodyLoc}}">
+                  <prop name="name">"notification_template_body_{{bodyLoc}}"</prop>
+                  <default>
+              <html-editor data-type="composite" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+                <on type="change">
+                  <!-- 본문(언어별) — 제목과 같은 방식이고, 편집기라 아래 변수 안내의 `{키}` 를 그대로 쓴다. -->
+                  <set-state target="global" gdpr_notification_template_form_modal.template.body="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.body, {[bodyLoc]: $event.target.value})}}"/>
+                </on>
+              </html-editor>
+                  </default>
+                </extension-point>
+              </div>
+              <!-- 평문 편집기 — 채널의 편집기 선언이 rich 가 아닐 때(사이트내 알림, 선언이 없는 확장 채널) 뜬다. 그 채널들은 본문을 글자 그대로 보여 주므로 서식 입력을 주지 않는다. -->
+              <html-editor data-type="composite" data-ref="gdpr_template_body_plain" data-if="{{(gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor !== 'rich'}}" content="{{_global.gdpr_notification_template_form_modal?.template?.body?.[_global.gdpr_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="false" :showHtmlModeToggle="false" class="min-h-[200px]">
+                <on type="change">
+                  <set-state target="global" gdpr_notification_template_form_modal.template.body="{{Object.assign({}, _global.gdpr_notification_template_form_modal?.template?.body, {[_global.gdpr_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+                </on>
+              </html-editor>
           </div>
         </div>
-        <div data-ref="gdpr_template_click_url_input" data-if="{{_global.gdpr_notification_template_form_modal?.template?.channel === 'database'}}">
+        </div>
+        <div data-ref="gdpr_template_click_url_input" data-if="{{(_global.gdpr_notification_template_form_modal?.template?.channel === 'database') &amp;&amp; !((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="row-stack">
           <div>
             <label class="form-label">$t:admin.settings.notification_definitions.edit_modal.click_url</label>
             <input type="text" value="{{_global.gdpr_notification_template_form_modal?.template?.click_url ?? ''}}" placeholder="/mypage/orders/{order_number}" class="font-mono">
               <on type="change">
-                <!-- 알림을 눌렀을 때 갈 경로. 앱 안 알림(channel=database)일 때만 입력칸이 뜨고, 주문번호 같은 변수를 경로에 끼워 쓴다(아래 변수 안내 참조). 제목·본문과 달리 언어를 타지 않는다. -->
+                <!-- 알림을 눌렀을 때 갈 곳 — **화면 알림 채널일 때만 보이는 칸**이다(메일에는 갈 자리가 없다).
+                     비우면 빈 문자열이 아니라 `null` 로 담아 "설정 안 함" 과 "빈 값" 을 가른다.
+                     본문 변수와 같은 `{키}` 표기를 경로 안에 쓸 수 있다. -->
                 <set-state target="global" gdpr_notification_template_form_modal.template.click_url="{{$event.target.value || null}}"/>
               </on>
             </input>
-            <p class="form-hint">$t:admin.settings.notification_definitions.edit_modal.click_url_hint</p>
           </div>
+          <p class="form-hint">$t:admin.settings.notification_definitions.edit_modal.click_url_hint</p>
         </div>
-        <div data-ref="gdpr_template_variables_info" data-if="{{(_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).length > 0}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
-          <h4 class="text-body font-medium mb-2">$t:sirsoft-gdpr.notification_definitions.edit_modal.variables_title</h4>
+        <div data-ref="gdpr_template_variables_info" data-if="{{((_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).length > 0) &amp;&amp; !((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:sirsoft-gdpr.notification_definitions.edit_modal.variables_title</h4>
           <div class="flex flex-wrap gap-2">
             <span data-each="v in {{_global.gdpr_notification_template_form_modal?.definition?.variables ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300">
               <span class="font-mono">{</span>
@@ -199,8 +231,8 @@
       </div>
       <div data-ref="gdpr_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
         <div>
-          <!-- 닫기. 저장 중에는 잠긴다 — 요청이 도는 도중에 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다 -->
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
+          <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
+          <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
                 <success>
@@ -223,9 +255,9 @@
             </on>
             $t:common.cancel
           </button>
-          <!-- 편집 모달 푸터 확장 슬롯(범용). 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
+          <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
           <extension-point name="notification_template_form_footer_actions" data-ref="gdpr_template_form_footer_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
-          <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
+          <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
               <sequence>

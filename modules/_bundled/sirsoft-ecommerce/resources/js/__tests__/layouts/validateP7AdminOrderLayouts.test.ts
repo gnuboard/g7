@@ -257,24 +257,38 @@ describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
     });
 
     /**
-     * 번역 파서는 키에 콜론을 받지 않는다 — `$t:…mobile.target_type:` 는 키가 `mobile.target_type` 이다.
+     * 쿠폰 목록의 좁은 화면 카드 블록은 아무도 채우지 않는 `_global.isPortable` 에 묶여 한 번도 보이지
+     * 않았다. 좁은 화면은 DataGrid 의 카드 보기가 맡으므로 블록을 걷어냈고(2026-10-04 결정 3), 그 블록만
+     * 쓰던 `mobile.*` 라벨 키도 ko·en·ja 에서 함께 지웠다(예전 콜론 키 결함도 이 블록 안에 있었다).
      *
-     * @scenario surface=coupon_list, defect=colon_in_translation_key
-     * @effects coupon_mobile_labels_resolve
+     * @scenario surface=coupon_list, defect=unreachable_mobile_cards
+     * @effects coupon_list_has_no_unreachable_mobile_cards
      */
-    it('쿠폰 모바일 카드 라벨이 실재하는 _label 키를 쓰고, 콜론 키가 lang 에 남지 않는다', () => {
+    it('쿠폰 목록에 보이지 않던 카드 블록과 그 블록만 쓰던 라벨 키가 남지 않는다', () => {
         const text = renderJson(couponDatagrid);
-        expect(text).toContain('$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type_label');
-        expect(text).not.toMatch(/mobile\.(target_type|issue|valid_period|issue_period|issue_count|status)[:"]/);
+        expect(text).not.toContain('_global.isPortable');
+        expect(text).not.toContain('mobile_card_view');
+        expect(text).not.toMatch(/promotion_coupon\.mobile\./);
 
         for (const file of [
             path.join(LANG_ROOT, 'ko/admin/promotion_coupon.json'),
             path.join(LANG_ROOT, 'en/admin/promotion_coupon.json'),
             path.join(JA_ROOT, 'admin/promotion_coupon.json'),
         ]) {
-            const mobile = JSON.parse(fs.readFileSync(file, 'utf8')).mobile ?? {};
-            expect(Object.keys(mobile).filter((k) => k.includes(':')), file).toHaveLength(0);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).mobile, file).toBeUndefined();
         }
+    });
+
+    /**
+     * 회원 배송지 목록도 같은 카드 블록을 `_global.isPortable` 에 묶어 두었다 — 같은 결정으로 걷어냈다.
+     *
+     * @scenario surface=user_address_index, defect=unreachable_mobile_cards
+     * @effects address_list_has_no_unreachable_mobile_cards
+     */
+    it('회원 배송지 목록에도 보이지 않던 카드 블록이 남지 않는다', () => {
+        const text = renderJson(addressDatagrid);
+        expect(text).not.toContain('_global.isPortable');
+        expect(text).not.toContain('mobile_card_view');
     });
 });
 

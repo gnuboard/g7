@@ -9,7 +9,7 @@
 ### Added
 
 - 확장 업데이트 명령어(`module:update`·`plugin:update`·`template:update`·번들 일괄 업데이트)의 터미널 안내 문구와 설치·업데이트·제거 진행 문구의 일본어 번역을 추가했습니다(`extensions.commands.update.*`·`extensions.commands.bundled_update.*`·`extensions.progress.*`, 71키).
-- 拡張を「修正を維持」で更新したときのレイアウト処理結果(更新完了通知の要約・CLI の結果表・アクティビティログの変更内容)の日本語訳を追加しました。
+- 확장을 「수정 유지」로 업데이트했을 때의 레이아웃 처리 결과(업데이트 완료 알림 요약, CLI 결과 표, 활동 로그 변경 내용) 일본어 번역을 추가했습니다.
 
 - 활동 로그 행위자 라벨 「システム(CLI)」 일본어 번역을 추가했습니다(`common.system_cli`). Artisan 커맨드·스케줄러가 남긴 활동 로그의 행위자 칸에 쓰이며, 없으면 일본어 로케일에서 이 라벨만 한국어로 보입니다.
 - 활동 로그 목록 「동작」 칸의 방문자 통계 운영 행위 라벨 일본어 번역을 추가했습니다(`activity_log.action.analytics.*` 9종). 없으면 동작 칸에 `analytics.extension_purged` 같은 원문 키가 보입니다.
@@ -54,7 +54,7 @@
   이 자리에 키가 그대로 노출됩니다.
 - 확장 카드가 새로 내보내는 동작 3종(주 버튼·보조 버튼·더보기 메뉴)의 편집기 라벨
   일본어 번역을 추가했습니다. 없으면 동작 탭에 키가 그대로 노출됩니다.
-- 確認画面と拡張アイコンの案内文言（アイコン規格の警告 25 件）を追加しました。
+- 확인 화면과 확장 아이콘 안내 문구(아이콘 규격 경고 25건)의 일본어 번역을 추가했습니다.
 - 코어 권한 2건(`core.system`·`core.system.update`)의 일본어 번역을 추가했습니다 — 일본어 로케일의 역할 수정 화면에서 「시스템 관리」·「코어 업데이트」가 한국어로 남아 있었습니다.
 
 - 레이아웃 파일 생성·삭제·이름변경 안내 문구 일본어 번역 추가 (`layouts.messages.*`·`layouts.errors.*`·`layouts.reference_kinds.*`) — 코드 편집기에서 화면 파일을 직접 만들고 지우고 옮길 수 있게 되면서 새로 생긴 안내입니다. 쓸 수 없는 이름(`invalid_name`)·이미 있는 이름(`name_taken`) 같은 입력 오류와, 지우거나 옮길 수 없는 사유 — 모듈·플러그인이 제공한 원본이라서(`delete_blocked_source_type`·`rename_blocked_source_type`), 다른 화면이 상속·조각으로 참조하고 있어서(`delete_blocked_by_reference`·`rename_blocked_by_reference`) — 그리고 라우트가 연결된 화면을 지울 때 한 번 더 묻는 안내(`delete_requires_confirmation`)가 일본어 로케일에서 자연스럽게 표시됩니다. 참조 목록에 붙는 갈래 이름(상속·조각 참조·라우트 연결)도 함께 번역했습니다.
@@ -63,7 +63,7 @@
 
 - 커스텀 자산 편집 모달의 새 문구 일본어 번역 추가 (`layout_editor.custom_assets.*`) — 파일을 경로별 트리로 보여 주고 파일명·내용을 검색할 수 있게 되면서 생긴 문구입니다. 검색 입력 안내와 결과 없음 안내, 미저장 표시, 이름변경 버튼과 입력 안내, 대상을 바꿀 때 미저장 편집을 버릴지 묻는 확인, 자동 줄바꿈 토글 라벨입니다.
 
-- 활동 로그 문구 4건 일본어 번역 추가 (`activity_log.description.layout_create`·`layout_rename`·`layout_delete`·`custom_asset_rename`) — 레이아웃 파일 생성·이름변경·삭제와 커스텀 자산 이름변경이 활동 로그에 남게 되면서 생긴 문구입니다(생성기 대신 수작업으로 넣었습니다 — 키로 재생성하면 덮어써도 됩니다).
+- 활동 로그 문구 4건 일본어 번역 추가 (`activity_log.description.layout_create`·`layout_rename`·`layout_delete`·`custom_asset_rename`) — 레이아웃 파일 생성·이름변경·삭제와 커스텀 자산 이름변경이 활동 로그에 남게 되면서 생긴 문구입니다.
 
 - 레이아웃 소스 파일 검사 문구 일본어 번역 추가 — 태그·속성·주석·중첩 규칙 위반을 알려 주는 안내가 줄·열 위치와 함께 일본어로 표시됩니다.
 
@@ -97,7 +97,7 @@
 - 회원 알림함 관리 기능의 일본어 번역을 추가했습니다. 관리자가 회원에게 나간 알림을 목록으로 보고 지울 때 뜨는 안내 문구(`member_notification.*` 7건)와, 좌측 메뉴 「회원 알림함」, 권한 3종(`core.member-notifications`·`.read`·`.delete`)이 일본어 로케일에서 자연스럽게 표시됩니다.
 - 저장소 경로 거부 안내 문구의 일본어 번역을 추가했습니다(`exceptions.storage.unsafe_path`·`destructive_on_root`·`local_safe_option_package`) — 허용되지 않는 저장 경로나 저장소 최상위 폴더 삭제 요청이 거부될 때, 저장소 디스크 설정에 필요한 패키지가 없을 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 한국어로 나옵니다.
 - 첨부파일 업로드에서 파일 내용이 허용 형식과 다를 때의 거부 문구(`attachment.validation.file_mimetype_invalid`)와 빈 파일(0바이트) 거부 문구(`attachment.validation.file_empty`) 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이름만 이미지로 바꾼 파일이나 빈 파일을 올렸을 때 안내가 번역되지 않은 채 나옵니다. (KVE-2026-2366)
-- 비밀번호 재설정으로 계정 잠금이 풀렸을 때의 활동 로그 문구(`activity_log.description.auth_account_unlocked_by_password_reset`)를 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
+- 비밀번호 재설정으로 계정 잠금이 풀렸을 때의 활동 로그 문구(`activity_log.description.auth_account_unlocked_by_password_reset`)를 추가했습니다.
 - 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
   (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
   (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
@@ -107,11 +107,13 @@
   추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
 - 관리 범위 밖의 회원이 섞인 일괄 상태 변경의 제외 사유(`user.bulk_status_out_of_scope`)와, 유형별 마지막 활성 템플릿의 비활성화·삭제 거절 문구(`templates.errors.last_active_deactivate`·`last_active_uninstall`) 일본어 번역을 추가했습니다.
 - 역할↔메뉴 일괄 지정·회원 역할 일괄 변경의 코어 문구 일본어 번역을 추가했습니다 — 메뉴 역할 일괄 변경 결과·실패 안내(`menu.bulk_roles_*`·`menu.admin_role_required`), 회원 역할 일괄 변경 결과·권한 상한 거부 안내(`user.bulk_roles_*`), 활동 로그 「ロール一括変更」(`activity_log.action.bulk_roles`·`activity_log.description.user_bulk_roles`), 요청 검증 문구와 항목명(`validation.role.menu_ids.*`·`validation.attributes.menu_ids`·`role_ids`·`mode`·`uuids`).
-- 7.0 에서 만든 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록할 때 남기는 경고(`exceptions.layout.include_skipped`), 레이아웃 편집기가 저장본에 이미 있던 목록 밖 컴포넌트를 알리는 경고(`exceptions.layout_markup_lint.template_component_kept`), 플러그인 레이아웃 마크업 컴파일 실패(`plugins.errors.layout_validation_markup_error`), 템플릿 레이아웃 검증 실패 요약(`templates.errors.layout_validation_validation_failed`)의 일본어 문구를 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재).
+- 7.0 에서 만든 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록할 때 남기는 경고(`exceptions.layout.include_skipped`), 레이아웃 편집기가 저장본에 이미 있던 목록 밖 컴포넌트를 알리는 경고(`exceptions.layout_markup_lint.template_component_kept`), 플러그인 레이아웃 마크업 컴파일 실패(`plugins.errors.layout_validation_markup_error`), 템플릿 레이아웃 검증 실패 요약(`templates.errors.layout_validation_validation_failed`)의 일본어 문구를 추가했습니다.
+- 입력 오류가 두 개 이상일 때 오류 안내 끝에 붙는 나머지 오류 수 문구(`validation.summary_more_error`, `validation.summary_more_errors`)의 일본어 번역을 추가했습니다. 일본어 화면의 오류 안내가 「(and 1 more error)」 대신 「(他 1 件のエラー)」로 끝납니다.
+- 관리자 회원 알림함 목록 조회의 검증 오류 문구에 쓰는 항목 이름(`member_notification.list_attributes.*` 11개) 일본어 번역을 추가했습니다. 없으면 일본어 로케일의 안내 문구에 내부 키가 그대로 나옵니다.
 
 ### Changed
 
-- モジュール・プラグイン・テンプレート更新時の上書き警告文を、レイアウトと拡張フラグメントの両方を指す表現に変更しました。
+- 모듈, 플러그인, 템플릿 업데이트 때의 덮어쓰기 경고 문구를 레이아웃과 확장 조각을 함께 가리키는 표현으로 바꿨습니다.
 
 - 독립 레이아웃 전역 상태 호스트 누락 경고(`layout_markup_lint.standalone_missing_global_host`)와 편집기 빌드 파일 누락 안내(`templates.messages.editor_assets_missing`)를 한국어 원문 변경에 맞춰 다시 번역했습니다.
 - 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
@@ -120,7 +122,7 @@
   (`analytics.alerts.ledger_limit_message`)·조치 링크(`ledger_limit_action`, 「保持設定を開く」)와 재집계
   건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
   「保持期間」과 다른 말로 보였습니다.
-- 계정 잠김 안내(`auth.account_locked`·`auth.account_locked_permanently`)와 무기한 잠금 활동 로그 문구(`activity_log.description.auth_account_locked_permanently`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다 — 코어가 재설정 완료 시 잠금을 풀도록 바뀌었습니다. 직접 적었습니다(번역 API 키 부재).
+- 계정 잠김 안내(`auth.account_locked`·`auth.account_locked_permanently`)와 무기한 잠금 활동 로그 문구(`activity_log.description.auth_account_locked_permanently`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다 — 코어가 재설정 완료 시 잠금을 풀도록 바뀌었습니다.
 
 - 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
 - 알림 템플릿의 역할 수신자 값이 잘못된 형태로 저장되려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
@@ -137,6 +139,7 @@
 
 - 모듈 비활성화 경고(`modules.deactivate_warning`)의 일본어 문구가 의존하는 것이 템플릿뿐인 것처럼 「アクティブなテンプレート」라고 하던 것을 「有効化された拡張」로 바로잡았습니다(코어 원문과 같은 수정).
 - 모듈·플러그인 레이아웃 검증 실패 요약(`modules.errors.layout_validation_validation_failed`, `plugins.errors.layout_validation_validation_failed`) 끝의 `: :error` 를 ko 원문에 맞춰 뺐습니다. 호출부가 더 이상 오류 문구를 넘기지 않아 일본어 화면에 `:error` 가 글자 그대로 보였습니다.
+- 레이아웃 편집기 커스텀 자산 창의 바이너리 파일 안내 문구(`layout_editor.custom_assets.binary_hint`)의 치환 자리를 `:extension` 에서 `{extension}` 으로 바꿨습니다(코어 원문과 같은 수정). 화면 번역기는 `{이름}` 만 바꿔 넣어, 「このフォーマット(:extension)」처럼 자리 이름이 글자 그대로 보였습니다.
 
 ## [1.0.10] - 2026-09-09
 

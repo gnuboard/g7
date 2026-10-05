@@ -79,6 +79,36 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
+     * 옵션 스냅샷에 정가가 없으면 상품 정가에 옵션 조정액을 더한 값이 정가다 (실측 2026-10-03).
+     *
+     * 판매가는 조정액을 더해 저장되는데 정가만 상품 정가 그대로 내려, 블루(+3,000) 옵션이
+     * 「정가 ¥4,000 / 판매가 ¥5,000」으로 정가가 판매가보다 낮게 찍혔다. 클레임 비교 카드는
+     * 같은 주문의 정가를 ¥7,000 으로 계산해 두 화면이 갈렸다.
+     *
+     * @effects option_list_price_adds_the_option_adjustment_without_an_option_list_price
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_option_list_price_adds_option_adjustment_when_option_snapshot_has_none(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'unit_price' => 5000,
+            'quantity' => 2,
+            'subtotal_price' => 10000,
+            'product_snapshot' => ['list_price' => '4000.00', 'selling_price' => '2000.00'],
+            'option_snapshot' => ['list_price' => null, 'selling_price' => null, 'price_adjustment' => '3000.00'],
+        ]);
+
+        $resource = (new OrderOptionResource($option))->resolve();
+        $this->assertEquals(7000, $resource['list_price']);
+
+        $order->load('options');
+        $orderResource = (new OrderResource($order))->resolve();
+        $this->assertEquals(14000, $orderResource['total_list_price']);
+    }
+
+    /**
      * OrderOptionResource에서 mc_subtotal_discount_amount 필드가 제거되었는지 확인
      *
      * @effects option_resource_drops_the_removed_mc_discount_field

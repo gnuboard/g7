@@ -3,6 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use Illuminate\Support\Facades\App;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -14,6 +15,8 @@ class ModuleUpdateI18nTest extends TestCase
 {
     /**
      * 업데이트 관련 필수 다국어 키 목록
+     *
+     * @return array<int, array{0: string}> 다국어 키
      */
     public static function updateTranslationKeysProvider(): array
     {
@@ -50,8 +53,16 @@ class ModuleUpdateI18nTest extends TestCase
     }
 
     /**
-     * @dataProvider updateTranslationKeysProvider
+     * 업데이트 관련 다국어 키가 한국어 파일에 있다.
+     *
+     * @scenario concern=translation_key, extension_type=module
+     *
+     * @effects ko_translation_key_exists
+     *
+     * @param  string  $key  다국어 키
+     * @return void 반환값 없음
      */
+    #[DataProvider('updateTranslationKeysProvider')]
     public function test_ko_translation_key_exists(string $key): void
     {
         App::setLocale('ko');
@@ -67,8 +78,16 @@ class ModuleUpdateI18nTest extends TestCase
     }
 
     /**
-     * @dataProvider updateTranslationKeysProvider
+     * 업데이트 관련 다국어 키가 영어 파일에 있다.
+     *
+     * @scenario concern=translation_key, extension_type=module
+     *
+     * @effects en_translation_key_exists
+     *
+     * @param  string  $key  다국어 키
+     * @return void 반환값 없음
      */
+    #[DataProvider('updateTranslationKeysProvider')]
     public function test_en_translation_key_exists(string $key): void
     {
         App::setLocale('en');
@@ -85,8 +104,14 @@ class ModuleUpdateI18nTest extends TestCase
     /**
      * ko/en 번역이 동일하지 않은지 확인 (실제로 번역된 것인지 검증)
      *
-     * @dataProvider updateTranslationKeysProvider
+     * @scenario concern=translation_key, extension_type=module
+     *
+     * @effects ko_and_en_translations_differ
+     *
+     * @param  string  $key  다국어 키
+     * @return void 반환값 없음
      */
+    #[DataProvider('updateTranslationKeysProvider')]
     public function test_ko_and_en_translations_differ(string $key): void
     {
         App::setLocale('ko');
@@ -109,6 +134,12 @@ class ModuleUpdateI18nTest extends TestCase
 
     /**
      * 플레이스홀더가 있는 키의 치환이 정상 동작하는지 확인
+     *
+     * @scenario concern=translation_key, extension_type=module
+     *
+     * @effects placeholder_substitution_works
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholder_substitution_works(): void
     {
@@ -137,6 +168,12 @@ class ModuleUpdateI18nTest extends TestCase
 
     /**
      * 영어 플레이스홀더 치환 확인
+     *
+     * @scenario concern=translation_key, extension_type=module
+     *
+     * @effects en_placeholder_substitution_works
+     *
+     * @return void 반환값 없음
      */
     public function test_en_placeholder_substitution_works(): void
     {

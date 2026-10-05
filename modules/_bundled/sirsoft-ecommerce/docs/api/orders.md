@@ -475,6 +475,7 @@ _단건 응답: `data` 객체의 필드._
 | order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
 | progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `true` | first order 여부 |
@@ -1193,12 +1194,15 @@ Content-Type: application/json
 }
 ```
 
-**응답 메시지** — `mark_order_complete` 에 따라 갈립니다 (#599 세션2 S2-D3).
+**응답 메시지** — 요청 전 주문 상태와 `mark_order_complete` 에 따라 갈립니다.
 
-| `mark_order_complete` | 주문 상태 | `message` |
-| --- | --- | --- |
-| `true` | 주문완료까지 전이 | `입금이 확인되어 결제완료 처리되었습니다.` |
-| `false`(기본) | 입금 내역만 기록 | `입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.` |
+| 요청 전 주문 상태 | `mark_order_complete` | 처리 | `message` |
+| --- | --- | --- | --- |
+| 주문대기·결제대기 | `true` | 결제완료로 전이 | `입금이 확인되어 결제완료 처리되었습니다.` |
+| 주문대기·결제대기 | `false`(기본) | 입금 내역만 기록 | `입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.` |
+| 결제완료 이후(상품준비중·배송 등) | 무관 | 입금 내역과 주문 결제금액(`total_paid_amount`)을 기록, 상태는 그대로 | `입금 내역과 결제금액을 기록했습니다. 이미 결제 이후 단계인 주문이라 주문 상태는 그대로 유지됩니다.` |
+
+> 운영자가 주문 목록에서 상태를 먼저 올려 둔 뒤 입금을 기록하는 경우다. 종전에는 결제 기록만 입금완료가 되고 주문 결제금액이 0 으로 남아 환불 예정액이 0원으로 계산됐고, `true` 로 보내면 상품준비중 주문이 결제완료로 되돌아갔다(실측 2026-10-03).
 
 > 종전에는 두 경우 모두 「결제완료 처리되었습니다」로 응답해, **결제완료로 전이하지 않은 건에도 전이했다고 알렸습니다.** 운영자가 실제 상태를 오해할 수 있어 분기했습니다.
 
@@ -2265,6 +2269,7 @@ _단건 응답: `data` 객체의 필드._
 | order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
 | progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `false` | first order 여부 |
@@ -3106,6 +3111,7 @@ _단건 응답: `data` 객체의 필드._
 | order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
 | progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `false` | first order 여부 |

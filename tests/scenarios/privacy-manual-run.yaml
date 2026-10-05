@@ -67,6 +67,8 @@ effects:
   - status_api_masks_targets_without_run_permission
   - run_record_captures_count_and_failure
   - activity_log_records_queue_and_finish
+  - activity_log_orders_queue_before_finish_on_sync_queue
+  - queued_hook_failure_does_not_block_dispatch # 접수 훅 구독자 예외가 작업 발행을 막지 않는다
   - extension_registers_manual_run_target_via_filter
   - skip_waiting_widens_dormant_population_to_unnotified_members
   - skip_waiting_keeps_admin_accounts_out_of_withdrawal

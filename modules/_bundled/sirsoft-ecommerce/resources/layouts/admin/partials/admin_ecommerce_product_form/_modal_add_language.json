@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.title",
-        "description": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.description",
         "size": "md"
     },
     "children": [

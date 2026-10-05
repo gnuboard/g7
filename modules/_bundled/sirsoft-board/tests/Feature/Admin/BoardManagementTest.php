@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 관리자 게시판 관리 테스트
@@ -742,8 +743,6 @@ class BoardManagementTest extends ModuleTestCase
      * 따라서 요청에는 항상 모든 키가 존재하며, 무변경 저장이 검증에 막히면 안 된다.
      * 이 테스트가 "전체 객체 PUT" 이라는 프런트 계약을 백엔드에 고정한다.
      *
-     * @dataProvider roundTripBoardAttributesProvider
-     *
      * @scenario case=upload_disabled_extensions_null
      *
      * @effects unchanged_form_data_round_trip_saves
@@ -751,6 +750,7 @@ class BoardManagementTest extends ModuleTestCase
      * @param  array<string, mixed>  $attributes  게시판 속성
      * @return void 반환값 없음
      */
+    #[DataProvider('roundTripBoardAttributesProvider')]
     public function test_form_data_round_trip_save_passes(array $attributes): void
     {
         // Given: 생성 API 로 만든 게시판 (board-scoped 역할/권한이 실제로 존재하는 상태)

@@ -139,6 +139,7 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         );
     };
 
+    /** @effects untrusted_external_script_blocked */
     it('미신뢰 외부 src 는 주입하지 않고 경고만 남긴다', async () => {
         layoutScripts = [{ src: 'https://cdn.evil.com/x.js', id: 'evil' }];
 
@@ -153,6 +154,7 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         expect(injectedScriptSrcs()).not.toContain('https://cdn.evil.com/x.js');
     });
 
+    /** @effects untrusted_external_script_blocked */
     it('authority 우회 형태도 주입하지 않는다', async () => {
         layoutScripts = [{ src: '/\\/evil.com/x.js', id: 'bypass' }];
 
@@ -167,6 +169,7 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         expect(injectedScriptSrcs()).not.toContain('/\\/evil.com/x.js');
     });
 
+    /** @effects trusted_script_host_allowlist_wired */
     it('same-origin 경로는 그대로 주입된다 (과차단 없음)', async () => {
         layoutScripts = [{ src: '/api/templates/assets/sirsoft-basic/x.js', id: 'ok' }];
 
@@ -177,6 +180,7 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         });
     });
 
+    /** @effects trusted_script_host_allowlist_wired */
     it('선언된 신뢰 호스트는 주입된다', async () => {
         (window as any).G7Config = { trustedScriptHosts: ['cdn.ckeditor.com'] };
         layoutScripts = [{ src: 'https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js', id: 'ck' }];
@@ -188,5 +192,90 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
                 'https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js'
             );
         });
+    });
+
+    /**
+     * 자산 주소 방식 — 런타임(TemplateApp.loadLayoutScript)은 레이아웃이 확장자 형태로 굳혀 둔 `src` 를
+     * `convertToCurrentMode` 로 바꿔 싣는다. 확장자 붙은 주소를 웹서버가 먼저 가로채는 사이트(확장자 없는 방식)에서
+     * 캔버스만 원래 주소로 실으면 CKEditor 본체가 404 로 떨어져 미리보기의 본문 편집기가 그려지지 않는다.
+     */
+    const ckSrc = '/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js';
+    const injectedTag = (marker: string): HTMLScriptElement | null =>
+        window.document.querySelector(`script[data-g7le-canvas-script="${marker}"]`);
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects preview_layout_script_url_converted_to_current_mode
+     */
+    it('[case:wysiwyg-6] 확장자 없는 방식이면 캔버스도 런타임처럼 바꾼 주소로 싣는다', async () => {
+        (window as any).G7Config = { trustedScriptHosts: [], assetUrlMode: 'extensionless' };
+        layoutScripts = [{ src: ckSrc, id: 'ckeditor5_script' }];
+
+        renderCanvas();
+
+        await waitFor(() => {
+            expect(injectedTag(ckSrc)).not.toBeNull();
+        });
+        expect(injectedTag(ckSrc)?.getAttribute('src')).toBe(
+            '/api/plugins/assets/sirsoft-ckeditor5?file=dist%2Fvendor%2Fckeditor5%2F43.3.1%2Fckeditor5.umd.js'
+        );
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects preview_layout_script_url_converted_to_current_mode
+     */
+    it('[case:wysiwyg-6] 확장자 방식(기본)이면 주소를 그대로 싣는다', async () => {
+        layoutScripts = [{ src: ckSrc, id: 'ckeditor5_script' }];
+
+        renderCanvas();
+
+        await waitFor(() => {
+            expect(injectedTag(ckSrc)).not.toBeNull();
+        });
+        expect(injectedTag(ckSrc)?.getAttribute('src')).toBe(ckSrc);
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects vendored_editor_umd_executes_once_across_loaders
+     */
+    it('[case:wysiwyg-6] 다른 로더가 다른 id 로 같은 주소를 이미 실었으면 다시 싣지 않는다 (본체 두 번 실행 방지)', async () => {
+        (window as any).G7Config = { trustedScriptHosts: [], assetUrlMode: 'extensionless' };
+        // 편집기 플러그인의 자체 로더가 먼저 실은 본체 — 같은 UMD 가 두 번 실행되면 전역이 빈 객체로 덮인다
+        const vendorTag = window.document.createElement('script');
+        vendorTag.id = 'ckeditor5-vendor-umd';
+        vendorTag.setAttribute('src', '/api/plugins/assets/sirsoft-ckeditor5?file=dist%2Fvendor%2Fckeditor5%2F43.3.1%2Fckeditor5.umd.js');
+        window.document.body.appendChild(vendorTag);
+        layoutScripts = [{ src: ckSrc, id: 'ckeditor5_script' }];
+
+        try {
+            renderCanvas();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(injectedTag(ckSrc)).toBeNull();
+        } finally {
+            vendorTag.remove();
+        }
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects vendored_editor_umd_executes_once_across_loaders
+     */
+    it('[case:wysiwyg-6] 호스트 화면이 바꾼 주소로 이미 실은 스크립트(id 없음)는 다시 싣지 않는다', async () => {
+        (window as any).G7Config = { trustedScriptHosts: [], assetUrlMode: 'extensionless' };
+        const hostTag = window.document.createElement('script');
+        hostTag.setAttribute('src', '/api/plugins/assets/sirsoft-ckeditor5?file=dist%2Fvendor%2Fckeditor5%2F43.3.1%2Fckeditor5.umd.js');
+        window.document.body.appendChild(hostTag);
+        layoutScripts = [{ src: ckSrc }];
+
+        try {
+            renderCanvas();
+            // 주입 판정은 렌더 직후 effect 에서 끝난다 — 한 틱 뒤에도 캔버스 주입 태그가 없어야 한다
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(injectedTag(ckSrc)).toBeNull();
+        } finally {
+            hostTag.remove();
+        }
     });
 });

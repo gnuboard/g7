@@ -141,7 +141,9 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
      */
     public function transferChildren(int $fromParentId, int $toParentId): int
     {
+        // 이전 대상 행 자신은 빼고 옮긴다 — 생존 행이 피흡수 행의 자식이면 자기 자신을 부모로 갖게 된다.
         return OrderOption::where('parent_option_id', $fromParentId)
+            ->where('id', '!=', $toParentId)
             ->update(['parent_option_id' => $toParentId]);
     }
 

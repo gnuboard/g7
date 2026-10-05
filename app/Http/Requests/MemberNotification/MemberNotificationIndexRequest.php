@@ -53,4 +53,29 @@ class MemberNotificationIndexRequest extends FormRequest
 
         return HookManager::applyFilters('core.member_notification.index_validation_rules', $rules);
     }
+
+    /**
+     * 검증 오류 문구에 쓸 항목 이름
+     *
+     * 항목 이름이 없으면 422 문구에 `search type` 같은 내부 키가 그대로 나온다. 확장이 규칙 필터로
+     * 파라미터를 더했다면 같은 키의 이름도 이 필터로 더한다(회원 목록 요청과 같은 짝).
+     *
+     * @return array<string, string> 항목 이름
+     */
+    public function attributes(): array
+    {
+        return HookManager::applyFilters('core.member_notification.index_validation_attributes', [
+            'page' => __('member_notification.list_attributes.page'),
+            'per_page' => __('member_notification.list_attributes.per_page'),
+            'search_type' => __('member_notification.list_attributes.search_type'),
+            'search' => __('member_notification.list_attributes.search'),
+            'read' => __('member_notification.list_attributes.read'),
+            'user_id' => __('member_notification.list_attributes.user_id'),
+            'user_uuid' => __('member_notification.list_attributes.user_uuid'),
+            'created_from' => __('member_notification.list_attributes.created_from'),
+            'created_to' => __('member_notification.list_attributes.created_to'),
+            'sort_by' => __('member_notification.list_attributes.sort_by'),
+            'sort_order' => __('member_notification.list_attributes.sort_order'),
+        ], $this);
+    }
 }

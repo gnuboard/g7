@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Upgrades;
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\Ext\Plugins\SirsoftPayNhnkcp\V1_1_0\Migrations\DropLegacyPaymentPanelOverlay;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
@@ -25,10 +26,9 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  *
  * 이 테스트가 고정하는 것은 세 축이다 — 삭제 범위(자기 행만) · 멱등 · 대상 0건 안전.
  * 되돌리면(스코프 조건 제거 / run() 본문 제거) 각각 red 가 된다.
- *
- * @group payment
- * @group upgrade
  */
+#[Group('payment')]
+#[Group('upgrade')]
 class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
 {
     /**

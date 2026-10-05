@@ -383,13 +383,11 @@
   "modal": {
     "preset_save": {
       "title": "プリセット保存",
-      "description": "現在の検索条件をプリセットとして保存します。",
       "placeholder": "プリセット名を入力してください",
       "save": "保存"
     },
     "preset_manage": {
       "title": "プリセット管理",
-      "description": "検索プリセットを管理します。",
       "add_new": "新しいプリセットを追加",
       "empty": "保存されたプリセットがありません。"
     },

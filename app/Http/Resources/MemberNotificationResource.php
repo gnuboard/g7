@@ -33,13 +33,25 @@ class MemberNotificationResource extends BaseApiResource
      * 컬렉션이 한 번 읽어 모든 행에 나눠 준다.
      *
      * @param  array<string, string>  $map  종류 → 라벨 매핑
-     * @return $this
+     * @return $this 같은 리소스(이어 호출용)
      */
     public function withTypeLabelMap(array $map): static
     {
         $this->typeLabelMap = $map;
 
         return $this;
+    }
+
+    /**
+     * 행 권한 매핑 — 행 메뉴 「삭제」는 행의 abilities.can_delete 로 켜고 끈다(DataGrid disabledField).
+     *
+     * @return array<string, string> ability 키 → 권한 식별자
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_delete' => 'core.member-notifications.delete',
+        ];
     }
 
     /**
@@ -53,17 +65,22 @@ class MemberNotificationResource extends BaseApiResource
         $data = is_array($this->data) ? $this->data : (json_decode((string) $this->data, true) ?? []);
         $member = $this->resolveMember($request);
 
+        // 어떤 알림인지는 `data.type`(알림 정의 키)에 있다 — `type` 열은 모든 행이 같은 알림 클래스명이다.
+        // 회원 화면의 알림 목록(UserNotificationResource)과 같은 순서로 고른다.
+        $type = $data['type'] ?? $this->type;
+
         return [
             'id' => $this->id,
             'member' => $member,
-            'type' => $this->type,
-            'type_label' => $this->typeLabelMap[$this->type] ?? $this->type,
+            'type' => $type,
+            'type_label' => $this->typeLabelMap[$type] ?? $type,
             'subject' => $data['subject'] ?? null,
             'body_excerpt' => $this->excerpt($data['body'] ?? null),
             'url' => $data['click_url'] ?? null,
             'read_at' => $this->formatDateTimeStringForUser($this->read_at),
             'is_read' => $this->read_at !== null,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            ...$this->resourceMeta($request),
         ];
     }
 

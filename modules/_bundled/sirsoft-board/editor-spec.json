@@ -1490,9 +1490,66 @@
           ],
           "basic_defaults": {
             "default_board_permissions": {
-              "read": "all",
-              "write": "member",
-              "comment": "member"
+              "admin.posts.read": [
+                "admin"
+              ],
+              "admin.posts.write": [
+                "admin"
+              ],
+              "admin.posts.read-secret": [
+                "admin"
+              ],
+              "admin.comments.read": [
+                "admin"
+              ],
+              "admin.comments.write": [
+                "admin"
+              ],
+              "admin.attachments.upload": [
+                "admin"
+              ],
+              "admin.attachments.download": [
+                "admin"
+              ],
+              "admin.manage": [
+                "admin"
+              ],
+              "posts.read": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "posts.write": [
+                "admin",
+                "user"
+              ],
+              "posts.read-secret": [
+                "admin"
+              ],
+              "posts.write-notice": [
+                "admin"
+              ],
+              "comments.read": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "comments.write": [
+                "admin",
+                "user"
+              ],
+              "attachments.upload": [
+                "admin",
+                "user"
+              ],
+              "attachments.download": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "manager": [
+                "admin"
+              ]
             }
           }
         }
@@ -1604,7 +1661,7 @@
           "data": [
             {
               "id": 1,
-              "type": "board.post.created",
+              "type": "new_comment",
               "is_active": true,
               "is_default": true,
               "variables": [
@@ -1619,12 +1676,12 @@
                   "is_active": true,
                   "is_default": true,
                   "subject": {
-                    "ko": "게시글 등록 알림",
-                    "en": "New post"
+                    "ko": "새 댓글 알림",
+                    "en": "New comment"
                   },
                   "body": {
-                    "ko": "<p>새 게시글이 등록되었습니다.</p>",
-                    "en": "<p>A new post has been created.</p>"
+                    "ko": "<p>게시글에 새 댓글이 등록되었습니다.</p>",
+                    "en": "<p>A new comment was added to the post.</p>"
                   },
                   "recipients": [
                     {
@@ -2921,9 +2978,7 @@
                 "bulkApplySnapshot": {
                   "applyAll": false,
                   "boardIds": [
-                    11,
-                    12,
-                    13
+                    1
                   ],
                   "fields": [
                     "type",
@@ -2931,7 +2986,7 @@
                     "per_page",
                     "max_file_size",
                     "notify_author",
-                    "manager.write"
+                    "posts.write"
                   ]
                 }
               }
@@ -3003,6 +3058,38 @@
             "initialState": {
               "global": {
                 "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkPostSkipped) — 일괄 처리 응답의 건너뛴 글 목록이 담는 값이라, 편집기에서는 이 상태로 담아야 「0개 게시글」 빈 목록으로 열리지 않는다. 항목 모양은 응답 skipped 와 같다(id, title, reason, reason_label).",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_post_skipped_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkPostSkipped": [
+                  {
+                    "id": 101,
+                    "title": "샘플 게시글 제목",
+                    "reason": "already_blinded",
+                    "reason_label": "이미 블라인드된 글"
+                  },
+                  {
+                    "id": 102,
+                    "title": "답글이 달린 샘플 게시글",
+                    "reason": "has_replies",
+                    "reason_label": "답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)"
+                  }
+                ]
               }
             }
           }
@@ -3226,7 +3313,13 @@
                   "editLang": "ko",
                   "definition": {
                     "id": 1,
-                    "type": "sample_notification",
+                    "type": "new_comment",
+                    "relations": [
+                      "post_author"
+                    ],
+                    "relation_labels": {
+                      "post_author": "게시글 작성자"
+                    },
                     "name": {
                       "ko": "샘플 알림 정의",
                       "en": "Sample notification"
@@ -3262,12 +3355,16 @@
                     },
                     {
                       "type": "related_user",
-                      "value": "author"
+                      "relation": "post_author"
                     },
                     {
                       "type": "role",
-                      "value": "admin",
-                      "display_name": "최고 관리자",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
                       "exclude_trigger_user": false
                     },
                     {
@@ -3328,7 +3425,13 @@
                   "editLang": "ko",
                   "definition": {
                     "id": 1,
-                    "type": "sample_notification",
+                    "type": "new_comment",
+                    "relations": [
+                      "post_author"
+                    ],
+                    "relation_labels": {
+                      "post_author": "게시글 작성자"
+                    },
                     "name": {
                       "ko": "샘플 알림 정의",
                       "en": "Sample notification"
@@ -3364,12 +3467,16 @@
                     },
                     {
                       "type": "related_user",
-                      "value": "author"
+                      "relation": "post_author"
                     },
                     {
                       "type": "role",
-                      "value": "admin",
-                      "display_name": "최고 관리자",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
                       "exclude_trigger_user": false
                     },
                     {
@@ -3606,7 +3713,16 @@
               "global": {
                 "typeFilter": "샘플 값",
                 "showAdvancedSearch": "샘플 값",
-                "visibleColumns_reports": "샘플 값",
+                "visibleColumns_reports": [
+                  "created_at",
+                  "status",
+                  "target_status",
+                  "target_type",
+                  "snapshot_board_name",
+                  "snapshot_target_title",
+                  "snapshot_author_name",
+                  "reporter_id"
+                ],
                 "dateTo": "샘플 값",
                 "statusFilter": "샘플 값",
                 "targetStatusFilter": "샘플 값",

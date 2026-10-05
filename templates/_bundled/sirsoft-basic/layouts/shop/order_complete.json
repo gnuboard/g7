@@ -736,11 +736,30 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Img",
+                                                                "if": "{{item.thumbnail_url}}",
                                                                 "props": {
-                                                                    "src": "{{item.thumbnail_url ?? '/images/placeholder.png'}}",
+                                                                    "src": "{{item.thumbnail_url}}",
                                                                     "alt": "{{$localized(item.product_name)}}",
                                                                     "className": "w-16 h-16 object-cover rounded"
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{!item.thumbnail_url}}",
+                                                                "props": {
+                                                                    "className": "shrink-0 w-16 h-16 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "image",
+                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                        }
+                                                                    }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",

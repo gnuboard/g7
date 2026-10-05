@@ -54,6 +54,15 @@ export interface CodeWorkspaceProps {
   serverValue?: string;
   /** 그 파일의 서버 판본 (`lock_version`) */
   serverRevision?: number;
+  /**
+   * 방금 성공한 **내 저장** — 어느 파일(`key`)에 어떤 본문(`value`)을 보냈고 서버가 어떤 판본(`revision`)을
+   * 매겼는지. 저장을 보낼 때 `revision` 없이 적고, 성공 응답의 `lock_version` 으로 채운다.
+   *
+   * 서버는 저장한 마크업을 다시 역변환해 돌려주므로 공백·속성 표기가 정규화된다. 그 본문은 내 버퍼와
+   * 글자가 달라, 이 정보가 없으면 «판본이 오르고 내용이 다르다» 가 곧 «남이 고쳤다» 가 되어 내 저장
+   * 직후마다 충돌 바가 섰다(실측 2026-10-04: 태그 안 공백 세 칸 저장 → 「yours v2 → server v3」).
+   */
+  lastSave?: { key?: string; value?: string; revision?: number | null } | null;
   /** 탭에 보일 이름 — 없으면 키에서 뽑는다 */
   fileLabel?: string;
   /** 본문을 불러오는 중 (편집기를 언마운트하지 않는다 — 모델이 날아간다) */
@@ -73,6 +82,13 @@ export interface CodeWorkspaceProps {
    * 중에 열린 탭을 전부 없는 파일로 몰아 버리는 사고를 막는다.
    */
   knownKeys?: string[];
+  /**
+   * 부모가 «끝났다» 고 알린 키 — 새 이름으로 살린 없는 파일이다. 그 탭을 닫고 초안을 지운다.
+   *
+   * 살린 뒤에도 탭과 초안이 남으면 이미 살린 편집분이 다음 진입에서 또 «저장하지 않은 편집» 으로
+   * 뜨고 같은 물음을 되풀이한다(실측 2026-10-03). 편집기는 생성이 성공했는지 모르므로 부모가 알린다.
+   */
+  retiredKey?: string;
   markers?: CodeEditorMarker[];
   /** 검색 결과·오류 패널에서 온 이동 좌표 */
   revealAt?: CodeEditorReveal;
@@ -109,7 +125,7 @@ export interface CodeWorkspaceProps {
    * 조용히 버리면 사용자가 쓴 글이 사라지고, 그대로 두면 저장할 수 없는 탭이 남는다.
    * 그래서 원본이 없어졌다는 사실을 알리고 내용은 지키는 쪽으로 연다.
    */
-  onSaveAs?: (event: { target: { value: string } }) => void;
+  onSaveAs?: (event: { target: { value: string; key: string } }) => void;
   onSaveAll?: () => void;
   onPreview?: () => void;
   onNewFile?: () => void;
@@ -184,6 +200,7 @@ function labelFromKey(key: string): string {
  * | 재방문 · dirty | **`serverValue` 를 무시하고 버퍼를 보여준다** |
  * | 재방문 · clean | `serverValue` 로 갱신 (남이 고친 최신본 반영) |
  * | `serverRevision` 증가 + dirty | 충돌 바 — 자동 덮어쓰기 금지 |
+ * | 그 판본이 `lastSave` (내 저장) + 서버 정규화로 글자만 다름 | 서버 본문으로 clean. 저장 뒤 더 친 글자가 있으면 기준선만 옮겨 dirty 유지 |
  * | 저장 성공 (판본 증가 + clean 전환) | 초안 삭제 |
  * | 탭 상한 초과 | 오래된 **clean** 탭부터 해제. dirty 탭은 절대 자동으로 닫지 않는다 |
  */
@@ -192,11 +209,13 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   serverValue = '',
   serverKey,
   serverRevision = 0,
+  lastSave,
   fileLabel,
   isLoading = false,
   language = 'html',
   readOnly = false,
   knownKeys,
+  retiredKey,
   markers,
   revealAt,
   draftNamespace = 'g7le.codeEditor',
@@ -282,6 +301,9 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   onUserEditRef.current = onUserEdit;
   const onDirtyChangeRef = useRef(onDirtyChange);
   onDirtyChangeRef.current = onDirtyChange;
+  // 서버 본문 반영 효과가 읽는다 — 의존성에 넣으면 저장 정보가 바뀔 때마다 반영이 다시 돈다.
+  const lastSaveRef = useRef(lastSave);
+  lastSaveRef.current = lastSave;
 
   const activeBuffer = buffers[fileKey];
 
@@ -348,6 +370,24 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
             ...current,
             [fileKey]: { value: serverValue, base: serverValue, baseRevision: serverRevision, touchedAt: now },
           };
+        }
+
+        // 이 판본은 **내 저장**이 만든 것이다 — 서버가 역변환하며 공백·속성 표기를 정규화해 글자가
+        // 달라졌을 뿐이다. 보낸 본문 그대로면 서버 본문으로 clean 이 되고, 저장을 보낸 뒤 더 친
+        // 글자가 있으면 그 편집분은 남긴 채 기준선만 이 판본으로 옮긴다(아직 저장되지 않았다).
+        const saved = lastSaveRef.current;
+        if (
+          saved?.key === fileKey &&
+          typeof saved.revision === 'number' &&
+          saved.revision === serverRevision &&
+          serverRevision > existing.baseRevision
+        ) {
+          const next =
+            existing.value === saved.value
+              ? { value: serverValue, base: serverValue, baseRevision: serverRevision, touchedAt: now }
+              : { ...existing, base: serverValue, baseRevision: serverRevision, touchedAt: now };
+
+          return { ...current, [fileKey]: next };
         }
 
         // 내용까지 달라졌는데 판본이 올랐다면 남이 고친 것이다 — 사용자가 고르게 한다.
@@ -494,6 +534,26 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     },
     [fileKey, forgetDraft, onRequestSelect]
   );
+
+  // 부모가 살린 키를 알리면 그 탭과 초안을 거둔다 — 이미 열려 있을 때만.
+  // 알림 하나는 한 번만 처리한다. performClose 는 지금 파일(fileKey)에 따라 새로 만들어지므로 이 효과는
+  // 파일을 옮길 때마다 다시 돈다 — 처리한 키를 기억하지 않으면, 같은 이름의 파일을 새로 만들어 연 뒤
+  // 다른 파일로 옮기는 순간 남아 있던 옛 알림이 그 새 탭과 초안까지 거둔다. 부모가 알림을 비우면(빈 값)
+  // 기억도 비워, 같은 키를 다시 살리는 다음 알림은 처리한다.
+  const handledRetiredKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!retiredKey) {
+      handledRetiredKeyRef.current = null;
+      return;
+    }
+    if (handledRetiredKeyRef.current === retiredKey) return;
+    handledRetiredKeyRef.current = retiredKey;
+    if (openKeys.includes(retiredKey)) {
+      performClose(retiredKey);
+    }
+    // openKeys 는 일부러 빼다 — 닫은 뒤 목록이 바뀔 때마다 다시 돌 이유가 없다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retiredKey, performClose]);
 
   /**
    * 탭 닫기 — dirty 면 3지선다(저장 / 버림 / 취소)를 묻는다 (계획서 §4.3 표 6행).
@@ -949,7 +1009,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
                 type="button"
                 data-testid="missing-save-as"
                 className="px-3 py-1 text-xs rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                onClick={() => onSaveAs?.({ target: { value: activeBuffer?.value ?? '' } })}
+                onClick={() => onSaveAs?.({ target: { value: activeBuffer?.value ?? '', key: fileKey } })}
               >
                 {t('admin.templates.layout_edit.file.save_as')}
               </Button>

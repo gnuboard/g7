@@ -1252,6 +1252,10 @@ return [
         'bucket_bounds' => 'Bucket bounds must be comma-separated integers between :min and :max, in increasing order without duplicates.',
     ],
 
+    // 검증 실패 요약(422 응답 message)의 나머지 오류 수 꼬리 — Laravel 원문 「(and :count more error)」(단수)와 「…errors)」(복수)를 대신한다
+    'summary_more_error' => '(and :count more error)',
+    'summary_more_errors' => '(and :count more errors)',
+
     'attributes' => [
         'since' => 'reference time',
         'skip_waiting' => 'skip waiting period',

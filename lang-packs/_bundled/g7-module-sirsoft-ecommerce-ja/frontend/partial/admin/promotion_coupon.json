@@ -138,16 +138,6 @@
       "actions": "操作"
     }
   },
-  "mobile": {
-    "benefit_label": "特典金額",
-    "target_type_label": "適用対象",
-    "issue_label": "発行",
-    "validity_period_label": "有効期限",
-    "issue_period_label": "発行期間",
-    "issue_count_label": "発行数量",
-    "status_label": "ステータス",
-    "creator_label": "登録者"
-  },
   "modal": {
     "status_change": {
       "title": "発行ステータスを変更しますか?",

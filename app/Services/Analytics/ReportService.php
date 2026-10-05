@@ -253,7 +253,7 @@ class ReportService
             'limit' => $perPage + 1,
             'offset' => ($page - 1) * $perPage,
             'sort' => $this->sortColumn($options['sort'] ?? null),
-            'search' => $this->searchTerms($options['search'] ?? null, $dimension),
+            'search' => $this->searchTerms($options['search'] ?? null, $dimension, $options['locale'] ?? null),
         ]);
 
         $hasMore = $rows->count() > $perPage;
@@ -323,7 +323,7 @@ class ReportService
             'limit' => self::BUCKET_ROW_LIMIT,
             'offset' => 0,
             'sort' => 'visits',
-            'search' => $this->searchTerms($options['search'] ?? null, $dimension),
+            'search' => $this->searchTerms($options['search'] ?? null, $dimension, $options['locale'] ?? null),
         ])->sort(function ($a, $b): int {
             return [BucketLabeler::lowerBound((string) $a->label), (string) $a->label]
                 <=> [BucketLabeler::lowerBound((string) $b->label), (string) $b->label];
@@ -394,6 +394,11 @@ class ReportService
             // 알려진 탭(전체·게시글·상품·페이지)만 풀고, 확장이 더한 탭은 원값 그대로.
             StatsDimension::SearchTab->value => __('analytics.search_tab.'.$label, [], $locale) !== 'analytics.search_tab.'.$label
                 ? __('analytics.search_tab.'.$label, [], $locale)
+                : $label,
+            // 유입 종류·기기 종류는 저장 코드(`direct`·`desktop`) — 방문자 목록과 같은 이름으로 풀고, 모르는 코드는 원값.
+            StatsDimension::ReferrerType->value,
+            StatsDimension::DeviceType->value => __('analytics.'.$dimension.'.'.$label, [], $locale) !== 'analytics.'.$dimension.'.'.$label
+                ? __('analytics.'.$dimension.'.'.$label, [], $locale)
                 : $label,
             default => $options['extension_labels'][$label] ?? $label,
         };
@@ -474,11 +479,15 @@ class ReportService
      * (`UrlNormalizer::forDisplay`). 화면에 보이는 「테스트」로 찾으면 저장값 「%ED%85%8C…」와 맞지
      * 않으므로, 공백·비ASCII 글자를 브라우저와 같게 인코딩한 형태도 함께 찾습니다.
      *
+     * 유입 종류·기기 종류는 저장값이 코드(`direct`)이고 화면은 이름(「직접 유입」)을 보여 주므로, 검색어가 들어
+     * 있는 이름의 코드도 함께 찾습니다.
+     *
      * @param  string|null  $search  입력한 검색어
      * @param  string  $dimension  차원 이름
+     * @param  string|null  $locale  화면 이름을 맞춰 볼 로케일 (없으면 앱 로케일)
      * @return array<int, string> 찾을 형태 목록 (비었으면 검색 안 함)
      */
-    private function searchTerms(?string $search, string $dimension): array
+    private function searchTerms(?string $search, string $dimension, ?string $locale = null): array
     {
         if ($search === null || trim($search) === '') {
             return [];
@@ -494,7 +503,17 @@ class ReportService
             }
         }
 
-        return $terms;
+        if (in_array($dimension, [StatsDimension::ReferrerType->value, StatsDimension::DeviceType->value], true)) {
+            $names = __('analytics.'.$dimension, [], $locale ?? app()->getLocale());
+
+            foreach (is_array($names) ? $names : [] as $code => $name) {
+                if (is_string($name) && mb_stripos($name, trim($search)) !== false) {
+                    $terms[] = (string) $code;
+                }
+            }
+        }
+
+        return array_values(array_unique($terms));
     }
 
     /**

@@ -1,0 +1,21 @@
+feature: 알림 템플릿 편집 모달을 둔 플러그인 설정 화면의 비즈뿌리오 섹션 데이터소스
+
+description: |
+  비즈뿌리오 섹션(notification_template_form_sections)과 하단 저장 버튼(notification_template_form_footer_actions)은 확장점이라
+  그 확장점을 둔 모든 화면에 주입된다. 섹션이 읽는 데이터소스(bizppurioTemplates, bizppurioCategories, bizppurioProfiles)는
+  섹션 조각이 함께 싣는다. 그래서 코어, 게시판, 쇼핑몰 설정이든 GDPR, 환율 플러그인 설정이든 확장점을 둔 화면이면 같은
+  데이터소스가 실리고, 화면 이름을 지목하는 탭 오버레이(notification_tab_*)는 데이터소스를 선언하지 않는다.
+  번들 플러그인 레이아웃을 훑어 확장점을 둔 플러그인을 찾고, 조각이 데이터소스를 모두 싣고 오버레이가 하나도 선언하지 않는지 잠근다.
+  요약 맵(bizppurioTemplates)은 화면을 열 때 받으므로 메시지 조회 권한이 없는 관리자가 GDPR, 환율 설정을 열면 403 이 온다.
+  이 경우만 알림 없이 빈 맵으로 대신하고, 서버 오류 같은 다른 실패는 기본 처리대로 알리는지도 같은 테스트 파일에서 본다.
+
+axes:
+  surface: [plugin_settings_host]
+
+exclusions: []
+
+effects:
+  - plugin_settings_hosts_carry_bizppurio_section_data_sources
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_template_plugin_hosts.test.ts

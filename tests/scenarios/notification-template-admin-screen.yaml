@@ -55,6 +55,7 @@ effects:
   - notification_template_rejects_an_undeclared_relation
   - notification_template_rejects_any_relation_without_declarations
   - notification_definition_resource_carries_relations
+  - notification_definition_resource_carries_relation_labels
   # 수신자 검색 라이브 축
   - notification_template_recipient_search_live_measurement
   # 기존 편집 계약 (회귀 보호)

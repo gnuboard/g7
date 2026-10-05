@@ -124,7 +124,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "src": "{{_global.selectedTemplate.icon_url}}",
-                                                                        "alt": "$t:defer:extensions.icon.alt|name={{_global.selectedTemplate?.name ?? ''}}",
+                                                                        "alt": "$t:extensions.icon.alt|name={{_global.selectedTemplate?.name ?? ''}}",
                                                                         "loading": "lazy",
                                                                         "decoding": "async",
                                                                         "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700"

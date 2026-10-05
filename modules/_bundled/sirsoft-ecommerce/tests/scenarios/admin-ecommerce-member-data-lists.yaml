@@ -96,10 +96,12 @@ effects:
   - admin_product_inquiry_filters_by_user_uuid
   - admin_product_inquiry_unknown_uuid_returns_empty
   - admin_product_inquiry_search_field_branches
+  - admin_product_inquiry_search_escapes_like_wildcards # 검색어의 % 와 _ 를 글자 그대로 찾는다
   - admin_product_inquiry_destroy_requires_manage_permission
   - admin_product_inquiry_bulk_delete_writes_activity_log
   - admin_inquiry_is_answered_filter
   - admin_inquiry_excludes_soft_deleted
+  - admin_product_inquiry_list_shows_content_excerpt   # 풀리는 원글 타입의 행만 묶어 싣고 본문 요약을 낸다(실측 2026-10-03: 모든 행이 「본문을 불러올 수 없습니다」)
   - admin_inquiry_bulk_delete_rejects_soft_deleted_ids
   # 문의 삭제는 피벗만 지우면 안 된다 — 게시판의 질문 글까지 함께 지워야 하고,
   # 문의 게시판이 지정되지 않은 환경에서는 글 정리를 생략하되 행은 지울 수 있어야 한다.

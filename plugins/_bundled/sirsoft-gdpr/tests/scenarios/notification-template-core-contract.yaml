@@ -1,0 +1,33 @@
+feature: GDPR 알림 템플릿 편집 창 — 코어 모달 계약 정합
+
+description: |
+  GDPR 설정 「알림 템플릿」 카드의 템플릿 편집 창은 코어 알림 템플릿 창과 같은 저장 API 를 쓰면서
+  7.1.0 코어 계약을 따라가지 못했다(실측 2026-10-03) — 메일 본문이 html_editor 확장 슬롯이 아닌
+  HtmlEditor 직접 호출이라 CKEditor 가 붙지 않고 HTML 원문 입력칸으로 열림, 사이트내 알림도 서식 모드,
+  알림톡(template_editor=none) 채널에서 확장 양식 아래 코어 제목·본문·미리보기·저장이 한 벌 더 떠 「저장」 2개,
+  관계를 선언하지 않은 연간 통지 정의에 「관련 사용자」 선택지, 역할 단일 선택, 종류 전환 시 앞 종류 값 잔존.
+  환율 플러그인 창과 같은 방식으로 코어 창의 수신자·본문 블록을 이식한다.
+
+axes:
+  case: [specific_users_to_role, to_related_user, exclude_trigger_user_carry, other_rows_untouched, none_declared, named, undeclared, role, multiple, rich, none]
+
+effects:
+  - gdpr_recipient_rule_type_switch_clears_previous_value
+  - gdpr_recipient_rule_related_user_seeds_first_declared_relation
+  - gdpr_recipient_rule_exclude_trigger_user_only_carries_between_group_types
+  - gdpr_related_user_option_follows_declared_relations
+  - gdpr_recipient_relation_select_shows_relation_names
+  - gdpr_recipient_relation_outside_declaration_warns
+  - gdpr_role_rule_is_multi_select
+  - gdpr_recipient_multi_select_count_label_is_translated
+  - gdpr_body_editor_follows_channel_declaration
+  - gdpr_rich_editor_writes_to_active_language_body
+  - gdpr_core_editor_hidden_when_channel_owns_editor
+  - gdpr_click_url_only_for_database_channel
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdprNotificationTemplateCoreContract.test.ts
+
+notes: |
+  브라우저 실측은 GDPR 설정 화면에서 한다 — 메일 템플릿 편집 시 CKEditor 표시, 사이트내 알림 평문,
+  알림톡 템플릿 편집 시 코어 칸·저장 버튼 숨김, 수신자 종류 선택지 3개, 역할 다중 선택.

@@ -102,6 +102,9 @@ effects:
   - guest_password_modal_masks_the_plain_text_input
   - guest_password_modal_confirms_and_closes_on_success
   - guest_password_reset_button_lives_in_the_guest_block
+  # 상품 표 보조 통화 — 기준 통화(윗줄)를 빼야 한다. 표시 통화를 빼면 기준 엔화·표시 원화 상점에서 원화가 사라지고 엔화가 두 번 선다(실측 2026-10-03)
+  - order_info_secondary_currency_excludes_order_base_currency
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderInfoSecondaryCurrency.test.ts

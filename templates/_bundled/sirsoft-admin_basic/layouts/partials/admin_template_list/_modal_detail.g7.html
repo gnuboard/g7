@@ -23,7 +23,7 @@
                    아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
               <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
                 <icon name="{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
-                <img data-if="{{_global.selectedTemplate?.icon_url && !(_local.selectedTemplateIconBroken ?? []).includes(_global.selectedTemplate?.identifier)}}" src="{{_global.selectedTemplate.icon_url}}" alt="$t:defer:extensions.icon.alt|name={{_global.selectedTemplate?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                <img data-if="{{_global.selectedTemplate?.icon_url && !(_local.selectedTemplateIconBroken ?? []).includes(_global.selectedTemplate?.identifier)}}" src="{{_global.selectedTemplate.icon_url}}" alt="$t:extensions.icon.alt|name={{_global.selectedTemplate?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
                   <on event="onError">
                     <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
                          다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->

@@ -137,15 +137,20 @@
        HTML 버퍼를 `format=markup` 으로 보내 서버가 프로덕션 컴파일한 JSON 을 저장한다. 받아 둔
        `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다(덮어쓰기를 막는 낙관적 잠금).
        성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 — 안 받으면 다음 저장이 낡은 번호로 나가
-       반드시 실패한다. 그때 `<code-workspace>` 의 버퍼는 clean 으로 바뀌며 초안도 지워진다. -->
+       반드시 실패한다. 그때 `<code-workspace>` 의 버퍼는 clean 으로 바뀌며 초안도 지워진다.
+       `codeEditorLastSave` 는 보낸 파일·본문을 적어 두었다가 성공 응답의 판본을 채운다. 서버는 저장한 마크업을
+       역변환해 돌려주므로 공백·속성 표기가 정규화돼 글자가 달라지는데, 작업 공간이 이 기록으로 그 판본을
+       «내 저장» 으로 알아본다 — 없으면 저장할 때마다 «서버에 더 새 버전이 있습니다» 가 선다.
+       작업 공간에는 `serverValue` 처럼 `raw:` 로 넘긴다. 본문 안의 `$t:` 가 번역 패스에서 바뀌면 보낸 본문과
+       버퍼가 달라 보여, 정규화본을 받아들이지 못하고 저장 뒤에도 미저장으로 남는다(실측 2026-10-04). -->
   <action name="save_current_file">
     <conditions>
       <when if="{{_global.selectedNodeKind === 'extension'}}">
         <sequence>
-          <set-state target="global" :isSaving="true"/>
+          <set-state target="global" :isSaving="true" codeEditorLastSave="{{({key: 'ext:' + _global.selectedExtensionId, value: _global.editorMarkup, revision: null})}}"/>
           <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="PUT">
             <success>
-              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
+              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}" codeEditorLastSave="{{({key: _global.codeEditorLastSave?.key, value: _global.codeEditorLastSave?.value, revision: response.data?.lock_version ?? null})}}"/>
               <toast type="success" message="$t:admin.templates.layout_edit.extension_save_success"/>
               <refetch-data-source dataSourceId="current_extension"/>
               <refetch-data-source dataSourceId="layout_extensions"/>
@@ -166,10 +171,10 @@
       </when>
       <else>
         <sequence>
-          <set-state target="global" :isSaving="true"/>
+          <set-state target="global" :isSaving="true" codeEditorLastSave="{{({key: 'layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name), value: _global.editorMarkup, revision: null})}}"/>
           <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}" method="PUT">
             <success>
-              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}"/>
+              <set-state target="global" :isSaving="false" :markupCompileError="null" :jsonViewStale="false" markupWarnings="{{response.data?.markup_warnings ?? []}}" codeEditorLastSave="{{({key: _global.codeEditorLastSave?.key, value: _global.codeEditorLastSave?.value, revision: response.data?.lock_version ?? null})}}"/>
               <toast type="success" message="$t:admin.templates.layout_edit.save_success"/>
               <refetch-data-source dataSourceId="current_layout"/>
               <!-- 목록도 함께 다시 부른다 — 파일 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 표시하므로, 상세만 갱신하면 방금 저장한 파일의 행이 저장 전 값으로 남는다. 목록 응답이 본문을 싣지 않게 된 뒤로 재조회 비용이 수십 KB 수준이라 매 저장마다 불러도 된다. -->
@@ -455,7 +460,7 @@
         <on type="createFile" event="onCreateFile">
           <!-- 파일 만들기 — 폴더 노드에서 열면 그 경로를 접두로 채워 폼 창을 연다 -->
           <sequence>
-            <set-state target="global" fileFormMode="create_file" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" fileFormContent="" :fileFormError="null"/>
+            <set-state target="global" fileFormMode="create_file" fileFormName="{{$args[0] ? ($args[0] + '/') : ''}}" fileFormContent="" :fileFormRescueFrom="null" :fileFormError="null"/>
             <open-modal target="file_form_modal"/>
           </sequence>
         </on>
@@ -493,15 +498,18 @@
                   <span data-if="{{_global.selectedNodeKind !== 'extension'}}" class="text-primary font-medium">{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.g7.html</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="text-primary font-medium">{{current_extension?.data?.target_name ?? ''}}</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{current_extension?.data?.source_label ?? ''}}</span>
-                  <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
+                  <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName) &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.is_modified}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
                 </div>
-                <p data-if="{{_global.selectedNodeKind !== 'extension'}}" class="mt-1 text-label-subtle">{{raw:current_layout?.data?.description || ''}}</p>
+                <!-- 설명·수정일·버전 히스토리는 «불러온 파일» 의 것이다. 없는 파일 탭은 서버를 부르지 않아 current_layout 이
+                     직전 파일로 남으므로, 고른 파일과 불러온 파일이 다르면 그리지 않는다 — 그리면 지워진 파일 이름 옆에
+                     다른 파일의 수정일·이력이 붙는다(실측 2026-10-03). 평소 파일 전환 중의 짧은 공백도 같은 이유로 비운다. -->
+                <p data-ref="layout_meta_description" data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" class="mt-1 text-label-subtle">{{raw:current_layout?.data?.description || ''}}</p>
               </div>
               <div class="flex-center gap-3 shrink-0">
-                <span class="text-label-subtle whitespace-nowrap">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
+                <span data-ref="layout_meta_modified_at" data-if="{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" class="text-label-subtle whitespace-nowrap">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
                 <!-- shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측). -->
-                <button type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap" data-testid="layout-version-history-open">
+                <button data-ref="layout_meta_version_history" data-if="{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap" data-testid="layout-version-history-open">
                   <on type="click">
                     <action-ref name="open_version_history"/>
                   </on>
@@ -536,8 +544,10 @@
               serverKey="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.id ? ('ext:' + current_extension.data.id) : '') : (current_layout?.data?.name ? ('layout:' + current_layout.data.name) : '')}}"
               serverValue="{{raw:_global.selectedNodeKind === 'extension' ? (current_extension?.data?.content_markup ?? '') : (current_layout?.data?.content_markup ?? '')}}"
               serverRevision="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.lock_version ?? 0) : (current_layout?.data?.lock_version ?? 0)}}"
+              lastSave="{{raw:_global.codeEditorLastSave ?? null}}"
               fileLabel="{{_global.selectedNodeKind === 'extension' ? (current_extension?.data?.fragment_key ?? current_extension?.data?.target_name ?? 'extension') : (_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'layout')}}"
               knownKeys="{{[...(layout_files?.data ?? []).map(f => 'layout:' + f.name), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => 'ext:' + e.id))]}}"
+              retiredKey="{{_global.retiredFileKey ?? ''}}"
               language="html"
               readOnly="{{(_global.selectedNodeKind === 'extension' ? current_extension?.data?.abilities?.can_update : current_layout?.data?.abilities?.can_update) === false}}"
               isLoading="{{!!_global.isSaving}}"
@@ -603,7 +613,10 @@
                 <!-- 없어진 파일의 복원분을 살린다. 생성 흐름을 그대로 쓰되 본문을 실어 보낸다 —
                 빈 골격으로 만들면 사용자가 쓴 글이 그 자리에서 사라진다. -->
                 <sequence>
-                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="{{$event.target.value}}" :fileFormError="null"/>
+                  <!-- 어느 없는 파일을 살리는지 기억한다 — 생성이 성공하면 그 탭과 초안을 거두라고 `retiredKey` 로 돌려준다.
+                       앞선 살리기 알림은 여기서 비운다 — 작업 공간은 알림 하나를 한 번만 처리하므로, 같은 키를 다시 살릴 때도
+                       빈 값을 거쳐야 새 알림으로 받는다. -->
+                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="{{$event.target.value}}" fileFormRescueFrom="{{$event.target.key ?? null}}" :retiredFileKey="null" :fileFormError="null"/>
                   <open-modal target="file_form_modal"/>
                 </sequence>
               </on>
@@ -623,7 +636,7 @@
               <on type="newFile" event="onNewFile">
                 <!-- 새 파일 — 빈 본문으로 생성 폼 창을 연다 -->
                 <sequence>
-                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="" :fileFormError="null"/>
+                  <set-state target="global" fileFormMode="create_file" fileFormName="" fileFormContent="" :fileFormRescueFrom="null" :fileFormError="null"/>
                   <open-modal target="file_form_modal"/>
                 </sequence>
               </on>
@@ -660,7 +673,8 @@
               <span data-ref="json_stale_badge" data-if="{{!!_global.jsonViewStale}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">$t:admin.templates.layout_edit.json_stale</span>
             </div>
             <div class="flex-1 min-h-0 px-4 pb-4">
-              <code-editor data-type="composite" data-ref="json_editor" value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" :readOnly="true" theme="auto" height="100%"/>
+              <!-- 없는 파일 탭이면 비운다 — editorContent·current_layout 은 직전 파일의 산출물이다. -->
+              <code-editor data-type="composite" data-ref="json_editor" value="{{raw:(_global.selectedNodeKind !== 'extension' &amp;&amp; !(!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)) ? '' : (_global.editorContent ?? current_layout?.data?.content ?? '{}')}}" language="json" :readOnly="true" theme="auto" height="100%"/>
             </div>
           </div>
           <div data-ref="markup_error_panel" data-if="{{!!_global.markupCompileError}}" role="alert" class="mx-4 mt-3 p-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">

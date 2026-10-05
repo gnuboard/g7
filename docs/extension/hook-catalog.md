@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (595)
+- [코어](#코어) (596)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -287,6 +287,7 @@
 | `core.member_notification.after_bulk_delete` | action | 2 |  |
 | `core.member_notification.before_bulk_delete` | action | 1 |  |
 | `core.member_notification.bulk_delete_validation_rules` | filter | 2 |  |
+| `core.member_notification.index_validation_attributes` | filter | 2 |  |
 | `core.member_notification.index_validation_rules` | filter | 1 |  |
 | `core.menu.after_bulk_update_roles` | action | 4 |  |
 | `core.menu.after_create` | action | 1 |  |

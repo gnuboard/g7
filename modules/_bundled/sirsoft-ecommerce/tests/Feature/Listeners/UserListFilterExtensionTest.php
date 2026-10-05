@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 회원관리 목록 확장 필터 예제 2종 테스트 (#705 D5 — E1 마일리지 잔액 · E2 배송지)
@@ -23,10 +24,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - 잔액은 상점 기본 통화 한 가지로만 본다. 잔액 행이 없는 회원은 0 으로 본다.
  * - 배송지 국가는 「그 나라 배송지를 하나라도」, 등록 여부 0 은 국가보다 우선한다.
  * - 조회 권한(마일리지·배송지)이 없으면 조건을 무시한다.
- *
- * @group ecommerce
- * @group admin
  */
+#[Group('ecommerce')]
+#[Group('admin')]
 class UserListFilterExtensionTest extends ModuleTestCase
 {
     private User $admin;

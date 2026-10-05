@@ -437,7 +437,7 @@
                   "uuid": "00000000-0000-4000-8000-000000000018",
                   "name": "김민준",
                   "nickname": "민준이",
-                  "avatar": "/images/placeholder.png",
+                  "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                   "bio": "프론트엔드 개발과 사진을 좋아하는 평범한 회원입니다.",
                   "status": "active",
                   "status_label": "활성",
@@ -649,16 +649,16 @@
           "initialState": {
             "global": {
               "secretViewToken": "샘플 값",
-              "notificationsCurrentPage": "샘플 값",
-              "mobileUserMenuOpen": "샘플 값",
+              "notificationsCurrentPage": 1,
+              "mobileUserMenuOpen": true,
               "notificationsLoadingMore": false,
-              "toasts": "샘플 값",
+              "toasts": [{ "id": "editor-sample-toast", "type": "success", "message": "샘플 알림" }],
               "notificationCount": 0,
               "cartKey": "sample_key",
               "notificationsUnreadOnly": true,
               "cartCount": 0,
               "guestOrderToken": "샘플 값",
-              "notificationsHasMore": "샘플 값",
+              "notificationsHasMore": true,
               "shopBase": "/shop",
               "mobileLanguageOpen": false
             }
@@ -762,7 +762,7 @@
             "global": {
               "reportModal": {
                 "apiEndpoint": "샘플 값",
-                "comment_author_avatar": "샘플 값",
+                "comment_author_avatar": null,
                 "comment_author_name": "샘플 제목",
                 "comment_content": "샘플 설명 문구입니다.",
                 "comment_created_at": "2026-09-19 11:30:00",
@@ -836,6 +836,81 @@
               "preferredCurrency": "KRW",
               "availableCurrencies": [],
               "isUpdatingOption": false
+            },
+            "local": {
+              "optionModal": {
+                "targetItem": {
+                  "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                  "product_name": "베이직 오버핏 코튼 티셔츠",
+                  "option_name": "색상: 블랙 / 사이즈: L",
+                  "option_name_localized": "색상: 블랙 / 사이즈: L",
+                  "unit_price_formatted": "23,200원",
+                  "multi_currency_selling_price": {
+                    "KRW": {
+                      "formatted": "23,200원"
+                    },
+                    "USD": {
+                      "formatted": "$17.40"
+                    }
+                  }
+                }
+              },
+              "optionProduct": {
+                "has_options": true,
+                "option_groups": [
+                  {
+                    "name": "색상",
+                    "name_localized": "색상",
+                    "values": [
+                      "블랙",
+                      "화이트",
+                      "네이비"
+                    ],
+                    "values_localized": [
+                      "블랙",
+                      "화이트",
+                      "네이비"
+                    ]
+                  },
+                  {
+                    "name": "사이즈",
+                    "name_localized": "사이즈",
+                    "values": [
+                      "M",
+                      "L",
+                      "XL"
+                    ],
+                    "values_localized": [
+                      "M",
+                      "L",
+                      "XL"
+                    ]
+                  }
+                ],
+                "additional_options": [
+                  {
+                    "id": 1,
+                    "name": "선물 포장",
+                    "is_required": false,
+                    "values": [
+                      {
+                        "id": 11,
+                        "name": "포장 안 함",
+                        "allow_custom_text": false
+                      },
+                      {
+                        "id": 12,
+                        "name": "선물 포장 (+2,000원)",
+                        "allow_custom_text": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              "selectedOptions": {
+                "색상": "블랙",
+                "사이즈": "L"
+              }
             }
           }
         }
@@ -855,6 +930,27 @@
           "initialState": {
             "global": {
               "shopBase": "/shop"
+            },
+            "local": {
+              "unavailableModal": {
+                "hasStockIssue": true,
+                "items": [
+                  {
+                    "name": "프리미엄 무선 이어버드 프로",
+                    "option": "색상: 미드나잇 블랙",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "reason": "stock",
+                    "stock": 1,
+                    "quantity": 2
+                  },
+                  {
+                    "name": "베이직 오버핏 코튼 티셔츠",
+                    "option": "색상: 화이트 / 사이즈: M",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                    "reason": "status"
+                  }
+                ]
+              }
             }
           }
         }
@@ -944,6 +1040,48 @@
             "global": {
               "defaultCurrency": "KRW",
               "preferredCurrency": "KRW"
+            },
+            "local": {
+              "downloadableCouponsLoading": false,
+              "downloadableCoupons": {
+                "data": [
+                  {
+                    "id": 1,
+                    "name": "신규 가입 10% 할인",
+                    "localized_name": "신규 가입 10% 할인",
+                    "discount_type": "rate",
+                    "discount_value": 10,
+                    "min_order_amount": 30000,
+                    "multi_currency_min_order_amount": {
+                      "KRW": {
+                        "formatted": "30,000원"
+                      }
+                    },
+                    "valid_to": "2026-12-31 23:59:59",
+                    "is_downloaded": false
+                  },
+                  {
+                    "id": 2,
+                    "name": "주말 5,000원 할인",
+                    "localized_name": "주말 5,000원 할인",
+                    "discount_type": "fixed",
+                    "discount_value": 5000,
+                    "multi_currency_discount_value": {
+                      "KRW": {
+                        "formatted": "5,000원"
+                      }
+                    },
+                    "min_order_amount": 50000,
+                    "multi_currency_min_order_amount": {
+                      "KRW": {
+                        "formatted": "50,000원"
+                      }
+                    },
+                    "valid_to": "2026-10-31 23:59:59",
+                    "is_downloaded": true
+                  }
+                ]
+              }
             }
           }
         }
@@ -989,26 +1127,6 @@
               "qnaDeleting": false,
               "qnaDeleteId": 1,
               "qnaDeleteSource": "product"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "modal_cancel_order"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "defaultCurrency": "KRW",
-              "preferredCurrency": "KRW"
             }
           }
         }
@@ -1163,7 +1281,8 @@
           "initialState": {
             "global": {
               "reportCancelModal": {
-                "id": 1
+                "id": 1,
+                "title": "샘플 제목"
               }
             }
           }
@@ -1186,10 +1305,34 @@
               "reviewForModal": {
                 "content": "샘플 설명 문구입니다.",
                 "createdAt": "2026-09-19 11:30:00",
-                "images": [],
-                "optionValues": [],
-                "rating": 0,
-                "userAvatar": "샘플 값",
+                "images": [
+                  {
+                    "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  },
+                  {
+                    "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                  }
+                ],
+                "optionValues": [
+                  {
+                    "key": {
+                      "ko": "색상"
+                    },
+                    "value": {
+                      "ko": "블랙"
+                    }
+                  },
+                  {
+                    "key": {
+                      "ko": "사이즈"
+                    },
+                    "value": {
+                      "ko": "L"
+                    }
+                  }
+                ],
+                "rating": 4,
+                "userAvatar": null,
                 "userName": "홍길동"
               },
               "reviewImageIndex": 0
@@ -1258,38 +1401,6 @@
             }
           },
           "default": true
-        }
-      ]
-    },
-    {
-      "comment": "서비스 점검 안내 화면 — 비활성 확장 목록(_global.errorData)은 점검 응답이 담는 값이라 편집기에서는 상태로 담아야 목록이 그려진다.",
-      "scope": {
-        "kind": "layout",
-        "match": "503"
-      },
-      "items": [
-        {
-          "id": "screen_filled",
-          "label": "$t:editor.state.screen_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "errorData": {
-                "modules": [
-                  {
-                    "identifier": "sirsoft-board",
-                    "name": "게시판"
-                  }
-                ],
-                "plugins": [
-                  {
-                    "identifier": "sirsoft-gdpr",
-                    "name": "개인정보 동의"
-                  }
-                ]
-              }
-            }
-          }
         }
       ]
     },

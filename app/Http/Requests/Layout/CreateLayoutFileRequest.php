@@ -10,6 +10,7 @@ use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidLayoutStructure;
 use App\Services\LayoutFileService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * 레이아웃 **파일 생성** 요청 검증.
@@ -39,7 +40,7 @@ class CreateLayoutFileRequest extends FormRequest
     /**
      * 검증 전 전처리 — 본문이 비었으면 기본 골격을 채우고, 마크업을 JSON 으로 컴파일합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -81,7 +82,10 @@ class CreateLayoutFileRequest extends FormRequest
 
             // 컴파일이 끝난 JSON — 실패하면 문자열로 남아 `array` 에서 걸리고,
             // `CompilesMarkupContent::failedValidation()` 이 422 에 `compile_error` 를 싣는다.
+            // 이름이 틀리면 골격을 만들지 못해 본문이 비므로 본문은 보지 않는다 — 「본문 필수」가 덤으로 붙으면
+            // 이름 오류 하나를 알리는 화면에 원인과 무관한 「외 1개 오류」가 붙는다.
             'content' => [
+                Rule::excludeIf(fn (): bool => ! $this->hasValidName()),
                 'required',
                 'array',
                 new ValidLayoutStructure,
@@ -91,6 +95,18 @@ class CreateLayoutFileRequest extends FormRequest
         ];
 
         return HookManager::applyFilters('core.layout.create_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 이름이 파일 이름 규칙을 지키는지 판정합니다.
+     *
+     * @return bool 규칙을 지키는 비어 있지 않은 이름이면 true
+     */
+    private function hasValidName(): bool
+    {
+        $name = (string) $this->input('name', '');
+
+        return $name !== '' && preg_match(LayoutFileService::NAME_PATTERN, $name) === 1;
     }
 
     /**

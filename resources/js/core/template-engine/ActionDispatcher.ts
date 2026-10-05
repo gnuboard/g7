@@ -2131,7 +2131,7 @@ export class ActionDispatcher {
         }
       }
 
-      // 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
+      // 보안: 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
       const eventData = toExpressionEvent(event);
 
       try {
@@ -2176,7 +2176,7 @@ export class ActionDispatcher {
             // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
             _local: componentContext?.state || {},
             // $event: 이벤트의 plain 스냅샷 ({{$event.target.value}} 바인딩 지원).
-            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 싣지 않는다.
+            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 보안상 싣지 않는다.
             // 핸들러는 context.event 로 원본을 받는다.
             $event: eventData,
           },
@@ -3839,7 +3839,7 @@ export class ActionDispatcher {
       await this.ensureCsrfToken();
     }
 
-    // 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다. 레이아웃은 대상 주소를
+    // 보안: 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다. 레이아웃은 대상 주소를
     // 표현식으로 조립할 수 있어, 출처를 보지 않고 실으면 레이아웃 편집 권한만으로 관리자 토큰을 외부로
     // 보낼 수 있다. ApiClient(데이터 소스)도 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
     const sameOrigin = isSameOriginRequestUrl(target);
@@ -4069,7 +4069,9 @@ export class ActionDispatcher {
       }
 
       // `user` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 `response.user` 를 읽는다.
-      return { user: result.user, two_factor_required: false };
+      // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored` 등)도 함께 넘긴다 — 버리면 로그인 화면의
+      // `<toast if="{{response.dormancy_restored}}">` 가 한 번도 뜨지 않는다 (engine-v1.76.0).
+      return { ...(result.extras ?? {}), user: result.user, two_factor_required: false };
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
@@ -4104,13 +4106,14 @@ export class ActionDispatcher {
       : '/api/auth/login/two-factor';
 
     try {
-      const user = await AuthManager.getInstance().completeTwoFactor(
+      const session = await AuthManager.getInstance().completeTwoFactorSession(
         authType,
         { challengeId: String(body.challenge_id), code: String(body.code) },
         this.buildAuthRequestOptions(endpoint, context)
       );
 
-      return { user };
+      // 비밀번호 단계와 같은 안내 필드를 넘긴다 — 2단계 인증 사이트에서만 해제 안내가 빠지지 않게 (engine-v1.76.0).
+      return { ...(session.extras ?? {}), user: session.user };
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
@@ -8102,7 +8105,7 @@ export class ActionDispatcher {
                 // 커스텀 콜백의 모든 인자를 $args 배열로 전달
                 const contextWithArgs = {
                   ...freshContext,
-                  // 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단
+                  // 보안: 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단
                   $args: toExpressionArgs(args),
                 };
 

@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -30,9 +31,8 @@ use Tests\TestCase;
  * 트랜잭션 격리로 바꿔 **검증 범위는 그대로 두고** 위험한 DDL 만 뺐다. 대신 기존 데이터와
  * 공존해야 하므로 고정 식별자를 쓰지 않는다 — 역할 이름에 매 실행 고유 접미어를 붙이고,
  * `admin` 처럼 이미 있을 수 있는 행은 `firstOrCreate` 로 받는다.
- *
- * @group console
  */
+#[Group('console')]
 class PlaywrightCleanupTest extends TestCase
 {
     use DatabaseTransactions;
@@ -40,6 +40,11 @@ class PlaywrightCleanupTest extends TestCase
     /** 이 실행에서만 쓰는 접미어 — 기존 데이터·병렬 실행과 충돌하지 않게 한다 */
     private string $suffix;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,11 @@ class PlaywrightCleanupTest extends TestCase
         $_ENV['G7_PLAYWRIGHT_BYPASS'] = '1';
     }
 
+    /**
+     * 테스트가 남긴 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         putenv('G7_PLAYWRIGHT_BYPASS');
@@ -102,6 +112,7 @@ class PlaywrightCleanupTest extends TestCase
      *
      * @param  User  $user  대상 유저
      * @param  Role  ...$roles  부여할 역할들
+     * @return void 반환값 없음
      */
     private function attach(User $user, Role ...$roles): void
     {
@@ -116,6 +127,8 @@ class PlaywrightCleanupTest extends TestCase
      * @scenario mode=delete
      *
      * @effects cleanup_refused_without_optin
+     *
+     * @return void 반환값 없음
      */
     public function test_refuses_without_bypass_env(): void
     {
@@ -135,6 +148,8 @@ class PlaywrightCleanupTest extends TestCase
      * @scenario mode=delete
      *
      * @effects leftover_roles_removed, leftover_users_removed, human_and_normal_role_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_reclaims_only_its_own_leftovers(): void
     {
@@ -179,6 +194,8 @@ class PlaywrightCleanupTest extends TestCase
      * @scenario mode=dry_run
      *
      * @effects nothing_deleted_on_dry_run
+     *
+     * @return void 반환값 없음
      */
     public function test_dry_run_deletes_nothing(): void
     {
@@ -198,6 +215,8 @@ class PlaywrightCleanupTest extends TestCase
      * @scenario mode=delete
      *
      * @effects recent_leftovers_kept, old_leftovers_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_keep_hours_protects_recent_issues(): void
     {
@@ -218,6 +237,8 @@ class PlaywrightCleanupTest extends TestCase
      * @scenario mode=delete
      *
      * @effects no_op_when_clean
+     *
+     * @return void 반환값 없음
      */
     public function test_no_leftovers_is_a_noop(): void
     {

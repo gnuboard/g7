@@ -89,6 +89,17 @@
 (`POST templates/{id}/sync`)으로 즉시 확인할 수도 있습니다. 승인된 템플릿을 고치려면
 `POST templates/{id}/cancel-approval` 로 승인을 먼저 취소합니다.
 
+**카카오 관리 API 실패의 응답 규약**: 카카오 관리 API 를 부르는 컨트롤러는 실패를 422 로
+돌려줍니다. 참조 조회(분류, 발신 프로필)는 `GuardsKakaoRequests::guard()`, 수명주기 액션은
+`BizppurioTemplateController::guardLifecycle()` 이 맡습니다. 카카오가 실패 사유를 주면
+(`BizppurioApiException`) `errors.bizppurio_message`, `errors.result_code` 에 원문을 싣고,
+서버에 닿지 못하면(`ConnectionException`: 타임아웃, DNS, 프록시) 연결 확인 버튼과 같은
+`messages.error.connection_failed` 안내만 내고 경고 로그를 남깁니다. 연결 실패를 잡지 않으면
+편집 창을 열 때마다 서버 오류(500)와 스택 추적이 쌓입니다. 이 둘 밖의 예외는 우리 쪽 결함이라
+잡지 않고 500 으로 드러냅니다. 템플릿 삭제(`destroy`)와 예약 동기화(`bizppurio:sync-template-status`)는
+가드를 거치지 않습니다 — 삭제는 서비스가 카카오측 실패(사유, 연결 실패)를 잡아 DB 행을 지우고 200 과
+`kakao_skip_reason` 으로 끝내고, 예약 동기화는 그 주기만 건너뛰고 명령을 성공으로 끝냅니다.
+
 **임시 저장과 검수 신청의 검증 분담**: 플러그인 설정 화면 작성 창의 「저장」은 본문에
 `draft: true` 를 실어 보내고, `ValidatesTemplateContent::contentRules()` 는 이때
 `relaxForDraft()` 로 필수 조건(`required*` · `min:` · 링크 종류별 필수 칸)만 걷어 냅니다 —
@@ -200,10 +211,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 39개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
-| Vitest | 10개 | `vitest.config.ts` |
+| PHPUnit | 40개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| Vitest | 11개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -10,6 +10,7 @@ use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * EcommerceInquiryHookListener 단위 테스트
@@ -25,11 +26,10 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - deletePost: 성공 → carry 반환, 답글 자식까지 cascade soft delete, 존재하지 않는 PostId → RuntimeException
  * - deleteReplyPost: reply 없음 → RuntimeException, 성공 → carry 반환
  * - countReplies: 살아있는 자식만 집계
- *
- * @group board
- * @group unit
- * @group listener
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('listener')]
 class EcommerceInquiryHookListenerTest extends BoardTestCase
 {
     private EcommerceInquiryHookListener $listener;
@@ -397,7 +397,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
     }
 
     /**
-     * getByIds: 비밀글은 비열람자에게 content/title/reply/attachments 가 마스킹된다 (KVE-2026-1914 A-1)
+     * getByIds: 비밀글은 비열람자에게 content/title/reply/attachments 가 마스킹된다
      *
      * @return void 반환값 없음
      *

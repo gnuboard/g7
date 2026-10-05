@@ -30,7 +30,7 @@ export interface UseFileDraftsResult {
     dismissPending: () => void;
 }
 /**
- * 미저장 편집분을 브라우저에 적어 두고 되살립니다 (PO 결정 D-4).
+ * 미저장 편집분을 브라우저에 적어 두고 되살립니다 (결정 D-4).
  *
  * ## 자동 복원하지 않는 이유
  *

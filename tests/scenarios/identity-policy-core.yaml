@@ -1,0 +1,51 @@
+feature: 코어 본인인증 정책 선언, 수명 주기, 동기화와 활동 로그
+
+description: |
+  코어가 선언한 본인인증 정책 9개가 선언 값대로 등록되고 강제, 검증, 유예가 정책마다 맞게 돌며, 메일 제공자 회로, 운영자 수정 보존 동기화, 본인인증 훅의 활동 로그가 동작하는지 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 policy_stage 는 정책이 거치는 단계(선언 등록, 선언 동기화, 강제 판정, 인증 요청 발송, 활동 로그), verification_progress 는 그 단계가 받는 본인인증 진행 상태다.
+  강제 판정의 expired 는 검증 뒤 유예 시간이 지나 검증 효력이 끝난 상태를 뜻한다.
+
+axes:
+  policy_stage: [declare, sync, enforce, challenge_delivery, activity_log]
+  verification_progress: [none, issued, verified, failed, expired]
+
+exclusions:
+  - { policy_stage: [declare, sync], verification_progress: [issued, verified, failed, expired],
+      reason: "정책 선언 등록과 동기화는 정책 행만 다루고 본인인증 시도보다 앞서 끝나 진행 상태를 입력으로 받지 않는다." }
+  - { policy_stage: enforce, verification_progress: [issued, failed],
+      reason: "강제 판정은 유효한 검증 완료 기록만 보므로 발급만 됐거나 검증에 실패한 상태는 기록 없음(none)과 같은 판정을 받는다." }
+  - { policy_stage: challenge_delivery, verification_progress: [none, verified, failed, expired],
+      reason: "메일 제공자는 인증 요청을 발급할 때만 메일을 보내므로 발급 밖의 상태에서는 관찰할 발송이 없다." }
+  - { policy_stage: activity_log, verification_progress: none,
+      reason: "활동 로그는 본인인증 훅이 불릴 때만 남아 진행 사건이 없으면 기록할 대상이 없다." }
+
+effects:
+  - core_seeds_exactly_nine_core_policies
+  - core_policy_matches_declaration
+  - signup_before_submit_full_http_lifecycle
+  - password_change_service_lifecycle_with_grace_window
+  - policy_full_service_lifecycle
+  - password_reset_route_returns_428_when_enabled
+  - mail_provider_circuit_for_purpose
+  - mail_provider_logs_challenge_with_sent_status
+  - sync_policy_creates_new_policy_on_first_run
+  - sync_policy_updates_fields_not_in_user_overrides
+  - sync_policy_preserves_conditions_in_user_overrides
+  - sync_preserves_each_trackable_field_in_user_overrides
+  - cleanup_stale_removes_policies_not_in_current_keys
+  - cleanup_stale_preserves_other_sources
+  - after_request_hook_creates_activity_log
+  - after_verify_success_creates_verify_activity_log
+  - after_verify_failure_creates_failed_activity_log
+  - challenge_expired_hook_creates_expired_activity_log
+  - identity_action_label_resolves_in_ko
+  - identity_action_label_resolves_in_en
+
+test_files:
+  - tests/Feature/Identity/CoreIdentityPolicyDeclarationTest.php
+  - tests/Feature/Identity/CoreIdentityPolicyLifecycleTest.php
+  - tests/Feature/Identity/IdentityPolicyMailFakeSmokeTest.php
+  - tests/Unit/Extension/Helpers/IdentityPolicySyncHelperTest.php
+  - tests/Feature/Listeners/CoreActivityLogListenerIdentityTest.php

@@ -9,6 +9,7 @@ use App\Services\MenuService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
@@ -21,10 +22,9 @@ use Tests\TestCase;
  * 로컬 MySQL 의 migrate:fresh OOM 을 피하려 트랜잭션 격리를 쓴다 — 식별자는 매 실행 고유값이다.
  *
  * 시나리오 SSoT: tests/scenarios/role-menu-bulk-assignment.yaml
- *
- * @group core
- * @group admin
  */
+#[Group('core')]
+#[Group('admin')]
 class RoleMenuAssignmentTest extends TestCase
 {
     use DatabaseTransactions;

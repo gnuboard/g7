@@ -6,7 +6,9 @@ namespace Plugins\Sirsoft\MessageBizppurio\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioTemplateStateException;
@@ -297,7 +299,9 @@ class BizppurioTemplateController extends AdminBaseController
      * - BizppurioApiException: 카카오가 준 사유 원문(bizppurio_message)·결과코드를 errors 로 노출
      *   (관리자 전용 면 — 조치 근거 제공, TokenCheckController 규약과 동일)
      * - BizppurioTemplateStateException: 예외가 든 메시지 키를 해석해 422
-     * 그 외 예외는 잡지 않는다 — 인프라 장애·코드 결함은 500 으로 드러나야 한다.
+     * - ConnectionException: 비즈뿌리오 서버에 닿지 못함(타임아웃·DNS·프록시). 우리 쪽 결함이 아니라
+     *   외부 서버 접속 실패라 연결 실패 안내 422 로 돌려주고 경고 로그를 남긴다(TokenCheckController 규약)
+     * 그 외 예외는 잡지 않는다 — 우리 쪽 인프라 장애(DB 등)·코드 결함은 500 으로 드러나야 한다.
      *
      * @param  callable():JsonResponse  $callback  라이프사이클 액션
      * @return JsonResponse 성공 응답 또는 422
@@ -317,6 +321,10 @@ class BizppurioTemplateController extends AdminBaseController
             );
         } catch (BizppurioTemplateStateException $e) {
             return ResponseHelper::error($e->getMessageKey(), 422, null, $e->getMessageParams());
+        } catch (ConnectionException $e) {
+            Log::warning('[Bizppurio] 알림톡 템플릿 카카오 연동 연결 실패', ['error' => $e->getMessage()]);
+
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.error.connection_failed', 422);
         }
     }
 

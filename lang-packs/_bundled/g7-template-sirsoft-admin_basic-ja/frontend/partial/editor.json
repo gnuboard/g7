@@ -1452,6 +1452,7 @@
     "policy_version_snapshot": "ポリシー版のスナップショット",
     "rows_selected": "行を選択 (一括操作)",
     "delete_confirm": "削除の確認",
+    "withdraw_confirm": "退会の確認",
     "bulk_delete_confirm": "一括削除の確認",
     "editor_preview_open": "エディタープレビューを展開",
     "marketing_channel_edit": "マーケティングチャネルの編集",

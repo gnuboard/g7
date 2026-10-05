@@ -182,6 +182,18 @@ enum OrderStatusEnum: string
     }
 
     /**
+     * 결제 이후 단계(결제완료 ~ 구매확정)인지 확인합니다. 취소는 결제 이후가 아닙니다.
+     *
+     * 입금 기록, 상태 전이의 결제금액 정합화, 관리자 입금확인 창(리소스 `is_past_payment`)이 같은 판정을 쓴다.
+     *
+     * @return bool 결제 이후 단계면 true
+     */
+    public function isPastPayment(): bool
+    {
+        return ! $this->isBeforePayment() && $this !== self::CANCELLED;
+    }
+
+    /**
      * 주문 상태 → 옵션 상태 동기화에서 제외할 상태 목록을 반환합니다.
      *
      * 결제완료·관리자 주문 수정 등으로 주문 전체 상태를 일괄 전이시킬 때,
@@ -192,7 +204,7 @@ enum OrderStatusEnum: string
      * 모든 동기화 지점(completePayment / OrderService::update /
      * bulkUpdateOptionStatus / syncParentOrderStatus)에 일괄 반영된다.
      *
-     * @return array<self>
+     * @return array<self> 옵션 상태 동기화에서 제외할 상태 목록
      */
     public static function syncExcludedStatuses(): array
     {
@@ -304,7 +316,7 @@ enum OrderStatusEnum: string
     /**
      * 주문 상태 → 옵션 상태 동기화에서 제외할 상태 값 배열을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 옵션 상태 동기화에서 제외할 상태 값 목록
      */
     public static function syncExcludedValues(): array
     {
@@ -318,7 +330,7 @@ enum OrderStatusEnum: string
      * 결제가 완료된 적 없는 주문이라 관리자·마이페이지 목록과 통계에서 기본 제외한다.
      * (관리자가 order_status 필터를 명시하면 노출 가능 — Repository 분기 참조)
      *
-     * @return array<self>
+     * @return array<self> 목록과 통계에서 기본으로 숨길 상태 목록
      */
     public static function listHiddenStatuses(): array
     {
@@ -328,7 +340,7 @@ enum OrderStatusEnum: string
     /**
      * 주문 목록·통계에서 기본 숨김 처리할 상태 값 배열을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 목록과 통계에서 기본으로 숨길 상태 값 목록
      */
     public static function listHiddenValues(): array
     {
@@ -365,7 +377,7 @@ enum OrderStatusEnum: string
     /**
      * 배송 정보 필수 상태 목록을 반환합니다.
      *
-     * @return array<self>
+     * @return array<self> 배송 정보가 있어야 하는 상태 목록
      */
     public static function shippingInfoRequiredStatuses(): array
     {
@@ -375,7 +387,7 @@ enum OrderStatusEnum: string
     /**
      * 배송 정보 필수 상태 값 배열을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 배송 정보가 있어야 하는 상태 값 목록
      */
     public static function shippingInfoRequiredValues(): array
     {
@@ -395,7 +407,7 @@ enum OrderStatusEnum: string
     /**
      * 발송 이후 상태 목록을 반환합니다.
      *
-     * @return array<self>
+     * @return array<self> 발송 이후 상태 목록
      */
     public static function shippedStatuses(): array
     {
@@ -420,7 +432,7 @@ enum OrderStatusEnum: string
      * 결제 전(pending_order/pending_payment)과 취소(cancelled — 부분취소는 별도 상태가 아니라
      * CANCELLED 로 분할된 행으로 표현된다)는 제외됩니다.
      *
-     * @return array<self>
+     * @return array<self> 매출에 반영되는 상태 목록
      */
     public static function salesEligibleStatuses(): array
     {
@@ -438,7 +450,7 @@ enum OrderStatusEnum: string
     /**
      * 매출 반영 상태 값(문자열) 배열을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 매출에 반영되는 상태 값 목록
      */
     public static function salesEligibleValues(): array
     {
@@ -483,7 +495,7 @@ enum OrderStatusEnum: string
      * 인덱스 순서가 곧 정상 진행 방향이며, 전이 규칙(allowedTransitions)·
      * 잔여옵션 파생 상태(OrderOptionService::syncParentOrderStatus)가 이 배열을 공유한다.
      *
-     * @return array<self>
+     * @return array<self> 진행 순서대로 늘어선 상태 목록(취소 제외)
      */
     public static function progressOrder(): array
     {
@@ -503,7 +515,7 @@ enum OrderStatusEnum: string
     /**
      * 주문 진행 순서 값(문자열) 배열을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 진행 순서대로 늘어선 상태 값 목록
      */
     public static function progressOrderValues(): array
     {
@@ -526,7 +538,7 @@ enum OrderStatusEnum: string
      *   (반려·철회 시 신청 직전 상태로 되돌리는 경로 — revertibleClaimCourseStatuses 참조).
      *   완료 2종(EXCHANGED/RETURNED)은 터미널이라 빈 배열을 유지한다.
      *
-     * @return array<self>
+     * @return array<self> 현재 상태에서 옮겨 갈 수 있는 상태 목록(취소 진입 제외)
      */
     public function allowedTransitions(): array
     {

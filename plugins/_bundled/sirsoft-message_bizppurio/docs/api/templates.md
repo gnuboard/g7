@@ -10,7 +10,7 @@
 1. 이 문서는 Templates 엔드포인트 레퍼런스입니다 (readiness 1건은 실측 @generated, 라이프사이클 13건은 코드 사양 기반 수기 작성)
 2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시 + 응답 필드 표 + 응답 예시(envelope)
 3. 알림 템플릿 라이프사이클: 등록(draft) → 검수 신청(requested) → 승인(approved) 후 발송 활성화 — 발송 판정은 DB 가 유일한 근거
-4. kapi(카카오 관리 API) 실패는 422 + errors.bizppurio_message(사유 원문)·errors.result_code / 상태 전이 위반도 422
+4. kapi(카카오 관리 API) 실패는 422 + errors.bizppurio_message(사유 원문)·errors.result_code / 서버 연결 실패는 연결 실패 안내 422 / 상태 전이 위반도 422
 5. 갱신: 코드 변경 후 이 문서를 수기 동기화 (라이프사이클 항목은 kapi 자격증명 없이 실측 불가)
 ```
 
@@ -96,6 +96,7 @@ HTTP/1.1 200
 | 상태코드 | 발생 조건 | 응답 형태 |
 | --- | --- | --- |
 | 422 (kapi 실패) | 카카오 관리 API 호출이 실패한 경우 | `errors.bizppurio_message` 에 카카오가 준 실패 사유 원문, `errors.result_code` 에 결과 코드 (관리자 전용 면 — 조치 근거 제공) |
+| 422 (연결 실패) | 비즈뿌리오 서버에 닿지 못한 경우(타임아웃·DNS·프록시) | `messages.error.connection_failed` 안내, errors 없음. 행 상태는 바뀌지 않는다 |
 | 422 (상태 전이 위반) | 현재 상태에서 허용되지 않는 액션인 경우 | 위반 사유 메시지 (예: "현재 상태(requested)에서는 알림톡 내용을 수정할 수 없습니다. …") |
 | 422 (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 | `error.errors` 에 필드별 메시지 |
 | 404 | `{id}` 에 해당하는 템플릿이 없는 경우 | `messages.not_found` |
@@ -1039,7 +1040,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | kakao_deleted | boolean | 카카오측 템플릿도 함께 삭제했는지 여부 |
-| kakao_skip_reason | string\|null | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문. 삭제했으면 null |
+| kakao_skip_reason | string\|null | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문 / 서버에 닿지 못했으면 연결 실패 안내 문장(`messages.error.connection_failed` 의 번역). 삭제했으면 null |
 
 **응답 예시**
 
@@ -1068,4 +1069,5 @@ DB 행은 항상 삭제한다. 카카오측 템플릿은 삭제 가능 상태일
 등록(REG)/반려(REJ) 상태에서만 허용되므로, 우리 상태가 `draft`/`rejected` 면 kapi 삭제를 시도하고,
 그 외 상태(또는 kapi 삭제 실패)면 카카오측은 그대로 두고 DB 행만 삭제한다. 어느 쪽이든 응답의
 `kakao_deleted`·`kakao_skip_reason` 으로 결과를 명시해 운영자가 알 수 있게 한다(kapi 실패가 있어도
-이 엔드포인트는 422 가 아닌 200 으로 완료된다).
+이 엔드포인트는 422 가 아닌 200 으로 완료된다). 비즈뿌리오 서버에 닿지 못한 경우도 같다 — `kakao_skip_reason` 에
+연결 실패 안내 문장(`messages.error.connection_failed` 키의 번역)을 적는다.

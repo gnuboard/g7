@@ -383,13 +383,11 @@
   "modal": {
     "preset_save": {
       "title": "Save preset",
-      "description": "Save the current search conditions as a preset.",
       "placeholder": "Enter a preset name",
       "save": "Save"
     },
     "preset_manage": {
       "title": "Manage presets",
-      "description": "Manage your search presets.",
       "add_new": "Add a preset",
       "empty": "No presets have been saved."
     },

@@ -501,6 +501,15 @@ class VisitRepository implements VisitRepositoryInterface
             ->whereBetween('visit_date', [$from, $to])
             ->when($visitorType !== null, fn (Builder $q) => $q->where('visitor_type', $visitorType))
             ->when($search !== null && $search !== '', function (Builder $q) use ($search): void {
+                // `#번호` 는 그 회원의 방문만 — 목록 회원 메뉴 「이 회원으로 검색」이 이 꼴로 보낸다.
+                // 숫자만 넣으면 아래 한 칸 검색이 방문자 키 앞부분에도 대 보아, 키가 같은 숫자로
+                // 시작하는 비회원 방문이 섞인다(목록이 지워진 회원을 `#번호` 로 보여 주는 것과 같은 표기).
+                if (preg_match('/^#(\d+)$/', trim((string) $search), $member) === 1) {
+                    $q->where('user_id', (int) $member[1]);
+
+                    return;
+                }
+
                 // 운영자는 방문자 키·주소·회원 번호 중 무엇으로 찾을지 미리 고르지 않는다 —
                 // 한 칸에 넣은 값을 셋 모두에 대 본다.
                 $binary = inet_pton((string) $search) ?: null;

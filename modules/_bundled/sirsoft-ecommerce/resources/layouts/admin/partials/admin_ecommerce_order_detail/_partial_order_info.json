@@ -499,11 +499,11 @@
                                                         "text": "{{row.unit_price_formatted}}"
                                                     },
                                                     {
-                                                        "comment": "판매가 보조 통화",
+                                                        "comment": "판매가 보조 통화 — 윗줄은 주문의 기준 통화 금액이므로 목록에서 빼는 것도 기준 통화다(이 표의 보조 통화 줄 다섯 곳이 같은 규칙).\n                  관리자가 헤더에서 고른 표시 통화를 빼면, 기준 통화가 그와 다른 상점(기준 엔화·표시 원화)에서 원화가 사라지고 엔화가 두 번 선다(실측 2026-10-03).\n                  클레임 비교 카드와 주문 취소 창은 이미 같은 순서(base_currency 먼저)로 거른다.",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                            "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -968,7 +968,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                            "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -1036,7 +1036,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -1197,7 +1197,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -1262,7 +1262,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "iteration": {
-                                                                    "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                                    "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (order.data?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                     "item_var": "currency"
                                                                 },
                                                                 "props": {

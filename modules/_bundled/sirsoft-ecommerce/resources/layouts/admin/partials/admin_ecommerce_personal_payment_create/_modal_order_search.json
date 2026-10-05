@@ -9,7 +9,6 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.title",
-        "description": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.description",
         "size": "lg"
     },
     "children": [

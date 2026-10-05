@@ -959,12 +959,20 @@ slots.content:
 | 프로필 수정 | `profile-edit.g7.html` | `_edit.g7.html`, `_password_verify_section.g7.html`, `_modal_withdraw.g7.html` |
 | 주문 내역 | `orders.g7.html` | `_list.g7.html` |
 | 주문 상세 | `orders/show.g7.html` | `_status_header.g7.html`, `_items.g7.html`, `_shipping.g7.html`, `_payment.g7.html`, `_history.g7.html` |
-| 내 게시글 | `board.g7.html` | `_my_posts.g7.html`, `_my_comments.g7.html` |
+| 게시판 활동 | `board.g7.html` | `_my_posts.g7.html`, `_my_comments.g7.html`, `_my_reactions.g7.html`, `_my_reports.g7.html`, `_modal_reaction_delete.g7.html`, `_modal_reaction_bulk_delete.g7.html`, `_modal_report_cancel.g7.html` |
+| 스크랩 | `scrap.g7.html` | `_list.g7.html`, `_modal_scrap_delete.g7.html`, `_modal_scrap_bulk_delete.g7.html` |
 | 배송지 | `addresses.g7.html` | `_list.g7.html`, `_modal_address.g7.html`, `_modal_confirm_delete.g7.html` |
 | 알림 | `notifications.g7.html` | `_list.g7.html` |
 | 비밀번호 변경 | `change-password.g7.html` | (인라인) |
 | 위시리스트 | `wishlist.g7.html` | `_list.g7.html` |
 | 상품 1:1 문의내역 | `inquiries.g7.html` | `_list.g7.html` (sirsoft-ecommerce 모듈 연동 시에만 탭 표시) |
+
+**목록의 빈 상태**: 스크랩·내 글·내 댓글·내 반응·내 신고 목록은 0건일 때 두 문구로 갈립니다. 검색어나
+게시판·유형·상태 같은 조건이 걸려 있으면 「검색 결과가 없습니다」(`board.no_search_results`), 아무 조건이
+없을 때만 「아직 … 없습니다」입니다. 조건을 건 채 「아직 없음」을 띄우면 있는 항목이 사라진 것으로 읽힙니다.
+
+**내 신고 목록의 머리줄**: 신고 시점 스냅샷의 `title ?? excerpt` 입니다 — 글 신고는 글 제목, 제목이 없는
+댓글 신고는 본문 요약이 나옵니다. 취소 확인 창도 같은 값을 보여 어느 신고를 거두는지 알립니다.
 
 **핸들러 패턴**:
 - `apiCall` — 프로필 수정, 주문 취소, 배송지 CRUD, 알림 읽음 처리

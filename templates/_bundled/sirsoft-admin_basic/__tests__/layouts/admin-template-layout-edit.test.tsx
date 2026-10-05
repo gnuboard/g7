@@ -21,6 +21,8 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
+import { isRawWrapped, unwrapRaw } from '@core/template-engine/rawMarkers';
 
 // ==============================
 // 레이아웃 JSON 파일 로드
@@ -611,6 +613,60 @@ describe('selectedNodeKind 분기', () => {
     expect(body).toContain('layout_files');
   });
 
+  /**
+   * 서버는 저장한 마크업을 역변환해 돌려주므로 글자가 정규화된다. 작업 공간이 그 판본을 «내 저장» 으로
+   * 알아보도록 저장 동작이 보낸 파일·본문을 적고, 성공 응답의 판본을 채워 `lastSave` 로 넘긴다
+   * (실측 2026-10-04: 없으면 저장할 때마다 「yours v2 → server v3」 충돌 바).
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_editor_save_records_last_save_for_workspace
+   */
+  it('저장 동작이 보낸 파일·본문과 응답 판본을 남기고 작업 공간이 그것을 받는다', () => {
+    const save = layoutEditJson.named_actions?.save_current_file;
+    const branches = asArray(save?.conditions);
+    const evaluate = (expr: string, context: Record<string, unknown>): unknown =>
+      dataBindingEngine.evaluateExpression(String(expr).trim().replace(/^\{\{|\}\}$/g, ''), context);
+    const findSetState = (node: any, pred: (params: any) => boolean): any => {
+      if (!node || typeof node !== 'object') return null;
+      if (!Array.isArray(node) && node.handler === 'setState' && node.params && pred(node.params)) return node.params;
+      for (const v of Array.isArray(node) ? node : Object.values(node)) {
+        const hit = findSetState(v, pred);
+        if (hit) return hit;
+      }
+      return null;
+    };
+
+    const cases = [
+      { branch: branches.find((c: any) => c.if && c.if.includes("'extension'")), global: { selectedNodeKind: 'extension', selectedExtensionId: 12, editorMarkup: '<x  a="1"/>' }, key: 'ext:12' },
+      { branch: branches.find((c: any) => !c.if), global: { selectedNodeKind: 'layout', selectedLayoutName: 'home', editorMarkup: '<y  b="2"/>' }, key: 'layout:home' },
+    ];
+
+    for (const { branch, global, key } of cases) {
+      const sending = findSetState(branch, (p) => p.isSaving === true);
+      expect(evaluate(sending.codeEditorLastSave, { _global: global })).toEqual({ key, value: global.editorMarkup, revision: null });
+
+      const done = findSetState(branch?.then, (p) => p.isSaving === false && 'codeEditorLastSave' in p);
+      const recorded = { key, value: global.editorMarkup, revision: null };
+      expect(
+        evaluate(done.codeEditorLastSave, { _global: { ...global, codeEditorLastSave: recorded }, response: { data: { lock_version: 7 } } }),
+      ).toEqual({ key, value: global.editorMarkup, revision: 7 });
+    }
+
+    // 작업 공간에는 `raw:` 로 넘긴다 — 본문 안의 `$t:` 가 번역 패스에서 바뀌면 보낸 본문과 버퍼가 달라 보여
+    // 정규화본을 받아들이지 못하고 저장 뒤에도 미저장으로 남는다(실측 2026-10-04, 첫 수정본에서 재현).
+    const workspace = findComponent(layoutEditJson, (n) => n.name === 'CodeWorkspace');
+    expect(workspace?.props?.lastSave).toBe('{{raw:_global.codeEditorLastSave ?? null}}');
+
+    const markup = '<h1>$t:gnuboard7-hello_module.admin.memos.index.title</h1>';
+    const resolved = dataBindingEngine.resolveObject(
+      { lastSave: workspace.props.lastSave },
+      { _global: { codeEditorLastSave: { key: 'layout:home', value: markup, revision: 3 } } },
+    ) as { lastSave: { key: string; value: string; revision: number } };
+    expect(isRawWrapped(resolved.lastSave.value)).toBe(true);
+    expect(unwrapRaw(resolved.lastSave.value)).toBe(markup);
+    expect(resolved.lastSave.revision).toBe(3);
+  });
+
   /** @effects editor_header_buttons_reference_named_actions */
   it('머리말 저장 버튼과 Ctrl+S 가 같은 정의를 참조한다', () => {
     const buttons = findAllComponents(
@@ -622,6 +678,35 @@ describe('selectedNodeKind 분기', () => {
     const workspace = findComponent(layoutEditJson, (n) => n.name === 'CodeWorkspace');
     const shortcut = asArray(workspace?.actions).find((a: any) => a.event === 'onSave');
     expect(shortcut?.actionRef).toBe('save_current_file');
+  });
+});
+
+describe('[case:components-misc-user-content-object-prop-translated] 사용자 본문을 객체 prop 으로 넘길 때', () => {
+  /**
+   * 증상: 본문에 `$t:` 가 있는 파일은 저장이 200 인데도 미저장 표시가 남았다(실측 2026-10-04).
+   * 해결: 작업 공간에 `raw:` 로 넘긴다. 일반 바인딩은 객체 안 본문을 그대로 두어 렌더러의 번역 패스가
+   * `$t:` 를 번역문으로 바꾸고, `raw:` 바인딩은 객체 리프 문자열 전부에 마커를 붙여 번역 패스를 건너뛰게 한다.
+   *
+   * @effects code_editor_save_records_last_save_for_workspace
+   */
+  it('일반 바인딩은 본문을 번역 대상으로 남기고, 작업 공간이 쓰는 raw 바인딩은 원문을 지킨다', () => {
+    const markup = '<h1>$t:gnuboard7-hello_module.admin.memos.index.title</h1>';
+    const context = { _global: { codeEditorLastSave: { key: 'layout:home', value: markup, revision: 3 } } };
+
+    const plain = dataBindingEngine.resolveObject(
+      { lastSave: '{{_global.codeEditorLastSave ?? null}}' },
+      context,
+    ) as { lastSave: { value: string } };
+    expect(isRawWrapped(plain.lastSave.value)).toBe(false);
+    expect(plain.lastSave.value).toContain('$t:');
+
+    const workspace = findComponent(layoutEditJson, (n) => n.name === 'CodeWorkspace');
+    expect(String(workspace?.props?.lastSave)).toMatch(/^\{\{raw:/);
+    const guarded = dataBindingEngine.resolveObject({ lastSave: workspace.props.lastSave }, context) as {
+      lastSave: { key: string; value: string };
+    };
+    expect(isRawWrapped(guarded.lastSave.value)).toBe(true);
+    expect(unwrapRaw(guarded.lastSave.value)).toBe(markup);
   });
 });
 
@@ -720,5 +805,126 @@ describe('코드 편집기 ?route= URL 동기화', () => {
 
     expect(toast?.params?.message).toBe('$t:admin.templates.layout_edit.file.missing_reloading');
     expect(refetch?.params?.dataSourceId).toBe('layout_files');
+  });
+});
+
+describe('admin_template_layout_edit — 없는 파일 탭의 머리말·JSON 창', () => {
+  /** id 로 노드를 찾는다. */
+  const byId = (node: any, id: string): any => {
+    if (!node || typeof node !== 'object') return null;
+    if (!Array.isArray(node) && node.id === id) return node;
+    for (const v of Array.isArray(node) ? node : Object.values(node)) {
+      const hit = byId(v, id);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  /** 데이터 바인딩 엔진으로 `{{ }}` 식을 평가한다. */
+  const evaluate = (expr: string, context: Record<string, unknown>): unknown =>
+    dataBindingEngine.evaluateExpression(String(expr).trim().replace(/^\{\{(raw:)?|\}\}$/g, ''), context);
+
+  /** 지워진 파일(zz-probe)의 초안 탭을 고른 상태 — 서버를 부르지 않으므로 current_layout 은 직전 파일이다. */
+  const missingTab = {
+    _global: { selectedNodeKind: 'layout', selectedLayoutName: 'zz-probe', editorContent: '{"layout_name":"_user_base"}' },
+    current_layout: { data: { name: '_user_base', description: '그누보드7 커뮤니티', updated_at: '2026-10-01 11:47:58', content: { layout_name: '_user_base' } } },
+  };
+  /** 같은 파일을 불러온 평소 상태 */
+  const loadedTab = {
+    _global: { selectedNodeKind: 'layout', selectedLayoutName: '_user_base', editorContent: '{"layout_name":"_user_base"}' },
+    current_layout: missingTab.current_layout,
+  };
+
+  /**
+   * 없는 파일 탭은 일부러 서버를 부르지 않아 `current_layout` 이 직전 파일로 남는다. 머리말(설명·수정일·
+   * 버전 히스토리)과 JSON 창이 그것을 그대로 그리면, 지워진 파일 이름 옆에 다른 파일의 수정일·이력·JSON 이
+   * 보인다(브라우저 실측 2026-10-03: zz-probe 탭에 _user_base 의 「수정일 2026-10-01」과 JSON).
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_editor_hides_loaded_file_meta_for_missing_file_tab
+   */
+  it('선택한 파일과 불러온 파일이 다르면 설명·수정일·버전 히스토리를 감추고 JSON 창을 비운다', () => {
+    const description = byId(layoutEditJson, 'layout_meta_description');
+    const modifiedAt = byId(layoutEditJson, 'layout_meta_modified_at');
+    const versionButton = byId(layoutEditJson, 'layout_meta_version_history');
+    const jsonEditor = byId(layoutEditJson, 'json_editor');
+
+    for (const node of [description, modifiedAt, versionButton]) {
+      expect(node, '머리말 요소가 식별자로 남아 있어야 한다').toBeTruthy();
+      expect(evaluate(node.if, missingTab)).toBeFalsy();
+      expect(evaluate(node.if, loadedTab)).toBeTruthy();
+    }
+
+    expect(evaluate(jsonEditor.props.value, missingTab)).toBe('');
+    expect(evaluate(jsonEditor.props.value, loadedTab)).toBe('{"layout_name":"_user_base"}');
+  });
+});
+
+describe('admin_template_layout_edit — 없는 파일 살리기의 마무리', () => {
+  const fileFormModalJson = loadLayout('partials/admin_template_layout_edit/_modal_file_form.json');
+
+  /** 조건을 만족하는 노드를 모두 모은다. */
+  const collect = (node: any, pred: (n: any) => boolean, acc: any[] = []): any[] => {
+    if (!node || typeof node !== 'object') return acc;
+    if (!Array.isArray(node) && pred(node)) acc.push(node);
+    for (const v of Array.isArray(node) ? node : Object.values(node)) collect(v, pred, acc);
+    return acc;
+  };
+
+  /**
+   * «새 이름으로 저장» 은 어느 없는 파일에서 왔는지 기억하고, 생성이 성공하면 그 키를 편집기에 `retiredKey` 로
+   * 돌려준다 — 편집기는 생성 성공을 모르므로 이 연결이 끊기면 살린 뒤에도 유령 탭과 초안이 남는다.
+   *
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
+   * @effects code_workspace_retires_rescued_missing_file
+   */
+  it('saveAs 가 원래 키를 기억하고 생성 성공이 그 키를 retiredKey 로 넘긴다', () => {
+    const workspace = collect(layoutEditJson, (n) => n.name === 'CodeWorkspace')[0];
+    expect(workspace?.props?.retiredKey).toBe('{{_global.retiredFileKey ?? \'\'}}');
+
+    const saveAs = collect(layoutEditJson, (n) => n.event === 'onSaveAs')[0];
+    const remembers = collect(saveAs, (n) => n.handler === 'setState' && n.params?.fileFormRescueFrom !== undefined)[0];
+    expect(remembers?.params?.fileFormRescueFrom).toBe('{{$event.target.key ?? null}}');
+    // 새 살리기는 앞선 알림을 비우고 시작한다 — 작업 공간은 알림 하나를 한 번만 처리하므로 같은 키를 다시 살릴 때도
+    // 빈 값을 거쳐야 새 알림으로 받는다.
+    expect(remembers?.params?.retiredFileKey).toBeNull();
+
+    const handsBack = collect(fileFormModalJson, (n) => n.handler === 'setState' && n.params?.retiredFileKey !== undefined)[0];
+    expect(handsBack?.if).toBe('{{!!_global.fileFormRescueFrom}}');
+    expect(handsBack?.params?.retiredFileKey).toBe('{{_global.fileFormRescueFrom}}');
+    expect(handsBack?.params?.fileFormRescueFrom).toBeNull();
+  });
+});
+
+describe('admin_template_layout_edit — 트리에서 다른 파일 이름변경', () => {
+  const fileFormModalJson = loadLayout('partials/admin_template_layout_edit/_modal_file_form.json');
+  const collect = (node: any, pred: (n: any) => boolean, acc: any[] = []): any[] => {
+    if (!node || typeof node !== 'object') return acc;
+    if (!Array.isArray(node) && pred(node)) acc.push(node);
+    for (const v of Array.isArray(node) ? node : Object.values(node)) collect(v, pred, acc);
+    return acc;
+  };
+  const evaluate = (expr: string, context: Record<string, unknown>): unknown =>
+    dataBindingEngine.evaluateExpression(String(expr).trim().replace(/^\{\{|\}\}$/g, ''), context);
+
+  /**
+   * 이름변경은 **대상 파일**의 잠금 번호를 보내야 한다. 지금 열린 파일의 번호를 보내면, 트리에서 다른 파일의
+   * 이름을 바꿀 때 가짜 충돌(409 「다른 사용자가 먼저 저장했습니다… 현재 버전: 0, 보낸 버전: 2」)이 난다
+   * (실측 2026-10-03: zz-probe2 를 연 채 zz-probe-rescue2 이름변경).
+   *
+   * @scenario branch=layout, buffer_state=clean, leave=file_switch
+   * @effects code_editor_rename_sends_the_target_lock_version
+   */
+  it('이름변경 요청의 expected_lock_version 은 대상 파일의 것이다', () => {
+    const rename = collect(fileFormModalJson, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('/rename'))[0];
+    const lockExpr = rename?.params?.body?.expected_lock_version;
+    expect(lockExpr).toBeTruthy();
+
+    const layoutFiles = { data: [{ name: 'zz-probe2', lock_version: 2 }, { name: 'zz-probe-rescue2', lock_version: 0 }] };
+    const current = { data: { name: 'zz-probe2', lock_version: 2 } };
+
+    // 다른 파일(열려 있지 않음)의 이름변경 → 그 파일의 번호
+    expect(evaluate(lockExpr, { _global: { fileFormTarget: 'zz-probe-rescue2' }, layout_files: layoutFiles, current_layout: current })).toBe(0);
+    // 열린 파일의 이름변경 → 상세의 최신 번호
+    expect(evaluate(lockExpr, { _global: { fileFormTarget: 'zz-probe2' }, layout_files: layoutFiles, current_layout: { data: { name: 'zz-probe2', lock_version: 5 } } })).toBe(5);
   });
 });

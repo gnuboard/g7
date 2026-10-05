@@ -258,7 +258,7 @@ avg_time_seconds, pages_per_visit, new_visitors, returning_visitors` 아홉 열�
 | page | query | integer | 아니오 | min 1 | 쪽 번호 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 쪽당 건수. 기본값은 설정의 「상세 화면 상위 목록 건수」(`top_n_detail`, 기본 25) |
 | sort | query | string | 아니오 | visits, hits, entries, exits | 정렬 기준. 기본 `visits` |
-| q | query | string | 아니오 | max 255 | 라벨 부분 검색. 입력한 글자 그대로 찾는다(`%`·`_` 도 글자). 주소 리포트(페이지·진입·이탈·봇 페이지)은 화면에 풀어 보인 모양(「테스트」)으로 찾아도 인코딩돼 저장된 라벨(「%ED%85%8C…」)이 잡힌다 |
+| q | query | string | 아니오 | max 255 | 라벨 부분 검색. 입력한 글자 그대로 찾는다(`%`·`_` 도 글자). 주소 리포트(페이지·진입·이탈·봇 페이지)은 화면에 풀어 보인 모양(「테스트」)으로 찾아도 인코딩돼 저장된 라벨(「%ED%85%8C…」)이 잡힌다. 유입 종류·기기 종류는 화면 이름(「직접 유입」·「데스크톱」)으로 찾아도 저장 코드(`direct`·`desktop`)가 잡힌다 |
 | format | query | string | 아니오 | json, csv | `csv` 면 표를 파일로 내려받는다 |
 
 
@@ -268,7 +268,7 @@ avg_time_seconds, pages_per_visit, new_visitors, returning_visitors` 아홉 열�
 | --- | --- | --- |
 | report | string | 요청한 리포트 이름 |
 | data[].label | string | 저장된 라벨 (기계가 읽는 값 — 국가 코드, 접두를 뗀 주소) |
-| data[].label_display | string | 화면에 보일 문자열 (국가·지역·도시는 번역, 주소는 사이트 호스트를 떼고 퍼센트 인코딩을 푼 값 — 풀어서 올바른 UTF-8 이 아니거나 제어 문자가 섞이면 원문. `label` 은 저장값 그대로). 목표(`goal`)는 선언한 이름(「회원가입」), 확장 분류 기준은 그 확장의 라벨 풀이 함수가 돌려준 이름 — 확장이 꺼졌으면 원값 |
+| data[].label_display | string | 화면에 보일 문자열 (국가·지역·도시는 번역, 주소는 사이트 호스트를 떼고 퍼센트 인코딩을 푼 값 — 풀어서 올바른 UTF-8 이 아니거나 제어 문자가 섞이면 원문. `label` 은 저장값 그대로). 목표(`goal`)는 선언한 이름(「회원가입」), 유입 종류·기기 종류는 요청 로케일의 이름(「직접 유입」·「데스크톱」, 모르는 코드는 원값), 확장 분류 기준은 그 확장의 라벨 풀이 함수가 돌려준 이름 — 확장이 꺼졌으면 원값 |
 | data[].visits / hits | integer | 이 라벨이 나온 방문 수 / 액션 수. 같은 방문이 한 라벨을 여러 번 봐도 방문은 1 이다 |
 | data[].entries / exits | integer | 이 라벨로 시작한 / 끝난 방문 수 |
 | data[].bounce_rate | float | 이탈률 (%) |
@@ -850,7 +850,7 @@ _없음._
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| q | query | string | 아니오 | max 64 | 방문자 키 앞자리·주소·회원 번호 중 무엇으로 찾을지 미리 고르지 않는다 — 한 칸에 넣은 값을 셋 모두에 대 본다 |
+| q | query | string | 아니오 | max 64 | 방문자 키 앞자리·주소·회원 번호 중 무엇으로 찾을지 미리 고르지 않는다 — 한 칸에 넣은 값을 셋 모두에 대 본다. `#123` 처럼 `#` 을 붙이면 그 회원 번호의 방문만 찾는다(숫자만 넣으면 키가 같은 숫자로 시작하는 방문도 걸린다) |
 | type | query | string | 아니오 | guest, member, admin, bot | 방문자 유형 필터 |
 | page / per_page | query | integer | 아니오 | min 1 / max 100 | 쪽 정보 |
 

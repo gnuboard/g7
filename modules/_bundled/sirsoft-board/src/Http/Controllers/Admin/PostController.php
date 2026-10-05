@@ -83,6 +83,15 @@ class PostController extends AdminBaseController
             // 게시글 목록 조회 (simplePaginate — COUNT 쿼리 제거)
             $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $canViewDeleted, board: $board);
 
+            // board 관계 수동 주입 (목록 Repository는 board를 eager load하지 않음) — 사용자 목록과 같다.
+            // 빠지면 PostResource 가 반응 설정을 읽지 못해 reaction_total 을 싣지 않고, 화면의 「반응」 열이
+            // 반응이 있는 글에서도 늘 0 이 된다. New 배지(is_new)도 이 관계로 게시판의 신규 게시글 표시 기간을 읽어,
+            // 빠지면 늘 24시간 기본값으로 판정한다. 이미 조회한 단일 $board 를 공유 주입하므로 게시판 조회는 늘지 않고,
+            // 행마다 쓰는 활성 반응 유형은 PostResource 가 요청 안에서 한 번만 조회한다.
+            foreach ($posts as $post) {
+                $post->setRelation('board', $board);
+            }
+
             // 일반 게시글 총 건수는 캐시에서 조회 (simplePaginate는 total 미제공)
             $totalNormalPosts = $this->postService->getCachedNormalPostCount($slug, $board->id, $listParams['filters'], $canViewDeleted, 'admin');
 

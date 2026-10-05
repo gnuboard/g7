@@ -1,4 +1,4 @@
-<!-- 알림 설정 '비즈뿌리오' 통합 탭의 각 알림 행 하단 상태 요약(제품 결정 2026-08-23 — 버튼 없음, 조작은 코어 [편집] 모달로 일원화). activeChannel==='alimtalk'(통합 탭 정체성)일 때만 노출. 요약 데이터는 bizppurioTemplates(각 탭 오버레이가 등록·조회, GET templates/map)에서 def.type 으로 읽는다. 1줄: 알림톡 승인 2단 배지 + 신청/동기화일 + 발송 사용 여부 / 2줄: 문자(SMS) 대체·단독 사용 여부 + 본문 미리보기. -->
+<!-- 알림 설정 '비즈뿌리오' 통합 탭의 각 알림 행 하단 상태 요약(제품 결정 2026-08-23 — 버튼 없음, 조작은 코어 [편집] 모달로 일원화). activeChannel==='alimtalk'(통합 탭 정체성)일 때만 노출. 요약 데이터는 bizppurioTemplates(편집 모달 섹션 조각이 싣는 데이터소스, GET templates/map)에서 def.type 으로 읽는다. 1줄: 알림톡 승인 2단 배지 + 신청/동기화일 + 발송 사용 여부 / 2줄: 문자(SMS) 대체·단독 사용 여부 + 본문 미리보기. -->
 <extension extension-point="notification_definition_row_footer" priority="320">
   <div data-ref="bizppurio_row_lifecycle" data-if="{{extensionPointProps.activeChannel === 'alimtalk'}}" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
     <div class="flex items-center flex-wrap gap-2">

@@ -23,7 +23,7 @@
                    아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
               <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
                 <icon name="puzzle-piece" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
-                <img data-if="{{_global.selectedPlugin?.icon_url && !(_local.selectedPluginIconBroken ?? []).includes(_global.selectedPlugin?.identifier)}}" src="{{_global.selectedPlugin.icon_url}}" alt="$t:defer:extensions.icon.alt|name={{_global.selectedPlugin?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                <img data-if="{{_global.selectedPlugin?.icon_url && !(_local.selectedPluginIconBroken ?? []).includes(_global.selectedPlugin?.identifier)}}" src="{{_global.selectedPlugin.icon_url}}" alt="$t:extensions.icon.alt|name={{_global.selectedPlugin?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
                   <on event="onError">
                     <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
                          다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->
@@ -133,8 +133,14 @@
               <span class="text-primary font-semibold">$t:admin.plugins.modals.permissions</span>
             </div>
             <p data-if="{{!_global.selectedPlugin.permissions || _global.selectedPlugin.permissions.length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_permissions</p>
-            <div data-if="{{_global.selectedPlugin.permissions &amp;&amp; _global.selectedPlugin.permissions.length > 0}}" class="flex flex-wrap gap-2">
-              <span data-each="perm in _global.selectedPlugin.permissions" class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{$localized(perm.name)}} ({{perm.identifier}})</span>
+            <!-- 서버는 모듈과 같은 분류 배열을 보낸다 — 분류 이름 아래 개별 권한을 「이름 (분류.동작)」으로 그린다(모듈 정보 창과 같은 모양). -->
+            <div data-if="{{_global.selectedPlugin.permissions &amp;&amp; _global.selectedPlugin.permissions.length > 0}}" class="row-stack">
+              <div data-each="category in _global.selectedPlugin.permissions">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{{$localized(category.name)}}</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span data-each="perm in category.permissions" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}</span>
+                </div>
+              </div>
             </div>
           </div>
           <div data-ref="roles_section">

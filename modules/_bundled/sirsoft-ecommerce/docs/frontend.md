@@ -300,7 +300,9 @@
 환경설정 알림 탭의 템플릿 편집 창(`_modal_notification_template_edit`)은 코어 창의 사본입니다(게시판·수출입은행
 플러그인과 함께 네 벌). 수신자 규칙 종류를 바꾸면 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 정의가 선언한
 첫 관계를 채웁니다 — 앞 종류의 값을 남기면 회원 UUID 가 역할로 저장돼 수신자가 0명이 됩니다. 규칙을 바꾸면 네 벌을
-함께 바꿉니다(코어 `sirsoft-admin_basic` AGENTS.md 「알림 템플릿 편집 창 사본」).
+함께 바꿉니다(코어 `sirsoft-admin_basic` AGENTS.md 「알림 템플릿 편집 창 사본」). 관계 선택지와 목록 카드는 관계 키 대신 정의
+응답의 `relation_labels` 이름을 보이며, 이름은 `src/lang/{ko,en}/messages.php` 의 `notification_relations` 에 둡니다(「문의 답변 완료」의
+`author` → 「문의 작성자」).
 <!-- @intent END -->
 
 

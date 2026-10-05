@@ -1,6 +1,6 @@
 <!-- 클레임 목록 — 지금 걸린 검색 조건을 새 프리셋으로 저장하는 창. 조건 묶음은 필터 영역의 [프리셋 저장] 버튼이 창을 열기 전에 `_global.savingPresetConditions` 로 옮겨 두고, 유형은 그 묶음에 없어 지금 보는 서브탭으로 채우므로 프리셋을 적용하면 저장할 때의 탭으로 돌아간다. -->
 <partial description="Claim List - Preset Save Modal">
-  <modal data-type="composite" data-ref="modal_claim_preset_save" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.title" description="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.description" size="sm">
+  <modal data-type="composite" data-ref="modal_claim_preset_save" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.title" size="sm">
     <!-- 프리셋 이름 입력칸. 이름은 이 창에서만 쓰는 값이라 로컬 상태에 두고, 저장에 성공하면 비워 다음에 창을 열 때 앞 이름이 남지 않게 한다. -->
     <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
       <on type="input">
