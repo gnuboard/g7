@@ -10,7 +10,6 @@ use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\PasswordChangeChallengeService;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\PasswordPolicyFixtures;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -29,6 +29,7 @@ use Tests\TestCase;
  */
 class PasswordExpiryLoginTest extends TestCase
 {
+    use CapturesSentMail;
     use PasswordPolicyFixtures;
     use RefreshDatabase;
 
@@ -218,7 +219,8 @@ class PasswordExpiryLoginTest extends TestCase
     #[Test]
     public function two_factor_comes_before_the_password_change_step(): void
     {
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        // 본인인증 메일은 7.1.0 부터 알림 정의(category=identity)로 보낸다 — 옛 IdentityMessageDefinitionSeeder 는 건너뛰는 사용 중단 클래스다.
+        $this->prepareIdentityNotifications();
         $this->enableExpiry();
         $this->setSecurity(['two_factor_auth' => true]);
 
