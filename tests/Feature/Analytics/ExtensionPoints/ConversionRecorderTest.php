@@ -36,6 +36,16 @@ class ConversionRecorderTest extends TestCase
     {
         parent::setUp();
 
+        // 방문자 통계 설정을 기본값(config/settings/defaults.json)으로 되돌린다 — 운영자가 관리자 화면에서 저장한
+        // 값(storage/app/settings/analytics.json)이 부팅 시 config 로 실려 스며든다. 동의 모드(`privacy_mode: consent`)면
+        // 쿠키 대신 익명 키가 쓰이고, `respect_dnt: false` 면 DNT 제외가 꺼져 이 파일의 단언이 환경에 따라 갈린다
+        // (mem:core-settings-boot-config-leaks-into-unit-tests, AnalyticsApiTestCase 와 같은 고정).
+        $defaults = json_decode((string) file_get_contents(base_path('config/settings/defaults.json')), true);
+        config(['g7_settings.core.analytics' => array_replace(
+            (array) config('g7_settings.core.analytics', []),
+            $defaults['defaults']['analytics'] ?? []
+        )]);
+
         $this->activateAnalyticsExtensions([], [
             $this->fakeAnalyticsExtension('vendor-shop', [
                 ['key' => 'order_completed', 'label' => '주문', 'category' => 'purchase', 'dedupe' => 'every_time', 'attributes' => [
