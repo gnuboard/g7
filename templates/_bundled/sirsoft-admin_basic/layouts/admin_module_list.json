@@ -541,26 +541,26 @@
                         "id": "search_bar_wrapper",
                         "type": "basic",
                         "name": "Div",
-                        "responsive": {
-                            "portable": {
-                                "props": {
-                                    "className": "mb-6 row-stack"
-                                }
-                            }
-                        },
                         "props": {
-                            "className": "flex-center justify-between gap-4 mb-6"
+                            "className": "flex flex-wrap items-center gap-x-4 gap-y-3 mb-6"
                         },
                         "children": [
                             {
-                                "comment": "갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.\n             icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)\n             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).",
+                                "comment": "갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.\n             icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)\n             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).\n             `mr-auto` 가 체크박스와 검색을 오른쪽으로 민다. 모바일은 `mr-auto` 를 빼고 줄바꿈으로 체크박스가 보기 전환 옆에 온다.",
                                 "id": "view_mode_toggle",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "role": "group",
                                     "aria-label": "$t:extensions.view_mode.toggle_label",
-                                    "className": "inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                                    "className": "inline-flex shrink-0 mr-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
                                 },
                                 "children": [
                                     {
@@ -747,9 +747,10 @@
                                 ]
                             },
                             {
-                                "id": "search_bar",
-                                "type": "composite",
-                                "name": "SearchBar",
+                                "comment": "너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다.",
+                                "id": "search_bar_box",
+                                "type": "basic",
+                                "name": "Div",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -757,33 +758,43 @@
                                         }
                                     }
                                 },
-                                "actions": [
+                                "props": {
+                                    "className": "w-64"
+                                },
+                                "children": [
                                     {
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "searchQuery": "{{$event.target.value}}"
-                                        }
-                                    },
-                                    {
-                                        "comment": "검색 실행. 검색어가 비면 쿼리에서 아예 빼고 페이지를 1로 되돌린다.\n                 `mergeQuery` 를 켜지 않아 상태 필터도 함께 떨어진다 — 검색은 처음부터 다시 훑는 동작이다.",
-                                        "type": "submit",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/modules",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "search": "{{_local.searchQuery || undefined}}",
-                                                "page": 1
+                                        "id": "search_bar",
+                                        "type": "composite",
+                                        "name": "SearchBar",
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "검색 실행. 검색어가 비면 쿼리에서 아예 빼고 페이지를 1로 되돌린다.\n                   `mergeQuery` 를 켜지 않아 상태 필터도 함께 떨어진다 — 검색은 처음부터 다시 훑는 동작이다.",
+                                                "type": "submit",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/modules",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "search": "{{_local.searchQuery || undefined}}",
+                                                        "page": 1
+                                                    }
+                                                }
                                             }
+                                        ],
+                                        "props": {
+                                            "placeholder": "$t:admin.modules.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "w-full"
                                         }
                                     }
-                                ],
-                                "props": {
-                                    "placeholder": "$t:admin.modules.search_placeholder",
-                                    "value": "{{_local.searchQuery || ''}}",
-                                    "className": "w-64"
-                                }
+                                ]
                             }
                         ]
                     },

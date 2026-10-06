@@ -203,7 +203,7 @@
           <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
         </div>
       </div>
-      <div data-ref="activity_log_pagination" class="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
+      <div data-ref="activity_log_pagination" class="flex justify-center p-4">
         <pagination data-type="composite" currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{activity_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <!-- 쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다 -->

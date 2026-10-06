@@ -306,10 +306,12 @@ describe('확장 목록 — 숨김 포함 토글', () => {
    * @effects hidden_toggle_visible_only_to_super_admin
    */
   it('모듈·플러그인·템플릿: 최고관리자에게만 보이고 그 판정은 current_user 의 is_super 로 한다', () => {
+    // 템플릿 체크박스는 탭마다 툴바 안에 있다(7.1.0 출시 전 점검 — 탭 위 별도 줄에서 옮김).
     const cases: Array<[unknown, string]> = [
       [moduleList, 'include_hidden_toggle'],
       [pluginList, 'include_hidden_toggle'],
-      [templateList, 'include_hidden_toggle_wrapper'],
+      [templateTabUser, 'tpl_user_include_hidden_toggle'],
+      [templateTabAdmin, 'tpl_admin_include_hidden_toggle'],
     ];
     for (const [tree, ref] of cases) {
       const expr = ifOf(tree, ref);
@@ -328,17 +330,19 @@ describe('확장 목록 — 숨김 포함 토글', () => {
    * @effects hidden_toggle_refetch_uses_new_value
    */
   it('모듈·플러그인·템플릿: 숨김 포함 여부는 주소에 싣고 목록 조회·체크 표시·체크 변경이 그 값을 쓴다', () => {
-    const cases: Array<[unknown, string, string]> = [
-      [moduleList, 'include_hidden_toggle', 'modules'],
-      [pluginList, 'include_hidden_toggle', 'plugins'],
-      [templateList, 'include_hidden_toggle', 'templates'],
+    // [목록 조회를 가진 레이아웃, 체크박스를 가진 레이아웃, 체크박스 id, 데이터소스 id]
+    const cases: Array<[unknown, unknown, string, string]> = [
+      [moduleList, moduleList, 'include_hidden_toggle', 'modules'],
+      [pluginList, pluginList, 'include_hidden_toggle', 'plugins'],
+      [templateList, templateTabUser, 'tpl_user_include_hidden_toggle', 'templates'],
+      [templateList, templateTabAdmin, 'tpl_admin_include_hidden_toggle', 'templates'],
     ];
-    for (const [tree, ref, source] of cases) {
+    for (const [tree, inputTree, ref, source] of cases) {
       const ds = asArray((tree as Json).data_sources).find((d: Json) => d.id === source) as Json;
       expect(String(ds?.params?.include_hidden), `${source}: 목록 조회가 주소의 include_hidden 을 읽지 않습니다.`).toContain('query.include_hidden');
       expect(String(ds?.params?.include_hidden), `${source}: 목록 조회가 화면 상태를 읽습니다.`).not.toContain('_local');
 
-      const input = asArray(nodeById(tree, ref).children).find((c: Json) => c.name === 'Input') as Json;
+      const input = asArray(nodeById(inputTree, ref).children).find((c: Json) => c.name === 'Input') as Json;
       expect(String(input?.props?.checked), `${source}: 체크 표시가 주소 값을 읽지 않습니다.`).toContain('query.include_hidden');
 
       const changes = asArray(input?.actions).filter((a: Json) => a.type === 'change');

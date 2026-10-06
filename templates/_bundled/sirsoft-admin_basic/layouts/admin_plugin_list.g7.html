@@ -160,12 +160,13 @@
           </div>
         </div>
       </div>
-      <div data-ref="search_bar_wrapper" class="flex-center justify-between gap-4 mb-6">
-        <responsive on="portable" class="mb-6 row-stack"/>
+      <div data-ref="search_bar_wrapper" class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
         <!-- 갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.
              icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)
-             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음). -->
-        <div data-ref="view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).
+             `mr-auto` 가 체크박스와 검색을 오른쪽으로 민다. 모바일은 `mr-auto` 를 빼고 줄바꿈으로 체크박스가 보기 전환 옆에 온다. -->
+        <div data-ref="view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex shrink-0 mr-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <responsive on="portable" class="inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"/>
           <button data-ref="view_mode_gallery" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}" title="$t:extensions.view_mode.gallery" class="px-3 h-10 transition-colors">
             <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-gray-900 text-white dark:bg-white dark:text-gray-900"><variant when="list">bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700</variant></class-map>
             <on type="click">
@@ -219,19 +220,22 @@
           </input>
           <span>$t:admin.plugins.include_hidden</span>
         </label>
-        <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.plugins.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+        <!-- 너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다. -->
+        <div data-ref="search_bar_box" class="w-64">
           <responsive on="portable" class="w-full"/>
-          <on type="change">
-            <set-state searchQuery="{{$event.target.value}}"/>
-          </on>
-          <on type="submit">
-            <!-- 검색 실행 — 빈 검색어는 쿼리에서 빼고 페이지를 1로 되돌린다. `mergeQuery` 를 켜지
-                 않아 상태 필터도 함께 떨어진다(모듈 화면과 같다). -->
-            <navigate path="/admin/plugins" :mergeQuery="true">
-              <query search="{{_local.searchQuery || undefined}}" :page="1"/>
-            </navigate>
-          </on>
-        </search-bar>
+          <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.plugins.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-full">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="submit">
+              <!-- 검색 실행 — 빈 검색어는 쿼리에서 빼고 페이지를 1로 되돌린다. `mergeQuery` 를 켜지
+                   않아 상태 필터도 함께 떨어진다(모듈 화면과 같다). -->
+              <navigate path="/admin/plugins" :mergeQuery="true">
+                <query search="{{_local.searchQuery || undefined}}" :page="1"/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
       </div>
       <div data-ref="content_area" class="admin-card">
         <!-- 확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.

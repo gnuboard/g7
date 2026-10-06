@@ -65,8 +65,9 @@
  * 확장(모듈) 레이아웃이 쓰는 간격·최소 폭 클래스 — 이커머스 상품 목록·상품 옵션·주문 목록·마일리지 내역·
  * 리뷰 이미지 창이 `gap-0.5`·`min-w-[12rem]` 을 쓴다. 이 템플릿 layouts/ 에는 없어 여기 적지 않으면 CSS 가
  * 생성되지 않고 여백이 조용히 0 이 된다(2026-09-26 #599 3차 검증).
+ * `min-w-5` 는 이커머스 클레임 유형 칩, 게시판 일괄 적용 칩 — 없으면 한 자리 숫자 칩이 원이 아닌 타원이 된다.
  */
-@source inline("gap-0.5 min-w-[12rem]");
+@source inline("gap-0.5 min-w-[12rem] min-w-5");
 
 /*
  * 결제 브랜드 마크(BrandMark) 색 배지 클래스 — 결제 플러그인이 결제수단 카탈로그 brand_mark.class 로 실어 보내는 값이라
@@ -2457,6 +2458,8 @@
    * 첫/마지막 자식은 pt-0 / pb-0 자동 — 컨테이너 외곽 불필요한 빈 공간 차단.
    * 호출처 책임: 자식 행 내부 레이아웃 (flex-between / form-label 등) 만 명시.
    * 자식 행에 별도 border-b / border-t / py-N 토큰 명시 금지 — 본 자산이 책임.
+   * 직속 자식으로 테두리 상자(border·admin-card) 금지 — py-2 가 테두리 안쪽에 들어간다.
+   * 래퍼 div 로 감싸거나 stack-tight·card-stack·stack-flush 를 쓴다(audit row-stack-boxed-child).
    * 이전 명칭 .stack — 의미 명확화(input row 컨테이너)
    * + 구분선 통합 + 균형 간격 .
    */

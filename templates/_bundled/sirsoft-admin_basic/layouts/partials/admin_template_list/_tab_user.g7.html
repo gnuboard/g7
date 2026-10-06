@@ -10,12 +10,12 @@
         <h2 class="section-heading">$t:admin.templates.user_section.title</h2>
         <p class="mt-1 text-label-subtle">$t:admin.templates.user_section.description</p>
       </div>
-      <div data-ref="toolbar_group" class="flex-center gap-3 shrink-0">
-        <responsive on="portable" class="row-stack w-full gap-2"/>
+      <div data-ref="toolbar_group" class="flex-center gap-4 shrink-0">
+        <responsive on="portable" class="flex flex-wrap items-center gap-x-4 gap-y-3 w-full"/>
         <!-- 갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.
              icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)
              button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음). -->
-        <div data-ref="tpl_user_view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+        <div data-ref="tpl_user_view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
           <button data-ref="tpl_user_view_mode_gallery" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}" title="$t:extensions.view_mode.gallery" class="px-3 h-10 transition-colors">
             <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-gray-900 text-white dark:bg-white dark:text-gray-900"><variant when="list">bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700</variant></class-map>
             <on type="click">
@@ -57,18 +57,34 @@
             <span class="sr-only">$t:extensions.view_mode.list_aria</span>
           </button>
         </div>
-        <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.templates.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+        <!-- 최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).
+             탭 위 별도 줄에 있던 것을 모듈·플러그인 화면처럼 툴바 안(보기 전환과 검색 사이)으로 옮겼다. -->
+        <label data-ref="tpl_user_include_hidden_toggle" data-if="{{current_user?.data?.is_super === true}}" class="flex-center gap-2 text-body cursor-pointer select-none">
+          <input type="checkbox" checked="{{query.include_hidden === '1'}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+            <on type="change">
+              <!-- 숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다 -->
+              <navigate path="/admin/templates/user" :mergeQuery="true">
+                <query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/>
+              </navigate>
+            </on>
+          </input>
+          <span>$t:admin.templates.include_hidden</span>
+        </label>
+        <!-- 너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다. -->
+        <div data-ref="search_bar_box" class="w-64">
           <responsive on="portable" class="w-full"/>
-          <on type="change">
-            <set-state searchQuery="{{$event.target.value}}"/>
-          </on>
-          <on type="submit">
-            <!-- 검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75). -->
-            <navigate path="/admin/templates/user" :mergeQuery="true">
-              <query search="{{_local.searchQuery || undefined}}" page=""/>
-            </navigate>
-          </on>
-        </search-bar>
+          <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.templates.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-full">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="submit">
+              <!-- 검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75). -->
+              <navigate path="/admin/templates/user" :mergeQuery="true">
+                <query search="{{_local.searchQuery || undefined}}" page=""/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
       </div>
     </div>
     <div data-ref="content_area" class="admin-card">

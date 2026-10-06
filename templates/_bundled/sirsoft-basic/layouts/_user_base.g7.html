@@ -244,7 +244,14 @@
             <navigate path="{{_global.shopBase}}/cart"/>
           </on>
           <icon name="shopping-cart" size="md"/>
-          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
+          <!-- 세 자리(99+)일 때만 9px — 12px 은 20px 원을 넘친다(7.1.0 출시 전 점검 실측) -->
+          <span data-if="{{_global.cartCount > 0}}">
+            <class-map base="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white font-bold rounded-full flex items-center justify-center" key="{{_global.cartCount > 99 ? 'triple' : 'short'}}" default="text-xs">
+              <variant when="triple">text-[9px]</variant>
+              <variant when="short">text-xs</variant>
+            </class-map>
+            {{_global.cartCount > 99 ? '99+' : _global.cartCount}}
+          </span>
         </button>
         <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼 -->
         <button data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">

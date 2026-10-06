@@ -58,6 +58,10 @@ effects:
   - toggle_resyncs_to_server_value_on_refetch
   # 숨김 항목 포함 체크는 바꾼 값으로 곧바로 다시 받는다 — 따로 둔 두 change 처리는 한 박자 늦은 값을 보냈다(#703).
   - hidden_toggle_refetch_uses_new_value
+  # 체크박스는 PC 에서 검색칸 바로 왼쪽(간격 16px), 모바일에서 보기 전환 바로 오른쪽에 붙고 보기 전환 상자는
+  # 버튼 높이 그대로다(7.1.0 출시 전 점검 — Playwright P11 이 잰다).
+  - hidden_toggle_next_to_search_on_desktop
+  - view_toggle_box_fits_buttons_on_mobile
   - default_is_gallery
   - toggle_persists_to_local_storage
   - persisted_value_read_back_after_write

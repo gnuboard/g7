@@ -37,8 +37,8 @@
         <p data-if="{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug}}" class="text-tertiary text-xs">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.legacy_slug_note|slug={{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug ?? ''}}</p>
         <div data-if="{{!gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_url</div>
       </div>
-      <!-- 쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환. -->
-      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories}}" class="row-stack">
+      <!-- 쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환. 반복 상자 묶음이라 row-stack(입력 행 전용) 대신 stack-tight 로 상자 사이 8px 를 둔다(audit row-stack-boxed-child). -->
+      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories}}" class="stack-tight">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_categories</h4>
         <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length === 0}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_categories</div>
         <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length > 0}}" data-each="category in gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []" class="divider-list border border-gray-200 dark:border-gray-700 rounded-md">
@@ -54,8 +54,8 @@
           </div>
         </div>
       </div>
-      <!-- 차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환. -->
-      <div class="row-stack">
+      <!-- 차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환. 반복 상자 묶음이라 stack-tight. -->
+      <div class="stack-tight">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_blocked_domains</h4>
         <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length === 0}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_blocked_domains</div>
         <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length > 0}}" data-each="blockedGroup in gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []" class="divider-list border border-gray-200 dark:border-gray-700 rounded-md">

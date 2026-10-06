@@ -855,461 +855,468 @@
                                                         ]
                                                     },
                                                     {
-                                                        "comment": "카드 본문 — col-span-3 (full-width) 박스. 상단: 버전 배지 + 메타 + 액션 버튼. 하단: collapsible 이력 표.",
+                                                        "comment": "카드 본문 — col-span-3 (full-width) 박스. 상단: 버전 배지 + 메타 + 액션 버튼. 하단: collapsible 이력 표.\n                   row-stack(field_cookie_policy_version) 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child).",
+                                                        "id": "policy_version_card_row",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900"
-                                                        },
                                                         "children": [
                                                             {
-                                                                "comment": "헤더 영역 — 좌측: v배지 + 발행 메타 / 우측: 새 버전 발행 + 이력 토글",
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-start px-4 py-3 justify-between gap-3 flex-wrap"
+                                                                    "className": "border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900"
                                                                 },
                                                                 "children": [
                                                                     {
-                                                                        "comment": "메타 4개를 한 줄로 — 현재 버전 v배지 + 발행일시 + 발행자 + 변경사유. 좁은 화면에서는 flex-wrap 으로 자연 줄바꿈.",
+                                                                        "comment": "헤더 영역 — 좌측: v배지 + 발행 메타 / 우측: 새 버전 발행 + 이력 토글",
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex-center flex-1 min-w-0 flex-wrap gap-x-6 gap-y-1 text-xs"
+                                                                            "className": "flex-start px-4 py-3 justify-between gap-3 flex-wrap"
                                                                         },
                                                                         "children": [
                                                                             {
-                                                                                "comment": "현재 버전 v배지 + 본문 보기 버튼. v배지는 평문 Span (인디케이션 의도 명확화). 본문 보기는 별도 Button 으로 명시 액션 — (v배지 클릭만으로는 직관성 부족).",
+                                                                                "comment": "메타 4개를 한 줄로 — 현재 버전 v배지 + 발행일시 + 발행자 + 변경사유. 좁은 화면에서는 flex-wrap 으로 자연 줄바꿈.",
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "flex items-baseline gap-2"
+                                                                                    "className": "flex-center flex-1 min-w-0 flex-wrap gap-x-6 gap-y-1 text-xs"
                                                                                 },
                                                                                 "children": [
                                                                                     {
+                                                                                        "comment": "현재 버전 v배지 + 본문 보기 버튼. v배지는 평문 Span (인디케이션 의도 명확화). 본문 보기는 별도 Button 으로 명시 액션 — (v배지 클릭만으로는 직관성 부족).",
                                                                                         "type": "basic",
-                                                                                        "name": "Span",
+                                                                                        "name": "Div",
                                                                                         "props": {
-                                                                                            "className": "uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                                                                                            "className": "flex items-baseline gap-2"
                                                                                         },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.current_label"
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.current_label"
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "text-lg font-semibold text-gray-900 dark:text-gray-100"
+                                                                                                },
+                                                                                                "text": "v{{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
+                                                                                            },
+                                                                                            {
+                                                                                                "id": "policy_version_current_snapshot_view_button",
+                                                                                                "type": "basic",
+                                                                                                "name": "Button",
+                                                                                                "if": "{{gdprPolicyVersionCurrent?.data?.data?.version}}",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "comment": "현재 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다",
+                                                                                                        "type": "click",
+                                                                                                        "handler": "sequence",
+                                                                                                        "actions": [
+                                                                                                            {
+                                                                                                                "handler": "setState",
+                                                                                                                "params": {
+                                                                                                                    "target": "global",
+                                                                                                                    "viewingPolicyVersion": "{{gdprPolicyVersionCurrent?.data?.data?.version}}"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "handler": "refetchDataSource",
+                                                                                                                "params": {
+                                                                                                                    "dataSourceId": "gdprPolicyVersionSnapshot"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "handler": "openModal",
+                                                                                                                "target": "policy_version_snapshot_modal"
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ],
+                                                                                                "props": {
+                                                                                                    "type": "button",
+                                                                                                    "className": "text-info-soft px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                                                                    "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
+                                                                                                },
+                                                                                                "children": [
+                                                                                                    {
+                                                                                                        "type": "basic",
+                                                                                                        "name": "Span",
+                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short"
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
-                                                                                        "name": "Span",
+                                                                                        "name": "Div",
+                                                                                        "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
                                                                                         "props": {
-                                                                                            "className": "text-lg font-semibold text-gray-900 dark:text-gray-100"
+                                                                                            "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300"
                                                                                         },
-                                                                                        "text": "v{{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.published_at_label"
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "text": "{{gdprPolicyVersionCurrent?.data?.data?.created_at ?? '-'}}"
+                                                                                            }
+                                                                                        ]
                                                                                     },
                                                                                     {
-                                                                                        "id": "policy_version_current_snapshot_view_button",
+                                                                                        "type": "basic",
+                                                                                        "name": "Div",
+                                                                                        "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
+                                                                                        "props": {
+                                                                                            "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300"
+                                                                                        },
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.publisher_label"
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "text": "{{gdprPolicyVersionCurrent?.data?.data?.publisher?.name ? (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ? gdprPolicyVersionCurrent.data.data.publisher.name + ' (' + gdprPolicyVersionCurrent.data.data.publisher.email + ')' : gdprPolicyVersionCurrent.data.data.publisher.name) : (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
+                                                                                            }
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Div",
+                                                                                        "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
+                                                                                        "props": {
+                                                                                            "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300 min-w-0"
+                                                                                        },
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.memo_label"
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "props": {
+                                                                                                    "className": "truncate"
+                                                                                                },
+                                                                                                "text": "{{gdprPolicyVersionCurrent?.data?.data?.memo ?? '-'}}"
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "액션 영역 — 새 버전 발행 (publish modal 진입) + 이력 토글",
+                                                                                "type": "basic",
+                                                                                "name": "Div",
+                                                                                "props": {
+                                                                                    "className": "flex-center gap-2 flex-shrink-0"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "comment": "새 버전 발행 버튼 — publish modal 열기",
                                                                                         "type": "basic",
                                                                                         "name": "Button",
-                                                                                        "if": "{{gdprPolicyVersionCurrent?.data?.data?.version}}",
                                                                                         "actions": [
                                                                                             {
-                                                                                                "comment": "현재 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다",
+                                                                                                "type": "click",
+                                                                                                "handler": "openModal",
+                                                                                                "target": "policy_version_publish_modal"
+                                                                                            }
+                                                                                        ],
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                                                                        },
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Icon",
+                                                                                                "props": {
+                                                                                                    "name": "plus",
+                                                                                                    "size": "xs"
+                                                                                                }
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.publish_button"
+                                                                                            }
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "comment": "이력 collapsible 토글 — _local.policyHistoryOpen 으로 inline 표 노출/숨김 (열릴 때 데이터소스 refetch)",
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "actions": [
+                                                                                            {
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
                                                                                                     {
                                                                                                         "handler": "setState",
                                                                                                         "params": {
-                                                                                                            "target": "global",
-                                                                                                            "viewingPolicyVersion": "{{gdprPolicyVersionCurrent?.data?.data?.version}}"
+                                                                                                            "target": "local",
+                                                                                                            "policyHistoryOpen": "{{!_local.policyHistoryOpen}}",
+                                                                                                            "policyHistoryPage": 1
                                                                                                         }
                                                                                                     },
                                                                                                     {
                                                                                                         "handler": "refetchDataSource",
                                                                                                         "params": {
-                                                                                                            "dataSourceId": "gdprPolicyVersionSnapshot"
+                                                                                                            "dataSourceId": "gdprPolicyVersionHistory"
                                                                                                         }
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "handler": "openModal",
-                                                                                                        "target": "policy_version_snapshot_modal"
                                                                                                     }
                                                                                                 ]
                                                                                             }
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "button",
-                                                                                            "className": "text-info-soft px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
-                                                                                            "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
+                                                                                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                                                                         },
                                                                                         "children": [
                                                                                             {
                                                                                                 "type": "basic",
-                                                                                                "name": "Span",
-                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short"
-                                                                                            }
-                                                                                        ]
-                                                                                    }
-                                                                                ]
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Div",
-                                                                                "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
-                                                                                "props": {
-                                                                                    "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300"
-                                                                                },
-                                                                                "children": [
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "props": {
-                                                                                            "className": "text-gray-500 dark:text-gray-400"
-                                                                                        },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.published_at_label"
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "text": "{{gdprPolicyVersionCurrent?.data?.data?.created_at ?? '-'}}"
-                                                                                    }
-                                                                                ]
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Div",
-                                                                                "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
-                                                                                "props": {
-                                                                                    "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300"
-                                                                                },
-                                                                                "children": [
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "props": {
-                                                                                            "className": "text-gray-500 dark:text-gray-400"
-                                                                                        },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.publisher_label"
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "text": "{{gdprPolicyVersionCurrent?.data?.data?.publisher?.name ? (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ? gdprPolicyVersionCurrent.data.data.publisher.name + ' (' + gdprPolicyVersionCurrent.data.data.publisher.email + ')' : gdprPolicyVersionCurrent.data.data.publisher.name) : (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
-                                                                                    }
-                                                                                ]
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Div",
-                                                                                "if": "{{gdprPolicyVersionCurrent?.data?.data}}",
-                                                                                "props": {
-                                                                                    "className": "flex items-baseline gap-2 text-gray-600 dark:text-gray-300 min-w-0"
-                                                                                },
-                                                                                "children": [
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "props": {
-                                                                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
-                                                                                        },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.memo_label"
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "props": {
-                                                                                            "className": "truncate"
-                                                                                        },
-                                                                                        "text": "{{gdprPolicyVersionCurrent?.data?.data?.memo ?? '-'}}"
-                                                                                    }
-                                                                                ]
-                                                                            }
-                                                                        ]
-                                                                    },
-                                                                    {
-                                                                        "comment": "액션 영역 — 새 버전 발행 (publish modal 진입) + 이력 토글",
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "props": {
-                                                                            "className": "flex-center gap-2 flex-shrink-0"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "comment": "새 버전 발행 버튼 — publish modal 열기",
-                                                                                "type": "basic",
-                                                                                "name": "Button",
-                                                                                "actions": [
-                                                                                    {
-                                                                                        "type": "click",
-                                                                                        "handler": "openModal",
-                                                                                        "target": "policy_version_publish_modal"
-                                                                                    }
-                                                                                ],
-                                                                                "props": {
-                                                                                    "type": "button",
-                                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                                                                                },
-                                                                                "children": [
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Icon",
-                                                                                        "props": {
-                                                                                            "name": "plus",
-                                                                                            "size": "xs"
-                                                                                        }
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.publish_button"
-                                                                                    }
-                                                                                ]
-                                                                            },
-                                                                            {
-                                                                                "comment": "이력 collapsible 토글 — _local.policyHistoryOpen 으로 inline 표 노출/숨김 (열릴 때 데이터소스 refetch)",
-                                                                                "type": "basic",
-                                                                                "name": "Button",
-                                                                                "actions": [
-                                                                                    {
-                                                                                        "type": "click",
-                                                                                        "handler": "sequence",
-                                                                                        "actions": [
-                                                                                            {
-                                                                                                "handler": "setState",
-                                                                                                "params": {
-                                                                                                    "target": "local",
-                                                                                                    "policyHistoryOpen": "{{!_local.policyHistoryOpen}}",
-                                                                                                    "policyHistoryPage": 1
+                                                                                                "name": "Icon",
+                                                                                                "props": {
+                                                                                                    "name": "{{_local.policyHistoryOpen ? 'chevron-up' : 'chevron-down'}}",
+                                                                                                    "size": "xs"
                                                                                                 }
                                                                                             },
                                                                                             {
-                                                                                                "handler": "refetchDataSource",
-                                                                                                "params": {
-                                                                                                    "dataSourceId": "gdprPolicyVersionHistory"
-                                                                                                }
+                                                                                                "type": "basic",
+                                                                                                "name": "Span",
+                                                                                                "text": "{{_local.policyHistoryOpen ? '$t:sirsoft-gdpr.settings.policy_version.history_toggle_hide' : '$t:sirsoft-gdpr.settings.policy_version.history_toggle_show'}}"
                                                                                             }
                                                                                         ]
-                                                                                    }
-                                                                                ],
-                                                                                "props": {
-                                                                                    "type": "button",
-                                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                                                                },
-                                                                                "children": [
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Icon",
-                                                                                        "props": {
-                                                                                            "name": "{{_local.policyHistoryOpen ? 'chevron-up' : 'chevron-down'}}",
-                                                                                            "size": "xs"
-                                                                                        }
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Span",
-                                                                                        "text": "{{_local.policyHistoryOpen ? '$t:sirsoft-gdpr.settings.policy_version.history_toggle_hide' : '$t:sirsoft-gdpr.settings.policy_version.history_toggle_show'}}"
                                                                                     }
                                                                                 ]
                                                                             }
                                                                         ]
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "comment": "이력 표 — collapsible. _local.policyHistoryOpen 일 때만 노출. gdprPolicyVersionHistory 데이터소스 페이지네이션 표시.",
-                                                                "id": "policy_version_history_table",
-                                                                "type": "basic",
-                                                                "name": "Div",
-                                                                "if": "{{_local.policyHistoryOpen}}",
-                                                                "props": {
-                                                                    "className": "border-t border-gray-200 dark:border-gray-700 px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "if": "{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) === 0}}",
-                                                                        "props": {
-                                                                            "className": "text-center text-label-subtle py-6"
-                                                                        },
-                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_empty"
                                                                     },
                                                                     {
+                                                                        "comment": "이력 표 — collapsible. _local.policyHistoryOpen 일 때만 노출. gdprPolicyVersionHistory 데이터소스 페이지네이션 표시.",
+                                                                        "id": "policy_version_history_table",
                                                                         "type": "basic",
                                                                         "name": "Div",
-                                                                        "if": "{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) > 0}}",
+                                                                        "if": "{{_local.policyHistoryOpen}}",
                                                                         "props": {
-                                                                            "className": "overflow-x-auto"
+                                                                            "className": "border-t border-gray-200 dark:border-gray-700 px-4 py-3"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
-                                                                                "name": "Table",
+                                                                                "name": "Div",
+                                                                                "if": "{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) === 0}}",
                                                                                 "props": {
-                                                                                    "className": "w-full text-sm"
+                                                                                    "className": "text-center text-label-subtle py-6"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history_empty"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Div",
+                                                                                "if": "{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) > 0}}",
+                                                                                "props": {
+                                                                                    "className": "overflow-x-auto"
                                                                                 },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
-                                                                                        "name": "Thead",
-                                                                                        "children": [
-                                                                                            {
-                                                                                                "type": "basic",
-                                                                                                "name": "Tr",
-                                                                                                "props": {
-                                                                                                    "className": "text-tertiary uppercase tracking-wide border-b border-gray-200 dark:border-gray-700"
-                                                                                                },
-                                                                                                "children": [
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.version"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.created_at"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.publisher"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.change_type"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.memo"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Th",
-                                                                                                        "props": {
-                                                                                                            "className": "text-left px-3 py-2 font-medium w-20"
-                                                                                                        },
-                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.snapshot_action"
-                                                                                                    }
-                                                                                                ]
-                                                                                            }
-                                                                                        ]
-                                                                                    },
-                                                                                    {
-                                                                                        "type": "basic",
-                                                                                        "name": "Tbody",
-                                                                                        "iteration": {
-                                                                                            "source": "gdprPolicyVersionHistory?.data?.data ?? []",
-                                                                                            "item_var": "row"
+                                                                                        "name": "Table",
+                                                                                        "props": {
+                                                                                            "className": "w-full text-sm"
                                                                                         },
                                                                                         "children": [
                                                                                             {
                                                                                                 "type": "basic",
-                                                                                                "name": "Tr",
-                                                                                                "props": {
-                                                                                                    "className": "border-b border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200"
-                                                                                                },
+                                                                                                "name": "Thead",
                                                                                                 "children": [
                                                                                                     {
                                                                                                         "type": "basic",
-                                                                                                        "name": "Td",
+                                                                                                        "name": "Tr",
                                                                                                         "props": {
-                                                                                                            "className": "px-3 py-2 font-mono text-gray-900 dark:text-gray-100"
-                                                                                                        },
-                                                                                                        "text": "v{{row?.version ?? '?'}}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Td",
-                                                                                                        "props": {
-                                                                                                            "className": "px-3 py-2 text-xs"
-                                                                                                        },
-                                                                                                        "text": "{{row?.created_at ?? '-'}}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Td",
-                                                                                                        "props": {
-                                                                                                            "className": "px-3 py-2 text-xs"
-                                                                                                        },
-                                                                                                        "text": "{{row?.publisher?.name ? (row?.publisher?.email ? row.publisher.name + ' (' + row.publisher.email + ')' : row.publisher.name) : (row?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Td",
-                                                                                                        "props": {
-                                                                                                            "className": "px-3 py-2 text-xs"
-                                                                                                        },
-                                                                                                        "text": "{{row?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (row?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Td",
-                                                                                                        "props": {
-                                                                                                            "className": "px-3 py-2 text-xs text-gray-600 dark:text-gray-300 break-all"
-                                                                                                        },
-                                                                                                        "text": "{{row?.memo ?? '-'}}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "comment": "본문 액션 셀 — 클릭 시 setState global.viewingPolicyVersion → refetch → openModal 시퀀스로 snapshot 모달 노출",
-                                                                                                        "type": "basic",
-                                                                                                        "name": "Td",
-                                                                                                        "props": {
-                                                                                                            "className": "px-3 py-2 text-xs"
+                                                                                                            "className": "text-tertiary uppercase tracking-wide border-b border-gray-200 dark:border-gray-700"
                                                                                                         },
                                                                                                         "children": [
                                                                                                             {
                                                                                                                 "type": "basic",
-                                                                                                                "name": "Button",
-                                                                                                                "actions": [
-                                                                                                                    {
-                                                                                                                        "comment": "이력 표의 그 버전 본문 보기 — 위 배지와 같은 흐름을 행 단위로 태운다",
-                                                                                                                        "type": "click",
-                                                                                                                        "handler": "sequence",
-                                                                                                                        "actions": [
-                                                                                                                            {
-                                                                                                                                "handler": "setState",
-                                                                                                                                "params": {
-                                                                                                                                    "target": "global",
-                                                                                                                                    "viewingPolicyVersion": "{{row?.version}}"
-                                                                                                                                }
-                                                                                                                            },
-                                                                                                                            {
-                                                                                                                                "handler": "refetchDataSource",
-                                                                                                                                "params": {
-                                                                                                                                    "dataSourceId": "gdprPolicyVersionSnapshot"
-                                                                                                                                }
-                                                                                                                            },
-                                                                                                                            {
-                                                                                                                                "handler": "openModal",
-                                                                                                                                "target": "policy_version_snapshot_modal"
-                                                                                                                            }
-                                                                                                                        ]
-                                                                                                                    }
-                                                                                                                ],
+                                                                                                                "name": "Th",
                                                                                                                 "props": {
-                                                                                                                    "type": "button",
-                                                                                                                    "className": "text-info-soft px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
-                                                                                                                    "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}"
+                                                                                                                    "className": "text-left px-3 py-2 font-medium"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.version"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Th",
+                                                                                                                "props": {
+                                                                                                                    "className": "text-left px-3 py-2 font-medium"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.created_at"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Th",
+                                                                                                                "props": {
+                                                                                                                    "className": "text-left px-3 py-2 font-medium"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.publisher"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Th",
+                                                                                                                "props": {
+                                                                                                                    "className": "text-left px-3 py-2 font-medium"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.change_type"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Th",
+                                                                                                                "props": {
+                                                                                                                    "className": "text-left px-3 py-2 font-medium"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.memo"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Th",
+                                                                                                                "props": {
+                                                                                                                    "className": "text-left px-3 py-2 font-medium w-20"
+                                                                                                                },
+                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.snapshot_action"
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ]
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Tbody",
+                                                                                                "iteration": {
+                                                                                                    "source": "gdprPolicyVersionHistory?.data?.data ?? []",
+                                                                                                    "item_var": "row"
+                                                                                                },
+                                                                                                "children": [
+                                                                                                    {
+                                                                                                        "type": "basic",
+                                                                                                        "name": "Tr",
+                                                                                                        "props": {
+                                                                                                            "className": "border-b border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200"
+                                                                                                        },
+                                                                                                        "children": [
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 font-mono text-gray-900 dark:text-gray-100"
+                                                                                                                },
+                                                                                                                "text": "v{{row?.version ?? '?'}}"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 text-xs"
+                                                                                                                },
+                                                                                                                "text": "{{row?.created_at ?? '-'}}"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 text-xs"
+                                                                                                                },
+                                                                                                                "text": "{{row?.publisher?.name ? (row?.publisher?.email ? row.publisher.name + ' (' + row.publisher.email + ')' : row.publisher.name) : (row?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 text-xs"
+                                                                                                                },
+                                                                                                                "text": "{{row?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (row?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 text-xs text-gray-600 dark:text-gray-300 break-all"
+                                                                                                                },
+                                                                                                                "text": "{{row?.memo ?? '-'}}"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "comment": "본문 액션 셀 — 클릭 시 setState global.viewingPolicyVersion → refetch → openModal 시퀀스로 snapshot 모달 노출",
+                                                                                                                "type": "basic",
+                                                                                                                "name": "Td",
+                                                                                                                "props": {
+                                                                                                                    "className": "px-3 py-2 text-xs"
                                                                                                                 },
                                                                                                                 "children": [
                                                                                                                     {
                                                                                                                         "type": "basic",
-                                                                                                                        "name": "Span",
-                                                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short"
+                                                                                                                        "name": "Button",
+                                                                                                                        "actions": [
+                                                                                                                            {
+                                                                                                                                "comment": "이력 표의 그 버전 본문 보기 — 위 배지와 같은 흐름을 행 단위로 태운다",
+                                                                                                                                "type": "click",
+                                                                                                                                "handler": "sequence",
+                                                                                                                                "actions": [
+                                                                                                                                    {
+                                                                                                                                        "handler": "setState",
+                                                                                                                                        "params": {
+                                                                                                                                            "target": "global",
+                                                                                                                                            "viewingPolicyVersion": "{{row?.version}}"
+                                                                                                                                        }
+                                                                                                                                    },
+                                                                                                                                    {
+                                                                                                                                        "handler": "refetchDataSource",
+                                                                                                                                        "params": {
+                                                                                                                                            "dataSourceId": "gdprPolicyVersionSnapshot"
+                                                                                                                                        }
+                                                                                                                                    },
+                                                                                                                                    {
+                                                                                                                                        "handler": "openModal",
+                                                                                                                                        "target": "policy_version_snapshot_modal"
+                                                                                                                                    }
+                                                                                                                                ]
+                                                                                                                            }
+                                                                                                                        ],
+                                                                                                                        "props": {
+                                                                                                                            "type": "button",
+                                                                                                                            "className": "text-info-soft px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                                                                                            "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}"
+                                                                                                                        },
+                                                                                                                        "children": [
+                                                                                                                            {
+                                                                                                                                "type": "basic",
+                                                                                                                                "name": "Span",
+                                                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short"
+                                                                                                                            }
+                                                                                                                        ]
                                                                                                                     }
                                                                                                                 ]
                                                                                                             }
@@ -1320,99 +1327,99 @@
                                                                                         ]
                                                                                     }
                                                                                 ]
-                                                                            }
-                                                                        ]
-                                                                    },
-                                                                    {
-                                                                        "comment": "이력 페이저 — 총건수/현재 페이지를 함께 표시한다. 없으면 최신 20건만 보이고 나머지가 조용히 잘린다.",
-                                                                        "id": "policy_version_history_pager",
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "if": "{{((gdprPolicyVersionHistory?.data?.pagination?.last_page ?? 0) > 1) || (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages === true) || ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) > 1)}}",
-                                                                        "props": {
-                                                                            "className": "flex items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-gray-700"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "text-label-subtle text-sm"
-                                                                                },
-                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history_page_summary|current={{gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1}}|last={{gdprPolicyVersionHistory?.data?.pagination?.last_page ?? '-'}}|total={{gdprPolicyVersionHistory?.data?.pagination?.total ?? 0}}"
                                                                             },
                                                                             {
+                                                                                "comment": "이력 페이저 — 총건수/현재 페이지를 함께 표시한다. 없으면 최신 20건만 보이고 나머지가 조용히 잘린다.",
+                                                                                "id": "policy_version_history_pager",
                                                                                 "type": "basic",
                                                                                 "name": "Div",
+                                                                                "if": "{{((gdprPolicyVersionHistory?.data?.pagination?.last_page ?? 0) > 1) || (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages === true) || ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) > 1)}}",
                                                                                 "props": {
-                                                                                    "className": "flex items-center gap-2"
+                                                                                    "className": "flex items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-gray-700"
                                                                                 },
                                                                                 "children": [
                                                                                     {
-                                                                                        "id": "policy_history_prev",
                                                                                         "type": "basic",
-                                                                                        "name": "Button",
-                                                                                        "actions": [
-                                                                                            {
-                                                                                                "comment": "이전 페이지. 이력은 이 화면 안에서만 넘기므로 URL 이 아니라 폼 상태에 페이지를 두고 데이터소스를 다시 부른다. 마지막 페이지 번호를 모를 수 있어(총 건수 상한) 상한이 있을 때만 그 값으로 조인다",
-                                                                                                "type": "click",
-                                                                                                "handler": "sequence",
-                                                                                                "actions": [
-                                                                                                    {
-                                                                                                        "handler": "setState",
-                                                                                                        "params": {
-                                                                                                            "target": "local",
-                                                                                                            "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (-1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (-1))}}"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "handler": "refetchDataSource",
-                                                                                                        "params": {
-                                                                                                            "dataSourceId": "gdprPolicyVersionHistory"
-                                                                                                        }
-                                                                                                    }
-                                                                                                ]
-                                                                                            }
-                                                                                        ],
+                                                                                        "name": "Span",
                                                                                         "props": {
-                                                                                            "type": "button",
-                                                                                            "className": "btn btn-sm btn-neutral",
-                                                                                            "disabled": "{{(gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) <= 1}}"
+                                                                                            "className": "text-label-subtle text-sm"
                                                                                         },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_prev"
+                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_page_summary|current={{gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1}}|last={{gdprPolicyVersionHistory?.data?.pagination?.last_page ?? '-'}}|total={{gdprPolicyVersionHistory?.data?.pagination?.total ?? 0}}"
                                                                                     },
                                                                                     {
-                                                                                        "id": "policy_history_next",
                                                                                         "type": "basic",
-                                                                                        "name": "Button",
-                                                                                        "actions": [
+                                                                                        "name": "Div",
+                                                                                        "props": {
+                                                                                            "className": "flex items-center gap-2"
+                                                                                        },
+                                                                                        "children": [
                                                                                             {
-                                                                                                "comment": "다음 페이지. 마지막 번호를 모르는 목록에서는 그 대신 서버가 알려 준 has_more_pages 로 버튼을 잠근다 — 총 건수에 상한이 걸리면 last_page 가 비어 오기 때문이다",
-                                                                                                "type": "click",
-                                                                                                "handler": "sequence",
+                                                                                                "id": "policy_history_prev",
+                                                                                                "type": "basic",
+                                                                                                "name": "Button",
                                                                                                 "actions": [
                                                                                                     {
-                                                                                                        "handler": "setState",
-                                                                                                        "params": {
-                                                                                                            "target": "local",
-                                                                                                            "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (1))}}"
-                                                                                                        }
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "handler": "refetchDataSource",
-                                                                                                        "params": {
-                                                                                                            "dataSourceId": "gdprPolicyVersionHistory"
-                                                                                                        }
+                                                                                                        "comment": "이전 페이지. 이력은 이 화면 안에서만 넘기므로 URL 이 아니라 폼 상태에 페이지를 두고 데이터소스를 다시 부른다. 마지막 페이지 번호를 모를 수 있어(총 건수 상한) 상한이 있을 때만 그 값으로 조인다",
+                                                                                                        "type": "click",
+                                                                                                        "handler": "sequence",
+                                                                                                        "actions": [
+                                                                                                            {
+                                                                                                                "handler": "setState",
+                                                                                                                "params": {
+                                                                                                                    "target": "local",
+                                                                                                                    "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (-1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (-1))}}"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "handler": "refetchDataSource",
+                                                                                                                "params": {
+                                                                                                                    "dataSourceId": "gdprPolicyVersionHistory"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        ]
                                                                                                     }
-                                                                                                ]
+                                                                                                ],
+                                                                                                "props": {
+                                                                                                    "type": "button",
+                                                                                                    "className": "btn btn-sm btn-neutral",
+                                                                                                    "disabled": "{{(gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) <= 1}}"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history_prev"
+                                                                                            },
+                                                                                            {
+                                                                                                "id": "policy_history_next",
+                                                                                                "type": "basic",
+                                                                                                "name": "Button",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "comment": "다음 페이지. 마지막 번호를 모르는 목록에서는 그 대신 서버가 알려 준 has_more_pages 로 버튼을 잠근다 — 총 건수에 상한이 걸리면 last_page 가 비어 오기 때문이다",
+                                                                                                        "type": "click",
+                                                                                                        "handler": "sequence",
+                                                                                                        "actions": [
+                                                                                                            {
+                                                                                                                "handler": "setState",
+                                                                                                                "params": {
+                                                                                                                    "target": "local",
+                                                                                                                    "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (1))}}"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "handler": "refetchDataSource",
+                                                                                                                "params": {
+                                                                                                                    "dataSourceId": "gdprPolicyVersionHistory"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ],
+                                                                                                "props": {
+                                                                                                    "type": "button",
+                                                                                                    "className": "btn btn-sm btn-neutral",
+                                                                                                    "disabled": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) >= gdprPolicyVersionHistory?.data?.pagination?.last_page) : (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages !== true)}}"
+                                                                                                },
+                                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history_next"
                                                                                             }
-                                                                                        ],
-                                                                                        "props": {
-                                                                                            "type": "button",
-                                                                                            "className": "btn btn-sm btn-neutral",
-                                                                                            "disabled": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) >= gdprPolicyVersionHistory?.data?.pagination?.last_page) : (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages !== true)}}"
-                                                                                        },
-                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_next"
+                                                                                        ]
                                                                                     }
                                                                                 ]
                                                                             }

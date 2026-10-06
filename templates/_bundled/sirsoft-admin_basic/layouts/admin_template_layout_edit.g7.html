@@ -399,7 +399,7 @@
            좁을수록 툴바가 더 감겨 더 나빠지는 방향이라, 여기서만 남는 높이를 주는 것으로는 부족하다.
            `min-h` 를 함께 둬 툴바가 아무리 감겨도 코드 칸이 접히지 않게 하고, 넘치면 페이지가 스크롤된다. -->
       <div data-ref="main_grid" class="mt-6 flex flex-row gap-6 items-stretch h-[calc(100dvh-230px)] min-h-[480px]">
-        <responsive on="portable" class="mt-6 row-stack h-[calc(100dvh-264px)] min-h-[420px]"/>
+        <responsive on="portable" class="mt-6 flex flex-col gap-4 h-[calc(100dvh-264px)] min-h-[420px]"/>
       <!-- 좌측 파일 트리. 기기 폭에 따라 **인라인 · 서랍 · 시트**로 스스로 갈아입으므로 화면 분기를
            레이아웃에 두지 않는다(종전에는 데스크톱 목록과 모바일 `rich-select` 두 벌이었고, 모바일 쪽에는
            검색이 없어 144개를 스크롤해야 했다).

@@ -53,12 +53,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "row-stack w-full gap-2"
+                                "className": "flex flex-wrap items-center gap-x-4 gap-y-3 w-full"
                             }
                         }
                     },
                     "props": {
-                        "className": "flex-center gap-3 shrink-0"
+                        "className": "flex-center gap-4 shrink-0"
                     },
                     "children": [
                         {
@@ -69,7 +69,7 @@
                             "props": {
                                 "role": "group",
                                 "aria-label": "$t:extensions.view_mode.toggle_label",
-                                "className": "inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                                "className": "inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
                             },
                             "children": [
                                 {
@@ -215,9 +215,51 @@
                             ]
                         },
                         {
-                            "id": "search_bar",
-                            "type": "composite",
-                            "name": "SearchBar",
+                            "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).\n             탭 위 별도 줄에 있던 것을 모듈·플러그인 화면처럼 툴바 안(보기 전환과 검색 사이)으로 옮겼다.",
+                            "id": "tpl_admin_include_hidden_toggle",
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{current_user?.data?.is_super === true}}",
+                            "props": {
+                                "className": "flex-center gap-2 text-body cursor-pointer select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/templates/admin",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{query.include_hidden === '1'}}",
+                                        "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.include_hidden"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다.",
+                            "id": "search_bar_box",
+                            "type": "basic",
+                            "name": "Div",
                             "responsive": {
                                 "portable": {
                                     "props": {
@@ -225,33 +267,43 @@
                                     }
                                 }
                             },
-                            "actions": [
+                            "props": {
+                                "className": "w-64"
+                            },
+                            "children": [
                                 {
-                                    "type": "change",
-                                    "handler": "setState",
-                                    "params": {
-                                        "searchQuery": "{{$event.target.value}}"
-                                    }
-                                },
-                                {
-                                    "comment": "검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75).",
-                                    "type": "submit",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/templates/admin",
-                                        "mergeQuery": true,
-                                        "query": {
-                                            "search": "{{_local.searchQuery || undefined}}",
-                                            "page": ""
+                                    "id": "search_bar",
+                                    "type": "composite",
+                                    "name": "SearchBar",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "searchQuery": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75).",
+                                            "type": "submit",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/templates/admin",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "search": "{{_local.searchQuery || undefined}}",
+                                                    "page": ""
+                                                }
+                                            }
                                         }
+                                    ],
+                                    "props": {
+                                        "placeholder": "$t:admin.templates.search_placeholder",
+                                        "value": "{{_local.searchQuery || ''}}",
+                                        "className": "w-full"
                                     }
                                 }
-                            ],
-                            "props": {
-                                "placeholder": "$t:admin.templates.search_placeholder",
-                                "value": "{{_local.searchQuery || ''}}",
-                                "className": "w-64"
-                            }
+                            ]
                         }
                     ]
                 }

@@ -301,7 +301,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       >
         <Icon name={IconName.Bell} className="w-5 h-5" />
         {displayCount > 0 && (
-          <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
+          // 20px 원 안에 12px `99+` 는 넘친다(실측 23.28px) — 세 자리 표시일 때만 9px 로 줄인다
+          <Span className={`absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-500 dark:bg-red-600 rounded-full`}>
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}

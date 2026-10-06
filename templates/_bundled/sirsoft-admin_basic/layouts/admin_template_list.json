@@ -538,57 +538,6 @@
                         ]
                     },
                     {
-                        "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).",
-                        "id": "include_hidden_toggle_wrapper",
-                        "type": "basic",
-                        "name": "Div",
-                        "if": "{{current_user?.data?.is_super === true}}",
-                        "props": {
-                            "className": "flex justify-end mb-3"
-                        },
-                        "children": [
-                            {
-                                "id": "include_hidden_toggle",
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                    "className": "flex-center gap-2 text-body cursor-pointer select-none"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Input",
-                                        "actions": [
-                                            {
-                                                "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
-                                                "type": "change",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/templates/{{route.type}}",
-                                                    "mergeQuery": true,
-                                                    "query": {
-                                                        "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
-                                                        "page": 1
-                                                    }
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "type": "checkbox",
-                                            "checked": "{{query.include_hidden === '1'}}",
-                                            "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.templates.include_hidden"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
                         "id": "tab_navigation_wrapper",
                         "type": "basic",
                         "name": "Div",

@@ -185,7 +185,7 @@
             </button>
           </div>
           <div data-if="{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') &amp;&amp; !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="overflow-x-auto">
-            <responsive on="portable" class="row-stack">
+            <responsive on="portable" class="stack-flush">
               <div data-each="option in row.options || []" data-testid="option-row-{{option.id}}" class="admin-card mb-3">
                 <div data-ref="option_checkbox_portable_{{option.id}}" class="flex-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                   <checkbox checked="{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">

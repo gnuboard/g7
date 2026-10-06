@@ -425,6 +425,13 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 수신자 카드 목록은 `stack-tight`(세로 gap)로 감쌉니다. 카드는 유틸리티 `p-3` 을 가져 `row-stack` 의 자식 패딩
 규칙보다 우선하므로, `row-stack` 으로 감싸면 구분선만 생기고 카드 사이 간격은 0 이 되어 테두리가 맞붙습니다.
 이 모달은 게시판·이커머스·수출입은행 플러그인에도 사본이 있어 간격도 네 벌을 함께 맞춥니다.
+
+`row-stack` 직속 자식으로 테두리 상자(`border`·`admin-card`)를 두지 않습니다. `row-stack` 이 자식에 주는
+세로 패딩(`py-2`, 첫 자식 `pt-0`, 마지막 자식 `pb-0`)이 테두리 **안쪽**에 들어가 상자 첫 행이 8px 내려앉고,
+`admin-card` 의 자체 패딩은 위 8 / 아래 0 으로 덮어써집니다. 상자 하나면 테두리 없는 `<div>` 래퍼로 감싸고
+(조건·반복 속성은 래퍼로), 상자 묶음이면 `stack-tight`·`card-stack`·`stack-flush`, 단순 세로 쌓기면
+`flex flex-col gap-*` 를 씁니다. `<responsive on="portable" class="… row-stack"/>` 처럼 모바일에서만 class 를
+통째로 바꾸는 자리는 PC 화면에서 드러나지 않으므로 특히 주의합니다(정적 검사가 이 형태를 잡습니다).
 <!-- @intent END -->
 
 ## 알림 설정 — 분류 칩 · 본인인증 문구 · 메일 채널 끄기 확인
@@ -913,6 +920,13 @@ modals:
 - 이 체크는 최고관리자 전용이며 `data-if="{{current_user?.data?.is_super === true}}"` 로 가린다 — 관리자 로그인
   응답 전역 이름은 `current_user` 이고 값은 `data` 아래에 있다. 존재하지 않는 `currentUser` 를 읽어 최고관리자에게도
   체크가 보이지 않던 것을 #703 에서 바로잡았다.
+- 체크는 모듈·플러그인·템플릿(사용자/관리자 탭 각각) 화면 모두 **툴바 안** [보기 전환, 체크, 검색] 순서다. 툴바는
+  `flex flex-wrap items-center gap-x-4 gap-y-3` 한 줄 구조이고, PC 는 보기 전환의 `mr-auto` 가 체크와 검색을 오른쪽으로
+  밀어 체크가 검색칸 바로 왼쪽(16px)에 붙는다. 모바일(portable)은 보기 전환에서 `mr-auto` 를 빼 체크가 보기 전환 바로
+  오른쪽에 오고 검색이 전폭으로 다음 줄에 내려간다. 검색칸 너비는 래퍼(`search_bar_box`: PC `w-64`, 모바일 `w-full`)가
+  맡는다 — `SearchBar` 는 받은 class 를 안쪽 input 에만 걸어 바깥 div 가 내용 폭이 되기 때문이다. 종전처럼 툴바를
+  `justify-between` 에 자식 셋으로 두면 체크가 남는 폭 정중앙에 뜨고, 모바일 class 를 `row-stack` 으로 바꾸면 보기 전환
+  상자 안에 8px 이 들어가 아래가 빈다.
 - 켜기/끄기 스위치는 격자의 `resyncKey="{{_global.extensionToggleResync ?? 0}}"` 계약을 따른다
   (§[components.md](components.md) `ExtensionCardGrid` 스위치 재동기). 토글 요청의 `fail` 과 409(의존 충돌 창)
   갈래에서 `_global.extensionToggleResync` 를 1 올린다 — 409 는 `fail` 을 거치지 않으므로 그 갈래에서도 목록을
