@@ -9,9 +9,10 @@ description: |
 
 axes:
   viewer: [member_session, member_bearer, guest_valid_token, guest_invalid_token, guest_other_order_token, member_with_guest_token]
-  payment: [domestic_card, easy_pay, cbt_card, cbt_cvs_waiting]
+  payment: [domestic_card, easy_pay, cbt_card, cbt_cvs_waiting, vbank_waiting]
 
 exclusions:
+  - { viewer: [member_bearer, guest_valid_token, guest_invalid_token, guest_other_order_token, member_with_guest_token], payment: vbank_waiting, reason: "은행코드는 조회가 통과한 뒤 결제 종류로만 갈린다 — member_session 조합이 같은 코드를 잠근다" }
   - { viewer: member_bearer, payment: easy_pay, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
   - { viewer: member_bearer, payment: cbt_card, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
   - { viewer: member_bearer, payment: cbt_cvs_waiting, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
@@ -36,6 +37,7 @@ effects:
   - cbt_cvs_waiting_uses_cvs_labels
   - lookup_denied_as_not_found
   - response_uses_common_envelope
+  - vbank_bank_code_returned
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/UserReceiptControllerTest.php

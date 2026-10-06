@@ -15,6 +15,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PaymentMethodResolverTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderPaymentTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsOrder.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminPaymentMethodBrandMark.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-pg-locked.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-brand-mark.spec.ts
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
@@ -46,7 +47,7 @@ exclusions:
     reason: "브랜드 마크는 PG 플러그인이 등록한 간편결제 수단의 표현이다. 코어 8종은 브랜드가 아니라 결제 형태(카드·가상계좌 등)이므로 brand_mark 를 선언하지 않는다"
   - capability: brand_mark
     capability_declared: undeclared
-    reason: "brand_mark 는 다른 능력과 달리 미선언 시 파생 경로가 없다 — 관리자 화면은 공급 플러그인이 직접 주입하는 배지로만 그리므로, 미선언은 곧 '배지 없음(기본 아이콘 유지)' 이고 판정할 후속 효과가 존재하지 않는다"
+    reason: "brand_mark 는 다른 능력과 달리 미선언 시 파생 경로가 없다 — 쇼핑몰 관리자 결제수단 목록은 카탈로그의 _cached_brand_mark 를 BrandMark 컴포넌트로 직접 그리고(#639, PG 주입 스크립트 삭제) 값이 없으면 기본 아이콘을 그린다. 미선언은 곧 '배지 없음(기본 아이콘 유지)' 이며, 그 아이콘 분기는 선언 조합의 테스트가 admin_falls_back_to_icon_without_brand_mark 로 함께 고정하므로 별도 조합으로 판정할 후속 효과가 없다"
 
 # 후속 효과 체인 — 능력 오판이 낳는 실패들
 effects:
@@ -68,8 +69,9 @@ effects:
   - admin_shows_pg_locked_badge           # 확장 결제수단이 "PG 고정 · {PG명}" 배지로 표시
   - admin_hides_pg_select_for_locked      # PG 고정 수단은 PG 선택 셀렉트 미노출
   - admin_shows_pg_select_for_unlocked    # 일반 PG 수단은 셀렉트 노출 (회귀 차단)
-  - admin_shows_brand_mark                # 간편결제 행의 기본 아이콘이 공급 플러그인의 브랜드 배지로 치환
-  - admin_rebinds_brand_mark_after_tab_return # 탭 전환(replaceState) 후 복귀해도 배지 재주입 — 새로고침 불요
+  - admin_shows_brand_mark                # 간편결제 행에 카탈로그 _cached_brand_mark 를 쇼핑몰 레이아웃의 BrandMark 가 직접 그림 (#639)
+  - admin_falls_back_to_icon_without_brand_mark # 브랜드 마크가 없는 수단은 BrandMark 대신 기본 아이콘(_cached_icon)만 그림
+  - admin_rebinds_brand_mark_after_tab_return # 탭 전환(replaceState) 후 복귀해도 마크가 그대로 — 레이아웃 렌더라 복귀가 곧 재렌더, 새로고침 불요
   # 기존 설치 환경
   - saved_null_pg_provider_self_healed    # 저장된 pg_provider=null 이 정의값으로 덮임
   - upgrade_step_backfills_settings_file  # upgrade step 이 저장 파일 자체도 정정 (멱등)

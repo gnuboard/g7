@@ -1,4 +1,4 @@
-import { buildGuestOwnershipHeaders } from '../guestOrderToken';
+import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
 
@@ -6,9 +6,13 @@ interface G7ApiResponse {
     data?: unknown;
 }
 
+interface G7ApiRequestOptions {
+    headers?: Record<string, string>;
+}
+
 interface G7CoreApi {
-    get: (url: string, options?: { headers?: Record<string, string> }) => Promise<G7ApiResponse>;
-    post?: (url: string, data?: Record<string, unknown>) => Promise<G7ApiResponse>;
+    get: (url: string, options?: G7ApiRequestOptions) => Promise<G7ApiResponse>;
+    post: <T = G7ApiResponse>(url: string, data?: Record<string, unknown>, options?: G7ApiRequestOptions) => Promise<T>;
 }
 
 interface G7CoreToast {
@@ -17,23 +21,12 @@ interface G7CoreToast {
 
 interface G7CoreStateApi {
     setLocal: (state: Record<string, unknown>) => void;
-    get?: (scope: string) => Record<string, any> | undefined;
 }
 
 interface G7Core {
     api: G7CoreApi;
     toast?: G7CoreToast;
     state?: G7CoreStateApi;
-}
-
-interface TemplateLocalState {
-    paymentMethod?: string;
-}
-
-interface TemplateApp {
-    globalState?: {
-        _local?: TemplateLocalState;
-    };
 }
 
 interface PgPaymentData {
@@ -63,7 +56,6 @@ interface ClientConfig {
     sign_data_url: string;
     /** PG 로 보내는 결과 수신 주소(ReturnURL) — 서버가 사이트 주소로 만든 절대 URL */
     callback_url?: string;
-    close_report_url?: string;
     useEscrow?: boolean;
 }
 
@@ -83,7 +75,6 @@ declare global {
         nicepayClose: (resultCode: string, resultMsg: string) => void;
         goPay: (form: HTMLFormElement) => void;
         G7Core: G7Core;
-        __templateApp?: TemplateApp;
     }
 }
 
@@ -233,7 +224,12 @@ function isMobileDevice(): boolean {
  *
  * 체크아웃 레이아웃에서 주문 생성 API 성공 후 호출됩니다:
  *   handler: "sirsoft-pay_nicepayments.requestPayment"
- *   params: { pgPaymentData: response.data.pg_payment_data }
+ *   params: { pgPaymentData: response.data.pg_payment_data, paymentMethod?: string }
+ *
+ * 결제수단은 액션 인자로만 받는다 — `paymentMethod` 를 명시하면 그 값, 아니면 서버가 저장해 내려준
+ * `pgPaymentData.payment_method`(확장 수단이면 확장 ID 그대로, #475). 둘 다 없으면 결제를 시작하지 않는다.
+ * 종전에는 엔진 내부(`window.__templateApp`)의 화면 상태와 'card' 기본값까지 뒤져, 잘못된 수단으로 결제창이
+ * 열릴 수 있었다(#639).
  *
  * 호출 순서:
  *   1. Client Config API 호출 → MID, SDK URL, SignData URL 획득
@@ -250,19 +246,22 @@ function isMobileDevice(): boolean {
 export async function requestPaymentHandler(action: PaymentAction, _context?: unknown): Promise<void> {
     const { pgPaymentData, paymentMethod: paramPaymentMethod } = action.params ?? {};
 
-    const localState = window.__templateApp?.globalState?._local;
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
-    const paymentMethod = paramPaymentMethod
-        ?? pgPaymentData?.payment_method
-        ?? localState?.paymentMethod
-        ?? 'card';
-
     if (!pgPaymentData) {
         console.error('[sirsoft-pay_nicepayments] pgPaymentData is required');
         return;
     }
 
     const G7Core = window.G7Core;
+
+    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
+    const paymentMethod = paramPaymentMethod || pgPaymentData.payment_method;
+
+    if (typeof paymentMethod !== 'string' || paymentMethod === '') {
+        console.error('[sirsoft-pay_nicepayments] payment method is required (paymentMethod or pgPaymentData.payment_method)');
+        G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
+        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
+        return;
+    }
 
     try {
         // 1. Client Config 가져오기
@@ -289,36 +288,25 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 3. 서버에서 EdiDate + SignData 생성
         //    공개 엔드포인트지만 서버에서 주문번호, 결제 전 상태, 금액, 구매자 컨텍스트를 검증한다.
-        const signDataUrl = config.sign_data_url;
-        const authToken = (typeof localStorage !== 'undefined') ? localStorage.getItem('auth_token') : null;
-        const signDataHeaders: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-        };
-        if (authToken) {
-            signDataHeaders['Authorization'] = `Bearer ${authToken}`;
-        }
+        //    회원 Bearer 와 401 처리는 G7Core.api 가 맡는다(같은 출처 요청에만 싣는다). 실패 응답은 예외로 올라와
+        //    아래 catch 가 결제 오류로 안내한다.
         // 실패한 같은 주문을 다시 결제할 때 서버는 주문을 결제대기로 되살린다. 그 복구는 주문 소유자만
-        // 할 수 있으므로 비회원은 체크아웃이 저장해 둔 조회 토큰을 싣는다 (회원은 위 Bearer 로 증명).
-        Object.assign(signDataHeaders, buildGuestOwnershipHeaders());
-        const signDataRes = await fetch(signDataUrl, {
-            method: 'POST',
-            credentials: 'include',
-            headers: signDataHeaders,
-            body: JSON.stringify({
+        // 할 수 있으므로 비회원은 공개 상태 계약(_global.guestOrderToken)의 조회 토큰을 싣는다.
+        const signData = await G7Core.api.post<SignDataResponse>(
+            config.sign_data_url,
+            {
                 amt: pgPaymentData.amount,
                 moid: pgPaymentData.order_number,
                 buyer_email: pgPaymentData.customer_email ?? '',
                 buyer_phone: pgPaymentData.customer_phone ?? '',
-            }),
-        });
+            },
+            { headers: { 'X-Requested-With': 'XMLHttpRequest', ...buildGuestOrderTokenHeaders() } },
+        );
 
-        if (!signDataRes.ok) {
+        if (!signData?.signData || !signData?.ediDate) {
             throw new Error('SignData 생성에 실패했습니다.');
         }
 
-        const signData: SignDataResponse = await signDataRes.json();
         const callbackUrl = requireSiteAbsoluteUrl(config.callback_url);
 
         // 4. 결제 폼 생성
@@ -403,10 +391,10 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         try {
             // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
             // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
-            const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
+            const guestHeaders = buildGuestOrderTokenHeaders();
             const orderRes = await G7Core.api.get(
                 `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
-                guestToken ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined,
+                Object.keys(guestHeaders).length > 0 ? { headers: guestHeaders } : undefined,
             );
             const od = orderRes?.data as Record<string, unknown> | null | undefined;
             if (od) {
@@ -461,7 +449,6 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             paymentClosed = true;
             const closeReason = [_resultCode, resultMsg].filter(Boolean).join(': ') || 'nicepay-window-closed';
             void reportPaymentWindowClosed({
-                closeReportUrl: config.close_report_url,
                 oid: pgPaymentData.order_number,
                 price: Number(pgPaymentData.amount),
                 payment_method: paymentMethod,

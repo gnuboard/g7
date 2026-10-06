@@ -1,8 +1,7 @@
 <!-- 주문 상세의 결제 칸 — 결제수단과 금액 분해. 무통장·가상계좌는 입금 계좌와 기한까지 함께 나온다.
      금액은 주문에 굳은 값이라 지금 시세나 설정이 바뀌어도 달라지지 않는다.
-     data-ref 는 확장의 overlay 앵커다. KG 플러그인의 resources/extensions/user_order_show.json 이
-     target_id 로 이 이름을 지정하고 mypageOrderShowInjector.ts 가 getElementById 로 찾는데,
-     그동안 이 노드에 id 가 없어 주입이 조용히 실패하고 있었다(#454 에서 부수 복구). -->
+     data-ref 는 결제 플러그인 조각이 붙는 자리다(쇼핑몰 docs/extension-points.md 의 약속 id).
+     조각은 이 id 로만 찾는다 — 화면 제목 글자로 찾으면 언어마다 빠진다. -->
 <partial description="주문 상세 - 결제 정보">
   <div data-ref="order_payment_info_panel" class="bg-white dark:bg-gray-800 rounded-lg p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>

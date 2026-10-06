@@ -8,6 +8,7 @@
 
 ### Added
 
+- 결제 통화에서 쓸 수 없는 결제수단을 골랐을 때의 주문 거절 문구(`validation.order.payment_method_not_allowed_for_currency`)의 일본어 번역을 추가했습니다.
 - 관리자 회원 목록의 쇼핑몰 조건 필터(마일리지 잔액·배송지) 문구와 그 검증 항목명을 일본어로 번역했습니다(`admin.user_filter.*`·`validation.attributes.user_filter_*`).
 - 주문 목록 엑셀 내려받기 실패 안내(`admin/order.excel.download_failed`)의 일본어 번역을 추가했습니다.
 - 구매할 수 있는 옵션이 없는 상품의 바로 구매 거부 문구, 회원 결제 통화·배송국가 변경 권한 문구의 일본어 번역을 추가했습니다.

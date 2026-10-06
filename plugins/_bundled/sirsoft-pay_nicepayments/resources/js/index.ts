@@ -1,10 +1,12 @@
+/**
+ * 나이스페이먼츠 플러그인 엔트리
+ *
+ * ActionDispatcher 에 결제 핸들러를 등록한다. 화면에 덧붙이는 표시(주문 완료·마이페이지 영수증, 관리자 주문 상세
+ * 간편결제 이름)는 모두 레이아웃 조각(resources/extensions)이 그린다 — 종전의 화면 주입 스크립트(주소 정규식 +
+ * history.pushState 덮어쓰기 + DOM 패치)는 #639 에서 걷어냈다.
+ */
 import { handlerMap } from './handlers';
 import { initEasyPayWatcher } from './handlers/setPaymentMethod';
-import { installOrderResponseInterceptor } from './orderResponseInterceptor';
-import { installOrderCompleteReceiptInjector } from './orderCompleteReceiptInjector';
-import { installMypageOrderShowInjector } from './mypageOrderShowInjector';
-import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
-import { installAdminOrderPaymentDisplayInjector } from './adminOrderPaymentDisplayInjector';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_nicepayments';
 
@@ -46,14 +48,10 @@ function registerHandlers(): number {
     return count;
 }
 
+/**
+ * 플러그인 초기화 — 코어가 재초기화(언어 전환 등) 때 window.__SirsoftNicepayments.initPlugin 으로 다시 부른다.
+ */
 function initPlugin(): void {
-    // fetch 인터셉터는 G7Core 초기화와 무관하게 즉시 설치
-    installOrderResponseInterceptor();
-    installOrderCompleteReceiptInjector();
-    installMypageOrderShowInjector();
-    installAdminPaymentMethodBrandInjector();
-    installAdminOrderPaymentDisplayInjector();
-
     const doInit = () => {
         const count = registerHandlers();
 

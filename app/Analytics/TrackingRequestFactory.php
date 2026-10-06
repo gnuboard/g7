@@ -3,7 +3,7 @@
 namespace App\Analytics;
 
 use App\Enums\Analytics\ActionType;
-use App\Extension\HookManager;
+use App\Extension\Consent\ConsentManager;
 use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -77,10 +77,10 @@ class TrackingRequestFactory
     /**
      * 동의 조회에 쓸 세션 식별자를 정합니다.
      *
-     * 동의 관리 확장은 게스트 동의를 자기 식별자(예: GDPR 플러그인의 서명된 `gdpr_session`
-     * 쿠키 — 라라벨 세션과 무관한 UUID)로 저장합니다. 그 값은 요청이 살아 있을 때만 읽을 수
-     * 있으므로(큐로 넘어가면 요청이 없다) 조립 단계에서 `core.analytics.consent_session_id`
-     * 필터로 물어 싣습니다. 답이 없으면 시작된 라라벨 세션 ID(없으면 null)를 씁니다.
+     * 동의 관리 제공자는 게스트 동의를 자기 식별자(예: 서명된 쿠키에 담긴 UUID — 라라벨 세션과
+     * 무관한 값)로 저장합니다. 그 값은 요청이 살아 있을 때만 읽을 수 있으므로(큐로 넘어가면 요청이
+     * 없다) 조립 단계에서 동의 매니저(`ConsentManager::subjectKey()`)로 물어 싣습니다. 선택된 제공자가
+     * 없거나 답하지 못하면 시작된 라라벨 세션 ID(없으면 null)를 씁니다.
      *
      * @param  Request  $request  HTTP 요청
      * @return string|null 동의 조회용 세션 식별자
@@ -90,15 +90,15 @@ class TrackingRequestFactory
         $default = $request->hasSession() ? $request->session()->getId() : null;
 
         try {
-            $resolved = HookManager::applyFilters('core.analytics.consent_session_id', $default, $request);
+            $resolved = app(ConsentManager::class)->subjectKey($request);
         } catch (\Throwable $e) {
-            // 확장의 실수가 수집을 막으면 안 된다 — 기본값으로 묻는다.
+            // 동의 제공자의 실수가 수집을 막으면 안 된다 — 기본값으로 묻는다.
             Log::warning('방문자 통계 동의 식별자 조회 실패', ['error' => $e->getMessage()]);
 
             return $default;
         }
 
-        return is_string($resolved) && $resolved !== '' ? mb_substr($resolved, 0, 100) : $default;
+        return $resolved ?? $default;
     }
 
     /**

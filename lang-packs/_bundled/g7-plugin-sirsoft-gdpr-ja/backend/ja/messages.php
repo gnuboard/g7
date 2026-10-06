@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'consent_provider' => [
+        'label' => 'クッキー同意バナー (sirsoft-gdpr)',
+    ],
     'annual_notice' => [
         'collection_summary' => '会員登録·サービス利用時に提供いただいた氏名、メールアドレスおよびアカウント情報',
         'purpose' => '会員識別、サービス提供および利用お問い合わせ処理',

@@ -1164,6 +1164,7 @@ _응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 �
 | selected_payment_method | string \| null | `null` | 결제 시 사용자가 선택한 결제수단 식별값(`payment_meta.selected_payment_method`). 없으면 `null`. |
 | embedded_pg_provider | string \| null | `null` | 간편결제 등 결제창에 내장된 실제 PG 제공사 식별값(예: `payco`, `tosspay`). 일반 결제면 `null`. |
 | embedded_pg_provider_label | string \| null | `null` | `embedded_pg_provider` 의 사람이 읽는 라벨(예: `페이코`, `토스페이`). 아는 제공자는 제공자 코드로 번역하고, 모르는 제공자는 결제 때 저장된 이름(없으면 코드)을 쓴다. 없으면 `null`. |
+| vbank_bank_code | string \| null | `04` | 일반 결제 전용 — 가상계좌 은행코드. 저장된 코드(`vbank_code`)가 없으면 은행 이름으로 KG 이니시스 은행코드 표에서 찾는다. 가상계좌가 아니거나 찾지 못하면 `null`. 주문 상세 입금 안내 조각이 관리자에게만 보여 준다. CBT 응답에는 없음. |
 
 **응답 예시**
 

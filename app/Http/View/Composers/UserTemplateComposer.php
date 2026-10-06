@@ -3,6 +3,8 @@
 namespace App\Http\View\Composers;
 
 use App\Exceptions\TemplateNotFoundException;
+use App\Extension\Consent\ConsentManager;
+use App\Extension\Consent\ConsentSnapshot;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -11,11 +13,11 @@ use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
-use App\Services\Analytics\PrivacyService;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
 
@@ -74,14 +76,21 @@ class UserTemplateComposer
         }
 
         // 동의 연동 모드 트래커가 「동의를 확인할 곳이 있는가」를 알아야 한다. 코어는 어느 확장이
-        // 답하는지 모르고, 코어 동의 필터에 답하는 구독자가 있는지만 계산해 싣는다(설정이 아니라 계산값).
-        if (isset($frontendSettings['analytics']) && is_array($frontendSettings['analytics'])) {
-            try {
-                $frontendSettings['analytics']['consent_provider'] = app(PrivacyService::class)->consentSource() !== PrivacyService::SOURCE_NONE;
-            } catch (\Throwable $e) {
-                $frontendSettings['analytics']['consent_provider'] = false;
-            }
+        // 답하는지 모르고, 동의 제공자 선택 상태가 none 이 아닌지만 계산해 싣는다(설정이 아니라 계산값).
+        $governsConsent = false;
+        try {
+            $governsConsent = app(ConsentManager::class)->selection()->governsConsent();
+        } catch (\Throwable $e) {
+            $governsConsent = false;
         }
+
+        if (isset($frontendSettings['analytics']) && is_array($frontendSettings['analytics'])) {
+            $frontendSettings['analytics']['consent_provider'] = $governsConsent;
+        }
+
+        // 코어 동의 런타임의 첫 값 — 회원 토큰은 브라우저 저장소에 있어 이 시점에는 누구의 동의인지 모른다.
+        // 그래서 `ready` 를 싣지 않고, 제공자가 없으면 `none`, 있으면 `unknown` 으로 두고 런타임이 곧바로 조회한다.
+        $consentInitial = $governsConsent ? ConsentSnapshot::unknown()->toArray() : ConsentSnapshot::none()->toArray();
 
         // 활성화된 플러그인 설정 조회
         try {
@@ -144,5 +153,8 @@ class UserTemplateComposer
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
+        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
+        $view->with('stateContracts', StateContracts::forFrontend());
+        $view->with('consentInitial', $consentInitial);
     }
 }

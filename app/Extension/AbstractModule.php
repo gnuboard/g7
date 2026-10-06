@@ -11,7 +11,9 @@ use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
+use App\Support\StateContracts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -986,6 +988,38 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getMetadata(): array
     {
         return [];
+    }
+
+    /**
+     * 이 모듈이 소유하는 전역 상태 공개 계약을 반환합니다.
+     *
+     * module.json 의 `state_contracts` 에서 읽습니다. 다른 확장이 **읽는** 전역 상태만 선언합니다(화면 전용 임시 값은
+     * 선언하지 않는다). 설치·활성화 때 다른 활성 확장이나 코어가 같은 이름을 소유하면 막히고, 프론트에는
+     * `G7Core.stateContracts` 로 공개됩니다({@see StateContracts}).
+     *
+     * @return array<string, array{description: array<string, string>, schema: array<string, mixed>, writers: array<int, string>}>
+     *                                                                                                                             이름 → 계약
+     *
+     * @since 7.1.0
+     */
+    public function getStateContracts(): array
+    {
+        return StateContracts::normalize($this->loadManifest()['state_contracts'] ?? []);
+    }
+
+    /**
+     * 함께 쓰면 연동되는(선택) 확장을 반환합니다.
+     *
+     * module.json 의 `integrations` 에서 읽습니다. `dependencies` 와 달리 설치·활성화를 막지 않습니다
+     * ({@see ExtensionIntegrations}).
+     *
+     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
+     *
+     * @since 7.1.0
+     */
+    public function getIntegrations(): array
+    {
+        return ExtensionIntegrations::normalize($this->loadManifest()['integrations'] ?? []);
     }
 
     /**

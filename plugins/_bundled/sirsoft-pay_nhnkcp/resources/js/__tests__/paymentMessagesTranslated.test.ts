@@ -3,7 +3,7 @@
  *
  * 종전에는 「NHN KCP는 KRW 결제만 지원합니다」「애플페이는 IOS 기기에 …」「KCP 모바일 승인키 획득 실패」「KCP 오류 […]」를
  * 스크립트에 한국어(일부는 한국어/영어 두 갈래)로 박아, 일본어 등 다른 언어 화면에서도 한국어나 영어로 나왔다
- * (PO 결정 2026-09-28 「모두 번역 키로」). 이제 플러그인 번역 키(ko·en, 일본어는 언어팩)를 쓰고, 번역 엔진이 없을 때만
+ * 이제 플러그인 번역 키(ko·en, 일본어는 언어팩)를 쓰고, 번역 엔진이 없을 때만
  * 한국어 문구로 대신한다. PG 가 돌려준 오류 원문은 그대로 보여 준다.
  */
 
@@ -44,7 +44,7 @@ describe('NHN KCP — 결제 안내·오류 문구 번역 키', () => {
      * @effects message_from_translation_key
      */
     it('KRW 외 통화 안내를 번역 키로 내고 통화를 채운다', async () => {
-        await requestPaymentHandler({ params: { pgPaymentData: { order_number: 'O-1', order_name: 'T', amount: 1, pay_method: 'card', currency: 'USD' } } });
+        await requestPaymentHandler({ params: { pgPaymentData: { order_number: 'O-1', order_name: 'T', amount: 1, payment_method: 'card', currency: 'USD' } } });
 
         expect(setLocal).toHaveBeenCalledWith(expect.objectContaining({ paymentErrorMessage: 'NHN KCPはKRW決済のみ対応しています。(USD)' }));
     });

@@ -598,23 +598,21 @@ describe('requestPaymentHandler', () => {
  * 사각이 되므로 두 목록의 일치도 함께 고정한다.
  */
 /**
- * 결제수단 id 결정 순서 — 액션 인자, 서버가 저장한 payment_method, 화면 상태.
+ * 결제수단 id 결정 순서 — 액션 인자, 서버가 저장한 payment_method. 화면 상태는 보지 않는다.
  *
- * 화면 상태만 보면 주문서가 아닌 화면(클레임 추가결제 등)에서 값이 비어 가상계좌 주문에도 카드 결제창이 열린다.
+ * 화면 상태는 주문서가 아닌 화면(클레임 추가결제 등)에서 비거나 서버와 다른 값일 수 있다 — 서버가 저장한 값이 단일 출처다.
  */
 describe('resolveSelectedMethodId', () => {
     it('액션 인자가 있으면 그 값을 쓴다', () => {
-        expect(resolveSelectedMethodId('toss_kakaopay', 'vbank', 'card')).toBe('toss_kakaopay');
+        expect(resolveSelectedMethodId('toss_kakaopay', 'vbank')).toBe('toss_kakaopay');
     });
 
-    it('액션 인자가 없으면 서버가 저장한 결제수단을 화면 상태보다 먼저 쓴다', () => {
-        expect(resolveSelectedMethodId(undefined, 'vbank', 'card')).toBe('vbank');
-        expect(resolveSelectedMethodId(undefined, 'vbank', undefined)).toBe('vbank');
+    it('액션 인자가 없으면 서버가 저장한 결제수단을 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, 'vbank')).toBe('vbank');
     });
 
-    it('둘 다 없을 때만 화면 상태를 쓴다', () => {
-        expect(resolveSelectedMethodId(undefined, null, 'toss_virtual_account')).toBe('toss_virtual_account');
-        expect(resolveSelectedMethodId(undefined, null, undefined)).toBeUndefined();
+    it('둘 다 없으면 정하지 않는다(화면 상태로 채우지 않는다)', () => {
+        expect(resolveSelectedMethodId(undefined, null)).toBeUndefined();
     });
 });
 

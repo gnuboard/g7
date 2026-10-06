@@ -78,26 +78,26 @@
                                     "props": {
                                         "className": "block font-medium"
                                     },
-                                    "text": "{{_global.revokeTargetLabel ?? _global.revokeTargetKey ?? ''}}"
+                                    "text": "{{_global.gdprRevokeTargetLabel ?? _global.gdprRevokeTargetKey ?? ''}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!!_global.revokeTargetDescription}}",
+                                    "if": "{{!!_global.gdprRevokeTargetDescription}}",
                                     "props": {
                                         "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed"
                                     },
-                                    "text": "{{_global.revokeTargetDescription ?? ''}}"
+                                    "text": "{{_global.gdprRevokeTargetDescription ?? ''}}"
                                 },
                                 {
-                                    "comment": "이슈 #430 — 철회 대상의 마지막 동의일. 사용자가 언제 동의한 것을 철회하는지 인지 (informed). status_at_formatted 를 revokeTargetDate 로 전달받음.",
+                                    "comment": "이슈 #430 — 철회 대상의 마지막 동의일. 사용자가 언제 동의한 것을 철회하는지 인지 (informed). status_at_formatted 를 gdprRevokeTargetDate 로 전달받음.",
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!!_global.revokeTargetDate}}",
+                                    "if": "{{!!_global.gdprRevokeTargetDate}}",
                                     "props": {
                                         "className": "block text-xs text-green-600 dark:text-green-400 mt-1.5"
                                     },
-                                    "text": "$t:sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date={{_global.revokeTargetDate ?? ''}}"
+                                    "text": "$t:sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date={{_global.gdprRevokeTargetDate ?? ''}}"
                                 }
                             ]
                         },
@@ -152,7 +152,7 @@
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "POST",
-                                                        "body": "{{{ consent_key: _global.revokeTargetKey }}}"
+                                                        "body": "{{{ consent_key: _global.gdprRevokeTargetKey }}}"
                                                     },
                                                     "onSuccess": [
                                                         {
@@ -166,9 +166,9 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "revokeTargetKey": null,
-                                                                "revokeTargetLabel": null,
-                                                                "revokeTargetDescription": null
+                                                                "gdprRevokeTargetKey": null,
+                                                                "gdprRevokeTargetLabel": null,
+                                                                "gdprRevokeTargetDescription": null
                                                             }
                                                         },
                                                         {
@@ -184,7 +184,7 @@
                                                             }
                                                         },
                                                         {
-                                                            "handler": "sirsoft-gdpr.syncConsent"
+                                                            "handler": "refreshConsent"
                                                         },
                                                         {
                                                             "handler": "closeModal"
@@ -219,7 +219,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local.isRevoking || !_global.revokeTargetKey}}",
+                                        "disabled": "{{_local.isRevoking || !_global.gdprRevokeTargetKey}}",
                                         "className": "px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -255,7 +255,7 @@
             ]
         },
         {
-            "comment": "동의 확인 모달 (이슈 #430 버튼 재설계) — 거부/미설정 항목의 '동의' 버튼 클릭 시. 즉시 grant 대신 한 번 더 확인. 대상은 _global.grantTarget* (모달 컨텍스트 분리).",
+            "comment": "동의 확인 모달 (이슈 #430 버튼 재설계) — 거부/미설정 항목의 '동의' 버튼 클릭 시. 즉시 grant 대신 한 번 더 확인. 대상은 _global.gdprGrantTarget* (모달 컨텍스트 분리).",
             "id": "grant_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -293,16 +293,16 @@
                                     "props": {
                                         "className": "block font-medium"
                                     },
-                                    "text": "$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{_global.grantTargetLabel ?? _global.grantTargetKey ?? ''}}"
+                                    "text": "$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? ''}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!!_global.grantTargetDescription}}",
+                                    "if": "{{!!_global.gdprGrantTargetDescription}}",
                                     "props": {
                                         "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed"
                                     },
-                                    "text": "{{_global.grantTargetDescription ?? ''}}"
+                                    "text": "{{_global.gdprGrantTargetDescription ?? ''}}"
                                 }
                             ]
                         },
@@ -357,7 +357,7 @@
                                                     "auth_required": true,
                                                     "params": {
                                                         "method": "POST",
-                                                        "body": "{{{ consent_key: _global.grantTargetKey }}}"
+                                                        "body": "{{{ consent_key: _global.gdprGrantTargetKey }}}"
                                                     },
                                                     "onSuccess": [
                                                         {
@@ -371,9 +371,9 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "grantTargetKey": null,
-                                                                "grantTargetLabel": null,
-                                                                "grantTargetDescription": null
+                                                                "gdprGrantTargetKey": null,
+                                                                "gdprGrantTargetLabel": null,
+                                                                "gdprGrantTargetDescription": null
                                                             }
                                                         },
                                                         {
@@ -389,7 +389,7 @@
                                                             }
                                                         },
                                                         {
-                                                            "handler": "sirsoft-gdpr.syncConsent"
+                                                            "handler": "refreshConsent"
                                                         },
                                                         {
                                                             "handler": "closeModal"
@@ -424,7 +424,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "disabled": "{{_local.isGranting || !_global.grantTargetKey}}",
+                                        "disabled": "{{_local.isGranting || !_global.gdprGrantTargetKey}}",
                                         "className": "px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
@@ -636,7 +636,7 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                    "handler": "refreshConsent"
                                                                 },
                                                                 {
                                                                     "handler": "toast",
@@ -766,7 +766,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
-                                                    "comment": "선택 동의 전부 켜기. 필수 항목은 이미 동의로 고정돼 있어 대상에서 뺀다. 두 데이터소스를 다시 부르는 것은 이 탭의 목록과 요약이 서로 다른 응답에서 오기 때문이고, syncConsent 는 브라우저에 올라와 있는 자동차단 엔진의 동의 캐시를 갱신한다",
+                                                    "comment": "선택 동의 전부 켜기. 필수 항목은 이미 동의로 고정돼 있어 대상에서 뺀다. 두 데이터소스를 다시 부르는 것은 이 탭의 목록과 요약이 서로 다른 응답에서 오기 때문이고, refreshConsent 는 코어 동의 런타임을 다시 읽어 consent:changed 로 자동차단 엔진의 동의 캐시까지 갱신한다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -806,7 +806,7 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                    "handler": "refreshConsent"
                                                                 },
                                                                 {
                                                                     "handler": "toast",
@@ -1010,10 +1010,10 @@
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "global",
-                                                                                "revokeTargetKey": "{{consent?.consent_key}}",
-                                                                                "revokeTargetLabel": "{{consent?.consent_label ?? consent?.consent_key}}",
-                                                                                "revokeTargetDescription": "{{consent?.consent_description ?? ''}}",
-                                                                                "revokeTargetDate": "{{consent?.status_at_formatted ?? ''}}"
+                                                                                "gdprRevokeTargetKey": "{{consent?.consent_key}}",
+                                                                                "gdprRevokeTargetLabel": "{{consent?.consent_label ?? consent?.consent_key}}",
+                                                                                "gdprRevokeTargetDescription": "{{consent?.consent_description ?? ''}}",
+                                                                                "gdprRevokeTargetDate": "{{consent?.status_at_formatted ?? ''}}"
                                                                             }
                                                                         },
                                                                         {
@@ -1050,9 +1050,9 @@
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "global",
-                                                                                "grantTargetKey": "{{consent?.consent_key}}",
-                                                                                "grantTargetLabel": "{{consent?.consent_label ?? consent?.consent_key}}",
-                                                                                "grantTargetDescription": "{{consent?.consent_description ?? ''}}"
+                                                                                "gdprGrantTargetKey": "{{consent?.consent_key}}",
+                                                                                "gdprGrantTargetLabel": "{{consent?.consent_label ?? consent?.consent_key}}",
+                                                                                "gdprGrantTargetDescription": "{{consent?.consent_description ?? ''}}"
                                                                             }
                                                                         },
                                                                         {

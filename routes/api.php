@@ -61,9 +61,9 @@ use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationCont
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 use App\Http\Controllers\Api\Public\AnalyticsCollectController;
-use App\Http\Controllers\Api\Public\AnalyticsConsentController;
 use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
+use App\Http\Controllers\Api\Public\ConsentController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
@@ -108,11 +108,11 @@ Route::group([], function () use ($publicDataThrottle) {
         ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
         ->name('api.public.analytics.collect');
 
-    // 동의 연동 모드에서 트래커가 「이 방문자가 동의했는가」를 미리 확인한다. 코어 필터로 답하므로
-    // 브라우저는 동의를 관리하는 확장의 경로를 몰라도 된다. 회원 동의는 회원 번호로 찾으므로 optional.sanctum.
-    Route::get('analytics/consent', [AnalyticsConsentController::class, 'show'])
-        ->middleware(['throttle:60,1,analytics_consent', 'optional.sanctum'])
-        ->name('api.public.analytics.consent');
+    // 방문자 동의 스냅샷 — 코어 동의 런타임이 `_global.consent` 를 채운다. 운영자가 고른 동의 제공자에게
+    // 묻으므로 브라우저는 동의를 관리하는 확장의 경로를 몰라도 된다. 회원 동의는 회원 번호로 찾으므로 optional.sanctum.
+    Route::get('consent', [ConsentController::class, 'show'])
+        ->middleware(['throttle:60,1,consent', 'optional.sanctum'])
+        ->name('api.public.consent');
 
     // 사용자 화면 방문자 카운터가 읽는 요약 — 오늘·어제·최대·전체 네 숫자뿐이다.
     // 로그인 없이 누구나 부르므로 스로틀을 걸고, 응답은 컨트롤러가 짧게 캐시한다.

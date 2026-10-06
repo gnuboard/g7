@@ -11,6 +11,12 @@
  * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
  */
 /**
+ * 백엔드 API를 통해 Cart Key 발급
+ *
+ * @returns 발급된 cart_key 또는 null (실패 시)
+ */
+export declare function issueCartKeyFromApi(): Promise<string | null>;
+/**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.

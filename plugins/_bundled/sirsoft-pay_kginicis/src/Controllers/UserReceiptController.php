@@ -28,6 +28,21 @@ class UserReceiptController extends PublicBaseController
     // 표시 이름 번역이 있는 간편결제 제공자 코드(messages.receipt.easy_pay_providers)
     private const EASY_PAY_PROVIDERS = ['samsungpay', 'naverpay', 'lpay', 'kakaopay', 'payco', 'tosspay', 'ssgpay'];
 
+    // KG 이니시스 가상계좌 은행 이름 → 은행코드 (메뉴얼 manual.inicis.com 기준). 은행코드를 저장하지 못한
+    // 예전 주문은 은행 이름으로 코드를 찾는다. 주문 상세 입금 안내가 관리자에게만 보여 주는 값이다.
+    private const VBANK_BANK_CODES = [
+        '기업은행' => '03', '국민은행' => '04', '외환은행' => '05', '수협중앙회' => '07',
+        '농협중앙회' => '11', '우리은행' => '20', 'SC 제일은행' => '23', '대구은행' => '31',
+        '부산은행' => '32', '광주은행' => '34', '전북은행' => '37', '경남은행' => '39',
+        '한국씨티은행' => '53', '우체국' => '71', '하나은행' => '81', '신한은행' => '88',
+        '케이뱅크' => '89', '카카오뱅크' => '90', '토스뱅크' => '92',
+        '동양종합금융증권' => 'D1', '현대증권' => 'D2', '미래에셋증권' => 'D3',
+        '한국투자증권' => 'D4', '우리투자증권' => 'D5', '하이투자증권' => 'D6',
+        'HMC 투자증권' => 'D7', 'SK 증권' => 'D8', '대신증권' => 'D9',
+        '하나대투증권' => 'DA', '굿모닝신한증권' => 'DB', '동부증권' => 'DC',
+        '유진투자증권' => 'DD', '메리츠증권' => 'DE', '신영증권' => 'DF',
+    ];
+
     /**
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
      * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
@@ -97,6 +112,8 @@ class UserReceiptController extends PublicBaseController
                 'p.currency',
                 'p.card_approval_number',
                 'p.card_installment_months',
+                'p.vbank_code',
+                'p.vbank_name',
                 'p.vbank_number',
                 'p.vbank_due_at',
                 'p.payment_meta',
@@ -162,7 +179,26 @@ class UserReceiptController extends PublicBaseController
             'selected_payment_method' => $paymentMeta['selected_payment_method'] ?? null,
             'embedded_pg_provider' => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
             'embedded_pg_provider_label' => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
+            'vbank_bank_code' => $this->vbankBankCode($payment),
         ]);
+    }
+
+    /**
+     * 가상계좌 은행코드를 반환합니다 — 저장된 코드가 없으면 은행 이름으로 찾는다.
+     *
+     * @param  object  $payment  결제·주문 조회 행
+     * @return string|null 은행코드(가상계좌가 아니거나 찾지 못하면 null)
+     */
+    private function vbankBankCode(object $payment): ?string
+    {
+        $code = trim((string) ($payment->vbank_code ?? ''));
+        if ($code !== '') {
+            return $code;
+        }
+
+        $name = trim((string) ($payment->vbank_name ?? ''));
+
+        return $name !== '' ? (self::VBANK_BANK_CODES[$name] ?? null) : null;
     }
 
     /**

@@ -10,7 +10,7 @@
  * 같은 탭에서 외부 도메인을 다녀와도 유지된다.
  */
 
-import { buildGuestOwnershipHeaders } from './guestOrderToken';
+import { buildGuestOwnershipHeaders, waitForGuestOrderTokenContract } from './guestOrderToken';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -115,27 +115,25 @@ async function postCloseReport(
         reason: reason.trim().slice(0, 160),
     };
 
-    // 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만 받아 준다. 회원 Bearer 는 G7Core.api 가
-    // 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰을 헤더로 싣는다. 보고 주소는 같은 출처 고정 경로다.
-    const ownershipHeaders = buildGuestOwnershipHeaders();
+    // 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만 받아 준다. 회원 Bearer 와 401 처리는
+    // G7Core.api 가 맡고, 비회원은 쇼핑몰 계약 `_global.guestOrderToken` 을 헤더로 싣는다.
+    // 화면 초기화가 그 값을 올리기 전일 수 있으므로 먼저 기다린다.
+    await waitForGuestOrderTokenContract();
 
     const apiClient = ((window as any).G7Core)?.api;
-    if (typeof apiClient?.post === 'function') {
-        if (Object.keys(ownershipHeaders).length > 0) {
-            await apiClient.post(CLOSE_REPORT_PATH, payload, { headers: ownershipHeaders });
-        } else {
-            await apiClient.post(CLOSE_REPORT_PATH, payload);
-        }
+    if (typeof apiClient?.post !== 'function') {
+        console.warn(`[${PLUGIN_IDENTIFIER}] G7Core.api is not available — payment failure not reported`);
 
         return;
     }
 
-    await fetch(CLOSE_REPORT_PATH, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...ownershipHeaders },
-        body: JSON.stringify(payload),
-        keepalive: true,
-    });
+    const ownershipHeaders = buildGuestOwnershipHeaders();
+
+    if (Object.keys(ownershipHeaders).length > 0) {
+        await apiClient.post(CLOSE_REPORT_PATH, payload, { headers: ownershipHeaders });
+    } else {
+        await apiClient.post(CLOSE_REPORT_PATH, payload);
+    }
 }
 
 /**

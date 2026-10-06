@@ -7,7 +7,7 @@ use App\Analytics\ExclusionCounter;
 use App\Analytics\TrackingRequest;
 use App\Enums\Analytics\CollectFailureReason;
 use App\Enums\Analytics\ReferrerType;
-use App\Extension\HookManager;
+use App\Extension\Consent\ConsentSubject;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use App\Models\Analytics\AnalyticsVisit;
 use App\Services\Analytics\CollectFailureLogger;
@@ -16,6 +16,7 @@ use App\Services\Analytics\VisitService;
 use App\Services\GeoIpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
+use Tests\Concerns\FakesConsentProviders;
 use Tests\TestCase;
 
 /**
@@ -27,6 +28,7 @@ use Tests\TestCase;
  */
 class PrivacyModeTest extends TestCase
 {
+    use FakesConsentProviders;
     use RefreshDatabase;
 
     private PrivacyService $privacy;
@@ -48,7 +50,27 @@ class PrivacyModeTest extends TestCase
             $defaults['defaults']['analytics'] ?? []
         )]);
 
+        // 동의 제공자도 테스트마다 비운다 — 각 테스트가 필요한 제공자를 제 본문에서 등록한다.
+        $this->resetConsentProviders();
+
         $this->privacy = app(PrivacyService::class);
+    }
+
+    /**
+     * 분석·기능 동의 답을 정한 가짜 동의 제공자를 등록합니다.
+     *
+     * @param  bool  $analytics  분석 동의
+     * @param  bool  $functional  기능 동의
+     * @param  bool  $needsRenewal  재동의 필요 여부
+     * @return void 반환값 없음
+     */
+    private function consentProviderAnswering(bool $analytics, bool $functional = true, bool $needsRenewal = false): void
+    {
+        $this->fakeConsentProvider(
+            'fake-consent',
+            fn (ConsentSubject $subject): array => ['analytics' => $analytics, 'functional' => $functional],
+            needsRenewal: $needsRenewal,
+        );
     }
 
     /**
@@ -258,22 +280,22 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * 동의 여부는 확장이 답하는 필터로 판정한다.
+     * 동의 여부는 범용 동의 제공자 계약으로 판정한다.
      *
      * 코어가 동의 관리 플러그인의 클래스를 직접 부르면 그 플러그인 없이는 코어가
-     * 서지 못한다. 필터를 열어 두고 답할 수 있는 확장이 답하게 한다.
+     * 서지 못한다. 운영자가 고른 제공자에게 범용 계약으로 묻는다(#639).
      *
      * @scenario mode=consent, consent_provider=active_consented
      *
-     * @effects consent_mode_with_granted_consent_behaves_like_full
+     * @effects consent_mode_with_granted_consent_behaves_like_full, consent_is_answered_through_the_consent_provider_contract
      *
      * @return void 없음
      */
-    public function test_consent_is_resolved_through_a_filter(): void
+    public function test_consent_is_resolved_through_the_consent_provider(): void
     {
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
 
-        HookManager::addFilter('core.analytics.visitor_has_consent', fn () => true);
+        $this->consentProviderAnswering(analytics: true);
 
         $this->assertTrue(
             $this->privacy->hasAnalyticsConsent($this->request(), AnalyticsConfig::fromSettings()),
@@ -293,7 +315,7 @@ class PrivacyModeTest extends TestCase
     {
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
 
-        HookManager::addFilter('core.analytics.visitor_has_consent', fn () => false);
+        $this->consentProviderAnswering(analytics: false);
 
         $this->assertFalse(
             $this->privacy->hasAnalyticsConsent($this->request(), AnalyticsConfig::fromSettings()),
@@ -319,11 +341,12 @@ class PrivacyModeTest extends TestCase
     {
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
 
-        HookManager::addFilter(
-            'core.analytics.visitor_has_consent',
-            fn ($granted, $userId = null, $sessionId = null) => $sessionId === 'guest-uuid-1',
+        $this->fakeConsentProvider(
+            'fake-consent',
+            fn (ConsentSubject $subject): array => ['analytics' => $subject->subjectKey === 'guest-uuid-1', 'functional' => true],
+            true,
+            fn ($request): string => 'guest-uuid-1',
         );
-        HookManager::addFilter('core.analytics.consent_session_id', fn ($default, $request = null) => 'guest-uuid-1');
 
         $this->postJson('/api/analytics/collect', [
             't' => 'pageview',
@@ -350,10 +373,10 @@ class PrivacyModeTest extends TestCase
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
 
         $asked = [];
-        HookManager::addFilter('core.analytics.visitor_has_consent', function ($granted, $userId = null, $sessionId = null) use (&$asked) {
-            $asked[] = $sessionId;
+        $this->fakeConsentProvider('fake-consent', function (ConsentSubject $subject) use (&$asked): array {
+            $asked[] = $subject->subjectKey;
 
-            return false;
+            return ['analytics' => false];
         });
 
         $this->postJson('/api/analytics/collect', [
@@ -547,7 +570,7 @@ class PrivacyModeTest extends TestCase
     public function test_consent_mode_granted_ledger_row(): void
     {
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
-        HookManager::addFilter('core.analytics.visitor_has_consent', fn () => true);
+        $this->consentProviderAnswering(analytics: true);
 
         ['visit' => $visit, 'result' => $result] = $this->trackOne();
 
@@ -571,7 +594,7 @@ class PrivacyModeTest extends TestCase
     public function test_consent_mode_declined_records_nothing_and_counts(): void
     {
         config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
-        HookManager::addFilter('core.analytics.visitor_has_consent', fn () => false);
+        $this->consentProviderAnswering(analytics: false);
         $before = app(ExclusionCounter::class)->forDate()['consent'];
 
         ['visit' => $visit, 'result' => $result] = $this->trackOne();
@@ -766,18 +789,24 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * 식별자 추적 허용을 방문자마다 정하는 확장이 있는 사이트를 흉내 냅니다.
+     * 식별자 추적 허용을 방문자마다 정하는 동의 제공자가 있는 사이트를 흉내 냅니다.
      *
-     * 코어는 어느 확장이 답하는지 모른다 — 코어 필터 `core.analytics.tracking_permission` 에 답하는
-     * 구독자가 있는지만 본다. 그래서 필터 하나를 걸어 「그런 확장이 켜진 사이트」를 만든다.
+     * 코어는 어느 확장이 답하는지 모른다 — 운영자가 고른 동의 제공자에게 묻는다. 추적 허용은
+     * 분석·기능 동의 둘 다다.
      *
-     * @param  bool|null  $permitted  이 방문자에게 돌려줄 답 (null 이면 답하지 않음)
+     * @param  bool|null  $permitted  이 방문자에게 돌려줄 답 (null 이면 제공자가 답하지 못함 = unknown)
      * @return void 없음
      */
     private function answerTrackingPermission(?bool $permitted): void
     {
-        HookManager::clearFilter(PrivacyService::TRACKING_PERMISSION_FILTER);
-        HookManager::addFilter(PrivacyService::TRACKING_PERMISSION_FILTER, fn ($default) => $permitted ?? $default);
+        $this->resetConsentProviders();
+        $this->fakeConsentProvider('fake-consent', function () use ($permitted): array {
+            if ($permitted === null) {
+                throw new \RuntimeException('제공자가 답하지 못함');
+            }
+
+            return ['analytics' => $permitted, 'functional' => $permitted];
+        });
 
         $this->privacy = app(PrivacyService::class);
     }
@@ -860,5 +889,60 @@ class PrivacyModeTest extends TestCase
                 $this->assertFalse($visit->is_returning, "{$label}: 쿠키 방식이라 재방문을 판정한다");
             }
         }
+    }
+
+    /**
+     * 정책이 바뀌어 재동의가 필요한 방문자는 동의하지 않은 것으로 본다.
+     *
+     * @scenario mode=consent, consent_provider=active_consented
+     *
+     * @effects consent_mode_with_declined_consent_records_nothing
+     *
+     * @return void 없음
+     */
+    public function test_needs_renewal_counts_as_no_consent(): void
+    {
+        config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
+        $this->consentProviderAnswering(analytics: true, needsRenewal: true);
+
+        $this->assertFalse($this->privacy->hasAnalyticsConsent($this->request(), AnalyticsConfig::fromSettings()));
+    }
+
+    /**
+     * 식별자 추적 허용은 분석 동의만으로는 부족하다 — 기능 동의까지 있어야 한다.
+     *
+     * @scenario mode=full, consent_provider=active_declined
+     *
+     * @effects full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
+     *
+     * @return void 없음
+     */
+    public function test_tracking_requires_analytics_and_functional(): void
+    {
+        $this->consentProviderAnswering(analytics: true, functional: false);
+
+        ['visit' => $visit] = $this->trackOne();
+
+        $this->assertNotNull($visit);
+        $this->assertNull($visit->ip, '기능 동의가 없으면 방문자 쿠키가 지워지므로 익명으로 모은다');
+    }
+
+    /**
+     * 동의 제공자가 둘인데 고르지 않았으면(모호) 동의 모드 방문자는 동의하지 않은 것으로 본다.
+     *
+     * @scenario mode=consent, consent_provider=active_declined
+     *
+     * @effects consent_mode_with_declined_consent_records_nothing
+     *
+     * @return void 없음
+     */
+    public function test_ambiguous_providers_fail_closed(): void
+    {
+        config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
+        $this->fakeConsentProvider('alpha', fn (): array => ['analytics' => true]);
+        $this->fakeConsentProvider('beta', fn (): array => ['analytics' => true]);
+
+        $this->assertSame('provider', $this->privacy->consentSource(), '모호해도 익명으로 내려가지 않는다 — 운영자 확인 대상');
+        $this->assertFalse($this->privacy->hasAnalyticsConsent($this->request(), AnalyticsConfig::fromSettings()));
     }
 }

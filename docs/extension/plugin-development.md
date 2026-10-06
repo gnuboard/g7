@@ -1046,12 +1046,12 @@ public function getPermissions(): array
 
 ### 확장 간 협력 원칙
 
-플러그인이 다른 모듈·플러그인과 함께 동작해야 할 때는 [코어와 확장의 책임 경계](README.md#코어와-확장의-책임-경계)를 따릅니다. 확장끼리는 **훅**으로 협력하고, 다른 확장을 **이름으로** 참조한다면 그 확장을 매니페스트 `dependencies` 에 선언합니다.
+플러그인이 다른 모듈·플러그인과 함께 동작해야 할 때는 [코어와 확장의 책임 경계](README.md#코어와-확장의-책임-경계)를 따릅니다. 확장끼리는 **훅**으로 협력하고, 다른 확장을 **이름으로** 참조한다면 그 확장을 매니페스트에 선언합니다 — 없으면 동작할 수 없으면 `dependencies`, 있으면 연동되고 없어도 동작하면 `integrations` 입니다.
 
 ```text
 ✅ 협력은 훅으로 — 코어가 소유한 계약 훅, 또는 상대 확장이 소유하고 문서화한 훅 키를 구독·호출
-✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하면 dependencies 에 선언
-❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용
+✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키·레이아웃 조각의 target_layout)하면 dependencies 또는 integrations 에 선언
+❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용 · 그 확장 화면에 조각 끼우기
 ```
 
 훅 키가 확장 사이의 계약입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다.
@@ -1118,6 +1118,25 @@ class ReportSyncListener implements HookListenerInterface
 ```
 
 선언하지 않고 협력만 하려면 이름 대신 훅 키만 씁니다 — 상대가 없는 사이트에서는 구독한 훅이 발화하지 않을 뿐입니다.
+
+**선택 연동 (`integrations`)** — 상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에
+탭을 끼우는 알림 플러그인)는 `integrations` 에 선언합니다. 설치를 막지 않고, 관리자 확장 상세의 「함께 쓰면 연동되는 확장」과 확장 문서의
+의존 관계 절에 드러나 결합이 추적됩니다. 레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도
+이름 참조이므로 둘 중 하나에 선언해야 합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면
+결합을 아무도 모릅니다.
+
+```json
+{
+    "integrations": {
+        "modules": ["vendor-sample_shop", "vendor-sample_board"],
+        "plugins": [],
+        "templates": []
+    }
+}
+```
+
+객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사 `extension-undeclared-extension-reference` 는
+`dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 봅니다.
 
 #### 3. 훅 계약 (Hook Contract)
 
@@ -1197,6 +1216,54 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | layout_extensions (확장 지점) | 가능 | 가능 |
 
 ---
+
+### 전역 상태 공개 계약 (state_contracts)
+
+전역 상태(`_global`)는 모든 확장과 템플릿이 함께 씁니다. 다른 확장이 **읽으라고** 내놓는 전역 값은 매니페스트 `state_contracts` 에
+이름·모양·쓰기 허용 주체를 선언합니다. 선언하지 않은 전역 키는 그 확장의 내부 값이라 다른 확장이 기대면 안 됩니다.
+
+```json
+{
+    "state_contracts": {
+        "preferredCurrency": {
+            "description": { "ko": "방문자가 고른 표시 통화 코드", "en": "Display currency chosen by the visitor" },
+            "schema": { "type": "string" },
+            "writers": ["@template"]
+        }
+    }
+}
+```
+
+| 필드 | 의미 |
+| --- | --- |
+| `description` | 다국어 설명 |
+| `schema` | 값 모양(JSON Schema 일부) |
+| `writers` | 소유자 말고 쓸 수 있는 주체. `@template` 은 활성 템플릿, 빈 배열이면 소유자만 쓴다 |
+
+- 코어가 예약한 이름(`consent`·`identityChallenge`·`currentUser`·`settings`·`plugins`·`modules`·`appConfig`)은 선언할 수 없고,
+  다른 활성 확장이 이미 선언한 이름도 선언할 수 없습니다 — 설치·활성화가 막히고 메시지에 소유자가 나옵니다.
+- 브라우저에서는 `G7Core.stateContracts.get(name)` · `list()` · `ownerOf(name)` 로 읽습니다(읽기 전용).
+- 코어의 `plugins`·`modules` 저장소에는 **자기 식별자 하위만** 씁니다(`plugins.{내 식별자}`). 통째로 다시 쓰면 그 사이 다른 확장이 바꾼
+  값을 되돌립니다.
+- 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
+  규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
+
+### 코어 비공개 내부를 쓰지 않는다
+
+확장의 브라우저 코드는 코어의 **공개 API** 만 씁니다. 엔진 내부 구조는 예고 없이 바뀌고, 그때 확장은 오류 없이 조용히 다르게 동작합니다.
+
+| 쓰지 않는다 | 대신 |
+| --- | --- |
+| `window.__templateApp` | `G7Core.state.get()` · `getLocal()` · `subscribe()`(해제 함수를 돌려준다), `G7Core.locale.change()` |
+| `window.__g7ActionContext` · `__g7LayoutContextStack` | 핸들러가 받는 액션 컨텍스트 인자, `G7Core.state.getLocal()` |
+| `localStorage.getItem('auth_token')` 후 직접 Bearer 를 붙인 `fetch('/api/…')` | `G7Core.api.get/post(url, data, config)` — 토큰 부착, 갱신, 401 처리를 코어가 맡는다 |
+| `window.fetch = …` 로 남의 응답 고치기 | 서버 훅(예: 쇼핑몰 `checkout.filter_payment_methods_for_currency`)이나 레이아웃 조각의 데이터소스 |
+| `history.pushState = …` 로 화면 이동 엿보기 | 레이아웃 조각, `G7Core.state.subscribe()` |
+| 주소 문자열 정규식(`/^\/shop\/…/`)으로 화면 판정 | 상태 계약(예: 기본 템플릿 `_global.shopBase`) |
+
+정적 검사 `extension-private-core-internals` 가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
+컴포넌트가 원본을 호출하는 래퍼처럼 정당한 예외는 같은 줄 또는 바로 위 주석 줄에
+`audit:allow extension-private-core-internals reason: <사유>` 를 남깁니다.
 
 ## 플러그인 Artisan 커맨드
 

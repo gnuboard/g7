@@ -81,6 +81,7 @@ class ModuleManager implements ModuleManagerInterface
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesPermissionStructure;
     use Traits\ValidatesSeoVariables;
+    use Traits\ValidatesStateContracts;
     use Traits\ValidatesTranslationPath;
 
     /**
@@ -472,6 +473,9 @@ class ModuleManager implements ModuleManagerInterface
             // SEO 변수명 중복 검증
             $this->validateSeoVariables($module, 'module');
 
+            // 전역 상태 공개 계약 이름 충돌 검증 (#639)
+            $this->validateStateContracts('module:'.$module->getIdentifier(), $module->getStateContracts());
+
             // 모듈 설치 실행
             $module->clearLifecycleFailureReason();
             $result = $module->install();
@@ -654,6 +658,9 @@ class ModuleManager implements ModuleManagerInterface
                 'module'
             );
         }
+
+        // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
+        $this->validateStateContracts('module:'.$module->getIdentifier(), $module->getStateContracts());
 
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
@@ -1269,6 +1276,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $module->getVersion(),
                     'description' => $this->getLocalizedValue($module->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
+                    'integrations' => $this->enrichIntegrations($module->getIntegrations()),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1290,6 +1298,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => true,
@@ -1311,6 +1320,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1383,6 +1393,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $record->version,
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
+                    'integrations' => $this->enrichIntegrations($module->getIntegrations()),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -1523,6 +1534,7 @@ class ModuleManager implements ModuleManagerInterface
             'metadata' => $metadata,
             'requires_core' => $module->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($module->getDependencies()),
+            'integrations' => $this->enrichIntegrations($module->getIntegrations()),
             'permissions' => $module->getPermissions()['categories'] ?? [],
             'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
             'config' => $module->getConfig(),
@@ -1576,6 +1588,7 @@ class ModuleManager implements ModuleManagerInterface
                 'metadata' => $module->getMetadata(),
                 'requires_core' => $module->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($module->getDependencies()),
+                'integrations' => $this->enrichIntegrations($module->getIntegrations()),
                 'permissions' => $module->getPermissions()['categories'] ?? [],
                 'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
                 'config' => $module->getConfig(),
@@ -1604,6 +1617,7 @@ class ModuleManager implements ModuleManagerInterface
             'metadata' => $metadata,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+            'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
             'permissions' => $metadata['permissions']['categories'] ?? $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
             'config' => $metadata['config'] ?? [],
@@ -1812,6 +1826,17 @@ class ModuleManager implements ModuleManagerInterface
     protected function enrichDependencies(array $dependencies): array
     {
         return DependencyEnricher::enrich($dependencies);
+    }
+
+    /**
+     * 선택 연동 선언(`integrations`)을 화면 표시용으로 보강합니다 (#639).
+     *
+     * @param  mixed  $integrations  manifest 의 integrations 값
+     * @return array<int, array<string, mixed>> 보강된 연동 목록
+     */
+    protected function enrichIntegrations(mixed $integrations): array
+    {
+        return DependencyEnricher::enrichIntegrations($integrations);
     }
 
     /**

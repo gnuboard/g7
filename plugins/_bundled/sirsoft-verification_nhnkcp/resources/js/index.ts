@@ -471,17 +471,9 @@ function isChallengeConsumed(challengeId?: string): boolean {
 async function reportAbandonedChallenge(challengeId?: string): Promise<void> {
     if (!challengeId) return;
 
-    const token = getG7Core()?.api?.getToken?.() ?? null;
-
+    // Bearer 부착·401 처리는 코어 API 클라이언트가 맡는다 — 토큰을 꺼내 헤더를 직접 만들지 않는다.
     try {
-        await fetch(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                Accept: 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        });
+        await getG7Core()?.api?.post?.(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`);
     } catch (e) {
         logger.warn('이탈 거래 취소 통보 실패 (재시도 흐름에는 영향 없음)', e);
     }
@@ -503,29 +495,10 @@ async function reissueChallenge(current: Record<string, any>): Promise<Record<st
     if (current.target) body.target = current.target;
 
     try {
-        const token = G7Core?.api?.getToken?.() ?? null;
-        const locale = (() => {
-            try {
-                return window.localStorage?.getItem('g7_locale');
-            } catch {
-                return null;
-            }
-        })();
-
-        const res = await fetch('/api/identity/challenges', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                ...(locale ? { 'Accept-Language': locale } : {}),
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(body),
-        });
-
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.success) {
+        // 코어 API 클라이언트로 보낸다 — Bearer 부착·401 처리·운영자 로케일(Accept-Language)은 코어가 맡는다.
+        // 4xx·5xx 는 예외로 던지므로 아래 catch 가 실패로 처리한다.
+        const json = await G7Core?.api?.post?.('/api/identity/challenges', body);
+        if (!json?.success) {
             logger.error('challenge 재발급 실패', json);
             return null;
         }

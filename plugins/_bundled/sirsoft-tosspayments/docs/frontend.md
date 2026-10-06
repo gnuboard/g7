@@ -91,11 +91,14 @@
 컴포넌트와 §레이아웃 확장 조각만으로 구성됩니다.
 <!-- @intent END -->
 
-### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
+### 관리자 결제수단 설정의 브랜드 표시는 카탈로그 선언이 단일 출처다
 
-관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
-`data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+간편결제 수단(토스페이·카카오페이·네이버페이·페이코·삼성페이)의 브랜드 배지 색·글자는
+`RegisterTossPaymentMethodsListener` 가 결제수단 카탈로그에 `brand_mark` 로 선언하고, 이커머스가 그 값을
+`_cached_brand_mark` 로 실어 화면에 내려준다. 그 값을 그리는 일은 화면을 소유한 쪽(이커머스 관리자 화면·
+사용자 템플릿 주문서)이 한다. 이 플러그인은 남의 화면 DOM 을 고치지 않고 `history.pushState`·`replaceState`
+를 덮어쓰지 않는다 — 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀌고, 엔진이 화면 이동 방식을
+바꾸면 조용히 깨진다.
 
 ## 결제창 닫힘 보고의 소유자 증명
 
@@ -104,11 +107,16 @@
 실패·취소로 바꾸므로 서버가 **주문 소유자만** 받아 준다(KVE-2026-2434). 주문자 이메일·전화번호는
 제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
 
-- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
-- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣고 401 을 처리한다 — 호출부는 아무것도 붙이지 않는다.
+- 비회원: 쇼핑몰 공개 상태 계약 `_global.guestOrderToken`(사용자 템플릿이 주문 생성·조회 응답의 토큰을 올린다)을
+  `X-Guest-Order-Token` 헤더로 싣는다. 회원 주문은 서버가 이 헤더를 보지 않으므로 토큰이 있으면 그대로 싣는다.
 
-헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
-상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
-토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
-결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만들고, 결제 취소 기록
+(`requestPayment`)도 같은 함수를 쓴다. 브라우저 저장소의 로그인 토큰이나 템플릿의 저장소 키를 직접 읽지 않는다.
+요청은 언제나 `G7Core.api` 로 보낸다 — 코어 클라이언트를 우회하는 `fetch` 폴백은 없다.
+
+플러그인 스크립트는 화면 초기화(템플릿의 init_actions)보다 먼저 실행되므로, 보고는 템플릿이
+`_global.guestOrderToken` 키를 세울 때까지 기다린다(`waitForGuestOrderTokenContract()`, 100ms 간격 최대 5초).
+키를 세우지 않는 템플릿이면 상한 뒤 헤더 없이 보낸다. 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은
+그대로 진행한다 — 결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
 <!-- @intent END -->

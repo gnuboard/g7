@@ -3,8 +3,8 @@
  * @description 마이페이지 주문 상세 › KG이니시스 영수증 링크가 플러그인 API 주소를 쓰는지 테스트
  *
  * 링크 주소(iniweb.inicis.com …)를 조각에 글자 그대로 적으면 레이아웃 편집기 저장 게이트(외부 URL 금지)가
- * 이 조각을 거절한다. 그래서 조각은 마운트 때 영수증 조회 API 를 불러 `receipt_url` 을 로컬 상태에
- * 담고 그 값으로 링크를 그린다. 회원은 토큰(auth_mode=optional), 비회원은 조회 토큰 헤더로 같은 API 를 부른다.
+ * 이 조각을 거절한다. 그래서 조각은 마운트 때 영수증 조회 API 를 불러 응답을 로컬 상태(`_kgReceipt`)에
+ * 담고 그 응답의 `receipt_url` 로 링크를 그린다. 회원은 토큰(auth_mode=optional), 비회원은 조회 토큰 헤더로 같은 API 를 부른다.
  * 설치되는 조각 원본(JSON)과 저작본(.g7.html)을 함께 보고, 엔진 바인딩으로 링크 주소를 풀어 확인한다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_kginicis/tests/scenarios/mypage-receipt-link-from-api.yaml
@@ -18,7 +18,8 @@ import { DataBindingEngine } from '../../../../../../../resources/js/core/templa
 import extensionLayout from '../../../extensions/user_order_show.json';
 
 const MARKUP_PATH = path.resolve(__dirname, '../../../extensions/user_order_show.g7.html');
-const LOCAL_KEY = '_kgReceiptUrl';
+/** 영수증 조회 응답(data)을 통째로 담는 로컬 상태 키 — 같은 응답으로 간편결제 이름·입금 안내도 그린다 */
+const LOCAL_KEY = '_kgReceipt';
 const RECEIPT_URL = 'https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp?noTid=INI_TID_TEST&noMethod=1';
 
 type Node = Record<string, unknown>;
@@ -85,7 +86,7 @@ function mountCall(): Node {
  */
 function renderLink(receiptUrl: string | undefined): { href: unknown; visible: boolean } {
   const link = receiptLink();
-  const context = { _local: receiptUrl === undefined ? {} : { [LOCAL_KEY]: receiptUrl } };
+  const context = { _local: receiptUrl === undefined ? {} : { [LOCAL_KEY]: { receipt_url: receiptUrl } } };
   const engine = new DataBindingEngine();
 
   return {
@@ -111,7 +112,7 @@ describe('마이페이지 KG이니시스 영수증 링크', () => {
     const call = mountCall();
     expect(call.auth_required).toBe(true);
     expect(call.auth_mode).toBe('optional');
-    expect((call.onSuccess as Node).params).toMatchObject({ target: 'local', [LOCAL_KEY]: '{{response.data.receipt_url}}' });
+    expect((call.onSuccess as Node).params).toMatchObject({ target: 'local', [LOCAL_KEY]: '{{response.data}}' });
 
     expect(renderLink(RECEIPT_URL)).toEqual({ href: RECEIPT_URL, visible: true });
   });

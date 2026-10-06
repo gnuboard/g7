@@ -5,6 +5,7 @@ namespace App\Http\Requests\Settings;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\PasswordExpiryAction;
 use App\Enums\PasswordExpiryScope;
+use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
@@ -171,6 +172,7 @@ class SaveSettingsRequest extends FormRequest
         $this->normalizeIpRestrictionLists();
         $this->normalizePrivacyIntegerFields();
         $this->normalizeSecurityIntegerFields();
+        $this->normalizeConsentProvider();
     }
 
     /**
@@ -211,6 +213,27 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
+     * 동의 관리 제공자 선택값의 빈 값을 빈 문자열로 되돌립니다.
+     *
+     * 전역 `ConvertEmptyStringsToNull` 이 「자동」(빈 문자열)을 null 로 바꾼다. 그대로 저장하면
+     * `privacy.json` 에 null 이 남아 기본값("")과 타입이 갈린다(선례: `UpdateSettingRequest`).
+     *
+     * @return void
+     */
+    private function normalizeConsentProvider(): void
+    {
+        $privacy = $this->input('privacy');
+
+        if (! is_array($privacy) || ! array_key_exists('consent_provider', $privacy)) {
+            return;
+        }
+
+        if ($privacy['consent_provider'] === null) {
+            $this->merge(['privacy' => array_merge($privacy, ['consent_provider' => ''])]);
+        }
+    }
+
+    /**
      * 보안 탭 비밀번호 정책 정수 키의 검증 규칙을 반환합니다.
      *
      * 경계는 `config('core.settings_limits.security_{key}_min|_max')` 가 SSoT 다 — 화면(`_meta.limits`)과
@@ -227,6 +250,32 @@ class SaveSettingsRequest extends FormRequest
             'min:'.config("core.settings_limits.security_{$key}_min"),
             'max:'.config("core.settings_limits.security_{$key}_max"),
         ];
+    }
+
+    /**
+     * 동의 관리 제공자 선택값 규칙을 반환합니다.
+     *
+     * 허용: 등록된 제공자 id(수집을 꺼 둔 제공자 포함) 또는 지금 저장된 값. 빈 값은 규칙을 타지 않는다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function consentProviderRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            if (array_key_exists($value, app(ConsentManager::class)->registered())) {
+                return;
+            }
+
+            if ($value === app(ConsentManager::class)->configuredProviderId()) {
+                return;
+            }
+
+            $fail(__('validation.settings.privacy_consent_provider_unknown'));
+        };
     }
 
     /**
@@ -655,6 +704,10 @@ class SaveSettingsRequest extends FormRequest
 
             // 개인정보 보유기간·휴면 — 전 항목 기본 꺼짐. 토글은 false 가 정상값이라 required 를 붙이지 않는다.
             // 기간 하한을 1일로 두는 것은 0 을 허용하면 "켠 즉시 전원 대상" 이 되기 때문이다.
+            // 동의 관리 제공자 — 빈 값(자동), 등록된 제공자 id(수집을 꺼 둔 제공자 포함), 또는 지금 저장된 값.
+            // 저장된 값을 허용하는 이유: 고른 제공자가 비활성화된(missing) 상태에서 다른 칸만 고쳐 저장할 때
+            // 화면이 옛 id 를 그대로 다시 보내므로, 그것까지 막으면 개인정보 탭 저장 전체가 422 로 막힌다.
+            'privacy.consent_provider' => ['nullable', 'string', 'max:100', $this->consentProviderRule()],
             'privacy.withdrawn_retention_enabled' => ['nullable', 'boolean'],
             'privacy.withdrawn_retention_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
             'privacy.dormant_enabled' => ['nullable', 'boolean'],
@@ -1511,6 +1564,7 @@ class SaveSettingsRequest extends FormRequest
             'identity.challenge_ttl_minutes' => __('validation.attributes.identity_challenge_ttl_minutes'),
             'identity.max_attempts' => __('validation.attributes.identity_max_attempts'),
             // 개인정보 보유기간·휴면 필드
+            'privacy.consent_provider' => __('validation.attributes.privacy_consent_provider'),
             'privacy.withdrawn_retention_enabled' => __('validation.attributes.privacy_withdrawn_retention_enabled'),
             'privacy.withdrawn_retention_days' => __('validation.attributes.privacy_withdrawn_retention_days'),
             'privacy.dormant_enabled' => __('validation.attributes.privacy_dormant_enabled'),

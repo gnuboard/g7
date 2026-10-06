@@ -33,7 +33,10 @@ describe('AuthManager', () => {
   });
 
   describe('싱글톤 패턴', () => {
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=singleton
+     * @effects auth_manager_session_lifecycle, single_instance_is_shared
+     */
     it('항상 동일한 인스턴스를 반환해야 합니다', () => {
       const instance1 = AuthManager.getInstance();
       const instance2 = AuthManager.getInstance();
@@ -42,7 +45,10 @@ describe('AuthManager', () => {
   });
 
   describe('checkAuth', () => {
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=check_auth
+     * @effects auth_manager_session_lifecycle, check_auth_reflects_server_session
+     */
     it('토큰이 없으면 false를 반환해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue(null);
 
@@ -52,7 +58,10 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=check_auth
+     * @effects auth_manager_session_lifecycle, check_auth_reflects_server_session
+     */
     it('유효한 토큰이면 true를 반환하고 사용자 정보를 저장해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -74,7 +83,10 @@ describe('AuthManager', () => {
       expect(authManager.getAuthType()).toBe('admin');
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=check_auth
+     * @effects auth_manager_session_lifecycle, check_auth_reflects_server_session
+     */
     it('관리자 인증과 일반 사용자 인증을 구분해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue('valid-token');
       mockApiClient.get.mockResolvedValue({
@@ -95,7 +107,10 @@ describe('AuthManager', () => {
       expect(mockApiClient.get).toHaveBeenCalledWith('/auth/user');
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=check_auth
+     * @effects auth_manager_session_lifecycle, check_auth_reflects_server_session
+     */
     it('API 호출 실패 시 false를 반환해야 합니다', async () => {
       mockApiClient.getToken.mockReturnValue('valid-token');
       mockApiClient.get.mockRejectedValue(new Error('Network error'));
@@ -118,7 +133,10 @@ describe('AuthManager', () => {
       await authManager.checkAuth('admin');
     });
 
-    /** @effects auth_manager_token_refresh */
+    /**
+     * @scenario surface=token_refresh
+     * @effects auth_manager_token_refresh, token_refresh_is_shared_and_reported
+     */
     it('토큰 갱신이 성공하면 true를 반환해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -131,7 +149,10 @@ describe('AuthManager', () => {
       expect(mockApiClient.setToken).toHaveBeenCalledWith('new-token');
     });
 
-    /** @effects auth_manager_token_refresh */
+    /**
+     * @scenario surface=token_refresh
+     * @effects auth_manager_token_refresh, token_refresh_is_shared_and_reported
+     */
     it('토큰 갱신이 실패하면 false를 반환해야 합니다', async () => {
       mockApiClient.post.mockRejectedValue(new Error('Refresh failed'));
 
@@ -140,7 +161,10 @@ describe('AuthManager', () => {
       expect(result).toBe(false);
     });
 
-    /** @effects auth_manager_token_refresh */
+    /**
+     * @scenario surface=token_refresh
+     * @effects auth_manager_token_refresh, token_refresh_is_shared_and_reported
+     */
     it('동시 갱신 요청은 하나의 요청으로 처리해야 합니다', async () => {
       mockApiClient.post.mockImplementation(() =>
         new Promise(resolve =>
@@ -164,7 +188,10 @@ describe('AuthManager', () => {
       expect(mockApiClient.post).toHaveBeenCalledTimes(1);
     });
 
-    /** @effects auth_manager_token_refresh */
+    /**
+     * @scenario surface=token_refresh
+     * @effects auth_manager_token_refresh, token_refresh_is_shared_and_reported
+     */
     it('인증 타입이 없으면 false를 반환해야 합니다', async () => {
       // 인스턴스 리셋하여 인증 타입 없음
       AuthManager.resetInstance();
@@ -177,14 +204,20 @@ describe('AuthManager', () => {
   });
 
   describe('getLoginRedirectUrl', () => {
-    /** @effects auth_manager_redirect_urls */
+    /**
+     * @scenario surface=redirect
+     * @effects auth_manager_redirect_urls, login_redirect_url_is_built_safely
+     */
     it('관리자 로그인 URL에 redirect 파라미터를 포함해야 합니다', () => {
       const url = authManager.getLoginRedirectUrl('admin', '/admin/dashboard');
 
       expect(url).toBe('/admin/login?redirect=%2Fadmin%2Fdashboard');
     });
 
-    /** @effects auth_manager_redirect_urls */
+    /**
+     * @scenario surface=redirect
+     * @effects auth_manager_redirect_urls, login_redirect_url_is_built_safely
+     */
     it('일반 사용자 로그인 URL에 redirect 파라미터를 포함해야 합니다', () => {
       const url = authManager.getLoginRedirectUrl('user', '/profile');
 
@@ -193,7 +226,10 @@ describe('AuthManager', () => {
   });
 
   describe('getRedirectUrl', () => {
-    /** @effects auth_manager_redirect_urls */
+    /**
+     * @scenario surface=redirect
+     * @effects auth_manager_redirect_urls, login_redirect_url_is_built_safely
+     */
     it('URL 파라미터에서 redirect 값을 읽어야 합니다', () => {
       // URL 파라미터 설정
       Object.defineProperty(window, 'location', {
@@ -208,7 +244,10 @@ describe('AuthManager', () => {
       expect(url).toBe('/admin/dashboard');
     });
 
-    /** @effects auth_manager_redirect_urls */
+    /**
+     * @scenario surface=redirect
+     * @effects auth_manager_redirect_urls, login_redirect_url_is_built_safely
+     */
     it('redirect 파라미터가 없으면 기본 경로를 반환해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: {
@@ -224,7 +263,10 @@ describe('AuthManager', () => {
       expect(userUrl).toBe('/');
     });
 
-    /** @effects auth_manager_redirect_urls */
+    /**
+     * @scenario surface=redirect
+     * @effects auth_manager_redirect_urls, login_redirect_url_is_built_safely
+     */
     it('외부 URL은 무시하고 기본 경로를 반환해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: {
@@ -250,7 +292,10 @@ describe('AuthManager', () => {
       await authManager.checkAuth('admin');
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=logout
+     * @effects auth_manager_session_lifecycle, logout_clears_session_and_redirects
+     */
     it('로그아웃 시 토큰과 사용자 정보를 삭제해야 합니다', async () => {
       // window.location.href mock
       const locationMock = { href: '' };
@@ -268,7 +313,10 @@ describe('AuthManager', () => {
       expect(authManager.getUser()).toBeNull();
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=logout
+     * @effects auth_manager_session_lifecycle, logout_clears_session_and_redirects
+     */
     it('로그아웃 이벤트를 발생시켜야 합니다', async () => {
       const locationMock = { href: '' };
       Object.defineProperty(window, 'location', {
@@ -286,7 +334,10 @@ describe('AuthManager', () => {
       expect(logoutHandler).toHaveBeenCalled();
     });
 
-    /** @effects auth_manager_session_lifecycle */
+    /**
+     * @scenario surface=logout
+     * @effects auth_manager_session_lifecycle, logout_clears_session_and_redirects
+     */
     it('로그아웃 후 로그인 페이지로 리다이렉트해야 합니다', async () => {
       // logout 구현이 returnUrl(`${pathname}${search}`) 을 redirect 쿼리로 포함하므로
       // mock 에 pathname/search 를 제공해야 URL 조립이 정상 동작
@@ -305,7 +356,10 @@ describe('AuthManager', () => {
   });
 
   describe('login', () => {
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('로그인 성공 시 토큰을 저장하고 사용자 정보를 반환해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -332,7 +386,10 @@ describe('AuthManager', () => {
       expect(authManager.getUser()).toEqual(mockUser);
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('로그인 실패 시 에러를 throw해야 합니다', async () => {
       mockApiClient.post.mockRejectedValue(new Error('Invalid credentials'));
 
@@ -346,7 +403,10 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('options.headers가 있으면 ApiClient.post에 전달해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -375,7 +435,10 @@ describe('AuthManager', () => {
       );
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('options가 없으면 ApiClient.post에 config를 전달하지 않아야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -403,7 +466,10 @@ describe('AuthManager', () => {
       );
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('2단계 인증 응답에서는 토큰을 저장하지 않고 challenge 를 돌려줘야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -433,7 +499,10 @@ describe('AuthManager', () => {
       expect(authManager.isAuthenticated()).toBe(false);
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('updateConfig 로 바꾼 loginEndpoint 를 사용해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -451,7 +520,10 @@ describe('AuthManager', () => {
       );
     });
 
-    /** @effects login_result_discriminates_response_forms */
+    /**
+     * @scenario surface=login
+     * @effects login_result_discriminates_response_forms, login_establishes_session_or_returns_challenge
+     */
     it('네트워크 오류의 code 를 보존해야 합니다', async () => {
       const networkError: any = new Error('Network Error');
       networkError.code = 'ERR_NETWORK';
@@ -465,7 +537,10 @@ describe('AuthManager', () => {
   });
 
   describe('completeTwoFactor', () => {
-    /** @effects two_factor_completion_returns_login_result */
+    /**
+     * @scenario surface=two_factor
+     * @effects two_factor_completion_returns_login_result, two_factor_completes_or_resends_challenge
+     */
     it('코드 확인에 성공하면 토큰을 저장하고 로그인 상태가 되어야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
@@ -498,7 +573,10 @@ describe('AuthManager', () => {
       expect(loginHandler).toHaveBeenCalled();
     });
 
-    /** @effects two_factor_completion_returns_login_result */
+    /**
+     * @scenario surface=two_factor
+     * @effects two_factor_completion_returns_login_result, two_factor_completes_or_resends_challenge
+     */
     it('관리자 타입은 관리자 전용 엔드포인트를 사용해야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -517,7 +595,10 @@ describe('AuthManager', () => {
       );
     });
 
-    /** @effects two_factor_completion_returns_login_result */
+    /**
+     * @scenario surface=two_factor
+     * @effects two_factor_completion_returns_login_result, two_factor_completes_or_resends_challenge
+     */
     it('실패 시 서버 메시지를 실은 에러를 throw 해야 합니다', async () => {
       const error: any = new Error('Request failed');
       error.response = { status: 401, data: { message: '인증번호가 올바르지 않습니다.' } };
@@ -745,7 +826,10 @@ describe('AuthManager', () => {
   });
 
   describe('resendTwoFactor', () => {
-    /** @effects two_factor_resend_replaces_challenge */
+    /**
+     * @scenario surface=two_factor
+     * @effects two_factor_resend_replaces_challenge, two_factor_completes_or_resends_challenge
+     */
     it('새 challenge 를 돌려주고 토큰은 건드리지 않아야 합니다', async () => {
       mockApiClient.post.mockResolvedValue({
         success: true,
@@ -772,6 +856,137 @@ describe('AuthManager', () => {
         undefined
       );
       expect(mockApiClient.setToken).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * #639 — 구독 해제와 인증 경계 이벤트.
+   *
+   * 확장은 엔진보다 늦게 실리므로 `on()` 이 해제 함수를 돌려주지 않으면 화면을 떠나도 리스너가
+   * 남는다. 토큰 만료로 인증 확인이 실패해 비인증으로 바뀔 때 이벤트가 없으면, 인증 상태에 묶인
+   * 캐시(동의 스냅샷 등)를 비울 기회가 없다.
+   */
+  describe('구독 해제와 인증 경계 이벤트 (#639)', () => {
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('on() 은 해제 함수를 돌려주고, 해제 뒤에는 호출되지 않는다', async () => {
+      const handler = vi.fn();
+      const off = authManager.on('authStateChange', handler);
+
+      expect(typeof off).toBe('function');
+
+      off();
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: { id: 1, name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('off(event, handler) 로도 해제할 수 있다', async () => {
+      const handler = vi.fn();
+      authManager.on('authStateChange', handler);
+      authManager.off('authStateChange', handler);
+
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: { id: 1, name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('getState() 는 현재 상태의 사본을 돌려준다', async () => {
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: { id: 7, uuid: 'u-7', name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      const snapshot = authManager.getState();
+      expect(snapshot).toEqual({ isAuthenticated: true, user: expect.objectContaining({ id: 7 }), type: 'user' });
+
+      (snapshot as { isAuthenticated: boolean }).isAuthenticated = false;
+      expect(authManager.isAuthenticated()).toBe(true);
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('인증 상태에서 인증 확인이 실패해 비인증이 되면 authStateChange 를 발행한다', async () => {
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValueOnce({ success: true, data: { id: 1, name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      const handler = vi.fn();
+      authManager.on('authStateChange', handler);
+
+      mockApiClient.getToken.mockReturnValue(null);
+      await authManager.checkAuth('user');
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(expect.objectContaining({ isAuthenticated: false, user: null }));
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('비인증 전환을 받은 구독자가 예외를 던져도 인증 확인은 false 로 끝난다', async () => {
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValueOnce({ success: true, data: { id: 1, name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      authManager.on('authStateChange', () => {
+        throw new Error('listener boom');
+      });
+
+      mockApiClient.getToken.mockReturnValue(null);
+      await expect(authManager.checkAuth('user')).resolves.toBe(false);
+      expect(authManager.isAuthenticated()).toBe(false);
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('getState() 의 user 도 사본이라 바꿔도 내부 상태가 그대로다', async () => {
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: { id: 7, uuid: 'u-7', name: 'U', email: 'u@example.com' } });
+      await authManager.checkAuth('user');
+
+      const snapshot = authManager.getState();
+      (snapshot.user as { name: string }).name = 'changed';
+
+      expect(authManager.getUser()?.name).toBe('U');
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('비인증 상태에서 다시 비인증이 되면 발행하지 않는다', async () => {
+      const handler = vi.fn();
+      authManager.on('authStateChange', handler);
+
+      mockApiClient.getToken.mockReturnValue(null);
+      await authManager.checkAuth('user');
+      await authManager.checkAuth('user');
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    // @scenario surface=subscription
+    // @effects auth_listeners_are_releasable_and_boundary_is_emitted
+    it('logout() 은 authStateChange 를 한 번만 발행한다', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { href: '', pathname: '/', search: '' },
+        writable: true,
+      });
+      mockApiClient.getToken.mockReturnValue('valid-token');
+      mockApiClient.get.mockResolvedValue({ success: true, data: { id: 1, name: 'U', email: 'u@example.com' } });
+      mockApiClient.post.mockResolvedValue({ success: true });
+      await authManager.checkAuth('user');
+
+      const handler = vi.fn();
+      authManager.on('authStateChange', handler);
+      await authManager.logout();
+
+      expect(handler).toHaveBeenCalledTimes(1);
     });
   });
 });

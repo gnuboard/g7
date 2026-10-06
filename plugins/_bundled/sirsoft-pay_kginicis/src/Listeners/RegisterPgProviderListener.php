@@ -109,17 +109,20 @@ class RegisterPgProviderListener implements HookListenerInterface
                 : 'https://stdpay.inicis.com/stdjs/INIStdPay.js',
             // 보안: PG 로 보내는 결과·통보 주소(returnUrl·closeUrl·P_NEXT_URL·P_NOTI_URL·notiUrl)와 같은 출처 API —
             // 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL 을 내려 준다.
+            // 브라우저가 G7Core.api 로 직접 부르는 주소(signature·close_report·cbt_checkout_token·cbt_hash_data·
+            // mobile_signature)는 API 라우트(src/routes/api.php)다 — 절대 URL 에는 ApiClient 가 /api 를 붙이지
+            // 않으므로 /api 를 포함해 내려 준다(#639).
             'callback_urls' => [
-                'signature' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/signature'),
-                'close_report' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/close-report'),
+                'signature' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/signature'),
+                'close_report' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/close-report'),
                 'callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/callback'),
                 'close' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/close'),
-                'cbt_checkout_token' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token'),
-                'cbt_hash_data' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data'),
+                'cbt_checkout_token' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token'),
+                'cbt_hash_data' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data'),
                 'cbt_callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/callback'),
                 'cbt_cvs_notify' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
                 'cbt_auth_url' => $isTest ? self::CBT_AUTH_URL_TEST : self::CBT_AUTH_URL_LIVE,
-                'mobile_signature' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/signature'),
+                'mobile_signature' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/mobile/signature'),
                 'mobile_callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/callback'),
                 'mobile_vbank_notify' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
             ],

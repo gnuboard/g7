@@ -32,8 +32,8 @@
                 <success>
                   <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}" :gdprPreferencesOpen="false" gdprConsent="{{(gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, [c.key]: c.required === true }), {})}}"/>
                   <refetch-data-source dataSourceId="gdprMyConsent"/>
-                  <!-- 자동 차단 엔진 동의 메모리 캐시 갱신 + rescan -->
-                  <action handler="sirsoft-gdpr.syncConsent"/>
+                  <!-- 코어 동의 런타임 재조회 — consent:changed 로 자동 차단 엔진 캐시 갱신 + rescan -->
+                  <action handler="refreshConsent"/>
                   <!-- 거부 전용 토스트 (이슈 #430) — 거부인데 '동의가 저장' 문구가 뜨던 오표기 수정. -->
                   <toast type="success" message="$t:sirsoft-gdpr.consent.rejected_saved"/>
                 </success>
@@ -82,8 +82,8 @@
                 <success>
                   <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}" :gdprPreferencesOpen="false" gdprConsent="{{(gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, [c.key]: true }), {})}}"/>
                   <refetch-data-source dataSourceId="gdprMyConsent"/>
-                  <!-- 자동 차단 엔진 동의 메모리 캐시 갱신 + rescan -->
-                  <action handler="sirsoft-gdpr.syncConsent"/>
+                  <!-- 코어 동의 런타임 재조회 — consent:changed 로 자동 차단 엔진 캐시 갱신 + rescan -->
+                  <action handler="refreshConsent"/>
                   <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
                 </success>
                 <fail>
@@ -138,7 +138,7 @@
                   <success>
                     <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}" :gdprPreferencesOpen="false"/>
                     <refetch-data-source dataSourceId="gdprMyConsent"/>
-                    <action handler="sirsoft-gdpr.syncConsent"/>
+                    <action handler="refreshConsent"/>
                     <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
                   </success>
                   <fail>

@@ -1,0 +1,26 @@
+feature: KG이니시스 결제 통화별 결제수단 제한 — 쇼핑몰 서버 훅에 답한다 (#639 ⑤, 결정 D17)
+
+description: |
+  쇼핑몰 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 에 답해, 주문서 표시(체크아웃 응답
+  `allowed_payment_methods`)와 주문 생성 검증(422)이 같은 판정을 쓰게 한다. 예전 브라우저 제한기(주문서 응답 변조,
+  그려진 버튼 숨김)는 직접 POST 로 우회됐고, 쇼핑몰 경로가 `/shop` 이 아니면 아예 동작하지 않았다.
+
+    엔화 + 운영자 제한 켬   이니시스 수단 중 card·PayPay·편의점 외 제외
+    엔화 + 제한 끔         제외 없음
+    엔화 외                일본 전용(PayPay·편의점) 제외
+    다른 플러그인 수단      판정하지 않음
+
+axes:
+  currency: [jpy, krw]
+  restrict: [on, off]
+
+exclusions:
+  - { currency: krw, restrict: on, reason: "엔화 외 판정은 토글과 무관하다 — off 행이 같은 경로를 덮는다" }
+
+effects:
+  - jpy_keeps_only_allowed_inicis_methods
+  - jpy_restriction_follows_operator_toggle
+  - non_jpy_hides_japan_only_methods
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestrictPaymentMethodsForCurrencyListenerTest.php

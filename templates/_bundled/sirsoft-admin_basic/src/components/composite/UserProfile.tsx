@@ -46,7 +46,7 @@ export interface UserProfileProps {
   onProfileClick?: () => void;
   onLogoutClick?: () => void;
   className?: string;
-  /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout). 동일 출처일 때만 토큰을 싣는다 */
+  /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
   logoutEndpoint?: string;
   /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login). 동일 출처가 아니면 기본값으로 이동한다 */
   redirectPath?: string;
@@ -123,26 +123,22 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   }, []);
 
   /**
-   * 쿠키에서 XSRF 토큰 읽기
+   * 로그인 토큰 제거 — 코어 ApiClient 가 토큰 저장을 맡으므로 공개 API 로 지운다
    */
-  const getXsrfToken = (): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; XSRF-TOKEN=`);
-    if (parts.length === 2) {
-      return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+  const clearAuthToken = (): void => {
+    const api = (window as any).G7Core?.api;
+    if (typeof api?.removeToken === 'function') {
+      api.removeToken();
+      return;
     }
-    return null;
-  };
-
-  /**
-   * 로컬 스토리지에서 Bearer 토큰 읽기
-   */
-  const getBearerToken = (): string | null => {
-    return localStorage.getItem('auth_token');
+    // 코어 미초기화 폴백 — 토큰이 남아 로그아웃 뒤에도 로그인 상태로 보이지 않게 한다
+    localStorage.removeItem('auth_token');
   };
 
   /**
    * 로그아웃 처리
+   *
+   * 요청은 코어 `G7Core.api` 로 보낸다 — Bearer·XSRF 첨부와 교차 출처 대상의 토큰 제외를 코어가 맡는다.
    */
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -160,42 +156,27 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         return;
       }
 
-      // 토큰은 동일 출처 대상에만 싣는다 — 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를
-      // 만들 수 있고, 그대로 실으면 관리자 토큰이 그 주소로 간다(KVE-2026-2350)
-      const sameOrigin = isSameOriginRequest(logoutEndpoint);
-      if (!sameOrigin) {
+      // 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를 만들 수 있다. 토큰은 코어가 동일 출처
+      // 대상에만 싣지만(KVE-2026-2350), 교차 출처 주소가 들어온 사실은 남긴다
+      if (!isSameOriginRequest(logoutEndpoint)) {
         logger.warn('교차 출처 로그아웃 주소라 인증 정보를 싣지 않습니다.', logoutEndpoint);
       }
-      const xsrfToken = sameOrigin ? getXsrfToken() : null;
-      const bearerToken = sameOrigin ? getBearerToken() : null;
 
-      // API 호출
-      const response = await fetch(logoutEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
-          ...(bearerToken && { Authorization: `Bearer ${bearerToken}` }),
-        },
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        // 로그아웃 성공 - 로컬 스토리지에서 토큰 제거
-        localStorage.removeItem('auth_token');
-        // 로그인 페이지로 리다이렉션
-        window.location.href = safeRedirectPath;
-      } else {
-        logger.error('로그아웃 실패:', response.statusText);
-        // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
-        localStorage.removeItem('auth_token');
-        window.location.href = safeRedirectPath;
+      const api = (window as any).G7Core?.api;
+      if (typeof api?.post !== 'function') {
+        throw new Error('G7Core.api is not available');
       }
+
+      // API 호출 — 실패(4xx·5xx)는 예외로 떨어진다
+      await api.post(logoutEndpoint);
+
+      // 로그아웃 성공 - 토큰 제거 후 로그인 페이지로 리다이렉션
+      clearAuthToken();
+      window.location.href = safeRedirectPath;
     } catch (error) {
       logger.error('로그아웃 오류:', error);
-      // 에러 발생 시에도 토큰 제거 및 로그인 페이지로 이동
-      localStorage.removeItem('auth_token');
+      // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
+      clearAuthToken();
       window.location.href = safeRedirectPath;
     } finally {
       setIsLoggingOut(false);

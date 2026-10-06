@@ -266,6 +266,14 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 | `type` | "admin" 또는 "user" |
 | `locales` | 지원 언어 배열 (`config('app.supported_locales')`와 매칭) |
 
+### 공개 전역 상태와 선택 연동 (state_contracts · integrations)
+
+템플릿도 다른 확장이 읽으라고 내놓는 전역 값을 `state_contracts` 로 선언하고(예: 기본 템플릿의 `shopBase` — 쇼핑몰 경로),
+있으면 연동되는 확장을 `integrations` 로 선언합니다. 형식과 규칙은 플러그인과 같습니다 —
+[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts),
+[선택 연동](plugin-development.md#2-의존성-dependency). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
+교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
+
 ### 외부 리소스 (externals)
 
 `externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.

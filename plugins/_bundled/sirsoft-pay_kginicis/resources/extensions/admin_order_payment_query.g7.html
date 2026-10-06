@@ -473,7 +473,11 @@
       <div data-if="{{_local._dncf_error}}" class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._dncf_error}}</div>
     </div>
   </inject>
-  <!-- 이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너의 근거이기도 하다 -->
+  <inject target-id="payment_method_block_{{payIdx}}" position="append_child">
+    <!-- 결제 정보 카드의 결제수단 칸에 간편결제 이름을 한 줄 덧붙인다. 칸은 이커머스가 약속한 id(payment_method_block_{결제 순번})로만 찾는다 — 칸이 결제 건 반복 안에 있어 저작 id 가 순번 표현식 그대로다. 칸 값(결제수단 이름)은 이커머스 소유라 바꾸지 않는다. 결제 상태 응답(kginicis_status)이 이 주문의 이니시스 결제 하나를 조회하므로 이니시스 결제 칸에만 붙인다. 예전에는 주입 스크립트(adminOrderPaymentDisplayInjector)가 칸 글자를 덮어썼다(#639 에서 이 조각으로 옮김) -->
+    <span data-ref="kginicis_easy_pay_provider_{{payIdx}}" data-if="{{payment.pg_provider === 'kginicis' &amp;&amp; !!kginicis_status.data?._embedded_pg_provider_label}}" class="text-tertiary block">$t:sirsoft-pay_kginicis.admin.easy_pay_provider|provider={{kginicis_status.data?._embedded_pg_provider_label}}</span>
+  </inject>
+  <!-- 이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너와 결제수단 칸의 간편결제 이름의 근거이기도 하다 -->
   <data-source id="kginicis_status" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_status" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
   <!-- CBT 정산 대사 결과 — 재시도 버튼을 띄울지 여기서 정한다 -->
   <data-source id="kginicis_cbt_reconciliation" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_cbt_reconciliation" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation" method="GET" :auto_fetch="true" :auth_required="true"/>

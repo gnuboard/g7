@@ -262,10 +262,10 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 | 항목 | 값 |
 |---|---|
 | 엔트리 파일 | `src/index.ts` |
-| 전역 객체 | **미노출** |
+| 전역 객체 | `window.G7TemplateHandlers` |
 | 재등록 진입점 | `initTemplate()` |
 
-재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).
+템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->

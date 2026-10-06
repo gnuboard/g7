@@ -11,6 +11,42 @@
   「대상 보기」는 명단을 볼 권한(설정 읽기 + 회원 읽기)이 있으면 대상이 0명이어도 그린다 — 0명인 까닭을 창에서 확인할 수 있어야 한다. -->
 <partial description="환경설정 개인정보 탭 콘텐츠">
   <div data-ref="tab_content_privacy" data-if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" class="card-stack">
+    <!-- 동의 관리 제공자 (#639) — 방문자의 쿠키·추적 동의를 판단할 확장을 고르는 자리. 탭 맨 위에 둔다: 아래 파기 카드들과
+      달리 사이트 전체(방문자 통계·외부 스크립트 차단·다른 확장)의 판정을 바꾸는 설정이기 때문이다.
+      선택지는 「자동」(빈 값) + 등록된 제공자. 수집을 꺼 둔 제공자도 목록에 남긴다 — 골라 둔 뒤 꺼지면 사유 안내로 보여야 한다.
+      안내는 서버가 판정한 선택 상태(`_meta.consent_selection`)로만 띄운다 — 저장 전 선택으로 띄우면 아직 적용되지 않은
+      상태를 사실처럼 말한다. none 은 사유(`no_provider` · `provider_unavailable`)로 문구를 가른다. -->
+    <div data-ref="card_consent_provider" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.privacy.consent_provider.title</h3>
+      <div class="card-description">$t:admin.settings.privacy.consent_provider.desc</div>
+      <div class="row-stack">
+        <div data-ref="consent_provider_field" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <span class="text-heading">$t:admin.settings.privacy.consent_provider.label</span>
+          <!-- 고른 제공자가 사라진 missing 상태에서는 저장된 id 를 선택지 끝에 덧붙여 선택 상자가 빈 글자로 보이지 않게 한다(경고 문구가 사유를 알린다). -->
+          <div class="w-full md:w-96">
+            <select name="privacy.consent_provider" disabled="{{_computed.isReadOnly}}" class="w-full" aria-label="$t:admin.settings.privacy.consent_provider.label" error="{{_local.errors?.['privacy.consent_provider']?.[0] ?? ''}}" options="{{[{ value: '', label: _local.form?._meta?.consent_selection?.state === 'auto' &amp;&amp; _local.form?._meta?.consent_selection?.provider_label ? '$t:admin.settings.privacy.consent_provider.auto_current|provider=' + _local.form._meta.consent_selection.provider_label : '$t:admin.settings.privacy.consent_provider.auto' }].concat((_local.form?._meta?.consent_providers ?? []).map(p =&gt; ({ value: p.id, label: p.label }))).concat(_local.form?._meta?.consent_selection?.state === 'missing' &amp;&amp; _local.form?.privacy?.consent_provider ? [{ value: _local.form.privacy.consent_provider, label: _local.form.privacy.consent_provider }] : [])}}"/>
+          </div>
+        </div>
+        <div data-ref="consent_provider_ambiguous" data-if="{{_local.form?._meta?.consent_selection?.state === 'ambiguous'}}" role="alert" class="alert-warning">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0" aria-hidden="true"/>
+            <p class="text-warning-soft">$t:admin.settings.privacy.consent_provider.ambiguous</p>
+          </div>
+        </div>
+        <div data-ref="consent_provider_missing" data-if="{{_local.form?._meta?.consent_selection?.state === 'missing'}}" role="alert" class="alert-warning">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0" aria-hidden="true"/>
+            <p class="text-warning-soft">$t:admin.settings.privacy.consent_provider.missing</p>
+          </div>
+        </div>
+        <div data-ref="consent_provider_none" data-if="{{_local.form?._meta?.consent_selection?.state === 'none'}}" role="status" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0" aria-hidden="true"/>
+            <p class="text-label-subtle">{{_local.form?._meta?.consent_selection?.reason === 'provider_unavailable' ? $t('admin.settings.privacy.consent_provider.none_unavailable') : $t('admin.settings.privacy.consent_provider.none_no_provider')}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div data-ref="card_privacy_notice" class="alert-info">
       <div class="flex gap-3">
         <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>

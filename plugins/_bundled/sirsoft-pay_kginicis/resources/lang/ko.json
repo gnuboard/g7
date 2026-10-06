@@ -85,7 +85,8 @@
         "cvs_code": "편의점 코드",
         "cvs_confirmation_no": "편의점 확인번호",
         "cvs_receipt_no": "편의점 접수번호",
-        "cvs_payment_term": "입금 마감일시"
+        "cvs_payment_term": "입금 마감일시",
+        "easy_pay_label": "간편결제"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",
@@ -226,7 +227,8 @@
         "escrow_deny_confirm_done_at": "처리일시",
         "escrow_deny_confirm_status_label": "구매거절 상태",
         "escrow_deny_confirm_buyer_denied": "구매거절",
-        "escrow_deny_confirm_buyer_denied_at": "일시"
+        "escrow_deny_confirm_buyer_denied_at": "일시",
+        "easy_pay_provider": "간편결제: {{provider}}"
     },
     "settings": {
         "title": "KG 이니시스 설정",

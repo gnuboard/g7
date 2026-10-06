@@ -1,4 +1,4 @@
-import { buildGuestOwnershipHeaders, isSameOriginUrl } from './guestOrderToken';
+import { guestOwnershipHeaders, waitForGuestOrderToken } from './guestOrderToken';
 
 export interface PaymentCloseReportContext {
     closeReportUrl?: string;
@@ -7,20 +7,42 @@ export interface PaymentCloseReportContext {
     payment_method?: string;
 }
 
-function resolveApiUrl(url: string): string {
-    if (/^https?:\/\//i.test(url) || url.startsWith('/api/')) {
-        return url;
+interface G7CoreApi {
+    post: (url: string, data?: unknown, config?: { headers?: Record<string, string> }) => Promise<unknown>;
+}
+
+/**
+ * 코어 공개 API 클라이언트를 돌려줍니다.
+ *
+ * @return API 클라이언트 (코어가 아직 없으면 null)
+ */
+function coreApi(): G7CoreApi | null {
+    const api = (window as unknown as { G7Core?: { api?: Partial<G7CoreApi> } }).G7Core?.api;
+
+    return typeof api?.post === 'function' ? (api as G7CoreApi) : null;
+}
+
+/**
+ * 서버가 내려준 보고 주소를 `G7Core.api` 경로(`/api` 이하)로 바꿉니다.
+ *
+ * 서버는 사이트 주소로 만든 절대 URL(`https://사이트/plugins/…/payment/close-report`)을 준다. 이 주소를 그대로
+ * 부르면 `/api` 접두사가 빠져 API 라우트에 닿지 못한다. 경로만 꺼내 같은 사이트의 API 로 보낸다 — 출처(host)는
+ * 버리므로 조회 토큰이 다른 사이트로 새지 않는다.
+ *
+ * @param url 서버가 내려준 주소 (절대·상대 모두)
+ * @return `G7Core.api` 에 넘길 경로, 해석할 수 없으면 null
+ */
+export function toApiPath(url: string): string | null {
+    let parsed: URL;
+    try {
+        parsed = new URL(url, window.location.origin);
+    } catch {
+        return null;
     }
 
-    if (url.startsWith('/plugins/')) {
-        return `/api${url}`;
-    }
+    const path = `${parsed.pathname}${parsed.search}`;
 
-    if (url.startsWith('plugins/')) {
-        return `/api/${url}`;
-    }
-
-    return url;
+    return path.startsWith('/api/') ? path.slice(4) : path;
 }
 
 function trimReason(reason: string): string {
@@ -39,45 +61,30 @@ function resolveRetryUrl(closeReportUrl?: string): string | undefined {
  * 결제 컨텍스트를 서버에 보냅니다 (결제창 닫힘 보고·재시도 준비).
  *
  * 두 엔드포인트 모두 주문 상태를 바꾸므로 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만
- * 받아 준다. 회원 Bearer 는 G7Core.api 가 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰을 싣는다.
+ * 받아 준다. 회원 Bearer 와 401 처리는 `G7Core.api` 가 맡고, 비회원은 공개 상태의 조회 토큰을 싣는다.
+ * 실패하면 예외를 그대로 던진다 — 재시도 준비가 실패하면 결제창을 열지 않아야 한다.
+ *
+ * @param url 서버가 내려준 주소
+ * @param payload 요청 본문
+ * @return 요청이 끝나면 이행되는 Promise
+ * @throws Error 코어 API 가 없거나 주소를 해석할 수 없는 경우, 서버가 거절한 경우
  */
-async function postPaymentContext(url: string, payload: Record<string, unknown>, keepalive = false): Promise<void> {
-    const ownershipHeaders = buildGuestOwnershipHeaders();
-    const apiClient = ((window as any).G7Core)?.api;
-    if (typeof apiClient?.post === 'function') {
-        if (Object.keys(ownershipHeaders).length > 0) {
-            await apiClient.post(url, payload, { headers: ownershipHeaders });
-        } else {
-            await apiClient.post(url, payload);
-        }
-        return;
+async function postPaymentContext(url: string, payload: Record<string, unknown>): Promise<void> {
+    const api = coreApi();
+    if (!api) {
+        throw new Error('[sirsoft-pay_nhnkcp] G7Core.api is not available');
     }
 
-    const resolvedUrl = resolveApiUrl(url);
-    const response = await fetch(resolvedUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(isSameOriginUrl(resolvedUrl) ? ownershipHeaders : {}),
-        },
-        body: JSON.stringify(payload),
-        keepalive,
-    });
+    const path = toApiPath(url);
+    if (!path) {
+        throw new Error('[sirsoft-pay_nhnkcp] invalid payment report url');
+    }
 
-    if (!response.ok) {
-        let message = `NHN KCP payment request failed (${response.status})`;
-        try {
-            const data = await response.json();
-            const responseMessage = Array.isArray(data?.errors?.message)
-                ? data.errors.message[0]
-                : data?.error ?? data?.message;
-            if (typeof responseMessage === 'string' && responseMessage.trim() !== '') {
-                message = responseMessage;
-            }
-        } catch {
-            // JSON 응답이 아니면 HTTP 상태 메시지를 사용한다.
-        }
-        throw new Error(message);
+    const headers = guestOwnershipHeaders();
+    if (Object.keys(headers).length > 0) {
+        await api.post(path, payload, { headers });
+    } else {
+        await api.post(path, payload);
     }
 }
 
@@ -178,7 +185,7 @@ function readPendingClose(): PaymentCloseReportContext | null {
  *
  * 브라우저 리턴 콜백(`authCallback`)은 PG 서명도 IP 증명도 없어 주문 상태를 바꾸지 않는다.
  * 소유권을 대조하는 close-report 만이 정당한 결제 실패를 기록할 수 있으므로, 실패 화면에
- * 도착한 이 시점에 그 경로로 보고한다. 플러그인 부팅 시 1회 호출한다.
+ * 도착한 이 시점에 그 경로로 보고한다. 플러그인 부팅 후 코어가 준비되면 1회 호출한다.
  */
 export async function reportPaymentFailureOnReturn(): Promise<void> {
     const pending = readPendingClose();
@@ -218,6 +225,9 @@ export async function reportPaymentFailureOnReturn(): Promise<void> {
     // 중복 보고를 막기 위해 요청 전에 먼저 지운다.
     forgetPendingClose();
 
+    // 비회원이면 템플릿이 조회 토큰을 전역 상태에 되살린 뒤에 보낸다 — 토큰 없이 보내면 서버가 거부한다.
+    await waitForGuestOrderToken();
+
     await reportPaymentWindowClosed(pending, message !== '' ? message : code);
 }
 
@@ -237,7 +247,7 @@ export async function reportPaymentWindowClosed(
     };
 
     try {
-        await postPaymentContext(context.closeReportUrl, payload, true);
+        await postPaymentContext(context.closeReportUrl, payload);
     } catch (error) {
         console.warn('[sirsoft-pay_nhnkcp] failed to report payment window close', error);
     }

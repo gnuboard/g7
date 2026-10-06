@@ -324,9 +324,21 @@
           </div>
         </div>
         <div data-ref="tab_privacy" data-if="{{(query.tab || 'collection') === 'privacy'}}" class="space-y-4">
+          <!-- 동의 출처 배지 (#639) — 코어 동의 매니저의 선택 상태(`collection.consent_selection`)로 색과 말을 고른다.
+            auto·selected 는 초록 제공자 이름, none 은 회색 「없음」, ambiguous·missing 은 주황 「제공자 선택 필요」와 개인정보 탭 링크.
+            조회 권한이 없으면 모르는 것을 고장으로 말하지 않도록 회색 「확인 권한 없음」. -->
           <div data-ref="consent_source_row" class="flex-center gap-2 flex-wrap">
             <span class="text-label-subtle">$t:admin.analytics.settings.privacy.consent_source_label</span>
-            <badge data-type="composite" color="{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? (['provider', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}" size="sm"/>
+            <badge data-type="composite" color="{{!_computed.canReadAnalytics ? 'gray' : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'green' : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'orange' : 'gray'))}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? (analytics_status?.data?.collection?.consent_provider_label ?? '') : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? $t('admin.analytics.settings.privacy.consent_source_needs_selection') : $t('admin.analytics.settings.privacy.consent_source_none')))}}" size="sm"/>
+            <!-- 링크는 선택이 필요한 상태(ambiguous·missing)이고, 목적지(환경설정 개인정보 탭)를 열 권한(core.settings.read)이 있을 때만 그린다. -->
+            <div data-if="{{_computed.canReadAnalytics &amp;&amp; ['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '')}}" class="contents">
+              <button data-ref="consent_source_choose_link" data-if="{{_computed.canReadDefinitions}}" type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <on type="click">
+                  <navigate path="/admin/settings?tab=privacy"/>
+                </on>
+                $t:admin.analytics.settings.privacy.consent_source_choose
+              </button>
+            </div>
           </div>
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는
             모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면

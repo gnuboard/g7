@@ -91,6 +91,8 @@ class OverviewControllerTest extends AnalyticsApiTestCase
 
         $this->assertFalse($meta['collection_enabled'], '수집이 꺼진 것을 화면이 알아야 안내를 띄운다');
         $this->assertArrayHasKey('consent_source', $meta);
+        $this->assertContains($meta['consent_source'], ['provider', 'none'], '옛 출처 값(filter)은 더는 없다');
+        $this->assertArrayHasKey('consent_selection', $meta);
         $this->assertArrayHasKey('queue_backlogged', $meta);
         $this->assertArrayHasKey('realtime_poll_seconds', $meta);
     }

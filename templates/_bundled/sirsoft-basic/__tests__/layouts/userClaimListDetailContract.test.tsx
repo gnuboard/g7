@@ -467,41 +467,44 @@ describe('상세 셸 — 원 주문을 신청서 뒤에 읽는다', () => {
 
   // @scenario claim_type=refund, screen=detail, entry=none
   // @effects claim_detail_payment_provider_blocks_follow_the_shared_card
-  it('결제 플러그인 주입 스크립트도 이 화면을 안다 (JSON 만 고치면 절반만 따라온다)', () => {
-    // 영수증 버튼·가상계좌 입금 안내의 절반은 확장 JSON 이 아니라 플러그인 JS 가 DOM 에
-    // 직접 그린다. 그 스크립트가 `/mypage/orders/{n}` 만 보고 있으면, 카드는 뜨는데 그
-    // 절반만 빠진 채 열린다 — 오류도 경고도 남지 않는다.
-    // 경로 리터럴은 소스마다 이스케이프가 다르다(정규식 안이면 `mypage\/orders`). 문자열
-    // 비교로 재면 이스케이프 한 글자 차이로 모집단이 비어 조용히 통과한다.
+  it('결제 플러그인은 화면 주소 글자가 아니라 공유 결제 카드 id 로 이 화면을 찾는다', () => {
+    // 영수증 버튼·가상계좌 입금 안내는 예전에 플러그인 JS 가 주소(`/mypage/orders/{n}`)를 보고 DOM 에 직접 그렸다 —
+    // 그 스크립트가 클레임 신청서 상세 주소를 모르면 카드는 뜨는데 안내만 빠졌다. 이제는 결제 플러그인의 화면 조각이
+    // 주문 상세와 신청서 상세가 함께 쓰는 결제 카드에 붙으므로, 주소를 글자로 판정하는 플러그인 스크립트가 남아 있으면 안 된다.
+    // 경로 리터럴은 소스마다 이스케이프가 다르다(정규식 안이면 `mypage\/orders`). 문자열 비교로 재면 이스케이프 한 글자
+    // 차이로 모집단이 비어 조용히 통과한다.
     const ORDER_PATH_RE = /mypage[\\/]+orders/;
-    const CLAIM_PATH_RE = /mypage[\\/]+claims/;
+    const pluginsDir = path.resolve(__dirname, '../../../../../plugins/_bundled');
 
-    const pluginJsDir = path.resolve(__dirname, '../../../../../plugins/_bundled');
+    const pathGated: string[] = [];
+    const fragmentsOnSharedCard: string[] = [];
+    for (const plugin of fs.readdirSync(pluginsDir)) {
+      const jsDir = path.join(pluginsDir, plugin, 'resources/js');
+      if (fs.existsSync(jsDir)) {
+        for (const file of fs.readdirSync(jsDir)) {
+          if (!file.endsWith('.ts')) continue;
+          const src = fs.readFileSync(path.join(jsDir, file), 'utf-8');
+          if (src.includes('order_payment_info_panel') && ORDER_PATH_RE.test(src)) {
+            pathGated.push(`${plugin}/${file}`);
+          }
+        }
+      }
 
-    // 모집단을 저장소에서 파생한다 — 손으로 적으면 플러그인이 하나 늘어도 통과한다.
-    const injectors: string[] = [];
-    for (const plugin of fs.readdirSync(pluginJsDir)) {
-      const jsDir = path.join(pluginJsDir, plugin, 'resources/js');
-      if (!fs.existsSync(jsDir)) continue;
-
-      for (const file of fs.readdirSync(jsDir)) {
-        if (!file.endsWith('.ts')) continue;
-        const full = path.join(jsDir, file);
-        const src = fs.readFileSync(full, 'utf-8');
-        // 결제 정보 카드를 겨냥하면서 주문 상세 경로로 게이트하는 스크립트만 모집단이다.
-        if (src.includes('order_payment_info_panel') && ORDER_PATH_RE.test(src)) {
-          injectors.push(full);
+      const extDir = path.join(pluginsDir, plugin, 'resources/extensions');
+      if (fs.existsSync(extDir)) {
+        for (const file of fs.readdirSync(extDir)) {
+          if (!file.endsWith('.json')) continue;
+          const src = fs.readFileSync(path.join(extDir, file), 'utf-8');
+          if (src.includes('order_payment_info_panel') || src.includes('mypage_order_payment_provider_slot')) {
+            fragmentsOnSharedCard.push(`${plugin}/${file}`);
+          }
         }
       }
     }
 
-    // 모집단이 비면 red — 파일이 옮겨졌는데 초록으로 통과하는 것을 막는다.
-    expect(injectors.length).toBeGreaterThan(0);
-
-    for (const file of injectors) {
-      const src = fs.readFileSync(file, 'utf-8');
-      expect(CLAIM_PATH_RE.test(src), `${file} 이 클레임 신청서 상세 경로를 모른다`).toBe(true);
-    }
+    expect(pathGated, '주소 글자로 결제 카드 화면을 판정하는 플러그인 스크립트').toEqual([]);
+    // 모집단이 비면 red — 조각이 다른 자리로 옮겨졌는데 초록으로 통과하는 것을 막는다.
+    expect(fragmentsOnSharedCard.length).toBeGreaterThan(0);
   });
 
   // @scenario claim_type=refund, screen=list, entry=none

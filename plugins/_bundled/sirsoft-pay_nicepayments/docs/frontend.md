@@ -82,59 +82,81 @@
 플러그인은 간편결제 버튼 같은 최소한의 UI만 코어 컴포넌트로 구성하기 때문입니다.
 <!-- @intent END -->
 
+## 화면 표시는 레이아웃 조각만 그린다
+
+<!-- @intent START -->
+주문 완료·마이페이지 주문 상세의 영수증과 관리자 주문 상세의 간편결제 서비스명은 모두 레이아웃 조각(`resources/extensions`)이 그린다.
+브라우저 스크립트(`resources/js`)는 결제 핸들러(`requestPayment`·`setPaymentMethod`·`copyToClipboard`)만 등록한다.
+
+#639 이전에는 주입 스크립트 넷이 화면을 직접 고쳤다 — 주소 정규식(`/shop/...`·`/mypage/...`·`/admin/...`)으로 화면을 알아보고
+`history.pushState`·`replaceState` 를 덮어써 이동을 엿본 뒤, 로그인 토큰을 저장소에서 직접 읽어 원시 `fetch` 로 조회하고
+결제수단 칸 글자를 바꾸거나 버튼을 덧그렸다. 쇼핑몰 경로 설정을 바꾸면 주소 정규식이 빗나가고, 덮어쓰기는 다른 확장의 덮어쓰기와
+감싸는 순서에 따라 동작이 바뀌었다. 지금은 아래처럼 나뉜다.
+
+| 화면 | 조각 | 붙는 자리 | 데이터 |
+|---|---|---|---|
+| 주문 완료 | `user_order_complete_receipt` | `shop/order_complete` 의 `order_complete_payment_summary` | 영수증 조회 API (마운트 조회) |
+| 마이페이지·비회원 주문 상세, 신청서 상세 | `user_mypage_order_receipt` | 슬롯 `mypage_order_payment_provider_slot` | 주문 응답 + 영수증 조회 API (마운트 조회) |
+| 관리자 주문 상세 | `admin_order_payment_query` | `admin_ecommerce_order_detail` 의 `tab_content_area` | 데이터 소스 `nicepay_status`·`nicepay_escrow` |
+| 관리자 주문 목록 | `admin_order_list_payment_method_badge` | 확장점 `admin_order_list_payment_method_badges` | 데이터 소스 `nicepay_test_map` |
+
+- **간편결제 서비스명** — 이커머스 주문 응답은 간편결제 주문도 기본 결제수단(신용카드)만 안다. 조각은 플러그인 API 가 주는 원 수단
+  코드(영수증 조회의 `embedded_pg_provider`, 거래 조회의 `_embedded_pg_provider` — `naverpay` 등)를 번역 키
+  `user.easy_pay_names.{대문자 코드}` 로 풀어 자기 행에 보인다. 이커머스의 결제수단 칸 글자는 고치지 않는다.
+- **영수증 주소는 API 가 준다** — 결제사 주소(`npg.nicepay.co.kr`)를 조각에 적으면 레이아웃 편집기 저장 게이트(외부 URL 금지)가
+  거절한다. 영수증 조회 API 의 `payment_receipt_url`(결제 영수증, `type=2`)·`receipt_url`(매출전표, `type=0`)·`cash_receipt_url`
+  을 화면 상태(`_npMp*`·`_npOc*`)에 담아 링크로 그린다. 주소를 받지 못하면 링크를 그리지 않는다. 링크는 새 창(`target=_blank`)을
+  `rel="noopener noreferrer"` 로 연다.
+- **마운트 조회는 조건 블록 안쪽 행에 건다** — 엔진은 `data-if` 가 거짓인 노드에서도 마운트 동작을 돌린다. 나이스페이먼츠 결제
+  조건이 걸린 바깥 블록에 걸면 다른 결제사 주문·입금 대기 주문에도, 주문을 받기 전 첫 렌더에도(주문번호 빈 주소) 조회가 나간다.
+- **주문번호는 불러온 주문에서 읽는다** — 마이페이지 조각은 `order.data.order_number`, 주문 완료 조각은
+  `orderData.data.order_number`. 결제 정보 카드는 주소에 주문번호가 없는 교환·반품·환불 신청서 상세에서도 같은 조각으로 쓰인다.
+- 가상계좌 입금 안내도 마이페이지 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌 `vbank_due_at_formatted` 를 그대로 쓴다.
+- 관리자 쇼핑몰 설정의 결제수단 브랜드 마크는 이 플러그인이 결제수단 카탈로그에 싣는다(`RegisterEasyPayMethodsListener` 의
+  `brand_mark` → 이커머스 `_cached_brand_mark`). 그리는 것은 화면 소유자(이커머스·템플릿) 몫이다 — 종전의 브랜드 마크 주입
+  스크립트는 걷어냈다.
+<!-- @intent END -->
+
 ## 비회원 주문의 자격 증명
 
 <!-- @intent START -->
-영수증·결제수단 표시는 주문 정보를 서버에서 다시 조회해 만든다. 이 요청은 레이아웃의
-`globalHeaders` 배선을 타지 않는 직접 호출(`fetch`)이므로, 자격 증명을 호출부가 직접 실어야 한다.
+비회원 주문은 서버가 `X-Guest-Order-Token` 으로 소유자를 확인한다. 토큰은 이커머스가 약속한 공개 상태 계약
+`_global.guestOrderToken`(sirsoft-ecommerce `module.json` 의 `state_contracts`)에서만 읽는다 — 코어 저장소 키(sessionStorage)나
+로그인 토큰(localStorage)을 직접 읽지 않는다.
 
-- 회원: `Authorization: Bearer …`
-- 비회원: `X-Guest-Order-Token: …` (코어 storageHandlers 가 sessionStorage 에 저장, 전역 상태 폴백)
+- 레이아웃 조각: 조회 `api-call` 에 `auth_mode="optional"` 과 헤더 `X-Guest-Order-Token="{{_global.guestOrderToken ?? ''}}"` 를 함께 단다.
+  회원은 엔진이 Bearer 를 싣는다.
+- 스크립트: `resources/js/guestOrderToken.ts` 의 `buildGuestOrderTokenHeaders()` 한 곳에서 헤더를 만들어 `G7Core.api` 요청에 싣는다.
+  회원 Bearer 와 401 처리는 `G7Core.api` 몫이다. 회원 주문은 서버가 로그인 본인으로만 판정하므로 이 헤더가 함께 실려도 결과가 바뀌지 않는다.
 
-두 경로 모두 `plugins/_bundled/sirsoft-pay_nicepayments/resources/js/guestOrderToken.ts` 의 `buildOrderRequestHeaders()` 한 곳을 거친다.
-비회원 분기를 비우면 서버는 그 주문을 찾을 수 없다고 응답하고, 화면에는 영수증 버튼이 아예
-나타나지 않는다 — 예외도 콘솔 오류도 남지 않아 운영자가 원인을 알 수 없다. 서버(`UserReceiptController`)는
-비회원을 이미 지원하므로, 이 배선이 빠지면 서버 기능이 도달 불가 상태로만 남는다.
-
-주문 상세 화면의 경로 판정(`ORDER_SHOW_RE`)도 회원(`/mypage/orders/{N}`)과
-비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
-조회가 시작조차 되지 않는다.
+비회원 헤더를 빼면 서버는 그 주문을 찾을 수 없다고 응답하고, 화면에는 영수증 링크가 아예 나타나지 않는다 — 예외도 콘솔 오류도
+남지 않는다. 서버(`UserReceiptController`)는 비회원을 이미 지원하므로, 이 배선이 빠지면 서버 기능이 도달 불가 상태로만 남는다.
 <!-- @intent END -->
 
-마이페이지 주문 상세의 영수증 조각(`plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_mypage_order_receipt.g7.html`)도 결제사 주소를 글자
-그대로 적지 않는다 — 적으면 레이아웃 편집기의 저장 게이트(외부 URL 금지)가 이 조각을 거절한다. 조각은 마운트 때
-영수증 조회 API 를 불러 공통 응답 형식의 `data.payment_receipt_url`(첫 출시부터 링크가 열어 온 `type=2` 주소)을 로컬 상태
-(`_npMpPaymentReceiptUrl`)에 담고 그 값으로 「결제 영수증」 링크를 그린다. 회원은 토큰(`auth_mode=optional`),
-비회원은 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다. 주소를 받지 못하면 링크를 그리지 않는다.
-주문번호는 주소가 아니라 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 결제 정보 카드(결제 영수증 링크·현금영수증 조회 버튼)는 주소에 주문번호가 없는
-교환·반품·환불 신청서 상세(회원·비회원)에서도 같은 조각으로 쓰인다.
+### 화면 자리는 약속된 id·확장점으로만 찾는다
 
-같은 조회 응답의 `data.receipt_url`(매출전표, `type=0` — 주문 완료 화면 버튼과 같은 전표)은 `_npMpSalesSlipUrl` 에 담아
-「매출전표 보기」 링크로 그린다. 가상계좌 입금 안내도 이 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌
-`vbank_due_at_formatted` 를 그대로 쓴다. 주입 스크립트(`mypageOrderShowInjector`)는 결제 방법 행에 간편결제 이름을
-덧붙이는 일만 한다 — 종전에는 스크립트도 같은 입금 안내·영수증 행을 한국어 고정 글자로 한 번 더 그려 두 번 나왔다. 이제 레이아웃 조각만 그린다.
-
-### 결제 정보 카드는 id 로만 찾는다
-
-주문 상세·신청서 상세에 영수증 버튼·입금 안내를 붙이는 주입 스크립트는 결제 정보 카드를 템플릿이 약속한 `id="order_payment_info_panel"` 로만
-찾는다. 화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다
-(약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
-
-간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
-`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다.
-
-### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
-
-관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
-`data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+조각이 붙는 자리는 화면 소유자가 약속한 id·확장점뿐이다(약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
+「PG 플러그인이 …의 약속」). 화면 제목·행 이름 글자나 클래스 모양으로 자리를 찾지 않는다 — 언어·화면 폭마다 다르다. 자리가 없는
+화면에서는 조각이 오류 없이 빠진다.
 
 ### 스크립트·조각이 그리는 글자는 번역 키로 낸다
 
-주문 완료 화면 영수증 버튼(`user.receipt_view`·`user.loading`)과 결제 실패 알림(`payment.error.sdk_load_failed`·`request_failed`)은
-`translateNicepay(key, 대체 문구, 값)`(`plugins/_bundled/sirsoft-pay_nicepayments/resources/js/translate.ts`)로 낸다. 영수증 조각의 간편결제 이름은
-`$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + PayMethod)` 로 푼다 — 조각 안에 한국어 이름표를 두지 않는다.
+결제 실패 알림(`payment.error.sdk_load_failed`·`request_failed`)은 `translateNicepay(key, 대체 문구, 값)`
+(`plugins/_bundled/sirsoft-pay_nicepayments/resources/js/translate.ts`)로 낸다. 조각의 간편결제 이름은
+`$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + 대문자 코드)` 로 푼다 — 조각 안에 한국어 이름표를 두지 않는다.
 플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.
+
+## 결제수단은 액션 인자로만 받는다
+
+<!-- @intent START -->
+`requestPayment` 는 결제수단을 액션 인자로만 받는다 — `paymentMethod` 를 명시하면 그 값, 아니면 서버가 저장해 내려준
+`pgPaymentData.payment_method`(확장 수단이면 확장 ID 그대로). 둘 다 없으면 결제를 시작하지 않고 오류를 알린다. 종전에는 엔진
+내부(`window.__templateApp`)의 화면 상태와 `'card'` 기본값까지 뒤져, 잘못된 수단으로 결제창이 열릴 수 있었다.
+
+`setPaymentMethod` 의 간편결제 선택 표시 감시(`initEasyPayWatcher`)는 공개 API `G7Core.state.subscribe()` 로 걸고, 선택값은
+`G7Core.state.getLocal()` 로 읽는다. 코어가 재초기화 때 `initPlugin` 을 다시 부르면 앞 구독의 해제 함수를 먼저 불러 리스너가
+쌓이지 않게 한다.
+<!-- @intent END -->
 
 ## 결제창 닫힘 보고의 소유자 증명
 
@@ -144,47 +166,13 @@
 제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
 
 - 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
-- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+- 비회원: 공개 상태 계약 `_global.guestOrderToken` 의 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
 
-헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
-상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
-토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
-결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+보고는 `G7Core.api` 로만 보낸다. 주소는 이 플러그인의 API 상대 경로(`CLOSE_REPORT_PATH`)다 — client-config 의 `close_report_url`
+은 읽지 않는다(사이트 절대 주소로 부르면 별칭 Host 화면에서 교차 출처가 되어 Bearer 가 실리지 않는다). `G7Core.api` 가 없으면
+원시 `fetch` 로 우회하지 않고 보고를 건너뛴다. 보고가 거부되면(토큰 없음 403 등) 화면 흐름은 그대로 진행한다 — 결제대기 주문은
+이커머스 만료 정리 잡이 정리한다.
 
-나이스페이의 결제창 서명 발급(`sign-data`)도 같은 헤더를 싣는다. 실패한 같은 주문을 다시 결제할 때 서버가
+나이스페이의 결제창 서명 발급(`sign-data`)도 `G7Core.api` 로 같은 헤더를 실어 보낸다. 실패한 같은 주문을 다시 결제할 때 서버가
 주문을 결제대기로 되살리는데, 그 복구는 주문 소유자만 할 수 있기 때문이다.
-<!-- @intent END -->
-
-## 주문 화면 주입의 폴링·조회 규약
-
-<!-- @intent START -->
-주문 상세 화면에 결제 정보를 덧붙이는 인젝터 둘 — 관리자 주문 상세 결제수단 표시
-(`adminOrderPaymentDisplayInjector.ts`), 마이페이지·비회원 주문 상세의 결제수단 표시(간편결제 이름)
-(`mypageOrderShowInjector.ts`) — 는 대상 DOM 이 그려질 때까지 재시도하며, 폴링과 서버 조회를
-`resources/js/orderScreenPolling.ts` 에 맡긴다. 예전 `setInterval` 폴러는 틱이 앞선 비동기 조회를 기다리지 않아
-첫 응답이 올 때까지 400ms 마다 같은 조회를 새로 보냈고(조회마다 서버가 나이스페이먼츠 API 까지 간다), 라우트가
-바뀔 때마다 폴러가 쌓였다.
-
-- **직렬 폴러** — `createOrderScreenPoller()`(기본 400ms · 최대 30틱)는 한 틱의 비동기 작업이 끝난 뒤에야 다음
-  틱을 예약한다. 인젝터마다 폴러를 모듈 수준에 **하나만** 두고, `start(key, tick)` 은 같은 key 면 무시하고 다른
-  key 면 이전 폴러를 멈춘다. 대상 경로를 벗어나면 `stop()` 한다. 틱은 `isActive()` 를 받아, 응답을 기다리는 사이
-  폴러가 멈췄으면 DOM 을 건드리지 않고 끝낸다.
-- **화면 진입당 1회 조회** — 영수증(`nicepay-receipt:{주문번호}`)과 관리자 거래 조회는
-  `requestOncePerOrderScreen()` 으로만 보낸다. 한 화면 진입(같은 경로) 동안 key 별로 한 번 보내고 결과를 **실패까지
-  포함해** 재사용한다. 캐시 키에 회원·비회원 토큰이 들어가 토큰이 늦게 준비되면 그때 한 번 더 보낸다. 라우트 변경
-  처리 첫머리의 `enterOrderScreen()` 이 경로가 바뀌면 이전 결과를 버린다.
-- **관리자 주문 상세는 레이아웃 확장의 데이터 소스를 재사용** — 같은 화면의 `admin_order_payment_query` 확장이
-  `transaction-status` 를 데이터 소스 `nicepay_status` 로 이미 받으므로 인젝터는
-  `G7Core.dataSource.get('nicepay_status')` 값을 쓴다(`readSharedDataSource`). 값이 아직 없으면 최대 20틱(약 8초)
-  기다리고, 그래도 없으면(확장 미적용·조회 실패) 화면 진입당 한 번만 직접 조회한다. 라우트 전환 직후 남아 있는
-  이전 주문 값을 새 값으로 오인하지 않도록 `history.pushState`·`popstate` 직후
-  `rememberLeavingDataSources(['nicepay_status'])` 로 떠나는 값을 기억해 두고, 그 값과 같은 객체는 쓰지 않는다. 이
-  재사용 전에는 주문 상세를 열 때마다 거래 조회가 두 번 나갔다.
-- 마이페이지 인젝터는 상태에서 주문을 읽지 못하면(불러오는 중 포함) 조회 없이 재시도만 하므로 별도의 로딩 대기
-  가드(`isOrderDataLoading`)를 두지 않는다. 공용 도우미 파일은 세 결제 플러그인이 같은 내용으로 가진다.
-
-**깨뜨리면 안 되는 것**: 인젝터 안에서 `setInterval` 이나 직접 `fetch` 루프로 되돌리지 않는다 · 결과 캐시에서
-실패를 빼지 않는다 · 레이아웃 확장의 데이터 소스 ID `nicepay_status` 를 바꾸면 인젝터 상수 `STATUS_DATA_SOURCE` 도
-함께 바꾼다(어긋나면 매번 20틱을 기다린 뒤 직접 조회로 떨어져 중복 조회가 되살아난다). 회귀는 Vitest
-`resources/js/__tests__/orderPaymentDisplayInjectors.test.ts` 가 지킨다.
 <!-- @intent END -->

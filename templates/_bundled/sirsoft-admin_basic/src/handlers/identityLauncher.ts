@@ -12,8 +12,6 @@
  * - 기본 purpose 추정값이 `sensitive_action` (admin 정책은 대부분 민감 작업)
  */
 
-import { isSameOriginRequest } from '../support/sameOriginRequest';
-
 const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-admin_basic:IdentityLauncher')) ?? {
   log: (...args: unknown[]) => console.log('[Template:sirsoft-admin_basic:IdentityLauncher]', ...args),
   warn: (...args: unknown[]) => console.warn('[Template:sirsoft-admin_basic:IdentityLauncher]', ...args),
@@ -43,42 +41,6 @@ type VerificationResult =
   | { status: 'cancelled' }
   | { status: 'failed'; failureCode: string; reason?: string };
 
-/**
- * Bearer 토큰 헤더를 만듭니다 — 요청 대상이 동일 출처일 때만.
- *
- * challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 교차 출처 서버가 428 을 흉내 내
- * 자기 주소를 넣으면 관리자 토큰을 그 주소로 보내게 되므로 출처를 먼저 본다.
- *
- * @param url 요청 대상
- * @return 토큰이 있고 대상이 동일 출처면 Authorization 헤더, 아니면 빈 객체
- */
-function getAuthHeader(url: string): Record<string, string> {
-  if (!isSameOriginRequest(url)) {
-    return {};
-  }
-  const G7Core = (window as any).G7Core;
-  const token = G7Core?.api?.getToken?.() ?? null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-/**
- * 현재 앱 언어를 Accept-Language 헤더로 추출합니다 (있으면).
- *
- * challenge POST 는 ApiClient 를 우회하는 raw fetch 라, ApiClient 가 모든 요청에
- * 부착하는 `Accept-Language: g7_locale`(ApiClient.ts) 을 여기서 동일하게 부착해야
- * 서버 SetLocale 이 사용자 화면 언어로 IDV 메일을 렌더한다. 누락 시 challenge 요청이
- * 브라우저 기본 언어로 전송되어 메일이 사용자 화면 언어와 달라진다.
- */
-function getLocaleHeader(): Record<string, string> {
-  try {
-    const locale =
-      typeof window !== 'undefined' ? window.localStorage?.getItem('g7_locale') : null;
-    return locale ? { 'Accept-Language': locale } : {};
-  } catch {
-    return {};
-  }
-}
-
 interface ChallengeResponseData {
   id: string;
   expires_at: string;
@@ -103,23 +65,32 @@ async function startChallenge(payload: VerificationPayload, target: IdentityVeri
   if (payload.policy_key) body.policy_key = payload.policy_key;
   if (target) body.target = target;
 
+  // challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 코어 `G7Core.api` 로 보내면
+  // Bearer·XSRF 는 동일 출처 대상에만 실리고(교차 출처 서버가 428 을 흉내 내 자기 주소를 넣어도 토큰이
+  // 가지 않는다, KVE-2026-2350), 화면 언어(`Accept-Language: g7_locale`)도 코어가 붙인다 — IDV 메일이
+  // 사용자 화면 언어로 렌더된다.
   const url = payload.challenge_start_url || '/api/identity/challenges';
-  const res = await fetch(url, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...getLocaleHeader(),
-      ...getAuthHeader(url),
-    },
-    body: JSON.stringify(body),
-  });
+  const api = (window as any).G7Core?.api;
+  // 사용자에게 보이는 실패 문구는 화면 언어로 — 서버가 준 message 가 없을 때만 쓴다.
+  const failedText = (): string => {
+    const translated = (window as any).G7Core?.t?.('common.error_occurred');
+    return typeof translated === 'string' && translated !== 'common.error_occurred' ? translated : 'An error occurred.';
+  };
+  if (typeof api?.post !== 'function') {
+    throw new Error(failedText());
+  }
 
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.success) {
-    const msg = json?.message ?? `Challenge 시작 실패 (HTTP ${res.status})`;
+  let json: any;
+  try {
+    json = await api.post(url, body);
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data?.message
+      ?? (status ? `${failedText()} (HTTP ${status})` : (err instanceof Error ? err.message : String(err)));
     throw new Error(msg);
+  }
+  if (!json?.success) {
+    throw new Error(json?.message ?? failedText());
   }
 
   const data = json.data ?? json;
@@ -230,7 +201,7 @@ export async function sirsoftAdminBasicIdentityLauncher(
   // 재전송으로 expires_at 이 갱신될 때 launcher 클로저의 currentExpiresMs 동기화
   let unsubscribe: (() => void) | null = null;
   try {
-    unsubscribe = G7Core.state.subscribe?.((next: any) => {
+    const subscription = G7Core.state.subscribe?.((next: any) => {
       const updated = next?.identityChallenge?.expires_at;
       if (typeof updated === 'string') {
         const ms = new Date(updated).getTime();
@@ -242,7 +213,9 @@ export async function sirsoftAdminBasicIdentityLauncher(
       if (typeof cd === 'number' && cd > resendCooldown) {
         resendCooldown = cd;
       }
-    }) ?? null;
+    });
+    // 코어는 해제 함수를 돌려준다 — 함수가 아니면(구 코어) 보관하지 않는다
+    unsubscribe = typeof subscription === 'function' ? subscription : null;
   } catch {
     /* subscribe 미지원 — 첫 만료시각 기준만 카운트다운 */
   }
@@ -270,13 +243,16 @@ export async function sirsoftAdminBasicIdentityLauncher(
 
   // 링크 방식 — 확인은 메일 링크가 하므로 시작 응답의 비밀값으로 결과를 받아 간다(인증번호 방식은 묻지 않는다).
   const stopClaim = startLinkClaimPolling(challenge, G7Core);
-  const result = await deferred;
-  stopClaim();
 
-  window.clearInterval(tickHandle);
-  unsubscribe?.();
-
-  return result;
+  // 결과가 어떻게 나든(취소·실패 포함) 결과 폴링·카운트다운·구독을 정리한다 — 구독이 남으면 모달을 닫은 뒤에도
+  // 전역 상태가 바뀔 때마다 이 클로저가 불린다
+  try {
+    return await deferred;
+  } finally {
+    stopClaim();
+    window.clearInterval(tickHandle);
+    unsubscribe?.();
+  }
 }
 
 /**
@@ -338,33 +314,29 @@ function startLinkClaimPolling(challenge: ChallengeResponseData, G7Core: any): (
     if (!secret) return;
     if (`${id}:${secret}` === deadKey) return;
 
+    const api = G7Core?.api;
+    if (typeof api?.post !== 'function') return;
     const url = `/api/identity/challenges/${encodeURIComponent(id)}/claim`;
     inFlight = true;
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...getLocaleHeader(),
-          ...getAuthHeader(url),
-        },
-        body: JSON.stringify({ claim_secret: secret }),
-      });
-      if (res.status === 202 || stopped) return;
-      const json = await res.json().catch(() => null);
+      // 코어 `G7Core.api` 로 묻는다 — Bearer·XSRF·화면 언어는 코어가 같은 출처 요청에만 붙인다(템플릿은 로그인 토큰을 읽지 않는다).
+      const json = await api.post(url, { claim_secret: secret });
+      if (stopped) return;
       const token = json?.data?.verification_token;
-      if (res.ok && typeof token === 'string' && token !== '') {
+      if (typeof token === 'string' && token !== '') {
         stopped = true;
         clearInterval(handle);
         await G7Core.dispatch({ handler: 'resolveIdentityChallenge', params: { result: 'verified', token } });
         await G7Core.dispatch({ handler: 'closeModal', target: 'identity-challenge-modal' });
         return;
       }
+      // 아직 링크를 열지 않았으면(202 pending) 다음 주기에 다시 묻는다.
+      if (json?.data?.status === 'pending') return;
       deadKey = `${id}:${secret}`;
-    } catch {
-      /* 일시 오류 — 다음 주기에 다시 묻는다 */
+    } catch (err: any) {
+      // 서버가 답한 실패(거절·이미 사용·만료)는 같은 건·같은 비밀값으로 다시 묻지 않는다.
+      // 응답이 없는 일시 오류(네트워크)는 다음 주기에 다시 묻는다.
+      if (err?.response) deadKey = `${id}:${secret}`;
     } finally {
       inFlight = false;
     }

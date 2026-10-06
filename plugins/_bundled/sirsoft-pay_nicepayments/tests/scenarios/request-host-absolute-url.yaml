@@ -4,6 +4,8 @@ description: |
   주문 결과 이동은 자체 헬퍼(UrlHelper)로 사이트 주소를 썼지만 클레임 결제 결과 이동은 상대 경로 redirect() 로
   요청 Host 를 따랐고, 프런트가 보내는 ReturnURL 은 window.location.origin 으로 만들어졌다. 코어 SiteUrl 로
   수렴하고(자체 헬퍼 삭제) 관리자 입금통보 주소 안내도 사이트 주소로 만든다.
+  영수증 창(front_receipt_window)은 #639 에서 주입 스크립트의 창 도우미 대신 레이아웃 조각 링크가 됐다 — 주소는 영수증 조회
+  API 응답에서만 오고, 새 창(target=_blank)을 opener 를 끊고(rel=noopener noreferrer) 연다.
 
 axes:
   # forged = 위조 Host 변종 4종(외부 도메인·사이트 하위 도메인·포트만 바꾼 Host·신뢰 프록시 X-Forwarded-Host)을
@@ -29,7 +31,7 @@ effects:
   - invalid_server_notify_returns_422_without_redirect
   - front_pg_urls_require_site_absolute
   - front_pg_urls_use_server_site_address_unchanged
-  - front_receipt_window_has_no_opener_and_https_only
+  - front_receipt_link_opens_without_opener
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/NicepaymentsHostTrustTest.php

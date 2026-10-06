@@ -13,13 +13,14 @@
  *    user-initiated 면제 (WP29 §3.6) 는 항상 활성.
  * 2. 공개 설정 페치 (banner_enabled / cookie_policy_version / blocked_domains)
  * 3. 자동 차단 엔진 (MutationObserver 백업 라인) 시작 — banner_enabled=true 시
- * 4. 현재 방문자의 카테고리별 동의 상태 페치 후 preblocker + blocker + interceptor 동기화
- * 5. 부팅 시점 functional 미동의면 cleanup 호출 (allowlist 외 모든 storage/cookie 파기, EDPB §117)
- * 6. ActionDispatcher 에 `sirsoft-gdpr.syncConsent` 핸들러 등록 — 레이아웃의 동의 저장
- *    onSuccess 에서 호출하여 두 차단 엔진 + 인터셉터 동기화 + 필요 시 cleanup
+ * 4. 코어 동의 런타임의 현재 스냅샷(`G7Core.consent.getSnapshot()` = `_global.consent`)으로
+ *    preblocker + blocker + interceptor 동기화하고, 이후 변경은 `G7Core.consent.subscribe()`
+ *    (코어 이벤트 `consent:changed`)로 받는다.
  *
- * 동의 SSoT 는 서버 DB. 배너 표시/저장은 cookie_banner.g7.html 레이아웃이 단독 처리하며,
- * 차단 엔진 + 인터셉터는 `sirsoft-gdpr.syncConsent` 핸들러로 동기화.
+ * 동의 SSoT 는 서버 DB 이고, 이 플러그인은 코어 동의 계약의 제공자로 서버에서 답한다(GdprConsentProvider).
+ * 브라우저에서는 코어 런타임 하나가 스냅샷을 조회·보관하고 로그인·로그아웃 때 다시 읽는다 — 이 플러그인은
+ * 자체 조회도 자체 이벤트도 없이 그 런타임을 소비만 한다(#639). 배너·마이페이지 레이아웃은 동의 저장 뒤
+ * 코어 내장 핸들러 `refreshConsent` 를 부른다.
  *
  * @module sirsoft-gdpr/index
  */
@@ -31,7 +32,7 @@ import {
     updateCookieInterceptorConfig,
 } from './cookieInterceptor';
 import { cleanupFunctionalArtifacts } from './functionalCleaner';
-import { fetchPublicSettings, fetchConsentSnapshot } from './layouts';
+import { fetchPublicSettings } from './layouts';
 import {
     LOCKED_FALLBACK,
     resolveInlineAllowlist,
@@ -51,8 +52,17 @@ import { installUserInitiatedTracker } from './userInitiatedTracker';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-gdpr';
 
-interface ActionDispatcher {
-    registerHandler: (name: string, handler: (...args: unknown[]) => unknown) => void;
+/** 코어 동의 스냅샷 (`_global.consent`) 중 이 플러그인이 읽는 부분 */
+interface CoreConsentSnapshot {
+    status: 'unknown' | 'ready' | 'none';
+    categories: Record<string, boolean>;
+    needsRenewal: boolean;
+}
+
+/** 코어 동의 파사드 (`G7Core.consent`) */
+interface CoreConsentFacade {
+    getSnapshot: () => CoreConsentSnapshot | null;
+    subscribe: (listener: (snapshot: CoreConsentSnapshot) => void) => () => void;
 }
 
 interface G7Config {
@@ -115,77 +125,66 @@ function readInlineBannerEnabled(): boolean {
 }
 
 /**
- * G7Core.getActionDispatcher() 가 준비될 때까지 대기 후 핸들러 등록.
+ * 코어 동의 파사드를 반환합니다 (사용자 화면에서만 있다).
  *
- * 모듈/플러그인 에셋 로딩 순서에 따라 ActionDispatcher 가 아직 초기화 안 됐을 수
- * 있으므로 setTimeout 으로 polling. module-assets.md 의 권장 패턴.
+ * @return 동의 파사드 또는 null
  */
-function registerSyncHandler(): void {
-    const dispatcher = (
-        window as unknown as { G7Core?: { getActionDispatcher?: () => ActionDispatcher | undefined } }
-    ).G7Core?.getActionDispatcher?.();
+function resolveConsentFacade(): CoreConsentFacade | null {
+    const facade = (window as unknown as { G7Core?: { consent?: CoreConsentFacade } }).G7Core?.consent;
+    if (facade && typeof facade.getSnapshot === 'function' && typeof facade.subscribe === 'function') {
+        return facade;
+    }
+    return null;
+}
 
-    if (!dispatcher) {
-        setTimeout(registerSyncHandler, 100);
-        return;
+/** 이전 구독 해제 함수 — 부트스트랩이 두 번 돌아도 구독은 하나 */
+let unsubscribeConsent: (() => void) | null = null;
+
+/**
+ * 코어 동의 스냅샷을 차단 엔진·preblocker·인터셉터에 반영합니다.
+ *
+ * - `unknown`(부팅 중, 로그인·로그아웃 직후 재조회 중)에는 아무것도 바꾸지 않는다 — 현재 엔진 상태 유지.
+ * - 기능 저장소 정리(EDPB §117)는 `ready` 이면서 기능 미동의일 때만 — 일시적 `unknown` 으로 동의한 회원의
+ *   저장소를 지우지 않는다.
+ * - `needsRenewal` 이면 옛 동의가 새 정책에 쓰이는 상태라 preblocker 차단 요소를 복원하지 않는다.
+ *
+ * @param snapshot 코어 동의 스냅샷
+ * @param blockedDomains 운영자 차단 도메인 카탈로그
+ */
+export function applyConsentSnapshot(
+    snapshot: CoreConsentSnapshot | null | undefined,
+    blockedDomains: Record<string, readonly string[]>,
+): void {
+    if (!snapshot || (snapshot.status !== 'ready' && snapshot.status !== 'none')) return;
+
+    const categories = { ...(snapshot.categories ?? {}) };
+    const needsRenewal = snapshot.needsRenewal === true;
+    const functionalConsented = snapshot.status === 'ready' && !needsRenewal && categories.functional === true;
+
+    // 1. blocker.ts (MutationObserver 백업 라인) — rescan 으로 placeholder 복원/차단
+    setCurrentConsent({ categories, needs_renewal: needsRenewal });
+
+    // 2. preblocker (1차 라인)
+    updatePreblockerConfig({ blockedDomains, consent: categories, needs_renewal: needsRenewal });
+
+    // 3. Phase 2: storage / cookie 인터셉터
+    const necessaryAllowlist = readInlineNecessaryAllowlist();
+    updateStorageInterceptorConfig({ functionalConsented, necessaryAllowlist });
+    updateCookieInterceptorConfig({ functionalConsented, necessaryAllowlist });
+
+    // 4. EDPB §117: 기능 미동의 확정이면 allowlist 외 storage/cookie 파기
+    if (snapshot.status === 'ready' && !functionalConsented) {
+        cleanupFunctionalArtifacts({ allowlist: necessaryAllowlist });
     }
 
-    // sirsoft-gdpr.syncConsent — 동의 저장 직후 차단 엔진 + 인터셉터 동기화
-    dispatcher.registerHandler(`${PLUGIN_IDENTIFIER}.syncConsent`, async () => {
-        const snapshot = await fetchConsentSnapshot();
-        if (snapshot === null) return;
-
-        const functionalConsented = !snapshot.needs_renewal && snapshot.categories.functional === true;
-
-        // 1. blocker.ts (MutationObserver 백업 라인) 동기화 — rescan 으로 placeholder 복원
-        setCurrentConsent({ categories: snapshot.categories, needs_renewal: snapshot.needs_renewal });
-
-        // 1-1. 동의가 바뀐 사실을 화면 전체에 알린다. 이 이벤트만 바라보는 소비자(코어
-        // 방문자 통계 트래커 등)는 알림이 없으면 새로고침 전까지 옛 판정을 그대로 쓴다.
-        window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
-            detail: { categories: snapshot.categories, needs_renewal: snapshot.needs_renewal },
-        }));
-
-        // 1-2. 코어 방문자 통계 계약 — 코어 이름의 이벤트에 분석 동의 여부를 싣는다. 코어는 이 플러그인의
-        // 이벤트 이름·스냅샷 모양을 모르므로 이 알림이 없으면 새로고침 전까지 옛 판정을 쓴다.
-        window.dispatchEvent(new CustomEvent('g7:analytics-permission-changed', {
-            // 정책이 바뀌어 재동의가 필요한 상태는 서버도 동의 없음으로 판정한다(현재 버전 동의만 센다).
-            detail: { has_consent: !snapshot.needs_renewal && snapshot.categories?.analytics === true },
-        }));
-
-        // 2. preblocker (1차 라인) 동기화 — 새 차단 판정에 즉시 반영
-        const blockedDomains = readInlineBlockedDomains();
-        updatePreblockerConfig({
-            blockedDomains,
-            consent: snapshot.categories,
-            needs_renewal: snapshot.needs_renewal,
-        });
-
-        // 3. Phase 2: storage / cookie 인터셉터 동기화
-        const necessaryAllowlist = readInlineNecessaryAllowlist();
-        updateStorageInterceptorConfig({
-            functionalConsented,
-            necessaryAllowlist,
-        });
-        updateCookieInterceptorConfig({
-            functionalConsented,
-            necessaryAllowlist,
-        });
-
-        // 4. EDPB §117: 동의 철회 즉시 파기 — strictly necessary allowlist 외 모든 storage/cookie cleanup.
-        if (!functionalConsented) {
-            cleanupFunctionalArtifacts({ allowlist: necessaryAllowlist });
-        }
-
-        // 5. 동의 받은 카테고리의 preblocker 차단 요소 복원 (단, needs_renewal=true 면 복원 안 함)
-        if (!snapshot.needs_renewal) {
-            for (const [category, allowed] of Object.entries(snapshot.categories)) {
-                if (allowed === true && category !== 'necessary') {
-                    restorePreblockedCategory(category);
-                }
+    // 5. 동의 받은 카테고리의 preblocker 차단 요소 복원
+    if (!needsRenewal) {
+        for (const [category, allowed] of Object.entries(categories)) {
+            if (allowed === true && category !== 'necessary') {
+                restorePreblockedCategory(category);
             }
         }
-    });
+    }
 }
 
 /**
@@ -193,9 +192,6 @@ function registerSyncHandler(): void {
  */
 async function bootstrap(): Promise<void> {
     if (typeof window === 'undefined') return;
-
-    // 핸들러 등록은 banner_enabled 활성 여부와 무관하게 항상 수행.
-    registerSyncHandler();
 
     // 0. preblocker + 1st-party 인터셉터 즉시 등록 (banner_enabled=true 시) — settings fetch 기다리지 않음.
     //    G7Config 인라인 페이로드 (HTML 응답에 동기 포함) 로 즉시 카탈로그 사용 가능.
@@ -250,65 +246,32 @@ async function bootstrap(): Promise<void> {
 
     startBlocker();
 
-    // 2. 현재 동의 상태 페치 후 두 엔진 + 인터셉터 동기화 + 복원
-    //    needs_renewal=true 면 옛 동의가 신정책에 그대로 쓰이는 상태 → 복원 안 함 (보수적 차단 유지)
-    const snapshot = await fetchConsentSnapshot();
-    const functionalConsented =
-        snapshot !== null && !snapshot.needs_renewal && snapshot.categories.functional === true;
-
-    // Phase 2: storage / cookie 인터셉터 설정 갱신 (functional 동의 여부만 반영).
-    const necessaryAllowlist = readInlineNecessaryAllowlist();
-    updateStorageInterceptorConfig({
-        functionalConsented,
-        necessaryAllowlist,
-    });
-    updateCookieInterceptorConfig({
-        functionalConsented,
-        necessaryAllowlist,
-    });
-
-    // Phase 2: 부팅 시점 functional 미동의면 allowlist 외 모든 storage/cookie 파기 (EDPB §117).
-    //   - 재방문 시 이전 세션의 잔류 데이터 정리
-    //   - 신규 게스트 / 거부 후 재방문 모두 동일 처리
-    if (!functionalConsented) {
-        cleanupFunctionalArtifacts({ allowlist: necessaryAllowlist });
+    // 2. 코어 동의 런타임 구독 후 현재 스냅샷 반영 — 구독을 먼저 걸어야 그 사이 도착한 변경을 놓치지 않는다.
+    //    런타임이 없는 화면(관리자)에서는 보수적 차단 상태를 유지한다.
+    const facade = resolveConsentFacade();
+    if (facade === null) {
+        return;
     }
-
-    if (snapshot !== null) {
-        setCurrentConsent({ categories: snapshot.categories, needs_renewal: snapshot.needs_renewal });
-        updatePreblockerConfig({
-            blockedDomains: customDomains,
-            consent: snapshot.categories,
-            needs_renewal: snapshot.needs_renewal,
-        });
-        if (!snapshot.needs_renewal) {
-            for (const [category, allowed] of Object.entries(snapshot.categories)) {
-                if (allowed === true && category !== 'necessary') {
-                    restorePreblockedCategory(category);
-                }
-            }
-        }
-    }
+    unsubscribeConsent?.();
+    unsubscribeConsent = facade.subscribe((next) => applyConsentSnapshot(next, customDomains));
+    applyConsentSnapshot(facade.getSnapshot(), customDomains);
 }
 
 /**
- * 코어 재초기화 시 호출되는 진입점.
+ * 코어 재초기화 시 호출되는 진입점 — 등록할 핸들러가 없어 아무것도 하지 않는다 (결정 D22).
  *
- * 로케일 전환 등으로 TemplateApp 이 ActionDispatcher 를 새로 만들면
- * `TemplateApp.reinitializePluginHandlers()` 가 `window.__[Plugin].initPlugin()` 을 호출한다.
- * 이 이름으로 노출하지 않으면 재초기화 후 syncConsent 핸들러가 소실되어
- * 동의 저장 직후 차단 엔진·인터셉터 동기화가 조용히 멈춘다.
- *
- * 핸들러 재등록만 수행한다 — 차단 엔진/인터셉터는 이미 설치되어 있으므로 재설치하지 않는다.
+ * 이 플러그인은 액션 핸들러를 등록하지 않는다(동의 저장 뒤 동기화는 코어 내장 `refreshConsent`). 전역
+ * `window.__SirsoftGdpr` 는 외부에서 이 이름으로 플러그인 존재를 확인하던 코드를 깨지 않으려고 남긴다.
+ * 동의 구독은 코어 `componentEvent` 에 걸려 있어 로케일 재초기화에도 유지된다.
  */
 function initPlugin(): void {
-    registerSyncHandler();
+    // no-op
 }
 
 if (typeof window !== 'undefined') {
     (window as unknown as Record<string, unknown>).__SirsoftGdpr = {
         identifier: PLUGIN_IDENTIFIER,
-        // 코어 재초기화 시 핸들러 재등록 진입점 — 이름 고정 (TemplateApp.reinitializePluginHandlers)
+        // 재등록할 핸들러가 없다 — 빈 진입점 (D22)
         initPlugin,
     };
 }

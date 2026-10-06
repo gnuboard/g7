@@ -13,6 +13,196 @@
     },
     "children": [
         {
+            "comment": "동의 관리 제공자 (#639) — 방문자의 쿠키·추적 동의를 판단할 확장을 고르는 자리. 탭 맨 위에 둔다: 아래 파기 카드들과\n      달리 사이트 전체(방문자 통계·외부 스크립트 차단·다른 확장)의 판정을 바꾸는 설정이기 때문이다.\n      선택지는 「자동」(빈 값) + 등록된 제공자. 수집을 꺼 둔 제공자도 목록에 남긴다 — 골라 둔 뒤 꺼지면 사유 안내로 보여야 한다.\n      안내는 서버가 판정한 선택 상태(`_meta.consent_selection`)로만 띄운다 — 저장 전 선택으로 띄우면 아직 적용되지 않은\n      상태를 사실처럼 말한다. none 은 사유(`no_provider` · `provider_unavailable`)로 문구를 가른다.",
+            "id": "card_consent_provider",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.privacy.consent_provider.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.privacy.consent_provider.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "consent_provider_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.privacy.consent_provider.label"
+                                },
+                                {
+                                    "comment": "고른 제공자가 사라진 missing 상태에서는 저장된 id 를 선택지 끝에 덧붙여 선택 상자가 빈 글자로 보이지 않게 한다(경고 문구가 사유를 알린다).",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-full md:w-96"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "privacy.consent_provider",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "aria-label": "$t:admin.settings.privacy.consent_provider.label",
+                                                "error": "{{_local.errors?.['privacy.consent_provider']?.[0] ?? ''}}",
+                                                "options": "{{[{ value: '', label: _local.form?._meta?.consent_selection?.state === 'auto' && _local.form?._meta?.consent_selection?.provider_label ? '$t:admin.settings.privacy.consent_provider.auto_current|provider=' + _local.form._meta.consent_selection.provider_label : '$t:admin.settings.privacy.consent_provider.auto' }].concat((_local.form?._meta?.consent_providers ?? []).map(p => ({ value: p.id, label: p.label }))).concat(_local.form?._meta?.consent_selection?.state === 'missing' && _local.form?.privacy?.consent_provider ? [{ value: _local.form.privacy.consent_provider, label: _local.form.privacy.consent_provider }] : [])}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_ambiguous",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'ambiguous'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:admin.settings.privacy.consent_provider.ambiguous"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_missing",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'missing'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:admin.settings.privacy.consent_provider.missing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_none",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'none'}}",
+                            "props": {
+                                "role": "status",
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "{{_local.form?._meta?.consent_selection?.reason === 'provider_unavailable' ? $t('admin.settings.privacy.consent_provider.none_unavailable') : $t('admin.settings.privacy.consent_provider.none_no_provider')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "card_privacy_notice",
             "type": "basic",
             "name": "Div",

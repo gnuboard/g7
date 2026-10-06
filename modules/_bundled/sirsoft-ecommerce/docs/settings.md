@@ -366,6 +366,18 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |
 | `sirsoft-tosspayments` | 플러그인 | `>=1.3.0` |
 | `sirsoft-basic` | 템플릿 | `>=1.3.0` |
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 번들 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | ✅ |
+
+**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
+
+| 확장 | 유형 |
+|---|---|
+| `sirsoft-message_bizppurio` | 플러그인 |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

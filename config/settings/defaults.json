@@ -243,6 +243,7 @@
             "visitor_cookie_days": 395
         },
         "privacy": {
+            "consent_provider": "",
             "withdrawn_retention_enabled": false,
             "withdrawn_retention_days": 365,
             "dormant_enabled": false,

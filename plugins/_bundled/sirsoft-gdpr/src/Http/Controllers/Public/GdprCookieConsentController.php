@@ -5,7 +5,6 @@ namespace Plugins\Sirsoft\Gdpr\Http\Controllers\Public;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
 use Plugins\Sirsoft\Gdpr\Http\Requests\CookieConsentStatusRequest;
@@ -121,32 +120,6 @@ class GdprCookieConsentController extends PublicBaseController
             // optional.sanctum 미들웨어 통과 후 $request->user() 가 토큰 보유 회원이면 인스턴스 반환, 게스트면 null.
             'is_member' => $userId !== null,
         ]);
-    }
-
-    /**
-     * 게스트 세션 ID를 결정합니다.
-     *
-     * 클라이언트가 쿠키로 전달한 session_id는 서명을 검증한 뒤 신뢰합니다
-     * (위조된 값은 미식별 게스트로 취급). 쿠키가 없으면 Laravel session ID를
-     * fallback으로 사용합니다.
-     *
-     * @param  Request  $request  요청
-     * @return string|null
-     */
-    private function resolveGuestSessionId($request): ?string
-    {
-        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
-        if ($verified !== null) {
-            return $verified;
-        }
-
-        try {
-            $sessionId = $request->hasSession() ? $request->session()->getId() : null;
-        } catch (\Throwable) {
-            $sessionId = null;
-        }
-
-        return $sessionId !== null ? substr($sessionId, 0, 100) : null;
     }
 
     /**

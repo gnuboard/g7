@@ -368,6 +368,7 @@ class Plugin extends AbstractPlugin
             Listeners\CancelActivityLogListener::class,
             Listeners\ScrubEscrowRecipientOnOrderAnonymizeListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
+            Listeners\RestrictPaymentMethodsForCurrencyListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\EnsureAdminOrderDetailTestModeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,

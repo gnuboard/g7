@@ -127,9 +127,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -193,9 +193,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 39개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 40개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 19개 | `vitest.config.ts` |
-| Playwright | 6개 | `tests/Playwright` |
+| Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
@@ -214,6 +214,8 @@ cd plugins/_bundled/sirsoft-gdpr && npm run test:e2e -- specs/<대상>.spec.ts
 
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.
 <!-- @generated:test-commands END -->
+
+E2E 의 게스트→로그인 시나리오는 `php artisan playwright:seed-gdpr-guest-login --json --suffix=<꼬리>`(CLI + `G7_PLAYWRIGHT_BYPASS=1`)로 게스트 세션과 회원을 시드합니다. 시드 주체는 지우고 다시 만드는 고정값이라, 이 시드를 쓰는 spec 이 병렬 워커에서 동시에 돌면 서로의 데이터를 지웁니다 — fixture(`tests/Playwright/fixtures/gdpr-guest-login-seed.ts`)는 spec 파일마다 다른 `--suffix` 를 넘깁니다. 이 시드를 쓰는 새 spec 도 그 fixture 를 거칩니다.
 
 ## 8. 문서 목차
 

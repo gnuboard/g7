@@ -21,7 +21,7 @@
         <on type="click">
           <!-- 모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값) -->
           <sequence>
-            <set-state target="global" cashReceiptForm="{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/>
+            <set-state target="global" ecommerceCashReceiptForm="{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/>
             <open-modal target="ext_cash_receipt_issue_modal"/>
           </sequence>
         </on>
@@ -70,19 +70,19 @@
           <div class="flex flex-row gap-4">
             <responsive on="portable" class="flex flex-col gap-2"/>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="radio" name="receipt_type" value="income" checked="{{(_global.cashReceiptForm?.receipt_type ?? 'income') === 'income'}}" class="w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+              <input type="radio" name="receipt_type" value="income" checked="{{(_global.ecommerceCashReceiptForm?.receipt_type ?? 'income') === 'income'}}" class="w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
                 <on type="change">
                   <!-- 소득공제 전환 시 사업자등록번호 선택을 phone 으로 리셋 (소득공제에 사용 불가) -->
-                  <set-state target="global" cashReceiptForm.receipt_type="income" cashReceiptForm.identifier_type="{{_global.cashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.cashReceiptForm?.identifier_type ?? 'phone')}}" cashReceiptForm.identifier="{{_global.cashReceiptForm?.identifier_type === 'business' ? '' : (_global.cashReceiptForm?.identifier ?? '')}}"/>
+                  <set-state target="global" ecommerceCashReceiptForm.receipt_type="income" ecommerceCashReceiptForm.identifier_type="{{_global.ecommerceCashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone')}}" ecommerceCashReceiptForm.identifier="{{_global.ecommerceCashReceiptForm?.identifier_type === 'business' ? '' : (_global.ecommerceCashReceiptForm?.identifier ?? '')}}"/>
                 </on>
               </input>
               <span>$t:sirsoft-ecommerce.order.cash_receipt.purpose_income</span>
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="radio" name="receipt_type" value="expense" checked="{{_global.cashReceiptForm?.receipt_type === 'expense'}}" class="w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+              <input type="radio" name="receipt_type" value="expense" checked="{{_global.ecommerceCashReceiptForm?.receipt_type === 'expense'}}" class="w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
                 <on type="change">
                   <!-- 지출증빙. 사업자 비용 처리용이라 아래 식별번호가 사업자등록번호를 받는다 -->
-                  <set-state target="global" cashReceiptForm.receipt_type="expense"/>
+                  <set-state target="global" ecommerceCashReceiptForm.receipt_type="expense"/>
                 </on>
               </input>
               <span>$t:sirsoft-ecommerce.order.cash_receipt.purpose_expense</span>
@@ -92,23 +92,23 @@
         <!-- 발급수단 — 지출증빙일 때만 사업자등록번호 추가 (D10) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier_type</label>
-          <select name="identifier_type" value="{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}" options="{{(_global.cashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <select name="identifier_type" value="{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}" options="{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
               <!-- 발급수단 변경 시 번호를 비운다 (형식이 달라 검증 실패를 유발) -->
-              <set-state target="global" cashReceiptForm.identifier_type="{{$event.target.value}}" cashReceiptForm.identifier=""/>
+              <set-state target="global" ecommerceCashReceiptForm.identifier_type="{{$event.target.value}}" ecommerceCashReceiptForm.identifier=""/>
             </on>
           </select>
         </div>
         <!-- 번호 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier</label>
-          <input type="text" name="identifier" value="{{_global.cashReceiptForm?.identifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="identifier" value="{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
               <!-- 식별번호. 소득공제면 휴대폰번호나 현금영수증카드, 지출증빙이면 사업자등록번호다 -->
-              <set-state target="global" cashReceiptForm.identifier="{{$event.target.value}}"/>
+              <set-state target="global" ecommerceCashReceiptForm.identifier="{{$event.target.value}}"/>
             </on>
           </input>
-          <span data-if="{{!!_global.cashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.cashReceiptForm?.error ?? ''}}</span>
+          <span data-if="{{!!_global.ecommerceCashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.ecommerceCashReceiptForm?.error ?? ''}}</span>
         </div>
         <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.immutable_help</p>
         <!-- 액션 — 데스크톱 가로 우측정렬, portable 세로 full-width -->
@@ -120,21 +120,21 @@
             </on>
             $t:sirsoft-ecommerce.order.cash_receipt.cancel
           </button>
-          <button data-ref="ext_cash_receipt_issue_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.cashReceiptForm?.identifier ?? '')}}">
+          <button data-ref="ext_cash_receipt_issue_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.ecommerceCashReceiptForm?.identifier ?? '')}}">
             <on type="click">
               <!-- 회원은 user/orders/{id}, 비회원은 guest/orders/{orderNumber} + X-Guest-Order-Token. 주문 응답의 실제 id 를 쓴다(라우트 파라미터가 주문번호일 수 있으므로). -->
               <api-call target="{{_global.currentUser?.uuid ? ('/api/modules/sirsoft-ecommerce/user/orders/' + order.data.id + '/cash-receipt') : ('/api/modules/sirsoft-ecommerce/guest/orders/' + order.data.order_number + '/cash-receipt')}}" auth_mode="optional" method="POST">
                 <success>
-                  <set-state target="global" :cashReceiptForm="null"/>
+                  <set-state target="global" :ecommerceCashReceiptForm="null"/>
                   <close-modal/>
                   <refetch-data-source dataSourceId="order"/>
                   <toast type="success" message="$t:sirsoft-ecommerce.order.cash_receipt.issue_success"/>
                 </success>
                 <fail>
                   <!-- 서버 검증 메시지를 그대로 노출한다 (사업자번호 체크섬·용도×수단 조합 등) -->
-                  <set-state target="global" cashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"/>
+                  <set-state target="global" ecommerceCashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"/>
                 </fail>
-                <body receipt_type="{{_global.cashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.cashReceiptForm?.identifier ?? ''}}"/>
+                <body receipt_type="{{_global.ecommerceCashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}"/>
                 <field name="headers">
                   <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
                 </field>

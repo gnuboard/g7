@@ -210,8 +210,8 @@
               $t:shop.order_complete.save_shipping_address
             </button>
           </div>
-          <!-- 결제 금액 요약 -->
-          <div class="py-4">
+          <!-- 결제 금액 요약 — 결제 플러그인 조각(영수증·매출전표·가상계좌 안내)이 이 id 끝에 붙는다(#639, 쇼핑몰 docs/extension-points.md 약속) -->
+          <div data-ref="order_complete_payment_summary" class="py-4">
             <!-- 상품 금액 -->
             <div class="flex justify-between mb-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.subtotal</span>

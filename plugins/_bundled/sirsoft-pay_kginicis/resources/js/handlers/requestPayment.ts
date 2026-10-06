@@ -29,11 +29,6 @@ interface PgPaymentData {
 
 interface RequestPaymentParams {
     pgPaymentData: PgPaymentData;
-    paymentMethod?: string;
-}
-
-interface TemplateLocalState {
-    paymentMethod?: string;
 }
 
 interface ClientConfig {
@@ -100,11 +95,6 @@ interface CbtCheckoutTokenResponse {
 declare global {
     interface Window {
         INIStdPay: any;
-        __templateApp?: {
-            globalState?: {
-                _local?: TemplateLocalState;
-            };
-        };
     }
 }
 
@@ -738,22 +728,24 @@ async function requestCbtPayment(
  *   - KRW + PC: INIStdPay 팝업 (표준결제)
  */
 export async function requestPaymentHandler(action: any, _context?: any): Promise<void> {
-    const { pgPaymentData, paymentMethod: paramPaymentMethod } = (action.params || {}) as RequestPaymentParams;
+    const { pgPaymentData } = (action.params || {}) as RequestPaymentParams;
 
     if (!pgPaymentData) {
         return;
     }
 
-    const localState = window.__templateApp?.globalState?._local;
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
-    const paymentMethod = paramPaymentMethod
-        ?? pgPaymentData.payment_method
-        ?? localState?.paymentMethod
-        ?? 'card';
+    // 결제수단은 액션 인자 하나에서만 읽는다 — 서버가 주문에 저장한 결제수단(pg_payment_data.payment_method)이
+    // 단일 출처이고, 확장 수단이면 확장 ID 가 그대로 온다(#475). 화면 상태를 뒤져 채우면 서버와 다른 수단으로
+    // 결제창을 열 수 있어, 없으면 결제창을 열지 않고 오류로 끝낸다.
+    const paymentMethod = typeof pgPaymentData.payment_method === 'string' ? pgPaymentData.payment_method : '';
 
     const G7Core = (window as any).G7Core;
 
     try {
+        if (paymentMethod === '') {
+            throw new Error('KG Inicis payment method is missing from pg_payment_data.');
+        }
+
         const configJson = await G7Core.api.get('/modules/sirsoft-ecommerce/payments/client-config/kginicis');
 
         if (!configJson.data) {
@@ -761,6 +753,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         const config: ClientConfig = configJson.data;
+        // 결제 통화도 액션 인자(서버가 주문 스냅샷 환율로 환산한 청구 통화)만 본다. 화면의 표시 통화
+        // (`_global.preferredCurrency`)는 주문 뒤에 바뀔 수 있어 청구 금액(amount)과 짝이 맞지 않을 수 있다.
         const currency = normalizePaymentCurrency(pgPaymentData.currency);
         const isJpy = currency === 'JPY';
         const isKrw = currency === 'KRW';

@@ -196,8 +196,8 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
-                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                    "comment": "코어 동의 런타임 재조회 — consent:changed 로 자동 차단 엔진 캐시 갱신 + rescan",
+                                                                    "handler": "refreshConsent"
                                                                 },
                                                                 {
                                                                     "comment": "거부 전용 토스트 (이슈 #430) — 거부인데 '동의가 저장' 문구가 뜨던 오표기 수정.",
@@ -428,8 +428,8 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
-                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                    "comment": "코어 동의 런타임 재조회 — consent:changed 로 자동 차단 엔진 캐시 갱신 + rescan",
+                                                                    "handler": "refreshConsent"
                                                                 },
                                                                 {
                                                                     "handler": "toast",
@@ -681,7 +681,7 @@
                                                                     }
                                                                 },
                                                                 {
-                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                    "handler": "refreshConsent"
                                                                 },
                                                                 {
                                                                     "handler": "toast",

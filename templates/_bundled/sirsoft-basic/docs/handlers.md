@@ -101,10 +101,10 @@
 | 항목 | 값 |
 |---|---|
 | 엔트리 파일 | `src/index.ts` |
-| 전역 객체 | **미노출** |
+| 전역 객체 | `window.G7TemplateHandlers` |
 | 재등록 진입점 | `initTemplate()` |
 
-재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).
+템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
@@ -603,6 +603,11 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 **소스**: `src/handlers/storageHandlers.ts`
 
 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지를 관리합니다.
+
+**인증 경계 정리**(`src/handlers/authBoundaryStorage.ts`, 핸들러가 아니라 템플릿 초기화가 설치): 로그아웃(인증 → 비인증)이면
+장바구니 키와 비회원 주문 조회 토큰을 지우고, 실제 로그인(코어 `login` 이벤트 — 로그인 폼·2단계 인증 완료)이면 비회원 토큰을
+지우고 장바구니 키를 새로 발급합니다. 부팅 시 인증 복원(새로고침)은 로그인이 아니므로 키를 다시 받지 않습니다 — 템플릿
+초기화가 부팅 인증 확인보다 먼저 설치될 수 있어 `authStateChange` 에 재발급을 걸면 새로고침마다 키가 바뀝니다.
 
 #### initCartKey
 

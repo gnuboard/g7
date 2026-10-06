@@ -40,7 +40,31 @@ function nextChallengeId(): string {
 
 let currentChallengeId = 'challenge-0';
 
+/** 코어 API 클라이언트의 post 모의 — 재발급·취소 통보가 모두 여기로 온다 */
+let apiPost = vi.fn();
+
+/**
+ * 새 거래 발급 응답을 정한다. 취소 통보 등 다른 요청은 성공으로 답한다.
+ *
+ * @param reissue 새 거래 발급 응답 (예외를 던지게 하려면 Error)
+ */
+function answerReissue(reissue: Record<string, unknown> | Error): void {
+    apiPost.mockImplementation(async (url: string) => {
+        if (url !== '/api/identity/challenges') return { success: true };
+        if (reissue instanceof Error) throw reissue;
+
+        return reissue;
+    });
+}
+
+/** 새 거래 발급 요청만 골라낸다 */
+function reissueCalls(): Array<[string, Record<string, unknown>]> {
+    return (apiPost.mock.calls as unknown as Array<[string, Record<string, unknown>]>)
+        .filter(([url]) => url === '/api/identity/challenges');
+}
+
 function setupG7Core(): void {
+    apiPost = vi.fn(async () => ({ success: true }));
     dispatched = [];
     toasts = [];
     globalState = {
@@ -72,7 +96,7 @@ function setupG7Core(): void {
             return true;
         }),
         identity: { markDomainNoticeShown: vi.fn() },
-        api: { getToken: () => null },
+        api: { post: apiPost },
     };
 }
 
@@ -160,25 +184,23 @@ describe('인증 실패 후 흐름', () => {
         await startAuthHandler();
         emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
 
-        const fetchMock = vi.fn(async () => ({
-            ok: true,
-            json: async () => ({
-                success: true,
-                data: {
-                    id: 'challenge-reissued',
-                    expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002', siteOrigin: SITE_ORIGIN },
-                },
-            }),
-        }));
-        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        const fetchSpy = vi.fn();
+        vi.stubGlobal('fetch', fetchSpy as unknown as typeof fetch);
+        answerReissue({
+            success: true,
+            data: {
+                id: 'challenge-reissued',
+                expires_at: '2026-07-28T15:00:00+09:00',
+                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002', siteOrigin: SITE_ORIGIN },
+            },
+        });
 
         await startAuthHandler();
 
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-        const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-        expect(url).toBe('/api/identity/challenges');
-        expect(JSON.parse(String(init.body))).toMatchObject({ purpose: 'signup', provider_id: 'nhnkcp' });
+        // 코어 API 클라이언트로 보낸다 — Bearer·401·로케일은 코어가 맡고 raw fetch 는 쓰지 않는다
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(reissueCalls()).toHaveLength(1);
+        expect(reissueCalls()[0][1]).toMatchObject({ purpose: 'signup', provider_id: 'nhnkcp' });
 
         // 새 거래 정보로 표준창이 열려야 한다 (이전 거래키 재사용 금지)
         expect(submitted[submitted.length - 1].action).toBe(NEXT_CALL_URL);
@@ -197,22 +219,18 @@ describe('인증 실패 후 흐름', () => {
         await startAuthHandler();
         emitBridgeResult({ identity_error: 'DUPLICATE' });
 
-        const fetchMock = vi.fn(async () => ({
-            ok: true,
-            json: async () => ({
-                success: true,
-                data: {
-                    id: 'challenge-reissued-2',
-                    expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
-                },
-            }),
-        }));
-        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        answerReissue({
+            success: true,
+            data: {
+                id: 'challenge-reissued-2',
+                expires_at: '2026-07-28T15:00:00+09:00',
+                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
+            },
+        });
 
         await startAuthHandler();
 
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(reissueCalls()).toHaveLength(1);
         expect(submitted[submitted.length - 1].fields.reg_cert_key).toBe('CERTKEY000000003');
     });
 
@@ -233,23 +251,19 @@ describe('인증 실패 후 흐름', () => {
         vi.advanceTimersByTime(500);
         vi.useRealTimers();
 
-        const fetchMock = vi.fn(async () => ({
-            ok: true,
-            json: async () => ({
-                success: true,
-                data: {
-                    id: 'challenge-reissued-3',
-                    expires_at: '2026-07-28T15:00:00+09:00',
-                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004', siteOrigin: SITE_ORIGIN },
-                },
-            }),
-        }));
-        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        answerReissue({
+            success: true,
+            data: {
+                id: 'challenge-reissued-3',
+                expires_at: '2026-07-28T15:00:00+09:00',
+                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004', siteOrigin: SITE_ORIGIN },
+            },
+        });
         vi.stubGlobal('open', openPopupStub());
 
         await startAuthHandler();
 
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(reissueCalls()).toHaveLength(1);
         expect(submitted[submitted.length - 1].fields.reg_cert_key).toBe('CERTKEY000000004');
         expect(globalState.identityChallenge.challenge_id).toBe('challenge-reissued-3');
     });
@@ -261,10 +275,8 @@ describe('인증 실패 후 흐름', () => {
         emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
         const submittedBefore = submitted.length;
 
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async () => ({ ok: false, json: async () => ({ success: false }) })) as unknown as typeof fetch,
-        );
+        // 4xx·5xx 는 API 클라이언트가 예외로 던진다
+        answerReissue(Object.assign(new Error('HTTP 422'), { response: { status: 422, data: { success: false } } }));
 
         await startAuthHandler();
 

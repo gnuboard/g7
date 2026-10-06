@@ -189,11 +189,16 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "주문 완료 화면은 회원·비회원이 함께 쓴다 — 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 주소를 부른다(전역 헤더는 이 플러그인 주소에 조회 토큰을 붙이지 않는다)",
                                                             "handler": "apiCall",
                                                             "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt",
+                                                            "auth_mode": "optional",
                                                             "auth_required": true,
                                                             "params": {
-                                                                "method": "GET"
+                                                                "method": "GET",
+                                                                "headers": {
+                                                                    "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}"
+                                                                }
                                                             },
                                                             "onSuccess": {
                                                                 "handler": "setState",

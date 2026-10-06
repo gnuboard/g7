@@ -206,6 +206,7 @@ const Header: React.FC<HeaderProps> = ({
 
     // G7Core의 navigate 이벤트 감지
     const originalPushState = history.pushState;
+    // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 원본 pushState 를 그대로 호출하고 현재 경로만 갱신하는 래퍼
     history.pushState = function(...args) {
       originalPushState.apply(this, args);
       setCurrentPath(window.location.pathname);
@@ -213,6 +214,7 @@ const Header: React.FC<HeaderProps> = ({
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 언마운트 시 위 래퍼를 걷어 원본 pushState 를 되돌린다
       history.pushState = originalPushState;
     };
   }, []);

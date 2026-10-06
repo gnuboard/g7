@@ -1,0 +1,28 @@
+feature: 주문 화면 표시는 레이아웃 조각이 맡고, 플러그인 엔트리는 코어 함수를 덮어쓰지 않는다
+
+description: |
+  관리자 주문 상세·내 주문 상세·주문 완료·관리자 결제수단 설정에 붙던 주입 스크립트(경로 정규식 판정, DOM 폴링,
+  window.fetch·history.pushState 덮어쓰기, 로그인 토큰 직접 읽기)를 걷어 내고 레이아웃 조각과 공개 API 로 옮긴다 (#639).
+  관리자 주문 상세의 간편결제 원 수단은 이 플러그인의 KCP 패널(admin_order_payment_query, kcp_status 데이터 소스)이
+  보여 주고 이커머스 결제수단 칸 글자를 고치지 않는다. 주문 완료 매출전표 요청은 회원은 선택 인증, 비회원은 공개 상태
+  `_global.guestOrderToken` 을 X-Guest-Order-Token 헤더로 싣는다. 애플페이 기기 제한은 결제수단 카탈로그(requires_ios)가
+  맡으므로 주문 생성 요청을 가로채지 않는다.
+
+  E2E 는 두지 않는다 — 로컬·CI 에 NHN KCP 결제 완료·간편결제 주문 픽스처가 없다. 배포 조각 JSON 을 엔진에 태워 확인한다.
+
+axes:
+  case: [admin_easy_pay, admin_general, order_complete_guest, order_complete_member, entry]
+
+effects:
+  - easy_pay_label_shown_in_own_panel
+  - easy_pay_row_hidden_for_general_payment
+  - host_screen_text_untouched
+  - guest_token_header_sent
+  - member_token_sent_optionally
+  - no_core_function_override
+  - handlers_registered_and_reinit_exposed
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/adminOrderEasyPayLabel.test.tsx
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/orderCompleteReceiptCredentials.test.tsx
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/entryNoCoreOverrides.test.ts

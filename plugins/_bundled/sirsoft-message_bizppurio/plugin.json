@@ -16,6 +16,9 @@
         "modules": {},
         "plugins": {}
     },
+    "integrations": {
+        "modules": ["sirsoft-board", "sirsoft-ecommerce"]
+    },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-message_bizppurio",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-message_bizppurio/blob/main/CHANGELOG.md",
     "assets": {

@@ -2,19 +2,22 @@
  * 나이스페이먼츠 — PG 전송 주소·영수증 창
  *
  * - PG 로 보내는 결과 수신 주소는 서버가 사이트 주소로 만든 절대 URL 만 쓴다(브라우저 현재 주소로 조립하지 않는다).
- * - 외부 영수증 창은 https 만, opener 를 끊고 연다.
+ * - 영수증 링크는 레이아웃 조각이 새 창(target=_blank)으로 열고 opener 를 끊는다(rel=noopener noreferrer). 종전의 주입 스크립트
+ *   영수증 창 도우미(openExternalReceiptWindow)는 #639 에서 조각 링크로 대체됐다.
  * - 핸들러 수준: 서버가 상대 경로를 주면 결제 폼을 제출하지 않고, 절대 URL 은 브라우저 주소와 달라도
  *   그대로 ReturnURL 에 싣는다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { requireSiteAbsoluteUrl, requestPaymentHandler } from '../handlers/requestPayment';
-import { openExternalReceiptWindow } from '../orderCompleteReceiptInjector';
+import orderCompleteFragment from '../../extensions/user_order_complete_receipt.json';
+import mypageFragment from '../../extensions/user_mypage_order_receipt.json';
 
 /** 서버(client-config)가 사이트 주소로 만들어 내려주는 결과 수신 주소 — 브라우저(jsdom) 주소와 다른 출처 */
 const SITE_CALLBACK_URL = 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback';
 
 const PG_PAYMENT = {
     order_number: 'ORD-HOST-001',
+    payment_method: 'card',
     order_name: 'Host Trust Order',
     amount: 10000,
     customer_email: 'buyer@example.com',
@@ -26,7 +29,7 @@ let submitSpy: ReturnType<typeof vi.spyOn>;
 let originalUserAgentData: PropertyDescriptor | undefined;
 
 /**
- * 모바일 결제 흐름(SignData 발급 → 나이스페이 모바일 결제창으로 폼 제출)을 쓰도록 G7Core·fetch·UA 를 모킹합니다.
+ * 모바일 결제 흐름(SignData 발급 → 나이스페이 모바일 결제창으로 폼 제출)을 쓰도록 G7Core·UA 를 모킹합니다.
  *
  * @param callbackUrl client-config 의 callback_url
  */
@@ -49,14 +52,11 @@ function mockNicepayMobileEnvironment(callbackUrl: string): void {
 
                 return Promise.resolve({ data: {} });
             }),
+            post: vi.fn().mockResolvedValue({ ediDate: '20260101000000', signData: 'fake-sig', mid: 'SRpaytestm' }),
         },
         state: { setLocal: vi.fn() },
         toast: { error: toastError },
     };
-    (window as unknown as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ ediDate: '20260101000000', signData: 'fake-sig', mid: 'SRpaytestm' }),
-    });
     Object.defineProperty(navigator, 'userAgentData', { value: { mobile: true }, configurable: true });
 }
 
@@ -81,7 +81,6 @@ beforeEach(() => {
 
 afterEach(() => {
     delete (window as Record<string, unknown>).G7Core;
-    delete (window as unknown as Record<string, unknown>).fetch;
     if (originalUserAgentData) {
         Object.defineProperty(navigator, 'userAgentData', originalUserAgentData);
     } else {
@@ -102,20 +101,25 @@ describe('나이스페이먼츠 — PG 전송 주소·영수증 창', () => {
     });
 
     // @scenario host_header=forged, sink=front_receipt_window
-    // @effects front_receipt_window_has_no_opener_and_https_only
-    it('영수증 창은 https 만 opener 를 끊은 빈 창에 싣는다', () => {
-        const popup = { opener: window as unknown, location: { href: '' } };
-        const open = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    // @effects front_receipt_link_opens_without_opener
+    it('영수증 링크는 서버가 준 주소로만 새 창을 열고 opener 를 끊는다', () => {
+        const links: Array<Record<string, any>> = [];
+        const walk = (node: unknown): void => {
+            if (!node || typeof node !== 'object') return;
+            const value = node as Record<string, any>;
+            if (value.name === 'A') links.push(value);
+            Object.values(value).forEach(walk);
+        };
+        walk(orderCompleteFragment);
+        walk(mypageFragment);
 
-        expect(openExternalReceiptWindow('https://receipt.example.com/r?id=1', 'r', 'width=800')).toBe(true);
-        expect(open).toHaveBeenCalledWith('', 'r', 'width=800');
-        expect(popup.opener).toBeNull();
-        expect(popup.location.href).toBe('https://receipt.example.com/r?id=1');
-
-        open.mockClear();
-        expect(openExternalReceiptWindow('http://receipt.example.com/r', 'r', 'width=800')).toBe(false);
-        expect(openExternalReceiptWindow('javascript:alert(1)', 'r', 'width=800')).toBe(false);
-        expect(open).not.toHaveBeenCalled();
+        expect(links.length).toBeGreaterThanOrEqual(5);
+        for (const link of links) {
+            // 주소는 영수증 조회 API 응답을 담은 화면 상태에서만 온다 — 조각에 결제사 주소를 적지 않는다
+            expect(link.props.href, link.id).toMatch(/^\{\{_local\._np(?:Oc|Mp)\w+\}\}$/);
+            expect(link.props.target, link.id).toBe('_blank');
+            expect(String(link.props.rel).split(' '), link.id).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
+        }
     });
 
     // @scenario host_header=forged, sink=front_pg_urls

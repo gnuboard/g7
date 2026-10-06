@@ -7,6 +7,7 @@ return [
         'template' => 'テンプレート',
     ],
     'errors' => [
+        'state_contract_conflict' => "':name' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。",
         'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
         'version_check_failed' => 'バージョン検証に失敗しました。',
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',

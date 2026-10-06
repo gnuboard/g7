@@ -112,6 +112,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 `true` (주문하기 차단 플래그) |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (아래 "free_shipping" 표) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (#639). 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
 | unavailable_items | array | `[]` | 구매 불가 상품 목록 (존재할 때만 포함) |
 | has_stock_issue | boolean | `false` | 구매 불가 사유에 재고 부족이 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
 | has_status_issue | boolean | `false` | 구매 불가 사유에 판매 상태 문제가 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
@@ -327,6 +328,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,
@@ -511,6 +513,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품 존재 여부 |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (`enabled` / `threshold_base` / `threshold_multi_currency` / `remaining_base` / `remaining_multi_currency`) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정, #639) |
 
 **응답 예시**
 
@@ -563,6 +566,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,

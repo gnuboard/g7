@@ -1699,6 +1699,30 @@
         }
       },
       {
+        "name": "BrandMark",
+        "type": "composite",
+        "description": "결제 브랜드 마크 (색 배지 또는 인라인 SVG 로고, DOMPurify 화이트리스트 sanitize) — 결제수단 카탈로그 _cached_brand_mark 를 그린다",
+        "path": "src/components/composite/BrandMark.tsx",
+        "props": {
+          "brandMark": {
+            "type": "object",
+            "required": false,
+            "description": "브랜드 마크 데이터 { text, class } 또는 { svg }"
+          },
+          "size": {
+            "type": "number",
+            "required": false,
+            "default": 32,
+            "description": "마크 컨테이너 크기(px)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "Badge",
         "type": "composite",
         "description": "Color-based label badge for status and type display",

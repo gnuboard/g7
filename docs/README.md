@@ -11,7 +11,7 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 40개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
-| [확장 시스템](extension/) | 36개 | 정상 |
+| [확장 시스템](extension/) | 37개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
@@ -228,13 +228,14 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
 | [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (36개)
+### 확장 시스템 (37개)
 
 | 문서 | 제목 |
 |------|------|
 | [analytics-extension-points.md](extension/analytics-extension-points.md) | 방문자 통계 확장 기여 지점 |
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
+| [consent-provider.md](extension/consent-provider.md) | 동의 제공자 계약 (Consent Provider) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
 | [extension-components.md](extension/extension-components.md) | 확장 컴포넌트 (Extension Components) |
 | [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
@@ -308,7 +309,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 38 / 357 |
+| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 39 / 357 |
 
 
 ### 확장 API 레퍼런스 (16개 확장, 자동 스캔)
@@ -343,12 +344,12 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 |------|------|----------------|----------|----------|
 | `gnuboard7-hello_module` | 모듈 | [AGENTS.md](../modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](../modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 2 · 라우트 7 · 모델 1 · 레이아웃 4 |
 | `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 105 · 라우트 105 · 모델 12 · 레이아웃 57 |
-| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 587 · 라우트 308 · 모델 54 · 레이아웃 246 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 588 · 라우트 308 · 모델 54 · 레이아웃 246 |
 | `sirsoft-page` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 18 · 모델 3 · 레이아웃 3 |
 | `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](../plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](../plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
 | `sirsoft-daum_postcode` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-daum_postcode/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-daum_postcode/docs/README.md) | 훅 0 · 라우트 0 · 모델 0 · 레이아웃 1 |
-| `sirsoft-gdpr` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 6 · 라우트 19 · 모델 4 · 레이아웃 10 |
+| `sirsoft-gdpr` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 5 · 라우트 19 · 모델 4 · 레이아웃 10 |
 | `sirsoft-koreaexim` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-koreaexim/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-koreaexim/docs/README.md) | 훅 2 · 라우트 4 · 모델 2 · 레이아웃 12 |
 | `sirsoft-marketing` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-marketing/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-marketing/docs/README.md) | 훅 4 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `sirsoft-message_bizppurio` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-message_bizppurio/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-message_bizppurio/docs/README.md) | 훅 1 · 라우트 21 · 모델 2 · 레이아웃 1 |

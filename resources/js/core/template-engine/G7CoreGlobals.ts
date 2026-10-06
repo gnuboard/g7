@@ -32,6 +32,7 @@ import { useResponsive, ResponsiveProvider, ResponsiveContext } from './Responsi
 import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -672,6 +673,80 @@ function initReactGlobals(): void {
   (window as any).ReactJSXRuntime = ReactJSXRuntime;
 
   logger.log('전역 객체 window.React, window.ReactDOM, window.ReactJSXRuntime에 노출됨');
+}
+
+/**
+ * 방문자 동의 파사드 초기화 — `G7Core.consent` (engine-v1.78.0, #639)
+ *
+ * 다른 확장이 동의를 관리하는 확장의 경로를 몰라도 동의 상태를 읽고 구독할 수 있게 한다. 런타임은 코어
+ * 동의 런타임(`resources/js/core/consent`) 하나이고, 이 파사드는 그것을 감싸기만 한다.
+ *
+ * - `getSnapshot()` — 현재 스냅샷 사본 (`_global.consent` 와 같은 모양). 런타임이 없는 화면(관리자)에서는 null.
+ * - `refresh()` — 다시 조회해 최신 스냅샷을 돌려준다. 런타임이 없으면 null.
+ * - `subscribe(listener)` — 변경(`consent:changed`)을 구독하고 **해제 함수**를 돌려준다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initConsentAPI(G7Core: any): void {
+  G7Core.consent = Object.freeze({
+    getSnapshot: () => getConsentRuntime()?.getSnapshot() ?? null,
+    refresh: async () => {
+      const runtime = getConsentRuntime();
+      return runtime ? runtime.refresh() : null;
+    },
+    subscribe: (listener: (snapshot: unknown) => void): (() => void) => {
+      if (typeof listener !== 'function') return () => {};
+      return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
+    },
+  });
+}
+
+/**
+ * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0, #639)
+ *
+ * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장이 manifest `state_contracts` 로 선언한
+ * 공개 전역 상태)를 읽기 전용으로 노출한다. 다른 확장이 읽는 `_global.{이름}` 의 소유자·모양·쓰기 허용 주체를
+ * 코드에서 확인할 수 있다.
+ *
+ * - `get(name)` — 계약 하나 (없으면 null)
+ * - `list()` — 계약 전부 (이름 → 계약)
+ * - `ownerOf(name)` — 소유자 키 (`core`·`module:{id}`·`plugin:{id}`·`template:{id}`, 없으면 null)
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initStateContractsAPI(G7Core: any): void {
+  const raw = (window as any).G7Config?.stateContracts;
+  const contracts: Record<string, any> = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const frozen: Record<string, any> = {};
+
+  for (const [name, contract] of Object.entries(contracts)) {
+    frozen[name] = deepFreeze(JSON.parse(JSON.stringify(contract ?? {})));
+  }
+  Object.freeze(frozen);
+
+  // 이름은 자기 속성으로만 찾는다 — `get('constructor')` 처럼 Object 원형 속성이 계약으로 보이지 않게.
+  const own = (name: string): any => (Object.prototype.hasOwnProperty.call(frozen, name) ? frozen[name] : null);
+
+  G7Core.stateContracts = Object.freeze({
+    get: (name: string) => own(name),
+    list: () => frozen,
+    ownerOf: (name: string) => own(name)?.owner ?? null,
+  });
+}
+
+/**
+ * 객체를 깊게 동결한다 (읽기 전용 노출용).
+ *
+ * @param value 동결할 값
+ * @returns 같은 값
+ */
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object') {
+    Object.values(value as Record<string, unknown>).forEach((child) => deepFreeze(child));
+    Object.freeze(value);
+  }
+
+  return value;
 }
 
 /**
@@ -3368,6 +3443,8 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
 
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
+  initConsentAPI(G7Core);
+  initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);

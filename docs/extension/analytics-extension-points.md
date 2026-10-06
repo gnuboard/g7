@@ -14,6 +14,7 @@
 3. 선언 밖의 목표·분류 기준은 버리고 unknown_goal·unknown_dimension 으로 실패 목록에 남긴다
 4. 판정표 필터는 받은 목록에 보태서 돌려준다(뺀 항목은 판정에서 빠진다) · 출력 훅은 코어 값을 덮지 못한다
 5. 개인정보 삭제는 코어와 같은 트랜잭션에 참여한다 — 던지면 코어 삭제도 되돌아간다
+6. 동의는 코어 동의 제공자 계약에 묻는다 — 방문자 통계 전용 동의 훅은 없다
 ```
 
 ---
@@ -182,6 +183,25 @@ public function contribute(array $payload): void
 수집 진단의 실패 목록에 사유 `listener_exception` 과 훅 이름이 남습니다. 확장 하나의 결함이 사이트 통계
 전체를 멈추지 않게 하려는 것입니다. 반대로 개인정보 훅(`subject_delete`·`purge_all`)은 던지면 코어
 작업도 멈춥니다 — 한쪽만 지워지고 완료로 보이는 것이 더 나쁘기 때문입니다.
+
+## 동의 — 코어 동의 제공자 계약의 소비자
+
+방문자 통계는 동의를 직접 관리하지 않고, 어느 확장이 동의를 관리하는지도 모릅니다. 서버는 코어 동의 제공자 계약
+(`App\Extension\Consent\ConsentManager`)에 묻고, 브라우저 트래커는 코어 동의 런타임을 읽습니다. 동의를 관리하는
+확장은 방문자 통계에 따로 연결하지 않고 [동의 제공자](consent-provider.md)로 등록하면 됩니다.
+
+| 판정 | 규칙 |
+| --- | --- |
+| 분석 동의 | 스냅샷이 `ready` 이고 재동의 대상이 아니며 `analytics` 에 동의 |
+| 식별자(IP, 방문자 쿠키) 추적 허용 | 분석 동의이면서 `functional` 에도 동의 |
+| 판단할 수 없음 (`unknown`, 제공자 모호나 누락, 조회 실패) | 동의하지 않은 것으로 본다 |
+| 동의 관리 제공자 없음 (`none`) | 동의 연동 모드면 익명 모드로 내려간다 |
+
+- 게스트의 동의 식별자는 수집 요청을 조립할 때 `ConsentManager::subjectKey()` 로 묻고, 답이 없으면 라라벨 세션 ID 를 씁니다.
+- 동의 철회는 코어 액션 `core.consent.changed` 로 받습니다. 바뀐 카테고리에 `analytics => false` 가 실리면 수집 진단의
+  계수 `consent_revoked` 를 하나 올립니다. 이미 쌓인 기록은 지우지 않습니다. 지난 기록 삭제는 정보주체 요청이 따로 처리합니다.
+- 예전의 필터 `core.analytics.visitor_has_consent`, `core.analytics.tracking_permission`, `core.analytics.consent_session_id` 와
+  액션 `core.analytics.consent_revoked` 는 없어졌습니다. 같은 일은 동의 제공자 계약이 합니다.
 
 ## 화면 조각
 

@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Rules\CashReceiptIdentifier;
+use Modules\Sirsoft\Ecommerce\Services\CheckoutPaymentMethodFilter;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
@@ -103,6 +104,20 @@ class CreateOrderRequest extends FormRequest
                     }
 
                     $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_selectable'));
+                },
+                // 결제 통화에서 고를 수 없는 수단 차단 (#639 D17). 주문서 표시가 쓰는 판정
+                // (CheckoutPaymentMethodFilter, 체크아웃 응답 `allowed_payment_methods`)과 같다 — 표시만 거르면
+                // 직접 POST 로 우회된다. 통화는 주문 생성과 같은 규칙(회원 영속 통화 → X-Currency → 기본 통화)으로 구한다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (! is_string($value)) {
+                        return;
+                    }
+
+                    $filter = app(CheckoutPaymentMethodFilter::class);
+                    $currency = $filter->currentCurrency();
+                    if (! $filter->isAllowed($value, $currency)) {
+                        $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_allowed_for_currency', ['currency' => $currency]));
+                    }
                 },
             ],
             'expected_total_amount' => 'required|numeric|min:0',

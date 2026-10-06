@@ -61,6 +61,7 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
 use App\Enums\DeactivationReason;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
 use App\Extension\ExtensionMiddlewareRegistry;
@@ -326,6 +327,9 @@ class CoreServiceProvider extends ServiceProvider
 
             return $manager;
         });
+
+        // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
+        $this->app->singleton(ConsentManager::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);

@@ -894,6 +894,7 @@ return [
     'order' => [
         'payment_method_unavailable' => 'This payment method is currently unavailable. Please choose another one.',
         'payment_method_not_selectable' => 'This payment method cannot be selected.',
+        'payment_method_not_allowed_for_currency' => 'This payment method is not available for payments in :currency.',
         'ids' => [
             'required' => 'Please select orders to update.',
             'array' => 'Order IDs must be an array.',

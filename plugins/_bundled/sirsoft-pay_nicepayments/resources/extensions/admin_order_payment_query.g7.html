@@ -95,6 +95,11 @@
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.order_verify_title</h3>
         <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
       </div>
+      <!-- 간편결제 서비스명 — 이커머스 주문 상세의 결제수단 칸은 기본 결제수단(신용카드)만 안다. 이 결제의 원 수단(카카오페이 등)은 거래 조회(nicepay_status)가 주는 원 수단 코드를 번역 키로 풀어 여기서 밝힌다. 종전에는 주입 스크립트가 이커머스 결제수단 칸의 글자를 직접 고쳐 썼다(#639). -->
+      <div data-ref="nicepay_easy_pay_row" data-if="{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(nicepay_status.data?._embedded_pg_provider)}}" class="flex items-center gap-2 mb-4">
+        <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(nicepay_status.data?._embedded_pg_provider ?? '').toUpperCase())}}</span>
+      </div>
       <div data-ref="nicepay_payments_list_{{pIdx}}" data-each="payment, pIdx in {{order.data?.payments?.filter(p => p.transaction_id) ?? []}}" class="space-y-3">
         <div class="rounded-lg border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
           <div class="flex items-center flex-wrap gap-3">

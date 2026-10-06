@@ -43,4 +43,8 @@ return [
             'expire' => 'Password expiry processing',
         ],
     ],
+    // Public consent snapshot (GET /api/consent) response message.
+    'consent' => [
+        'fetch_success' => 'Checked the visitor consent status.',
+    ],
 ];

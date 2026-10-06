@@ -63,25 +63,26 @@ G7의 훅 시스템은 WordPress 스타일로 구현되어 코어 수정 없이 
 반환 텍스트는 소비자가 HTML 이스케이프합니다. 개인 식별정보를 포함하지 않습니다.
 통지 플러그인 설치 여부와 관계없이 확장이 구독할 수 있으며 통지 발행자는 독립적으로 선택합니다.
 
-### 방문자 통계 동의 계약
+### 동의 제공자 계약
 
-코어 방문자 통계는 동의를 관리하는 확장이 무엇인지 모릅니다. 코어가 자기 질문을 아래 코어 소유 훅으로 묻고,
-답할 수 있는 확장이 구독해 답합니다. 아무도 답하지 않는 것이 정상 상태(동의 관리 확장이 없는 사이트)이며
-그때는 코어 기본 동작을 따릅니다. 코어 코드는 특정 확장의 식별자·클래스·API 경로·이벤트명을 참조하지 않습니다.
+방문자가 쿠키·추적에 무엇을 동의했는지는 **동의 관리 확장(제공자)** 이 답하고, 코어와 다른 확장은 코어 계약으로만 묻습니다.
+코어는 어느 확장이 동의를 관리하는지 모르며, 코어 코드는 특정 확장의 식별자·클래스·API 경로·이벤트명을 참조하지 않습니다.
+구현·소비 가이드 전문은 [동의 제공자 계약](consent-provider.md)입니다.
 
 | 훅 | 유형 | 인자 → 반환 | 의미 |
 | --- | --- | --- | --- |
-| `core.analytics.consent_session_id` | filter | `(?string $default, Request $request)` → `?string` | 게스트 동의를 찾을 식별자. 답이 없으면 라라벨 세션 ID |
-| `core.analytics.visitor_has_consent` | filter | `(null, ?int $userId, ?string $sessionId)` → `?bool` | 동의 모드: 이 방문자가 분석 수집에 동의했는가 |
-| `core.analytics.tracking_permission` | filter | `(null, ?int $userId, ?string $sessionId)` → `?bool` | 이 방문자를 식별자(IP·방문자 쿠키)로 추적해도 되는가. 구독자가 있으면 IP 저장 모드에서도 허용되지 않은 방문자는 익명으로 모인다 |
-| `core.analytics.consent_revoked` | action | `()` | 방문자가 분석 동의를 철회했다(진단 카운터) |
+| `core.consent.registered_providers` | filter | `(array $providers)` → `array<ConsentProviderInterface>` | 제공자 등록. 앞선 구독자의 항목을 지우지 말고 덧붙입니다 |
+| `core.consent.changed` | action | `(string $providerId, ConsentSubject $subject, array<string, bool> $changes)` | 선택된 제공자가 알린 동의 변경(카테고리 → 새 동의 여부). 선택되지 않은 제공자의 알림은 코어가 버립니다 |
 
-- 필터 첫 인자가 `null` 이 아니면 앞선 구독자가 이미 답한 것이므로 덮어쓰지 않습니다.
-- 동의 출처(`consent_source`)는 구독자 유무로만 정해집니다: `tracking_permission` 구독자 → `provider`,
-  `visitor_has_consent` 구독자만 → `filter`, 없음 → `none`.
-- 브라우저: 트래커는 코어 API `GET /api/analytics/consent`(`{consent_source, has_consent}`)로 묻고, 코어 이벤트
-  `g7:analytics-permission-changed`(`detail.has_consent: boolean`, 없으면 다시 조회)로 변경을 받습니다. 동의를
-  관리하는 확장은 동의를 저장한 뒤 이 이벤트를 발행합니다.
+- 제공자는 `App\Contracts\Extension\ConsentProviderInterface` 를 구현합니다(`getId`·`getLabel`·`isAvailable`·
+  `getCategories`·`resolveSubjectKey`·`getSnapshot`).
+- 제공자가 여럿이면 운영자가 환경설정 > 개인정보 탭에서 고릅니다(설정 `privacy.consent_provider`, 빈 값은 자동).
+  수집 중인 제공자가 하나면 자동으로 선택되고, 둘 이상인데 고르지 않았거나 고른 제공자가 사라지면 모든 방문자가 「모름」입니다.
+- 브라우저는 코어 API `GET /api/consent` 의 스냅샷을 코어 동의 런타임(`_global.consent`, `G7Core.consent`)으로 받습니다.
+  확장은 자체 조회·자체 window 이벤트를 두지 말고 코어 이벤트 `consent:changed` 를 구독합니다.
+- 코어 방문자 통계도 이 계약의 소비자입니다(분석 동의 = `ready` 이면서 재동의 필요 없음 + `analytics`, 식별자 추적 = 분석 + `functional`).
+  예전의 분석 전용 훅(`core.analytics.consent_session_id`·`visitor_has_consent`·`tracking_permission`·`consent_revoked`)과
+  `GET /api/analytics/consent`, 브라우저 이벤트 `g7:analytics-permission-changed` 는 이 계약으로 대체되어 없어졌습니다.
 - 스크립트 로드 지연: 동의 전 스크립트를 막는 확장은 `<script>` src setter 에서 코어 속성 `data-g7-script-deferred`
   를 붙입니다. 코어 `loadScript` 는 그 태그를 붙이지 않고 미완료(`false`)로 돌려주며 캐시하지 않습니다.
 

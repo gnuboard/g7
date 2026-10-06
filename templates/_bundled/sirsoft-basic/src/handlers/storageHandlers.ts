@@ -29,7 +29,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
  *
  * @returns 발급된 cart_key 또는 null (실패 시)
  */
-async function issueCartKeyFromApi(): Promise<string | null> {
+export async function issueCartKeyFromApi(): Promise<string | null> {
   try {
     const response = await fetch(CART_KEY_API_ENDPOINT, {
       method: 'POST',

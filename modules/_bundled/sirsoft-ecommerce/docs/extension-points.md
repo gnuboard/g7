@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 587종 / 호출 지점 686곳. 이 중 584종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 21곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 588종 / 호출 지점 687곳. 이 중 584종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 22곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -121,7 +121,8 @@
 | `sirsoft-ecommerce.category.reorder_validation_rules` | filter | — | `src/Http/Requests/Admin/ReorderCategoriesRequest.php:50` |
 | `sirsoft-ecommerce.category.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateCategoryRequest.php:82` |
 | `sirsoft-ecommerce.checkout.before_payment` | action | — | `src/Http/Controllers/Traits/HandlesOrderCreation.php:84` |
-| `sirsoft-ecommerce.checkout.filter_response_data` | filter | — | `src/Services/CheckoutDataService.php:96` |
+| `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` | filter | 결제 통화에서 고를 수 있는 결제수단 (뺄 수만 있음) | 선언 (호출 위치 미확인) |
+| `sirsoft-ecommerce.checkout.filter_response_data` | filter | — | `src/Services/CheckoutDataService.php:130` |
 | `sirsoft-ecommerce.checkout.update_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCheckoutRequest.php:55` |
 | `sirsoft-ecommerce.checkout.validation_rules` | filter | — | `src/Http/Requests/Public/CheckoutRequest.php:70` |
 | `sirsoft-ecommerce.claim-image.after_delete` | action | — | `src/Services/ClaimAttachmentService.php:338` |
@@ -287,7 +288,7 @@
 | `sirsoft-ecommerce.mileage.max_usable_validation_rules` | filter | — | `src/Http/Requests/User/UserMileageMaxUsableRequest.php:34` |
 | `sirsoft-ecommerce.mileage.notify_expiring` | action | — | `src/Console/Commands/NotifyExpiringMileageCommand.php:88` |
 | `sirsoft-ecommerce.mileage.restore` | action | — | `src/Services/RefundExecutionService.php:551` |
-| `sirsoft-ecommerce.mileage.use` | action | — | `src/Services/OrderProcessingService.php:2193` |
+| `sirsoft-ecommerce.mileage.use` | action | — | `src/Services/OrderProcessingService.php:2206` |
 | `sirsoft-ecommerce.option.after_bulk_update` | action | — | `src/Services/ProductOptionService.php:303` |
 | `sirsoft-ecommerce.option.before_bulk_update` | action | — | `src/Services/ProductOptionService.php:203` |
 | `sirsoft-ecommerce.option.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionsRequest.php:73` |
@@ -302,7 +303,7 @@
 | `sirsoft-ecommerce.order.after_confirm` | action | — | `src/Services/OrderProcessingService.php:371` 외 1곳 |
 | `sirsoft-ecommerce.order.after_create` | action | — | `src/Services/OrderProcessingService.php:257` |
 | `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderPrivacyRetentionService.php:153` 외 1곳 |
-| `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:2043` |
+| `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:2056` |
 | `sirsoft-ecommerce.order.after_payment_complete` | action | — | `src/Services/OrderProcessingService.php:370` 외 1곳 |
 | `sirsoft-ecommerce.order.after_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:256` |
 | `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:1039` 외 1곳 |
@@ -324,15 +325,15 @@
 | `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:1088` |
 | `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:223` |
 | `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:909` |
-| `sirsoft-ecommerce.order.create_validation_rules` | filter | — | `src/Http/Requests/Public/CreateOrderRequest.php:162` |
-| `sirsoft-ecommerce.order.filter_create_data` | filter | — | `src/Services/OrderProcessingService.php:680` |
+| `sirsoft-ecommerce.order.create_validation_rules` | filter | — | `src/Http/Requests/Public/CreateOrderRequest.php:177` |
+| `sirsoft-ecommerce.order.filter_create_data` | filter | — | `src/Services/OrderProcessingService.php:693` |
 | `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:851` |
 | `sirsoft-ecommerce.order.filter_list_params` | filter | — | `src/Services/OrderService.php:110` |
 | `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | 관리자 주문 목록 결제수단 표시 라벨 | `src/Http/Resources/OrderListResource.php:279` |
 | `sirsoft-ecommerce.order.filter_update_data` | filter | — | `src/Services/OrderService.php:229` |
 | `sirsoft-ecommerce.order.list_validation_messages` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:223` |
 | `sirsoft-ecommerce.order.list_validation_rules` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:132` |
-| `sirsoft-ecommerce.order.payment_failed` | action | — | `src/Services/OrderProcessingService.php:2175` |
+| `sirsoft-ecommerce.order.payment_failed` | action | — | `src/Services/OrderProcessingService.php:2188` |
 | `sirsoft-ecommerce.order.shipping_address_validation_rules` | filter | — | `src/Http/Requests/User/UpdateOrderShippingAddressRequest.php:71` |
 | `sirsoft-ecommerce.order.tax_invoice_stale_after_cancel` | action | — | `src/Services/OrderCancellationService.php:545` |
 | `sirsoft-ecommerce.order_option.after_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:568` |
@@ -343,7 +344,7 @@
 | `sirsoft-ecommerce.order_shipping.tracking_updated` | action | — | `src/Services/OrderOptionService.php:423` |
 | `sirsoft-ecommerce.payment.before_approve` | action | — | `src/Services/OrderService.php:579` 외 1곳 |
 | `sirsoft-ecommerce.payment.before_cancel` | action | — | `src/Services/OrderCancellationService.php:313` |
-| `sirsoft-ecommerce.payment.before_confirm_deposit` | action | — | `src/Services/OrderProcessingService.php:1921` |
+| `sirsoft-ecommerce.payment.before_confirm_deposit` | action | — | `src/Services/OrderProcessingService.php:1934` |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
 | `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:451` |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1043` |
@@ -1247,6 +1248,10 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 - **카드는 id 로만 찾는다.** 템플릿은 결제 정보 카드에 `id="order_payment_info_panel"` 을 단다(sirsoft-basic 의
   `partials/mypage/orders/_payment` — 회원·비회원 주문 상세와 신청서 상세가 함께 쓴다). 플러그인은 이 id 로만 카드를 찾고,
   화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다.
+- **주문 완료 화면은 결제 금액 요약 id 에 붙인다.** 템플릿은 주문 완료 화면(`shop/order_complete`)의 결제 금액 요약 칸에
+  `id="order_complete_payment_summary"` 를 단다. 영수증·매출전표·가상계좌 안내 조각은 이 id 에 `append_child` 로 붙이고,
+  화면 주소(`/shop/orders/…/complete`)를 글자로 맞춰 끼우는 스크립트를 쓰지 않는다 — 쇼핑몰 경로를 바꾼 설치본에서 조용히
+  빠진다(#639 에서 번들 PG 세 플러그인이 조각으로 옮김).
 - **결제 방법 행도 id 로만 찾는다.** 간편결제 이름(예: 카카오페이)을 결제 방법 값에 덧붙일 때, 사용자 화면은 템플릿이 단
   `id="order_payment_method_row"`(같은 `_payment` 조각의 결제 방법 행 — 주문 완료 화면에 그 행을 두는 템플릿도 같은 id 를 쓴다),
   관리자 주문 상세는 이 모듈이 단 `id="payment_method_block_{결제 순번}"`(`admin_ecommerce_order_detail/_partial_payment_info` —
@@ -1258,9 +1263,24 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 ### PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속
 
 주문서의 결제수단 칸은 템플릿이 `id="checkout_payment_method_section"` 을 달고, 결제수단 버튼마다 `data-payment-method`
-(결제수단 id — 이 모듈의 결제수단 카탈로그 id)를 단다(sirsoft-basic `partials/shop/_checkout_payment`). 이미 그려진 버튼을
-숨기거나 고치는 플러그인(예: KG이니시스 엔화 결제수단 제한)은 이 id·표식으로만 찾고, 칸 제목이나 버튼 이름 글자로 찾지 않는다 —
-글자는 언어마다 다르다. 표식이 없는 버튼은 건드리지 않는다.
+(결제수단 id — 이 모듈의 결제수단 카탈로그 id)를 단다(sirsoft-basic `partials/shop/_checkout_payment`). 칸을 찾는 플러그인은
+이 id·표식으로만 찾고, 칸 제목이나 버튼 이름 글자로 찾지 않는다 — 글자는 언어마다 다르다. 표식이 없는 버튼은 건드리지 않는다.
+
+**결제 통화에 따라 고를 수 없는 수단은 버튼을 숨기지 말고 서버 훅으로 뺀다(#639).** 필터 훅
+`sirsoft-ecommerce.checkout.filter_payment_methods_for_currency(array $methodIds, string $currency): array` 에 답하면,
+이 모듈이 그 판정을 두 곳에 쓴다.
+
+| 쓰는 곳 | 결과 |
+|---|---|
+| 주문서 조회·갱신 응답 `allowed_payment_methods` | 템플릿이 결제수단 버튼과 기본 선택을 이 목록으로 거른다 |
+| 주문 생성 검증(`CreateOrderRequest` 의 `payment_method`) | 목록 밖 수단을 직접 제출하면 422(`payment_method_not_allowed_for_currency`) |
+
+- 훅은 **뺄 수만** 있다. 원래 목록에 없던 id 를 돌려줘도 무시한다(`CheckoutPaymentMethodFilter`).
+- 자기 소유가 아닌 결제수단 id 는 건드리지 않는다 — 여러 PG 플러그인이 같은 훅에 답한다.
+- 카탈로그 훅 `sirsoft-ecommerce.settings.filter_available_payment_methods` 는 「어떤 수단이 존재하는가」이고, 이 훅은
+  「이 통화에서 고를 수 있는가」다. 통화 제한을 카탈로그 훅에 넣으면 통화를 바꿔도 목록이 따라오지 않는다.
+- 예전처럼 주문서 응답을 브라우저에서 고치거나(`window.fetch` 덮어쓰기) 그려진 버튼을 숨기면, 직접 POST 하는 주문을 막지 못하고
+  쇼핑몰 경로가 바뀌면 동작하지 않는다. KG이니시스 엔화 제한이 그 방식이었다가 이 훅으로 옮겼다.
 
 ### PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속
 
@@ -1268,6 +1288,29 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 좁은 화면 카드)은 항목 루트마다 `data-payment-method`(결제수단 id)를 단다. 브랜드 배지·안내를 붙이는 PG 플러그인(KG이니시스·
 NHN KCP·나이스페이먼츠·토스페이먼츠)은 이 표식으로만 항목을 찾고, 이름 글자나 클래스 모양으로 찾지 않는다 — 관리자 언어·화면
 폭마다 다르다. 표식이 없는 항목은 건드리지 않는다.
+
+### 다른 확장이 읽는 전역 상태 (상태 계약)
+
+이 모듈은 아래 전역 상태(`_global`) 키를 매니페스트 `state_contracts` 로 공개한다(#639). 결제 플러그인·템플릿 조각처럼 다른 확장이
+쇼핑몰 값을 읽어야 하면 이 키만 읽고, 여기 없는 쇼핑몰 화면의 전역 키(목록 필터·모달 상태 등)에는 기대지 않는다 — 내부 값이라 예고
+없이 바뀐다. 브라우저에서는 `G7Core.stateContracts.get('<이름>')` 으로 소유자·모양을 확인할 수 있다.
+
+| 키 | 값 | 쓰는 주체 | 읽는 쪽 |
+|---|---|---|---|
+| `preferredCurrency` | 방문자가 고른 표시 통화 코드(문자열, 예: `KRW`·`JPY`) | 활성 템플릿(`@template`) | 템플릿·이 모듈 화면의 가격 표시, 헤더·회원가입 통화 선택 조각 |
+| `availableCurrencies` | 고를 수 있는 통화 목록(배열) | 활성 템플릿 | 통화 선택 조각 |
+| `defaultCurrency` | 쇼핑몰 기본 통화 코드(문자열) | 활성 템플릿 | 가격 표시, 통화 선택 조각 |
+| `preferredShippingCountry` | 방문자가 고른 배송 국가 코드(문자열) | 활성 템플릿 | 회원정보 수정·배송지 관리·주문서의 배송 국가 필드 |
+| `availableShippingCountries` | 고를 수 있는 배송 국가 목록(배열) | 활성 템플릿 | 회원정보 수정·배송지 관리·주문서의 배송 국가 필드 |
+| `guestOrderToken` | 비회원 주문 조회 토큰(문자열 또는 `null`) | 활성 템플릿(조회 화면이 발급) | 결제 플러그인의 비회원 영수증·입금 안내 조회 |
+| `activeEcommerceSettingsTab` | 쇼핑몰 환경설정 화면의 현재 탭(문자열) | 이 모듈만 | 그 화면에 끼운 다른 확장의 조각(게시판의 쇼핑몰 문의 설정 등) |
+
+- 결제 플러그인은 비회원 토큰을 브라우저 저장소에서 직접 읽지 않고 `_global.guestOrderToken` 하나만 읽는다. 로그아웃하면 템플릿이
+  이 값을 비운다.
+- 결제 요청의 통화는 이 표의 `preferredCurrency` 가 아니라 주문 생성 응답(`pg_payment_data.currency`)을 쓴다 — 표시 통화는 주문
+  뒤에 바뀔 수 있어 청구 통화와 어긋난다.
+- 쓰기 허용이 없는 확장이 이 키에 쓰면 정적 검사 `state-contract-write-ownership` 이 막는다. 키를 바꾸거나 없앨 때는 위 「읽는 쪽」
+  확장과 함께 확인한다.
 
 ## 미들웨어
 
@@ -1465,8 +1508,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **127종**입니다
-> (등록 건수는 129건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **138종**입니다
+> (등록 건수는 140건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
@@ -1480,13 +1523,13 @@ _등록하는 브로드캐스트 채널이 없습니다._
 ### 이커머스 모듈 훅
 
 **모듈**: `sirsoft-ecommerce`
-**등록 129건 / 훅 127종** (8개 Listener)
+**등록 140건 / 훅 138종** (8개 Listener)
 
-#### OrderActivityLogListener (25훅)
+#### OrderActivityLogListener (26훅)
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/OrderActivityLogListener.php`
 
-##### OrderService (8훅)
+##### OrderService (9훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -1498,6 +1541,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.order.after_update_shipping_address` | `handleOrderAfterUpdateShippingAddress` | `order.update_shipping_address` | Admin | Order |
 | `sirsoft-ecommerce.order.after_send_email` | `handleOrderAfterSendEmail` | `order.send_email` | Admin | - |
 | `sirsoft-ecommerce.order.after_reset_guest_password` | `handleOrderAfterResetGuestPassword` | `order.reset_guest_password` | Admin | Order |
+| `sirsoft-ecommerce.order.after_deposit_recorded` | `handleOrderAfterDepositRecorded` | `order.deposit_record` | 요청 주체 | Order |
 
 ##### OrderOptionService (2훅)
 
@@ -1795,6 +1839,23 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.claim.return.amounts_updated` | `handleAmountsUpdated` | `claim_return.update_amounts` | Admin | OrderReturn |
 | `sirsoft-ecommerce.claim.refund.amounts_updated` | `handleAmountsUpdated` | `claim_refund.update_amounts` | Admin | OrderRefund |
 | `sirsoft-ecommerce.claim.refund.completed` | `handleRefundExecuted` | `claim_refund.execute` | Admin | OrderRefund |
+
+##### 송장 · 진행 방식 · 재고 복구 · 신청 내용 수정 (10훅)
+
+LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 화면이면 User — 코어 `ResolvesActivityLogType`). 신청 내용 수정은 운영자 대리 수정 여부를 `properties.operator` 로 싣는다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.after_tracking_update` | `handleTrackingUpdated` | `claim_exchange.tracking_update` | 요청 주체 | OrderExchange |
+| `sirsoft-ecommerce.claim.return.after_tracking_update` | `handleTrackingUpdated` | `claim_return.tracking_update` | 요청 주체 | OrderReturn |
+| `sirsoft-ecommerce.claim.exchange.after_tracking_deliver` | `handleTrackingDelivered` | `claim_exchange.tracking_deliver` | 요청 주체 | OrderExchange |
+| `sirsoft-ecommerce.claim.return.after_tracking_deliver` | `handleTrackingDelivered` | `claim_return.tracking_deliver` | 요청 주체 | OrderReturn |
+| `sirsoft-ecommerce.claim.exchange.after_mode_change` | `handleExchangeModeChanged` | `claim_exchange.mode_change` | 요청 주체 | OrderExchange |
+| `sirsoft-ecommerce.claim.exchange.after_stock_restore` | `handleStockRestored` | `claim_exchange.stock_restore` | 요청 주체 | OrderExchange |
+| `sirsoft-ecommerce.claim.return.after_stock_restore` | `handleStockRestored` | `claim_return.stock_restore` | 요청 주체 | OrderReturn |
+| `sirsoft-ecommerce.claim.exchange.request_updated` | `handleRequestUpdated` | `claim_exchange.request_update` | 요청 주체 | OrderExchange |
+| `sirsoft-ecommerce.claim.return.request_updated` | `handleRequestUpdated` | `claim_return.request_update` | 요청 주체 | OrderReturn |
+| `sirsoft-ecommerce.claim.refund.request_updated` | `handleRequestUpdated` | `claim_refund.request_update` | 요청 주체 | OrderRefund |
 
 ##### 클레임 추가결제 (5훅)
 

@@ -8,7 +8,8 @@
             "label": "편집기",
             "style_label": "편집기 스타일",
             "fallback_notice": "편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."
-        }
+        },
+        "upload_failed": "파일을 올리지 못했습니다: {{name}}"
     },
     "admin": {
         "uploads": {

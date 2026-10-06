@@ -43,7 +43,7 @@ export interface LanguageSelectorProps {
   availableLocales?: string[];
   /** 언어 설정 텍스트 */
   languageText?: string;
-  /** 언어 변경 API 엔드포인트. 동일 출처일 때만 토큰을 싣는다 */
+  /** 언어 변경 API 엔드포인트 (G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다) */
   apiEndpoint?: string;
   /** 언어 변경 후 콜백 */
   onLanguageChange?: (locale: string) => void;
@@ -123,61 +123,37 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [inline]);
 
   /**
-   * 쿠키에서 XSRF 토큰 읽기
-   */
-  const getXsrfToken = (): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; XSRF-TOKEN=`);
-    if (parts.length === 2) {
-      return decodeURIComponent(parts.pop()?.split(';').shift() || '');
-    }
-    return null;
-  };
-
-  /**
-   * 로컬 스토리지에서 Bearer 토큰 읽기
-   */
-  const getBearerToken = (): string | null => {
-    return localStorage.getItem('auth_token');
-  };
-
-  /**
    * 언어 변경 처리
+   *
+   * 저장 요청은 코어 `G7Core.api` 로 보낸다 — Bearer·XSRF 첨부, 교차 출처 대상의 토큰 제외,
+   * 401 처리를 코어가 맡는다. 화면 언어 전환은 공개 API `G7Core.locale.change()` 를 쓴다.
    */
   const handleLanguageChange = async (locale: string) => {
     if (isChanging || locale === currentLocale) return;
 
+    const G7Core = (window as any).G7Core;
+
     try {
       setIsChanging(true);
 
-      // 토큰은 동일 출처 대상에만 싣는다 — 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를
-      // 만들 수 있고, 그대로 실으면 관리자 토큰이 그 주소로 간다(KVE-2026-2350)
-      const sameOrigin = isSameOriginRequest(apiEndpoint);
-      if (!sameOrigin) {
+      // 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를 만들 수 있다. 토큰은 코어가 동일 출처
+      // 대상에만 싣지만(KVE-2026-2350), 교차 출처 주소가 들어온 사실은 남긴다
+      if (!isSameOriginRequest(apiEndpoint)) {
         logger.warn('교차 출처 언어 저장 주소라 인증 정보를 싣지 않습니다.', apiEndpoint);
       }
-      const xsrfToken = sameOrigin ? getXsrfToken() : null;
-      const bearerToken = sameOrigin ? getBearerToken() : null;
 
       // API 호출로 DB에 저장 (실패해도 UI는 변경)
       try {
-        const response = await fetch(apiEndpoint, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
-            ...(bearerToken && { Authorization: `Bearer ${bearerToken}` }),
-          },
-          credentials: 'include',
-          body: JSON.stringify({ language: locale }),
-        });
-
-        if (!response.ok) {
-          logger.warn('언어 설정 저장 실패 (UI는 변경됨):', response.statusText);
+        if (typeof G7Core?.api?.patch !== 'function') {
+          throw new Error('G7Core.api is not available');
         }
-      } catch (apiError) {
-        logger.warn('언어 설정 API 호출 실패 (UI는 변경됨):', apiError);
+        await G7Core.api.patch(apiEndpoint, { language: locale });
+      } catch (apiError: any) {
+        if (apiError?.response) {
+          logger.warn('언어 설정 저장 실패 (UI는 변경됨):', apiError.response.statusText ?? apiError.response.status);
+        } else {
+          logger.warn('언어 설정 API 호출 실패 (UI는 변경됨):', apiError);
+        }
       }
 
       // UI 상태 업데이트
@@ -187,11 +163,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       // 콜백 실행
       onLanguageChange?.(locale);
 
-      // TemplateApp의 changeLocale 호출하여 UI 리렌더링
-      if ((window as any).__templateApp) {
-        await (window as any).__templateApp.changeLocale(locale);
+      // 공개 API 로 화면 언어 전환 (새로고침 없이 리렌더링)
+      if (typeof G7Core?.locale?.change === 'function') {
+        await G7Core.locale.change(locale);
       } else {
-        logger.warn('TemplateApp not found, reloading page');
+        logger.warn('G7Core.locale not found, reloading page');
         window.location.reload();
       }
     } catch (error) {

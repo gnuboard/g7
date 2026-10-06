@@ -1,0 +1,50 @@
+feature: 코어 동의 제공자 계약으로 동의 판단에 답하기 (#639)
+
+description: |
+  코어는 동의를 관리하는 확장이 무엇인지 모른다. 이 플러그인은 코어 필터 `core.consent.registered_providers` 로
+  제공자(GdprConsentProvider)를 등록하고, 코어 매니저가 고른 제공자일 때 「이 방문자가 무엇에 동의했나」에
+  스냅샷으로 답한다. 코어 코드에는 이 플러그인의 식별자·클래스·경로·이벤트명이 없다.
+
+    등록      core.consent.registered_providers (filter) ← RegisterGdprConsentProviderListener
+    식별      게스트 = 서명 검증한 gdpr_session UUID, 회원 = 회원 번호
+    스냅샷    미식별 게스트 = 필수만(D19), 정책 버전 변경 = needsRenewal, 조회 실패 = 코어가 unknown 으로 닫음
+    변경 알림 sirsoft-gdpr.consent.granted/revoked → 요청 종료 시 주체마다 한 번 core.consent.changed (D11)
+
+  브라우저 쪽은 코어 동의 런타임(_global.consent · consent:changed · refreshConsent)을 소비만 한다 —
+  자체 조회 폴백·전용 이벤트·동기화 핸들러가 없다(Vitest consentRuntimeConsumer 가 잠근다).
+
+axes:
+  case: [registration, banner_disabled, categories, subject_key, snapshot_unidentified, snapshot_consents, snapshot_renewal, snapshot_failure, batched, ignored, unchanged, not_selected, frontend_boot, frontend_change, frontend_refresh, e2e_login_boundary, e2e_guest_login_reappear]
+
+effects:
+  - gdpr_registers_as_a_core_consent_provider
+  - banner_disabled_provider_is_not_available
+  - provider_categories_follow_operator_settings
+  - provider_answers_consent_session_id_with_the_verified_guest_uuid
+  - guest_consent_cookie_survives_web_cookie_encryption
+  - unidentified_guest_is_necessary_only
+  - provider_answers_core_consent_filter_with_analytics_consent
+  - provider_permits_tracking_only_with_both_categories
+  - stale_policy_consent_needs_renewal
+  - lookup_failure_fails_closed
+  - consent_changes_are_relayed_once_per_subject_per_request
+  - non_cookie_consent_changes_are_not_relayed
+  - only_changed_categories_are_relayed
+  - unselected_provider_changes_are_dropped
+  - frontend_consumes_core_consent_runtime_only
+  - layouts_refresh_through_core_handler
+  - consent_snapshot_follows_member_after_spa_login
+  - consent_snapshot_returns_to_guest_after_logout
+  - banner_hidden_for_consented_guest
+  - banner_reappears_after_login_with_no_consent_history
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Consent/GdprConsentProviderTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprConsentChangeRelayListenerTest.php
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/consentRuntimeConsumer.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/handlerReregistration.test.ts
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/public/consent-runtime-login-boundary.spec.ts
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/public/cookie-banner-guest-login-reappear.spec.ts
+
+limitations:
+  - "재동의 필요 판정은 서비스의 현재 정책 버전 필터에 맡긴다 — 제공자는 서비스가 돌려준 항목과 이력 유무만 읽는다."

@@ -24,6 +24,7 @@ class ModuleResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
+            'integrations' => $this->getValue('integrations', []),
             'status' => $this->getValue('status'),
             'assets' => $this->getValue('assets'),
             'icon_url' => $this->getValue('icon_url'),
@@ -100,6 +101,7 @@ class ModuleResource extends BaseApiResource
             'github_url' => $this->getValue('github_url'),
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
+            'integrations' => $this->getValue('integrations', []),
             'status' => $this->getValue('status'),
             'is_installed' => $this->getValue('is_installed', false),
             // 상세 정보

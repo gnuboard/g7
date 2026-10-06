@@ -29,6 +29,8 @@ use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use App\Support\ExtensionIntegrations;
+use App\Support\StateContracts;
 use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -52,6 +54,7 @@ class TemplateManager implements TemplateManagerInterface
     use Traits\InvalidatesLayoutCache;
     use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
+    use Traits\ValidatesStateContracts;
 
     /**
      * 아이콘 해석기에 넘길 확장 유형을 반환합니다.
@@ -639,6 +642,15 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
+        // 전역 상태 공개 계약 이름 충돌 검증 (#639) — 같은 유형의 활성 템플릿은 이번 활성화로 교체되므로
+        // 그 선언은 빼고 본다. 같은 계약을 선언한 새 사용자 템플릿이 옛 템플릿 때문에 막히면 안 된다.
+        $replaced = $this->getActiveTemplate((string) ($template['type'] ?? ''));
+        $this->validateStateContracts(
+            'template:'.$templateName,
+            StateContracts::normalize($template['state_contracts'] ?? []),
+            is_array($replaced) && isset($replaced['identifier']) ? ['template:'.$replaced['identifier']] : [],
+        );
+
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         $missingModules = [];
         $missingPlugins = [];
@@ -1004,6 +1016,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $template['type'],
                     'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
+                    'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'active',
@@ -1026,6 +1039,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
+                    'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'pending',
@@ -1048,6 +1062,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
+                    'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'bundled',
@@ -1108,6 +1123,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $template['type'],
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
+                    'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -1175,6 +1191,7 @@ class TemplateManager implements TemplateManagerInterface
             'github_changelog_url' => $template['github_changelog_url'] ?? null,
             'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
+            'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
             'externals' => $template['externals'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
@@ -1224,6 +1241,7 @@ class TemplateManager implements TemplateManagerInterface
             'github_changelog_url' => $metadata['github_changelog_url'] ?? null,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
+            'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
             'externals' => $metadata['externals'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,

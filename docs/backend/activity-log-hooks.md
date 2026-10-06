@@ -220,13 +220,13 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 확장 | 훅 수 | 문서 |
 |------|------|------|
-| `sirsoft-ecommerce` | 127 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
+| `sirsoft-ecommerce` | 138 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
 | `sirsoft-board` | 30 | [docs/extension-points.md](../../modules/_bundled/sirsoft-board/docs/extension-points.md) |
 | `sirsoft-page` | 7 | [docs/extension-points.md](../../modules/_bundled/sirsoft-page/docs/extension-points.md) |
 | `sirsoft-pay_kginicis` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md) |
 | `sirsoft-pay_nhnkcp` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md) |
 | `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
-| **합계** | **167** | |
+| **합계** | **178** | |
 
 코어 71훅 + 확장 167훅 = **총 238훅**입니다.
 

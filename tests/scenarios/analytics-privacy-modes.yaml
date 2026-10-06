@@ -46,7 +46,7 @@ exclusions:
 effects:
   - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
   - consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
-  - consent_status_api_answers_through_the_core_filter
+  - consent_is_answered_through_the_consent_provider_contract   # 동의 판정은 범용 동의 제공자 계약으로 묻는다 (#639, 옛 분석 전용 필터·API 대체)
   - full_mode_stores_masked_ip_and_issues_cookie
   - full_mode_reports_returning_visitors
   - anonymous_mode_stores_no_ip
@@ -79,7 +79,6 @@ effects:
 
 test_files:
   - tests/Feature/Analytics/PrivacyModeTest.php
-  - tests/Feature/Analytics/ConsentStatusApiTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
   - tests/Feature/Analytics/CollectControllerTest.php
   - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php

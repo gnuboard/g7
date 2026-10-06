@@ -7,7 +7,9 @@ use App\Analytics\IpAddress;
 use App\Analytics\TrackingRequest;
 use App\Analytics\VisitorRecognizer;
 use App\Enums\Analytics\PrivacyMode;
-use App\Extension\HookManager;
+use App\Extension\Consent\ConsentManager;
+use App\Extension\Consent\ConsentSelection;
+use App\Extension\Consent\ConsentSubject;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,60 +23,56 @@ use Illuminate\Support\Facades\Log;
  * 않으면 운영자가 이유도 모른 채 데이터를 잃고, 익명 수집은 개인정보를 남기지 않아
  * 법적으로 가장 안전한 쪽입니다.
  *
- * **코어는 동의를 관리하는 확장이 무엇인지 모릅니다.** 코어가 자기 질문을 자기 필터로 묻고,
- * 답할 수 있는 확장이 구독해 답합니다. 아무도 답하지 않는 것이 정상 상태이며(동의 관리 확장이
- * 없는 사이트) 그때는 코어 기본 동작을 따릅니다.
+ * **코어는 동의를 관리하는 확장이 무엇인지 모릅니다.** 동의 판단은 범용 동의 제공자 계약
+ * ({@see ConsentManager})의 소비자로서 묻습니다. 운영자가 고른 제공자 하나가 답하고, 제공자가 없는
+ * 사이트(`none`)는 코어 기본 동작을 따릅니다.
  *
- *   - `core.analytics.visitor_has_consent` — 동의 모드: 이 방문자가 분석 수집에 동의했는가
- *   - `core.analytics.tracking_permission` — 이 방문자를 식별자(IP·방문자 쿠키)로 추적해도 되는가.
- *     답하는 확장이 있으면 방문자마다 허용 여부가 갈린다는 뜻이다(동의 전 쿠키를 막는 확장).
+ *   - 분석 동의 = 스냅샷 `ready` && 재동의 대상 아님 && `analytics`
+ *   - 식별자(IP·방문자 쿠키) 추적 허용 = 분석 동의 && `functional` — 동의 관리 확장은 기능 동의 전에
+ *     방문자 쿠키를 지우므로, 그 전에는 쿠키 방식으로 셀 수 없다.
+ *   - 제공자가 모호하거나 사라졌거나 답하지 못하면(`unknown`) 동의하지 않은 것으로 본다.
  */
 class PrivacyService
 {
-    /** 동의 모드에서 분석 동의 여부를 묻는 필터 이름 (코어 소유) */
-    public const CONSENT_FILTER = 'core.analytics.visitor_has_consent';
-
-    /** 식별자 추적 허용 여부를 묻는 필터 이름 (코어 소유) */
-    public const TRACKING_PERMISSION_FILTER = 'core.analytics.tracking_permission';
-
-    /** 동의 출처 — 방문자마다 추적 허용을 정하는 확장이 답한다 */
+    /** 동의 출처 — 동의 관리 제공자가 있다(선택 상태 auto·selected·ambiguous·missing) */
     public const SOURCE_PROVIDER = 'provider';
 
-    /** 동의 출처 — 동의 모드의 동의 여부만 답하는 확장이 있다 */
-    public const SOURCE_FILTER = 'filter';
-
-    /** 동의 출처 — 답하는 확장이 없다 */
+    /** 동의 출처 — 동의 관리 제공자가 없다(선택 상태 none) */
     public const SOURCE_NONE = 'none';
 
     /**
      * 개인정보 처리기를 생성합니다.
      *
      * @param  VisitorRecognizer  $recognizer  방문자 식별기
+     * @param  ConsentManager  $consent  동의 제공자 매니저
      */
     public function __construct(
         private readonly VisitorRecognizer $recognizer,
+        private readonly ConsentManager $consent,
     ) {}
 
     /**
      * 동의 출처를 판정합니다.
      *
-     * 코어는 어느 확장이 답하는지 알 필요가 없다 — 자기 필터에 답하는 구독자가 있는지만 본다.
+     * 선택 상태가 `none`(제공자 없음, 또는 고른 제공자가 수집을 꺼 둠)이면 `none`, 그 밖에는 `provider` 다.
+     * 모호·누락(ambiguous·missing)도 `provider` 로 본다 — 운영자 확인이 필요한 상태라 동의 없이 식별자를
+     * 남기면 안 되고, 그 방문자의 스냅샷은 `unknown` 이라 동의하지 않은 것으로 판정된다.
      *
-     * @return string 동의 출처 (`provider`·`filter`·`none`)
+     * @return string 동의 출처 (`provider`·`none`)
      */
     public function consentSource(): string
     {
-        $filters = HookManager::getFilters();
+        return $this->consentSelection()->governsConsent() ? self::SOURCE_PROVIDER : self::SOURCE_NONE;
+    }
 
-        if (! empty($filters[self::TRACKING_PERMISSION_FILTER])) {
-            return self::SOURCE_PROVIDER;
-        }
-
-        if (! empty($filters[self::CONSENT_FILTER])) {
-            return self::SOURCE_FILTER;
-        }
-
-        return self::SOURCE_NONE;
+    /**
+     * 동의 제공자 선택 상태를 반환합니다 (진단 화면의 동의 출처 배지가 읽는다).
+     *
+     * @return ConsentSelection 선택 상태
+     */
+    public function consentSelection(): ConsentSelection
+    {
+        return $this->consent->selection();
     }
 
     /**
@@ -134,10 +132,9 @@ class PrivacyService
     }
 
     /**
-     * 이 방문자를 식별자로 추적해도 되는지 코어 필터로 묻습니다.
+     * 이 방문자를 식별자로 추적해도 되는지 동의 제공자에게 묻습니다 (분석 동의 + 기능 동의).
      *
-     * 이 판정은 추적 허용 필터에 답하는 확장이 있을 때만 불린다. 확인할 수 없거나 답이 `true` 가
-     * 아니면 허용하지 않은 것으로 본다 — 모르는 상태에서 IP 를 남기지 않는다.
+     * 확인할 수 없으면 허용하지 않은 것으로 본다 — 모르는 상태에서 IP 를 남기지 않는다.
      *
      * @param  TrackingRequest  $request  수집 요청
      * @return bool 허용이면 true
@@ -145,17 +142,24 @@ class PrivacyService
     private function visitorPermitsTracking(TrackingRequest $request): bool
     {
         try {
-            return HookManager::applyFilters(
-                self::TRACKING_PERMISSION_FILTER,
-                null,
-                $request->userId,
-                $request->sessionId,
-            ) === true;
+            return $this->consent->snapshotFor($this->subject($request->userId, $request->sessionId))->permitsTracking();
         } catch (\Throwable $e) {
             Log::warning('방문자 통계 추적 허용 확인 실패', ['error' => $e->getMessage()]);
 
             return false;
         }
+    }
+
+    /**
+     * 수집 요청의 식별 값으로 동의 주체를 만듭니다.
+     *
+     * @param  int|null  $userId  회원 ID
+     * @param  string|null  $sessionId  게스트 동의 식별자
+     * @return ConsentSubject 동의 주체
+     */
+    private function subject(?int $userId, ?string $sessionId): ConsentSubject
+    {
+        return $userId !== null ? ConsentSubject::member($userId) : ConsentSubject::guest($sessionId);
     }
 
     /**
@@ -189,20 +193,20 @@ class PrivacyService
     }
 
     /**
-     * 방문자가 분석 수집에 동의했는지 코어 필터로 묻습니다.
+     * 방문자가 분석 수집에 동의했는지 동의 제공자에게 묻습니다.
      *
-     * 코어는 동의 관리 확장의 클래스를 부르지 않는다 — 코어가 확장에 의존하면 그 확장 없이는
-     * 코어가 서지 않는다. 필터를 열어 두고 답할 수 있는 확장이 답하게 한다. 아무도 답하지 않으면
-     * 동의하지 않은 것으로 본다. 브라우저의 동의 조회 API 도 같은 판정을 쓴다.
+     * 코어는 동의 관리 확장의 클래스를 부르지 않는다 — 운영자가 고른 제공자에게 범용 계약으로 묻는다.
+     * 판단할 수 없으면(`unknown`) 동의하지 않은 것으로 본다. 브라우저의 동의 런타임(`/api/consent`)도
+     * 같은 매니저와 같은 파생 규칙을 쓴다.
      *
      * @param  int|null  $userId  회원 ID (게스트면 null)
-     * @param  string|null  $sessionId  동의 조회용 세션 식별자
+     * @param  string|null  $sessionId  게스트 동의 식별자
      * @return bool 동의 여부
      */
     public function visitorHasConsent(?int $userId, ?string $sessionId): bool
     {
         try {
-            return (bool) HookManager::applyFilters(self::CONSENT_FILTER, null, $userId, $sessionId);
+            return $this->consent->snapshotFor($this->subject($userId, $sessionId))->permitsAnalytics();
         } catch (\Throwable $e) {
             // 동의를 확인할 수 없으면 수집하지 않는다 — 모르는 상태에서 모으는 것보다 안전하다.
             Log::warning('방문자 통계 동의 확인 실패', ['error' => $e->getMessage()]);

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -204,6 +205,34 @@ class KginicisHostTrustTest extends PluginTestCase
         $this->assertSame($site.'/mobile/vbank-notify', $config['callback_urls']['mobile_vbank_notify'] ?? null);
         $this->assertSame($site.'/cbt/callback', $config['callback_urls']['cbt_callback'] ?? null);
         $this->assertSame($site.'/cbt/cvs-notify', $config['cbt_extra_data']['payment']['cvs']['notiUrl'] ?? null);
+    }
+
+    /**
+     * 브라우저가 G7Core.api 로 직접 부르는 주소(서명·닫힘 보고·CBT 토큰·해시·모바일 서명)는 API 라우트 주소다.
+     *
+     * 절대 URL 은 ApiClient 가 /api 접두를 붙이지 않으므로, 웹 경로(/plugins/...)로 내려 주면 라우트가 없는
+     * 주소로 POST 가 나가 결제창이 열리지 않는다(#639 회귀 잠금).
+     *
+     * @scenario host_header=forged, sink=pg_callback_urls
+     *
+     * @effects browser_api_callback_urls_point_to_api_routes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_browser_api_callback_urls_point_to_registered_api_routes(): void
+    {
+        $config = app(RegisterPgProviderListener::class)->getClientConfig([], 'kginicis');
+        $site = rtrim((string) config('app.url'), '/');
+
+        foreach (['signature', 'close_report', 'cbt_checkout_token', 'cbt_hash_data', 'mobile_signature'] as $key) {
+            $url = $config['callback_urls'][$key] ?? '';
+            $this->assertStringStartsWith($site.'/api/plugins/sirsoft-pay_kginicis/payment/', $url, $key);
+
+            $route = app('router')->getRoutes()->match(
+                Request::create(substr($url, strlen($site)), 'POST')
+            );
+            $this->assertContains('POST', $route->methods(), $key);
+        }
     }
 
     /**

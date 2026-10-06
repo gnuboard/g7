@@ -427,8 +427,10 @@
             <!-- 저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).
                  알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가
                  다른 유일한 자리다.
-                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아
-                 처리하므로 여기서 파일을 다루지 않는다.
+                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고, SEO 탭 기본 공유 이미지) —
+                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를
+                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고
+                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).
                  성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.
                  개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이
                  처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).
@@ -451,6 +453,7 @@
               <case when="save">
                 <sequence>
                   <emit-event event="upload:site_logo"/>
+                  <emit-event event="upload:og_image_default"/>
                   <set-state target="local" :isSaving="true" :errors="null"/>
                   <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
                     <success>

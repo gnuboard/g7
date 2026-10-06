@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\Gdpr\Concerns;
 
+use Illuminate\Http\Request;
+
 /**
  * 게스트 세션 식별 쿠키(gdpr_session) 발급/검증 트레이트
  *
@@ -72,6 +74,34 @@ trait IssuesGuestSessionCookie
         }
 
         return substr($sessionId, 0, 100);
+    }
+
+    /**
+     * 요청의 게스트 동의 식별자를 정합니다 — 이 플러그인의 게스트 식별 규칙은 이 메서드 하나다.
+     *
+     * 회원 요청이면 null(회원은 회원 번호로 찾는다). 게스트면 서명을 검증한 `gdpr_session` 쿠키의 UUID, 쿠키가
+     * 없거나 위조됐으면 시작된 라라벨 세션 ID(없으면 null). 동의 저장(컨트롤러)·응답 쿠키 걸러내기(미들웨어)·코어
+     * 동의 계약(제공자)이 같은 규칙을 써야 저장한 동의를 다시 찾을 수 있다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return string|null 게스트 동의 식별자
+     */
+    protected function resolveGuestSessionId(Request $request): ?string
+    {
+        if ($request->user() !== null) {
+            return null;
+        }
+
+        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
+        if ($verified !== null) {
+            return $verified;
+        }
+
+        try {
+            return $request->hasSession() ? substr($request->session()->getId(), 0, 100) : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

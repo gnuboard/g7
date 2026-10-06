@@ -8,7 +8,8 @@
       "label": "エディター",
       "style_label": "エディタースタイル",
       "fallback_notice": "エディターを読み込めませんでした。一時的な入力ウィンドウに切り替えました。作成した内容はそのまま保存されます。"
-    }
+    },
+    "upload_failed": "ファイルをアップロードできませんでした: {{name}}"
   },
   "settings": {
     "title": "CKEditor5 設定",

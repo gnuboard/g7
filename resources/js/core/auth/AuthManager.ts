@@ -259,22 +259,65 @@ export class AuthManager {
 
   /**
    * 이벤트 핸들러 등록
+   *
+   * 해제 함수를 돌려줍니다. 확장·템플릿은 엔진보다 늦게 실리고 화면을 오가며 구독을 걸었다 풀므로,
+   * 해제 수단이 없으면 화면을 떠나도 리스너가 남습니다(#639).
+   *
+   * 최초 인증 확인(`preloadAuth`)은 확장 번들이 실리기 전에 끝나 그 이벤트를 놓칠 수 있습니다 —
+   * 현재 상태는 {@link getState} 로 읽습니다.
+   *
+   * @param event 이벤트 이름 (`authStateChange`·`login`·`logout`·`tokenRefreshed`)
+   * @param handler 핸들러
+   * @returns 해제 함수
    */
-  on(event: string, handler: EventHandler): void {
+  on(event: string, handler: EventHandler): () => void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
+
+    return () => this.off(event, handler);
+  }
+
+  /**
+   * 이벤트 핸들러 해제
+   *
+   * @param event 이벤트 이름
+   * @param handler 등록했던 핸들러 (같은 참조)
+   * @since engine-v1.78.0
+   */
+  off(event: string, handler: EventHandler): void {
+    const handlers = this.eventHandlers.get(event);
+    if (!handlers) return;
+
+    const index = handlers.indexOf(handler);
+    if (index >= 0) {
+      handlers.splice(index, 1);
+    }
   }
 
   /**
    * 이벤트 발생
+   *
+   * 핸들러 목록의 사본을 돈다 — 핸들러 안에서 자기 자신을 해제해도 다음 핸들러를 건너뛰지 않는다.
    */
   private emit(event: string, ...args: any[]): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
-      handlers.forEach(handler => handler(...args));
+      [...handlers].forEach(handler => handler(...args));
     }
+  }
+
+  /**
+   * 현재 인증 상태의 사본을 반환합니다.
+   *
+   * 늦게 실린 구독자가 최초 상태를 이벤트 없이 알 수 있게 한다. `user` 도 얕은 사본이다(바꿔도 내부 상태는 그대로).
+   *
+   * @returns 인증 상태 사본
+   * @since engine-v1.78.0
+   */
+  getState(): AuthState {
+    return { ...this.state, user: this.state.user ? { ...this.state.user } : null };
   }
 
   /**
@@ -789,9 +832,9 @@ export class AuthManager {
       // 토큰 삭제
       apiClient.removeToken();
 
-      // 상태 초기화
+      // 상태 초기화 — 경계 발행은 아래 명시 발행이 맡는다(이중 발행 방지)
       const previousState = { ...this.state };
-      this.clearState();
+      this.clearState(false);
 
       this.emit('logout', previousState);
       this.emit('authStateChange', this.state);
@@ -970,13 +1013,30 @@ export class AuthManager {
 
   /**
    * 상태 초기화
+   *
+   * 인증 상태에서 비인증으로 바뀔 때는 `authStateChange` 를 발행한다 — 토큰이 사라지거나 인증 확인이
+   * 실패해 비인증이 된 사실을 알리지 않으면, 인증 상태에 묶인 캐시(동의 스냅샷 등)를 비울 기회가 없다(#639).
+   * 비인증 → 비인증은 발행하지 않는다.
+   *
+   * @param emit 경계 발행 여부 (logout 처럼 호출자가 직접 발행하면 false)
    */
-  private clearState(): void {
+  private clearState(emit: boolean = true): void {
+    const wasAuthenticated = this.state.isAuthenticated;
+
     this.state = {
       isAuthenticated: false,
       user: null,
       type: null,
     };
+
+    if (emit && wasAuthenticated) {
+      // 이 경로는 인증 확인·로그인 실패 처리 안에서 돈다 — 구독자 예외가 원래 결과(false·인증 오류)를 덮지 않게 격리한다.
+      try {
+        this.emit('authStateChange', this.state);
+      } catch (error) {
+        logger.error('authStateChange 구독자 오류 (비인증 전환)', error);
+      }
+    }
   }
 
   /**

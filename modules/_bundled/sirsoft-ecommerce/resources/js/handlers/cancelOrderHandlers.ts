@@ -38,6 +38,39 @@ function translateOr(key: string, fallback: string, params?: Record<string, unkn
     return typeof resolved === 'string' && resolved !== '' && resolved !== key ? resolved : fallback;
 }
 
+/**
+ * 엔진이 커스텀 핸들러에 넘기는 액션 컨텍스트 중 이 파일이 쓰는 부분.
+ *
+ * `setState` 는 핸들러를 부른 컴포넌트(취소 모달 등)의 로컬 상태 writer 다.
+ */
+type HandlerContext = ActionContext & {
+    setState?: (updates: Record<string, any>) => void;
+};
+
+/** 로컬 상태 쓰기 함수 */
+type LocalWriter = (updates: Record<string, any>) => void;
+
+/**
+ * debounce 콜백에서 쓸 로컬 상태 writer 를 만듭니다.
+ *
+ * debounce 콜백은 액션 실행이 끝난 뒤에 돌므로, 그때의 `G7Core.state.setLocal()` 은 핸들러를 부른
+ * 컴포넌트를 모른다 — 정본 `_local` 만 바뀌고 모달 화면은 그대로 남는다. 핸들러가 받은 컨텍스트의
+ * `setState` 를 잡아 두었다가 같은 값을 함께 실어 그 컴포넌트에도 반영한다(엔진 내부 전역을 바꿔
+ * 끼우지 않는다).
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param context 핸들러가 받은 액션 컨텍스트
+ * @returns 로컬 상태 writer
+ */
+function deferredLocalWriter(G7Core: any, context?: HandlerContext): LocalWriter {
+    const componentSetState = typeof context?.setState === 'function' ? context.setState : null;
+
+    return (updates) => {
+        G7Core.state.setLocal(updates);
+        componentSetState?.(updates);
+    };
+}
+
 /** Debounce 타이머 */
 let estimateDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -67,11 +100,11 @@ export function clearCancelOrderTimers(): void {
  * }
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (debounce 콜백의 상태 반영 대상)
  */
 export function updateCancelQuantityHandler(
     action: ActionWithParams<{ optionId: number; maxQuantity: number; orderId: string }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -95,21 +128,14 @@ export function updateCancelQuantityHandler(
     G7Core.state.setLocal({ cancelItems });
 
     // Debounce로 환불 예상금액 재계산
-    // engine-v1.24.7: ActionDispatcher의 try/finally가 debounce 콜백 전에 __g7ActionContext를
-    // 복원하므로, 콜백 실행 시점에는 모달의 actionContext가 사라짐.
-    // 캡처하여 복원해야 setLocal()이 모달의 actionContext.setState()를 호출할 수 있음.
-    const savedActionContext = (window as any).__g7ActionContext;
+    // 콜백 실행 시점에는 액션이 이미 끝나 모달 컴포넌트를 엔진이 모른다 — 핸들러가 받은
+    // 컨텍스트로 writer 를 만들어 두어야 계산 결과가 모달에 반영된다.
+    const writeLocal = deferredLocalWriter(G7Core, context);
     if (estimateDebounceTimer) {
         clearTimeout(estimateDebounceTimer);
     }
     estimateDebounceTimer = setTimeout(() => {
-        const previousContext = (window as any).__g7ActionContext;
-        (window as any).__g7ActionContext = savedActionContext;
-        try {
-            estimateRefundAmountInternal(G7Core, orderId);
-        } finally {
-            (window as any).__g7ActionContext = previousContext;
-        }
+        void estimateRefundAmountInternal(G7Core, orderId, undefined, writeLocal);
     }, 500);
 }
 
@@ -145,14 +171,21 @@ export async function estimateRefundAmountHandler(
  *
  * @param G7Core G7Core 인스턴스
  * @param orderId 주문번호
+ * @param paramCancelItems 취소 항목 (없으면 로컬 상태의 cancelItems)
+ * @param writeLocal 로컬 상태 writer (debounce 콜백은 핸들러 컨텍스트로 만든 writer 를 넘긴다)
  */
-async function estimateRefundAmountInternal(G7Core: any, orderId: string, paramCancelItems?: any[]): Promise<void> {
+async function estimateRefundAmountInternal(
+    G7Core: any,
+    orderId: string,
+    paramCancelItems?: any[],
+    writeLocal: LocalWriter = (updates) => G7Core.state.setLocal(updates),
+): Promise<void> {
     const local = G7Core.state.getLocal();
     const cancelItems = paramCancelItems || local.cancelItems || [];
     const refundPriority = local.refundPriority || 'pg_first';
 
     if (cancelItems.length === 0) {
-        G7Core.state.setLocal({ refundEstimate: null });
+        writeLocal({ refundEstimate: null });
         return;
     }
 
@@ -161,7 +194,7 @@ async function estimateRefundAmountInternal(G7Core: any, orderId: string, paramC
         cancel_quantity: item.cancel_quantity,
     }));
 
-    G7Core.state.setLocal({ refundLoading: true });
+    writeLocal({ refundLoading: true });
 
     try {
         const response = await G7Core.api.post(
@@ -170,7 +203,7 @@ async function estimateRefundAmountInternal(G7Core: any, orderId: string, paramC
         );
 
         if (response?.success) {
-            G7Core.state.setLocal({
+            writeLocal({
                 refundEstimate: response.data,
                 refundLoading: false,
                 cancelError: null,
@@ -180,7 +213,7 @@ async function estimateRefundAmountInternal(G7Core: any, orderId: string, paramC
         }
     } catch (error: any) {
         logger.error('[estimateRefundAmount] 실패:', error);
-        G7Core.state.setLocal({
+        writeLocal({
             refundLoading: false,
             refundEstimate: null,
         });
@@ -203,11 +236,11 @@ async function estimateRefundAmountInternal(G7Core: any, orderId: string, paramC
  * }
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (debounce 콜백의 상태 반영 대상)
  */
 export function changeRefundPriorityHandler(
     action: ActionWithParams<{ priority: string; orderId: string }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -217,20 +250,13 @@ export function changeRefundPriorityHandler(
 
     G7Core.state.setLocal({ refundPriority: priority });
 
-    // Debounce로 환불 예상금액 재계산
-    // engine-v1.24.7: debounce 콜백에서 actionContext 캡처/복원
-    const savedActionContext = (window as any).__g7ActionContext;
+    // Debounce로 환불 예상금액 재계산 (콜백의 상태 반영은 updateCancelQuantityHandler 와 같은 이유로 컨텍스트 writer 를 쓴다)
+    const writeLocal = deferredLocalWriter(G7Core, context);
     if (estimateDebounceTimer) {
         clearTimeout(estimateDebounceTimer);
     }
     estimateDebounceTimer = setTimeout(() => {
-        const previousContext = (window as any).__g7ActionContext;
-        (window as any).__g7ActionContext = savedActionContext;
-        try {
-            estimateRefundAmountInternal(G7Core, orderId);
-        } finally {
-            (window as any).__g7ActionContext = previousContext;
-        }
+        void estimateRefundAmountInternal(G7Core, orderId, undefined, writeLocal);
     }, 300);
 }
 

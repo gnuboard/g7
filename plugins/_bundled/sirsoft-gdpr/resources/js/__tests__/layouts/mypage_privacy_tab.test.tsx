@@ -165,13 +165,13 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(modal).toBeTruthy();
             expect(modal?.name).toBe('Modal');
             const text = serializeForSearch(modal);
-            // 동의 확인 문구 + grant API + 대상 _global.grantTargetKey
+            // 동의 확인 문구 + grant API + 대상 _global.gdprGrantTargetKey
             expect(text).toContain('mypage.privacy.grant_confirm_message');
             expect(text).toContain('"target": "/api/plugins/sirsoft-gdpr/consent/grant"');
-            expect(text).toContain('_global.grantTargetKey');
-            // 확인 후 refetch + syncConsent + closeModal
+            expect(text).toContain('_global.gdprGrantTargetKey');
+            // 확인 후 refetch + refreshConsent + closeModal
             expect(text).toContain('"dataSourceId": "gdprMeConsents"');
-            expect(text).toContain('"handler": "sirsoft-gdpr.syncConsent"');
+            expect(text).toContain('"handler": "refreshConsent"');
             expect(text).toContain('"handler": "closeModal"');
         });
 
@@ -217,12 +217,12 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         it('철회 버튼 클릭 시 _global 에 키+라벨+설명 세팅 후 revoke_confirm_modal 오픈', () => {
             const text = serializeForSearch(section);
             expect(text).toContain('"target": "revoke_confirm_modal"');
-            expect(text).toContain('"revokeTargetKey": "{{consent?.consent_key}}"');
+            expect(text).toContain('"gdprRevokeTargetKey": "{{consent?.consent_key}}"');
             // raw key (cookie_functional 등) 대신 사용자 친화 description 을 모달에 표시하기 위해
             // 행 핸들러에서 consent_description 을 _global 에 세팅한다.
-            expect(text).toContain('"revokeTargetDescription": "{{consent?.consent_description ?? \'\'}}"');
+            expect(text).toContain('"gdprRevokeTargetDescription": "{{consent?.consent_description ?? \'\'}}"');
             // 이슈 #430 — 철회 모달에서 마지막 동의일을 보여주기 위해 status_at_formatted 를 _global 로 전달.
-            expect(text).toContain('"revokeTargetDate": "{{consent?.status_at_formatted ?? \'\'}}"');
+            expect(text).toContain('"gdprRevokeTargetDate": "{{consent?.status_at_formatted ?? \'\'}}"');
         });
 
         it('동의 항목 컬럼이 라벨 우선 표시 (consent_label fallback consent_key)', () => {
@@ -248,15 +248,15 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
             const text = serializeForSearch(modal);
             // description 바인딩이 모달 본문에 존재
-            expect(text).toContain('_global.revokeTargetDescription');
+            expect(text).toContain('_global.gdprRevokeTargetDescription');
             // 옛 raw key 표시 (font-mono break-all 클래스) 가 회귀하지 않음
             expect(text).not.toContain('font-mono break-all');
         });
 
-        it('이슈 #430 — 모달에 철회 대상의 마지막 동의일 노출 (revokeTargetDate 있을 때만)', () => {
+        it('이슈 #430 — 모달에 철회 대상의 마지막 동의일 노출 (gdprRevokeTargetDate 있을 때만)', () => {
             const text = serializeForSearch(modal);
             // 사용자가 언제 동의한 것을 철회하는지 인지하도록 마지막 동의일을 표시.
-            expect(text).toContain('_global.revokeTargetDate');
+            expect(text).toContain('_global.gdprRevokeTargetDate');
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date=');
         });
 
@@ -270,16 +270,16 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
 
         it('철회 대상 + 확인 버튼 disabled 조건 모두 _global 참조 (모달 컨텍스트 분리)', () => {
             const text = serializeForSearch(modal);
-            expect(text).toContain('_global.revokeTargetKey');
+            expect(text).toContain('_global.gdprRevokeTargetKey');
         });
 
-        it('철회 onSuccess 에서 sirsoft-gdpr.syncConsent 핸들러를 호출한다', () => {
+        it('철회 onSuccess 에서 코어 refreshConsent 핸들러를 호출한다', () => {
             // 회귀 가드: 마이페이지 철회 후 functional 카테고리 cleanup 이 즉시 동작하려면
-            // syncConsent 핸들러가 호출되어야 함 (storage/cookie interceptor config 갱신 +
-            // functionalCleaner 호출). 누락 시 새로고침해야 cleanup 됨 (EDPB §117 즉시성 약화).
+            // refreshConsent 가 코어 동의 런타임을 다시 읽어 consent:changed 를 내야 함 (storage/cookie
+            // interceptor config 갱신 + functionalCleaner 호출). 누락 시 새로고침해야 cleanup 됨 (EDPB §117 즉시성 약화).
             // 배너 ([cookie_banner.test.tsx:261] — 3개 동의 버튼) 와 동일 패턴.
             const text = serializeForSearch(modal);
-            expect(text).toContain('"handler": "sirsoft-gdpr.syncConsent"');
+            expect(text).toContain('"handler": "refreshConsent"');
         });
 
         it('확인 버튼에 isRevoking 동안 spinner 아이콘 + "철회 중" 라벨 노출', () => {
@@ -365,7 +365,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('mypage.privacy.revoke');
             // 클릭 시 철회 확인 모달 오픈 + 대상 키를 global 로 세팅
             expect(text).toContain('"target": "revoke_confirm_modal"');
-            expect(text).toContain('"revokeTargetKey"');
+            expect(text).toContain('"gdprRevokeTargetKey"');
         });
 
         /**
@@ -378,7 +378,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('mypage.privacy.grant');
             // 토글 즉시 grant 가 아니라 동의 확인 모달 경유 (grant_confirm_modal)
             expect(text).toContain('"target": "grant_confirm_modal"');
-            expect(text).toContain('grantTargetKey');
+            expect(text).toContain('gdprGrantTargetKey');
         });
 
         it('이슈 #430 (3안) — 상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
@@ -418,11 +418,12 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('mypage.privacy.enable_all_success');
         });
 
-        it('grant/revoke onSuccess 에서 refetch + syncConsent 호출 (동의 즉시성)', () => {
-            // 회귀 가드: 동의/철회 시 interceptor 즉시 갱신 — 모달의 sequence onSuccess 에 syncConsent 존재.
+        it('grant/revoke onSuccess 에서 refetch + refreshConsent 호출 (동의 즉시성)', () => {
+            // 회귀 가드: 동의/철회 시 interceptor 즉시 갱신 — 모달의 sequence onSuccess 에 refreshConsent 존재.
             const text = serializeForSearch(root);
-            const matches = text.match(/"handler":\s*"sirsoft-gdpr\.syncConsent"/g) ?? [];
+            const matches = text.match(/"handler":\s*"refreshConsent"/g) ?? [];
             expect(matches.length).toBeGreaterThanOrEqual(2);
+            expect(text).not.toContain('sirsoft-gdpr.syncConsent');
         });
 
         it('제거된 amber 갱신 분기 / rejected_label 이 부활하지 않는다 (회귀 가드)', () => {
@@ -464,13 +465,13 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('renew_all_success');
         });
 
-        it('renew-all onSuccess 에서 sirsoft-gdpr.syncConsent 핸들러를 호출한다', () => {
+        it('renew-all onSuccess 에서 코어 refreshConsent 핸들러를 호출한다', () => {
             // 회귀 가드: renew-all 직후 functional 동의가 갱신되거나 신규 카테고리 (cookie_functional)
             // 가 활성 동의 매트릭스에 추가되는 경우, interceptor config 와 blocker 캐시를
             // 동기화하지 않으면 새로고침 전까지 차단 상태가 유지됨 (동의 후 즉시 미반영 회귀).
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
             const text = serializeForSearch(banner);
-            expect(text).toContain('"handler": "sirsoft-gdpr.syncConsent"');
+            expect(text).toContain('"handler": "refreshConsent"');
         });
 
         it('「전체 다시 동의」 버튼에 isRenewingAll 동안 spinner + "갱신 중" 라벨 노출', () => {

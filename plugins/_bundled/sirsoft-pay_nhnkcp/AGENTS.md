@@ -147,6 +147,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 결제창 컨텍스트(주문 정보)를 메모리에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남기고, 부팅 시 `reportPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| 스크립트가 주소 정규식·DOM 폴링으로 남의 화면을 찾아 글자를 고치거나 버튼을 붙이기, `window.fetch`·`history.pushState` 덮어쓰기, `localStorage.getItem('auth_token')` 으로 Bearer 붙이기 | 표시는 레이아웃 조각(`resources/extensions`)이 자기 데이터 소스로 그린다. 요청은 `G7Core.api`, 상태는 `G7Core.state.get()`·`subscribe()` 와 공개 상태 계약(`_global.guestOrderToken`)으로만 | 엔진이 내부를 바꾸면 조용히 깨지고, 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀐다. 제목·버튼 글자로 찾으면 다른 언어 화면에서 빠진다(#639). 가드: `extension-private-core-internals` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지·라벨을 넣기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → 라벨은 `children._patch`(by: id)로 text 만, 배지는 `children._append` | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 <!-- @intent END -->
@@ -157,9 +158,9 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 42개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 22개 | `vitest.config.ts` |
+| Vitest | 16개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

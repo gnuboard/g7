@@ -88,6 +88,7 @@ effects:
   - total_is_the_sum_of_daily_unique_visitors
   - change_percent_is_empty_when_yesterday_was_zero
   - overview_meta_exposes_collection_and_queue_state
+  - diagnostics_report_consent_selection_and_provider_label   # 동의 출처 배지 — 선택 상태·제공자 이름 (#639)
   - series_unit_is_chosen_from_the_range_length
   - series_downgrades_hour_outside_the_retention_window
   - series_fills_empty_buckets_with_zero

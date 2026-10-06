@@ -389,13 +389,13 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('"auth_required": false,\n                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie"');
         });
 
-        it('동의 저장 직후 onSuccess 에서 sirsoft-gdpr.syncConsent 핸들러를 호출 (3개 버튼 모두)', () => {
-            // v1.5.0 회귀 가드: 자동 차단 엔진이 클라이언트 쿠키 SSoT 를 버리고 서버 응답 SSoT 로
-            // 전환됨. 동의 저장 직후 차단 엔진의 메모리 캐시를 갱신하지 않으면 G-4 시나리오 (분석/
-            // 마케팅 스크립트 동의 직후 즉시 로드) 가 작동 안 함. refetchDataSource 만으로는
-            // blocker.ts 가 갱신을 알 수 없으므로 별도 핸들러 호출이 필요.
-            const syncOccurrences = (text.match(/"handler":\s*"sirsoft-gdpr\.syncConsent"/g) ?? []).length;
-            expect(syncOccurrences).toBeGreaterThanOrEqual(3);
+        it('동의 저장 직후 onSuccess 에서 코어 refreshConsent 핸들러를 호출 (3개 버튼 모두)', () => {
+            // 회귀 가드: 동의 저장 직후 코어 동의 런타임을 다시 읽지 않으면 consent:changed 가 오지 않아
+            // 자동 차단 엔진 캐시가 그대로다 — G-4 시나리오(분석/마케팅 스크립트 동의 직후 즉시 로드)가
+            // 작동 안 함. 옛 플러그인 전용 syncConsent 는 #639 에서 코어 내장 핸들러로 대체됐다.
+            const refreshOccurrences = (text.match(/"handler":\s*"refreshConsent"/g) ?? []).length;
+            expect(refreshOccurrences).toBeGreaterThanOrEqual(3);
+            expect(text).not.toContain('sirsoft-gdpr.syncConsent');
         });
 
         it('"환경설정" 클릭 시 인라인 펼침 토글 (모달 미사용)', () => {
@@ -647,14 +647,13 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     });
 
     describe('규정 준수', () => {
-        it('핸들러는 G7 내장 핸들러 또는 sirsoft-gdpr.* 플러그인 등록 핸들러만 사용', () => {
-            // G7 빌트인 핸들러 + 플러그인이 ActionDispatcher 에 등록한 sirsoft-gdpr.* 네임스페이스 핸들러.
-            // module-assets.md 의 핸들러 네이밍 규칙: {plugin-identifier}.{handler-name}
+        it('핸들러는 G7 내장 핸들러만 사용 (이 플러그인은 핸들러를 등록하지 않는다)', () => {
+            // #639(결정 D22): 플러그인 전용 syncConsent 가 코어 내장 refreshConsent 로 대체돼 이 플러그인은
+            // ActionDispatcher 에 핸들러를 등록하지 않는다(plugin.json assets.handlers=false).
             const allowedBuiltins = [
-                'apiCall', 'setState', 'sequence', 'toast', 'refetchDataSource',
+                'apiCall', 'setState', 'sequence', 'toast', 'refetchDataSource', 'refreshConsent',
             ];
             for (const h of collectHandlers(extension)) {
-                if (h.startsWith('sirsoft-gdpr.')) continue;
                 expect(allowedBuiltins).toContain(h);
             }
         });

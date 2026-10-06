@@ -112,6 +112,8 @@ class OverviewController extends AdminBaseController
             // 동의 모드인데 동의를 물어볼 곳이 없으면 익명으로 모은다 — 운영자가 그
             // 사실을 모른 채 「동의 모드」라고 믿으면 안 된다.
             'consent_source' => $this->privacy->consentSource(),
+            // 제공자를 고르지 못한 상태(ambiguous·missing)는 출처만으로 정상 연동과 구별되지 않는다.
+            'consent_selection' => $this->privacy->consentSelection()->state,
             'collection_enabled' => $config->enabled,
             'geoip_enabled' => (bool) g7_core_settings('geoip.feature_enabled', false),
             'realtime_poll_seconds' => $config->realtimePollSeconds,

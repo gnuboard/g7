@@ -102,8 +102,7 @@ G7Core.analytics?.trackGoal('sirsoft-ecommerce.order_completed', { revenue: 4500
 - 제외 URL 패턴에 맞음
 - 추적 거부(DNT·GPC)를 존중하도록 설정했고 브라우저가 보냄
 - 수집 제외 쿠키(`g7_analytics_optout`)가 있음
-- 동의 연동 모드에서 아직 동의를 모름(동의가 확인되면 보류한 화면을 최대 5건까지 보낸다 — 보내기 직전에
-  제외 판정을 다시 해, 보류 중 수집 제외를 고른 방문자의 요청은 나가지 않는다)
+- 동의 연동 모드에서 분석 동의가 확인되지 않음, 또는 아직 판정 전(아래 「동의 연동」)
 - 브라우저가 화면을 미리 그리는 중(prerender). 이때는 보내지 않고 기다렸다가 **실제로 열리면** 그 첫
   화면을 보냅니다 — 미리 그리기만 하고 열지 않은 화면은 세지 않되, 열린 화면의 첫 방문은 잃지 않습니다
 
@@ -115,6 +114,31 @@ G7Core.analytics?.trackGoal('sirsoft-ecommerce.order_completed', { revenue: 4500
 다른 주소가 되므로 유입 주소·클릭 대상(1024자)은 넘으면 빼고, 페이지 주소(2048자)는 쿼리·조각을 뗀 뒤에도
 길 때만 자릅니다.
 
+### 동의 연동
+
+수집 모드가 「동의 연동」이고 사이트에 동의 관리 제공자가 있을 때만 트래커가 동의를 확인합니다. IP 저장 모드와
+익명 모드에서는 동의를 기다리지 않습니다.
+
+판정 출처는 코어 동의 런타임([`G7Core.consent`](g7core-api.md#방문자-동의-g7coreconsent))입니다. 트래커는 동의를 따로
+조회하지 않고, 생성 옵션 `consentSource` 로 받은 런타임의 스냅샷을 읽습니다. 동의를 관리하는 확장이 무엇인지는 모릅니다.
+
+| 스냅샷 `status` | 트래커 판정 |
+| --- | --- |
+| `none` | 막지 않는다. 서버가 익명 모드로 받는다 |
+| `ready` | `needsRenewal` 이 `false` 이고 `categories.analytics` 가 `true` 일 때만 보낸다 |
+| `unknown` | 첫 판정 전이면 비콘을 들고 기다린다. 첫 판정 뒤에도 `unknown` 이면 동의하지 않은 것으로 보고 보내지 않는다 |
+
+첫 판정 전은 부팅 직후와 로그인, 로그아웃 직후입니다. 런타임이 인증 경계마다 다시 조회하므로 트래커도 그때마다
+「첫 판정 대기」로 돌아가 비콘을 최대 5건까지 들고 있습니다. 조회가 끝나면(값이 바뀌지 않았어도) 그때의 판정으로
+들고 있던 비콘을 보내거나 버립니다. 보내기 직전에 제외 판정을 다시 하므로, 보류 중 수집 제외를 고른 방문자의
+비콘은 나가지 않습니다.
+
+브라우저 판정은 버려질 요청을 미리 거르는 용도입니다. 서버가 매 요청에서 동의 제공자에게 같은 규칙으로 다시 묻습니다
+([동의 제공자](../extension/consent-provider.md)).
+
+예전의 window 이벤트 `g7:analytics-permission-changed`, export `ANALYTICS_CONSENT_CHANGED_EVENT`, 트래커 자체의 동의
+조회는 없어졌습니다. 동의 변경을 알아야 하는 확장은 `G7Core.consent.subscribe()` 나 컴포넌트 이벤트 `consent:changed` 를 씁니다.
+
 ---
 
 ## 관련 문서
@@ -122,3 +146,4 @@ G7Core.analytics?.trackGoal('sirsoft-ecommerce.order_completed', { revenue: 4500
 - 서버 설계·모드·보존: [../backend/analytics.md](../backend/analytics.md)
 - 수집 API 계약(비콘 필드): [../backend/api/analytics.md](../backend/api/analytics.md)
 - 확장 기여 지점: [../extension/analytics-extension-points.md](../extension/analytics-extension-points.md)
+- 동의 제공자 계약: [../extension/consent-provider.md](../extension/consent-provider.md)

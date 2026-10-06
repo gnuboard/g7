@@ -529,6 +529,127 @@
                                     ]
                                 },
                                 {
+                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.",
+                                    "id": "integrations_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.selectedModule?.integrations ?? []).length > 0}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "plug",
+                                                        "className": "text-xl text-gray-500",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle mb-2"
+                                            },
+                                            "text": "$t:admin.extension_integrations.hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.integrations",
+                                                        "item_var": "item"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'module'}}",
+                                                            "props": {
+                                                                "name": "cube",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'plugin'}}",
+                                                            "props": {
+                                                                "name": "puzzle-piece",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'template'}}",
+                                                            "props": {
+                                                                "name": "palette",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{item.name}} ({{item.identifier}})"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!item.is_installed}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.not_installed"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.is_installed && !item.is_active}}",
+                                                            "props": {
+                                                                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.inactive"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
                                     "id": "supported_languages_section",
                                     "type": "basic",
                                     "name": "Div",

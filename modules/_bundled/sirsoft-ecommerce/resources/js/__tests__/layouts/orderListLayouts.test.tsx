@@ -435,9 +435,9 @@ describe('주문 목록 visibleColumns 검증', () => {
     });
 
     /**
-     * 기본 컬럼 묶음의 출처가 셋이다 — 레이아웃 `state`, `loadFromLocalStorage` 의
-     * `defaultValue`, ColumnSelector 의 `defaultColumns`. 저장값이 없는 브라우저에서는
-     * loadFromLocalStorage 가 state 의 씨앗을 덮어쓰므로, 그 목록이 어긋나면 신규 운영자
+     * 기본 컬럼 묶음의 출처가 셋이다 — 레이아웃 `state`, 표시 컬럼 복원 핸들러
+     * (`sirsoft-ecommerce.loadVisibleColumns`, #639 ⑩ 회원 uuid 키)의 `defaultColumns`, ColumnSelector 의
+     * `defaultColumns`. 저장값이 없는 브라우저에서는 복원 핸들러가 state 의 씨앗을 덮어쓰므로, 그 목록이 어긋나면 신규 운영자
      * 화면에서만 컬럼이 빠진다(오류·로그 없음). DataGrid 는 `required` 를 보지 않고
      * `visibleColumns.includes(col.field)` 로만 거르므로 필드명이 하나만 틀려도 그 컬럼이
      * 사라진다 — 실제로 `order_date`(존재하지 않는 field, 실제 키는 `ordered_at`)가
@@ -445,15 +445,16 @@ describe('주문 목록 visibleColumns 검증', () => {
      * @effects order_list_visible_columns_share_one_default
      */
     it('기본 컬럼 묶음 3출처(state / localStorage 기본값 / ColumnSelector)가 같아야 함', () => {
-        const restore = findNodes(orderList as any, (n: any) => n.handler === 'loadFromLocalStorage')
-            .concat(((orderList as any).init_actions ?? []).filter((a: any) => a.handler === 'loadFromLocalStorage'))
-            .find((a: any) => a.params?.stateKey === 'visibleColumns');
+        const restore = ((orderList as any).init_actions ?? [])
+            .find((a: any) => a.handler === 'sirsoft-ecommerce.loadVisibleColumns' && a.resultTo?.key === 'visibleColumns');
         expect(restore).toBeDefined();
+        // 공용 키를 직접 읽는 옛 경로가 되살아나면 다른 관리자의 설정이 실린다(#639 ⑩).
+        expect(findNodes(orderList as any, (n: any) => n.handler === 'loadFromLocalStorage' && n.params?.key === 'g7_order_visible_columns')).toEqual([]);
 
         const selector = findNodes(filterSection, (n: any) => n.props?.defaultColumns !== undefined)[0];
         expect(selector).toBeDefined();
 
-        expect([...restore.params.defaultValue].sort()).toEqual([...selector.props.defaultColumns].sort());
+        expect([...restore.params.defaultColumns].sort()).toEqual([...selector.props.defaultColumns].sort());
         expect([...state.visibleColumns].sort()).toEqual([...selector.props.defaultColumns].sort());
     });
 
@@ -481,11 +482,11 @@ describe('주문 목록 visibleColumns 검증', () => {
      */
     it('클레임 컬럼은 기본 묶음 3출처에 모두 있어야 함', () => {
         const restore = ((orderList as any).init_actions ?? [])
-            .find((a: any) => a.handler === 'loadFromLocalStorage' && a.params?.stateKey === 'visibleColumns');
+            .find((a: any) => a.handler === 'sirsoft-ecommerce.loadVisibleColumns' && a.resultTo?.key === 'visibleColumns');
         const selector = findNodes(filterSection, (n: any) => n.props?.defaultColumns !== undefined)[0];
 
         expect(state.visibleColumns).toContain('claim');
-        expect(restore.params.defaultValue).toContain('claim');
+        expect(restore.params.defaultColumns).toContain('claim');
         expect(selector.props.defaultColumns).toContain('claim');
     });
 

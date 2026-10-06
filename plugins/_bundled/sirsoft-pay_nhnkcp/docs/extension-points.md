@@ -177,6 +177,19 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 신청서 상세 어디에도 이 블록이 뜨지 않으며, 오류도 경고도 남지 않습니다. 사용자 템플릿을 만들거나 고칠 때는
 결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
 사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
+
+**화면에 붙는 표시는 전부 이 조각들이 맡습니다 (#639).** 예전에는 주입 스크립트가 주소 정규식으로 화면을
+판정하고 DOM 을 폴링해 남의 화면 글자를 고치거나 버튼을 손으로 만들어 붙였습니다(관리자 주문 상세 결제수단 칸,
+관리자 결제수단 설정의 브랜드 배지·애플페이 안내, 내 주문 상세·주문 완료의 영수증·모의입금). 그 스크립트는
+`window.fetch`·`history.pushState` 를 덮어쓰고 로그인 토큰을 저장소에서 직접 읽었으므로 모두 지웠습니다.
+대신 관리자 주문 상세의 간편결제 원 수단은 `admin_order_payment_query` 의 KCP 패널이, 테스트 모드 모의입금 도구는
+`user_order_show` 가 자기 데이터 소스로 그립니다. 관리자 결제수단 설정의 브랜드 배지는 결제수단 카탈로그의
+`brand_mark`(→ `_cached_brand_mark`, 그리는 일은 이커머스 관리자 결제수단 목록 몫), 애플페이 iOS 전용 안내는 카탈로그 설명(`payment_methods.applepay.description`),
+비 iOS 기기에서 애플페이를 감추는 일은 카탈로그의 `requires_ios` 가 맡습니다.
+
+**템플릿 요구 사항 — 주문 완료 화면의 `order_complete_payment_summary`.** `user_order_complete_receipt` 는
+`shop/order_complete` 의 이 id 아래에 붙습니다. 대상 id 가 없는 템플릿에서는 조각이 오류 없이 빠집니다 —
+그 화면에서는 매출전표 보기가 뜨지 않습니다.
 <!-- @intent END -->
 
 ## 미들웨어

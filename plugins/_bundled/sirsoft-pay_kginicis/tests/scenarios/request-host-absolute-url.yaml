@@ -27,6 +27,7 @@ effects:
   - payment_result_redirect_uses_site_address
   - claim_result_redirect_uses_site_address
   - client_config_callback_urls_are_site_absolute
+  - browser_api_callback_urls_point_to_api_routes
   - admin_notify_url_uses_site_address
   - invalid_server_notify_returns_422_without_redirect
   - escrow_confirm_urls_are_site_address_with_path_nonce

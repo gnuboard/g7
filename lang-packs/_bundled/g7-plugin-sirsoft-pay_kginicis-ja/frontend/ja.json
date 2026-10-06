@@ -85,7 +85,8 @@
     "cvs_confirmation_no": "コンビニ確認番号",
     "cvs_receipt_no": "コンビニ受付番号",
     "cvs_payment_term": "入金締切日時",
-    "loading": "読み込み中..."
+    "loading": "読み込み中...",
+    "easy_pay_label": "簡単決済"
   },
   "admin": {
     "test_mode_badge": "テスト決済",
@@ -206,6 +207,7 @@
     "escrow_deny_confirm_status_label": "購入拒否ステータス",
     "escrow_deny_confirm_buyer_denied": "購入拒否",
     "escrow_deny_confirm_buyer_denied_at": "日時",
+    "easy_pay_provider": "簡単決済: {{provider}}",
     "cbt_cvs_ops_title": "CBT コンビニ決済入金管理",
     "cbt_cvs_ops_description": "日本コンビニ決済の入金通知(NOTI)受信履歴、入金待機状態、テスト入金処理を確認します。",
     "cbt_cvs_notify_url": "NOTI受信URL",

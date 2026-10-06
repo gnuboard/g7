@@ -59,11 +59,17 @@ function receiptCall(): Node {
 
 describe('마이페이지 NHN KCP 매출전표 보기 버튼', () => {
   /**
+   * @scenario viewer=member
    * @effects order_number_from_loaded_order
    */
   it('주문번호는 주소가 아니라 불러온 주문에서 읽는다 (신청서 상세에서도 같은 조각이 쓰인다)', () => {
     expect(receiptCall().target).toBe('/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{order.data.order_number}}/receipt');
-    expect(readFileSync(MARKUP_PATH, 'utf8')).not.toContain('route.order_number');
+    // 같은 조각의 모의입금 데이터 소스는 주문 상세 주소의 주문번호를 쓴다(신청서 상세에서는 부르지 않는다) —
+    // 매출전표 요청만 주소를 읽지 않는지 본다.
+    const markup = readFileSync(MARKUP_PATH, 'utf8');
+    const receiptMarkup = markup.slice(markup.indexOf('kcp-mp-receipt-row'), markup.indexOf('nhnkcp-mock-deposit'));
+    expect(receiptMarkup).toContain('/receipt');
+    expect(receiptMarkup).not.toContain('route.');
   });
 
   /**

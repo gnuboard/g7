@@ -49,6 +49,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | [hooks.md](hooks.md) | Action/Filter Hook, 리스너 구현, 우선순위 |
 | [hook-catalog.md](hook-catalog.md) | 공개 훅 목록 — 코어가 발화하는 훅 이름·유형·인자 개수 (자동 생성). 기본 제공 확장 훅은 각 확장 문서로 링크 |
 | [analytics-extension-points.md](analytics-extension-points.md) | 방문자 통계에 전환·커스텀 차원 선언, 판정·개인정보·출력 훅 |
+| [consent-provider.md](consent-provider.md) | 동의 제공자 계약 — 동의 관리 확장 구현, 서버·브라우저에서 동의 확인, fail-closed 소비 규칙 |
 
 ### 모듈 개발
 

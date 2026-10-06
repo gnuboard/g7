@@ -5,6 +5,25 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.78.0] - 2026-10-06
+
+### Added
+
+- 방문자 동의 런타임(코어 소유)을 추가했습니다. 사용자 템플릿 부팅 때 인증 확인이 끝난 뒤 `/api/consent` 를 조회해 전역 상태 `_global.consent`(`contractVersion`·`status`·`categories`·`needsRenewal`·`policyVersion`)를 채우고, 값이 바뀔 때만 컴포넌트 이벤트 `consent:changed` 를 냅니다. 로그인·로그아웃마다 세대를 올려 `unknown` 으로 비운 뒤 다시 조회하며(동의 관리 확장이 없는 사이트의 `none` 은 비우지 않고 다시 조회만 합니다), 이전 세대에서 출발한 응답은 버립니다. 같은 세대의 겹친 조회는 요청 하나를 공유하고, 조회 실패·형식 오류·모르는 계약 버전은 `unknown` 입니다. 관리자 템플릿에서는 만들지 않습니다.
+- 내장 액션 핸들러 `refreshConsent` 를 추가했습니다. 동의를 저장한 화면이 성공 뒤에 부르면 런타임이 다시 조회하고, `consent:changed` 리스너가 끝날 때까지(최대 3초) 기다린 뒤 끝나므로 같은 시퀀스의 다음 동작은 동기화 이후에 실행됩니다. 리스너 하나가 끝나지 않아도 3초 뒤에는 진행해, 다음 조회와 판정 대기가 함께 멈추지 않습니다. 레이아웃 편집기 액션 목록에도 「방문자 동의 상태 다시 읽기」로 올렸습니다.
+- `G7Core.consent` 파사드(`getSnapshot()`·`refresh()`·`subscribe(listener)` — `subscribe` 는 해제 함수 반환)를 추가했습니다.
+- 다른 확장이 읽는 공개 전역 상태의 소유자·모양을 조회하는 `G7Core.stateContracts`(`get(name)`·`list()`·`ownerOf(name)`, 읽기 전용)를 추가했습니다. 이름은 선언된 계약에서만 찾으며 `constructor` 같은 객체 기본 속성 이름은 계약으로 보지 않습니다.
+- `AuthManager.off(event, handler)` 와 현재 인증 상태 사본을 돌려주는 `AuthManager.getState()` 를 추가했습니다. 확장 번들은 최초 인증 확인 뒤에 실리므로 최초 상태는 이벤트가 아니라 `getState()` 로 읽습니다. 돌려주는 사용자 정보도 사본이라 고쳐도 내부 상태는 바뀌지 않습니다.
+
+### Changed
+
+- 방문자 통계 트래커의 동의 판정 출처를 코어 동의 런타임으로 바꿨습니다. 자체 조회(`/api/analytics/consent`)와 `g7:analytics-permission-changed` 이벤트 구독을 없앴고, 로그인·로그아웃 직후처럼 판정이 다시 대기로 돌아가면 그 사이의 비콘도 들고 있다가 새 판정으로 보내거나 버립니다(로그인 직후 화면의 페이지뷰 보존).
+
+### Fixed
+
+- `G7Core.state.subscribe()` 가 해제 함수 대신 `undefined` 를 돌려줘, 반환값을 해제 함수로 쓰던 화면(상품 카드·관리자 사이드바·본인인증 실행기)이 떠날 때마다 전역 상태 리스너를 남기던 문제를 고쳤습니다(실측: 상품 목록 왕복 20회에 29 → 281). `TemplateApp.onGlobalStateChange()` 가 해제 함수를 돌려줍니다. 도입 때부터(7.0.0-beta.1) 있던 결함입니다.
+- `AuthManager.on()` 이 해제 수단을 돌려주지 않던 문제와, 토큰이 사라지거나 인증 확인이 실패해 비인증이 되어도 `authStateChange` 를 내지 않던 문제를 고쳤습니다. 이제 `on()` 은 해제 함수를 돌려주고, 인증 상태에서 비인증으로 바뀔 때 한 번 발행합니다(로그아웃은 종전처럼 한 번만). 이 발행을 받은 구독자가 예외를 던져도 인증 확인은 종전처럼 `false` 로 끝납니다. 도입 때부터(7.0.0-beta.1) 있던 결함입니다.
+
 ## [engine-v1.77.2] - 2026-10-05
 
 ### Fixed

@@ -173,7 +173,8 @@
                 <success>
                   <!-- 쓸 수 없게 된 디스크 안내는 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다 -->
                   <set-state target="local" :isSaving="false" :hasChanges="false" form.public_asset_disk_unavailable="{{response.data?.public_asset_disk_unavailable ?? null}}"/>
-                  <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
+                  <!-- 전역 plugins 는 코어 소유 계약이다 — 자기 식별자 하위 키만 갱신한다(#639 state_contracts) -->
+                  <set-state target="global" plugins.sirsoft-ckeditor5="{{_local.form}}"/>
                   <toast type="success" message="$t:admin.plugins.settings.save_success"/>
                   <refetch-data-source dataSourceId="settings"/>
                   <remount componentId="preview_editor"/>

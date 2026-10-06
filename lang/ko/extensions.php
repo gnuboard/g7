@@ -8,6 +8,7 @@ return [
     ],
 
     'errors' => [
+        'state_contract_conflict' => "':name' 상태 계약은 :owner 가 소유합니다. :extension 은(는) 같은 이름을 선언할 수 없습니다.",
         'core_version_mismatch' => ':extension (:type)은(는) 그누보드7 코어 버전 :required 이상을 요구합니다. (현재: :installed)',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',

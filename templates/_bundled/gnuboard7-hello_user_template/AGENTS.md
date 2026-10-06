@@ -7,7 +7,7 @@
 ```text
 1. 유형: 템플릿 (gnuboard7-hello_user_template, type=user) — 학습용 최소 User 템플릿. Basic 컴포넌트 8 + 베이스 1 + 홈 1 + **오류 6종**. 홈이 학습용 모듈 API 를 `data_sources` 로 연동한다. `hidden: true`
 2. 확장 방식: 훅 없음 — 확장점은 화면 구조와 데이터소스 선언이다. 제공 컴포넌트 목록이 곧 계약
-3. 건드리면 안 되는 것: 오류 레이아웃 6종 축소, 401 에서 직접 리다이렉트, 컴포넌트 등록을 한 번만 시도(재시도 필요), 샘플에 실제 사이트 화면 추가
+3. 건드리면 안 되는 것: 오류 레이아웃 6종 축소, 401 에서 직접 리다이렉트, `src/index.ts` 의 export 이름을 `components.json` 과 어긋나게 바꾸기, 샘플에 실제 사이트 화면 추가
 4. 작업 위치: `templates/_bundled/gnuboard7-hello_user_template` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan template:update gnuboard7-hello_user_template --force`
 ```
@@ -57,14 +57,19 @@ SEO 설정 · 확장 오버라이드. `sirsoft-basic` 이 컴포넌트 79개와 
 <!-- @intent START -->
 서버 코드가 없으므로 흐름은 **컴포넌트 등록 → 라우트 → 레이아웃 → 데이터소스** 입니다.
 
-**컴포넌트 등록**: `src/index.ts` 가 모듈 로드 시점에 코어 `ComponentRegistry` 를 찾아 Basic
-8개를 등록합니다. 레지스트리가 없으면 경고를 남기고 건너뜁니다.
+**컴포넌트 등록**: 템플릿은 컴포넌트를 **스스로 등록하지 않습니다.** 빌드 산출물
+`dist/js/components.iife.js` 가 컴포넌트를 전역 `window.Gnuboard7HelloUserTemplate` 에 내보내
+두면, 코어는 엔진과 이 번들이 모두 적재된 뒤 초기화하면서 `ComponentRegistry` 가
+`components.json` 을 읽고, 선언된 `name` 마다 그 전역에서 같은 이름의 export 를 찾아 등록합니다.
+그래서 `src/index.ts` 가 하는 일은 Basic 8개, 확장 컴포넌트 대체본 `HelloModuleMemoCard`,
+`templateMetadata` 를 export 하는 것뿐이고, 적재 순서를 기다리는 재시도 루프도 없습니다. 전역
+이름은 템플릿 식별자를 PascalCase 로 바꾼 것이라 `vite.config.ts` 의 `build.lib.name` 과 같아야
+합니다. Admin 샘플도 같은 방식입니다.
 
-> 이 지점이 Admin 샘플과 다릅니다. `gnuboard7-hello_admin_template` 은 `initTemplate()`
-> 안에서 **100ms 간격 최대 50회 재시도**로 등록하지만, 이 템플릿은 모듈 로드 시점에 한 번만
-> 시도합니다. 로드 순서에 따라 그 시점에 레지스트리가 아직 없으면 등록이 건너뛰어지고, 그러면
-> 레이아웃이 참조하는 컴포넌트 이름을 찾지 못해 화면이 빕니다 — 콘솔 경고 외에는 흔적이 없습니다.
-> 새 템플릿을 만들 때는 **Admin 샘플의 재시도 형태를 따르는 것**이 안전합니다.
+깨지는 지점은 **이름 대응**입니다. Basic 컴포넌트는 export 이름이 `components.json` 의 `name` 과,
+대체본은 `overrides[].exportName` 과 같아야 합니다. 어긋나거나 export 가 빠지면 코어는 경고(디버그
+모드에서만 콘솔에 보임)만 남기고 건너뜁니다. Basic 쪽이면 레이아웃이 그 이름을 참조하는 자리가
+렌더되지 않고, 대체본 쪽이면 Hello 모듈의 원본 `MemoCard` 가 그대로 그려집니다.
 
 **화면 렌더**: `routes.json` 이 `/` 를 `home` 에 대응 → 그 레이아웃이 `_user_base` 를 상속해
 헤더·푸터를 얻고 콘텐츠를 채웁니다 → `data_sources` 의 `memos` 가 학습용 모듈의 API 를
@@ -114,9 +119,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 오류 레이아웃 6종(401·403·404·500·503·maintenance)이 모두 있는지 확인 — 하나라도 없으면 그 상황에서 백지가 된다
-- [ ] 컴포넌트 등록 경로를 손댔다면 재시도 여부를 확인 — 한 번만 시도하면 로드 순서에 따라 화면이 조용히 빈다
+- [ ] `src/index.ts` 의 export 를 손댔다면 `components.json` 과 이름이 맞는지 확인 — Basic 은 `name`, 대체본은 `overrides[].exportName` 과 같아야 코어가 구현체를 찾는다
 - [ ] 의존 모듈(`gnuboard7-hello_module`)의 API 응답 형태가 바뀌면 홈 화면이 조용히 빈다 — 그 모듈을 올릴 때 함께 확인
-- [ ] 컴포넌트를 추가·삭제했다면 소스 · `template.json` 레지스트리 · `components.json` 을 함께 갱신
+- [ ] 컴포넌트를 추가·삭제했다면 소스, `src/index.ts` 의 export, `template.json` 레지스트리, `components.json` 을 함께 갱신
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
 - [ ] TSX 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 레이아웃 렌더링 테스트(`__tests__/layouts/*.test.tsx`)는 이 템플릿 디렉토리에 둔다
@@ -129,12 +134,13 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 |---|---|---|
 | 오류 레이아웃 6종 중 일부를 빼기 | 401 · 403 · 404 · 500 · 503 · maintenance 전부 유지 | 코어가 그 상황에서 활성 템플릿의 레이아웃을 부른다 — 없으면 방문자에게 백지가 된다 |
 | `401` 레이아웃에서 로그인으로 직접 리다이렉트 | 코어 `TemplateApp.showRouteError` 가드에 위임 | 이중 리다이렉트가 되고, 돌아올 위치를 코어가 이미 관리한다 |
-| 컴포넌트 등록을 한 번만 시도 | Admin 샘플처럼 재시도 루프를 둔다 | 로드 순서에 따라 레지스트리가 아직 없을 수 있다 — 등록에 실패하면 화면이 조용히 빈다 |
+| `src/index.ts` 에서 `ComponentRegistry` 를 찾아 직접 등록 | 컴포넌트를 export 만 한다 | 등록은 코어가 `components.json` 을 읽어 한다. 자가등록은 매니페스트에 실릴 자리가 없는 모듈과 플러그인의 방식이다 |
+| export 이름을 `components.json` 과 다르게 바꾸거나 export 를 빼기 | export 와 `components.json`(`name`, 대체본은 `overrides[].exportName`)을 함께 고친다 | 코어는 선언된 이름으로 번들 전역을 찾는다. 못 찾으면 경고만 남기고 건너뛰어, 그 자리가 비거나 대체 전 원본이 그려진다 |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_user_base` 를 상속하거나 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
 | 모듈 API 응답 필드를 화면에서 그대로 가정하고 방어 없이 바인딩 | `{{값 ?? ''}}` 같은 폴백과 배열 경로 확인 | 응답 형태가 바뀌면 화면이 조용히 빈다 |
 | 이 샘플에 실제 사이트 화면을 더해 "쓸모 있게" 만들기 | 짧게 유지하고, 필요한 화면은 별도 템플릿으로 | 샘플의 가치는 "최소 구성이 무엇인가" 를 보이는 것이다 |
 | `manifest.hidden` 을 제거 | 그대로 둔다 (복제본에서만 제거) | 학습용 템플릿이 운영 사이트의 템플릿 목록에 섞인다 |
-| 컴포넌트를 추가하면서 `template.json` 의 레지스트리를 갱신하지 않기 | 소스·레지스트리·`components.json` 을 함께 | 레이아웃이 참조하는 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않는다 |
+| 컴포넌트를 추가하면서 `components.json` 선언이나 `src/index.ts` export 를 빠뜨리기 | 소스, export, `template.json` 레지스트리, `components.json` 을 함께 | 코어는 `components.json` 에 선언된 이름만 번들에서 찾는다. 둘 중 하나라도 없으면 레이아웃이 그 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않는다 |
 | TSX 를 고치고 `dist/` 재빌드 없이 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
 <!-- @intent END -->
 

@@ -8,6 +8,7 @@
 
 ### Added
 
+- 환경설정 「동의 관리 제공자」 목록에 보이는 이 플러그인의 이름(`messages.consent_provider.label`, 「クッキー同意バナー (sirsoft-gdpr)」)의 일본어 번역을 추가했습니다.
 - 개인정보처리방침 주소 설정(`settings.fields.privacy_policy_url.*`)과 그 검증 문구, 스냅샷의 옛 슬러그 기록 안내(`legacy_slug_note`), 주소 미등록 안내(`no_policy_url`), 연간 통지 메일의 처리방침 링크 문구의 일본어 번역을 추가했습니다.
 - 필수 저장 항목의 「확장이 제공하는 항목(자동)」 라벨·안내(`necessary_storage_allowlist.provided_label`·`provided_hint`)와 레이아웃 편집기에 쓰이는 연간 통지 대상·직권 발송 창 이름의 일본어 번역을 추가했습니다.
 - 개인정보 연간 통지 「지금 발송」 직권 실행의 일본어 번역을 추가했습니다 — 확인 창·진행 상태 줄·남은 건수 문구(`annual_notice.manual_run.*`)와 직권 실행 대상 이름(`messages.annual_notice.manual_run_label`), 연간 통지 대상 줄 이름(`annual_notice.targets.row_label`)입니다.

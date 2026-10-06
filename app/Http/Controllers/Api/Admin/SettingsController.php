@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Contracts\Extension\ConsentProviderInterface;
+use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
@@ -68,15 +70,27 @@ class SettingsController extends AdminBaseController
      * - `limits`: 입력 한계값 (core.settings_limits)
      * - `env_priority_enabled`: `.env` 우선 모드 활성 여부 (안내 배너 표시 판정)
      * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
+     * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
+     * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      *
      * @return array<string, mixed> 응답 메타 배열
      */
     private function buildSettingsMeta(): array
     {
+        $consent = app(ConsentManager::class);
+
         return [
             'limits' => config('core.settings_limits', []),
             'env_priority_enabled' => EnvPriority::enabled(),
             'env_locked' => $this->settingsService->envLockedMeta(),
+            'consent_providers' => array_values(array_map(
+                static fn (ConsentProviderInterface $provider): array => [
+                    'id' => $provider->getId(),
+                    'label' => $provider->getLabel(),
+                ],
+                $consent->registered(),
+            )),
+            'consent_selection' => $consent->selection()->toArray(),
         ];
     }
 

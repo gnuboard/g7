@@ -1,0 +1,25 @@
+feature: 관리자 브라우저 저장값의 회원 구분 (#639 ⑩)
+
+description: |
+  같은 PC 를 여러 관리자가 쓰면 회원 구분 없는 브라우저 저장값이 다음 사람에게 넘어간다.
+  작성물(레이아웃 편집기 초안)과 업무 설정(주문 목록 표시 컬럼)은 회원 uuid 를 키에 넣는다.
+  기기 선호(테마·글꼴·사이드바·폭·통화)는 그대로 둔다(결정 D16).
+
+  배경(실측 2026-10-05): 관리자 A 가 남긴 초안이 `g7le.codeEditor.{템플릿}.drafts` 하나에 적혀
+  같은 브라우저의 관리자 B 편집기에 「저장하지 않은 편집 1건이 있습니다」로 떴다.
+  회원 구분 없이 남은 옛 값은 누구 것인지 가를 수 없으므로 읽지 않고 지운다.
+
+axes:
+  surface: [layout_editor_drafts, order_list_columns]
+  member: [scoped]
+
+effects:
+  - drafts_are_scoped_to_member_uuid
+  - unscoped_legacy_drafts_are_discarded
+  - order_columns_are_scoped_to_member_uuid
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/hooks/__tests__/useFileDrafts.memberScope.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/orderVisibleColumnsMemberScope.test.ts
+
+# E2E axis 없음: 두 관리자 교대 시나리오는 Chrome MCP 매트릭스 T7 이 덮는다.

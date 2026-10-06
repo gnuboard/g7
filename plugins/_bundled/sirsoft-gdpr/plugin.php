@@ -10,12 +10,13 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\HookManager;
 use App\Models\Menu;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
-use Plugins\Sirsoft\Gdpr\Listeners\GdprAnalyticsConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprConsentChangeRelayListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
+use Plugins\Sirsoft\Gdpr\Listeners\RegisterGdprConsentProviderListener;
 
 /**
  * GDPR (일반 데이터 보호 규정) 플러그인
@@ -229,8 +230,11 @@ class Plugin extends AbstractPlugin
                     'en' => 'Fired when consent is granted',
                 ],
                 'parameters' => [
-                    'consent' => 'Model - GdprUserConsent',
-                    'source' => 'string - banner|preference_center|register|mypage',
+                    'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
+                    'source' => 'string - banner|mypage|mypage_renew_all|register|withdraw',
+                    'consentKey' => 'string - 동의 키 (예: cookie_analytics)',
+                    'userId' => 'int|null - 회원 ID (게스트면 null)',
+                    'sessionId' => 'string|null - 게스트 동의 식별자 (회원이면 null)',
                 ],
             ],
             [
@@ -241,8 +245,11 @@ class Plugin extends AbstractPlugin
                     'en' => 'Fired when consent is revoked',
                 ],
                 'parameters' => [
-                    'consent' => 'Model - GdprUserConsent',
-                    'source' => 'string - 철회 발생 경로',
+                    'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
+                    'source' => 'string - 철회 발생 경로 (banner|mypage|withdraw 등)',
+                    'consentKey' => 'string - 동의 키 (예: cookie_analytics)',
+                    'userId' => 'int|null - 회원 ID (게스트면 null)',
+                    'sessionId' => 'string|null - 게스트 동의 식별자 (회원이면 null)',
                 ],
             ],
             [
@@ -879,7 +886,8 @@ class Plugin extends AbstractPlugin
             GdprUserDeleteListener::class,
             GdprAuthLogoutListener::class,
             GdprAuthConsentListener::class,
-            GdprAnalyticsConsentListener::class,
+            RegisterGdprConsentProviderListener::class,
+            GdprConsentChangeRelayListener::class,
         ];
     }
 }

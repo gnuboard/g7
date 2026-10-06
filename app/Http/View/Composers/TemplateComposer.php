@@ -15,6 +15,7 @@ use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
 
@@ -48,6 +49,9 @@ class TemplateComposer
 
     /**
      * 뷰에 데이터 바인딩
+     *
+     * @param  View  $view  뷰 인스턴스
+     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -126,5 +130,7 @@ class TemplateComposer
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
+        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
+        $view->with('stateContracts', StateContracts::forFrontend());
     }
 }

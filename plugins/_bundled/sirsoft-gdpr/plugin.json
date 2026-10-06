@@ -27,7 +27,7 @@
             "entry": "resources/css/banner.css",
             "output": "dist/css/plugin.css"
         },
-        "handlers": true
+        "handlers": false
     },
     "loading": {
         "strategy": "global",

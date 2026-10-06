@@ -15,6 +15,7 @@ import {
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
 import { ensureCkeditorGlobal } from './ckeditorGlobal';
+import { createG7UploadAdapterPlugin } from './uploadAdapter';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
@@ -50,7 +51,6 @@ interface CKEditorGlobal {
     ImageStyle: any;
     ImageCaption: any;
     ImageToolbar: any;
-    SimpleUploadAdapter: any;
     MediaEmbed: any;
     HorizontalLine: any;
     Indent: any;
@@ -831,10 +831,9 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
     }
 
     if (withImageUpload) {
-        base.push(
-            CKEDITOR.ImageUpload,
-            CKEDITOR.SimpleUploadAdapter,
-        );
+        // 업로드 어댑터는 CDN 의 SimpleUploadAdapter 가 아니라 이 플러그인의 어댑터(코어 API 클라이언트 경유)다 —
+        // createEditorInstance 의 extraPlugins 로 붙인다.
+        base.push(CKEDITOR.ImageUpload);
     }
 
     return base;
@@ -846,18 +845,6 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
  */
 function buildUploadUrl(): string {
     return '/api/plugins/sirsoft-ckeditor5/upload';
-}
-
-/**
- * 이미지 업로드 헤더를 반환합니다.
- * Bearer 토큰을 Authorization 헤더에 포함합니다.
- */
-function getUploadHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        return { Authorization: `Bearer ${token}` };
-    }
-    return {};
 }
 
 /**
@@ -959,10 +946,8 @@ async function createEditorInstance(
     };
 
     if (options.imageUpload) {
-        editorConfig.simpleUpload = {
-            uploadUrl: buildUploadUrl(),
-            headers: getUploadHeaders(),
-        };
+        // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
+        editorConfig.extraPlugins = [createG7UploadAdapterPlugin(buildUploadUrl())];
     }
 
     const editor = await CKEDITOR.ClassicEditor.create(element, editorConfig);
