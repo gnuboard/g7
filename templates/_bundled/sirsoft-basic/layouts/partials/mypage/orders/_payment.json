@@ -742,6 +742,47 @@
                     ]
                 },
                 {
+                    "comment": "현금 환불 중 회원 마일리지로 지급한 금액(「마일리지로 환불」 — Q3). 결제 상태는 결제완료로 남으므로 이 줄이 없으면 구매자는 환불이 어디로 갔는지 알 수 없다. 0원이면 렌더하지 않는다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.total_refunded_mileage_credit_amount ?? 0) > 0}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.refund_mileage_credit"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white font-medium text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "{{order.data.total_refunded_mileage_credit_amount_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
                     "comment": "구분선",
                     "type": "basic",
                     "name": "Div",

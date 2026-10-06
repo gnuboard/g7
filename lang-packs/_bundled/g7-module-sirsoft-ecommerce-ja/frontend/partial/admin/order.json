@@ -150,6 +150,7 @@
       "confirm": "確認"
     },
     "claim_history": {
+      "source_claim": "元の申請 {{number}}",
       "title": "クレーム履歴",
       "columns": {
         "quantity": "数量",
@@ -216,7 +217,8 @@
       "cancelled_amount": "キャンセル金額",
       "refunded_amount": "返金金額",
       "refund_status": "返金ステータス",
-      "refund_points_amount": "マイレージ返金",
+      "refund_points_amount": "使用マイレージ返還",
+      "refund_mileage_credit_amount": "└ マイレージで返金(現金分)",
       "payment_currency": "決済通貨: {{currency}}",
       "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
       "claim_additional_paid": "クレーム追加決済合計"
@@ -329,7 +331,7 @@
         "refund_product_amount": "商品返金額",
         "refund_shipping_diff": "配送費変動",
         "refund_discount_diff": "割引調整",
-        "refund_points_amount": "マイレージ返金",
+        "refund_points_amount": "使用マイレージ返還",
         "refund_total": "最終返金予定額",
         "remaining_pg_balance": "返金後のPG残高",
         "remaining_points_balance": "返金後のマイレージ残高",
@@ -371,7 +373,8 @@
         "refund_bank_required_hint": "入金が完了した仮想口座注文は返金口座が必要です。",
         "refund_bank_empty_hint": "返金口座に選べる銀行が登録されていません。環境設定 > 注文設定の[銀行管理]で先に登録してください。",
         "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。",
-        "partial_unsupported": "この注文の決済手段は**全額キャンセルのみ**可能です。一部の商品・数量だけをキャンセルすると決済代行会社が拒否します。"
+        "partial_unsupported": "この注文の決済手段は全額キャンセルのみ可能です。一部の商品・数量だけをキャンセルすると決済代行会社が拒否します。",
+        "partial_unsupported_vbank_awaiting": "入金前の仮想口座注文は全額キャンセルのみ可能です。発行済みの仮想口座金額は変更できないため、一部だけキャンセルするとお客様が入金しても確認されません。"
       },
       "reset_guest_password": {
         "title": "非会員閲覧パスワード再設定",
@@ -436,6 +439,12 @@
       "cancel_failed": "現金領収書の発行キャンセルに失敗しました。",
       "reissue_failed": "再発行失敗",
       "reissue_success": "現金領収書が再発行されました。"
+    },
+    "deposit_after_cancel": {
+      "warning": "キャンセル済み注文の仮想口座に{{amount}}が入金されました。自動では返金されないため、お客様に返金してください。"
+    },
+    "vbank_close_failed": {
+      "warning": "入金前にキャンセルしましたが、決済代行会社で仮想口座を閉じられませんでした。お客様が入金しないよう、決済代行会社の管理画面で仮想口座を直接閉じてください。"
     },
     "tax_invoice": {
       "needs_review": "この注文にはキャンセルが発生していますが、発行済みの税金計算書がそのまま残っています。税金計算書の取消・修正発行は自動処理されないため、国税庁ホームタックスで直接処理してください。"
@@ -713,6 +722,7 @@
     "shipping": "配送中",
     "delivered": "配送完了",
     "cancelled": "注文キャンセル",
+    "returned": "返品完了",
     "confirmed": "購入確定"
   },
   "datagrid": {
@@ -863,5 +873,42 @@
     "reason_required": "理由を選択してください。",
     "preview_error": "請求額を計算できませんでした。",
     "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
+  },
+  "manual_paid": {
+    "title": "決済処理項目",
+    "description": "選択した注文のうち{{count}}件は未決済またはキャンセル済みです。一緒に処理する項目を選んでください。",
+    "description_single": "この注文は未決済またはキャンセル済みです。一緒に処理する項目を選んでください。",
+    "loading": "決済処理項目を確認しています…",
+    "preview_error": "決済処理項目を読み込めませんでした。閉じてもう一度お試しください。",
+    "stock_label": "在庫を差し引く（{{count}}件）",
+    "stock_label_single": "在庫を差し引く（商品{{count}}点）",
+    "stock_hint": "注文数量分の在庫を減らします。",
+    "stock_off_warning": "在庫を差し引かない場合、後でこの注文をキャンセルしても在庫は戻りません。",
+    "mileage_label": "使用マイレージを差し引く（{{count}}件、{{amount}}）",
+    "mileage_label_single": "使用マイレージを差し引く（{{amount}}）",
+    "mileage_hint": "この注文で使ったマイレージを会員残高から差し引きます。キャンセル注文を復活させる場合、キャンセル時に戻したマイレージを再度差し引きます。",
+    "mileage_short_warning": "残高不足のため変更できない注文：{{order_numbers}}",
+    "mileage_short_warning_single": "会員のマイレージ残高（{{balance}}）が不足しているため変更できません。差し引きをオフにすると変更できます。",
+    "mileage_off_warning": "マイレージを差し引かない場合、後の返金でマイレージは戻りません。",
+    "record_label": "決済金額を記録（{{count}}件、{{amount}}）",
+    "record_label_single": "決済金額を記録（{{amount}}）",
+    "record_hint": "決済予定金額を受領済みとして記録します。PG管理画面で承認を確認した場合のみオンにしてください。PG取引番号は記録されません。",
+    "record_off_warning": "記録しない場合、決済金額は0のままとなり、後のキャンセル・返品で現金返金できる金額は0になります。",
+    "auto_sync_note": "入金記録済みの{{count}}件は、記録された入金額で決済金額を合わせます。",
+    "auto_sync_note_single": "記録済みの入金額{{amount}}で決済金額を合わせます。",
+    "never_paid_note": "決済記録なしでキャンセルされた注文{{count}}件は、「決済金額を記録」をオンにすると復活した注文合計を受領済みとして記録します。オフの場合は未収金として残ります。",
+    "never_paid_note_single": "決済記録なしでキャンセルされた注文です。「決済金額を記録」をオンにすると復活した合計を受領済みとして記録し、オフの場合は未収金として残ります。",
+    "restoration_label": "キャンセル商品の復活・注文合計の再計算（{{count}}件、商品{{quantity}}点）",
+    "restoration_label_single": "キャンセルされた商品{{quantity}}点を復活させ、注文合計を{{before}}→{{after}}に再計算します",
+    "restoration_hint": "キャンセルで0になった注文金額・送料・割引とクーポン使用記録を、最初の注文条件に戻します。キャンセル・返金の履歴はそのまま残ります。",
+    "restoration_hint_partial": "復活させる商品を含めて注文金額・送料・割引を再計算します。キャンセル・返金履歴はそのまま残ります。",
+    "restoration_coupon_conflict": "この注文で使ったクーポンが他の注文で使用済みのため復活できない注文：{{order_numbers}}",
+    "restoration_coupon_conflict_single": "この注文で使ったクーポン（{{coupons}}）が他の注文で使用済みのため復活できません。",
+    "restoration_legacy_snapshot": "{{count}}件は最初の注文のクーポン情報が残っていないため、現在のクーポン情報で再計算します。合計が最初の注文と異なる場合があります。",
+    "restoration_legacy_snapshot_single": "最初の注文のクーポン情報が残っていないため、現在のクーポン情報で再計算します。合計が最初の注文と異なる場合があります。",
+    "warning": {
+      "pg_already_cancelled": "カードなどのPG決済が既にキャンセルされた注文です。以後の返金は口座返金またはマイレージで処理する必要があります。",
+      "pg_already_cancelled_orders": "カードなどのPG決済が既にキャンセルされた注文です（{{order_numbers}}）。以後の返金は口座返金またはマイレージで処理する必要があります。"
+    }
   }
 }

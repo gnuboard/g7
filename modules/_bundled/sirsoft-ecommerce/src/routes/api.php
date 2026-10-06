@@ -1495,6 +1495,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.bulk');
 
+        // 일괄변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/bulk/manual-paid-preview
+        Route::post('/bulk/manual-paid-preview', [OrderController::class, 'bulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.bulk.manual-paid-preview');
+
         Route::get('/{order}', [OrderController::class, 'show'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
             ->name('admin.orders.show');
@@ -1524,6 +1530,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::patch('/{order}/options/bulk-status', [OrderController::class, 'bulkChangeOptionStatus'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.options.bulk-status');
+
+        // 상품 일괄 상태 변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/options/bulk-status/manual-paid-preview
+        Route::post('/{order}/options/bulk-status/manual-paid-preview', [OrderController::class, 'optionBulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.options.bulk-status.manual-paid-preview');
 
         // 환불 예상금액 조회
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/estimate-refund

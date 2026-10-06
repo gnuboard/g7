@@ -307,6 +307,27 @@ class CancellableAmountCalculator
             ];
         }
 
+        // 재활성으로 다시 받은 현금 — 결제행은 PG 취소 사실대로 남으므로 한도를 따로 센다(Q14·Q24).
+        // 주문 장부의 잔여 현금(결제 − 환불 누적)에서 결제행 한도를 뺀 만큼, 다시 받은 누적액까지만 연다.
+        $reclaimedCash = (float) (($order->order_meta ?? [])['reactivation_reclaim']['cash'] ?? 0);
+        if ($reclaimedCash > 0) {
+            $ledgerRemaining = max(0.0, (float) $order->total_paid_amount - (float) $order->total_refunded_amount);
+            $extra = min($reclaimedCash, max(0.0, $ledgerRemaining - $total));
+
+            if ($extra > 0) {
+                $total += $extra;
+
+                $methods[] = [
+                    'type' => CancellableAmount::METHOD_REACTIVATED_CASH,
+                    'payment_id' => null,
+                    'method' => CancellableAmount::METHOD_REACTIVATED_CASH,
+                    'currency' => $this->resolveBaseCurrency($order),
+                    'remaining_local' => $extra,
+                    'remaining_base' => $extra,
+                ];
+            }
+        }
+
         $mileageRemaining = max(
             0.0,
             (float) $order->total_points_used_amount - (float) $order->total_refunded_points_amount

@@ -42,6 +42,7 @@ trait BuildsClaimAdjustmentOrders
      *
      * @param  array<int, array>|null  $currencies  통화 목록 (기본: KRW 단일)
      * @param  string  $defaultCurrency  기본 통화 코드
+     * @return void 반환값 없음
      */
     protected function setupTestCurrencySettings(?array $currencies = null, string $defaultCurrency = 'KRW'): void
     {
@@ -72,6 +73,8 @@ trait BuildsClaimAdjustmentOrders
 
     /**
      * 테스트용 통화 설정 파일을 제거합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function clearTestCurrencySettings(): void
     {
@@ -184,10 +187,14 @@ trait BuildsClaimAdjustmentOrders
             'extra_shipping_amount' => $result->summary->extraShippingTotal,
             'shipping_discount_amount' => $result->summary->shippingDiscount,
             'total_shipping_amount' => $result->summary->totalShipping,
-            'total_amount' => $result->summary->paymentAmount,
+            // 실주문 생성(OrderProcessingService)과 같이 사용 마일리지를 뺀 합계로 둔다.
+            'total_amount' => $result->summary->finalAmount,
             'total_paid_amount' => $result->summary->finalAmount,
             'total_due_amount' => 0,
             'total_points_used_amount' => $result->summary->pointsUsed,
+            // 결제완료 주문은 사용 마일리지를 이미 차감했다(실주문은 결제 확정 때 `is_mileage_deducted` 를 켠다).
+            // 차감하지 않은 주문(Q15 — 미리보기·실행 모두 마일리지 몫 0)은 호출부가 덮어써 만든다.
+            'is_mileage_deducted' => $result->summary->pointsUsed > 0,
             'total_tax_amount' => $result->summary->taxableAmount,
             'total_tax_free_amount' => $result->summary->taxFreeAmount,
             'total_cancelled_amount' => 0,
@@ -283,8 +290,8 @@ trait BuildsClaimAdjustmentOrders
     /**
      * 주문 옵션 전량을 대상으로 하는 클레임 아이템 배열을 만듭니다.
      *
-     * @param  Order  $order  주문
-     * @return array [{order_option_id, cancel_quantity}]
+     * @param  Order  $order  클레임 대상 주문 (옵션 관계를 순회한다)
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 옵션마다 원 수량 전량을 담은 클레임 아이템 목록
      */
     protected function claimItemsForAll(Order $order): array
     {

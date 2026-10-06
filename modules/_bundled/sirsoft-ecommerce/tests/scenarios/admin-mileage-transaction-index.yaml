@@ -137,6 +137,30 @@ effects:
   - non_admin_cannot_open_the_list_403                      # 관리자가 아닌 회원은 목록 403
   - row_edit_rejects_expiry_before_earned_at_422            # 만료일을 적립일시보다 과거로 → 422
   - row_edit_of_a_missing_transaction_returns_422           # 없는 거래 편집 → 422
+  # 마일리지 원장 서비스 계약 (PHPUnit Unit — UserMileageServiceTest: 잔액·FIFO·사용 검증·적립·복원·소멸·관리자 편집·연장)
+  - balance_is_sum_of_active_lots
+  - fifo_deducts_oldest_expiring_lot_first
+  - deduct_throws_when_insufficient_balance
+  - validate_usage_rules
+  - max_usable_caps_and_floors
+  - earn_for_order_option_is_idempotent_and_updates_cache
+  - restore_for_cancel_is_idempotent
+  - restore_links_original_use_transaction_via_cancel_id
+  - expire_lots_records_expired_transactions
+  - expire_lots_only_expires_remaining_not_full_earn
+  - admin_earn_unlimited
+  - update_admin_transaction_edits_memo_and_expiry
+  - update_admin_transaction_rejects_expiry_before_earned
+  - update_admin_transaction_allows_expiry_after_earned
+  - update_admin_transaction_rejects_non_earning
+  - update_admin_transaction_expired_lot_blocks_expiry_allows_memo
+  - admin_deduct_rejects_when_exceeds_balance
+  - extend_lot_expiry_revives_expired_lot
+  - guest_order_earn_returns_null
+  - get_balance_reads_from_cache
+  - get_balance_reflects_disabled_setting
+  - earn_uses_base_currency_not_display_currency
+  - base_currency_for_order_resolution
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php

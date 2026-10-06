@@ -95,7 +95,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 8개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -135,6 +135,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 입금된 가상계좌 환불에 환불계좌(`bank_code`·`account`·`depositor`)를 실어 `STSC`/`RN07` 로 보낸다 | 결제사를 부르지 않고 `VBANK_REQUIRES_BANK_TRANSFER` 로 돌려 운영자가 계좌 환불로 바꾸게 한다(부분취소 지원 판정도 false) | 그 필드명은 KCP 공개 사양 어디와도 맞지 않고 전체취소는 입금된 가상계좌를 환불하지 않는다 — 원인 없는 실패가 되거나 돈이 돌아가지 않는다 |
+| 복합과세(TG03)로 승인한 결제를 과세 분리 없이 부분취소 | `tax_flag=TG03` + `mod_tax_mny`·`mod_vat_mny`·`mod_free_mny`(합 = `mod_mny`)를 함께 보낸다 | 승인 때 나눈 과세·비과세 금액과 취소 금액이 어긋나 결제사가 거절하거나 세금 내역이 틀어진다 |
 | KCP CLI 인자(`site_cd`/`tx_cd`/`enc_data` 등)를 검증 없이 문자열 결합해 `exec()` 에 전달 | `assertSafeCliValue()` 로 위험 문자·제어문자 사전 거부 후 `escapeshellarg()` 로 quoting | 검증을 생략하면 서버가 받은 KCP 응답 값이 그대로 셸 명령 인자가 되어 명령 삽입(command injection)으로 이어질 수 있다 |
 | CLI 실행 권한 오류(9502)를 그대로 사용자에게 노출하고 자가 복구를 생략 | `ensureCliExecutable()` 로 결제 hot path 진입 시 0755 자가 복구 시도 | `plugin:update` 가 파일 권한을 0664 로 되돌리는 것은 배포 절차의 부작용이지 운영자 실수가 아니다 — 매 결제 실패로 드러나게 두면 안 된다 |
 | 동일 `transaction_id` 콜백을 매번 재처리 | `PreventsReplayCallback::wasAlreadyPaid()` 로 이미 `paid` 상태면 멱등 응답 | KCP 서버의 재전송·사용자의 새로고침으로 같은 콜백이 두 번 오면 결제완료 알림·마일리지가 중복 적립될 수 있다 |

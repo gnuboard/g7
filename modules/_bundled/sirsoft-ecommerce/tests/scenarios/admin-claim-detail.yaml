@@ -62,6 +62,9 @@ exclusions:
   - { claim_type: cancel, claim_stage: off_path, reason: "취소 상태 Enum 에는 보류·반려·철회 같은 이탈 상태가 없다" }
 
 effects:
+  - claim_linked_refunds_listed_from_source_axis   # #747 보완 5
+  - claim_linked_refunds_empty_notice   # #747 보완 5
+  - claim_header_links_source_and_result_cancel   # #747 보완 5
   - exchange_mode_button_stays_visible_and_disabled_with_reason  # 선교환 설정이 꺼져도 [선교환으로 전환] 은 꺼진 채 서고 이유 문구가 곁에 선다(#599 §3-9)
   - admin_detail_names_the_filing_and_withdrawing_operator  # 판매자 접수 뱃지 곁 접수 운영자·대리 철회 운영자 이름(validate-plan A2)
   # 라우트·셸 배선
@@ -161,6 +164,8 @@ effects:
   - claim_detail_cancel_resolves_by_number
   - claim_detail_cancel_is_read_only
   - claim_detail_cancel_info_card_rendered
+  # Q29 — 재활성된 취소의 카드 줄(일시·수량) (cancel-reactivation-badge.yaml 이 소유)
+  - claim_detail_cancel_card_shows_reactivated_time_and_quantity
   - claim_logs_include_cancel_linked_refund
   # 사유·관리자 메모
   - claim_reject_reason_row_conditional

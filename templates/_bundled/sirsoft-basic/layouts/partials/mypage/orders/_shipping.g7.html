@@ -101,8 +101,8 @@
         <icon name="box" size="sm" class="text-gray-700 dark:text-gray-300"/>
         <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:mypage.order_detail.shipping_status_title</span>
       </div>
-      <!-- 배송 목록 -->
-      <div data-each="shipping in {{order.data.shippings ?? []}}" class="space-y-3">
+      <!-- 배송 목록 — 취소된 상품의 배송 카드는 뺀다. 그 행의 배송비 몫은 0 이라 「무료배송」 으로 잘못 읽힌다. -->
+      <div data-each="shipping in {{(order.data.shippings ?? []).filter(s => (order.data.options ?? []).find(o => o.id === s.order_option_id)?.option_status !== 'cancelled')}}" class="space-y-3">
         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 space-y-2">
           <!-- 배송 상태 + 정책명 -->
           <div class="flex items-center justify-between">

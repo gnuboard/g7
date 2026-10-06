@@ -328,6 +328,18 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 입금 전 가상계좌 주문을 부분취소하려 할 때 (Q17)
+     *
+     * 발급된 가상계좌의 입금액은 바꿀 수 없어 일부만 취소하면 고객 입금을 확인할 수 없다.
+     *
+     * @return self 예외
+     */
+    public static function partialCancelNotSupportedBeforeVbankDeposit(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.partial_cancel_not_supported_vbank_awaiting_deposit');
+    }
+
+    /**
      * 환불액이 **그 수단의** 잔여를 초과할 때 (S3-D21 — 저장·실행 공통 422)
      *
      * 합계 한도(`refundExceedsCancellable`)와 다른 축이다. 합계로는 통과하지만 **실제로 나갈
@@ -572,6 +584,16 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * PG 승인 중에 결제 건이 철회·정리로 닫혔을 때 (F5 — 승인은 망취소된다)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentWithdrawnDuringApproval(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_withdrawn_during_approval');
+    }
+
+    /**
      * 이 신청서에는 결제할 청구액이 없습니다.
      *
      * 소비처는 관리자 결제 요청 경로(`AdminClaimService::requestPayment()`)다 — 청구액이 없는
@@ -598,6 +620,18 @@ class OrderClaimException extends Exception
     public static function paymentOutstanding(): self
     {
         return new self('sirsoft-ecommerce::exceptions.claim_payment_outstanding');
+    }
+
+    /**
+     * 「환불금에서 차감」 인데 환불액이 청구액보다 적을 때 (S4)
+     *
+     * 차감할 환불금이 모자라면 부족분이 어디에도 청구되지 않는다 — 청구 방식을 추가결제로 바꾸게 한다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function chargeDeductInsufficient(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.charge_deduct_insufficient');
     }
 
     /**

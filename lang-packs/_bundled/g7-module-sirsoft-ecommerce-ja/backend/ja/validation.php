@@ -1267,6 +1267,11 @@ return [
     ],
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
     'attributes' => [
+        // 手動決済処理・再有効化の確認ウィンドウ3項目 (Q13・Q14)
+        'apply_stock_deduction' => '在庫差し引き',
+        'apply_mileage_deduction' => '使用マイレージ差し引き',
+        'record_paid_amount' => '決済金額の記録',
+
         // 管理者会員一覧の拡張フィルター (#705)
         'user_filter_mileage_min' => 'マイレージ残高(最小)',
         'user_filter_mileage_max' => 'マイレージ残高(最大)',

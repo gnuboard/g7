@@ -1241,6 +1241,8 @@
           "total_amount_formatted": "69,500원",
           "total_paid_amount": 69500,
           "total_paid_amount_formatted": "69,500원",
+          "total_refunded_mileage_credit_amount": 0,
+          "total_refunded_mileage_credit_amount_formatted": "0원",
           "total_product_coupon_discount_amount": 5000,
           "total_product_coupon_discount_amount_formatted": "5,000원",
           "total_order_coupon_discount_amount": 2500,
@@ -4896,6 +4898,7 @@
               "fault_type_label": "고객 귀책",
               "charge_method_label": "환불금에서 차감",
               "refund_total_formatted": "34,000원",
+              "refund_progress": null,
               "outstanding_amount_formatted": "0원",
               "items": [
                 {
@@ -5178,6 +5181,48 @@
               }
             ]
           },
+          "linked_claims": {
+            "source": null,
+            "refunds": [
+              {
+                "claim_type": "refund",
+                "claim_type_label": "환불",
+                "claim_number": "RF-20260601-0002",
+                "status": "completed",
+                "status_label": "환불완료",
+                "status_variant": "success",
+                "status_icon": "status-completed",
+                "is_live": true,
+                "requested_at_formatted": "2026-06-02 10:00",
+                "detail_url": "/admin/ecommerce/claims/RF-20260601-0002",
+                "refund_method": "pg",
+                "refund_method_label": "PG사 환불",
+                "refund_total": 26000,
+                "refund_total_formatted": "26,000원",
+                "mc_refund_total": {},
+                "refunded_at_formatted": "2026-06-02 11:00"
+              }
+            ],
+            "result_cancel": null,
+            "latest_refund": {
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_number": "RF-20260601-0002",
+              "status": "completed",
+              "status_label": "환불완료",
+              "status_variant": "success",
+              "status_icon": "status-completed",
+              "is_live": true,
+              "requested_at_formatted": "2026-06-02 10:00",
+              "detail_url": "/admin/ecommerce/claims/RF-20260601-0002",
+              "refund_method": "pg",
+              "refund_method_label": "PG사 환불",
+              "refund_total": 26000,
+              "refund_total_formatted": "26,000원",
+              "mc_refund_total": {},
+              "refunded_at_formatted": "2026-06-02 11:00"
+            }
+          },
           "settlement": {
             "claim_shipping_fee": 0,
             "claim_shipping_fee_formatted": "0원",
@@ -5222,7 +5267,9 @@
             "order_number": "20260601-0042",
             "order_status_label": "배송준비중",
             "ordered_at_formatted": "2026-06-01 19:30",
-            "total_paid_amount_formatted": "66,000원"
+            "total_paid_amount_formatted": "66,000원",
+            "total_refunded_mileage_credit_amount": 0,
+            "total_refunded_mileage_credit_amount_formatted": "0원"
           }
         }
       },
@@ -9739,7 +9786,9 @@
                         "zipcode": "06234"
                       }
                     },
-                    "is_partially_cancelled": true
+                    "is_partially_cancelled": true,
+                    "total_refunded_mileage_credit_amount": 0,
+                    "total_refunded_mileage_credit_amount_formatted": "0원"
                   }
                 }
               }

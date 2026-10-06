@@ -273,6 +273,7 @@
         "confirm_change_address": "배송지를 변경하시겠습니까?",
         "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구",
         "claim_additional_paid": "클레임 추가결제",
+        "refund_mileage_credit": "마일리지로 환불",
         "delivered_at": "배송완료일시",
         "confirmed_at": "구매확정일시"
     },

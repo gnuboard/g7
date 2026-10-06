@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
@@ -20,6 +21,8 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -35,6 +38,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
+use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -756,13 +760,14 @@ class RefundExecutionServiceTest extends ModuleTestCase
     }
 
     /**
-     * 쿠폰 리스너 예외는 호출부로 전파되지 않는다 — 돈은 이미 나갔다.
+     * 쿠폰 리스너 예외는 환불을 중단시키는 예외로 올라간다 — 삼키면 환불은 끝났는데 쿠폰은
+     * 사용됨으로 남는다(D2). 호출부 트랜잭션이 전체를 되돌린다.
      *
-     * @effects coupon_restore_listener_failure_does_not_reach_the_caller
+     * @effects coupon_restore_listener_failure_aborts_the_refund
      *
      * @return void 반환값 없음
      */
-    public function test_restore_coupons_swallows_listener_failure(): void
+    public function test_restore_coupons_listener_failure_aborts_with_a_refund_exception(): void
     {
         HookManager::addAction('sirsoft-ecommerce.coupon.restore', function () {
             throw new \RuntimeException('쿠폰 복원 실패');
@@ -770,9 +775,12 @@ class RefundExecutionServiceTest extends ModuleTestCase
 
         $order = $this->createPaidOrder();
 
-        $this->service->restoreCoupons($order, new AdjustmentResult(restoredCouponIssueIds: [1]));
-
-        $this->assertTrue(true, '리스너 예외가 호출부로 전파되지 않는다');
+        try {
+            $this->service->restoreCoupons($order, new AdjustmentResult(restoredCouponIssueIds: [1]));
+            $this->fail('쿠폰 복원 실패가 호출부로 올라가야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.coupon_restore_failed', $e->getMessageKey());
+        }
     }
 
     /**
@@ -844,13 +852,14 @@ class RefundExecutionServiceTest extends ModuleTestCase
     }
 
     /**
-     * 마일리지 리스너 예외는 호출부로 전파되지 않는다.
+     * 마일리지 리스너 예외는 환불을 중단시키는 예외로 올라간다(D2) — 삼키면 카드는 취소되고
+     * 마일리지는 돌아오지 않은 채 완료로 닫힌다.
      *
-     * @effects mileage_restore_listener_failure_does_not_reach_the_caller
+     * @effects mileage_restore_listener_failure_aborts_the_refund
      *
      * @return void 반환값 없음
      */
-    public function test_restore_mileage_swallows_listener_failure(): void
+    public function test_restore_mileage_listener_failure_aborts_with_a_refund_exception(): void
     {
         HookManager::addAction('sirsoft-ecommerce.mileage.restore', function () {
             throw new \RuntimeException('마일리지 복원 실패');
@@ -858,9 +867,125 @@ class RefundExecutionServiceTest extends ModuleTestCase
 
         $order = $this->createPaidOrder(['is_mileage_deducted' => true]);
 
-        $this->service->restoreMileage($order, new AdjustmentResult(refundPointsAmount: 500));
+        try {
+            $this->service->restoreMileage($order, new AdjustmentResult(refundPointsAmount: 500));
+            $this->fail('마일리지 반환 실패가 호출부로 올라가야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.mileage_refund_failed', $e->getMessageKey());
+        }
+    }
 
-        $this->assertTrue(true, '리스너 예외가 호출부로 전파되지 않는다');
+    /**
+     * 환불 현금분 마일리지 지급은 그 환불에 묶인 무기한 lot 한 건을 남긴다(D1·Q2).
+     *
+     * @effects points_refund_credits_the_cash_amount_as_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_mileage_records_a_non_expiring_lot_for_the_refund(): void
+    {
+        $order = $this->createPaidOrder(['user_id' => User::factory()->create()->id]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->service->creditMileage($order, $refund, 5000);
+
+        $credits = MileageTransaction::query()
+            ->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)
+            ->get();
+        $this->assertCount(1, $credits);
+        $this->assertSame(5000.0, (float) $credits->first()->amount);
+        $this->assertNull($credits->first()->expires_at);
+    }
+
+    /**
+     * 지급할 현금이 0 이면 훅을 쏘지 않고 원장에도 아무것도 남지 않는다.
+     *
+     * @effects credit_mileage_skips_a_zero_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_mileage_skips_a_zero_amount(): void
+    {
+        $called = false;
+        HookManager::addAction('sirsoft-ecommerce.mileage.refund_credit', function () use (&$called) {
+            $called = true;
+        });
+
+        $order = $this->createPaidOrder(['user_id' => User::factory()->create()->id]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->service->creditMileage($order, $refund, 0);
+
+        $this->assertFalse($called);
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+    }
+
+    /**
+     * 비회원 주문에는 마일리지를 지급할 원장이 없다 — 조용히 넘기면 돈이 사라진다.
+     *
+     * @effects credit_mileage_rejects_a_guest_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_mileage_rejects_a_guest_order(): void
+    {
+        $order = $this->createPaidOrder(['user_id' => null]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::POINTS]);
+
+        try {
+            $this->service->creditMileage($order, $refund, 5000);
+            $this->fail('비회원 주문의 마일리지 지급은 거절돼야 한다');
+        } catch (OrderClaimException $e) {
+            $this->assertSame(__('sirsoft-ecommerce::exceptions.claim_refund_points_requires_member'), $e->getMessage());
+        }
+    }
+
+    /**
+     * 지급 리스너가 던지면 환불을 중단시키는 예외로 바뀌어 올라간다(D2).
+     *
+     * @effects credit_mileage_listener_failure_aborts_the_refund
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_mileage_listener_failure_aborts_with_a_refund_exception(): void
+    {
+        HookManager::addAction('sirsoft-ecommerce.mileage.refund_credit', function () {
+            throw new \RuntimeException('지급 실패');
+        }, 5);
+
+        $order = $this->createPaidOrder(['user_id' => User::factory()->create()->id]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::POINTS]);
+
+        try {
+            $this->service->creditMileage($order, $refund, 5000);
+            $this->fail('지급 실패가 호출부로 올라가야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.mileage_refund_failed', $e->getMessageKey());
+        }
+    }
+
+    /**
+     * 지급 훅에 응답한 리스너가 없어 원장이 남지 않으면 실패로 본다 — 「완료」인데 돈이 없는
+     * refund 274 의 재발을 원장 확인으로 막는다(fail-closed).
+     *
+     * @effects credit_mileage_fails_closed_when_no_ledger_row_appears
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_mileage_fails_closed_when_no_ledger_row_appears(): void
+    {
+        HookManager::clearAction('sirsoft-ecommerce.mileage.refund_credit');
+
+        $order = $this->createPaidOrder(['user_id' => User::factory()->create()->id]);
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::POINTS]);
+
+        try {
+            $this->service->creditMileage($order, $refund, 5000);
+            $this->fail('원장 기록이 없으면 실패로 올라가야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.mileage_refund_failed', $e->getMessageKey());
+        }
     }
 
     /**
@@ -920,6 +1045,87 @@ class RefundExecutionServiceTest extends ModuleTestCase
         ]);
 
         $this->assertSame(90, (int) $productOption->fresh()->stock_quantity);
+    }
+
+    /**
+     * 클레임 환불신청서의 환불수단은 돌려줄 현금이 남지 않은 회원 주문에서만 「마일리지」다(결함 4).
+     *
+     * 고객은 마일리지 결제수단을 고를 수 없어 전액 마일리지 주문도 무통장·카드 수단을 단다 — 결제수단만
+     * 보면 계좌·PG 환불로 기록되고, 계좌를 묻거나 승인에서 멈춘다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects refund_method_for_claim_is_points_only_when_no_cash_remains
+     */
+    public function test_refund_method_for_claim_is_points_only_when_no_cash_remains(): void
+    {
+        $member = User::factory()->create()->id;
+        $zeroCash = ['user_id' => $member, 'total_paid_amount' => 0, 'total_points_used_amount' => 20000];
+        $zeroPayment = ['payment_method' => PaymentMethodEnum::DBANK->value, 'paid_amount_base' => 0, 'paid_amount_local' => 0];
+
+        $this->assertSame(
+            RefundMethodEnum::POINTS,
+            $this->service->refundMethodForClaim($this->createPaidOrder($zeroCash, $zeroPayment)),
+        );
+        $this->assertSame(
+            RefundMethodEnum::BANK,
+            $this->service->refundMethodForClaim($this->createPaidOrder(['user_id' => $member], ['payment_method' => PaymentMethodEnum::DBANK->value])),
+        );
+        $this->assertSame(
+            RefundMethodEnum::BANK,
+            $this->service->refundMethodForClaim($this->createPaidOrder(['user_id' => null] + $zeroCash, $zeroPayment)),
+        );
+    }
+
+    /**
+     * 재고 복원 실패는 환불을 중단시키는 예외로 올라간다(F2) — 삼키면 환불은 끝났는데 재고가
+     * 돌아오지 않는다.
+     *
+     * @effects stock_restore_failure_aborts_the_refund
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restore_stock_failure_aborts_with_a_refund_exception(): void
+    {
+        $this->setStockRestoreSetting(true);
+        [$order, $option] = $this->createOrderWithDeductedOption(stock: 90, quantity: 2);
+
+        $this->mock(StockService::class, function ($mock) {
+            $mock->shouldReceive('restoreOptionStockForOrderOption')->andThrow(new \RuntimeException('재고 잠금 실패'));
+        });
+        $this->service = app(RefundExecutionService::class);
+
+        try {
+            $this->service->restoreStock($order, [
+                ['order_option_id' => $option->id, 'cancel_quantity' => 2],
+            ]);
+            $this->fail('재고 복원 실패가 호출부로 올라가야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.stock_restore_failed', $e->getMessageKey());
+        }
+    }
+
+    /**
+     * 장부 준비(prepareLedger)는 트랜잭션 밖에서 부르면 거절한다 — PG 앞에서 저장하는 누적은
+     * 트랜잭션 롤백만이 되돌릴 수 있다(P-D5).
+     *
+     * @effects prepare_ledger_refuses_to_run_outside_a_transaction
+     *
+     * @return void 반환값 없음
+     */
+    public function test_prepare_ledger_refuses_to_run_outside_a_transaction(): void
+    {
+        $service = $this->partialMock(RefundExecutionService::class, function ($mock) {
+            $mock->shouldAllowMockingProtectedMethods()->shouldReceive('inTransaction')->andReturn(false);
+        });
+
+        $order = $this->createPaidOrder();
+        $refund = $this->createRefund($order);
+
+        // 메시지까지 본다 — 메서드가 없을 때 Mockery 가 던지는 BadMethodCallException 도 LogicException 이다.
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('트랜잭션 안에서만');
+        $service->prepareLedger($order, $refund, new AdjustmentResult(refundAmount: 5000), true);
     }
 
     // ================================================================
@@ -1151,7 +1357,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
         });
 
         $order = $this->createPaidOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value]);
-        $refund = $this->createRefund($order);
+        // 무통장입금의 환불수단은 계좌 환불이다 — PG 로 적힌 신청서는 실행이 422 로 막는다(P-D4, PgRefundProviderGuardTest).
+        $refund = $this->createRefund($order, ['refund_method' => RefundMethodEnum::BANK]);
 
         $this->service->execute($order, $refund, new AdjustmentResult(refundAmount: 5000));
 
@@ -1315,7 +1522,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
             $this->service->execute($order, $refund, new AdjustmentResult(refundAmount: 5000));
             $this->fail('PG 실패 시 예외가 전파되어야 한다');
         } catch (OrderCancellationException $e) {
-            // 누적은 PG 성공 뒤에만 일어난다 — 실패한 환불이 잔여 한도를 깎으면 안 된다.
+            // PG 가 실패하면 PG 앞에서 저장한 누적이 트랜잭션째 롤백된다(P-D5) — 실패한 환불이
+            // 잔여 한도를 깎으면 안 된다.
             $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
             $this->assertSame(0.0, (float) $order->payment->fresh()->cancelled_amount);
         }

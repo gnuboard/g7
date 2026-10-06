@@ -205,6 +205,7 @@ class Plugin extends AbstractPlugin
         return [
             Listeners\RegisterPgProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\VbankCloseListener::class,
             Listeners\ClaimPaymentApproveListener::class,
             Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,

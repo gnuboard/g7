@@ -15,6 +15,7 @@ return [
         'missing_tid' => 'Cannot process refund: transaction number (tno) is missing.',
         'default_reason' => 'Buyer refund request',
         'in_progress' => 'NHN KCP refund is already in progress.',
+        'vbank_requires_bank_transfer' => 'A settled virtual account payment cannot be refunded automatically through NHN KCP. Change the refund method to bank transfer and send the money to the customer account directly.',
     ],
     'escrow' => [
         'invoice_required' => 'Please enter the tracking number.',

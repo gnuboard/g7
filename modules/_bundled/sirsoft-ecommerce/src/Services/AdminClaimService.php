@@ -505,6 +505,22 @@ class AdminClaimService
             }
         }
 
+        // 종결 전이와 추가결제 환급은 한 트랜잭션이다(S6 · D2) — 환급이 PG 에서 거절되면 반려·철회도 되돌려 운영자가
+        // 다시 시도할 수 있게 한다. 예전에는 전이를 먼저 커밋해, 환급이 실패하면 신청서는 종결로 굳고 낸 돈을 돌려줄
+        // 자리가 사라졌다. 환급(PG 호출)은 트랜잭션의 마지막 단계다.
+        return DB::transaction(fn () => $this->transitionAndCloseMoney($claim, $target, $context));
+    }
+
+    /**
+     * 신청서를 전이하고, 종결이면 추가결제를 정리합니다. (`transition()` 의 트랜잭션 본문 — S6)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  string  $target  목표 상태 값
+     * @param  array  $context  부가 정보
+     * @return array{claim: OrderExchange|OrderReturn|OrderRefund, payment_requested: bool} 전이 결과
+     */
+    protected function transitionAndCloseMoney(OrderExchange|OrderReturn|OrderRefund $claim, string $target, array $context): array
+    {
         $updated = match (true) {
             $claim instanceof OrderExchange => $this->exchangeService->transition($claim, ExchangeStatusEnum::from($target), $context),
             $claim instanceof OrderReturn => $this->returnService->transition($claim, ReturnStatusEnum::from($target), $context),
@@ -620,6 +636,16 @@ class AdminClaimService
         // 신청서가 이미 결제대기를 지났으면 아래 전이가 게이트 판정을 그대로 돌려준다
         // (결제대기 → 결제대기 자기 전이는 no-op 허용).
         if ($this->paymentService->initiateForRequest($claim) !== null) {
+            return $this->reload($claim);
+        }
+
+        // 접수·결제대기를 지난 뒤(승인·회수 등)의 결제 요청은 전이 없이 차액 결제 대기 건만 만든다(S3) —
+        // 결제대기로 되돌리면 진행 중인 회수·재발송 흐름이 끊긴다. 구매자 화면은 대기 건이 있으면 상태와
+        // 무관하게 [추가 결제] 를 보인다.
+        $status = $claim instanceof OrderExchange ? $claim->exchange_status : $claim->return_status;
+        if (! in_array($status instanceof \BackedEnum ? $status->value : (string) $status, ['requested', 'payment_pending'], true)) {
+            $this->paymentService->settleChargeDifference($claim);
+
             return $this->reload($claim);
         }
 
@@ -769,16 +795,25 @@ class AdminClaimService
 
             $wasFinal = $claim->isFinal();
 
-            $result = $claim instanceof OrderExchange
-                ? $this->exchangeService->transitionOption($claim, $items, ExchangeStatusEnum::from($target), $context)
-                : $this->returnService->transitionOption($claim, $items, ReturnStatusEnum::from($target), $context);
+            // 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같이 돈을 닫는다(#2). 전이와 환급은 한
+            // 트랜잭션이다(S6) — 환급이 거절되면 상품 단위 전이도 되돌린다.
+            [$result, $reloaded] = DB::transaction(function () use ($claim, $items, $target, $context, $wasFinal) {
+                $result = $claim instanceof OrderExchange
+                    ? $this->exchangeService->transitionOption($claim, $items, ExchangeStatusEnum::from($target), $context)
+                    : $this->returnService->transitionOption($claim, $items, ReturnStatusEnum::from($target), $context);
 
-            // 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같이 돈을 닫는다(#2).
-            $reloaded = $this->reload($claim);
+                $reloaded = $this->reload($claim);
 
-            if (! $wasFinal && $reloaded->isFinal()) {
-                $this->closeMoneyIfTerminated($reloaded);
-            } elseif ($reloaded instanceof OrderExchange
+                if (! $wasFinal && $reloaded->isFinal()) {
+                    $this->closeMoneyIfTerminated($reloaded);
+                }
+
+                return [$result, $reloaded];
+            });
+
+            // 헤더가 종결된 경우의 돈은 위 트랜잭션에서 닫았다. 종결되지 않은 일부 반려·철회만 아래에서 다시 정산한다.
+            if (($wasFinal || ! $reloaded->isFinal())
+                && $reloaded instanceof OrderExchange
                 && in_array($target, [ExchangeStatusEnum::REJECTED->value, ExchangeStatusEnum::WITHDRAWN->value], true)
                 && ($result['succeeded'] ?? []) !== []) {
                 // 일부만 반려·철회됐으면 청구액을 살아 있는 상품 기준으로 다시 계산하고, 결제 대기 건·
@@ -926,6 +961,13 @@ class AdminClaimService
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
 
+        // 받아야 할 청구액이 남았으면 완료하지 않는다(S3) — 운영자가 수납 뒤 청구액을 올린 건이 미수납인 채 완료되면
+        // 그 돈은 어디에도 청구되지 않는다. 차감 방식·청구 0원은 대상이 아니다. 승인 게이트
+        // (`divertApprovalToPayment()`)와 같은 층·같은 판정이다 — 운영자 지시의 입구에서 막는다.
+        if ($claim->requiresAdditionalPayment() && $this->paymentService->outstandingAmount($claim) > 0) {
+            throw OrderClaimException::paymentOutstanding();
+        }
+
         return $claim instanceof OrderExchange
             ? $this->exchangeService->completeExchange($claim, $itemIds, $completion, $processedBy)
             : $this->returnService->completeReturn($claim, $itemIds, $completion, $processedBy);
@@ -1003,12 +1045,16 @@ class AdminClaimService
         // (`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` 의 `updateAmounts` 응답에 환급 기술이 없다), 운영자가 금액을
         // 고치는 것은 대개 운영상의 판단이기 때문이다.
         //
-        // 그래서 수납액이 0 일 때만 부른다. 그 조건에서 `settleChargeDifference()` 의 차액은
-        // `total − 0` 이라 **음수가 될 수 없어** 환급 경로(`refundDifference()`)를 구조적으로 타지
-        // 않는다 — 금액을 내리면 대기 건이 갱신·취소되고, 올리면 그 금액으로 만들어진다.
-        if (($updated instanceof OrderExchange || $updated instanceof OrderReturn)
-            && $this->paymentService->paidAmount($updated) <= 0.0) {
-            $this->paymentService->settleChargeDifference($updated);
+        // 그래서 수납액이 0 이거나, 이미 받은 뒤 **청구액을 올린** 경우에만 부른다(S3). 두 조건 모두
+        // `settleChargeDifference()` 의 차액이 음수가 될 수 없어 환급 경로(`refundDifference()`)를 구조적으로
+        // 타지 않는다 — 금액을 내리면 대기 건이 갱신·취소되고, 올리면 그 차액으로 만들어진다. 종전에는 수납액이
+        // 0 일 때만 불러, 3,000원을 낸 뒤 5,000원으로 올리면 2,000원을 낼 자리가 생기지 않았다.
+        if ($updated instanceof OrderExchange || $updated instanceof OrderReturn) {
+            $paid = $this->paymentService->paidAmount($updated);
+
+            if ($paid <= 0.0 || (float) $updated->total_charge_amount > $paid) {
+                $this->paymentService->settleChargeDifference($updated);
+            }
         }
 
         if ($before !== $after) {
@@ -1144,6 +1190,10 @@ class AdminClaimService
             return __('sirsoft-ecommerce::messages.claims.cancellable_method.mileage');
         }
 
+        if (($method['type'] ?? null) === CancellableAmount::METHOD_REACTIVATED_CASH) {
+            return __('sirsoft-ecommerce::messages.claims.cancellable_method.reactivated_cash');
+        }
+
         $value = (string) ($method['method'] ?? '');
 
         // 라벨 해석의 SSoT 는 결제수단 카탈로그다 — PG 플러그인이 등록하는 확장 수단은
@@ -1184,10 +1234,14 @@ class AdminClaimService
      * 어휘는 `RefundMethodEnum` 이 소유한다 — 화면이 셋을 다시 적으면 수단이 늘어도 화면만
      * 낡은 채로 남는다.
      *
+     * 「마일리지」는 비회원 주문과, 마일리지 기능이 꺼진 상점의 현금 환불에서 뺀다(D1·Q21 —
+     * `OrderRefundRequestService::pointsRefundAllowed()` 와 같은 판정).
+     *
      * @param  Order|null  $order  주문 (null 이면 종전처럼 전 수단)
+     * @param  float|null  $cashAmount  이 환불의 현금 환불액 (null 이면 현금이 있는 것으로 본다)
      * @return array<int, array{value: string, label: string}> 선택지
      */
-    public function refundMethodOptions(?Order $order = null): array
+    public function refundMethodOptions(?Order $order = null, ?float $cashAmount = null): array
     {
         $cases = RefundMethodEnum::cases();
 
@@ -1198,10 +1252,16 @@ class AdminClaimService
         // 같은 판정(`pgRefundAvailable()` — PG 리스너가 없어 계좌로 떨어지는 주문 포함)을 읽는다.
         if ($order !== null) {
             $hasPg = $this->refundRequestService->pgRefundAvailable($order);
+            // 현금액을 모르면 현금이 있는 것으로 본다 — 기능이 꺼진 상점에서 보여 두고 실행에서 막히면 늦다.
+            $hasPoints = $this->refundRequestService->pointsRefundAllowed($order, $cashAmount ?? 1.0);
 
             $cases = array_filter(
                 $cases,
-                fn (RefundMethodEnum $case): bool => $case !== RefundMethodEnum::PG || $hasPg
+                fn (RefundMethodEnum $case): bool => match ($case) {
+                    RefundMethodEnum::PG => $hasPg,
+                    RefundMethodEnum::POINTS => $hasPoints,
+                    default => true,
+                }
             );
         }
 
@@ -1762,17 +1822,20 @@ class AdminClaimService
      */
     public function withdrawOnBehalf(OrderExchange|OrderReturn|OrderRefund $claim, string $reason, ?int $processedBy): OrderExchange|OrderReturn|OrderRefund
     {
-        $withdrawn = match (true) {
-            $claim instanceof OrderExchange => $this->exchangeService->withdraw($claim, $processedBy ?? 0, $reason),
-            $claim instanceof OrderReturn => $this->returnService->withdraw($claim, $processedBy ?? 0, $reason),
-            default => $this->refundRequestService->withdraw($claim, $processedBy ?? 0, $reason),
-        };
+        // 철회와 추가결제 환급은 한 트랜잭션이다(S6) — 환급이 거절되면 철회도 되돌린다.
+        return DB::transaction(function () use ($claim, $reason, $processedBy) {
+            $withdrawn = match (true) {
+                $claim instanceof OrderExchange => $this->exchangeService->withdraw($claim, $processedBy ?? 0, $reason),
+                $claim instanceof OrderReturn => $this->returnService->withdraw($claim, $processedBy ?? 0, $reason),
+                default => $this->refundRequestService->withdraw($claim, $processedBy ?? 0, $reason),
+            };
 
-        if ($withdrawn instanceof OrderExchange || $withdrawn instanceof OrderReturn) {
-            $this->closeMoneyIfTerminated($withdrawn);
-        }
+            if ($withdrawn instanceof OrderExchange || $withdrawn instanceof OrderReturn) {
+                $this->closeMoneyIfTerminated($withdrawn);
+            }
 
-        return $withdrawn;
+            return $withdrawn;
+        });
     }
 
     /**

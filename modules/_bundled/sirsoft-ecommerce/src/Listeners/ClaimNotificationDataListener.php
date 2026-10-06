@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
+use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
  * 클레임 알림 데이터 필터 리스너 (§4-8 — 29종 공용)
@@ -328,12 +329,21 @@ class ClaimNotificationDataListener implements HookListenerInterface
             $refundTotal = (float) $claim->refund_amount
                 + (float) $claim->refund_points_amount;
 
+            // 수단은 「실제로 돈이 간 수단」 이다(S7) — 신청서 수단(결제수단에서 정해진 PG)에 마일리지 합계를 묶으면
+            // 마일리지로만 돌려준 환불이 「PG사 환불 15,000원」 으로 알려진다. 합계 `refund_amount` 는 하위호환으로 둔다.
+            $format = fn (float $amount): string => $this->formatClaimAmount($order, $amount);
+            $cash = RefundBreakdown::cashAmount($claim);
+            $points = RefundBreakdown::pointsAmount($claim);
+
             return [
                 'charge_amount' => '',
                 'outstanding_amount' => '',
                 'paid_amount' => '',
-                'refund_amount' => $this->formatClaimAmount($order, $refundTotal),
-                'refund_method_label' => $claim->refund_method?->label() ?? '',
+                'refund_amount' => $format($refundTotal),
+                'refund_method_label' => RefundBreakdown::methodLabel($claim),
+                'refund_cash_amount' => $cash > 0.0 ? $format($cash) : '',
+                'refund_points_amount' => $points > 0.0 ? $format($points) : '',
+                'refund_breakdown' => RefundBreakdown::lines($claim, $format),
             ];
         }
 
@@ -349,6 +359,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'paid_amount' => $this->formatClaimAmount($order, $totalCharge),
             'refund_amount' => '',
             'refund_method_label' => '',
+            'refund_cash_amount' => '',
+            'refund_points_amount' => '',
+            'refund_breakdown' => '',
         ];
     }
 

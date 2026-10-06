@@ -323,6 +323,16 @@
                             "text": "$t:sirsoft-ecommerce.admin.claim.complete.unreturned_desc"
                         },
                         {
+                            "comment": "미회수 완료는 상품 대금·보증금을 청구하지 않는다(S8 · Q10 — 현행 유지). 운영자가 모른 채 완료하면 매출이 새므로 그 사실을 체크 영역에서 말한다.",
+                            "id": "cc_023b_unreturned_no_charge_notice",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "p-2 rounded bg-orange-50 dark:bg-orange-900/20 text-xs text-orange-700 dark:text-orange-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.complete.unreturned_no_charge_notice"
+                        },
+                        {
                             "type": "basic",
                             "name": "Div",
                             "iteration": {

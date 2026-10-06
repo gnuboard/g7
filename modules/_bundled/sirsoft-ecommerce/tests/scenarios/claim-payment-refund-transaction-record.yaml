@@ -1,0 +1,15 @@
+# e2e:allow 화면 변경 없음 — 결제 건 raw_response 에 환급 거래 기록만 쌓인다(대사 근거).
+feature: 클레임 추가결제 PG 환급의 결제사 거래 ID 기록 (P-D11) — #747 C8
+
+description: |
+  클레임 추가결제를 PG 로 환급하면 결과의 transaction_id 를 버려, 결제사 취소 내역과 대사할 근거가 없었다.
+  환급마다 raw_response.refunds[] 에 {transaction_id, amount, refunded_at} 를 차례로 남긴다. 승인 거래 ID 는 그대로다.
+
+axes:
+  refunds: [partial_twice]
+
+effects:
+  - claim_payment_refund_keeps_the_pg_transaction_id
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimPaymentRefundTransactionRecordTest.php

@@ -150,6 +150,7 @@
       "confirm": "확인"
     },
     "claim_history": {
+      "source_claim": "원 신청서 {{number}}",
       "title": "클레임 내역",
       "readonly_badge": "조회 전용",
       "subtabs": {
@@ -216,7 +217,8 @@
       "cancelled_amount": "취소금액",
       "refunded_amount": "환불금액",
       "refund_status": "환불상태",
-      "refund_points_amount": "마일리지 환불",
+      "refund_points_amount": "사용 마일리지 반환",
+      "refund_mileage_credit_amount": "└ 마일리지로 환불(현금분)",
       "claim_additional_paid": "클레임 추가결제 합계",
       "payment_currency": "결제 통화: {{currency}}",
       "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구"
@@ -360,7 +362,7 @@
         "refund_product_amount": "상품 환불액",
         "refund_shipping_diff": "배송비 변동",
         "refund_discount_diff": "할인 조정",
-        "refund_points_amount": "마일리지 환불",
+        "refund_points_amount": "사용 마일리지 반환",
         "refund_total": "최종 환불 예정액",
         "remaining_pg_balance": "환불 후 PG 잔액",
         "remaining_points_balance": "환불 후 마일리지 잔액",
@@ -402,7 +404,8 @@
         "refund_bank_required_hint": "입금이 완료된 가상계좌 주문은 환불 계좌가 필요합니다.",
         "refund_bank_empty_hint": "환불 계좌로 고를 은행이 등록되어 있지 않습니다. 환경설정 > 주문 설정의 [은행 관리]에서 먼저 등록해 주세요.",
         "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다.",
-        "partial_unsupported": "이 주문의 결제수단은 **전액취소만** 가능합니다. 일부 상품·수량만 취소하면 결제대행사가 거절합니다."
+        "partial_unsupported": "이 주문의 결제수단은 전액취소만 가능합니다. 일부 상품·수량만 취소하면 결제대행사가 거절합니다.",
+        "partial_unsupported_vbank_awaiting": "입금 전 가상계좌 주문은 전액취소만 가능합니다. 발급된 가상계좌 금액은 바꿀 수 없어, 일부만 취소하면 고객이 입금해도 확인되지 않습니다."
       }
     },
     "cash_receipt": {
@@ -436,6 +439,12 @@
       "cancel_failed": "현금영수증 발급 취소에 실패했습니다.",
       "reissue_failed": "재발급 실패",
       "reissue_success": "현금영수증이 재발급되었습니다."
+    },
+    "deposit_after_cancel": {
+      "warning": "취소된 주문의 가상계좌에 {{amount}}이(가) 입금되었습니다. 자동으로 환불되지 않으니 고객에게 환불해 주세요."
+    },
+    "vbank_close_failed": {
+      "warning": "입금 전에 취소했지만 결제사에서 가상계좌를 닫지 못했습니다. 고객이 입금하지 않도록 결제사 관리자 화면에서 가상계좌를 직접 닫아 주세요."
     },
     "tax_invoice": {
       "needs_review": "이 주문은 취소가 발생했지만 발급된 세금계산서가 그대로 남아 있습니다. 세금계산서 취소·수정 발행은 자동으로 처리되지 않으므로 국세청 홈택스에서 직접 처리해 주세요."
@@ -713,6 +722,7 @@
     "shipping": "배송중",
     "delivered": "배송완료",
     "cancelled": "주문취소",
+    "returned": "반품완료",
     "confirmed": "구매확정"
   },
   "datagrid": {
@@ -863,5 +873,42 @@
     "success": "고객을 대신해 접수했습니다.",
     "error": "접수하지 못했습니다.",
     "reason_required": "사유를 선택해주세요."
+  },
+  "manual_paid": {
+    "title": "결제 처리 항목",
+    "description": "선택한 주문 중 {{count}}건은 결제 전이거나 취소된 주문입니다. 함께 처리할 항목을 고르세요.",
+    "description_single": "이 주문은 결제 전이거나 취소된 주문입니다. 함께 처리할 항목을 고르세요.",
+    "loading": "결제 처리 항목을 확인하는 중…",
+    "preview_error": "결제 처리 항목을 불러오지 못했습니다. 창을 닫고 다시 시도하세요.",
+    "stock_label": "재고 차감 ({{count}}건)",
+    "stock_label_single": "재고 차감 (상품 {{count}}개)",
+    "stock_hint": "주문한 수량만큼 상품 재고를 줄입니다.",
+    "stock_off_warning": "재고를 차감하지 않으면 이후 이 주문을 취소해도 재고를 되돌리지 않습니다.",
+    "mileage_label": "사용 마일리지 차감 ({{count}}건, {{amount}})",
+    "mileage_label_single": "사용 마일리지 차감 ({{amount}})",
+    "mileage_hint": "고객이 이 주문에 쓴 마일리지를 회원 잔액에서 뺍니다. 취소한 주문을 되살리면 취소 때 돌려준 마일리지를 다시 뺍니다.",
+    "mileage_short_warning": "잔액이 부족해 변경되지 않을 주문: {{order_numbers}}",
+    "mileage_short_warning_single": "회원 마일리지 잔액({{balance}})이 부족해 변경되지 않습니다. 차감을 끄면 바꿀 수 있습니다.",
+    "mileage_off_warning": "마일리지를 차감하지 않으면 이후 환불 때 마일리지를 돌려주지 않습니다.",
+    "record_label": "결제금액 기록 ({{count}}건, {{amount}})",
+    "record_label_single": "결제금액 기록 ({{amount}})",
+    "record_hint": "결제예정금액을 받은 것으로 기록합니다. PG 관리 화면에서 승인을 확인한 경우에만 켜 두세요. PG 거래번호는 기록되지 않습니다.",
+    "record_off_warning": "결제금액을 기록하지 않으면 결제금액 0원으로 남아, 이후 취소·반품 때 현금으로 돌려줄 수 있는 금액이 0원이 됩니다.",
+    "auto_sync_note": "입금이 이미 기록된 {{count}}건은 기록된 입금액으로 결제금액을 맞춥니다.",
+    "auto_sync_note_single": "이미 기록된 입금액 {{amount}}으로 결제금액을 맞춥니다.",
+    "never_paid_note": "결제 기록 없이 취소된 주문 {{count}}건은 「결제금액 기록」을 켜 두면 되살린 주문 합계를 받은 것으로 기록합니다. 끄면 미수금으로 남습니다.",
+    "never_paid_note_single": "결제 기록 없이 취소된 주문입니다. 「결제금액 기록」을 켜 두면 되살린 주문 합계를 받은 것으로 기록하고, 끄면 미수금으로 남습니다.",
+    "restoration_label": "취소된 상품 되살리기·주문 합계 다시 계산 ({{count}}건, 상품 {{quantity}}개)",
+    "restoration_label_single": "취소된 상품 {{quantity}}개를 되살리고 주문 합계를 {{before}} → {{after}}으로 다시 계산합니다",
+    "restoration_hint": "취소로 0원이 된 주문 금액·배송비·할인과 쿠폰 사용 기록을 처음 주문 조건으로 되돌립니다. 취소·환불 내역은 그대로 남습니다.",
+    "restoration_hint_partial": "되살리는 상품을 포함해 주문 금액·배송비·할인을 다시 계산합니다. 취소·환불 내역은 그대로 남습니다.",
+    "restoration_coupon_conflict": "이 주문에 쓴 쿠폰을 다른 주문이 이미 사용해 되살릴 수 없는 주문: {{order_numbers}}",
+    "restoration_coupon_conflict_single": "이 주문에 쓴 쿠폰({{coupons}})을 다른 주문이 이미 사용해 되살릴 수 없습니다.",
+    "restoration_legacy_snapshot": "{{count}}건은 처음 주문 쿠폰 정보가 남아 있지 않아 현재 쿠폰 정보로 다시 계산합니다. 합계가 처음 주문과 다를 수 있습니다.",
+    "restoration_legacy_snapshot_single": "처음 주문 쿠폰 정보가 남아 있지 않아 현재 쿠폰 정보로 다시 계산합니다. 합계가 처음 주문과 다를 수 있습니다.",
+    "warning": {
+      "pg_already_cancelled": "카드 등 PG 결제가 이미 취소된 주문입니다. 이후 환불은 계좌 환불 또는 마일리지로 처리해야 합니다.",
+      "pg_already_cancelled_orders": "카드 등 PG 결제가 이미 취소된 주문입니다({{order_numbers}}). 이후 환불은 계좌 환불 또는 마일리지로 처리해야 합니다."
+    }
   }
 }

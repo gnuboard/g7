@@ -40,6 +40,12 @@ class PaymentRefundListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
+            // 부분취소 사전 판정(P-D7) — 접수 단계에서 422 로 안내하게 한다(나이스 선례).
+            'sirsoft-ecommerce.payment.supports_partial_cancel' => [
+                'method' => 'supportsPartialCancel',
+                'type' => 'filter',
+                'priority' => 10,
+            ],
         ];
     }
 
@@ -55,6 +61,40 @@ class PaymentRefundListener implements HookListenerInterface
     }
 
     /**
+     * 토스 결제가 부분취소를 지원하는지 판정합니다. (P-D7)
+     *
+     * 토스 문서(https://docs.tosspayments.com/guides/v2/cancel-payment, /guides/v2/get-started/payment-methods)의 제약:
+     * - 에스크로 결제는 배송 정보 등록 뒤에는 구매확정 전 부분취소가 되지 않는다 — 환불 리스너도 에스크로 부분취소를
+     *   실행 단계에서 막으므로, 접수 단계에서 먼저 막는다.
+     * - 휴대폰 결제는 결제한 달의 말일까지만 취소된다(통신사 월 마감). 달이 바뀐 휴대폰 결제는 부분취소할 수 없다.
+     * - 입금 전 가상계좌는 이커머스가 이미 막는다(`PaymentMethodResolver::isVbankAwaitingDeposit()`).
+     *
+     * @param  bool  $supported  현재까지의 판정
+     * @param  OrderPayment|null  $payment  결제행
+     * @return bool 부분취소 지원 여부
+     */
+    public function supportsPartialCancel(bool $supported, $payment = null): bool
+    {
+        if (! $supported || ! $payment instanceof OrderPayment || $payment->pg_provider !== self::PG_PROVIDER_ID) {
+            return $supported;
+        }
+
+        if ((bool) $payment->is_escrow) {
+            return false;
+        }
+
+        $method = $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method;
+        if ($method === 'phone' && $payment->paid_at !== null) {
+            // 통신사 마감은 한국 시간 기준 월말이다.
+            $paidMonth = $payment->paid_at->copy()->timezone('Asia/Seoul')->format('Y-m');
+
+            return $paidMonth === now()->copy()->timezone('Asia/Seoul')->format('Y-m');
+        }
+
+        return true;
+    }
+
+    /**
      * PG 결제 환불을 처리합니다.
      *
      * @param  array  $result  환불 결과 (기본값)
@@ -63,7 +103,7 @@ class PaymentRefundListener implements HookListenerInterface
      * @param  float  $refundAmount  환불 금액 (결제 통화 order_currency 기준)
      * @param  string|null  $reason  환불 사유
      * @param  OrderRefund|null  $refund  이번 환불 시도의 레코드 (멱등키 조립용)
-     * @return array 환불 결과 {success, error_code, error_message, transaction_id}
+     * @return array 환불 결과 {success, handled, error_code, error_message, transaction_id}
      */
     public function processRefund(
         array $result,
@@ -73,7 +113,8 @@ class PaymentRefundListener implements HookListenerInterface
         ?string $reason = null,
         ?OrderRefund $refund = null,
     ): array {
-        // 토스페이먼츠 결제가 아닌 경우 스킵
+        // 토스페이먼츠 결제가 아닌 경우 스킵 — 결과(`handled` 포함)를 건드리지 않아야 모듈이 「이 주문의 결제
+        // 플러그인이 응답했는가」를 가릴 수 있다(P-D6). 자기 결제면 성공·실패 모두 `handled=true` 를 싣는다.
         if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
             return $result;
         }
@@ -82,6 +123,7 @@ class PaymentRefundListener implements HookListenerInterface
         if (! $paymentKey) {
             return [
                 'success' => false,
+                'handled' => true,
                 'error_code' => 'MISSING_PAYMENT_KEY',
                 'error_message' => __('sirsoft-tosspayments::messages.refund.missing_payment_key'),
                 'transaction_id' => null,
@@ -103,6 +145,7 @@ class PaymentRefundListener implements HookListenerInterface
 
             return [
                 'success' => false,
+                'handled' => true,
                 'error_code' => 'ESCROW_PARTIAL_REFUND_NOT_ALLOWED',
                 'error_message' => __('sirsoft-tosspayments::messages.refund.escrow_partial_not_allowed'),
                 'transaction_id' => null,
@@ -123,6 +166,7 @@ class PaymentRefundListener implements HookListenerInterface
 
                 return [
                     'success' => false,
+                    'handled' => true,
                     'error_code' => 'MISSING_REFUND_ACCOUNT',
                     'error_message' => __('sirsoft-tosspayments::messages.refund.missing_refund_account'),
                     'transaction_id' => null,
@@ -143,7 +187,7 @@ class PaymentRefundListener implements HookListenerInterface
                 // R2: 복합과세 상점에서 면세분이 공급가액으로 오산되지 않도록 동반 전달.
                 $this->resolveTaxFreeAmount($order, $payment, $cancelAmount),
                 $refundReceiveAccount,
-                $this->buildIdempotencyKey($refund),
+                $this->buildIdempotencyKey($refund, $cancelAmount, $refundReceiveAccount['accountNumber'] ?? null),
             );
 
             // S1-D14: 취소 응답은 갱신된 cancels[] 를 담고 온다. 이걸 스냅샷에 반영해야
@@ -170,6 +214,7 @@ class PaymentRefundListener implements HookListenerInterface
 
             return [
                 'success' => true,
+                'handled' => true,
                 'error_code' => null,
                 'error_message' => null,
                 'transaction_id' => $transactionId,
@@ -178,12 +223,13 @@ class PaymentRefundListener implements HookListenerInterface
             Log::error('토스페이먼츠 결제 취소 실패', [
                 'order_id' => $order->id,
                 'payment_key' => $paymentKey,
-                'cancel_amount' => (int) $refundAmount,
+                'cancel_amount' => (int) round($refundAmount),
                 'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
+                'handled' => true,
                 'error_code' => 'PG_API_ERROR',
                 'error_message' => $e->getMessage(),
                 'transaction_id' => null,
@@ -427,19 +473,23 @@ class PaymentRefundListener implements HookListenerInterface
     /**
      * 취소 요청의 멱등키를 조립합니다.
      *
-     * 환불 레코드는 환불 시도마다 고유하므로, 네트워크 재시도로 같은 취소가 두 번
-     * 도달해도 토스가 중복 청구를 차단한다. 레코드가 없으면(레거시 호출) 키를 생략한다.
+     * 네트워크 재시도로 같은 취소가 두 번 도달해도 토스가 중복 취소를 막도록 환불 레코드로 키를 만든다.
+     * 금액과 환불계좌도 키에 넣는다(P-D2) — 운영자가 금액이나 계좌를 고쳐 같은 레코드로 다시 실행하면 그것은
+     * 재전송이 아니라 다른 요청인데, 레코드 id 만으로는 토스가 처음 요청의 응답을 돌려줘 고친 금액이 취소되지
+     * 않는다. 클레임 결제 환급의 키와 같은 구성이다. 레코드가 없으면(레거시 호출) 키를 생략한다.
      *
      * @param  OrderRefund|null  $refund  환불 레코드
+     * @param  int  $cancelAmount  이번 취소 금액 (결제 통화)
+     * @param  string|null  $refundAccount  환불계좌 번호 (가상계좌만)
      * @return string|null 멱등키 (없으면 null)
      */
-    private function buildIdempotencyKey(?OrderRefund $refund): ?string
+    private function buildIdempotencyKey(?OrderRefund $refund, int $cancelAmount, ?string $refundAccount): ?string
     {
         if ($refund === null || $refund->id === null) {
             return null;
         }
 
-        return 'g7-refund-'.$refund->id;
+        return 'g7-refund-'.$refund->id.'-'.$cancelAmount.'-'.substr(sha1($refundAccount ?? ''), 0, 8);
     }
 
     /**

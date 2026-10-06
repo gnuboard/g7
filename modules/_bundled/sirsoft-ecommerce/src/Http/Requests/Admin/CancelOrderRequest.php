@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 주문 취소 요청 (관리자)
@@ -218,18 +219,9 @@ class CancelOrderRequest extends FormRequest
      */
     protected function hasMoneyToReturn(Order $order): bool
     {
-        if ($order->order_status instanceof OrderStatusEnum && $order->order_status->isBeforePayment()) {
-            return false;
-        }
-
-        // 두 누적은 decimal 이다 — float 로 빼면 `0.1 + 0.2` 류의 오차로 전액 환불된 주문이
-        // `0.00000001 > 0` 이 되어 "돌려줄 돈이 있다" 로 읽히고, 존재하지 않는 환불에 계좌를 묻는다.
-        // 문자열 그대로 소수 넷째 자리까지 비교한다(통화 소수 자릿수 최대치보다 넉넉하다).
-        return bccomp(
-            (string) ($order->total_paid_amount ?? '0'),
-            (string) ($order->total_refunded_amount ?? '0'),
-            4,
-        ) > 0;
+        // 판정은 환불 도메인의 술어 하나다(결함 4 — `hasCashToReturn`). 여기에 사본을 두면 결제행 축
+        // (수동 결제완료로 헤더가 0 인 채 결제된 주문)처럼 한쪽만 고쳐진 규칙이 다시 갈린다.
+        return app(OrderRefundRequestService::class)->hasCashToReturn($order);
     }
 
     /**

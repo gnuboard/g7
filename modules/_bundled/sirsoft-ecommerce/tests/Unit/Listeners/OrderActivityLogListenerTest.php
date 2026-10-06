@@ -58,11 +58,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_get_subscribed_hooks_returns_all_26_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_27_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(26, $hooks);
+        $this->assertCount(27, $hooks);
+        // 수동 결제 처리 세 항목·재활성 복원 결과 — 27번째 구독 (Q13·Q26)
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_manual_paid_effects', $hooks);
         // 입금 기록(결제 이후 단계 주문의 입금만 기록) — 26번째 구독
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_deposit_recorded', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.tax_invoice_stale_after_cancel', $hooks);

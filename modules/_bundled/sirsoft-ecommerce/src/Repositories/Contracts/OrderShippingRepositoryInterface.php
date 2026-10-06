@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 
 /**
@@ -27,6 +28,25 @@ interface OrderShippingRepositoryInterface
      * @return bool 성공 여부
      */
     public function update(int $id, array $data): bool;
+
+    /**
+     * 주문의 배송 행을 id 오름차순으로 새로 조회합니다.
+     *
+     * 분할로 방금 생긴 행까지 포함해야 하므로 적재된 관계가 아니라 DB 에서 다시 읽는다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return Collection<int, OrderShipping> 배송 행 목록
+     */
+    public function listByOrderId(int $orderId): Collection;
+
+    /**
+     * 적재된 배송 행을 모델 캐스트를 거쳐 갱신합니다. (mc_* JSON 컬럼 포함)
+     *
+     * @param  OrderShipping  $shipping  배송 행
+     * @param  array  $data  갱신 데이터
+     * @return bool 성공 여부
+     */
+    public function updateRow(OrderShipping $shipping, array $data): bool;
 
     /**
      * 주문 옵션 ID로 배송 레코드를 삭제합니다.

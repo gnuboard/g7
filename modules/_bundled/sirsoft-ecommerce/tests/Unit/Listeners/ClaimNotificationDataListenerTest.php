@@ -298,6 +298,92 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 완료된 환불신청서를 만들고 환불 완료 알림 데이터를 추출합니다. (S7)
+     *
+     * @param  RefundMethodEnum  $method  신청서의 환불 수단
+     * @param  int  $cash  현금 환불액 (`refund_amount`)
+     * @param  int  $points  마일리지 환불액 (`refund_points_amount`)
+     * @return array<string, mixed> 추출된 알림 데이터
+     */
+    private function refundCompletedData(RefundMethodEnum $method, int $cash, int $points): array
+    {
+        $order = $this->deliveredClaimOrder();
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::RETURN,
+            'refund_source_id' => 1,
+            'refund_number' => 'RF-S7-'.$method->value.'-'.$cash.'-'.$points,
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => $method,
+            'refund_amount' => $cash,
+            'refund_points_amount' => $points,
+        ]);
+
+        return $this->listener->extractData($this->emptyResult(), 'refund_completed', [$refund->fresh()])['data'];
+    }
+
+    /**
+     * 카드 주문을 마일리지로만 환불하면(현금 0) 수단은 「마일리지」 이고 현금 줄이 없다.
+     *
+     * 종전에는 신청서 수단(결제수단에서 정해진 PG) 라벨에 마일리지 합계를 묶어 「PG사 환불 15,000원」 으로 알렸다.
+     *
+     * @effects refund_notification_splits_cash_and_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mileage_only_refund_is_announced_as_mileage(): void
+    {
+        $data = $this->refundCompletedData(RefundMethodEnum::PG, 0, 15000);
+
+        $this->assertSame(RefundMethodEnum::POINTS->label(), $data['refund_method_label']);
+        $this->assertSame('', $data['refund_cash_amount']);
+        $this->assertStringContainsString('15,000', $data['refund_points_amount']);
+        $this->assertStringContainsString('15,000', $data['refund_amount'], '합계 변수는 하위호환으로 그대로 둔다');
+        $this->assertStringNotContainsString(RefundMethodEnum::PG->label(), $data['refund_breakdown']);
+    }
+
+    /**
+     * 현금과 마일리지가 섞이면 수단 라벨은 현금 수단이고, 두 금액이 따로 실린다.
+     *
+     * @effects refund_notification_splits_cash_and_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mixed_refund_carries_cash_and_mileage_separately(): void
+    {
+        $data = $this->refundCompletedData(RefundMethodEnum::PG, 12000, 3000);
+
+        $this->assertSame(RefundMethodEnum::PG->label(), $data['refund_method_label']);
+        $this->assertStringContainsString('12,000', $data['refund_cash_amount']);
+        $this->assertStringContainsString('3,000', $data['refund_points_amount']);
+        $this->assertStringContainsString('15,000', $data['refund_amount']);
+
+        $lines = explode("\n", $data['refund_breakdown']);
+        $this->assertCount(2, $lines);
+        $this->assertStringContainsString(RefundMethodEnum::PG->label(), $lines[0]);
+        $this->assertStringContainsString('12,000', $lines[0]);
+        $this->assertStringContainsString('3,000', $lines[1]);
+    }
+
+    /**
+     * 마일리지 수단 신청서는 현금분도 마일리지로 지급되므로(결함 1) 마일리지 한 줄로 합쳐 알린다.
+     *
+     * @effects refund_notification_splits_cash_and_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_points_method_refund_is_one_mileage_line(): void
+    {
+        $data = $this->refundCompletedData(RefundMethodEnum::POINTS, 10000, 2000);
+
+        $this->assertSame(RefundMethodEnum::POINTS->label(), $data['refund_method_label']);
+        $this->assertSame('', $data['refund_cash_amount']);
+        $this->assertStringContainsString('12,000', $data['refund_points_amount']);
+        $this->assertCount(1, explode("\n", $data['refund_breakdown']));
+        $this->assertStringContainsString('12,000', $data['refund_breakdown']);
+    }
+
+    /**
      * 클레임이 아닌 알림 유형은 앞선 필터 결과를 그대로 돌려주는지 검증합니다.
      *
      * @effects non_claim_notification_types_pass_through_untouched

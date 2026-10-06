@@ -198,11 +198,13 @@ class OrderOptionResource extends BaseApiResource
 
                 return ShippingType::getCachedByCode($method)?->getLocalizedName();
             }),
+            // 배송비는 행들의 합 — 병합 이전분으로 배송 행이 여럿이면 재계산이 id 가 가장 작은 행에만 몫을
+            // 쓰고 나머지는 0 으로 둔다(S-Q26-b). 첫 행만 읽으면 0 행이 앞설 때 몫이 사라진다.
             'shipping_amount' => $this->whenLoaded('shippings', function () {
-                return $this->roundToOrderCurrency($this->shippings->first()?->total_shipping_amount ?? 0);
+                return $this->roundToOrderCurrency((float) $this->shippings->sum('total_shipping_amount'));
             }),
             'shipping_amount_formatted' => $this->whenLoaded('shippings', function () {
-                return $this->formatOrderCurrency($this->shippings->first()?->total_shipping_amount ?? 0);
+                return $this->formatOrderCurrency((float) $this->shippings->sum('total_shipping_amount'));
             }),
             'carrier_name' => $this->whenLoaded('shippings', function () {
                 return $this->shippings->first()?->carrier?->getLocalizedName();

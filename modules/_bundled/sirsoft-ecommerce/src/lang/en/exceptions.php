@@ -8,6 +8,16 @@
 return [
     'exchange_rate_save_failed' => 'Failed to save exchange rate settings.',
     // Mileage validation exceptions
+    // Manual payment processing dialog — stock shortage (Q13)
+    'manual_paid' => [
+        'stock_insufficient' => 'The status cannot be changed because stock is insufficient. :reason',
+        'stock_insufficient_for_order' => 'Order :order_number — :reason Turn off "Deduct stock" to change it without deduction.',
+    ],
+    // Cancelled order reactivation — coupon conflict (Q27)
+    'reactivation' => [
+        'coupon_unavailable' => 'Order :order_number cannot be revived because its coupon (:coupons) was already used by another order or revoked.',
+        'coupon_unavailable_bulk' => 'No orders were changed because :count order(s) cannot be revived due to coupon conflicts. (Order numbers: :order_numbers)',
+    ],
     'mileage' => [
         'insufficient_balance' => 'Insufficient mileage balance available.',
         'use_exceeds_balance' => 'Cannot use more than your available mileage (:amount point).|Cannot use more than your available mileage (:amount points).',
@@ -16,6 +26,8 @@ return [
         'invalid_use_unit' => 'Mileage can only be used in units of :unit points.',
         'exceeds_max_use' => 'Exceeds the maximum usable limit. (up to :amount point)|Exceeds the maximum usable limit. (up to :amount points)',
         'base_currency_rule_missing' => 'Mileage cannot be used because the mileage usage unit for the base currency is not configured.',
+        'insufficient_for_payment_complete' => 'The member\'s mileage balance is too low to change order :order_number. :amount of mileage must be deducted for this order. Turn off "Deduct used mileage" to change it without deduction.',
+        'insufficient_for_payment_complete_bulk' => 'No orders were changed because :count order(s) lack enough member mileage balance. (Order numbers: :order_numbers)',
     ],
 
     'brand_not_found' => 'Brand not found.',
@@ -86,7 +98,10 @@ return [
     'cancel_quantity_invalid' => 'Cancel quantity is invalid.',
     'cancel_refund_negative' => 'Cancelling this item changes the applied discount conditions and increases the payment amount, so it cannot be cancelled.',
     'partial_cancel_not_supported' => 'The payment method for this order does not support partial cancellation. Only a full cancellation is possible.',
+    'partial_cancel_not_supported_vbank_awaiting_deposit' => 'Orders awaiting a virtual account deposit can only be cancelled in full. The issued amount cannot be changed, so a partial cancellation would prevent the deposit from being confirmed.',
     'pg_refund_failed' => 'PG refund processing failed. (:error)',
+    'pg_refund_unsupported' => 'This payment method does not go through a PG, so a PG refund is not possible. Change the refund method to a bank transfer.',
+    'pg_provider_inactive' => 'The payment plugin for this order (:provider) is inactive, so a PG refund is not possible. Activate the payment plugin or change the refund method to a bank transfer.',
     'order_cancel_failed' => 'Failed to cancel the order.',
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',
     'order_create_failed' => 'Failed to create the order.',
@@ -127,6 +142,11 @@ return [
     'claim_refund_exceeds_method_remaining' => 'The :method refund amount (:requested) exceeds the remaining balance for that method (:remaining). Please split the amount and try again.',
     'claim_refund_exceeds_cancellable' => 'The refund amount (:requested) exceeds the cancellable amount (:cancellable).',
     'claim_refund_points_requires_member' => 'Mileage refunds cannot be assigned to guest orders.',
+    'mileage_refund_failed' => 'The refund was not processed because returning or crediting mileage failed. Please try again shortly.',
+    'coupon_restore_failed' => 'Processing was stopped because restoring the coupon failed. Please try again shortly.',
+    'stock_restore_failed' => 'Processing was stopped because restoring stock failed. Please try again shortly.',
+    'refund_ledger_outside_transaction' => 'prepareLedger must be called inside a transaction — only a rollback can undo the refund totals saved before the PG call.',
+    'refund_ledger_commit_failed' => 'The PG refund went through but recording it failed. Press [Refund] again to record it without calling the PG.',
     'claim_refund_method_unavailable' => 'The selected refund method is not available for this order’s payment method.',
     'claim_tracking_incomplete' => 'Please enter both the carrier and the tracking number.',
     'claim_tracking_required' => 'Enter the carrier and tracking number to move this to collecting or shipping.',
@@ -157,8 +177,10 @@ return [
     'claim_refund_not_requestable' => 'A cancellation or refund cannot be requested for an item in the :status state.',
     'claim_payment_not_found' => 'The payment could not be found.',
     'claim_payment_not_pending' => 'The payment is not pending, so it cannot be processed.',
+    'claim_payment_withdrawn_during_approval' => 'The request was withdrawn, so the payment cannot be completed. The approved payment will be cancelled.',
     'claim_payment_not_required' => 'There is no charge to pay for this request.',
     'claim_payment_outstanding' => 'The request cannot be approved because an outstanding charge remains. Please approve it again after the payment is completed.',
+    'charge_deduct_insufficient' => 'The refund is smaller than the charge, so it cannot be deducted. Change the charge method to an additional payment.',
     'claim_payment_method_not_allowed' => 'The selected payment method cannot be used for claim charges.',
     'claim_payment_provider_unavailable' => 'No payment integration can approve claim charges. Please contact the administrator.',
     'claim_payment_currency_unavailable' => 'The payment currency of this order cannot be determined, so the payment cannot proceed. Please contact the administrator.',

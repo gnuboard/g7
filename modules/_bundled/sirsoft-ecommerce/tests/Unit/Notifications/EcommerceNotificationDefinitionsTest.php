@@ -34,6 +34,7 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         'new_order_admin',
         'order_confirmed_admin',
         'order_completed_admin',
+        'deposit_after_cancel_admin',
         'inquiry_received',
         'inquiry_replied',
         'order_custom_email',

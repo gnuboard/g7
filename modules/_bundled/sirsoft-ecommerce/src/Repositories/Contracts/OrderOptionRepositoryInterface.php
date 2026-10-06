@@ -140,7 +140,8 @@ interface OrderOptionRepositoryInterface
      * 특정 주문일의 상품 순매출을 합산합니다 (대시보드 집계).
      *
      * 매출 반영 상태(option_status)의 주문상품만 대상으로, 옵션별
-     * unit_price × (quantity − cancelled_quantity) 를 합산합니다.
+     * unit_price × quantity 를 합산합니다(quantity 는 분할 뒤 잔여 수량 — cancelled_quantity 는
+     * 이력이라 빼지 않는다).
      * 날짜는 주문(orders.ordered_at) 기준으로 귀속합니다.
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
@@ -151,8 +152,8 @@ interface OrderOptionRepositoryInterface
     /**
      * 특정 주문일의 판매 수량을 합산합니다 (대시보드 집계).
      *
-     * 매출 반영 상태(option_status)의 주문상품만 대상으로,
-     * (quantity − cancelled_quantity) 를 합산합니다.
+     * 매출 반영 상태(option_status)의 주문상품만 대상으로, quantity 합을 냅니다
+     * (cancelled_quantity 는 이력 카운터라 빼지 않는다).
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return int 판매 수량 합계

@@ -16,6 +16,7 @@ return [
         'refund_restore' => 'Refund Restore',
         'order_cancel_restore' => 'Order Cancel Restore',
         'earn_cancel' => 'Earn Cancel',
+        'refund_credit' => 'Refund Credit',
     ],
 
     // Mileage earn trigger (matches MileageEarnTriggerEnum values)
@@ -389,7 +390,7 @@ return [
     'refund_method' => [
         'pg' => 'PG Refund',
         'bank' => 'Bank Transfer Refund',
-        'points' => 'Points Refund',
+        'points' => 'Refund as mileage',
     ],
 
     // Refund Priority (matches RefundPriorityEnum values)

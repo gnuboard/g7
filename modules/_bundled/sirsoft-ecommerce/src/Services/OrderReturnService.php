@@ -67,11 +67,12 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
  *    FK(cascade)로 참조하므로 신청 이력이 함께 사라지고, 합쳐진 행은 어느 신청서 몫인지
  *    구분되지 않아 신청서 단위 복귀·완료가 불가능해진다.
  *
- * ## 주문 상태는 건드리지 않는다
+ * ## 주문 상태는 진행 중에는 건드리지 않는다
  *
  * 코스 4종은 `OrderStatusEnum::syncExcludedStatuses()` 에 속해 주문 상태 동기화 대상이
- * 아니다. 전량 반품 신청에서 `OrderOptionService::syncParentOrderStatus()` 를 부르면 활성
- * 옵션이 0건이 되어 **주문이 취소로 전이**되므로 이 서비스는 그 동기화를 부르지 않는다.
+ * 아니다. 신청·진행 단계는 주문 상태를 바꾸지 않는다. 완료 처리 끝에서만, 살아 있는 상품이
+ * 하나도 남지 않으면 주문을 반품완료로 바꾼다(`OrderOptionService::syncFullyReturnedOrderStatus()`) —
+ * 부분 반품은 주문 상태를 그대로 둔다.
  *
  * ## 완료 처리와 환불신청서 접수는 분리돼 있다 (D26)
  *
@@ -1388,7 +1389,67 @@ class OrderReturnService
             $updates['processed_by'] = $processedBy;
         }
 
+        // 결과 청구 방식이 「환불금에서 차감」 이면 신청 경로와 같은 비교를 한다(S4) — 허용 목록만 보면 환불액
+        // 2,000원인 반품에 회수비 6,000원을 차감으로 걸 수 있고, 부족분 4,000원은 어디에도 청구되지 않는다.
+        $finalMethod = array_key_exists('charge_method', $updates) ? $updates['charge_method'] : $return->charge_method;
+        $finalFee = (float) ($updates['claim_shipping_fee'] ?? $return->claim_shipping_fee);
+        $return->loadMissing(['order', 'returnOptions']);
+        $this->assertDeductCoversCharge(
+            $return->order,
+            $this->liveReturnItems($return),
+            $finalFee,
+            $finalMethod instanceof ClaimChargeMethodEnum ? $finalMethod : null,
+            $this->refundPriorityOf($return),
+        );
+
         return $this->returnRepository->update($return, $updates);
+    }
+
+    /**
+     * 「환불금에서 차감」 이 환불액으로 청구액을 덮는지 확인합니다. (S4)
+     *
+     * 차감 전(청구 방식 없음) 환불액과 청구액을 비교한다 — 차감 후로 판정하면 0 으로 잘려 「차감했는데 환불이 0」 과
+     * 「원래 환불이 0」 이 구분되지 않는다(신청 경로 `assertChargeMethodUsable` 와 같은 식).
+     *
+     * @param  Order  $order  주문
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $claimItems  환불 대상 행과 수량
+     * @param  float  $fee  청구액
+     * @param  ClaimChargeMethodEnum|null  $method  청구 방식
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 환불액이 청구액보다 적을 때
+     */
+    protected function assertDeductCoversCharge(Order $order, array $claimItems, float $fee, ?ClaimChargeMethodEnum $method, RefundPriorityEnum $refundPriority): void
+    {
+        if ($method !== ClaimChargeMethodEnum::DEDUCT_FROM_REFUND || $fee <= 0 || $claimItems === []) {
+            return;
+        }
+
+        $baseline = $this->adjustmentService->preview($order, new ReturnAdjustment(returnItems: $claimItems), $refundPriority);
+
+        if ($baseline->getTotalRefundAmount() < $fee) {
+            throw OrderClaimException::chargeDeductInsufficient();
+        }
+    }
+
+    /**
+     * 반려·철회되지 않은 반품 상품 행을 환불 대상 형태로 모읍니다.
+     *
+     * @param  OrderReturn  $return  반품 신청서 (returnOptions 로드)
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 대상 행과 수량
+     */
+    protected function liveReturnItems(OrderReturn $return): array
+    {
+        $items = [];
+        foreach ($return->returnOptions as $item) {
+            if (in_array($item->option_status, [ReturnStatusEnum::REJECTED, ReturnStatusEnum::WITHDRAWN], true)) {
+                continue;
+            }
+            $items[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->return_quantity];
+        }
+
+        return $items;
     }
 
     /**
@@ -1527,6 +1588,16 @@ class OrderReturnService
             // 담지 못한다(환불신청서는 신청서당 한 건이다).
             $return->load('returnOptions.refund');
             $claimItems = $this->completedClaimItems($return);
+
+            // 완료 시점의 환불액이 차감 청구액보다 작아졌으면(상품 반려·일부 수량) 완료하지 않는다(S4) — 운영자는
+            // 청구 방식을 추가결제로 바꾸고 결제를 받은 뒤 완료한다.
+            $ownCompleted = [];
+            foreach ($return->returnOptions as $item) {
+                if ($item->option_status === ReturnStatusEnum::COMPLETED) {
+                    $ownCompleted[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->return_quantity];
+                }
+            }
+            $this->assertDeductCoversCharge($order, $ownCompleted, (float) $return->claim_shipping_fee, $return->charge_method, $this->refundPriorityOf($return));
             // 이미 환불된 몫 — 다른 신청서의 완료분과 **이 신청서의 앞 회차에서 환불신청서에 담긴
             // 완료분**(S7). 재계산 기준선에는 들어가지만 이번 환불신청서에는 들어가면 안 된다(중복
             // 환불). 차분의 뺄 값으로만 쓴다.
@@ -1584,6 +1655,9 @@ class OrderReturnService
 
             // 살아 있는 상품이 없고 완료된 상품이 있을 때만 헤더가 완료된다(S8) — 일부만 완료한 라운드에서
             // 헤더까지 완료로 넘기면 남은 상품의 회수·완료 경로가 사라진다.
+            // 반품완료 행이 모두 기록된 뒤 — 살아 있는 상품이 하나도 없으면 주문도 반품완료다(부분 반품·진행 중 클레임은 그대로).
+            $this->orderOptionService->syncFullyReturnedOrderStatus((int) $order->id);
+
             if ($isFullyCompleted) {
                 $updates['return_status'] = ReturnStatusEnum::COMPLETED;
                 $updates['completed_at'] = now();
@@ -2690,7 +2764,8 @@ class OrderReturnService
             'refund_source_id' => $return->id,
             'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
             'refund_status' => RefundStatusEnum::REQUESTED,
-            'refund_method' => $this->refundExecutionService->determineRefundMethod($order),
+            // 돌려줄 현금이 없는 회원 주문은 결제수단과 무관하게 「마일리지」다(결함 4).
+            'refund_method' => $this->refundExecutionService->refundMethodForClaim($order),
             'reason_code' => $return->reason_code,
             'reason_detail' => $return->reason_detail,
             'fault_type' => $return->fault_type,
@@ -2712,6 +2787,8 @@ class OrderReturnService
             'refund_bank_code' => $return->refund_bank_code,
             'refund_bank_account' => $return->refund_bank_account,
             'refund_bank_holder' => $return->refund_bank_holder,
+            // 교환으로 받은 상품을 반품하면 그 교환 때 낸 상위 옵션 차액도 낸 수단 그대로 돌려준다(S2·Q9)
+            'exchange_difference_refunds' => app(ExchangeDifferenceRefundPlanner::class)->plan($order, $claimItems) ?: null,
         ]);
 
         foreach ($this->refundExecutionService->buildRefundOptionRows($order, $claimItems, $result) as $row) {

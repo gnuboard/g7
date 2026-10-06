@@ -247,7 +247,9 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
         // 미수납 판정용 `claimPayments`. 상품 요약은 헤더 `items_snapshot` 이 담당하므로
         // 상품 행·이미지 관계는 싣지 않는다 (목록 응답의 하위 컬렉션 규율).
         // 상품 행은 운송장 요약·회수 지연·환불 미접수 판정이 읽는 칸만 싣는다(송장은 행에 있다).
-        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments', 'exchangeOptions:id,order_exchange_id,order_option_id,option_status,exchange_quantity,price_difference,collection_carrier_id,collection_tracking_number,collected_at,unreturned_at,redelivery_carrier_id,redelivery_tracking_number,redelivered_at,completed_at'])
+        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments', 'exchangeOptions:id,order_exchange_id,order_option_id,option_status,exchange_quantity,price_difference,collection_carrier_id,collection_tracking_number,collected_at,unreturned_at,redelivery_carrier_id,redelivery_tracking_number,redelivered_at,completed_at',
+            // 환불 진행 배지(보완 5) — 출처 축, 페이지당 한 번.
+            'refunds:id,order_id,refund_source_type,refund_source_id,refund_number,refund_status'])
             // 환불 미접수 뱃지(D9)의 근거 — 이 교환에서 파생된 살아 있는 차액 환불신청서 수.
             ->withLiveRefundCount();
 

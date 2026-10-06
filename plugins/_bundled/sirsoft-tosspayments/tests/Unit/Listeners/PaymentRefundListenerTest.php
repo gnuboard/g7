@@ -618,6 +618,87 @@ class PaymentRefundListenerTest extends PluginTestCase
     }
 
     /**
+     * 부분취소 사전 판정: 에스크로·달이 바뀐 휴대폰 결제는 부분취소를 지원하지 않는다 (P-D7)
+     *
+     * @effects partial_cancel_support_follows_toss_constraints
+     *
+     * @return void 반환값 없음
+     */
+    public function test_partial_cancel_support_follows_toss_constraints(): void
+    {
+        $listener = app(PaymentRefundListener::class);
+
+        $card = $this->createTossOrder(['transaction_id' => 'pk_pd7_card']);
+        $this->assertTrue($listener->supportsPartialCancel(true, $card->payment));
+
+        $escrow = $this->createTossOrder(['transaction_id' => 'pk_pd7_escrow', 'is_escrow' => true]);
+        $this->assertFalse($listener->supportsPartialCancel(true, $escrow->payment));
+
+        $phoneLastMonth = $this->createTossOrder(['transaction_id' => 'pk_pd7_phone_old', 'payment_method' => 'phone', 'paid_at' => now('Asia/Seoul')->subMonthNoOverflow()->startOfMonth()->addDays(2)]);
+        $this->assertFalse($listener->supportsPartialCancel(true, $phoneLastMonth->payment), '달이 바뀐 휴대폰 결제는 취소할 수 없다');
+
+        $phoneThisMonth = $this->createTossOrder(['transaction_id' => 'pk_pd7_phone_now', 'payment_method' => 'phone', 'paid_at' => now()]);
+        $this->assertTrue($listener->supportsPartialCancel(true, $phoneThisMonth->payment));
+
+        $other = $this->createTossOrder(['transaction_id' => 'pk_pd7_other', 'pg_provider' => 'other_pg', 'is_escrow' => true]);
+        $this->assertTrue($listener->supportsPartialCancel(true, $other->payment), '다른 PG 결제는 판정하지 않는다');
+    }
+
+    /**
+     * 멱등키: 같은 환불 레코드라도 금액이 다르면 키가 다르다 (P-D2)
+     *
+     * 운영자가 금액을 고쳐 다시 실행하면 같은 레코드로 다른 금액의 취소가 나간다. 키가 레코드 id 뿐이면 토스는
+     * 두 번째 요청을 첫 요청의 재전송으로 보고 **처음 금액의 응답을 돌려준다** — 고친 금액은 취소되지 않는다.
+     *
+     * @effects cancel_idempotency_key_changes_with_amount_and_refund_account
+     *
+     * @return void 반환값 없음
+     */
+    public function test_idempotency_key_differs_when_the_amount_differs(): void
+    {
+        $this->fakeCancelApi();
+        $order = $this->createTossOrder(['paid_amount_local' => 20000]);
+        $refund = $this->createRefund($order, 10000);
+        $listener = app(PaymentRefundListener::class);
+
+        $listener->processRefund(['success' => false], $order, $order->payment, 10000.0, null, $refund);
+        $listener->processRefund(['success' => false], $order, $order->payment->fresh(), 5000.0, null, $refund);
+
+        $keys = collect(Http::recorded())->map(fn ($pair) => $pair[0]->header('Idempotency-Key')[0] ?? null)->all();
+        $this->assertCount(2, $keys);
+        $this->assertStringStartsWith('g7-refund-'.$refund->id.'-', $keys[0]);
+        $this->assertNotSame($keys[0], $keys[1], '금액이 다른 두 취소가 같은 멱등키를 썼다');
+    }
+
+    /**
+     * 자기 결제의 환불 결과에는 `handled=true` 를 싣고, 다른 PG 결제는 결과를 그대로 넘긴다 (P-D6)
+     *
+     * 모듈은 `handled` 로 「이 주문의 결제 플러그인이 응답했는가」 를 가린다 — 없으면 비활성 플러그인의 주문도
+     * 다른 플러그인이 구독만 하고 있으면 「PG 환불 실패」 로 뭉뚱그려졌다.
+     *
+     * @effects refund_result_marks_handled_only_for_own_payment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_own_payment_result_is_marked_handled(): void
+    {
+        $this->fakeCancelApi();
+        $order = $this->createTossOrder();
+
+        $own = app(PaymentRefundListener::class)->processRefund(
+            ['success' => false, 'handled' => false], $order, $order->payment, 10000.0
+        );
+        $this->assertTrue($own['handled']);
+        $this->assertTrue($own['success']);
+
+        $other = $this->createTossOrder(['pg_provider' => 'other_pg', 'transaction_id' => 'other_payment_key']);
+        $passed = app(PaymentRefundListener::class)->processRefund(
+            ['success' => false, 'handled' => false], $other, $other->payment, 10000.0
+        );
+        $this->assertFalse($passed['handled']);
+    }
+
+    /**
      * API 오류 시 실패 결과를 반환하는지 확인
      *
      * @effects refund_api_error_returns_a_failure_result_with_the_pg_error_code

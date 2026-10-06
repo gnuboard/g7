@@ -65,6 +65,7 @@ effects:
   - bulk_change_falls_back_to_original_quantity_when_unspecified
   - bulk_change_success_refetches_order_and_logs_and_clears_selection
   - bulk_change_failure_shows_error_toast
+  - bulk_change_failure_keeps_confirm_modal_open
   # ⑤ 관리자 메모 · 변경 수량
   - admin_memo_patches_order_and_confirms
   - admin_memo_skips_api_without_order_id

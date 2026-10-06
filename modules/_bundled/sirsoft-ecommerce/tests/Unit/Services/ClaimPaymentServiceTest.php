@@ -739,7 +739,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
 
         $this->assertClaimException('claim_payment_amount_mismatch', fn () => $this->service->approvePgPayment($payment, []));
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
-        $this->assertSame('AMOUNT_MISMATCH', $payment->fresh()->pg_error_code);
+        // 이 가짜 PG 는 망취소를 지원하지 않는다 — 승인된 돈이 결제사에 묶였으므로 결제 건에는 망취소 실패가 남는다(B4).
+        // 금액 불일치 사유는 위 예외 키가 말한다.
+        $this->assertSame('VOID_FAILED', $payment->fresh()->pg_error_code);
     }
 
     // ================================================================

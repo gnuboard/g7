@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -978,6 +979,49 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
             $seen[0],
             '훅의 직전 상태는 잠금 시점 값이어야 한다 — 낡은 값을 읽으면 활동로그 전/후가 어긋난다'
         );
+    }
+
+    /**
+     * 「돌려줄 현금이 남았는가」 진리표 — 헤더 누적과 결제행 수납액 두 장부를 본다(결함 4 · 00 ⑭).
+     *
+     * 결제행 축은 결제가 실제로 끝난 상태(`paid`·`partial_cancelled`)일 때만 본다 — 결제행은 생성될 때부터
+     * `paid_amount_base` 에 결제예정금액이 들어 있어, 상태를 보지 않으면 결제금액 기록을 끈 수동 결제완료
+     * 주문(Q13)을 「현금 있음」으로 오판한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects has_cash_to_return_reads_header_and_payment_ledgers
+     */
+    public function test_has_cash_to_return_reads_header_and_payment_ledgers(): void
+    {
+        $order = $this->paidClaimOrder();
+        $payment = $order->payment;
+
+        // ① 결제 전 주문 → 돌려줄 돈이 없다
+        $order->forceFill(['order_status' => OrderStatusEnum::PENDING_PAYMENT])->save();
+        $this->assertFalse($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ② 헤더 0 + 결제행 0 → 없다 (마일리지 전액 결제)
+        $order->forceFill(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE, 'total_paid_amount' => 0, 'total_refunded_amount' => 0])->save();
+        $payment->forceFill(['paid_amount_base' => 0, 'cancelled_amount' => 0, 'payment_status' => PaymentStatusEnum::PAID])->save();
+        $this->assertFalse($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ③ 헤더 0 + 결제완료 결제행 수납 55,000 → 있다 (수동 결제완료로 헤더가 비어도 결제된 돈)
+        $payment->forceFill(['paid_amount_base' => 55000])->save();
+        $this->assertTrue($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ④ 헤더 0 + 결제 전 결제행(결제예정금액만 든) → 없다 (00 ⑭)
+        $payment->forceFill(['payment_status' => PaymentStatusEnum::READY])->save();
+        $this->assertFalse($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ⑤ 헤더 결제액 = 환불 누적(소수 오차 포함) → 없다
+        $payment->forceFill(['paid_amount_base' => 0, 'payment_status' => PaymentStatusEnum::PAID])->save();
+        $order->forceFill(['total_paid_amount' => 0.3, 'total_refunded_amount' => 0.1 + 0.2])->save();
+        $this->assertFalse($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ⑥ 헤더 잔여 > 0 → 있다
+        $order->forceFill(['total_paid_amount' => 29000, 'total_refunded_amount' => 10000])->save();
+        $this->assertTrue($this->service->hasCashToReturn($order->fresh('payment')));
     }
 
     /**

@@ -891,8 +891,10 @@
                                                         "text": "{{row.shipping_policy_name}}"
                                                     },
                                                     {
+                                                        "comment": "취소된 줄은 배송비를 지지 않는다(행 몫 0 — 부분취소·재활성 재계산이 0 으로 쓴다). 「무료배송 0원」 으로 읽히지 않게 숨긴다.",
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{row.option_status !== 'cancelled'}}",
                                                         "props": {
                                                             "className": "text-tertiary block"
                                                         },
@@ -901,6 +903,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{row.option_status !== 'cancelled'}}",
                                                         "props": {
                                                             "className": "text-xs text-gray-600 dark:text-gray-300 block"
                                                         },

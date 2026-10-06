@@ -127,6 +127,33 @@ enum RefundSourceTypeEnum: string
     }
 
     /**
+     * 상품을 취소로 뺀 환불의 출처인지 여부를 반환합니다. (재활성 회수 판정 — Q14)
+     *
+     * 취소한 주문·상품을 되살릴 때 「취소로 돌려준 돈」만 다시 받는다. 반품·교환으로 돌려준 몫은
+     * 상품이 반품·교환 상태로 남아 되살아나지 않으므로 대상이 아니다. `ownsOptionQuantities()`
+     * 는 DIRECT·ADMIN 만이라 구형 CANCEL 출처를 빠뜨린다 — 그래서 별도 축으로 둔다.
+     *
+     * @return bool 취소 출처면 true
+     */
+    public function isCancellationSource(): bool
+    {
+        return ! in_array($this, [self::RETURN, self::EXCHANGE], true);
+    }
+
+    /**
+     * 취소 출처 값 목록을 반환합니다. (Repository 질의용)
+     *
+     * @return array<int, string> 출처 값 목록
+     */
+    public static function cancellationSourceValues(): array
+    {
+        return array_values(array_map(
+            fn (self $case) => $case->value,
+            array_filter(self::cases(), fn (self $case) => $case->isCancellationSource()),
+        ));
+    }
+
+    /**
      * 모든 값 배열을 반환합니다.
      *
      * @return array<string> 출처 유형 값 배열

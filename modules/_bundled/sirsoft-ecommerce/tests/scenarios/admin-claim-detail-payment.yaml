@@ -58,6 +58,9 @@ exclusions:
   - { claim_type: return, cancellable: present, reason: "위와 같다 — 반품의 환불은 완료 처리가 접수한 환불신청서가 맡는다 (D26)" }
 
 effects:
+  - claim_linked_refunds_listed_from_source_axis   # #747 보완 5
+  - claim_linked_refunds_empty_notice   # #747 보완 5
+  - claim_header_links_source_and_result_cancel   # #747 보완 5
   # 봉투 — 게이트 폭과 전달 통로 (①·②)
   - claim_payment_reads_detail_envelope_only
   - claim_payment_order_context_is_pruned
@@ -170,6 +173,7 @@ effects:
   - admin_claim_settlement_card_hides_comparison_for_cancel
   - admin_claim_detail_nested_partial_refs_are_sibling_relative
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimDetailHandlers.test.ts

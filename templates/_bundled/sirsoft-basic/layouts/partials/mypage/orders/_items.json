@@ -590,10 +590,10 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "적용 배송정책",
+                                                    "comment": "적용 배송정책 — 「그 상품만 샀을 때 배송비」는 부분취소·재활성 재계산 때 남은 수량 기준으로 갱신된다. 취소된 행은 남은 행과 같은 상품 옵션을 공유해 그 갱신된 배송비가 붙으므로(이미 취소한 상품에 「2,500원」), 취소 행에서는 줄을 세우지 않는다.",
                                                     "type": "basic",
                                                     "name": "Div",
-                                                    "if": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
+                                                    "if": "{{item.option_status !== 'cancelled' && (order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
                                                     "props": {
                                                         "className": "mt-1.5 flex items-center gap-1.5"
                                                     },

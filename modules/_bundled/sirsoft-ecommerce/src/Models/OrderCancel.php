@@ -39,6 +39,8 @@ class OrderCancel extends Model
         'shipping_snapshot',
         'cancelled_by',
         'cancelled_at',
+        'reactivated_quantity',
+        'reactivated_at',
     ];
 
     /**
@@ -55,7 +57,39 @@ class OrderCancel extends Model
             'items_snapshot' => 'array',
             'shipping_snapshot' => 'array',
             'cancelled_at' => 'datetime',
+            'reactivated_quantity' => 'integer',
+            'reactivated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * 이 취소로 빠진 상품 수량 합을 반환합니다. (취소 시점 스냅샷 기준)
+     *
+     * @return int 취소 수량 합
+     */
+    public function totalCancelQuantity(): int
+    {
+        return (int) collect($this->items_snapshot ?? [])->sum(fn ($item) => (int) ($item['quantity'] ?? 0));
+    }
+
+    /**
+     * 이 취소의 상품이 재활성된 적이 있는지 반환합니다. (Q29)
+     *
+     * @return bool 재활성 기록이 있으면 true
+     */
+    public function isReactivated(): bool
+    {
+        return $this->reactivated_at !== null;
+    }
+
+    /**
+     * 이 취소의 상품 중 일부만 재활성됐는지 반환합니다. (Q29)
+     *
+     * @return bool 재활성 수량이 취소 수량보다 적으면 true
+     */
+    public function isPartiallyReactivated(): bool
+    {
+        return $this->isReactivated() && (int) $this->reactivated_quantity < $this->totalCancelQuantity();
     }
 
     /**
@@ -139,6 +173,21 @@ class OrderCancel extends Model
     }
 
     /**
+     * 이 취소 이력의 사유 코드가 등록된 카탈로그 유형을 반환합니다. (사유 라벨 해석의 단일 출처)
+     *
+     * 환불 실행이 남긴 취소 이력은 환불신청서의 사유 코드를 물려받는다. 반품·교환에서 파생된
+     * 환불이면 그 코드는 반품·교환 카탈로그에만 있으므로(`defective_product` 등), 환불 카탈로그만
+     * 보면 원시 코드가 화면에 나온다. 판정은 연결된 환불신청서의 `reasonCatalogType()` 에 맡기고,
+     * 연결이 없으면(직접 취소) 환불 카탈로그가 정본이다.
+     *
+     * @return string 카탈로그 유형 값
+     */
+    public function reasonCatalogType(): string
+    {
+        return $this->refund?->reasonCatalogType() ?? ClaimTypeEnum::REFUND->value;
+    }
+
+    /**
      * 환불 사유 라벨을 반환합니다.
      *
      * DB에서 클레임 사유를 조회하여 다국어 이름을 반환합니다.
@@ -147,7 +196,7 @@ class OrderCancel extends Model
      */
     public function getRefundReasonLabel(): string
     {
-        $reason = ClaimReason::where('type', 'refund')
+        $reason = ClaimReason::where('type', $this->reasonCatalogType())
             ->where('code', $this->cancel_reason_type)->first();
 
         return $reason ? $reason->getLocalizedName() : ($this->cancel_reason_type ?? '');

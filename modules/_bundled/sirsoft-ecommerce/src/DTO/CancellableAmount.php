@@ -39,6 +39,15 @@ class CancellableAmount
     public const METHOD_MILEAGE = 'mileage';
 
     /**
+     * 결제수단 종류 — 재활성으로 다시 받은 현금 (주문 메타 기반, 결제행 없음 — Q14·Q24)
+     *
+     * 취소 때 PG 로 돌려준 결제는 결제행에서 이미 취소됐다. 재활성으로 그 금액을 「다시 받은 것」으로
+     * 기록하면 주문 장부에는 돌려줄 수 있는 현금이 생기지만 결제행 한도는 0 이다. 이 몫은 계좌·마일리지로
+     * 돌려줄 수 있는 현금 한도로 따로 센다(PG 재취소는 실패할 수 있다 — 재활성 확인 창 경고).
+     */
+    public const METHOD_REACTIVATED_CASH = 'reactivated_cash';
+
+    /**
      * @param  float  $amount  최종 취소 가능 금액 (기본 통화)
      * @param  float  $domainRefundable  ① 도메인 환불 대상 금액
      * @param  float  $paymentCapacity  ② 결제수단 잔여 한도 합계 (기본 통화 환산)

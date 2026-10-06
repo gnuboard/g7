@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
@@ -594,6 +595,18 @@ class PaymentCallbackController
             $order = $order->fresh('payment') ?? $order;
 
             $contextError = $this->validateVbankNotifyContext($order, $validated, $tno, $ipgmMny);
+
+            // 취소된 주문의 입금(P-D1 · Q11) — 주문은 되살리지 않고 기록·운영자 알림만 남긴 뒤 0000 으로 재통보를 멈춘다.
+            // 예전에는 9999(재통보 요청)로 답해 같은 입금이 10번 다시 왔고, 어디에도 남지 않았다. 발급 때 받은 거래번호와
+            // 맞는 통보만 기록한다(통보 출처는 KCP IP 로 이미 걸렀다).
+            if ($contextError === 'order_cancelled'
+                && $order->payment !== null
+                && hash_equals((string) $order->payment->transaction_id, $tno)) {
+                app(DepositAfterCancelRecorder::class)->record($order, (float) $ipgmMny, 'nhnkcp', $tno);
+
+                return $this->kcpNotifyResponse();
+            }
+
             if ($contextError !== null) {
                 Log::warning('KCP: vbank notify context mismatch — retry requested', [
                     'reason' => $contextError,

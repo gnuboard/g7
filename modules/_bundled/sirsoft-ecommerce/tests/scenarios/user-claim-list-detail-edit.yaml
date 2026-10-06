@@ -67,6 +67,7 @@ exclusions:
   - { screen: edit, entry: none, reason: "수정은 언제나 목록 또는 상세의 [수정] 버튼으로 들어온다 — 주소를 직접 입력한 진입도 그 둘과 같은 화면이다" }
 
 effects:
+  - user_claim_detail_shows_follow_up_refunds   # #747 보완 5
   # 목록 — 서브탭과 목록 컨텍스트 왕복 (①)
   - claim_list_type_tabs_follow_the_query
   - claim_list_tab_switch_does_not_inherit_the_previous_page
@@ -197,6 +198,8 @@ effects:
   - user_estimate_refund_is_422_for_claim_course_items              # 코스에 잠긴 상품의 회원 취소 미리보기 422
   - user_claim_pagination_meta_contract                             # pagination 7키 계약
 test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-claim-linked-refunds.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentMethodChoicesTest.php

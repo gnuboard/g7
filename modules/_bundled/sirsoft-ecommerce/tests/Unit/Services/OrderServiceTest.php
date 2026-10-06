@@ -9,12 +9,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use Mockery\MockInterface;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidEffectsReport;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidTransition;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -27,6 +32,13 @@ class OrderServiceTest extends ModuleTestCase
     protected OrderService $service;
 
     protected $mockRepository;
+
+    /**
+     * 결제 처리 서비스 대역 (수동 결제 처리 효과)
+     *
+     * @var MockInterface
+     */
+    protected $mockProcessing;
 
     /**
      * 주문 리포지토리 목과 실제 재고·첨부 서비스를 주입해 주문 서비스를 준비하고, 옵션 상태 동기화 전후 조회와 신청 상품 행 정리 호출은 기본 허용으로 둔다.
@@ -47,11 +59,19 @@ class OrderServiceTest extends ModuleTestCase
         $this->mockRepository->shouldReceive('deleteClaimItemRows')->andReturn(0)->byDefault();
         $mockUserAddressRepository = Mockery::mock(UserAddressRepositoryInterface::class);
 
+        // 수동 결제 처리 세 항목(Q13)은 잠근 주문 행을 DB 에서 다시 읽는다 — 저장소를 목으로 둔 이 단위
+        // 테스트에서는 그 단계를 대역으로 바꾼다(그 동작은 ManualPaidTransitionEffectsTest 가 실제 경로로 잰다).
+        $this->mockProcessing = Mockery::mock(OrderProcessingService::class);
+        $this->mockProcessing->shouldReceive('applyManualPaidTransitionEffects')
+            ->andReturnUsing(fn ($order, ManualPaidTransition $t, ManualPaidOptions $o) => ManualPaidEffectsReport::none($t, $o))
+            ->byDefault();
+
         $this->service = new OrderService(
             $this->mockRepository,
             $mockUserAddressRepository,
             app(StockService::class),
             app(ClaimAttachmentService::class),
+            $this->mockProcessing,
         );
     }
 

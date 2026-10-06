@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MileageTransactionListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -32,6 +33,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class MoneyHookTransactionBoundaryTest extends ModuleTestCase
 {
+    /**
+     * 테스트 픽스처와 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,7 +51,9 @@ class MoneyHookTransactionBoundaryTest extends ModuleTestCase
      *
      * 커밋 이후로 미뤄지면 이 단언이 실패한다.
      *
-     * @return void
+     * @return void 반환값 없음
+     *
+     * @effects coupon_deduction_is_visible_inside_caller_transaction
      */
     public function test_coupon_deduction_is_visible_inside_caller_transaction(): void
     {
@@ -71,7 +79,9 @@ class MoneyHookTransactionBoundaryTest extends ModuleTestCase
      *
      * 훅이 커밋 뒤에 실행되면 주문 행이 남은 채 예외만 올라온다 — 이 테스트가 그 상태를 잡는다.
      *
-     * @return void
+     * @return void 반환값 없음
+     *
+     * @effects taken_coupon_rolls_back_caller_transaction
      */
     public function test_taken_coupon_rolls_back_caller_transaction(): void
     {
@@ -111,7 +121,9 @@ class MoneyHookTransactionBoundaryTest extends ModuleTestCase
     /**
      * 금전 이동 리스너는 동기 실행을 명시 선언해야 합니다.
      *
-     * @return void
+     * @return void 반환값 없음
+     *
+     * @effects money_listeners_declare_sync_execution
      */
     public function test_money_listeners_declare_sync_execution(): void
     {
@@ -121,6 +133,10 @@ class MoneyHookTransactionBoundaryTest extends ModuleTestCase
             [CouponRestoreListener::class, 'sirsoft-ecommerce.coupon.restore'],
             [MileageTransactionListener::class, 'sirsoft-ecommerce.mileage.use'],
             [MileageTransactionListener::class, 'sirsoft-ecommerce.mileage.restore'],
+            [MileageTransactionListener::class, 'sirsoft-ecommerce.mileage.refund_credit'],
+            // 탈퇴·삭제의 마일리지 소멸 기록(E3) — 회원 행이 지워지기 전, 그 트랜잭션 안에서 돌아야 한다.
+            [UserMileageCleanupListener::class, 'core.user.before_withdraw'],
+            [UserMileageCleanupListener::class, 'core.user.before_delete'],
         ];
 
         foreach ($cases as [$listener, $hook]) {

@@ -248,7 +248,9 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
         // 상품 요약은 헤더 `items_snapshot` 이 담당한다 (목록 응답의 하위 컬렉션 규율).
         // 상품 행은 운송장 요약·환불 미접수 판정이 읽는 칸만 싣는다(송장은 행에 있다).
         // 환불 미접수 뱃지(D9)는 행에 연결된 환불신청서의 상태까지 본다(반려·철회면 미연결로 센다).
-        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments', 'returnOptions:id,order_return_id,order_option_id,option_status,return_quantity,collection_carrier_id,collection_tracking_number,collected_at,refund_id,completed_at', 'returnOptions.refund:id,refund_status']);
+        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments', 'returnOptions:id,order_return_id,order_option_id,option_status,return_quantity,collection_carrier_id,collection_tracking_number,collected_at,refund_id,completed_at', 'returnOptions.refund:id,refund_status',
+            // 환불 진행 배지(보완 5) — 출처 축, 페이지당 한 번. 외래키(refund_source_id)를 select 에 꼭 넣는다.
+            'sourcedRefunds:id,order_id,refund_source_type,refund_source_id,refund_number,refund_status']);
 
         $this->applyAdminClaimFilters($query, $filters);
 

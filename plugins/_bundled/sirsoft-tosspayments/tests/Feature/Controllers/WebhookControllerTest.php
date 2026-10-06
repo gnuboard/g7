@@ -6,11 +6,14 @@ use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
@@ -40,9 +43,10 @@ class WebhookControllerTest extends PluginTestCase
      *
      * @param  string  $secret  저장할 웹훅 secret
      * @param  int  $totalAmount  주문 총액
+     * @param  int  $optionCount  주문 상품 행 수 (0 이면 상품 행 없음 — 기존 테스트 기본값)
      * @return Order 생성된 주문
      */
-    private function createWaitingDepositOrder(string $secret = self::SECRET, int $totalAmount = 50000): Order
+    private function createWaitingDepositOrder(string $secret = self::SECRET, int $totalAmount = 50000, int $optionCount = 0): Order
     {
         $user = User::factory()->create();
 
@@ -93,6 +97,17 @@ class WebhookControllerTest extends PluginTestCase
             ],
         ]);
 
+        for ($i = 0; $i < $optionCount; $i++) {
+            OrderOptionFactory::new()->create([
+                'order_id' => $order->id,
+                'option_status' => OrderStatusEnum::PENDING_ORDER,
+                'quantity' => 1,
+                'unit_price' => intdiv($totalAmount, $optionCount),
+                'subtotal_price' => intdiv($totalAmount, $optionCount),
+                'subtotal_paid_amount' => intdiv($totalAmount, $optionCount),
+            ]);
+        }
+
         return $order;
     }
 
@@ -134,6 +149,47 @@ class WebhookControllerTest extends PluginTestCase
         ]);
 
         $response->assertOk();
+        $order->refresh();
+        $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+        $this->assertSame(PaymentStatusEnum::PAID->value, $order->payment->payment_status->value);
+    }
+
+    /**
+     * 입금 전 가상계좌의 부분취소는 거절되고, 원래 금액 입금통보로 결제가 완료된다. (Q17)
+     *
+     * 발급된 가상계좌의 입금액은 바꿀 수 없다. 부분취소가 통과하면 결제행이 부분취소로 바뀌어 이 웹훅이
+     * `waiting_deposit` 가드에서 200 으로 조용히 무시되고, 고객이 입금해도 주문은 영영 미결제로 남았다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario webhook_status=done, webhook_secret=match, replay=first
+     *
+     * @effects deposit_done_completes_payment
+     */
+    public function test_deposit_done_after_a_rejected_partial_cancel_completes_payment(): void
+    {
+        $this->mockPluginSettings();
+        $order = $this->createWaitingDepositOrder(optionCount: 2);
+        $first = $order->options()->orderBy('id')->first();
+
+        try {
+            app(OrderCancellationService::class)->cancelOrderOptions(
+                order: $order->fresh(['options', 'payment']),
+                cancelItems: [['order_option_id' => $first->id, 'cancel_quantity' => 1]],
+                reason: 'changed_mind',
+            );
+            $this->fail('입금 전 가상계좌 부분취소가 통과했습니다.');
+        } catch (OrderCancellationException) {
+            // 기대한 거절
+        }
+
+        $this->postJson(self::DEPOSIT_URL, [
+            'orderId' => $order->order_number,
+            'status' => 'DONE',
+            'secret' => self::SECRET,
+            'transactionKey' => 'txn_after_rejected_partial',
+        ])->assertOk();
+
         $order->refresh();
         $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
         $this->assertSame(PaymentStatusEnum::PAID->value, $order->payment->payment_status->value);

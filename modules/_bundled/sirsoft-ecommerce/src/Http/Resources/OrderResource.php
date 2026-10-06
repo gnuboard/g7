@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Support\OrderProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
@@ -39,6 +40,11 @@ class OrderResource extends BaseApiResource
         // 뒤에 이 합계의 정의가 바뀔 때(예: 환급 반영 범위) 두 곳이 갈린다. 단건 상세 전용이라
         // 목록에서 행마다 해석되지 않는다(목록은 OrderListResource).
         $claimPaid = app(ClaimPaymentService::class)->paidTotalForOrder($this->resource);
+
+        // 현금 환불 중 「마일리지로 환불」로 지급한 몫(Q3) — `total_refunded_amount` 안에 들어 있는 그중
+        // 내역이다. 결제행은 결제완료로 남으므로(Q16) 상세가 따로 말하지 않으면 그 돈의 행방이 보이지
+        // 않는다. 단건 상세 전용이다(목록은 OrderListResource).
+        $mileageCredited = app(OrderRefundRequestService::class)->mileageCreditedTotalForOrder($this->resource);
 
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 화면에 함께 표기한다.
         $paymentCurrency = $this->currency
@@ -121,6 +127,8 @@ class OrderResource extends BaseApiResource
             'total_refunded_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
             'total_refunded_points_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
+            'total_refunded_mileage_credit_amount' => $this->roundToOrderCurrency($mileageCredited, $orderCurrency),
+            'total_refunded_mileage_credit_amount_formatted' => $this->formatOrderCurrency($mileageCredited, $orderCurrency),
 
             // 클레임 추가결제 합계 (교환·반품 청구액의 실수납 합계 — 부분 환급 차감, 0원이면 화면 미표시)
             // 주문 총 배송비와 분리해 표기한다(§2 해석 확정). ClaimPaymentService::paidTotalForOrder 가 SSoT.
@@ -140,6 +148,9 @@ class OrderResource extends BaseApiResource
 
             // 마일리지/예치금
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
+            // 사용 마일리지를 차감하지 않은 주문인가(Q15) — 그 마일리지는 고객이 낸 적 없는 돈이라 취소·반품·환불에서 돌려주지
+            // 않는다. 회원 신청 화면이 「0 (차감되지 않은 마일리지)」로 이유를 보이고 환불 우선순위 선택을 숨기는 근거다.
+            'points_not_deducted' => (float) $this->total_points_used_amount > 0 && ! $this->is_mileage_deducted,
             'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_deposit_used_amount' => $this->roundToOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_deposit_used_amount_formatted' => $this->formatOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
@@ -160,19 +171,13 @@ class OrderResource extends BaseApiResource
 
             // 수량
             'item_count' => $this->item_count,
-            'total_quantity' => $this->whenLoaded('options', fn () => $this->options->sum('quantity'), 0),
+            // 수량·정가 합계는 판매가·결제액(헤더)과 같은 「남은 상품」 기준이다 — 취소 행·교환완료 원 행·
+            // 진행 중 교환 후속 행을 빼야 합계 줄이 한 기준으로 선다(부분취소 주문에서 정가만 취소분을 더했다).
+            'total_quantity' => $this->whenLoaded('options', fn () => $this->resource->accountableOptions()->sum('quantity'), 0),
 
             // 정가 합계 (스냅샷 기준)
-            'total_list_price' => $this->whenLoaded('options', fn () => $this->roundToOrderCurrency($this->options->sum(function ($opt) {
-                $listPrice = $opt->getSnapshotListPrice() ?? $opt->unit_price;
-
-                return $listPrice * $opt->quantity;
-            }), $orderCurrency), 0),
-            'total_list_price_formatted' => $this->whenLoaded('options', fn () => $this->formatOrderCurrency($this->options->sum(function ($opt) {
-                $listPrice = $opt->getSnapshotListPrice() ?? $opt->unit_price;
-
-                return $listPrice * $opt->quantity;
-            }), $orderCurrency), $this->formatOrderCurrency(0, $orderCurrency)),
+            'total_list_price' => $this->whenLoaded('options', fn () => $this->roundToOrderCurrency($this->accountableListPriceTotal(), $orderCurrency), 0),
+            'total_list_price_formatted' => $this->whenLoaded('options', fn () => $this->formatOrderCurrency($this->accountableListPriceTotal(), $orderCurrency), $this->formatOrderCurrency(0, $orderCurrency)),
 
             // 일시 — raw ISO 와 사용자 타임존 변환된 *_formatted 를 함께 제공 (프론트 raw 처리 + 백엔드 사전 포맷 양쪽 지원)
             'ordered_at' => $this->ordered_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
@@ -353,5 +358,19 @@ class OrderResource extends BaseApiResource
             // 환율 스냅샷이 비었거나 손상된 과거 주문 — 응답 전체를 500 으로 만들지 않는다.
             return (int) round((float) $this->total_due_amount);
         }
+    }
+
+    /**
+     * 회계 주체 행(`Order::accountableOptions()`)의 정가 × 수량 합계를 구합니다.
+     *
+     * 정가는 주문 시점 스냅샷을 쓰고, 스냅샷에 정가가 없는 옛 주문은 단가로 떨어진다.
+     *
+     * @return float 정가 합계 (주문 통화 반올림 전)
+     */
+    protected function accountableListPriceTotal(): float
+    {
+        return (float) $this->resource->accountableOptions()->sum(
+            fn ($option) => ($option->getSnapshotListPrice() ?? $option->unit_price) * $option->quantity
+        );
     }
 }

@@ -1116,6 +1116,36 @@ describe('Partial 레이아웃 구조 검증', () => {
             const invalidKeys = keys.filter((key) => !key.startsWith('$t:sirsoft-ecommerce.'));
             expect(invalidKeys).toEqual([]);
         });
+
+        /**
+         * 취소된 줄의 배송비 몫은 0 이다(부분취소·재활성 재계산 — S-Q26-b). 「무료배송 0원」 으로 읽히지 않게
+         * 유료/무료 줄과 배송비 줄을 숨긴다.
+         *
+         * @scenario partial-cancel-row-allocation
+         * @effects cancelled_lines_hide_shipping_fee_on_admin_and_member_screens
+         */
+        it('취소된 줄은 배송비 줄을 숨긴다', () => {
+            const found: Record<string, any>[] = [];
+            const walk = (node: any): void => {
+                if (Array.isArray(node)) {
+                    node.forEach(walk);
+                    return;
+                }
+                if (node && typeof node === 'object') {
+                    const text = typeof node.text === 'string' ? node.text : '';
+                    if (text.includes('delivery_info.paid_shipping') || text.includes('delivery_info.shipping_fee')) {
+                        found.push(node);
+                    }
+                    Object.values(node).forEach(walk);
+                }
+            };
+            walk(orderInfoPartial);
+
+            expect(found).toHaveLength(2);
+            for (const node of found) {
+                expect(node.if).toContain("row.option_status !== 'cancelled'");
+            }
+        });
     });
 
     describe('_partial_payment_info.json (결제정보 탭)', () => {
@@ -1171,6 +1201,17 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('order.data?.total_points_used_amount');
             expect(json).toContain('order.data?.total_points_used_amount_formatted');
             expect(json).toContain('order.data?.total_earned_points_amount');
+        });
+
+        // 현금 환불 중 「마일리지로 환불」로 지급한 몫은 환불금액의 그중 내역으로 따로 그린다(Q3).
+        /**
+         * @scenario surface=payment_info
+         * @effects payment_info_shows_mileage_credited_cash_share
+         */
+        it('마일리지로 지급한 현금분 행이 주문 집계를 읽는다', () => {
+            const json = JSON.stringify(paymentInfoPartial);
+            expect(json).toContain('order.data?.total_refunded_mileage_credit_amount');
+            expect(json).toContain('order.data?.total_refunded_mileage_credit_amount_formatted');
         });
 
         // 결함 C-2: 환불 금액/환불 마일리지는 결제(payment) 레벨이 아니라

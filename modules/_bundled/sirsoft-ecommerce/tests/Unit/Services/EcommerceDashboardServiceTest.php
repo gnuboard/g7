@@ -79,9 +79,9 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
      *
      * @param  string  $orderedAt  주문 일시 (orders.ordered_at)
      * @param  OrderStatusEnum  $status  주문상품 상태 (option_status)
-     * @param  int  $quantity  주문 수량
+     * @param  int  $quantity  수량 (부분취소 뒤에는 잔여 수량)
      * @param  int  $unitPrice  단가
-     * @param  int  $cancelledQuantity  취소 수량
+     * @param  int  $cancelledQuantity  취소 이력 카운터
      * @return OrderOption 생성된 주문상품
      */
     private function makeOption(
@@ -278,25 +278,69 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
     }
 
     /**
-     * 부분취소 수량은 순매출에서 빠진다 — 유효수량 × 단가가 기준이다.
+     * 부분취소 뒤 남은 수량은 한 번만 센다 — 취소 수량을 두 번 빼지 않는다.
      *
-     * @effects net_sales_deducts_cancelled_quantity
+     * 부분취소는 행을 나눠 살아 있는 행의 quantity 를 잔여 수량으로 줄이고, 같은 행의 cancelled_quantity
+     * 에도 취소 수량을 더한다(이력 카운터). 예전 집계식 unit_price × (quantity − cancelled_quantity) 는
+     * 취소 수량을 한 번 더 빼서 748 주문의 6개가 5개로 집계됐다. 픽스처는 실제 부분취소가 남기는 모양
+     * (살아 있는 행 + 부모를 가리키는 취소 조각)이다. 예전 테스트의 「qty 5, cq 2 단일 행」 픽스처는 코드
+     * 경로가 만들 수 없는 모양이라 폐기했다.
+     *
+     * @scenario admin-dashboard-commerce
+     *
+     * @effects net_sales_counts_remaining_quantity_once
      *
      * @return void 반환값 없음
      */
     #[Test]
-    public function test_aggregate_deducts_cancelled_quantity_from_net_sales(): void
+    public function test_aggregate_counts_remaining_quantity_once_after_partial_cancel(): void
     {
         $today = CarbonImmutable::today()->toDateString();
 
-        // 수량 5, 그 중 2 취소, 단가 1000 → 유효수량 3, 순매출 3000
-        $this->makeOption($today, OrderStatusEnum::SHIPPING, 5, 1000, cancelledQuantity: 2);
+        // 살아 있는 행: 원래 5개 중 2개를 취소해 잔여 3개, 이력 카운터 2
+        $alive = $this->makeOption($today, OrderStatusEnum::SHIPPING, 3, 1000, cancelledQuantity: 2);
+        // 분할된 취소 조각: 2개, 상태 cancelled (매출 반영 상태가 아니라 집계에서 빠진다)
+        OrderOption::factory()->create([
+            'order_id' => $alive->order_id,
+            'parent_option_id' => $alive->id,
+            'option_status' => OrderStatusEnum::CANCELLED,
+            'quantity' => 2,
+            'cancelled_quantity' => 0,
+            'unit_price' => 1000,
+        ]);
 
         $this->service->aggregateRecentDays(7);
 
         $row = EcommerceStat::where('date', $today)->first();
         $this->assertSame(3, $row->sales_quantity);
         $this->assertSame('3000.00', $row->sales_amount);
+    }
+
+    /**
+     * 이력 카운터가 수량보다 큰 행이 있어도 집계가 실패하지 않는다.
+     *
+     * cancelled_quantity 는 unsigned 라 quantity − cancelled_quantity 가 음수가 되면 MySQL 이
+     * SQLSTATE 22003(1690 BIGINT UNSIGNED out of range)으로 쿼리 전체를 실패시켰다. 개발 DB 옵션
+     * 199(qty 1, cq 2) 같은 행이 판매 상태가 되면 그날 집계 커맨드가 멈췄다.
+     *
+     * @scenario admin-dashboard-commerce
+     *
+     * @effects net_sales_aggregate_survives_counter_above_quantity
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_aggregate_survives_counter_above_quantity(): void
+    {
+        $today = CarbonImmutable::today()->toDateString();
+
+        $this->makeOption($today, OrderStatusEnum::PAYMENT_COMPLETE, 1, 1000, cancelledQuantity: 2);
+
+        $this->service->aggregateRecentDays(7);
+
+        $row = EcommerceStat::where('date', $today)->first();
+        $this->assertSame(1, $row->sales_quantity);
+        $this->assertSame('1000.00', $row->sales_amount);
     }
 
     /**

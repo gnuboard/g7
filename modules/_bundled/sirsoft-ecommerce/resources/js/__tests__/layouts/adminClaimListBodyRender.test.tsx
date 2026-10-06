@@ -280,6 +280,51 @@ async function renderProbe(
   return utils;
 }
 
+describe('취소 행 — 재활성 뱃지 (Q29)', () => {
+  const CANCEL_ROW = {
+    id: 71,
+    claim_number: 'CN20261005000001',
+    order_number: '20261005-0001',
+    requester_name: '홍길동',
+    is_guest_request: false,
+    status: 'completed',
+    status_label: '취소완료',
+    status_variant: 'success',
+    item_summary: { product_name: '프리미엄 코튼 티셔츠', item_count: 1, total_quantity: 2 },
+    requested_at_formatted: '2026-10-05 10:00',
+    completed_at_formatted: '2026-10-05 10:00',
+    refund_total: 12000,
+    refund_total_formatted: '12,000원',
+    reactivated_at_formatted: null,
+    is_partially_reactivated: false,
+  };
+
+  /**
+   * 재활성 기록이 있는 취소 행만 뱃지가 나오고, 일부만 되살렸으면 「일부」 뱃지가 나온다.
+   *
+   * @scenario revival=whole_order
+   * @effects claim_list_cancel_row_shows_reactivated_badge_with_time, claim_list_cancel_row_shows_partial_reactivated_badge
+   */
+  it('재활성된 취소 행에 일시와 함께 뱃지가 나온다', async () => {
+    const utils = await renderProbe(datagrid as Node, {
+      type: 'cancel',
+      claims: claimsResponse([
+        { ...CANCEL_ROW, reactivated_at_formatted: '2026-10-05 14:00' },
+        { ...CANCEL_ROW, id: 72, claim_number: 'CN20261005000002', reactivated_at_formatted: '2026-10-05 15:00', is_partially_reactivated: true },
+        { ...CANCEL_ROW, id: 73, claim_number: 'CN20261005000003' },
+      ]),
+    });
+
+    const cells = screen.getAllByTestId(GRID_ROW_TESTID).map((row) => row.querySelector('[data-field="claim_number"]')?.textContent ?? '');
+
+    expect(cells[0]).toContain('reactivated_badge');
+    expect(cells[0]).not.toContain('reactivated_partial_badge');
+    expect(cells[1]).toContain('reactivated_partial_badge');
+    expect(cells[2]).not.toContain('reactivated');
+    utils.cleanup();
+  });
+});
+
 describe('일괄 변경 바 — 유형별 노출과 어휘 (S8b)', () => {
   /**
    * 취소는 게이트의 `type` 어휘에 없다 — 바를 그리면 누를 수 있는 버튼이 언제나 422 다.
@@ -317,6 +362,12 @@ describe('일괄 변경 바 — 유형별 노출과 어휘 (S8b)', () => {
     utils.cleanup();
   });
 
+  /**
+   * 교환 서브탭의 일괄 상태 선택지에는 교환 어휘만 있다 — 반품·환불 상태가 섞이면 게이트가 422 로 거절한다.
+   *
+   * @scenario claim_type=exchange
+   * @effects bulk_status_vocabulary_matches_request_gate
+   */
   it('교환 서브탭에 반품·환불 어휘가 섞이지 않는다', async () => {
     const utils = await renderProbe(bulkSection as Node, {
       type: 'exchange',
@@ -606,5 +657,106 @@ describe('완료 처리 모달 — _global 계약만으로 그려진다 (D26)', 
     expect(cancel).not.toBeNull();
     expect(cancel).not.toBeDisabled();
     utils.cleanup();
+  });
+});
+
+describe('완료 처리 모달 — 선교환 미회수 안내 (S8 · Q10)', () => {
+  /**
+   * 미회수 후보가 있는 선교환 완료 상태
+   *
+   * @param withCandidate 미회수 후보를 실을지
+   * @returns 전역 상태
+   */
+  function exchangeCompleteState(withCandidate: boolean) {
+    return {
+      claimCompleteContext: { claimType: 'exchange', targets: [{ id: 41 }], execute: { url: '/x', method: 'POST' } },
+      claimCompleteCreateRefundRequest: false,
+      claimCompletePreview: {
+        claims: [
+          {
+            id: 41,
+            claim_number: 'EX20261005000041',
+            completable_item_ids: [77],
+            completable_item_count: 1,
+            stock_restore_count: 0,
+            stock_discard_count: 0,
+            unreturned_eligible_items: withCandidate ? [{ id: 77, label: '헤비 후드 XL' }] : [],
+          },
+        ],
+        skipped: [],
+        totals: { claim_count: 1 },
+      },
+      claimCompleteRows: [],
+    };
+  }
+
+  /**
+   * 미회수로 완료하면 상품 대금을 청구하지 않는다 — 운영자가 모른 채 완료하지 않도록 체크 영역에서 말한다.
+   *
+   * @effects advance_unreturned_completion_warns_no_charge
+   */
+  it('미회수 후보가 있으면 「고객에게 청구되지 않습니다」 안내가 나오고, 없으면 나오지 않는다', async () => {
+    let utils = await renderProbe(completeModal as Node, { globalState: exchangeCompleteState(true) });
+    expect(screen.getByTestId('claim-modal').textContent).toContain('complete.unreturned_no_charge_notice');
+    utils.cleanup();
+
+    utils = await renderProbe(completeModal as Node, { globalState: exchangeCompleteState(false) });
+    expect(screen.getByTestId('claim-modal').textContent).not.toContain('complete.unreturned_no_charge_notice');
+    utils.cleanup();
+  });
+});
+
+describe('반품·교환 행 — 환불 진행 배지 (보완 5 · Q7)', () => {
+  const RETURN_ROW = {
+    id: 81,
+    claim_number: 'RT20261005000001',
+    order_number: '20261005-0002',
+    requester_name: '홍길동',
+    is_guest_request: false,
+    status: 'completed',
+    status_label: '반품완료',
+    status_variant: 'success',
+    item_summary: { product_name: '프리미엄 코튼 티셔츠', item_count: 1, total_quantity: 1 },
+    requested_at_formatted: '2026-10-05 10:00',
+    completed_at_formatted: '2026-10-05 12:00',
+    total_charge_amount: 0,
+    total_charge_amount_formatted: '0원',
+    outstanding_amount: 0,
+    has_pending_refund: false,
+    refund_progress: null,
+  };
+
+  /**
+   * 최신 환불의 상태 배지와 「외 N건」 이 나오고, 환불이 없으면 배지가 없다.
+   *
+   * @scenario claim_type=return, completion_choice=file_later
+   * @effects claim_list_refund_progress_badge_navigates_to_refund
+   */
+  it('최신 환불 상태와 외 N건, 없으면 없음', async () => {
+    const utils = await renderProbe(datagrid as Node, {
+      type: 'return',
+      claims: claimsResponse([
+        { ...RETURN_ROW, refund_progress: { claim_number: 'RF20261005000002', status: 'requested', status_label: '환불신청', status_variant: 'info', status_icon: 'status-requested', count: 2 } },
+        { ...RETURN_ROW, id: 82, claim_number: 'RT20261005000002' },
+      ]),
+    });
+
+    const cells = screen.getAllByTestId(GRID_ROW_TESTID).map((row) => row.querySelector('[data-field="claim_number"]')?.textContent ?? '');
+
+    expect(cells[0]).toContain('환불신청');
+    expect(cells[0]).toContain('refund_progress_more');
+    expect(cells[1]).not.toContain('환불신청');
+    utils.cleanup();
+  });
+
+  /**
+   * 배지를 누르면 그 환불신청서 상세로 간다(목록 조건 승계).
+   *
+   * @scenario claim_type=return, completion_choice=file_later
+   * @effects claim_list_refund_progress_badge_navigates_to_refund
+   */
+  it('배지는 환불신청서 상세로 이동한다', () => {
+    const json = JSON.stringify(datagrid);
+    expect(json).toContain('/admin/ecommerce/claims/{{row.refund_progress.claim_number}}');
   });
 });

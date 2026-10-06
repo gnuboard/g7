@@ -68,7 +68,8 @@
     "partial_expired": "Partially Expired",
     "expired_amount": "{{amount}} expired",
     "unlimited": "Unlimited",
-    "none": "-"
+    "none": "-",
+    "deleted_member": "Deleted member"
   },
   "row_action": {
     "expand": "View Detail",

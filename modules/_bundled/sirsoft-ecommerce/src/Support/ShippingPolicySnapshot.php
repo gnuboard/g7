@@ -137,6 +137,52 @@ class ShippingPolicySnapshot
     }
 
     /**
+     * 옵션별 「그 상품만 샀을 때 배송비」 표시 칸만 새 값으로 바꾼 스냅샷을 돌려줍니다. (부분취소·재활성 재계산)
+     *
+     * 회원·비회원 주문 상세의 「적용 배송정책」이 이 칸을 읽는다 — 재계산이 배송 행만 다시 쓰고 이 칸을 주문 시점 값으로
+     * 두면, 일부 취소로 조건부 무료배송 기준 아래가 된 상품도 「무료배송」으로 보인다. 그 밖의 필드(정책 규칙
+     * `policy_snapshot`·훅 배송비 `hook_overridden`·`shipping_amount`·`policy_id`)는 다음 재계산의 입력이라 건드리지 않는다.
+     * 맵에 없는 옵션(전량 취소 등)은 그대로 두고, 스냅샷의 형태(신형·구형)도 바꾸지 않는다.
+     *
+     * @param  array|null  $snapshot  원본 스냅샷 (신형 · 구형 모두 허용)
+     * @param  array<int|string, int|float>  $standaloneByOptionId  product_option_id => 단독 배송비
+     * @return array 표시 칸을 갱신한 스냅샷 (원본이 비면 빈 배열)
+     */
+    public static function withStandaloneAmounts(?array $snapshot, array $standaloneByOptionId): array
+    {
+        if (empty($snapshot)) {
+            return [];
+        }
+
+        $apply = function (array $policy, int|float $amount): array {
+            $policy['standalone_shipping_amount'] = (int) $amount;
+            $policy['standalone_shipping_amount_formatted'] = ecommerce_format_price((int) $amount);
+
+            return $policy;
+        };
+
+        if (array_key_exists(self::ITEMS, $snapshot)) {
+            foreach ($snapshot[self::ITEMS] as $index => $entry) {
+                $optionId = $entry['product_option_id'] ?? null;
+                if ($optionId !== null && is_array($entry['policy'] ?? null) && array_key_exists($optionId, $standaloneByOptionId)) {
+                    $snapshot[self::ITEMS][$index]['policy'] = $apply($entry['policy'], $standaloneByOptionId[$optionId]);
+                }
+            }
+
+            return $snapshot;
+        }
+
+        // 구형 — `optionId => policy` 맵(배송지는 `address` 키)
+        foreach ($snapshot as $key => $entry) {
+            if ($key !== self::ADDRESS && is_array($entry) && array_key_exists($key, $standaloneByOptionId)) {
+                $snapshot[$key] = $apply($entry, $standaloneByOptionId[$key]);
+            }
+        }
+
+        return $snapshot;
+    }
+
+    /**
      * 스냅샷을 `product_option_id => policy` 맵으로 변환합니다.
      *
      * `OrderCalculationService::groupByShippingPolicy()` 가 `$snapshots[$optionId]` 로

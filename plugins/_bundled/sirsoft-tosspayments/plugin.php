@@ -243,6 +243,7 @@ class Plugin extends AbstractPlugin
             Listeners\RegisterTossPaymentMethodsListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\VbankCloseListener::class,
             Listeners\ClaimPaymentApproveListener::class,
             Listeners\ClaimPaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,

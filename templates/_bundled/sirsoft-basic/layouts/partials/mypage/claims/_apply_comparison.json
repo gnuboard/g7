@@ -1294,10 +1294,10 @@
                             ]
                         },
                         {
-                            "comment": "마일리지 환불분 — 마일리지를 쓴 주문에서만",
+                            "comment": "마일리지 환불분 — 마일리지를 쓴 주문에서만. 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지를 돌려주지 않아 몫이 0 인데(Q15), 줄을 숨기면 마일리지를 썼는데 왜 안 돌아오는지 알 수 없다 — 「0원 (차감되지 않은 마일리지)」로 이유와 함께 세운다.",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0}}",
+                            "if": "{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0 || order?.data?.points_not_deducted === true}}",
                             "props": {
                                 "className": "flex items-baseline justify-between gap-2 text-xs",
                                 "data-line": "refund_points"
@@ -1324,7 +1324,7 @@
                                             "props": {
                                                 "className": "text-gray-700 dark:text-gray-300"
                                             },
-                                            "text": "{{_local.claimEstimateFormatted?.refund_points ?? ''}}"
+                                            "text": "{{order?.data?.points_not_deducted === true ? '$t:claim.apply.comparison.refund_points_not_deducted' : (_local.claimEstimateFormatted?.refund_points ?? '')}}"
                                         },
                                         {
                                             "type": "basic",

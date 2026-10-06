@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
@@ -67,6 +68,7 @@ class OrderCancellationService
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (PG 환불·복원·현금영수증 공용)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
      * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
+     * @param  OrderShippingAmountWriter  $shippingAmountWriter  배송 행 금액 기록기 (S-Q26-b)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -83,6 +85,7 @@ class OrderCancellationService
         protected RefundExecutionService $refundExecutionService,
         protected ClaimQuantityGuard $claimQuantityGuard,
         protected OrderRepositoryInterface $orderRepository,
+        protected OrderShippingAmountWriter $shippingAmountWriter,
     ) {}
 
     /**
@@ -594,6 +597,8 @@ class OrderCancellationService
      * @param  bool  $accumulatePayment  결제행의 취소 누적을 여기서 더할지 (환불 실행이 이미 더했으면 false)
      * @param  bool  $recalculatePaidAmount  `total_paid_amount`·`total_points_used_amount` 를 재계산값으로 덮어쓸지
      * @param  bool  $restoreCouponsAndStock  쿠폰·재고 복원을 여기서 할지 (호출부가 이미 했으면 false)
+     * @param  bool  $paymentSettled  이 환불이 결제행의 수단에서 실제 취소로 일어났는지 (false = 다른 수단 — 마일리지·계좌 송금 — 으로
+     *                                지급: 결제행 상태·취소 시각을 바꾸지 않고 이력에만 남긴다 · Q16)
      * @return OrderCancel 생성·확정된 취소신청서
      */
     public function recordCancellation(
@@ -611,6 +616,7 @@ class OrderCancellationService
         bool $accumulatePayment = true,
         bool $recalculatePaidAmount = true,
         bool $restoreCouponsAndStock = true,
+        bool $paymentSettled = true,
     ): OrderCancel {
         $order->loadMissing(['options', 'payment', 'shippings']);
 
@@ -631,6 +637,9 @@ class OrderCancellationService
 
         // 누적 컬럼을 읽어 더하기 전에 주문·결제 행을 잠그고 커밋된 값으로 되읽는다.
         $this->lockAccumulatorRows($order);
+
+        // 입금 전 주문(E2) — 받은 돈이 없다. 재계산된 남은 결제액은 받을 돈(due)이고, 결제행은 입금 대기로 남는다.
+        $beforePayment = $order->order_status instanceof OrderStatusEnum && $order->order_status->isBeforePayment();
 
         $cancel = $this->createOrderCancel(
             $order, $cancelType, $reason, $reasonDetail, $cancelledBy, $cancelItems
@@ -664,7 +673,8 @@ class OrderCancellationService
 
         if ($adjustment !== null) {
             $this->applyOptionUpdates($order, $adjustment);
-            $this->updateShippings($adjustment);
+            // 분할(updateOrderOptions) 뒤라 이번 취소로 생긴 분할 행의 배송 행까지 다시 읽어 맞춘다 (S-Q26-b)
+            $this->shippingAmountWriter->apply($order, $adjustment->shippingShares);
         }
 
         $this->updateOrderTotals(
@@ -681,13 +691,22 @@ class OrderCancellationService
             cancelledAmount: $refund !== null
                 ? (float) $refund->refund_amount + (float) $refund->refund_points_amount
                 : null,
+            beforePayment: $beforePayment,
         );
 
         // P4 — 미입금 취소도 결제행을 정리한다. 정리하지 않으면 취소된 주문이 이후 PG
         // 입금통보·관리자 [입금확인]으로 `PAYMENT_COMPLETE` 로 되살아나 재고·마일리지가
         // 재차감된다. 누적(`cancelled_amount`)은 환불 실행이 이미 더했으면 건너뛴다.
         if ($order->payment) {
-            $this->updatePayment($order, $cancel, $adjustment, accumulate: $accumulatePayment);
+            $this->updatePayment(
+                $order,
+                $cancel,
+                $adjustment,
+                accumulate: $accumulatePayment,
+                refund: $refund,
+                paymentSettled: $paymentSettled,
+                beforePayment: $beforePayment,
+            );
         }
 
         if ($restoreCouponsAndStock && $adjustment !== null) {
@@ -698,7 +717,8 @@ class OrderCancellationService
             // 환불 실행(`RefundExecutionService::restoreMileage`)이 이미 돌려줬으므로 다시 하지 않는다.
             // 이 분기가 없으면 「주문할 때」 차감 시점의 상점에서 입금 기한 만료·결제 미성립 주문을
             // 정리할 때 사용 마일리지가 영영 돌아오지 않는다(취소는 되는데 오류도 로그도 없다).
-            // 복원은 취소신청서 id 로 멱등하다.
+            // 복원은 취소신청서 id 로 멱등하다. 복원이 실패하면 취소 전체를 되돌린다(D2) — 「취소는
+            // 됐는데 마일리지는 안 돌아온」 상태보다 「취소가 실패로 보이고 다시 할 수 있는」 상태가 낫다.
             if ($refund === null) {
                 $this->refundExecutionService->restoreMileage($order, $adjustment, $cancel);
             }
@@ -1093,7 +1113,8 @@ class OrderCancellationService
                 restoreStockOnCancel: false
             );
 
-            // 취소 수량/사유 누적
+            // 이력 카운터 — 이 행에서 떼어 낸 취소 수량의 누적. 매출 집계는 이 값을 빼지 않는다
+            // (quantity 가 이미 잔여다). 02c 재활성이 되돌린다.
             $option->refresh();
             $option->update([
                 'cancelled_quantity' => ($option->cancelled_quantity ?? 0) + $item['cancel_quantity'],
@@ -1123,23 +1144,6 @@ class OrderCancellationService
             if ($option) {
                 $this->orderOptionRepository->update($option, $updates);
             }
-        }
-    }
-
-    // ───────────────────────────────────────────────
-    // ③-d. OrderShipping 업데이트
-    // ───────────────────────────────────────────────
-
-    /**
-     * 배송비를 재계산 결과에 따라 갱신합니다.
-     *
-     * @param  AdjustmentResult  $result  계산 결과
-     * @return void 반환값 없음
-     */
-    protected function updateShippings(AdjustmentResult $result): void
-    {
-        foreach ($result->shippingUpdates as $shippingId => $updates) {
-            $this->orderShippingRepository->update($shippingId, $updates);
         }
     }
 
@@ -1195,6 +1199,7 @@ class OrderCancellationService
      * @param  bool  $recalculatePaidAmount  실결제·사용마일리지 재계산값을 덮어쓸지 여부
      * @param  bool  $syncOrderStatus  주문 상태를 이 취소로 파생시킬지 여부 (반품·교환은 false)
      * @param  float|null  $cancelledAmount  누적할 취소액 (null 이면 재계산 결과를 쓴다)
+     * @param  bool  $beforePayment  입금 전 주문의 취소인지 (E2 — 재계산 결제액을 받을 돈으로 옮긴다)
      * @return void 반환값 없음
      */
     protected function updateOrderTotals(
@@ -1205,6 +1210,7 @@ class OrderCancellationService
         bool $recalculatePaidAmount = true,
         bool $syncOrderStatus = true,
         ?float $cancelledAmount = null,
+        bool $beforePayment = false,
     ): void {
         // 주문 상태를 파생시키지 않는 출처(반품·교환)는 전체취소로 승격하지 않는다.
         //
@@ -1221,6 +1227,15 @@ class OrderCancellationService
             unset($orderUpdates['total_paid_amount'], $orderUpdates['total_points_used_amount']);
         }
 
+        // 입금 전 주문은 받은 돈이 없다 — 재계산된 「남은 결제액」은 받을 돈(due)이지 받은 돈(paid)이 아니다(E2).
+        // paid 에 쓰면 미결제 주문이 결제된 것처럼 보이고, due 가 원래 금액으로 남아 입금확인 금액 검증
+        // (validatePaymentAmount 1단계: 구성요소 합 = due)이 어떤 금액으로도 통과하지 못한다. 전체취소는 아래에서
+        // due 를 0 으로 덮는다(S1-D17).
+        if ($beforePayment && array_key_exists('total_paid_amount', $orderUpdates)) {
+            $orderUpdates['total_due_amount'] = $orderUpdates['total_paid_amount'];
+            unset($orderUpdates['total_paid_amount']);
+        }
+
         $updateData = array_merge($orderUpdates, [
             'total_cancelled_amount' => (float) $order->total_cancelled_amount
                 + (float) ($cancelledAmount ?? $result?->refundAmount ?? 0),
@@ -1228,6 +1243,20 @@ class OrderCancellationService
             // 취소일시 — 전체/부분취소 모두 기록(native 컬럼 SSoT). 최초 취소 시각을 보존하고 재취소 시 갱신하지 않는다.
             'cancelled_at' => $order->cancelled_at ?? Carbon::now(),
         ]);
+
+        // 최초 취소 직전의 쿠폰·사용 포인트 조건을 한 번만 남긴다 (Q26 재활성 복원 입력).
+        // 부분취소 재계산이 promotions_applied_snapshot 을 「적용된 쿠폰만」으로 바꿔 버려, 조건을 잃고
+        // 빠진 쿠폰의 규칙은 이 값에만 남는다. 입금 전 취소는 사용 포인트 헤더도 다시 써 버린다.
+        // 이후 취소·재활성에서 덮지 않는다 — 원 주문 조건이다.
+        $meta = $order->order_meta ?? [];
+        if ($result !== null && ! isset($meta['pre_cancel_snapshot'])) {
+            $meta['pre_cancel_snapshot'] = [
+                'promotions_applied_snapshot' => $order->promotions_applied_snapshot,
+                'total_points_used_amount' => (float) $order->total_points_used_amount,
+                'captured_at' => Carbon::now()->toIso8601String(),
+            ];
+            $updateData['order_meta'] = $meta;
+        }
 
         if ($isFullCancel) {
             // 전체취소는 주문 상태를 CANCELLED 로 확정한다.
@@ -1240,7 +1269,7 @@ class OrderCancellationService
             // 재계산 경로도 거치지 않는다 — 주문은 `cancelled` 인데 장부만 계속 「받을 돈이 있다」고
             // 말하는 상태가 된다(실측: 무통장 미입금 취소 주문만 due 가 남고 나머지 취소 주문은 전부 0).
             $updateData['total_due_amount'] = 0;
-            $updateData['order_meta'] = array_merge($order->order_meta ?? [], [
+            $updateData['order_meta'] = array_merge($updateData['order_meta'] ?? ($order->order_meta ?? []), [
                 'cancel_reason' => $reason,
                 'previous_status' => $previousStatus->value,
             ]);
@@ -1269,17 +1298,39 @@ class OrderCancellationService
      * 다시 차감되고, 고객은 취소한 주문의 상품을 받는다.
      *
      * `$accumulate` 가 false 면 취소 누적(`cancelled_amount`)은 더하지 않는다 — 환불
-     * 실행(`RefundExecutionService::execute`)이 이미 더한 경우다.
+     * 실행(`RefundExecutionService::prepareLedger`)이 이미 더한 경우다.
      * 두 번 더하면 결제수단 잔여 한도(D19 2축)가 두 배로 깎여 정당한 2차 환불이 막힌다.
+     *
+     * ## 취소 이력에 싣는 금액은 «실제로 집행된 값»이다 (E1)
+     *
+     * 환불신청서가 있으면 그 저장값(운영자 수정·우선순위 배분 반영)이 정본이다. 예전에는 재계산
+     * 결과(`$result`)를 실어, 반품·교환 발 환불은 `$result=null` 이라 0 원이 찍히고 직접 환불은
+     * 운영자가 고친 금액 대신 재계산값이 찍혔다.
+     *
+     * ## 결제수단과 다른 수단으로 돌려준 환불은 결제행 상태를 바꾸지 않는다 (Q16)
+     *
+     * 카드 주문을 계좌 송금·마일리지로 돌려줬다면 카드 거래는 취소되지 않았다. 그때 결제행을
+     * `cancelled` 로 바꾸면 「누적은 0 인데 상태는 취소」인 모순이 생긴다(주문 1622 실측). 그래서
+     * 상태·취소 시각·사유는 그대로 두고, 이력에만 수단과 `settled_on_payment=false` 로 남긴다.
      *
      * @param  Order  $order  주문
      * @param  OrderCancel  $cancel  취소 레코드
      * @param  AdjustmentResult|null  $result  계산 결과 (null 이면 금액 축 없이 상태만 정리)
      * @param  bool  $accumulate  취소 누적 컬럼을 여기서 더할지 여부
+     * @param  OrderRefund|null  $refund  이 취소를 일으킨 환불신청서 (이력 금액의 정본)
+     * @param  bool  $paymentSettled  그 결제수단에서 실제 취소가 일어났는지 (false 면 상태 유지)
+     * @param  bool  $beforePayment  입금 전 주문의 취소인지 (E2 — 누적 없음, 부분취소면 입금 대기 유지)
      * @return void
      */
-    protected function updatePayment(Order $order, OrderCancel $cancel, ?AdjustmentResult $result, bool $accumulate = true): void
-    {
+    protected function updatePayment(
+        Order $order,
+        OrderCancel $cancel,
+        ?AdjustmentResult $result,
+        bool $accumulate = true,
+        ?OrderRefund $refund = null,
+        bool $paymentSettled = true,
+        bool $beforePayment = false,
+    ): void {
         $payment = $order->payment;
         if (! $payment) {
             return;
@@ -1290,34 +1341,82 @@ class OrderCancellationService
         // 결제 통화(order_currency) 환산 환불액. base≠결제 통화일 때 PG 실환불·누적은 결제 통화로
         // 정합되어야 하므로 mc_cancelled_amount 를 결제 통화로 누적한다(base 누적 cancelled_amount 와 별개).
         $orderCurrency = $payment->currency ?: ($order->currency_snapshot['order_currency'] ?? null);
-        $refundLocal = $result !== null ? $this->resolveOrderCurrencyRefundAmount($result, $orderCurrency) : 0.0;
+
+        // 이력에 싣는 금액은 «실제로 집행된 값» — 환불신청서가 있으면 그 저장값이 정본이다.
+        $executed = $refund !== null
+            ? new AdjustmentResult(
+                refundAmount: (float) $refund->refund_amount,
+                refundPointsAmount: (float) $refund->refund_points_amount,
+                mcRefundAmount: $refund->mc_refund_amount ?? [],
+            )
+            : $result;
 
         // 취소 누적 컬럼(cancelled_amount / mc_cancelled_amount)의 규칙은 클레임 환불과 동일하므로
         // RefundExecutionService 가 SSoT 다. 여기서는 취소 고유 필드만 덧붙인다.
-        $cancelledUpdates = $accumulate && $result !== null
+        // 입금 전 주문은 결제행에 받은 돈이 없어 누적할 취소액도 없다(E2).
+        $cancelledUpdates = $accumulate && $result !== null && ! $beforePayment
             ? $this->refundExecutionService->buildCancelledAmountUpdates($payment, $result)
             : [];
+
+        $refundMethod = $refund?->refund_method;
 
         $cancelHistory = $payment->cancel_history ?? [];
         $cancelHistory[] = [
             'cancel_id' => $cancel->id,
             'cancel_number' => $cancel->cancel_number,
-            'amount' => (float) ($result?->refundAmount ?? 0),
-            'amount_local' => $refundLocal,
+            'refund_id' => $refund?->id,
+            'refund_number' => $refund?->refund_number,
+            'refund_method' => $refundMethod instanceof \BackedEnum ? $refundMethod->value : $refundMethod,
+            // 이 결제행의 cancelled_amount 에 합산됐는가 — 환불 없는 취소는 실제로 누적했는지로 본다.
+            'settled_on_payment' => $refund !== null ? $paymentSettled : ($cancelledUpdates !== []),
+            'amount' => (float) ($executed?->refundAmount ?? 0),
+            'amount_local' => $executed !== null ? $this->resolveOrderCurrencyRefundAmount($executed, $orderCurrency) : 0.0,
             'currency' => $orderCurrency,
-            'points_amount' => (float) ($result?->refundPointsAmount ?? 0),
+            'points_amount' => (float) ($executed?->refundPointsAmount ?? 0),
             'reason' => $cancel->cancel_reason_type,
             'date' => Carbon::now()->toIso8601String(),
         ];
 
-        $payment->update(array_merge($cancelledUpdates, [
-            'cancel_reason' => $cancel->cancel_reason_type,
-            'cancel_history' => $cancelHistory,
-            'cancelled_at' => Carbon::now(),
-            'payment_status' => $isFullCancel
-                ? PaymentStatusEnum::CANCELLED
-                : PaymentStatusEnum::PARTIAL_CANCELLED,
-        ]));
+        $updates = array_merge($cancelledUpdates, ['cancel_history' => $cancelHistory]);
+
+        // 결제행 상태를 바꾸지 않는 두 경우
+        // - 다른 수단으로 지급한 환불(Q16) — 그 결제는 취소되지 않았다.
+        // - 입금 전 부분취소(E2) — 남은 상품의 입금을 받아야 하므로 입금 대기로 둔다. 바꾸면 [입금확인] 버튼이
+        //   사라지고 API 도 `deposit_not_pending` 으로 거절한다. 전체취소는 P4 대로 취소로 정리한다.
+        $keepStatus = ($refund !== null && ! $paymentSettled)
+            || ($beforePayment && ! $isFullCancel && $payment->payment_status?->isAwaitingDeposit() === true);
+
+        if (! $keepStatus) {
+            $updates += [
+                'cancel_reason' => $cancel->cancel_reason_type,
+                'cancelled_at' => Carbon::now(),
+                'payment_status' => $isFullCancel || $this->paymentCashFullyCancelled($payment, $cancelledUpdates)
+                    ? PaymentStatusEnum::CANCELLED
+                    : PaymentStatusEnum::PARTIAL_CANCELLED,
+            ];
+        }
+
+        $payment->update($updates);
+    }
+
+    /**
+     * 이 결제행이 받은 돈을 전부 돌려줬는지 판정합니다. (결제행 상태는 돈의 상태다 — C11 매트릭스)
+     *
+     * 취소 유형(`FULL`)만으로는 판정하지 못한다 — 반품을 나눠 받으면 앞 회차에서 반품으로 닫힌 상품이
+     * `shouldConvertToFullCancel()` 에서 「남은 상품」으로 세어져 마지막 회차도 부분취소가 되고, 받은 돈을
+     * 모두 돌려준 결제행이 「부분취소」로 남는다. 누적 취소액이 수납액에 닿았는지로 함께 본다.
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @param  array<string, mixed>  $cancelledUpdates  이번 취소가 더할 누적 컬럼 (비었으면 이미 더해진 값)
+     * @return bool 수납액 전부를 돌려줬으면 true
+     */
+    protected function paymentCashFullyCancelled(OrderPayment $payment, array $cancelledUpdates): bool
+    {
+        $paid = (float) $payment->paid_amount_base;
+        $cancelled = (float) ($cancelledUpdates['cancelled_amount'] ?? $payment->cancelled_amount);
+
+        return $paid > 0
+            && bccomp(number_format($cancelled, 4, '.', ''), number_format($paid, 4, '.', ''), 4) >= 0;
     }
 
     /**

@@ -5,10 +5,15 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Listeners\MileageTransactionListener;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -272,6 +277,67 @@ class MileageTransactionListenerTest extends ModuleTestCase
     }
 
     /**
+     * 환불 현금분 지급 핸들러 — 회원 원장에 그 환불로 묶인 무기한 지급 거래를 남긴다(D1).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects mileage_listener_credits_the_refund_cash_share
+     */
+    public function test_handle_refund_credit_credits_the_member(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id, 'currency' => 'KRW']);
+        $refund = $this->makeRefund($order);
+
+        $this->listener->handleRefundCredit(5000, $order, $refund->id);
+
+        $this->assertDatabaseHas('ecommerce_mileage_transactions', [
+            'user_id' => $user->id,
+            'order_refund_id' => $refund->id,
+            'type' => MileageTransactionTypeEnum::REFUND_CREDIT->value,
+            'amount' => 5000,
+            'expires_at' => null,
+        ]);
+    }
+
+    /**
+     * 환불 현금분 지급 핸들러 — 비회원 주문이면 조용히 넘기지 않고 던진다(돈이 사라지지 않게).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects mileage_listener_rejects_a_guest_refund_credit
+     */
+    public function test_handle_refund_credit_rejects_a_guest_order(): void
+    {
+        $order = Order::factory()->create(['user_id' => null, 'currency' => 'KRW']);
+        $refund = $this->makeRefund($order);
+
+        $this->expectException(MileageValidationException::class);
+        $this->listener->handleRefundCredit(5000, $order, $refund->id);
+    }
+
+    /**
+     * 환불신청서 한 건을 만듭니다. (`order_refund_id` 는 FK 라 실제 행이 필요하다)
+     *
+     * @param  Order  $order  주문
+     * @return OrderRefund 환불신청서
+     */
+    private function makeRefund(Order $order): OrderRefund
+    {
+        return OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::DIRECT,
+            'refund_source_id' => null,
+            'refund_number' => 'RF-'.uniqid(),
+            'refund_status' => RefundStatusEnum::APPROVED,
+            'refund_method' => RefundMethodEnum::POINTS,
+            'refund_amount' => 5000,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+    }
+
+    /**
      * getSubscribedHooks 가 5개 훅을 구독한다 (mileage.earn 미구독).
      *
      * @return void 반환값 없음
@@ -286,6 +352,7 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
         $this->assertArrayHasKey('sirsoft-ecommerce.mileage.use', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.mileage.restore', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.mileage.refund_credit', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order-option.after_confirm', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_option.after_status_change', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order_option.after_bulk_status_change', $hooks);

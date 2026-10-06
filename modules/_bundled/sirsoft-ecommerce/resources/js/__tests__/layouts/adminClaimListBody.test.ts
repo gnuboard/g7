@@ -916,13 +916,13 @@ describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () =>
   };
 
   /**
-   * 판매자 접수·선교환·회수 지연·환불 미접수 넷은 전부 서버가 행에 실어 준 불리언으로만 켠다 — 화면이 상태·
-   * 날짜로 다시 판정하면 서버 필터(`pending_refund=1`·회수 지연만)와 뱃지가 서로 다른 건을 가리킨다.
-   * 회수 지연 일수도 서버 값이다.
+   * 판매자 접수·선교환·회수 지연·환불 미접수·재활성(전체·일부)·환불 진행(보완 5) 일곱은 전부 서버가 행에 실어 준 값으로만 켠다 —
+   * 화면이 상태·날짜로 다시 판정하면 서버 필터(`pending_refund=1`·회수 지연만)와 뱃지가 서로 다른 건을 가리킨다.
+   * 회수 지연 일수·재활성 일시도 서버 값이다(재활성은 취소신청서에 기록한 값 — Q29).
    *
-   * @effects claim_list_row_badges_read_server_flags
+   * @effects claim_list_row_badges_read_server_flags, claim_list_cancel_row_shows_reactivated_badge_with_time
    */
-  it('클레임번호 칸의 뱃지 넷이 서버 행 플래그로만 켜진다', () => {
+  it('클레임번호 칸의 뱃지 일곱이 서버 행 플래그로만 켜진다', () => {
     const badges = collect(column('claim_number').cellChildren, (n) => n.name === 'Badge');
 
     expect(badges.map((b) => [b.if, b.props.variant, b.text])).toEqual([
@@ -934,6 +934,18 @@ describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () =>
         '$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}',
       ],
       ['{{row.has_pending_refund === true}}', 'warning', '$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge'],
+      // 환불 진행(보완 5) — 노출 조건은 감싼 링크(`!!row.refund_progress`)에 있고, 상태·라벨은 서버 값이다.
+      [undefined, "{{row.refund_progress.status_variant ?? 'default'}}", "{{row.refund_progress.status_label ?? ''}}"],
+      [
+        '{{row.reactivated_at_formatted != null && row.is_partially_reactivated !== true}}',
+        'info',
+        '$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{row.reactivated_at_formatted}}',
+      ],
+      [
+        '{{row.reactivated_at_formatted != null && row.is_partially_reactivated === true}}',
+        'info',
+        '$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{row.reactivated_at_formatted}}',
+      ],
     ]);
   });
 

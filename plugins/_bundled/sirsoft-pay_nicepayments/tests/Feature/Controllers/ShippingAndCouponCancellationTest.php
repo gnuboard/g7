@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
+use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -41,6 +42,8 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  *   - 성공만 필요한 테스트: $this->stubNicePayCancelSuccess()
  *   - 호출되면 안 되는 테스트: $mock->expects($this->never())->method(...)
  *   ※ 같은 메서드에 method()와 expects()를 동시에 걸면 PHPUnit이 이중 호출로 인식하므로 혼용 금지.
+ *
+ * @scenario shipping-coupon-cancellation
  */
 class ShippingAndCouponCancellationTest extends PluginTestCase
 {
@@ -54,6 +57,11 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     protected User $adminUser;
 
+    /**
+     * 관리자·취소 채번을 준비하고 환불 리스너와 쿠폰 복원 리스너를 직접 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -69,8 +77,15 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         // 테스트에서 직접 listener 를 등록한다. HookListenerRegistrar 가 idempotent 이라
         // 운영 환경에서 listener 가 이미 등록되어 있으면 중복 호출되지 않음.
         HookListenerRegistrar::register(PaymentRefundListener::class, 'sirsoft-pay_nicepayments');
+        // 쿠폰 복원은 가짜 리스너가 아니라 모듈의 실제 리스너로 잰다(T11) — 모듈 리스너도 같은 이유로 활성 가드에서 빠지므로 직접 등록한다.
+        HookListenerRegistrar::register(CouponRestoreListener::class, 'sirsoft-ecommerce');
     }
 
+    /**
+     * 훅과 리스너 등록 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
@@ -87,6 +102,8 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     /**
      * cancelPayment 를 성공 stub 으로만 설정합니다 (호출 횟수 검증 없음).
      * 호출 횟수·인자를 검증해야 하는 테스트에서는 이 메서드 대신 인라인 mock 을 사용하세요.
+     *
+     * @return void 반환값 없음
      */
     private function stubNicePayCancelSuccess(): void
     {
@@ -98,6 +115,8 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     /**
      * cancelPayment 가 정확히 1회 호출되는 mock 을 생성합니다.
      * 반환된 mock 에 with() 제약을 추가할 수 있습니다.
+     *
+     * @return MockObject 등록한 나이스페이먼츠 API mock
      */
     private function expectNicePayCancelOnce(): MockObject
     {
@@ -112,6 +131,8 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * cancelPayment 가 호출되지 않아야 하는 mock 을 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function expectNicePayCancelNever(): void
     {
@@ -122,6 +143,9 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * cancelPayment 에서 예외를 던지는 mock 을 생성합니다.
+     *
+     * @param  string  $errorMsg  던질 예외 메시지
+     * @return void 반환값 없음
      */
     private function stubNicePayCancelFailure(string $errorMsg = 'NicePayments 취소 실패'): void
     {
@@ -130,28 +154,15 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         $this->app->instance(NicePaymentsApiService::class, $mock);
     }
 
-    /**
-     * 쿠폰 복원 훅을 등록합니다.
-     */
-    private function mockCouponRestore(): void
-    {
-        HookManager::addAction(
-            'sirsoft-ecommerce.coupon.restore',
-            function (Order $order, array $couponIssueIds) {
-                CouponIssue::whereIn('id', $couponIssueIds)->update([
-                    'status' => CouponIssueRecordStatus::AVAILABLE->value,
-                    'used_at' => null,
-                    'order_id' => null,
-                ]);
-            },
-            10
-        );
-    }
-
     // ────────────────────────────────────────────
     // 주문 생성 헬퍼
     // ────────────────────────────────────────────
 
+    /**
+     * 취소·환불 번호 채번 시퀀스를 기본 설정으로 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     private function createCancelSequences(): void
     {
         foreach ([SequenceType::CANCEL, SequenceType::REFUND] as $type) {
@@ -175,7 +186,11 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     /**
      * 나이스페이먼츠 결제가 완료된 배송비 포함 주문을 생성합니다.
      *
-     * @return array{order: Order, options: OrderOption[], payment: OrderPayment, shipping: OrderShipping}
+     * @param  int  $optionCount  주문 옵션 개수
+     * @param  int  $unitPrice  옵션 단가
+     * @param  int  $shippingFee  배송비
+     * @param  string  $tid  결제 거래번호
+     * @return array{order: Order, options: OrderOption[], payment: OrderPayment, shipping: OrderShipping} 주문·옵션·결제·배송 묶음
      */
     private function createNicepayOrderWithShipping(
         int $optionCount = 1,
@@ -252,7 +267,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     /**
      * 나이스페이먼츠 결제가 완료된 쿠폰 할인 주문을 생성합니다.
      *
-     * @return array{order: Order, options: OrderOption[], payment: OrderPayment, couponIssue: CouponIssue}
+     * @param  int  $optionCount  주문 옵션 개수
+     * @param  int  $unitPrice  옵션 단가
+     * @param  int  $couponDiscount  쿠폰 할인액
+     * @param  int  $minOrderAmount  쿠폰 최소 주문금액 조건
+     * @param  string  $tid  결제 거래번호
+     * @return array{order: Order, options: OrderOption[], payment: OrderPayment, couponIssue: CouponIssue} 주문·옵션·결제·쿠폰 발급 묶음
      */
     private function createNicepayOrderWithCoupon(
         int $optionCount = 1,
@@ -375,6 +395,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     /**
      * 배송비 있는 주문 전체취소 시 NicePayments cancelPayment 가 정확히 1회 호출되고
      * 배송비가 환불 레코드에 포함되어야 한다.
+     *
+     * @scenario case=shipping_full
+     *
+     * @effects order_cancelled_with_shipping_refunded, pg_cancel_called_once
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_with_shipping_calls_nicepayments_once_and_refunds_shipping(): void
     {
@@ -406,6 +432,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 전체취소 시 NicePayments cancelPayment 에 isPartial=0 (전액취소) 이 전달되어야 한다.
+     *
+     * @scenario case=shipping_full_args
+     *
+     * @effects full_cancel_sends_partial_code_zero, pg_cancel_called_once
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_passes_partial_code_zero_to_nicepayments(): void
     {
@@ -436,6 +468,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 무료배송 주문 전체취소 시 환불 레코드에 배송비가 0원이어야 한다.
+     *
+     * @scenario case=free_shipping_full
+     *
+     * @effects free_shipping_refunds_product_only
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_free_shipping_refunds_only_product_amount(): void
     {
@@ -465,6 +503,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 배송비 있는 주문 부분취소 시 NicePayments cancelPayment 에 isPartial=1 이 전달되어야 한다.
+     *
+     * @scenario case=shipping_partial
+     *
+     * @effects partial_cancel_refunds_shipping_difference, partial_cancel_sends_partial_code_one
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_cancel_with_shipping_calls_nicepayments_with_partial_flag(): void
     {
@@ -510,6 +554,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 이미 부분취소된 거래의 남은 잔액을 취소할 때도 NicePayments 에는 부분취소 코드가 전달되어야 한다.
+     *
+     * @scenario case=remaining_partial_flag
+     *
+     * @effects remaining_cancel_keeps_partial_code
+     *
+     * @return void 반환값 없음
      */
     public function test_remaining_cancel_after_prior_partial_cancel_keeps_partial_flag(): void
     {
@@ -562,6 +612,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
      * 새 모델에서 관리자 [주문취소]는 환불신청서를 접수할 뿐이고, 집행은 `auto_advance_refund`
      * 를 켰을 때(또는 뒤이은 [환불하기])만 일어난다. 그러므로 접수만 한 이 요청에서는 PG 왕복도
      * 없고 주문도 아직 취소되지 않는다 — 돈이 돌아가지 않았으므로 취소도 성립하지 않는다.
+     *
+     * @scenario case=request_only
+     *
+     * @effects request_only_cancel_skips_pg
+     *
+     * @return void 반환값 없음
      */
     public function test_request_only_cancel_never_calls_nicepayments_api(): void
     {
@@ -606,12 +662,17 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 쿠폰 적용 주문 전체취소 시 실결제금액(할인 후)이 환불되고 쿠폰이 복원되어야 한다.
+     *
+     * @scenario case=coupon_full
+     *
+     * @effects coupon_full_cancel_refunds_net_paid, coupon_restored_by_real_listener
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_with_coupon_refunds_paid_amount_and_restores_coupon(): void
     {
         // Given: 30,000원 - 쿠폰 3,000원 = 27,000원 실결제 (나이스페이먼츠)
         $this->stubNicePayCancelSuccess();
-        $this->mockCouponRestore();
 
         $data = $this->createNicepayOrderWithCoupon(optionCount: 1, unitPrice: 30000, couponDiscount: 3000);
         $order = $data['order'];
@@ -634,11 +695,18 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         // 쿠폰 복원 검증
         $couponIssue->refresh();
         $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status, '쿠폰이 AVAILABLE 로 복원되어야 합니다');
-        $this->assertNull($couponIssue->order_id, '복원된 쿠폰의 order_id 가 null 이어야 합니다');
+        // 가짜 리스너 없이 모듈의 실제 CouponRestoreListener 결과를 본다(T11) — 사용 이력(order_id)은 남고 used_at 만 비운다
+        $this->assertNull($couponIssue->used_at, '복원된 쿠폰의 used_at 이 null 이어야 합니다');
     }
 
     /**
      * 쿠폰 적용 주문 전체취소 시 NicePayments cancelPayment 에 실결제금액이 전달되어야 한다.
+     *
+     * @scenario case=coupon_full_args
+     *
+     * @effects coupon_net_paid_sent_to_pg, pg_cancel_called_once
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_with_coupon_calls_nicepayments_with_paid_amount(): void
     {
@@ -649,8 +717,6 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->with(self::TID, $this->anything(), 27000, $this->anything(), 0, null, null, null)
             ->willReturn(self::CANCEL_SUCCESS);
         $this->app->instance(NicePaymentsApiService::class, $mock);
-
-        $this->mockCouponRestore();
 
         $data = $this->createNicepayOrderWithCoupon(optionCount: 1, unitPrice: 30000, couponDiscount: 3000);
         $order = $data['order'];
@@ -669,12 +735,17 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * 부분취소 후 잔여금액이 쿠폰 최소 조건을 충족하는 경우 성공해야 한다.
+     *
+     * @scenario case=coupon_partial_condition_met
+     *
+     * @effects coupon_kept_when_condition_met
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_cancel_with_coupon_succeeds_when_min_amount_still_met(): void
     {
         // 30,000원 × 2개, 쿠폰 3,000원 (최소 20,000원) → 부분취소 후 잔여 30,000원 > 최소
         $this->stubNicePayCancelSuccess();
-        $this->mockCouponRestore();
 
         $data = $this->createNicepayOrderWithCoupon(
             optionCount: 2, unitPrice: 30000, couponDiscount: 3000, minOrderAmount: 20000
@@ -695,6 +766,8 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         // 부분취소는 주문 상태(결제완료)를 유지하고 취소된 옵션만 CANCELLED 로 전이된다(PARTIAL_CANCELLED 폐기).
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
         $this->assertEquals(OrderStatusEnum::CANCELLED, $options[0]->refresh()->option_status);
+        // 조건이 살아 있으니 실제 발급 행도 그대로 USED 다(T11 대조군)
+        $this->assertEquals(CouponIssueRecordStatus::USED, $data['couponIssue']->fresh()->status);
     }
 
     /**
@@ -703,6 +776,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
      * 20,000원 × 2개, 쿠폰 22,000원 할인 (최소 30,000원) → 결제 18,000원
      * 옵션 1개 취소 후 잔여 20,000 < 최소 30,000 → 쿠폰 소멸
      * 재계산: 20,000 > 원 결제 18,000 → 422 (추가 결제 필요, 취소 거부)
+     *
+     * @scenario case=coupon_partial_condition_broken
+     *
+     * @effects partial_cancel_rejected_when_coupon_condition_broken
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_cancel_rejected_when_coupon_condition_no_longer_met(): void
     {
@@ -735,6 +814,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
      * vbank_number 가 있고 payment_status = PAID 이면 PaymentRefundListener 가
      * VBANK_REQUIRES_BANK_INFO 를 반환 → OrderCancellationService 가 취소를 거부.
      * 환불 계좌 정보는 AdminVbankRefundController 를 통해 별도 처리한다.
+     *
+     * @scenario case=deposited_vbank_error
+     *
+     * @effects deposited_vbank_cancel_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_full_cancel_deposited_vbank_fails_with_pg_refund_error(): void
     {
@@ -772,6 +857,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * NicePayments cancelPayment API 오류 시 주문 취소가 실패하고 롤백되어야 한다.
+     *
+     * @scenario case=pg_api_error
+     *
+     * @effects pg_error_rolls_back_cancel
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_fails_and_rolls_back_when_nicepayments_api_throws(): void
     {
@@ -797,6 +888,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
     /**
      * NicePayments API 오류 시 refund_failed 훅이 발동되어야 한다.
+     *
+     * @scenario case=refund_failed_hook
+     *
+     * @effects refund_failed_hook_fired
+     *
+     * @return void 반환값 없음
      */
     public function test_nicepayments_api_error_fires_refund_failed_hook(): void
     {
@@ -832,6 +929,12 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
      * 확인했지만, 그 플래그가 사라진 지금은 **다른 응답자를 세워** 확인한다 — 체인이 실제로
      * 돌고, 이 플러그인만 손을 떼는 것이 요지이기 때문이다(아무도 응답하지 않으면 코어는 PG
      * 거절로 보고 전체를 롤백한다).
+     *
+     * @scenario case=other_pg_payment
+     *
+     * @effects other_pg_payment_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_skips_non_nicepayments_payment(): void
     {

@@ -227,6 +227,34 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제완료·구매확정 관리자 알림도 신규 주문 관리자 알림과 같은 변수를 채운다.
+     *
+     * 두 알림은 정의만 있고 데이터 추출이 없어 코어 기본값(빈 data·context)으로 떨어졌다 — 메일 본문에
+     * `{order_number}` 원문이 그대로 나가고, context 에 주문번호가 없어 관리자 주소로 올리는 단계도 건너뛰었다.
+     *
+     * @effects staff_order_status_notifications_carry_order_data
+     *
+     * @return void 반환값 없음
+     */
+    public function test_staff_order_status_notifications_carry_order_data(): void
+    {
+        foreach (['order_confirmed_admin', 'order_completed_admin'] as $type) {
+            $order = $this->makeGuestOrder('비회원주문자', 'guest@example.com', 'ORD-STAFF-'.$type);
+            $order->total_amount = 12000;
+            $order->total_paid_amount = 12000;
+
+            $result = $this->listener->extractData($this->emptyDefault(), $type, [$order]);
+
+            $this->assertSame('ORD-STAFF-'.$type, $result['data']['order_number'] ?? null, $type.' 의 order_number 가 비었습니다.');
+            $this->assertSame('비회원주문자', $result['data']['customer_name'] ?? null, $type);
+            $this->assertSame('12,000원', $result['data']['total_amount'] ?? null, $type);
+            $this->assertSame('{recipient_name}', $result['data']['name'] ?? null, $type);
+            $this->assertArrayHasKey('order_url', $result['data'], $type);
+            $this->assertSame('ORD-STAFF-'.$type, $result['context']['order_number'] ?? null, $type.' 의 context 에 주문번호가 없어 관리자 주소로 올리지 못합니다.');
+        }
+    }
+
+    /**
      * 비회원 주문 알림 6종은 주문자 연락처를 코어 표준 수신 전화번호 키로 data 에 싣는다.
      *
      * 비회원은 수신자 객체에 전화번호가 없으므로, 문자·알림톡 채널이 이커머스를 모른 채 읽을 수

@@ -480,7 +480,8 @@
         "available": "Available",
         "expiring_soon": "Expiring {{amount}} P",
         "view_history": "Mileage History",
-        "disabled_notice": "Mileage is disabled."
+        "disabled_notice": "Mileage is disabled.",
+        "withdraw_refund_credit_warning": "The {{amount}} P of mileage you received as a refund will also be forfeited and cannot be restored. Use it before withdrawing or contact customer service."
     },
     "user_address_card": {
         "title": "Default shipping address",

@@ -10,10 +10,12 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Mockery;
+use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
@@ -27,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -2109,5 +2112,75 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonPath('data.counts.exchange', 1)
             ->assertJsonPath('data.counts.return', 1)
             ->assertJsonPath('data.data.0.claim_type', 'exchange');
+    }
+
+    // ================================================================
+    // 현금 0원(마일리지 전액) 주문 — 결함 4
+    // ================================================================
+
+    /**
+     * 마일리지로 전액 결제한 무통장 주문은 돌려줄 현금이 없어 환불계좌를 묻지 않고, 자동 처리로 안내한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects refund_account_required_false_for_mileage_only_order
+     */
+    public function test_claimable_options_needs_no_refund_account_for_a_mileage_only_bank_transfer_order(): void
+    {
+        $order = $this->mileageOnlyPaidOrder($this->user, PaymentMethodEnum::DBANK->value);
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', false)
+            ->assertJsonPath('data.refund_account.banks', [])
+            ->assertJsonPath('data.refund_account.prefill', null)
+            ->assertJsonPath('data.refund_auto_approved', true);
+    }
+
+    /**
+     * 현금과 마일리지를 함께 쓴 무통장 주문은 종전대로 환불계좌를 묻는다 — 돌려줄 현금이 있다(비회귀).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects mixed_cash_order_keeps_bank_requirement
+     */
+    public function test_claimable_options_still_requires_an_account_for_a_mixed_cash_and_mileage_bank_order(): void
+    {
+        $order = $this->deliveredClaimOrder(
+            orderOverrides: ['total_points_used_amount' => 5000, 'is_mileage_deducted' => true],
+            paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value],
+        );
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', true);
+    }
+
+    /**
+     * 마일리지로 전액 결제한 주문의 반품은 계좌 없이 접수되고, 완료 처리로 생긴 환불신청서는
+     * 「마일리지로 환불」로 기록된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects mileage_only_refund_is_recorded_as_points
+     */
+    public function test_return_request_of_a_mileage_only_order_needs_no_account(): void
+    {
+        $order = $this->mileageOnlyPaidOrder($this->user, PaymentMethodEnum::DBANK->value, '', OrderStatusEnum::DELIVERED);
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/returns", [
+            'items' => $this->items($order), 'reason_code' => 'defective_product', 'charge_method' => 'deduct_from_refund',
+        ])->assertCreated();
+
+        $service = app(OrderReturnService::class);
+        $return = OrderReturn::query()->where('order_id', $order->id)->firstOrFail();
+        $return = $service->transition($return, ReturnStatusEnum::APPROVED);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTED);
+        $service->completeReturn($return, [], new ClaimCompletionOptions(restoreStockByItem: [], createRefundRequest: true));
+
+        $refund = OrderRefund::query()->where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(RefundMethodEnum::POINTS, $refund->refund_method);
+        $this->assertSame(0.0, (float) $refund->refund_amount);
     }
 }

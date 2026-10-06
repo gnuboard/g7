@@ -594,6 +594,64 @@
                                             ]
                                         },
                                         {
+                                            "comment": "취소된 주문에 들어온 가상계좌 입금(P-D1 · Q11). 주문을 되살리지 않고 자동 환불도 하지 않으므로, 운영자가 고객에게 돌려줘야 한다는 사실을 여기서 말한다.",
+                                            "id": "payment_deposit_after_cancel_warning_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!payment.deposit_after_cancel}}",
+                                            "props": {
+                                                "className": "flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "triangle-exclamation",
+                                                        "size": "sm",
+                                                        "className": "text-red-600 dark:text-red-400 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-red-700 dark:text-red-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.deposit_after_cancel.warning|amount={{payment.deposit_after_cancel?.amount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "입금 전 취소 뒤 PG 가상계좌를 닫지 못함(P-D1). 열린 계좌로 고객이 입금할 수 있으므로 PG 관리자 화면에서 직접 닫게 한다.",
+                                            "id": "payment_vbank_close_failed_warning_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{payment.vbank_close_failed === true}}",
+                                            "props": {
+                                                "className": "flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "triangle-exclamation",
+                                                        "size": "sm",
+                                                        "className": "text-amber-600 dark:text-amber-400 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-amber-700 dark:text-amber-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.vbank_close_failed.warning"
+                                                }
+                                            ]
+                                        },
+                                        {
                                             "comment": "취소/환불 요약 — 취소·환불 금액은 주문(Order) 레벨 집계(total_cancelled/refunded_amount, total_refunded_points_amount)가 SSoT. 결제(payment) 레벨에는 환불 마일리지/환불액 합계가 없으므로 order.data 를 바인딩한다. 개별 환불 레코드의 상태는 환불 탭(claim_history)에서 표시.",
                                             "type": "basic",
                                             "name": "Div",
@@ -651,6 +709,34 @@
                                                                 "className": "text-orange-600 dark:text-orange-400"
                                                             },
                                                             "text": "-{{order.data?.total_refunded_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "환불금액 중 「마일리지로 환불」로 지급한 몫(Q3) — 그중 내역이라 부호 없이 들여 쓴다. 결제행은 결제완료로 남으므로(Q16) 이 줄이 없으면 그 돈이 카드·계좌로 나가지 않았다는 사실이 보이지 않는다.",
+                                                    "id": "payment_refunded_mileage_credit_{{payIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(order.data?.total_refunded_mileage_credit_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm pl-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{order.data?.total_refunded_mileage_credit_amount_formatted}}"
                                                         }
                                                     ]
                                                 },

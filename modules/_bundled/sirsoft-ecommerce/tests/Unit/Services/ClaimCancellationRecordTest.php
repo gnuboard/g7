@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
@@ -46,6 +47,11 @@ class ClaimCancellationRecordTest extends ModuleTestCase
 
     protected OrderRefundRequestService $service;
 
+    /**
+     * 테스트 픽스처와 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +67,11 @@ class ClaimCancellationRecordTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트가 남긴 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -92,9 +103,13 @@ class ClaimCancellationRecordTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * the cancellation record is created when the refund completes 동작을 검증합니다.
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects cancellation_record_is_created_only_on_refund_completion
+     *
+     * @return void 반환값 없음
      */
     public function test_the_cancellation_record_is_created_when_the_refund_completes(): void
     {
@@ -127,6 +142,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects cancellation_record_links_the_refund_that_created_it
+     *
+     * @return void 반환값 없음
      */
     public function test_the_cancellation_record_links_the_refund_that_created_it(): void
     {
@@ -162,6 +179,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects bank_refund_stops_at_requested_without_cancellation_record
+     *
+     * @return void 반환값 없음
      */
     public function test_a_bank_refund_stops_at_requested_and_records_no_cancellation_yet(): void
     {
@@ -196,6 +215,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects unpaid_cancel_skips_the_refund_request
+     *
+     * @return void 반환값 없음
      */
     public function test_an_unpaid_cancellation_skips_the_refund_request(): void
     {
@@ -244,6 +265,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects second_partial_refund_is_not_zeroed_by_double_deduction
+     *
+     * @return void 반환값 없음
      */
     public function test_a_second_partial_refund_is_not_zeroed_by_double_deduction(): void
     {
@@ -287,6 +310,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects second_partial_refund_returns_only_the_remaining_share
+     *
+     * @return void 반환값 없음
      */
     public function test_a_second_partial_refund_returns_only_the_remaining_share(): void
     {
@@ -348,6 +373,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects order_ledger_is_settled_exactly_once_per_intake
+     *
+     * @return void 반환값 없음
      */
     public function test_the_order_ledger_is_settled_exactly_once_per_intake(): void
     {
@@ -385,6 +412,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects item_status_after_a_refund_is_decided_by_the_source
+     *
+     * @return void 반환값 없음
      */
     public function test_the_item_status_after_a_refund_is_decided_by_the_source(): void
     {
@@ -408,6 +437,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects pg_rejection_rolls_the_whole_intake_back
+     *
+     * @return void 반환값 없음
      */
     public function test_a_pg_rejection_rolls_the_whole_intake_back(): void
     {
@@ -459,6 +490,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects auto_advance_sends_one_notification_but_logs_every_step
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_advance_suppresses_intermediate_notifications(): void
     {
@@ -498,6 +531,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects auto_advance_sends_exactly_one_customer_notification
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_advance_sends_exactly_one_customer_notification(): void
     {
@@ -544,6 +579,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects auto_approve_also_sends_exactly_one_notification
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_approve_sends_exactly_one_customer_notification(): void
     {
@@ -600,6 +637,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario gate_case=stopped_method_auto_branch
      *
      * @effects stopped_payment_method_holds_refund_at_requested, stopped_payment_method_sends_one_requested_notification
+     *
+     * @return void 반환값 없음
      */
     public function test_a_stopped_payment_method_holds_the_refund_at_requested(): void
     {
@@ -659,6 +698,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario gate_case=stopped_method_auto_approve_toggle
      *
      * @effects stopped_payment_method_ignores_auto_approve_toggle
+     *
+     * @return void 반환값 없음
      */
     public function test_the_auto_approve_toggle_does_not_advance_a_stopped_payment_method(): void
     {
@@ -685,6 +726,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario gate_case=allowed_method_auto_branch
      *
      * @effects allowed_payment_method_still_auto_completes
+     *
+     * @return void 반환값 없음
      */
     public function test_an_allowed_payment_method_still_auto_completes(): void
     {
@@ -713,6 +756,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario gate_case=operator_allows_stopped_method
      *
      * @effects auto_approve_list_is_the_single_source_of_truth
+     *
+     * @return void 반환값 없음
      */
     public function test_the_operator_list_decides_which_methods_auto_advance(): void
     {
@@ -741,6 +786,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects cancellation_record_walks_requested_then_completed
+     *
+     * @return void 반환값 없음
      */
     public function test_the_cancellation_record_walks_both_steps(): void
     {
@@ -774,6 +821,8 @@ class ClaimCancellationRecordTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects admin_filed_refund_is_not_buyer_withdrawable
+     *
+     * @return void 반환값 없음
      */
     public function test_an_admin_filed_refund_cannot_be_withdrawn_by_the_buyer(): void
     {
@@ -790,5 +839,132 @@ class ClaimCancellationRecordTest extends ModuleTestCase
         $this->assertSame(RefundSourceTypeEnum::ADMIN, $refund->refund_source_type);
 
         $this->assertClaimException('claim_not_withdrawable', fn () => $this->service->withdraw($refund->fresh()));
+    }
+
+    // ================================================================
+    // 결함 2 · E1 — 돈 부수효과 실패는 취소 전체를 되돌린다 / 다른 수단 환불은 결제행을 두고 간다
+    // ================================================================
+
+    /**
+     * 입금 대기 중인 단일 상품 주문을 만들고, 미결제 취소를 허용 상태로 둡니다.
+     *
+     * @param  array  $orderOverrides  주문 덮어쓰기
+     * @return Order 미결제 주문
+     */
+    protected function unpaidOrder(array $orderOverrides = []): Order
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->createSingleItemClaimOrder(29000, 1, $policy, $orderOverrides + ['currency_snapshot' => $this->krwCurrencySnapshot()]);
+        $order = $this->attachPolicyShippings($order, $policy);
+        $order->forceFill(['order_status' => OrderStatusEnum::PENDING_PAYMENT])->save();
+        $order->options->first()->forceFill(['option_status' => OrderStatusEnum::PENDING_PAYMENT])->save();
+        $order->payment?->forceFill(['payment_status' => PaymentStatusEnum::WAITING_DEPOSIT])->save();
+
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cancellable_statuses', [
+            OrderStatusEnum::PENDING_ORDER->value,
+            OrderStatusEnum::PENDING_PAYMENT->value,
+            OrderStatusEnum::PAYMENT_COMPLETE->value,
+        ]);
+
+        return $order->fresh(['options', 'payment', 'shippings']);
+    }
+
+    /**
+     * 환불 없는 취소(미입금)에서 선차감 마일리지 반환이 실패하면 취소 전체가 롤백된다(D2) —
+     * 「취소는 됐는데 마일리지는 영영 안 돌아오는」 상태를 「재시도할 수 있는 실패」로 바꾼다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects unpaid_cancel_rolls_back_when_mileage_restore_fails
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unpaid_cancel_rolls_back_when_mileage_restore_fails(): void
+    {
+        $order = $this->unpaidOrder(['total_points_used_amount' => 3000, 'is_mileage_deducted' => true]);
+        HookManager::addAction('sirsoft-ecommerce.mileage.restore', function () {
+            throw new \RuntimeException('원장 잠금 실패');
+        }, 5);
+
+        try {
+            $this->service->request($order, $this->payload($order));
+            $this->fail('마일리지 반환 실패는 취소를 되돌려야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.mileage_refund_failed', $e->getMessageKey());
+        }
+
+        $this->assertSame(0, OrderCancel::query()->where('order_id', $order->id)->count());
+        $this->assertSame(OrderStatusEnum::PENDING_PAYMENT, $order->options->first()->fresh()->option_status);
+    }
+
+    /**
+     * 환불 없는 취소에서 쿠폰 복원이 실패하면 취소 전체가 롤백된다(F1).
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects unpaid_cancel_rolls_back_when_coupon_restore_fails
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unpaid_cancel_rolls_back_when_coupon_restore_fails(): void
+    {
+        $order = $this->unpaidOrder(['promotions_applied_snapshot' => ['coupon_issue_ids' => [987654]]]);
+        HookManager::addAction('sirsoft-ecommerce.coupon.restore', function () {
+            throw new \RuntimeException('쿠폰 잠금 실패');
+        }, 5);
+
+        try {
+            $this->service->request($order, $this->payload($order));
+            $this->fail('쿠폰 복원 실패는 취소를 되돌려야 한다');
+        } catch (OrderCancellationException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.coupon_restore_failed', $e->getMessageKey());
+        }
+
+        $this->assertSame(0, OrderCancel::query()->where('order_id', $order->id)->count());
+    }
+
+    /**
+     * 결제수단과 다른 수단으로 돌려준 환불(paymentSettled=false)은 결제행의 상태·취소 시각을
+     * 건드리지 않고, 이력에만 수단과 함께 남긴다(Q16·E1).
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects record_cancellation_keeps_the_payment_row_for_a_foreign_method_refund
+     *
+     * @return void 반환값 없음
+     */
+    public function test_record_cancellation_keeps_the_payment_row_for_a_foreign_method_refund(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::RETURN,
+            'refund_number' => 'RF-TEST-'.uniqid(),
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => RefundMethodEnum::POINTS,
+            'refund_amount' => 29000,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+
+        app(OrderCancellationService::class)->recordCancellation(
+            order: $order->fresh(['options', 'payment', 'shippings']),
+            cancelItems: [['order_option_id' => $order->options->first()->id, 'cancel_quantity' => 1]],
+            refund: $refund,
+            transitionOptions: false,
+            syncOrderStatus: false,
+            accumulatePayment: false,
+            recalculatePaidAmount: false,
+            restoreCouponsAndStock: false,
+            paymentSettled: false,
+        );
+
+        $payment = $order->payment()->first();
+        $this->assertSame(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertNull($payment->cancelled_at);
+        $last = (array) collect($payment->cancel_history ?? [])->last();
+        $this->assertSame('points', $last['refund_method']);
+        $this->assertFalse($last['settled_on_payment']);
+        $this->assertSame(29000.0, (float) $last['amount']);
     }
 }

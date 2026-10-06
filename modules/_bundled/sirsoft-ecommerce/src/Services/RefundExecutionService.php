@@ -4,15 +4,21 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Exceptions\RefundLedgerOutsideTransactionException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 
@@ -25,10 +31,24 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
  *
  * 이 클래스는 "환불을 실행하는 방법"만 안다 — 무엇을 환불할지(계산)는
  * OrderAdjustmentService 가, 환불 레코드의 상태 전이와 출처 기록은 호출부가 정한다.
+ *
+ * 돈·권리에 관한 부수효과(마일리지 반환·지급, 쿠폰·재고 복원)의 실패는 삼키지 않는다(D2) —
+ * 예외로 올려 호출부 트랜잭션 전체를 되돌린다. 삼키면 카드는 취소됐는데 마일리지·쿠폰·재고는
+ * 돌아오지 않은 채 「완료」로 닫힌다. 현금영수증 동기화만 커밋 뒤·트랜잭션 밖이라 삼킨다.
  */
 class RefundExecutionService
 {
     use AppliesRefundBankAccount;
+
+    /**
+     * 이번 실행에서 PG 가 승인한 환불 기록 (§14-C 표식용)
+     *
+     * PG 가 돈을 내보낸 뒤 장부 확정이 롤백되면, 호출부가 이 값을 꺼내 critical 로그와 신청서
+     * 표식을 남긴다 — 트랜잭션 롤백은 PG 응답을 되돌리지 못하므로 남길 근거가 이것뿐이다.
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $pgSettlement = null;
 
     /**
      * 클레임 환불이 주문 헤더에 동기화할 수 있는 컬럼 (S3-D17 · #599 validate P2 #8)
@@ -56,20 +76,27 @@ class RefundExecutionService
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
      * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
      * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 저장소 (송금 대상 계좌 갱신)
+     * @param  MileageTransactionRepositoryInterface  $mileageLedger  마일리지 원장 (환불 지급 기록 확인 — fail-closed)
      */
     public function __construct(
         protected StockService $stockService,
         protected EcommerceSettingsService $settingsService,
         protected CashReceiptService $cashReceiptService,
         protected OrderPaymentRepositoryInterface $orderPaymentRepository,
+        protected MileageTransactionRepositoryInterface $mileageLedger,
     ) {}
 
     /**
      * 환불을 실행하고 주문·결제의 환불 누적을 반영합니다.
      *
-     * 클레임(교환/반품/취소·환불) 환불의 진입점이다. 결제행의 취소 누적을 메모리에 먼저 채우고
-     * — PG 리스너가 그 값을 읽어 전액/부분 취소를 가른다 — PG 환불이 필요한 결제수단이면 훅을
-     * 실행한 뒤, 성공했을 때에만 주문의 총 환불 누적과 결제행을 저장한다.
+     * 장부(송금 계좌·결제행 취소 누적·주문 환불 누적)를 먼저 저장하고, PG 환불이 필요한
+     * 결제수단이면 **마지막 단계로** 훅을 부른다(P-D5). PG 리스너는 결제행 누적에 이번 환불이
+     * 이미 들어 있다고 보고 전액/부분 취소를 가르므로 저장된 값이 곧 그 입력이다. PG 가 실패하면
+     * 이 메서드가 여는 트랜잭션(호출부 트랜잭션 안이면 savepoint)이 누적을 함께 되돌린다.
+     *
+     * 환불신청서 실행(`OrderRefundRequestService::executeRefund`)은 이 메서드를 쓰지 않는다 —
+     * 그 경로는 취소신청서·결제행 정리까지 끝낸 뒤 PG 를 부르려고 `prepareLedger()` 와
+     * `executePgRefund()` 를 따로 부른다. 이 메서드는 단독 호출(단위 테스트 등)의 공용 진입점이다.
      *
      * 취소(OrderCancellationService)는 이 메서드를 쓰지 않는다 — 취소는 orderUpdates 로
      * total_paid_amount 자체를 재계산값으로 덮어써 잔여 한도를 이미 좁히므로, 여기서
@@ -80,6 +107,7 @@ class RefundExecutionService
      *
      * 쿠폰/마일리지/재고 복원은 여기서 부르지 않는다 — 클레임은 복원 시점이 환불 시점과
      * 다르다(반품 재고는 회수 도착 시 관리자 선택). 호출부가 자기 시점에 개별 호출한다.
+     * 마일리지 반환·지급은 호출부가 **PG 보다 먼저** 부른다(D2) — 실패하면 PG 를 부르지 않는다.
      *
      * @param  Order  $order  주문
      * @param  OrderRefund  $refund  환불 레코드
@@ -100,6 +128,48 @@ class RefundExecutionService
         bool $executePg = true,
         bool $recordPaymentLedger = true,
     ): void {
+        // 트랜잭션은 한 번만 시도한다(attempts=1) — 교착 재시도가 클로저를 다시 돌리면 PG 를 두 번 부른다.
+        DB::transaction(function () use ($order, $refund, $result, $reason, $executePg, $recordPaymentLedger) {
+            $this->prepareLedger($order, $refund, $result, $recordPaymentLedger);
+
+            // PG사 선택이 필요한 결제수단(카드/가상계좌/계좌이체/휴대폰)만 PG 환불 훅에 진입한다.
+            // 무통장입금(dbank)·포인트·예치금·무료는 PG 리스너가 인식하지 못해 success=false → 예외.
+            if ($executePg && $order->payment && $result->refundAmount > 0
+                && $order->payment->needsPgProvider()) {
+                $this->executePgRefund($order, $refund, $result, $reason);
+            } elseif ($executePg && $order->payment && $result->refundAmount > 0
+                && $refund->refund_method === RefundMethodEnum::PG) {
+                // 수단은 PG 환불인데 결제수단이 PG 를 거치지 않는다(무통장·예치금 등 — P-D4). 예전에는 PG 단계를
+                // 건너뛰고 환불완료로 끝나, 돈은 어디로도 나가지 않았는데 「PG사 환불 완료」 로 남았다.
+                // 운영자가 수단을 계좌 환불로 바꾸게 422 로 막는다.
+                $messageKey = 'sirsoft-ecommerce::exceptions.pg_refund_unsupported';
+
+                throw new OrderCancellationException(__($messageKey), $messageKey);
+            }
+        });
+    }
+
+    /**
+     * PG 앞에서 장부를 준비합니다. (송금 계좌 반영 + 결제행 취소 누적 저장 + 주문 환불 누적)
+     *
+     * PG 는 호출부 트랜잭션의 마지막 단계다(P-D5). 그래서 장부를 PG 앞에서 **저장한다** — 실패한
+     * 환불이 장부를 깎지 않게 하는 것은 이제 저장 순서가 아니라 트랜잭션 롤백이다. 그 보장이
+     * 없으면 PG 실패 뒤에도 누적이 남으므로, 트랜잭션 밖에서 부르면 거절한다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  환불 레코드
+     * @param  AdjustmentResult  $result  계산 결과
+     * @param  bool  $recordPaymentLedger  결제행의 취소 누적을 쌓을지 (그 수단에서 실제 취소가 일어난 환불만 — S1-D24)
+     * @return void
+     *
+     * @throws RefundLedgerOutsideTransactionException 트랜잭션 밖에서 호출했을 때
+     */
+    public function prepareLedger(Order $order, OrderRefund $refund, AdjustmentResult $result, bool $recordPaymentLedger): void
+    {
+        if (! $this->inTransaction()) {
+            throw new RefundLedgerOutsideTransactionException;
+        }
+
         $order->loadMissing('payment');
 
         // 송금 대상 계좌를 이 환불의 계좌로 맞춘다 — PG 환불 API 의 refundReceiveAccount 와
@@ -108,17 +178,10 @@ class RefundExecutionService
         // AppliesRefundBankAccount 독블록에 있다.
         $this->applyRefundBank($order, $this->refundBankInfoOf($refund));
 
-        // 결제행의 취소 누적은 **채우기와 저장을 나눈다**.
-        //
         // 결제행은 PG 훅의 입력이기도 하다 — 리스너는 이 행을 읽고 "이번이 잔액 전부인가" 를
-        // 판정해 전액취소/부분취소 코드를 고른다(NICE 의 `isPartial` 등). 채우지 않고 부르면
+        // 판정해 전액취소/부분취소 코드를 고른다(NICE 의 `isPartial` 등). 누적을 채우지 않고 부르면
         // 마지막 잔액을 환불하는데도 취소액이 아직 0 이어서 "남은 돈이 있다" 로 보이고, PG 에는
-        // **부분취소**로 나간다. 카드사는 원거래를 승인 상태로 남기고 장부만 전액환불로 찍혀
-        // 대사가 갈린다.
-        //
-        // 그렇다고 먼저 저장하면 "실패한 환불이 장부를 깎는" 반대쪽 위험이 생긴다. 호출부가
-        // 트랜잭션을 열지 않은 채 부르면 롤백이 없기 때문이다. 그래서 메모리에만 채워 훅에
-        // 보이게 하고, 실제 기록은 PG 가 받아들인 뒤에 한다.
+        // **부분취소**로 나간다. 그래서 PG 앞에서 이번 환불을 누적해 저장한다.
         //
         // 그리고 그 누적은 **그 결제수단에서 실제로 취소가 일어난 환불에만** 쌓는다 (S1-D24).
         //
@@ -144,20 +207,43 @@ class RefundExecutionService
 
         if ($paymentUpdates !== []) {
             $order->payment->fill($paymentUpdates);
-        }
-
-        // PG사 선택이 필요한 결제수단(카드/가상계좌/계좌이체/휴대폰)만 PG 환불 훅에 진입한다.
-        // 무통장입금(dbank)·포인트·예치금·무료는 PG 리스너가 인식하지 못해 success=false → 예외.
-        if ($executePg && $order->payment && $result->refundAmount > 0
-            && $order->payment->needsPgProvider()) {
-            $this->executePgRefund($order, $refund, $result, $reason);
+            $this->orderPaymentRepository->savePendingChanges($order->payment);
         }
 
         $this->accumulateRefundTotals($order, $result);
+    }
 
-        if ($paymentUpdates !== []) {
-            $this->orderPaymentRepository->savePendingChanges($order->payment);
-        }
+    /**
+     * 지금 DB 트랜잭션 안인지 판정합니다. (prepareLedger 가드 — 테스트가 바꿔 끼울 수 있게 분리)
+     *
+     * @return bool 트랜잭션 안이면 true
+     */
+    protected function inTransaction(): bool
+    {
+        return DB::transactionLevel() > 0;
+    }
+
+    /**
+     * 이번 실행에서 PG 가 승인한 환불 기록을 꺼내고 비웁니다. (§14-C)
+     *
+     * @return array<string, mixed>|null PG 승인 기록 (없으면 null)
+     */
+    public function takePgSettlement(): ?array
+    {
+        $settled = $this->pgSettlement;
+        $this->pgSettlement = null;
+
+        return $settled;
+    }
+
+    /**
+     * 남아 있는 PG 승인 기록을 버립니다. (실행 시작 전 초기화 — 앞선 실행의 값이 섞이지 않게)
+     *
+     * @return void
+     */
+    public function forgetPgSettlement(): void
+    {
+        $this->pgSettlement = null;
     }
 
     /**
@@ -276,6 +362,88 @@ class RefundExecutionService
     }
 
     /**
+     * 클레임 환불신청서에 기록할 환불수단을 정합니다. (결함 4)
+     *
+     * 돌려줄 현금이 남지 않은 회원 주문(마일리지로 전액 결제)은 결제수단과 무관하게 「마일리지」다.
+     * 고객은 마일리지 결제수단을 고를 수 없어 그런 주문도 카드·무통장·가상계좌·무료 수단을 단 채 결제완료로
+     * 끝난다 — 결제수단만 보면 계좌·PG 환불로 기록되어 계좌를 묻거나 승인에서 멈추는데, 실제로 나갈 돈은
+     * 쓴 마일리지뿐이다. 그 밖에는 결제수단의 환불수단(`determineRefundMethod`)을 따른다.
+     *
+     * @param  Order  $order  주문
+     * @return RefundMethodEnum 환불수단
+     */
+    public function refundMethodForClaim(Order $order): RefundMethodEnum
+    {
+        return $this->refundsOnlyMileage($order)
+            ? RefundMethodEnum::POINTS
+            : $this->determineRefundMethod($order);
+    }
+
+    /**
+     * 이 주문에서 돌려줄 현금(결제수단 몫)이 남아 있는지 판정합니다. (계좌 요구 · 환불수단 · 자동 전이 공용)
+     *
+     * 금액 엔진의 현금 상한(`total_paid_amount − total_refunded_amount`)이 0 이면 어떤 신청도 현금 0원이다.
+     * 신청 시점 미리보기가 아니라 **주문 장부**로 판정한다 — 신청 화면은 상품을 고르기 전에 계좌 칸을 그릴지
+     * 정해야 하고, 신청서 단위로 재면 현금이 남은 혼합 주문의 마일리지 우선 부분취소가 「마일리지」로 기록돼
+     * 뒤에 현금을 올리면 그 현금이 어디로도 보내지지 않는다.
+     *
+     * 결제행 수납액도 함께 본다 — 수동 결제완료로 헤더가 0 인 채 결제된 주문을 0원으로 오판하지 않게 한다.
+     * 단 결제가 실제로 끝난 결제행(`paid`·`partial_cancelled`)만 본다(00 ⑭): 결제행은 생성 때부터
+     * `paid_amount_base` 에 결제예정금액이 들어 있어, 상태를 보지 않으면 결제금액 기록을 끈 수동 결제완료
+     * 주문을 「현금 있음」으로 읽는다. 비교는 decimal 문자열 `bccomp`(소수 4자리) — 0.1 + 0.2 같은 부동소수
+     * 오차가 「돌려줄 돈 있음」이 되지 않게 한다(`CancelOrderRequest::hasMoneyToReturn` 과 같은 이유).
+     *
+     * @param  Order  $order  주문
+     * @return bool 돌려줄 현금이 남아 있으면 true
+     */
+    public function hasCashToReturn(Order $order): bool
+    {
+        if ($order->order_status instanceof OrderStatusEnum && $order->order_status->isBeforePayment()) {
+            return false;
+        }
+
+        if (bccomp($this->decimal($order->total_paid_amount), $this->decimal($order->total_refunded_amount), 4) > 0) {
+            return true;
+        }
+
+        $order->loadMissing('payment');
+        $payment = $order->payment;
+
+        if ($payment === null
+            || ! in_array($payment->payment_status, [PaymentStatusEnum::PAID, PaymentStatusEnum::PARTIAL_CANCELLED], true)) {
+            return false;
+        }
+
+        return bccomp($this->decimal($payment->paid_amount_base), $this->decimal($payment->cancelled_amount), 4) > 0;
+    }
+
+    /**
+     * 마일리지로만 돌려주는 주문인지 판정합니다. (현금 0원 + 남은 사용 마일리지 > 0 — 환불수단 「마일리지」 근거)
+     *
+     * 비회원은 마일리지를 쓸 수 없으므로 언제나 false 다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 마일리지로만 돌려주는 회원 주문이면 true
+     */
+    public function refundsOnlyMileage(Order $order): bool
+    {
+        return $order->user_id !== null
+            && ! $this->hasCashToReturn($order)
+            && bccomp($this->decimal($order->total_points_used_amount), $this->decimal($order->total_refunded_points_amount), 4) > 0;
+    }
+
+    /**
+     * 금액을 bccomp 용 decimal 문자열로 바꿉니다. (null 은 0)
+     *
+     * @param  mixed  $value  금액
+     * @return string 소수 4자리 문자열
+     */
+    private function decimal(mixed $value): string
+    {
+        return number_format((float) ($value ?? 0), 4, '.', '');
+    }
+
+    /**
      * 이 주문의 PG 환불에 응답할 리스너가 실제로 등록돼 있는지 판정합니다. (P14)
      *
      * `payment.refund` 는 필터 훅이라 구독자가 없으면 기본값(`success=false`)이 그대로
@@ -287,12 +455,27 @@ class RefundExecutionService
      */
     public function hasPgRefundListener(Order $order): bool
     {
-        // 판정은 **구독자 유무 하나**로 한다. 결제행의 `pg_provider` 가 지금 등록된 제공자
-        // 목록에 있는지까지 보고 싶어지지만, 그러면 거짓 양성이 생긴다 — 제공자 ID 와 리스너
-        // 등록 이름이 다른 플러그인, 여러 수단을 한 리스너로 처리하는 플러그인이 전부 걸린다.
-        // 여기서 잡으려는 것은 "**아무도 응답하지 않는다**" 는 명백한 경우(플러그인 제거)이고,
-        // 그 밖의 실패는 PG 거절로 드러나 사유와 함께 422 로 나간다(P13).
-        return ! empty(HookManager::getFilters()['sirsoft-ecommerce.payment.refund'] ?? []);
+        // 1차 판정은 구독자 유무다 — 아무도 응답하지 않는 명백한 경우(플러그인 제거)를 잡는다.
+        if (empty(HookManager::getFilters()['sirsoft-ecommerce.payment.refund'] ?? [])) {
+            return false;
+        }
+
+        // 2차 판정은 **이 주문의 결제 플러그인**이 켜져 있는가다(P-D6). 다른 PG 플러그인 하나만 켜져 있어도
+        // 구독자는 있으므로, 1차 판정만으로는 꺼진 플러그인의 주문이 PG 환불로 접수돼 실행 때 실패했다.
+        // 켜진 플러그인이 등록한 제공자 목록(`registered_pg_providers`)에 결제행의 제공자가 있는지 본다.
+        // 목록이 비어 있으면(제공자를 등록하지 않는 확장 리스너만 있는 구성) 1차 판정을 따른다 — 제공자 등록
+        // 없이 환불만 처리하는 리스너를 거짓 양성으로 막지 않기 위해서다.
+        $providerId = (string) ($order->payment?->pg_provider ?? '');
+        if ($providerId === '') {
+            return true;
+        }
+
+        $registered = HookManager::applyFilters('sirsoft-ecommerce.payment.registered_pg_providers', []);
+        if (! is_array($registered) || $registered === []) {
+            return true;
+        }
+
+        return in_array($providerId, array_map(fn ($p) => (string) ($p['id'] ?? ''), $registered), true);
     }
 
     /**
@@ -448,9 +631,12 @@ class RefundExecutionService
         // $refund 는 이 환불 시도의 고유 레코드다. PG 리스너가 멱등키(Idempotency-Key)를 조립할 때
         // 사용한다 — 네트워크 재시도로 같은 취소가 두 번 도달해도 PG 가 중복 청구를 차단한다.
         // 인자 추가는 하위호환이다: 기존 리스너(5-파라미터)는 초과 인자를 그대로 무시한다.
+        // `handled` 는 「이 주문의 결제 플러그인이 응답했는가」 다(P-D6). 리스너는 자기 결제일 때만 true 로 바꾼다 —
+        // 다른 PG 플러그인이 구독만 하고 있으면 결과는 기본값 그대로 돌아오고, 그것은 PG 거절이 아니라
+        // 「이 주문의 결제 플러그인이 꺼져 있다」 는 뜻이다.
         $pgResult = HookManager::applyFilters(
             'sirsoft-ecommerce.payment.refund',
-            ['success' => false, 'error_code' => null, 'error_message' => null, 'transaction_id' => null],
+            ['success' => false, 'handled' => false, 'error_code' => null, 'error_message' => null, 'transaction_id' => null],
             $order,
             $order->payment,
             $refundLocal,
@@ -459,6 +645,18 @@ class RefundExecutionService
         );
 
         if (! empty($pgResult['success'])) {
+            // 돈이 나간 사실을 **가장 먼저** 메모리에 남긴다 — 아래 UPDATE 나 커밋이 실패해 장부가
+            // 롤백되면 호출부가 이 값으로 critical 로그와 재실행 표식을 남긴다(§14-C).
+            $this->pgSettlement = [
+                'refund_id' => (int) $refund->id,
+                'refund_number' => $refund->refund_number,
+                'order_id' => (int) $order->id,
+                'order_number' => $order->order_number,
+                'transaction_id' => $pgResult['transaction_id'] ?? null,
+                'amount_local' => $refundLocal,
+                'currency' => $orderCurrency,
+            ];
+
             $refund->update([
                 'pg_transaction_id' => $pgResult['transaction_id'] ?? null,
                 'refund_status' => RefundStatusEnum::COMPLETED,
@@ -487,8 +685,15 @@ class RefundExecutionService
 
             // 키·파라미터를 함께 싣는다 — 호출부(회원·비회원 면)는 번역문이 아니라 키로 응답을
             // 조립하므로, 키가 없으면 PG 거절 사유가 뭉뚱그린 실패 안내로 사라진다.
-            $messageKey = 'sirsoft-ecommerce::exceptions.pg_refund_failed';
-            $messageParams = ['error' => $pgResult['error_message'] ?? 'Unknown error'];
+            // 아무 리스너도 자기 결제로 받지 않았으면 PG 거절이 아니라 플러그인 비활성이다(P-D6) — 사유와 해결책을
+            // 따로 안내한다. 결과를 새 배열로 돌려주는 옛 리스너(`handled` 키 없음)는 응답한 것으로 본다.
+            $unhandled = ($pgResult['handled'] ?? true) === false;
+            $messageKey = $unhandled
+                ? 'sirsoft-ecommerce::exceptions.pg_provider_inactive'
+                : 'sirsoft-ecommerce::exceptions.pg_refund_failed';
+            $messageParams = $unhandled
+                ? ['provider' => (string) ($order->payment->pg_provider ?? '')]
+                : ['error' => $pgResult['error_message'] ?? 'Unknown error'];
 
             throw new OrderCancellationException(__($messageKey, $messageParams), $messageKey, $messageParams);
         }
@@ -497,9 +702,14 @@ class RefundExecutionService
     /**
      * 쿠폰을 복원합니다.
      *
+     * 실패는 삼키지 않는다(F1·D2) — 삼키면 환불은 끝났는데 쿠폰은 사용됨으로 남는다. 호출부
+     * 트랜잭션 전체가 되돌아가고 운영자는 사유를 보고 다시 시도한다.
+     *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
      * @return void
+     *
+     * @throws OrderCancellationException 복원 실패
      */
     public function restoreCoupons(Order $order, AdjustmentResult $result): void
     {
@@ -510,12 +720,14 @@ class RefundExecutionService
                     $order,
                     $result->restoredCouponIssueIds
                 );
-            } catch (\Exception $e) {
-                Log::warning('쿠폰 복원 실패', [
+            } catch (\Throwable $e) {
+                Log::error('쿠폰 복원 실패 — 처리를 중단합니다', [
                     'order_id' => $order->id,
                     'coupon_ids' => $result->restoredCouponIssueIds,
                     'error' => $e->getMessage(),
                 ]);
+
+                throw $this->sideEffectFailure($e, 'sirsoft-ecommerce::exceptions.coupon_restore_failed');
             }
         }
     }
@@ -532,6 +744,8 @@ class RefundExecutionService
      * @param  OrderCancel|null  $orderCancel  취소 레코드 (취소 발 복원 멱등 기준)
      * @param  OrderRefund|null  $orderRefund  환불 레코드 (클레임 환불 실행 멱등 기준)
      * @return void
+     *
+     * @throws OrderCancellationException 반환 실패 (호출부 트랜잭션 전체 롤백 — D2)
      */
     public function restoreMileage(
         Order $order,
@@ -547,6 +761,9 @@ class RefundExecutionService
         }
 
         if ($result->refundPointsAmount > 0) {
+            // 실패를 삼키지 않는다(D2) — 예전에는 PG 가 카드를 취소한 뒤 여기서 실패해도 경고만 남기고
+            // 「완료」로 확정해, 카드는 취소됐는데 마일리지는 돌아오지 않았다. 이제 호출부는 이 반환을
+            // PG 보다 먼저 부르고, 실패하면 PG 를 부르지 않은 채 전체를 되돌린다.
             try {
                 HookManager::doAction(
                     'sirsoft-ecommerce.mileage.restore',
@@ -555,22 +772,100 @@ class RefundExecutionService
                     $orderCancel?->id,
                     $orderRefund?->id
                 );
-            } catch (\Exception $e) {
-                Log::warning('마일리지 복원 실패', [
+            } catch (\Throwable $e) {
+                Log::error('마일리지 반환 실패 — 환불·취소를 중단합니다', [
                     'order_id' => $order->id,
+                    'order_cancel_id' => $orderCancel?->id,
+                    'order_refund_id' => $orderRefund?->id,
                     'points_amount' => $result->refundPointsAmount,
                     'error' => $e->getMessage(),
                 ]);
+
+                throw $this->sideEffectFailure($e, 'sirsoft-ecommerce::exceptions.mileage_refund_failed');
             }
         }
     }
 
     /**
+     * 환불 현금분을 회원 마일리지로 지급합니다. (환불수단 「마일리지로 환불」 — D1)
+     *
+     * 현금(PG·계좌)으로 나갈 환불액을 회원 원장에 무기한 lot 으로 지급한다. 같은 환불의 쓴 마일리지
+     * 반환(`restoreMileage`)과 축이 달라 함께 생길 수 있다 — 호출부는 반환을 먼저, 지급을 나중에 부른다.
+     *
+     * 지급 기록은 **원장으로 확인한다**(fail-closed) — 구독자가 없거나 조용히 건너뛰면 「완료」인데 돈이
+     * 없는 상태(refund 274)가 되풀이되므로, 훅이 끝난 뒤 그 환불의 지급 행이 없으면 실패로 올린다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  float  $amount  지급액 (기준 통화 현금 환불액)
+     * @return void
+     *
+     * @throws OrderClaimException 비회원 주문 (호출부가 먼저 막는 방어선)
+     * @throws OrderCancellationException 지급 실패·원장 기록 없음 (호출부 트랜잭션 전체 롤백)
+     */
+    public function creditMileage(Order $order, OrderRefund $refund, float $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        if ($order->user_id === null) {
+            throw OrderClaimException::refundPointsRequireMember();
+        }
+
+        try {
+            HookManager::doAction('sirsoft-ecommerce.mileage.refund_credit', $amount, $order, (int) $refund->id);
+        } catch (\Throwable $e) {
+            Log::error('환불 마일리지 지급 실패 — 환불을 중단합니다', [
+                'order_id' => $order->id,
+                'order_refund_id' => $refund->id,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $this->sideEffectFailure($e, 'sirsoft-ecommerce::exceptions.mileage_refund_failed');
+        }
+
+        if (! $this->mileageLedger->existsCreditForRefund((int) $refund->id)) {
+            Log::error('환불 마일리지 지급 기록 없음 — 응답한 리스너가 없습니다', [
+                'order_id' => $order->id,
+                'order_refund_id' => $refund->id,
+                'amount' => $amount,
+            ]);
+
+            throw $this->sideEffectFailure(null, 'sirsoft-ecommerce::exceptions.mileage_refund_failed');
+        }
+    }
+
+    /**
+     * 돈·권리 부수효과의 실패를 환불·취소를 중단시키는 예외로 바꿉니다. (D2)
+     *
+     * 이미 취소 예외면(리스너가 자기 키로 던진 경우) 그대로 둔다 — 감싸면 원래 사유가 사라진다.
+     *
+     * @param  \Throwable|null  $previous  원인 예외
+     * @param  string  $messageKey  다국어 키 (공개 면에 그대로 안내해도 되는 문장 — `:error` 없음)
+     * @return OrderCancellationException 호출부 트랜잭션을 롤백시킬 예외
+     */
+    protected function sideEffectFailure(?\Throwable $previous, string $messageKey): OrderCancellationException
+    {
+        if ($previous instanceof OrderCancellationException) {
+            return $previous;
+        }
+
+        return new OrderCancellationException(__($messageKey), $messageKey);
+    }
+
+    /**
      * 재고를 복원합니다.
+     *
+     * 실패는 삼키지 않는다(F2·D2) — 삼키면 환불은 끝났는데 재고가 돌아오지 않는다. 설정 꺼짐·
+     * 미차감 옵션은 실패가 아니라 건너뛸 대상이다.
      *
      * @param  Order  $order  주문
      * @param  array  $cancelItems  복원 대상 (order_option_id / cancel_quantity)
      * @return void
+     *
+     * @throws OrderCancellationException 복원 실패
      */
     public function restoreStock(Order $order, array $cancelItems): void
     {
@@ -596,13 +891,15 @@ class RefundExecutionService
                     $option,
                     $item['cancel_quantity']
                 );
-            } catch (\Exception $e) {
-                Log::warning('재고 복원 실패', [
+            } catch (\Throwable $e) {
+                Log::error('재고 복원 실패 — 처리를 중단합니다', [
                     'order_id' => $order->id,
                     'option_id' => $option->id,
                     'quantity' => $item['cancel_quantity'],
                     'error' => $e->getMessage(),
                 ]);
+
+                throw $this->sideEffectFailure($e, 'sirsoft-ecommerce::exceptions.stock_restore_failed');
             }
         }
     }
@@ -619,8 +916,9 @@ class RefundExecutionService
      * 로그 레벨이 error 인 이유 — CashReceiptService 는 예상 가능한 실패(프로바이더가 success=false
      * 반환, 복호화 불가)를 스스로 삼키고 warning + FAILED 이력으로 남긴다. 따라서 여기까지 예외가
      * 올라왔다면 리스너가 계약을 어긴 것이고, 프로바이더 쪽 영수증이 실제로 취소됐는지조차 알 수 없다
-     * (국세청 기록과 DB 가 어긋날 수 있는 상태). 취소/재고/쿠폰 복원 실패(warning)와 달리 즉시
-     * 사람이 개입해야 하므로 PG 환불 실패와 같은 error 로 둔다.
+     * (국세청 기록과 DB 가 어긋날 수 있는 상태). 즉시 사람이 개입해야 하므로 PG 환불 실패와 같은
+     * error 로 둔다. 재고·쿠폰·마일리지 복원과 달리 삼키는 이유는 하나다 — 이 동기화는 환불이 커밋된
+     * 뒤·트랜잭션 밖에서 돌아 되돌릴 대상이 없고, 실패 이력과 수동 재발급이 복구 경로다.
      *
      * @param  Order  $order  환불이 반영된 주문
      * @param  string|null  $reason  사유

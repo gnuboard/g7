@@ -315,7 +315,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 224개 (정의: `resources/js/handlers/index.ts`).
+핸들러 225개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -471,6 +471,7 @@
 | `processOrderDetailBulkChange` | `sirsoft-ecommerce.processOrderDetailBulkChange` |
 | `saveAdminMemo` | `sirsoft-ecommerce.saveAdminMemo` |
 | `updateChangeQuantity` | `sirsoft-ecommerce.updateChangeQuantity` |
+| `setManualPaidOption` | `sirsoft-ecommerce.setManualPaidOption` |
 | `openConfirmDepositModal` | `sirsoft-ecommerce.openConfirmDepositModal` |
 | `confirmDeposit` | `sirsoft-ecommerce.confirmDeposit` |
 | `initShippingPolicyForm` | `sirsoft-ecommerce.initShippingPolicyForm` |

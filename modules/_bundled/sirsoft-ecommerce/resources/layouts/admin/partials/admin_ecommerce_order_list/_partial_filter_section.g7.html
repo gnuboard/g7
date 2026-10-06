@@ -184,6 +184,12 @@
               <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="cancelled"/>
             </on>
           </chip-checkbox>
+          <!-- F-029b 반품완료 — 전량 반품을 마친 주문은 주문 상태가 반품완료가 된다. 칩이 없으면 그 주문만 골라 볼 수 없고 배송완료 필터에서도 빠진다. -->
+          <chip-checkbox data-type="composite" data-ref="f_029b_status_returned" value="returned" checked="{{(_local.filter.orderStatus || []).includes('returned')}}" icon="box-archive" label="$t:sirsoft-ecommerce.admin.order.status.returned" variant="gray">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.toggleArrayValue" target="_local" path="filter.orderStatus" value="returned"/>
+            </on>
+          </chip-checkbox>
           <!-- F-030 -->
           <chip-checkbox data-type="composite" data-ref="f_030_status_confirmed" value="confirmed" checked="{{(_local.filter.orderStatus || []).includes('confirmed')}}" icon="thumbs-up" label="$t:sirsoft-ecommerce.admin.order.status.confirmed" variant="blue">
             <on type="change">

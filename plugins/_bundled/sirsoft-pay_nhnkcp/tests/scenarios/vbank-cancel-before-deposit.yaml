@@ -1,0 +1,17 @@
+# e2e:allow 화면 변경 없음(배너는 이커머스 관리자 화면 — 모듈 매니페스트 unpaid-vbank-cancel 이 맡는다).
+feature: NHN KCP — 입금 전 취소 가상계좌 발급 취소와 취소 후 입금 기록 (P-D1 · Q11) — #747 C7
+
+description: |
+  이커머스가 입금 전 취소 커밋 뒤 sirsoft-ecommerce.payment.close_vbank 필터로 부르면 자기 결제의 가상계좌를 전체 취소(STSC,
+  환불계좌 없이)로 발급 취소한다. 입금통보가 취소된 주문을 만나면 발급 거래번호가 맞을 때 주문을 되살리지 않고
+  DepositAfterCancelRecorder 로 기록·알림을 남긴 뒤 0000 으로 답한다(종전에는 9999 로 재통보 10회).
+
+axes:
+  role: [close, deposit_webhook]
+
+effects:
+  - kcp_closes_unpaid_vbank_with_full_cancel
+  - kcp_deposit_on_cancelled_order_is_recorded
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/VbankCancelBeforeDepositTest.php

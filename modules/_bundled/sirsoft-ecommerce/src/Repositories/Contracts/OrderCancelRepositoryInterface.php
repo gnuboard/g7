@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
@@ -28,6 +29,16 @@ interface OrderCancelRepositoryInterface
      * @return OrderCancel|null 최근 취소 이력 (없으면 null)
      */
     public function latestByOrderId(int $orderId): ?OrderCancel;
+
+    /**
+     * 취소신청서에 재활성 수량과 시각을 기록합니다. (Q29 배지)
+     *
+     * @param  int  $cancelId  취소신청서 ID
+     * @param  int  $quantity  이번에 되돌린 수량
+     * @param  CarbonInterface  $at  재활성 시각
+     * @return void 반환값 없음
+     */
+    public function markReactivated(int $cancelId, int $quantity, CarbonInterface $at): void;
 
     /**
      * 특정 취소 사유 코드를 사용한 취소 이력 건수를 셉니다.

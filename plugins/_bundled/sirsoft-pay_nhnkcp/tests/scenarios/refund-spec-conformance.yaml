@@ -1,0 +1,20 @@
+# e2e:allow 화면 문구는 이커머스가 그린다 — 플러그인은 취소 요청 필드·부분취소 지원 판정·환불 거절 사유만 바꾼다.
+feature: 취소 요청 공개 사양 정합 (P-D7·P-D8·P-D9·P-D11) — #747 C8
+
+description: |
+  NHN KCP 공개 문서(developer.kcp.co.kr reference/cancel·escrow, guide/mobile-payment·account) 기준.
+  에스크로·달이 바뀐 휴대폰·입금된 가상계좌는 부분취소를 접수 단계에서 막고, 복합과세(TG03) 부분취소에는 과세 분리 금액을 싣고,
+  입금된 가상계좌 자동 환불은 결제사로 보내지 않고 계좌 환불로 안내하며, 부분취소 거래 ID 에 일련번호를 남긴다.
+
+axes:
+  method: [card, escrow, vbank]
+
+effects:
+  - partial_cancel_support_follows_kcp_constraints
+  - tg03_partial_cancel_sends_tax_split
+  - non_tg03_or_full_cancel_omits_tax_split
+  - settled_vbank_refund_is_declined_without_pg_call
+  - partial_cancel_transaction_id_carries_sequence_number
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/RefundSpecConformanceTest.php

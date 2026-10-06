@@ -1543,7 +1543,7 @@ class OrderExchangeService
      * 선교환의 헌 물건 반송 기한을 다시 계산합니다. (§3-5 — 선교환만)
      *
      * 기준은 행 재발송 도착 시각 중 가장 이른 값이고, 도착 기록이 없으면 행 재발송 송장 등록 시각 중
-     * 가장 이른 값이다(PO 예시 「도착한 지 14일」 우선). 기한이 다시 미래가 되면 지연 알림 기록을 비워
+     * 가장 이른 값이다(운영 예시 「도착한 지 14일」 우선). 기한이 다시 미래가 되면 지연 알림 기록을 비워
      * 다음 지연 때 다시 한 번 알린다. 선교환이 아니면 기한을 비운다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
@@ -1683,7 +1683,59 @@ class OrderExchangeService
             $updates['processed_by'] = $processedBy;
         }
 
+        // 결과 청구 방식이 「환불금에서 차감」 이면 신청 경로와 같은 비교를 한다(S4) — 교환 차액 환불이 왕복 배송비를
+        // 덮지 못하면 부족분이 어디에도 청구되지 않는다.
+        $finalMethod = array_key_exists('charge_method', $updates) ? $updates['charge_method'] : $exchange->charge_method;
+        if ($finalMethod === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND) {
+            $exchange->loadMissing(['order', 'exchangeOptions']);
+            $claimItems = [];
+            foreach ($exchange->exchangeOptions as $item) {
+                $claimItems[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->exchange_quantity];
+            }
+
+            $this->assertDeductCoversExchangeCharge(
+                $exchange,
+                $claimItems,
+                (float) ($updates['claim_shipping_fee'] ?? $exchange->claim_shipping_fee),
+                (float) ($updates['total_charge_amount'] ?? $exchange->total_charge_amount),
+            );
+        }
+
         return $this->exchangeRepository->update($exchange, $updates);
+    }
+
+    /**
+     * 「환불금에서 차감」 청구를 교환 차액 환불이 덮는지 판정합니다. (S4 — 금액 수정·완료 공용)
+     *
+     * 덮지 못하면 부족분이 어디에도 청구되지 않는다 — 운영자는 청구 방식을 추가결제로 바꾸고 결제를 받는다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서 (order 로드)
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $claimItems  판정 대상 상품 행과 수량
+     * @param  float  $fee  왕복 배송비
+     * @param  float  $total  총 청구액
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 차액 환불이 청구액보다 작은 경우
+     */
+    protected function assertDeductCoversExchangeCharge(OrderExchange $exchange, array $claimItems, float $fee, float $total): void
+    {
+        if ($total <= 0 || $claimItems === []) {
+            return;
+        }
+
+        $baseline = $this->adjustmentService->preview(
+            $exchange->order,
+            ExchangeAdjustment::fromShippingFee(
+                $claimItems,
+                new ClaimShippingFee(fee: (int) round($fee), claimType: ClaimTypeEnum::EXCHANGE),
+                (int) round((float) $exchange->additional_product_amount - (float) $exchange->refund_product_amount),
+            ),
+            $this->refundPriorityOf($exchange),
+        );
+
+        if ($baseline->getTotalRefundAmount() < $total) {
+            throw OrderClaimException::chargeDeductInsufficient();
+        }
     }
 
     /**
@@ -1744,7 +1796,7 @@ class OrderExchangeService
      *
      * 신청 경로의 `assertChargeMethodUsable` 과 같은 허용 목록(`claim.allowed_charge_methods`)을
      * 읽는다 — 목록 밖 방식이 금액 수정으로 들어오면 신청 화면이 감춘 방식이 우회로가 된다.
-     * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
+     * 차감 가능 여부(deduct) 판정은 여기서 하지 않고 금액 수정(`updateAmounts`)·완료가 `assertDeductCoversExchangeCharge()` 로 한다(S4).
      *
      * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
      * @return void 반환값 없음
@@ -1771,7 +1823,7 @@ class OrderExchangeService
      * 교환을 완료 처리합니다. (D26)
      *
      * 한 트랜잭션에서 ① 신청 상품 완료 전이 ② 원 주문옵션 EXCHANGED 전이 ③ 건별 원 옵션 재고 복구
-     * ④ 원 옵션 적립 회수(후속 옵션이 구매확정 시 다시 적립한다) ⑤ (선택) 차액 환불신청서 접수를
+     * ④ 원 옵션 적립 회수(후속 옵션은 원 행이 이미 받은 적립을 공제한 차액만 적립한다 — S1) ⑤ (선택) 차액 환불신청서 접수를
      * 수행한다.
      *
      * 반품 완료와 달리 주문 재계산·쿠폰 복원은 하지 않는다 — 후속 주문옵션이 원 행의 금액을 그대로
@@ -1849,6 +1901,20 @@ class OrderExchangeService
                 throw OrderClaimException::completionItemsInvalid();
             }
 
+            // 완료 시점의 차액 환불이 차감 청구액보다 작아졌으면(상품 일부 반려 뒤 재계산 등) 완료하지 않는다(S4) —
+            // 반품 완료와 같은 422. 환불신청서를 접수하지 않는 완료도 막는다(부족분이 어디에도 청구되지 않는다).
+            if ($exchange->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND) {
+                $exchange->loadMissing(['order', 'exchangeOptions']);
+                $living = [];
+                foreach ($exchange->exchangeOptions as $item) {
+                    if (in_array($item->option_status, [ExchangeStatusEnum::REJECTED, ExchangeStatusEnum::WITHDRAWN], true)) {
+                        continue;
+                    }
+                    $living[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->exchange_quantity];
+                }
+                $this->assertDeductCoversExchangeCharge($exchange, $living, (float) $exchange->claim_shipping_fee, (float) $exchange->total_charge_amount);
+            }
+
             $restoredAny = false;
 
             foreach ($targets as $item) {
@@ -1900,7 +1966,7 @@ class OrderExchangeService
                     }
 
                     // 원 옵션에 남은 적립 lot 을 회수한다(현재 정책은 회수하지 않는다 —
-                    // `cancelEarnForOption()`). 같은 구매의 적립은 후속 옵션이 구매확정될 때 다시 발생한다.
+                    // `cancelEarnForOption()`). 후속 옵션의 적립은 원 행이 이미 받은 적립을 공제하고 남은 차액만 생긴다(`UserMileageService::earnForOrderOption` — S1).
                     $this->mileageService->cancelEarnForOption($order, $exchangedOption->fresh() ?? $exchangedOption);
                 }
             }
@@ -3783,7 +3849,8 @@ class OrderExchangeService
             'refund_bank_holder' => $exchange->refund_bank_holder,
             'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
             'refund_status' => RefundStatusEnum::REQUESTED,
-            'refund_method' => $this->refundExecutionService->determineRefundMethod($order),
+            // 돌려줄 현금이 없는 회원 주문은 결제수단과 무관하게 「마일리지」다(결함 4).
+            'refund_method' => $this->refundExecutionService->refundMethodForClaim($order),
             'reason_code' => $exchange->reason_code,
             'reason_detail' => $exchange->reason_detail,
             'fault_type' => $exchange->fault_type,

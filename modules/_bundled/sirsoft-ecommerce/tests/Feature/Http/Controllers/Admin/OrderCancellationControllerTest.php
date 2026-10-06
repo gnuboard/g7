@@ -1173,15 +1173,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'total_amount' => 30000,
         ]);
 
-        // 쿠폰 복원 훅 리스너 등록 (테스트 환경에서 실제 DB 업데이트 시뮬레이션)
-        HookManager::addAction('sirsoft-ecommerce.coupon.restore', function ($order, $couponIssueIds) {
-            CouponIssue::whereIn('id', $couponIssueIds)
-                ->update([
-                    'status' => CouponIssueRecordStatus::AVAILABLE->value,
-                    'used_at' => null,
-                    'order_id' => null,
-                ]);
-        }, 10);
+        // 가짜 리스너 없이 모듈이 등록한 실제 CouponRestoreListener 가 복원한다(T11)
 
         // When: 전체취소 요청
         $response = $this->actingAs($this->adminUser)
@@ -1197,6 +1189,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
         $couponIssue->refresh();
         $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status);
+        $this->assertNull($couponIssue->used_at);
     }
 
     // ========================================

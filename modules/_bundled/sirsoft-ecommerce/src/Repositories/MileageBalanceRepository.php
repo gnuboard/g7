@@ -27,6 +27,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
         'admin_earn',
         'refund_restore',
         'order_cancel_restore',
+        'refund_credit',
     ];
 
     /**
@@ -169,6 +170,8 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
         // 페이지 경계가 밀리지 않는다.
         $pairs = MileageTransaction::query()
             ->select('user_id', 'currency')
+            // 회원 삭제로 연결이 끊긴 행(user_id NULL)은 잔액 주인이 없다 — 넘기면 recalculateForUser(int) 가 죽는다(E3)
+            ->whereNotNull('user_id')
             ->distinct()
             ->orderBy('user_id')
             ->orderBy('currency')

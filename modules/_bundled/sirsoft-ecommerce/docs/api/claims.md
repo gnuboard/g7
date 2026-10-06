@@ -57,8 +57,13 @@
 (`order_payments.refund_bank_code`)가 있으면 그것으로 충분해 요청에 다시 싣지 않아도 된다.
 
 판정은 `claimable-options` 응답의 `refund_account.required` 와 **같은 술어**
-(`OrderRefundRequestService::refundsToBankAccount()`)다. 화면은 그 값으로 계좌 칸을 세우므로,
+(`OrderRefundRequestService::refundsToBankAccount()` AND `hasCashToReturn()`)다. 화면은 그 값으로 계좌 칸을 세우므로,
 칸이 선 주문은 반드시 이 게이트를 지나고 칸이 없는 주문은 이 게이트에 걸리지 않는다.
+
+**돌려줄 현금이 없는 주문(마일리지로 전액 결제)은 계좌를 묻지 않는다.** 결제수단이 무통장·가상계좌라도
+`refund_account.required = false` 이고, 환불신청서는 「마일리지로 환불」(`points`)로 기록되며, 계좌 송금이
+없으므로 결제수단 자동승인 게이트를 거치지 않는다(`refund_auto_approved = true` — 즉시 취소 대상 상품이면
+접수와 함께 완료되고 쓴 마일리지가 돌아온다). 현금과 마일리지를 함께 쓴 주문은 종전과 같다.
 
 막지 않으면 계좌가 빈 채로 승인·[환불하기]까지 지나 **돈은 나가지 않았는데 장부만
 `completed`** 로 닫힌다(2026-09-22 #599 3차 실측 L-8).
@@ -212,7 +217,14 @@
 | refund_amount | number | `29000` | PG 환불 금액 |
 | refund_amount_formatted | string | `29,000원` | PG 환불 금액 표기 |
 | refund_points_amount | number | `0` | 마일리지 환불 금액 |
-| refund_points_amount_formatted | string | `0원` | 마일리지 환불 표기 |
+| refund_points_amount_formatted | string | `0원` | 사용 마일리지 반환 표기 |
+| points_not_deducted | boolean | `false` | 주문의 사용 마일리지가 회원 잔액에서 차감되지 않아 마일리지 몫을 0 으로 낸 것인지 — 참이면 `refund_points_amount` 는 0 이고 화면은 「0 (차감되지 않은 마일리지)」로 이유를 보인다 |
+| refund_mileage_credit_amount | number | `0` | 「마일리지로 환불」로 완료돼 회원 마일리지로 지급된 현금 환불액 (완료 전·다른 수단이면 0) |
+| refund_mileage_credit_amount_formatted | string | `0원` | `refund_mileage_credit_amount` 표기 |
+| exchange_difference_refund_total | number | `5000` | 교환으로 받은 상품의 환불이면 그 교환 때 낸 상위 옵션 차액 중 이 환불이 돌려주는 몫의 합계(카드·마일리지 합, 없으면 0) |
+| exchange_difference_refund_total_formatted | string | `5,000원` | `exchange_difference_refund_total` 표기 |
+| exchange_difference_refunds_formatted | string\|null | `5,000원 (신용카드)` | 합계와 낸 수단 표기. 수단이 둘이면 `5,000원 (신용카드 3,000원 · 마일리지 2,000원)`. 상세에서만 채우고 목록·차액 없음은 `null` |
+| pg_settled_pending_ledger | boolean | `false` | PG 승인 뒤 장부 반영이 실패해 표식만 남은 승인 신청서인지 — 참이면 [환불하기]가 PG 를 부르지 않고 장부만 확정한다 |
 | refund_shipping_amount | number | `0` | 환불 배송비 |
 | refund_shipping_amount_formatted | string | `0원` | 환불 배송비 표기 |
 | refund_total | number | `29000` | PG + 마일리지 환불 합계 |
@@ -519,6 +531,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- | --- |
 | claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`, `available_payment_methods`) 포함 |
 | progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
+| linked_claims | object | — | 연결 신청서(보완 5 · Q8) — 관리자 상세와 같은 구조([admin-claims.md](admin-claims.md) 상세 봉투의 `linked_claims`). `detail_url` 은 회원이면 `/mypage/claims/…`, 비회원 조회면 `{shop}/guest/claims/…` 다. 비회원 조회(`guest/orders/{orderNumber}/claims/{claimNumber}`)도 같은 봉투다 |
 
 **응답 예시**
 

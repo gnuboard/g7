@@ -10,6 +10,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { manualPaidRequestFields, refreshManualPaidPreview, resetManualPaidState, SALES_STATUSES } from './manualPaidEffectsHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Order')) ?? {
@@ -782,10 +783,10 @@ export function loadVisibleFiltersHandler(
  *   "handler": "sirsoft-ecommerce.buildOrderBulkConfirmData"
  * }
  */
-export function buildOrderBulkConfirmDataHandler(
+export async function buildOrderBulkConfirmDataHandler(
     _action: ActionWithParams,
     _context: ActionContext
-): void {
+): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core) return;
 
@@ -827,8 +828,25 @@ export function buildOrderBulkConfirmDataHandler(
         },
     });
 
+    // 수동 결제 처리 항목(Q13) — 창을 열 때마다 세 체크를 모두 켠 채 다시 시작한다.
+    resetManualPaidState();
+
     // 모달 열기
     G7Core.modal?.open?.('modal_bulk_confirm');
+
+    // 창을 먼저 띄우고 그 안에서 미리보기를 불러온다(클레임 완료 모달과 같은 순서).
+    // 판매 상태로 가는 변경만 대상이다 — 결제 전·취소 주문이 섞여 있는지는 서버가 판정한다.
+    if (SALES_STATUSES.includes(bulkOrderStatus)) {
+        await refreshManualPaidPreview({
+            kind: 'orders',
+            body: {
+                ids: selectedItems,
+                order_status: bulkOrderStatus,
+                ...(bulkCourier ? { carrier_id: bulkCourier } : {}),
+                ...(bulkTrackingNumber ? { tracking_number: bulkTrackingNumber } : {}),
+            },
+        });
+    }
 }
 
 /**
@@ -872,6 +890,8 @@ export async function executeOrderBulkActionHandler(
     if (confirmData.trackingNumber) {
         body.tracking_number = confirmData.trackingNumber;
     }
+    // 확인 창에서 고른 세 항목 — 판매 상태로 가는 요청에만 싣는다(서버는 미지정을 「켬」으로 본다).
+    Object.assign(body, manualPaidRequestFields(confirmData.orderStatus));
 
     try {
         await G7Core.api.patch(
@@ -894,6 +914,7 @@ export async function executeOrderBulkActionHandler(
         });
         G7Core.state.set({
             bulkConfirmData: null,
+            manualPaidPreview: null,
         });
 
         // DataSource 리프레시
@@ -913,5 +934,8 @@ export async function executeOrderBulkActionHandler(
             || G7Core.t?.('sirsoft-ecommerce.admin.order.bulk.error')
             || '일괄 처리에 실패했습니다.'
         );
+        // 실패를 삼키면 확인 창의 성공 분기(`<close-modal/>`)가 돌아 창이 닫히고 고른 처리 항목이 사라진다.
+        // 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다 — 사유 토스트는 여기서 한 번만 띄운다.
+        throw error;
     }
 }

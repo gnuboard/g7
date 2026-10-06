@@ -8,10 +8,14 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderOptionResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderPaymentResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -149,6 +153,46 @@ class OrderResourceFieldsTest extends ModuleTestCase
 
         // Then: total_quantity = 2 + 3 + 5 = 10
         $this->assertEquals(10, $resource['total_quantity']);
+    }
+
+    /**
+     * 합계 줄의 정가·수량은 판매가·결제액과 같은 「남은 상품」 기준이다.
+     *
+     * 종전에는 정가·수량만 취소 행까지 더해, 부분취소 주문에서 「정가 114,000 · 4개」 옆에 「판매가 57,000」이
+     * 서는 기준 혼재가 생겼다. 교환이 끝난 주문은 원 행과 후속 행이 같은 상품을 두 번 세었다. 판정은 재계산
+     * 입력과 같다 — 취소 행·교환완료로 닫힌 원 행은 빼고, 원 행이 아직 교환 진행 중인 후속 행도 뺀다.
+     *
+     * @effects order_total_list_price_and_quantity_count_only_accountable_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_totals_count_only_accountable_rows(): void
+    {
+        $snapshot = fn (int $list) => ['list_price' => $list, 'selling_price' => $list];
+
+        // 부분취소 — 살아 있는 행 2개 × 28,500, 취소 행 2개 × 28,500
+        $order = OrderFactory::new()->create();
+        OrderOptionFactory::new()->forOrder($order)->create(['quantity' => 2, 'unit_price' => 28500, 'subtotal_price' => 57000, 'option_status' => OrderStatusEnum::DELIVERED, 'option_snapshot' => $snapshot(28500)]);
+        OrderOptionFactory::new()->forOrder($order)->create(['quantity' => 2, 'unit_price' => 28500, 'subtotal_price' => 57000, 'option_status' => OrderStatusEnum::CANCELLED, 'option_snapshot' => $snapshot(28500)]);
+        $resource = (new OrderResource($order->load('options')))->resolve();
+        $this->assertEquals(57000, $resource['total_list_price'], '취소 행 정가를 더했습니다.');
+        $this->assertEquals(2, $resource['total_quantity'], '취소 행 수량을 더했습니다.');
+
+        // 교환 완료 — 원 행(EXCHANGED)은 빼고 후속 행(교환으로 들어온 상품)은 센다
+        $exchanged = OrderFactory::new()->create();
+        $source = OrderOptionFactory::new()->forOrder($exchanged)->create(['quantity' => 1, 'unit_price' => 10000, 'subtotal_price' => 10000, 'option_status' => OrderStatusEnum::EXCHANGED, 'option_snapshot' => $snapshot(10000)]);
+        OrderOptionFactory::new()->forOrder($exchanged)->create(['quantity' => 1, 'unit_price' => 12000, 'subtotal_price' => 12000, 'option_status' => OrderStatusEnum::DELIVERED, 'option_snapshot' => $snapshot(12000), 'source_type' => 'exchange', 'source_option_id' => $source->id]);
+        $resource = (new OrderResource($exchanged->load('options')))->resolve();
+        $this->assertEquals(12000, $resource['total_list_price'], '교환 완료 주문의 원 행과 후속 행을 함께 셌습니다.');
+        $this->assertEquals(1, $resource['total_quantity']);
+
+        // 교환 진행 중 — 원 행이 아직 주체이므로 후속 행을 빼고 원 행을 센다
+        $inProgress = OrderFactory::new()->create();
+        $source = OrderOptionFactory::new()->forOrder($inProgress)->create(['quantity' => 1, 'unit_price' => 10000, 'subtotal_price' => 10000, 'option_status' => OrderStatusEnum::EXCHANGE_IN_PROGRESS, 'option_snapshot' => $snapshot(10000)]);
+        OrderOptionFactory::new()->forOrder($inProgress)->create(['quantity' => 1, 'unit_price' => 12000, 'subtotal_price' => 12000, 'option_status' => OrderStatusEnum::PREPARING, 'option_snapshot' => $snapshot(12000), 'source_type' => 'exchange', 'source_option_id' => $source->id]);
+        $resource = (new OrderResource($inProgress->load('options')))->resolve();
+        $this->assertEquals(10000, $resource['total_list_price'], '교환 진행 중 후속 행을 셌습니다.');
+        $this->assertEquals(1, $resource['total_quantity']);
     }
 
     /**
@@ -793,5 +837,39 @@ class OrderResourceFieldsTest extends ModuleTestCase
 
         $this->assertFalse($resource['is_cross_currency']);
         $this->assertSame(12000, $resource['total_due_charge_amount']);
+    }
+
+    /**
+     * 주문 상세는 현금 환불 중 마일리지로 지급한 몫을 따로 싣는다 — 「환불금액」 줄의 그중 내역(Q3).
+     *
+     * @effects order_detail_exposes_the_refunded_mileage_credit_total
+     *
+     * @return void 반환값 없음
+     */
+    public function test_refunded_mileage_credit_total_is_exposed(): void
+    {
+        $order = OrderFactory::new()->create(['currency' => 'KRW', 'total_refunded_amount' => 15000]);
+        OrderPaymentFactory::new()->forOrder($order)->create([
+            'payment_method' => PaymentMethodEnum::CARD->value,
+            'currency' => 'KRW',
+        ]);
+
+        foreach ([[RefundMethodEnum::POINTS, 10000], [RefundMethodEnum::PG, 5000]] as [$method, $amount]) {
+            OrderRefund::create([
+                'order_id' => $order->id,
+                'refund_source_type' => RefundSourceTypeEnum::DIRECT,
+                'refund_number' => 'RF-'.uniqid(),
+                'refund_status' => RefundStatusEnum::COMPLETED,
+                'refund_method' => $method,
+                'refund_amount' => $amount,
+                'refund_points_amount' => 0,
+                'refund_shipping_amount' => 0,
+            ]);
+        }
+
+        $resource = (new OrderResource($order->fresh('payment')))->resolve();
+
+        $this->assertSame(10000, (int) $resource['total_refunded_mileage_credit_amount']);
+        $this->assertStringContainsString('10,000', $resource['total_refunded_mileage_credit_amount_formatted']);
     }
 }

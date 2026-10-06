@@ -25,6 +25,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
@@ -995,6 +996,17 @@ class PaymentCallbackController
                 $precheckError = $currentPayment === null
                     ? 'payment_not_found'
                     : $this->validateVbankNotifyContext($order, $currentPayment, $validated, $tid, $amt);
+
+                // 취소된 주문의 입금(P-D1 · Q11) — 주문은 되살리지 않는다. 통보에는 서명이 없으므로 PG 거래 조회로 입금이
+                // 확인될 때만 기록·운영자 알림을 남기고 OK 로 재통보를 멈춘다. 확인되지 않으면 종전대로 FAIL.
+                $issuedTid = trim((string) ($currentPayment?->transaction_id ?: (($currentPayment?->payment_meta ?? [])['vbank_tid'] ?? '')));
+                if ($precheckError === 'order_cancelled'
+                    && $issuedTid !== '' && hash_equals($issuedTid, $tid)
+                    && $this->confirmVbankDepositWithPg($currentPayment, $tid, $amt) === null) {
+                    app(DepositAfterCancelRecorder::class)->record($order, (float) $amt, 'nicepayments', $tid);
+
+                    return response('OK', 200)->header('Content-Type', 'text/plain');
+                }
 
                 if ($precheckError !== null) {
                     Log::warning('NicePayments: vbank notify context mismatch', [

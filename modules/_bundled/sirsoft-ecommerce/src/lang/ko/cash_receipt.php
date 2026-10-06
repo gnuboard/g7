@@ -84,6 +84,7 @@ return [
         'provider_not_configured' => '현금영수증 발급 프로바이더가 설정되지 않았습니다.',
         'no_provider_handled' => '현금영수증 발급 요청을 처리한 프로바이더가 없습니다.',
         'no_issuable_amount' => '발급 가능한 현금성 금액이 없습니다.',
+        'currency_conversion_failed' => '결제 통화로 금액을 환산할 수 없어 현금영수증을 발급하지 않았습니다. 주문의 통화 정보를 확인해 주세요.',
         'identifier_unavailable' => '재발급에 필요한 식별번호를 복호화할 수 없습니다. 관리자가 식별번호를 다시 입력해 발급해야 합니다.',
         'payment_not_found' => '결제 정보를 찾을 수 없습니다.',
         'not_cash_payment' => '무통장입금 주문만 현금영수증을 발급할 수 있습니다.',

@@ -182,6 +182,76 @@ enum OrderStatusEnum: string
     }
 
     /**
+     * 결제 전 상태에서 판매 상태(결제완료 ~ 구매확정)로 올라가는 전이인지 판정합니다. (수동 결제 처리 P — Q13)
+     *
+     * 이 전이는 PG 승인·입금확인을 거치지 않으므로 재고 차감·사용 마일리지 차감·결제금액 기록을
+     * 운영자가 확인 창에서 고른 대로 따로 처리해야 한다. 재활성(취소 → 판매)과 클레임 코스 복귀는
+     * 걸리지 않는다.
+     *
+     * @param  self|string|null  $from  변경 전 상태
+     * @param  self|string|null  $to  변경 후 상태
+     * @return bool 결제 코스 진입 전이면 true
+     */
+    public static function movesIntoPaidCourse(self|string|null $from, self|string|null $to): bool
+    {
+        $from = $from instanceof self ? $from : self::tryFrom((string) $from);
+        $to = $to instanceof self ? $to : self::tryFrom((string) $to);
+
+        return $from !== null && $to !== null && $from->isBeforePayment()
+            && in_array($to, self::salesEligibleStatuses(), true);
+    }
+
+    /**
+     * 취소 상태에서 판매 상태로 되살리는 전이인지 판정합니다. (재활성 R — Q14·Q26)
+     *
+     * @param  self|string|null  $from  변경 전 상태
+     * @param  self|string|null  $to  변경 후 상태
+     * @return bool 재활성 전이면 true
+     */
+    public static function revivesFromCancelled(self|string|null $from, self|string|null $to): bool
+    {
+        $from = $from instanceof self ? $from : self::tryFrom((string) $from);
+        $to = $to instanceof self ? $to : self::tryFrom((string) $to);
+
+        return $from === self::CANCELLED && $to !== null && in_array($to, self::salesEligibleStatuses(), true);
+    }
+
+    /**
+     * 활성 상품 상태 값 목록에서 부모 주문 상태를 파생합니다. (순수 함수)
+     *
+     * 상품 상태 동기화(`OrderOptionService::syncParentOrderStatus`)와 확인 창 미리보기의 부모 상태
+     * 시뮬레이션이 같은 규칙을 써야 미리보기가 실행과 갈리지 않는다. 활성 상품이 없으면(전부 취소)
+     * 취소, 하나의 상태면 그 상태, 섞이면 진행 순서상 가장 낮은 상태(보수적)다.
+     *
+     * @param  array<int, string>  $activeStatusValues  취소·클레임 코스를 뺀 활성 상품 상태 값
+     * @param  bool  $hasAnyOption  상품 행이 하나라도 있는지 (없으면 파생하지 않음)
+     * @return self|null 파생 상태 (상품 행이 없으면 null)
+     */
+    public static function deriveParentStatus(array $activeStatusValues, bool $hasAnyOption = true): ?self
+    {
+        $values = array_values(array_unique($activeStatusValues));
+
+        if ($values === []) {
+            return $hasAnyOption ? self::CANCELLED : null;
+        }
+
+        if (count($values) === 1) {
+            return self::from($values[0]);
+        }
+
+        $order = self::progressOrderValues();
+        $lowest = PHP_INT_MAX;
+        foreach ($values as $value) {
+            $index = array_search($value, $order, true);
+            if ($index !== false && $index < $lowest) {
+                $lowest = $index;
+            }
+        }
+
+        return self::from($order[$lowest]);
+    }
+
+    /**
      * 결제 이후 단계(결제완료 ~ 구매확정)인지 확인합니다. 취소는 결제 이후가 아닙니다.
      *
      * 입금 기록, 상태 전이의 결제금액 정합화, 관리자 입금확인 창(리소스 `is_past_payment`)이 같은 판정을 쓴다.

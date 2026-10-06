@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -147,6 +148,31 @@ class OrderRefundRequestService
         }
 
         return array_key_first($branches);
+    }
+
+    /**
+     * 이 주문에서 돌려줄 현금(결제수단 몫)이 남아 있는지 판정합니다. (결함 4 — 계좌 요구·환불수단·자동 전이 공용)
+     *
+     * 판정 본문은 `RefundExecutionService::hasCashToReturn()` 하나다 — 그 서비스가 이 서비스를 주입받을 수
+     * 없어(순환) 술어를 그쪽에 두고 여기서 위임한다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 돌려줄 현금이 남아 있으면 true
+     */
+    public function hasCashToReturn(Order $order): bool
+    {
+        return $this->refundExecutionService->hasCashToReturn($order);
+    }
+
+    /**
+     * 마일리지로만 돌려주는 회원 주문인지 판정합니다. (현금 0원 + 남은 사용 마일리지 > 0)
+     *
+     * @param  Order  $order  주문
+     * @return bool 마일리지로만 돌려주면 true
+     */
+    public function refundsOnlyMileage(Order $order): bool
+    {
+        return $this->refundExecutionService->refundsOnlyMileage($order);
     }
 
     /**
@@ -343,7 +369,63 @@ class OrderRefundRequestService
         $gateStatuses = $payload['gate_statuses']
             ?? ($branch === self::BRANCH_AUTO ? $this->instantCancelStatusValues() : $this->refundRequestStatusValues());
 
-        $outcome = DB::transaction(function () use ($order, $items, $reason, $payload, $refundPriority, $branch, $sourceType, $gateStatuses) {
+        // 자동 전이(`autoAdvance`)가 이 트랜잭션 안에서 PG 를 부를 수 있다. 그 안쪽 실행의 트랜잭션은
+        // savepoint 라 **바깥 커밋 실패는 안쪽 catch 가 잡지 못한다** — 여기서 한 번 더 받아 PG 승인
+        // 기록을 남긴다(§14-C). 표식 대상 신청서가 같은 트랜잭션에서 생겨 함께 롤백됐으면 표식은
+        // 건너뛰고 critical 로그만 남는다(사람이 PG 콘솔과 대사).
+        $this->refundExecutionService->forgetPgSettlement();
+
+        try {
+            $outcome = $this->requestInTransaction($order, $items, $reason, $payload, $refundPriority, $branch, $sourceType, $gateStatuses);
+        } catch (\Throwable $e) {
+            $settled = $this->refundExecutionService->takePgSettlement();
+
+            if ($settled !== null) {
+                $this->recordOrphanPgSettlement((int) $settled['refund_id'], $settled, $e);
+            }
+
+            throw $e;
+        }
+
+        // 현금영수증 동기화는 트랜잭션 밖이다 — 재발급 실패 이력이 롤백에 휩쓸리면 안 되고,
+        // 프로바이더 왕복 2회 동안 DB 잠금을 붙들 수 없다(취소 파이프라인과 같은 규율).
+        if ($outcome['cancel'] !== null || $outcome['refund']?->refund_status === RefundStatusEnum::COMPLETED) {
+            $this->cancellationService->syncCashReceiptAfterCancellation($order->fresh(), $reason->code);
+        }
+
+        return [
+            'branch' => $branch,
+            'cancel' => $outcome['cancel'],
+            'refund' => $outcome['refund'],
+            // 재계산 결과 — 복원된 쿠폰 ID 등 "이 취소가 무엇을 되돌렸는가" 를 호출부가 읽는다.
+            'adjustment' => $outcome['adjustment'],
+        ];
+    }
+
+    /**
+     * 접수 본문을 한 트랜잭션에서 실행합니다. (request() 의 쓰기 단계)
+     *
+     * @param  Order  $order  주문
+     * @param  array  $items  대상 상품
+     * @param  ClaimReason  $reason  사유
+     * @param  array  $payload  접수 페이로드
+     * @param  mixed  $refundPriority  환불 우선순위 (페이로드 그대로 — RefundPriorityEnum)
+     * @param  string  $branch  분기
+     * @param  mixed  $sourceType  발생 출처 (페이로드 그대로 — RefundSourceTypeEnum)
+     * @param  array<int, string>  $gateStatuses  자격 판정 상태 목록
+     * @return array{cancel: ?OrderCancel, refund: ?OrderRefund, adjustment: AdjustmentResult} 접수 결과
+     */
+    protected function requestInTransaction(
+        Order $order,
+        array $items,
+        ClaimReason $reason,
+        array $payload,
+        mixed $refundPriority,
+        string $branch,
+        mixed $sourceType,
+        array $gateStatuses,
+    ): array {
+        return DB::transaction(function () use ($order, $items, $reason, $payload, $refundPriority, $branch, $sourceType, $gateStatuses) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
             $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment']);
@@ -411,20 +493,6 @@ class OrderRefundRequestService
 
             return ['cancel' => null, 'refund' => $refund, 'adjustment' => $adjustment];
         });
-
-        // 현금영수증 동기화는 트랜잭션 밖이다 — 재발급 실패 이력이 롤백에 휩쓸리면 안 되고,
-        // 프로바이더 왕복 2회 동안 DB 잠금을 붙들 수 없다(취소 파이프라인과 같은 규율).
-        if ($outcome['cancel'] !== null || $outcome['refund']?->refund_status === RefundStatusEnum::COMPLETED) {
-            $this->cancellationService->syncCashReceiptAfterCancellation($order->fresh(), $reason->code);
-        }
-
-        return [
-            'branch' => $branch,
-            'cancel' => $outcome['cancel'],
-            'refund' => $outcome['refund'],
-            // 재계산 결과 — 복원된 쿠폰 ID 등 "이 취소가 무엇을 되돌렸는가" 를 호출부가 읽는다.
-            'adjustment' => $outcome['adjustment'],
-        ];
     }
 
     /**
@@ -476,7 +544,8 @@ class OrderRefundRequestService
             'refund_source_id' => null,
             'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
             'refund_status' => RefundStatusEnum::REQUESTED,
-            'refund_method' => $this->refundExecutionService->determineRefundMethod($order),
+            // 돌려줄 현금이 없는 회원 주문은 결제수단과 무관하게 「마일리지」다(결함 4).
+            'refund_method' => $this->refundExecutionService->refundMethodForClaim($order),
             'reason_code' => $reason->code,
             'reason_detail' => $payload['reason_detail'] ?? null,
             'fault_type' => $reason->fault_type,
@@ -494,6 +563,8 @@ class OrderRefundRequestService
             'refund_bank_code' => $payload['refund_bank']['bank_code'] ?? null,
             'refund_bank_account' => $payload['refund_bank']['account_number'] ?? null,
             'refund_bank_holder' => $payload['refund_bank']['holder'] ?? null,
+            // 교환으로 받은 상품을 환불하면 그 교환 때 낸 상위 옵션 차액도 낸 수단 그대로 돌려준다(S2·Q9)
+            'exchange_difference_refunds' => app(ExchangeDifferenceRefundPlanner::class)->plan($order, $cancelItems) ?: null,
         ]);
 
         foreach ($this->refundExecutionService->buildRefundOptionRows($order, $cancelItems, $adjustment) as $row) {
@@ -515,9 +586,10 @@ class OrderRefundRequestService
      * @param  Order  $order  주문 (결제수단 판정용)
      * @param  string  $branch  분기 (`auto`/`request`)
      * @param  array<string, mixed>  $payload  접수 페이로드 (auto_advance · pg_already_settled)
+     * @param  OrderRefund|null  $refund  접수된 환불신청서 (현금 0원 마일리지 환불 판정)
      * @return bool 자동 전이하면 true
      */
-    protected function willAutoAdvance(Order $order, string $branch, array $payload): bool
+    protected function willAutoAdvance(Order $order, string $branch, array $payload, ?OrderRefund $refund = null): bool
     {
         if ($branch !== self::BRANCH_AUTO && ! (bool) ($payload['auto_advance'] ?? false)) {
             return false;
@@ -526,6 +598,27 @@ class OrderRefundRequestService
         // 바깥에서 이미 집행된 환불은 수단을 묻지 않는다 — 돈은 이미 나갔으므로 멈추면
         // 운영자에게 "송금하세요" 로 보이고, 그대로 이체하면 이중 환불이다.
         if ((bool) ($payload['pg_already_settled'] ?? false)) {
+            return true;
+        }
+
+        return $this->refundGateAutoApproves($order, $refund);
+    }
+
+    /**
+     * 이 환불이 결제수단 자동승인 게이트를 통과하는지 판정합니다. (P16 + 결함 4)
+     *
+     * 현금 0원 「마일리지로 환불」은 계좌 송금이 없다 — P16 의 정지 근거(사람이 송금해야 끝난다)가 없으므로
+     * 결제수단(무통장·가상계좌 등)과 무관하게 통과시킨다. 그 밖에는 결제수단 카탈로그 판정을 따른다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund|null  $refund  접수된 환불신청서
+     * @return bool 자동 승인 대상이면 true
+     */
+    protected function refundGateAutoApproves(Order $order, ?OrderRefund $refund): bool
+    {
+        if ($refund !== null
+            && $refund->refund_method === RefundMethodEnum::POINTS
+            && (float) $refund->refund_amount <= 0.0) {
             return true;
         }
 
@@ -575,7 +668,7 @@ class OrderRefundRequestService
 
         // 토글(D8)을 켜도 정지 수단 주문은 승인까지 가지 않는다 — 세 경로(즉시취소 분기 ·
         // 이 토글 · 관리자 [주문취소] 자동 전이)가 모두 같은 결제수단 규칙을 따른다(P16).
-        if (! $this->paymentMethodAutoApprovesRefund($order)) {
+        if (! $this->refundGateAutoApproves($order, $refund)) {
             return false;
         }
 
@@ -598,7 +691,7 @@ class OrderRefundRequestService
      */
     protected function willAdvanceOnIntake(Order $order, OrderRefund $refund, string $branch, array $payload): bool
     {
-        return $this->willAutoAdvance($order, $branch, $payload) || $this->willAutoApprove($order, $refund);
+        return $this->willAutoAdvance($order, $branch, $payload, $refund) || $this->willAutoApprove($order, $refund);
     }
 
     /**
@@ -622,7 +715,7 @@ class OrderRefundRequestService
     {
         $processedBy = $payload['processed_by'] ?? null;
 
-        if ($this->willAutoAdvance($order, $branch, $payload)) {
+        if ($this->willAutoAdvance($order, $branch, $payload, $refund)) {
             return $this->autoAdvance($refund, [
                 'processed_by' => $processedBy,
                 'pg_already_settled' => (bool) ($payload['pg_already_settled'] ?? false),
@@ -700,7 +793,7 @@ class OrderRefundRequestService
      * | 수단 | 종착점 | 근거 |
      * | --- | --- | --- |
      * | `PG` | 완료 | PG API 가 이 트랜잭션 안에서 실제로 환불한다 |
-     * | `POINTS` | 완료 | 같은 트랜잭션의 `restoreMileage()` 가 이미 마일리지를 환급한다 — 돈이 돌아갔는데 상태만 '승인' 이면 운영자가 추가 이체해 이중 환불이 난다(P12) |
+     * | `POINTS` | 완료 | 쓴 마일리지 반환 + 현금분 마일리지 지급이 같은 트랜잭션에서 끝난다(D1) — 돈이 돌아갔는데 상태만 '승인' 이면 운영자가 추가 이체해 이중 환불이 난다(P12) |
      * | `BANK` | 승인 | 사람이 송금해야 한다. 운영자의 [환불하기]가 곧 송금 완료 선언이다 |
      *
      * ## 알림은 묶고 로그는 쪼갠다
@@ -760,14 +853,12 @@ class OrderRefundRequestService
             return;
         }
 
-        $supported = (bool) HookManager::applyFilters(
-            'sirsoft-ecommerce.payment.supports_partial_cancel',
-            true,
-            $order->payment,
-        );
+        $resolver = app(PaymentMethodResolver::class);
 
-        if (! $supported) {
-            throw OrderClaimException::partialCancelNotSupported();
+        if (! $resolver->supportsPartialCancel($order->payment)) {
+            throw $resolver->partialCancelBlockReason($order->payment) === 'vbank_awaiting_deposit'
+                ? OrderClaimException::partialCancelNotSupportedBeforeVbankDeposit()
+                : OrderClaimException::partialCancelNotSupported();
         }
     }
 
@@ -1068,19 +1159,21 @@ class OrderRefundRequestService
      *
      * 실행 본문에 금액이 실려 있으면 저장과 같은 검증을 거쳐 먼저 반영한다 — D18 의
      * "[환불하기]는 화면에 입력된 값으로 실행한다(저장 없이 실행 가능)". 실행 직전에 취소 가능
-     * 금액(D19)을 같은 식으로 재계산해 동시 처리를 차단하고, 한 트랜잭션 안에서 다음을 수행한다:
+     * 금액(D19)을 같은 식으로 재계산해 동시 처리를 차단하고, 한 트랜잭션 안에서 다음을 이 순서로
+     * 수행한다 — **되돌릴 수 있는 것은 모두 앞에, 되돌릴 수 없는 것(PG)은 하나만 맨 뒤에**(P-D5):
      *
-     * 1. (직접 환불신청) 선점만 하던 수량을 취소 상태로 분할·전이 — `OrderCancellationService`
-     *    의 분할 규칙 한 벌을 재사용한다. 재고 복원(설정 준수)·쿠폰 조건 소멸 복원 동반
-     * 2. PG 환불 실행 + 주문 환불 누적(`total_refunded_amount`)·결제행 취소 누적
-     *    (`RefundExecutionService::execute` — 클레임 환불 누적의 단일 지점, §4-3-1)
-     * 3. 사용 마일리지 환급 (`order_refund_id` 멱등 축)
-     * 4. 환불신청서·상품 행 완료 확정 — PG 경로는 `executePgRefund` 가 완료를 찍고,
-     *    비-PG 경로(무통장·마일리지 전액)는 여기서 확정한다 (운영자의 [환불하기]가 곧
-     *    수동 송금 완료 선언이다)
+     * 1. 쓴 마일리지 반환(`order_refund_id` 멱등) → 「마일리지로 환불」이면 현금분 마일리지 지급(D1).
+     *    둘 다 실패하면 PG 를 부르지 않고 전체를 되돌린다(D2)
+     * 2. (직접 환불신청) 선점만 하던 수량을 취소 상태로 분할·전이 — `OrderCancellationService`
+     *    의 분할 규칙 한 벌을 재사용한다. 재고 복원(설정 준수)·쿠폰 조건 소멸 복원 동반(실패=중단)
+     * 3. 송금 계좌·결제행 취소 누적·주문 환불 누적(`RefundExecutionService::prepareLedger`)
+     * 4. 환불신청서·상품 행 상태, 취소신청서·결제행 정리(`recordCancellation`)
+     * 5. PG 환불 — 성공하면 신청서 행 UPDATE 1회로 완료를 찍는다. 이것이 PG 뒤 유일한 코어 쓰기다
      *
-     * PG 훅 실행이 트랜잭션 안에 있는 것은 취소 파이프라인과 같은 관례다 — 실패 예외가
-     * 누적·분할을 함께 롤백한다.
+     * 비-PG 경로(무통장·마일리지)는 4 단계에서 완료를 찍는다(운영자의 [환불하기]가 곧 수동 송금
+     * 완료 선언이다). 트랜잭션은 한 번만 시도한다 — 교착 재시도가 클로저를 다시 돌리면 PG 를 두 번
+     * 부른다. PG 승인 직후 커밋이 실패하면 critical 로그와 신청서 표식(`pg_transaction_id` +
+     * `LEDGER_COMMIT_FAILED`)을 남기고, 다음 [환불하기]는 PG 를 건너뛰고 장부만 확정한다(§14-C).
      *
      * 이미 실행됐거나 실행 중인 건의 재실행(더블클릭)은 `claim_refund_already_executed` 로
      * 거절한다 — 컨트롤러가 이 사유만 409 로 바꾼다.
@@ -1091,8 +1184,8 @@ class OrderRefundRequestService
      * @param  bool  $pgAlreadySettled  PG 환불이 바깥에서 이미 집행됐는지 (결제 플러그인의 가상계좌 환불 경로)
      * @return OrderRefund 실행 완료된 환불신청서
      *
-     * @throws OrderClaimException 실행 불가 출처·상태 / D19 상한 초과 / 재실행
-     * @throws OrderCancellationException PG 환불 실패
+     * @throws OrderClaimException 실행 불가 출처·상태 / D19 상한 초과 / 재실행 / 쓸 수 없는 환불수단
+     * @throws OrderCancellationException PG 환불 실패 / 마일리지 반환·지급, 쿠폰·재고 복원 실패
      */
     public function executeRefund(
         OrderRefund $refund,
@@ -1112,201 +1205,22 @@ class OrderRefundRequestService
 
         $completedOptionChanges = [];
 
-        $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy, $pgAlreadySettled, &$completedOptionChanges) {
-            // 잠금 후 상태를 다시 판정한다 — 동시 실행 두 건 중 나중 것이 완료 상태를 보고 물러난다.
-            $refund = $this->refundRepository->findForUpdate($refundId);
+        // 앞선 실행이 남긴 PG 승인 기록이 섞이지 않게 비우고 시작한다(§14-C).
+        $this->refundExecutionService->forgetPgSettlement();
 
-            if (! $refund) {
-                throw OrderClaimException::claimNotFound();
+        try {
+            $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy, $pgAlreadySettled, &$completedOptionChanges) {
+                return $this->executeRefundInTransaction($refundId, $overrides, $processedBy, $pgAlreadySettled, $completedOptionChanges);
+            });
+        } catch (\Throwable $e) {
+            $settled = $this->refundExecutionService->takePgSettlement();
+
+            if ($settled !== null) {
+                $this->recordOrphanPgSettlement($refundId, $settled, $e);
             }
 
-            if (in_array($refund->refund_status, [RefundStatusEnum::PROCESSING, RefundStatusEnum::COMPLETED], true)) {
-                throw OrderClaimException::refundAlreadyExecuted();
-            }
-
-            if ($refund->refund_status !== RefundStatusEnum::APPROVED) {
-                throw OrderClaimException::transitionNotAllowed(
-                    $refund->refund_status->label(),
-                    RefundStatusEnum::COMPLETED->label(),
-                );
-            }
-
-            $order = $this->orderRepository->findForUpdateOrFail($refund->order_id);
-            $order->load(['options', 'shippings', 'payment', 'payments']);
-
-            // D18 — 실행 본문의 금액을 저장과 같은 검증으로 반영 (저장 없이 실행 가능)
-            $updates = $this->normalizeRefundAmountUpdates($order, $refund, $overrides);
-
-            if ($updates !== []) {
-                $refund = $this->refundRepository->update($refund, $updates);
-            }
-
-            $amount = (float) $refund->refund_amount;
-            $points = (float) $refund->refund_points_amount;
-
-            // 실행 직전 D19 재계산 가드 — 저장 시점과 같은 식 (동시 처리 차단)
-            $this->assertWithinCancellable($order, $refund, $amount, $points);
-
-            $refund->loadMissing('refundOptions');
-
-            // **헤더 금액이 덮는 행만** 취소·재고복원 대상이다. 반려·철회 행을 포함하면
-            // 금액은 재계산된 값으로 나가는데 수량은 전건이 움직여, **돈과 수량이 어긋난 채
-            // 정상 종료한다.** 판단이 없는 행은 헤더 승인이 이미 덮고 있으므로 그대로 간다.
-            $executionTargets = $refund->refundOptionsForAmount();
-
-            $items = [];
-            foreach ($executionTargets as $option) {
-                $items[] = [
-                    'order_option_id' => $option->order_option_id,
-                    'cancel_quantity' => (int) $option->quantity,
-                ];
-            }
-
-            $couponRestore = null;
-
-            // 취소 유형은 **수량을 옮기기 전에** 정한다. 아래 `cancelOptionQuantitiesForClaim()`
-            // 이 수량을 먼저 빼기 때문에, 기록 시점에 다시 재면 남은 수량이 0 이라 부분취소가
-            // 전체취소로 굳는다 — 취소 문서의 유형이 틀리고 주문 축 훅도 전체취소로 나간다.
-            $cancelType = $items !== []
-                ? $this->cancellationService->resolveCancelType($order, $items)
-                : null;
-
-            if ($this->ownsOptionQuantities($refund) && $items !== []) {
-                // 직접 환불신청 — 선점만 하던 수량이 이 시점에 판매 흐름에서 실제로 빠진다.
-                // 재계산은 쿠폰 조건 소멸 복원 대상을 판정하기 위한 것이며, 환불 금액의 정본은
-                // 신청서 저장값(수정 반영분)이다. 잠금 가드 재검사는 끈다 — 이 수량을 잡고 있는
-                // 것이 바로 이 신청서다.
-                $couponRestore = $this->cancellationService->previewRefund($order, $items, RefundPriorityEnum::PG_FIRST, guardClaimLock: false);
-                $this->cancellationService->cancelOptionQuantitiesForClaim($order, $items, $refund->reason_code);
-            }
-
-            $result = new AdjustmentResult(
-                refundAmount: $amount,
-                refundPointsAmount: $points,
-                // 재계산이 낸 **세금 분류 세 컬럼**만 실어 보낸다 (S3-D17). 금액 컬럼은 싣지
-                // 않는다 — `total_paid_amount` 를 깎으면 잔여 한도에서 같은 금액이 두 번
-                // 차감된다(`RefundExecutionService::execute()` 독블록).
-                //
-                // 이 값이 없으면 `CashReceiptService` 가 **전액 환불된 주문에도 발급 가능액을
-                // 낸다**(2026-09-16 실측: 주문 964 전액 환불 후 `issuable.amount = 62,000`).
-                // 전액취소 경로는 이미 0 으로 내린다(S1-D22) — 반품·환불만 빠져 있었다.
-                orderUpdates: $this->taxColumnUpdatesFor($order, $items, $couponRestore),
-                restoredCouponIssueIds: $couponRestore?->restoredCouponIssueIds ?? [],
-                mcRefundAmount: $refund->mc_refund_amount ?? [],
-            );
-
-            // 환불 실행 — PG 훅 + 주문 환불 누적 + 결제행 취소 누적 (클레임 누적의 단일 지점)
-            //
-            // `$pgAlreadySettled` 는 **PG 환불을 바깥에서 이미 끝낸** 경로가 쓴다 — 결제
-            // 플러그인의 가상계좌 환불 화면이 그렇다(PG API 를 자기가 부르고 코어에는 장부만
-            // 맡긴다). 그때 여기서 PG 를 또 부르면 같은 거래를 두 번 취소한다. 장부·훅·로그는
-            // 전부 같은 경로로 남기고 PG 왕복만 건너뛴다.
-            $this->refundExecutionService->execute(
-                $order,
-                $refund,
-                $result,
-                $refund->reason_code,
-                executePg: ! $pgAlreadySettled
-                    && $refund->refund_method === RefundMethodEnum::PG
-                    && $amount > 0,
-                // 결제행의 취소 누적은 **그 수단에서 실제로 취소가 일어난 때만** 쌓는다 (S1-D24).
-                //
-                // 카드 주문에 `계좌이체` 환불수단을 지정하면 PG 왕복은 건너뛰면서 이 누적만
-                // 깎였다 — 카드사 잔액은 그대로인데 장부의 환불가능액만 줄어, 이후 정상적인
-                // 카드 환불이 한도에 먼저 걸린다(실측 1-P: 58,000 → 44,000).
-                //
-                // 운영자가 손으로 계좌 송금하는 운영은 막지 않는다(운영 결정 2026-09-16 —
-                // 「허용하되 장부는 건드리지 않음」). 그 송금은 카드 취소가 아니므로 카드
-                // 결제행의 취소 누적이 아닐 뿐이다. 돈이 나간 사실은 주문 축
-                // (`total_refunded_amount`)과 환불 레코드가 그대로 기록한다.
-                //
-                // 기준은 「이 결제수단이 **원래 쓰는** 환불수단인가」다. 무통장(dbank)의 계좌
-                // 환불은 그 수단의 정상 취소이므로 쌓고, 카드의 계좌 환불은 카드 취소가 아니라
-                // 쌓지 않는다. `determineRefundMethod()` 가 그 판정의 SSoT 이고, PG 리스너가
-                // 없어 계좌로 폴백된 카드 주문(P14)도 같은 답을 내어 정상 취소로 남는다.
-                //
-                // `$pgAlreadySettled`(가상계좌 환불 화면·`cancelPg: false`)는 **취소가 실제로
-                // 일어난** 경우라 그대로 쌓는다 — 여기서 빼면 정상 취소의 누적이 사라진다.
-                recordPaymentLedger: $pgAlreadySettled
-                    || $refund->refund_method === $this->refundExecutionService->determineRefundMethod($order),
-            );
-
-            if ($this->ownsOptionQuantities($refund) && $items !== []) {
-                // D7 — 취소·환불은 즉시 복구 (`stock_restore_on_cancel` 설정 준수는 restoreStock 내부).
-                $this->refundExecutionService->restoreStock($order, $items);
-                $this->refundExecutionService->restoreCoupons($order, $couponRestore);
-            }
-
-            // 사용 마일리지 환급 — order_refund_id 멱등 축 (재시도에도 lot 은 한 번만 발행)
-            $this->refundExecutionService->restoreMileage($order, $result, null, $refund);
-
-            // 완료 확정 — PG 경로는 executePgRefund 가 이미 COMPLETED 를 찍었다.
-            $fresh = $this->refundRepository->findById($refund->id) ?? $refund;
-            $finalUpdates = ['processed_by' => $processedBy ?? $fresh->processed_by];
-
-            if ($fresh->refund_status !== RefundStatusEnum::COMPLETED) {
-                $finalUpdates['refund_status'] = RefundStatusEnum::COMPLETED;
-                $finalUpdates['refunded_at'] = Carbon::now();
-            }
-
-            $updated = $this->refundRepository->update($fresh, $finalUpdates);
-
-            $executionTargetIds = $executionTargets->pluck('id')->map(fn ($id) => (int) $id)->all();
-
-            // 활동로그의 전/후도 **같은 대상**으로 좁힌다. 전건으로 캡처하면 반려 행이
-            // "반려 → 환불완료" 로 기록되는데 실제로는 바뀌지 않아, 로그와 데이터가
-            // 어긋난 채 둘 다 정상으로 보인다.
-            $completedOptionChanges = $this->captureOptionStatusChanges(
-                $updated->id,
-                RefundStatusEnum::COMPLETED,
-                $executionTargetIds,
-            );
-
-            // 완료로 올리는 대상도 **덮는 행에 한정**한다. 전건을 덮으면 반려 안내를 받은
-            // 상품이 고객 화면에 환불완료로 보인다 — 오류도 로그도 남지 않는다.
-            $this->refundOptionRepository->bulkUpdateStatus(
-                $updated->id,
-                RefundStatusEnum::COMPLETED->value,
-                $processedBy,
-                Carbon::now(),
-                $executionTargetIds,
-            );
-
-            // ── 취소신청서 기록 — 환불이 집행된 바로 그 순간이다 (D3) ──
-            //
-            // 상품 상태는 출처가 정한다(D13) — 취소·환불 신청과 관리자 대리 접수는 위
-            // `cancelOptionQuantitiesForClaim()` 이 이미 `CANCELLED` 로 전이시켰으므로 여기서
-            // 다시 전이시키지 않고, 반품·교환은 `returned`·`exchanged` 를 유지한다.
-            //
-            // 금액 재계산 대상도 출처가 가른다. 상품이 주문에서 빠지는 경로만 재계산을 넘긴다 —
-            // 교환 차액 환불은 상품이 주문에 남으므로 재계산하면 고객이 가진 물건의 값이
-            // 주문에서 사라진다. 반품은 회수배송비 청구가 환불액에 섞여 있어 재계산 결과와
-            // 실제 환불액이 갈리므로, 누적 축만 갱신하고 금액은 환불 누적이 말하게 둔다.
-            $cancelAdjustment = $this->ownsOptionQuantities($updated) ? $couponRestore : null;
-
-            $this->cancellationService->recordCancellation(
-                order: $order->fresh(['options', 'payment', 'shippings']),
-                cancelItems: $items,
-                adjustment: $cancelAdjustment,
-                refund: $updated,
-                cancelType: $cancelType,
-                reason: $updated->reason_code,
-                cancelledBy: $updated->requested_by,
-                processedBy: $processedBy ?? $updated->processed_by,
-                transitionOptions: false,
-                // 상품을 여기서 옮기지는 않았지만(위 `cancelOptionQuantitiesForClaim`), 그
-                // 수량은 주문에서 실제로 빠졌다 — 취소·환불 신청과 운영자 대리 접수는 주문
-                // 상태를 파생시켜야 한다. 반품·교환은 상품이 주문에 남으므로 건드리지 않는다.
-                syncOrderStatus: $this->ownsOptionQuantities($updated),
-                // 결제행 취소 누적·주문 환불 누적은 `RefundExecutionService::execute()` 가 이미
-                // 더했다. 여기서 또 더하면 같은 금액이 두 번 빠져 2차 부분환불이 0원이 된다.
-                accumulatePayment: false,
-                recalculatePaidAmount: false,
-                restoreCouponsAndStock: false,
-            );
-
-            return $updated->fresh(['refundOptions']);
-        });
+            throw $e;
+        }
 
         if ($completedOptionChanges !== []) {
             $this->fireAfterCommit(fn () => HookManager::doAction(
@@ -1341,6 +1255,363 @@ class OrderRefundRequestService
         }
 
         return $executed;
+    }
+
+    /**
+     * 환불 실행의 트랜잭션 본문입니다. (executeRefund() 독블록의 1~5 단계)
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @param  array  $overrides  실행 시점 금액
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  bool  $pgAlreadySettled  PG 환불이 바깥에서 이미 집행됐는지
+     * @param  array  $completedOptionChanges  상품 행 상태 변경 캡처 (참조 — 커밋 뒤 훅이 쓴다)
+     * @return OrderRefund 실행 완료된 환불신청서
+     */
+    protected function executeRefundInTransaction(
+        int $refundId,
+        array $overrides,
+        ?int $processedBy,
+        bool $pgAlreadySettled,
+        array &$completedOptionChanges,
+    ): OrderRefund {
+        // 잠금 후 상태를 다시 판정한다 — 동시 실행 두 건 중 나중 것이 완료 상태를 보고 물러난다.
+        $refund = $this->refundRepository->findForUpdate($refundId);
+
+        if (! $refund) {
+            throw OrderClaimException::claimNotFound();
+        }
+
+        if (in_array($refund->refund_status, [RefundStatusEnum::PROCESSING, RefundStatusEnum::COMPLETED], true)) {
+            throw OrderClaimException::refundAlreadyExecuted();
+        }
+
+        if ($refund->refund_status !== RefundStatusEnum::APPROVED) {
+            throw OrderClaimException::transitionNotAllowed(
+                $refund->refund_status->label(),
+                RefundStatusEnum::COMPLETED->label(),
+            );
+        }
+
+        // 앞선 실행이 PG 승인 뒤 커밋에 실패해 남긴 표식(§14-C) — 「승인 상태인데 PG 거래 ID 가 있다」는
+        // 조합은 그 표식에서만 생긴다(`pg_transaction_id` 는 완료와 함께만 쓰인다). PG 를 다시 부르면
+        // 같은 돈이 두 번 나가므로(NICE·KG·KCP 는 멱등키가 없다) 장부만 확정한다.
+        if (! $pgAlreadySettled
+            && $refund->refund_method === RefundMethodEnum::PG
+            && filled($refund->pg_transaction_id)) {
+            Log::warning('PG 기집행 표식 발견 — PG 를 다시 부르지 않고 장부만 확정합니다', [
+                'refund_id' => $refund->id,
+                'refund_number' => $refund->refund_number,
+                'pg_transaction_id' => $refund->pg_transaction_id,
+            ]);
+
+            $pgAlreadySettled = true;
+        }
+
+        $order = $this->orderRepository->findForUpdateOrFail($refund->order_id);
+        $order->load(['options', 'shippings', 'payment', 'payments']);
+
+        // D18 — 실행 본문의 금액을 저장과 같은 검증으로 반영 (저장 없이 실행 가능)
+        $updates = $this->normalizeRefundAmountUpdates($order, $refund, $overrides);
+
+        if ($updates !== []) {
+            $refund = $this->refundRepository->update($refund, $updates);
+        }
+
+        $amount = (float) $refund->refund_amount;
+        $points = (float) $refund->refund_points_amount;
+
+        // 저장된 환불수단도 다시 본다(S5·Q21) — 정규화는 본문(override)만 보므로, 본문 없이 실행하면
+        // 저장값 「마일리지」가 비회원·기능 꺼짐 가드를 그대로 통과해 돈이 증발한다.
+        if ($refund->refund_method === RefundMethodEnum::POINTS) {
+            $this->assertPointsRefundAllowed($order, $amount);
+        }
+
+        // 실행 직전 D19 재계산 가드 — 저장 시점과 같은 식 (동시 처리 차단)
+        $this->assertWithinCancellable($order, $refund, $amount, $points);
+
+        // 실제로 차감된 적 없는 마일리지는 돌려주지도, 장부에 적지도 않는다(Q15). 결제 이후 주문인데
+        // 차감되지 않았다면(차감 시점 설정·수동 결제완료에서 「마일리지 차감」 해제) 신청서의 마일리지
+        // 몫은 고객이 낸 적 없는 돈이다 — 반환은 `restoreMileage` 가드가 이미 막지만 장부·알림·화면은
+        // 신청서 값을 읽으므로 그 값부터 0 으로 맞춘다.
+        if ($points > 0 && ! $order->is_mileage_deducted) {
+            Log::warning('결제 이후 주문인데 사용 마일리지 미차감 — 마일리지 반환 0 처리', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'refund_id' => $refund->id,
+                'refund_points_amount' => $points,
+            ]);
+
+            $refund = $this->refundRepository->update($refund, [
+                'refund_points_amount' => 0,
+                'mc_refund_points_amount' => null,
+            ]);
+            $points = 0.0;
+        }
+
+        $refund->loadMissing('refundOptions');
+
+        // **헤더 금액이 덮는 행만** 취소·재고복원 대상이다. 반려·철회 행을 포함하면
+        // 금액은 재계산된 값으로 나가는데 수량은 전건이 움직여, **돈과 수량이 어긋난 채
+        // 정상 종료한다.** 판단이 없는 행은 헤더 승인이 이미 덮고 있으므로 그대로 간다.
+        $executionTargets = $refund->refundOptionsForAmount();
+
+        $items = [];
+        foreach ($executionTargets as $option) {
+            $items[] = [
+                'order_option_id' => $option->order_option_id,
+                'cancel_quantity' => (int) $option->quantity,
+            ];
+        }
+
+        $couponRestore = null;
+
+        // 취소 유형은 **수량을 옮기기 전에** 정한다. 아래 `cancelOptionQuantitiesForClaim()`
+        // 이 수량을 먼저 빼기 때문에, 기록 시점에 다시 재면 남은 수량이 0 이라 부분취소가
+        // 전체취소로 굳는다 — 취소 문서의 유형이 틀리고 주문 축 훅도 전체취소로 나간다.
+        $cancelType = $items !== []
+            ? $this->cancellationService->resolveCancelType($order, $items)
+            : null;
+
+        $ownsQuantities = $this->ownsOptionQuantities($refund) && $items !== [];
+
+        if ($ownsQuantities) {
+            // 직접 환불신청 — 선점만 하던 수량이 이 시점에 판매 흐름에서 실제로 빠진다.
+            // 재계산은 쿠폰 조건 소멸 복원 대상을 판정하기 위한 것이며, 환불 금액의 정본은
+            // 신청서 저장값(수정 반영분)이다. 잠금 가드 재검사는 끈다 — 이 수량을 잡고 있는
+            // 것이 바로 이 신청서다.
+            $couponRestore = $this->cancellationService->previewRefund($order, $items, RefundPriorityEnum::PG_FIRST, guardClaimLock: false);
+            $this->cancellationService->cancelOptionQuantitiesForClaim($order, $items, $refund->reason_code);
+        }
+
+        $result = new AdjustmentResult(
+            refundAmount: $amount,
+            refundPointsAmount: $points,
+            // 재계산이 낸 **세금 분류 세 컬럼**만 실어 보낸다 (S3-D17). 금액 컬럼은 싣지
+            // 않는다 — `total_paid_amount` 를 깎으면 잔여 한도에서 같은 금액이 두 번
+            // 차감된다(`RefundExecutionService::execute()` 독블록).
+            //
+            // 이 값이 없으면 `CashReceiptService` 가 **전액 환불된 주문에도 발급 가능액을
+            // 낸다**(2026-09-16 실측: 주문 964 전액 환불 후 `issuable.amount = 62,000`).
+            // 전액취소 경로는 이미 0 으로 내린다(S1-D22) — 반품·환불만 빠져 있었다.
+            orderUpdates: $this->taxColumnUpdatesFor($order, $items, $couponRestore),
+            restoredCouponIssueIds: $couponRestore?->restoredCouponIssueIds ?? [],
+            mcRefundAmount: $refund->mc_refund_amount ?? [],
+        );
+
+        // 이 결제수단이 **원래 쓰는** 환불수단 — PG 리스너가 없어 계좌로 폴백된 카드 주문(P14)도 같은
+        // 답을 낸다. 폴백 시 경고 로그를 남기므로 한 번만 계산한다.
+        $nativeMethod = $this->refundExecutionService->determineRefundMethod($order);
+
+        // 신청 시점에 PG 플러그인이 꺼져 있어 계좌 환불로 폴백된 카드 주문(P14)은, 운영자가 수단을 고르지 않았고
+        // 지금 PG 로 환불할 수 있으면 PG 로 되돌린다(P-D3). 예전에는 플러그인을 다시 켜도 저장된 「계좌 환불」 대로
+        // PG 를 부르지 않고 완료돼, 운영자가 손으로 송금하지 않으면 돈이 돌아가지 않았다. 반대 방향(PG → 계좌)은
+        // 바꾸지 않는다 — 꺼진 플러그인은 실행 때 사유와 함께 막힌다(P-D6).
+        if (! $pgAlreadySettled
+            && ! $refund->refund_method_overridden
+            && $refund->refund_method === RefundMethodEnum::BANK
+            && $nativeMethod === RefundMethodEnum::PG) {
+            Log::info('환불수단 재판정 — 계좌 폴백 건을 PG 로 되돌림', [
+                'refund_id' => $refund->id,
+                'refund_number' => $refund->refund_number,
+                'order_id' => $order->id,
+            ]);
+            $refund = $this->refundRepository->update($refund, ['refund_method' => RefundMethodEnum::PG]);
+        }
+
+        // 결제행의 취소 누적·상태는 **그 수단에서 실제로 취소가 일어난 때만** 움직인다 (S1-D24·Q16).
+        //
+        // 카드 주문에 `계좌이체`·`마일리지` 환불수단을 지정하면 카드 거래는 취소되지 않는다 — 그런데도
+        // 누적을 깎으면 카드사 잔액은 그대로인데 장부의 환불가능액만 줄어(실측 1-P: 58,000 → 44,000)
+        // 이후 정상 카드 환불이 한도에 먼저 걸리고, 상태를 취소로 바꾸면 「누적 0 인데 취소」인 모순이
+        // 남는다(주문 1622). 운영자가 손으로 송금하는 운영은 막지 않는다(운영 결정 2026-09-16 —
+        // 「허용하되 장부는 건드리지 않음」). 돈이 나간 사실은 주문 축(`total_refunded_amount`)과
+        // 환불 레코드, 결제행 취소 이력(`settled_on_payment=false`)이 기록한다.
+        //
+        // `$pgAlreadySettled`(가상계좌 환불 화면·표식 재실행)는 **취소가 실제로 일어난** 경우라 그대로
+        // 쌓는다 — 여기서 빼면 정상 취소의 누적이 사라진다.
+        $paymentSettled = $pgAlreadySettled || $refund->refund_method === $nativeMethod;
+
+        // PG 를 이번 실행에서 부를지 — 장부 확정(⑤)과 PG 호출(⑧)이 같은 값을 읽는다. 따로 판정하면
+        // PG 경로인데 완료를 PG 앞에서 찍는 일이 생긴다.
+        $willCallPg = ! $pgAlreadySettled
+            && $refund->refund_method === RefundMethodEnum::PG
+            && $amount > 0
+            && $order->payment?->needsPgProvider() === true;
+
+        // ① 쓴 마일리지 반환 (order_refund_id 멱등 — 실패=중단)
+        $this->refundExecutionService->restoreMileage($order, $result, null, $refund);
+
+        // ② 「마일리지로 환불」 — 현금 환불액을 회원 마일리지로 지급 (D1, 실패=중단)
+        if (! $pgAlreadySettled && $refund->refund_method === RefundMethodEnum::POINTS && $amount > 0) {
+            $this->refundExecutionService->creditMileage($order, $refund, $amount);
+        }
+
+        // ②-b 교환 차액 환급 중 마일리지로 낸 몫(S2·Q9) — 마일리지 단계에서 함께 돌려준다(실패=중단).
+        //      원 주문 PG 가 이미 끝난 경로(기집행 표식·바깥 PG)에서도 돌려준다 — 그 표식은 원 주문 PG 에
+        //      대한 것이고, 앞선 실행이 롤백됐다면 차액 환급도 함께 되돌아가 아직 나가지 않은 돈이다.
+        $this->refundExchangeDifference($refund, pointsOnly: true);
+
+        // ③ 재고·쿠폰 복원 — D7 「취소·환불은 즉시 복구」 (`stock_restore_on_cancel` 설정 준수는 restoreStock 내부, 실패=중단)
+        if ($ownsQuantities) {
+            $this->refundExecutionService->restoreStock($order, $items);
+            $this->refundExecutionService->restoreCoupons($order, $couponRestore);
+        }
+
+        // ④ 송금 계좌 + 결제행 취소 누적 + 주문 환불 누적 (클레임 환불 누적의 단일 지점)
+        $this->refundExecutionService->prepareLedger($order, $refund, $result, recordPaymentLedger: $paymentSettled);
+
+        // ⑤ 처리자 기록 — PG 를 부르지 않는 경로는 여기서 완료를 찍는다. PG 경로의 완료는 PG 성공 뒤
+        //    `executePgRefund` 가 신청서 행 UPDATE 1회로 찍는다.
+        $finalUpdates = ['processed_by' => $processedBy ?? $refund->processed_by];
+
+        if (! $willCallPg) {
+            $finalUpdates['refund_status'] = RefundStatusEnum::COMPLETED;
+            $finalUpdates['refunded_at'] = Carbon::now();
+        }
+
+        $updated = $this->refundRepository->update($refund, $finalUpdates);
+
+        $executionTargetIds = $executionTargets->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        // ⑥ 활동로그의 전/후도 **같은 대상**으로 좁힌다. 전건으로 캡처하면 반려 행이
+        // "반려 → 환불완료" 로 기록되는데 실제로는 바뀌지 않아, 로그와 데이터가
+        // 어긋난 채 둘 다 정상으로 보인다.
+        $completedOptionChanges = $this->captureOptionStatusChanges(
+            $updated->id,
+            RefundStatusEnum::COMPLETED,
+            $executionTargetIds,
+        );
+
+        // 완료로 올리는 대상도 **덮는 행에 한정**한다. 전건을 덮으면 반려 안내를 받은
+        // 상품이 고객 화면에 환불완료로 보인다 — 오류도 로그도 남지 않는다.
+        $this->refundOptionRepository->bulkUpdateStatus(
+            $updated->id,
+            RefundStatusEnum::COMPLETED->value,
+            $processedBy,
+            Carbon::now(),
+            $executionTargetIds,
+        );
+
+        // ⑦ 취소신청서 기록 — 환불이 집행되는 바로 그 트랜잭션이다 (D3)
+        //
+        // 상품 상태는 출처가 정한다(D13) — 취소·환불 신청과 관리자 대리 접수는 위
+        // `cancelOptionQuantitiesForClaim()` 이 이미 `CANCELLED` 로 전이시켰으므로 여기서
+        // 다시 전이시키지 않고, 반품·교환은 `returned`·`exchanged` 를 유지한다.
+        //
+        // 금액 재계산 대상도 출처가 가른다. 상품이 주문에서 빠지는 경로만 재계산을 넘긴다 —
+        // 교환 차액 환불은 상품이 주문에 남으므로 재계산하면 고객이 가진 물건의 값이
+        // 주문에서 사라진다. 반품은 회수배송비 청구가 환불액에 섞여 있어 재계산 결과와
+        // 실제 환불액이 갈리므로, 누적 축만 갱신하고 금액은 환불 누적이 말하게 둔다.
+        $cancelAdjustment = $this->ownsOptionQuantities($updated) ? $couponRestore : null;
+
+        $this->cancellationService->recordCancellation(
+            order: $order->fresh(['options', 'payment', 'shippings']),
+            cancelItems: $items,
+            adjustment: $cancelAdjustment,
+            refund: $updated,
+            cancelType: $cancelType,
+            reason: $updated->reason_code,
+            cancelledBy: $updated->requested_by,
+            processedBy: $processedBy ?? $updated->processed_by,
+            transitionOptions: false,
+            // 상품을 여기서 옮기지는 않았지만(위 `cancelOptionQuantitiesForClaim`), 그
+            // 수량은 주문에서 실제로 빠졌다 — 취소·환불 신청과 운영자 대리 접수는 주문
+            // 상태를 파생시켜야 한다. 반품·교환은 상품이 주문에 남으므로 건드리지 않는다.
+            syncOrderStatus: $this->ownsOptionQuantities($updated),
+            // 결제행 취소 누적·주문 환불 누적은 `prepareLedger()` 가 이미 더했다. 여기서 또
+            // 더하면 같은 금액이 두 번 빠져 2차 부분환불이 0원이 된다.
+            accumulatePayment: false,
+            recalculatePaidAmount: false,
+            restoreCouponsAndStock: false,
+            paymentSettled: $paymentSettled,
+        );
+
+        // ⑧ PG — 트랜잭션의 마지막 단계(P-D5). ⑦ 이후의 결제행(상태·누적)을 넘긴다 — 낡은 모델을
+        //    넘기면 리스너가 이번 환불을 뺀 누적으로 전액/부분을 가른다.
+        if ($willCallPg) {
+            $pgOrder = $this->orderRepository->find($order->id) ?? $order;
+            $pgOrder->load('payment');
+
+            $this->refundExecutionService->executePgRefund($pgOrder, $updated, $result, $updated->reason_code);
+        }
+
+        // ⑨ 교환 차액 환급 중 카드 등 PG 로 낸 몫(S2·Q9) — PG 단계의 맨 마지막(원 주문 PG 뒤). 거절되면 전체 중단(D2).
+        //    원 주문 PG 를 건너뛴 재실행에서도 부른다 — 이 단계가 거절돼 롤백된 환불을 다시 실행하면 표식 분기를
+        //    타는데, 그때 건너뛰면 클레임 결제 몫이 영영 돌아가지 않는다.
+        $this->refundExchangeDifference($updated, pointsOnly: false);
+
+        return $updated->fresh(['refundOptions']);
+    }
+
+    /**
+     * 환불신청서에 잡아 둔 교환 차액 몫을 클레임 결제 건별로 돌려줍니다. (S2 · Q9)
+     *
+     * 몫은 신청서를 만들 때 정했다(`ExchangeDifferenceRefundPlanner`). 마일리지로 낸 몫은 마일리지 단계에서,
+     * 카드 등 PG 로 낸 몫은 원 주문 PG 뒤에 돌려준다 — 둘 다 클레임 결제 환급(`ClaimPaymentService::refundPayment`)
+     * 한 경로를 쓰므로 결제 건의 환급 누적·상태 규칙이 그대로 적용된다. 실패하면 예외로 환불 전체를 되돌린다(D2).
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  bool  $pointsOnly  true 면 마일리지 몫만, false 면 PG 몫만
+     * @return void 반환값 없음
+     */
+    protected function refundExchangeDifference(OrderRefund $refund, bool $pointsOnly): void
+    {
+        $entries = $refund->exchange_difference_refunds ?? [];
+        if ($entries === []) {
+            return;
+        }
+
+        $claimPayments = app(ClaimPaymentService::class);
+        foreach ($entries as $entry) {
+            $portion = $pointsOnly ? (float) ($entry['points_amount'] ?? 0) : (float) ($entry['amount'] ?? 0);
+            if ($portion <= 0) {
+                continue;
+            }
+
+            $payment = $claimPayments->findById((int) ($entry['claim_payment_id'] ?? 0));
+            if ($payment === null) {
+                throw OrderClaimException::claimNotFound();
+            }
+
+            $claimPayments->refundPayment($payment, $portion, $refund->reason_code);
+        }
+    }
+
+    /**
+     * PG 승인 뒤 장부 확정이 롤백됐을 때 흔적을 남깁니다. (§14-C)
+     *
+     * ① 트랜잭션 밖 critical 로그 — DB 가 죽어도 남는 유일한 근거다. PG 콘솔 대사에 필요한 값만
+     *    싣는다(개인정보·PG raw 응답 금지).
+     * ② 새 트랜잭션으로 신청서 행에 `pg_transaction_id` + `LEDGER_COMMIT_FAILED` 표식을 남긴다 —
+     *    다음 [환불하기]가 PG 를 다시 부르지 않고 장부만 확정한다(executeRefundInTransaction 의 표식 분기).
+     *    신청서 행이 같은 트랜잭션에서 생겨 함께 롤백됐으면(자동 전이) 표식은 건너뛴다.
+     *
+     * @param  int  $refundId  환불신청서 ID
+     * @param  array<string, mixed>  $settled  PG 승인 기록 (RefundExecutionService::takePgSettlement)
+     * @param  \Throwable  $cause  롤백을 일으킨 예외
+     * @return void
+     */
+    protected function recordOrphanPgSettlement(int $refundId, array $settled, \Throwable $cause): void
+    {
+        Log::critical('PG 환불은 승인됐으나 장부 확정이 롤백됨 — 수동 대사 필요', $settled + ['error' => $cause->getMessage()]);
+
+        try {
+            DB::transaction(function () use ($refundId, $settled) {
+                $row = $this->refundRepository->findForUpdate($refundId);
+
+                if ($row !== null
+                    && $row->refund_status === RefundStatusEnum::APPROVED
+                    && blank($row->pg_transaction_id)) {
+                    $this->refundRepository->update($row, [
+                        'pg_transaction_id' => $settled['transaction_id'] ?? null,
+                        'pg_error_code' => 'LEDGER_COMMIT_FAILED',
+                        'pg_error_message' => __('sirsoft-ecommerce::exceptions.refund_ledger_commit_failed'),
+                    ]);
+                }
+            });
+        } catch (\Throwable $markerFailure) {
+            Log::critical('PG 기집행 표식 기록 실패 — 재실행하면 이중 환불 위험', $settled + ['error' => $markerFailure->getMessage()]);
+        }
     }
 
     /**
@@ -1506,9 +1777,16 @@ class OrderRefundRequestService
             // 무통장·마일리지·예치금·무료 결제는 PG 거래가 없어 `pg` 로 돌려줄 대상이 없고,
             // 실행(`RefundExecutionService`)은 **결제수단**으로 PG 진입을 가르므로 훅을 건너뛰고
             // 조용히 완료된다 — 화면에만 「PG사 환불」이 남아 장부와 표시가 어긋난다.
-            $this->assertRefundMethodAvailable($order, $method);
+            // 「마일리지」는 이 수정으로 바뀐 현금 환불액을 기준으로 본다(Q21 — 현금 0 원이면 기능과 무관).
+            $this->assertRefundMethodAvailable(
+                $order,
+                $method,
+                (float) ($updates['refund_amount'] ?? $refund->refund_amount),
+            );
 
             $updates['refund_method'] = $method;
+            // 운영자가 고른 수단이다 — 실행 시점에 수단을 다시 판정하지 않는다(P-D3).
+            $updates['refund_method_overridden'] = true;
         }
 
         // 실행하며 적어 넣은 환불 계좌 (T2-D6) — 계좌로 송금해야 끝나는 환불인데 신청서에
@@ -1533,17 +1811,25 @@ class OrderRefundRequestService
      * 예전에는 여기만 결제수단(`needsPgProvider`)을 보고 실행 게이트는 실효 수단을 봐, PG 리스너가
      * 없어 계좌 환불로 떨어지는 주문(P14)에서 PG 가 저장은 되는데 실행은 막혔다(#599 validate P2-A 후속).
      *
-     * `bank`·`points` 는 결제수단과 무관하게 사람이 돌려주는 경로라 제한하지 않는다
-     * (마일리지 환급의 회원 제약은 금액 축이 따로 검사한다).
+     * `bank` 는 결제수단과 무관하게 사람이 돌려주는 경로라 제한하지 않는다. `points` 는 회원 주문에서만,
+     * 그리고 현금을 마일리지로 돌려주려면 마일리지 기능이 켜진 상점에서만 쓸 수 있다(D1·Q21 —
+     * `pointsRefundAllowed()` 하나를 선택지·저장·실행이 함께 읽는다).
      *
      * @param  Order  $order  주문
      * @param  RefundMethodEnum  $method  지정한 환불수단
+     * @param  float  $cashAmount  이 환불의 현금 환불액 (`points` 판정용)
      * @return void 반환값 없음
      *
-     * @throws OrderClaimException 결제수단이 그 환불수단을 지원하지 않을 때
+     * @throws OrderClaimException 결제수단이 그 환불수단을 지원하지 않을 때 / 비회원 마일리지
      */
-    protected function assertRefundMethodAvailable(Order $order, RefundMethodEnum $method): void
+    protected function assertRefundMethodAvailable(Order $order, RefundMethodEnum $method, float $cashAmount = 0.0): void
     {
+        if ($method === RefundMethodEnum::POINTS) {
+            $this->assertPointsRefundAllowed($order, $cashAmount);
+
+            return;
+        }
+
         if ($method !== RefundMethodEnum::PG) {
             return;
         }
@@ -1551,6 +1837,94 @@ class OrderRefundRequestService
         if (! $this->pgRefundAvailable($order)) {
             throw OrderClaimException::refundMethodUnavailable();
         }
+    }
+
+    /**
+     * 이 주문을 「마일리지」로 환불할 수 있는지 판정합니다. (환불수단 `points` 의 단일 판정 — D1·Q21)
+     *
+     * `회원 주문` AND (`마일리지 기능 켜짐` OR `현금 환불액 = 0` OR `결제수단의 원래 환불수단이 마일리지`).
+     *
+     *  - 비회원 주문에는 마일리지 원장이 없다 — 받아 두면 돈이 어디에도 지급되지 않는다(S5·refund 274).
+     *  - 기능이 꺼진 상점에서는 현금을 마일리지로 돌려주지 않는다 — 고객이 쓸 수 없는 돈이 된다.
+     *    다만 현금 0 원(쓴 마일리지 반환만)은 고객이 이미 낸 마일리지를 되돌리는 것이라 기능과 무관하다.
+     *  - 마일리지 결제수단(`point`) 주문은 마일리지가 그 결제의 원래 환불수단이라 기능과 무관하다.
+     *
+     * 선택지(`AdminClaimService::refundMethodOptions()`)·저장(`assertRefundMethodAvailable()`)·
+     * 실행 저장값 가드(`executeRefundInTransaction`)가 이 메서드 하나를 읽는다.
+     *
+     * @param  Order  $order  주문
+     * @param  float  $cashAmount  현금 환불액 (기준 통화)
+     * @return bool 마일리지 환불 가능 여부
+     */
+    public function pointsRefundAllowed(Order $order, float $cashAmount): bool
+    {
+        if ($order->user_id === null) {
+            return false;
+        }
+
+        if ($cashAmount <= 0) {
+            return true;
+        }
+
+        if ((bool) $this->settingsService->getSetting('mileage.enabled', false)) {
+            return true;
+        }
+
+        return $this->paysBackInPoints($order);
+    }
+
+    /**
+     * 결제수단의 원래 환불수단이 마일리지인지 판정합니다. (마일리지 결제수단 `point` 주문)
+     *
+     * 결제행 카탈로그 선언만 본다 — PG 리스너 유무로 폴백을 가르는 `determineRefundMethod()` 는
+     * 폴백 경고 로그를 남겨, 화면을 열 때마다 부르는 이 판정에는 맞지 않는다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 마일리지가 원래 환불수단이면 true
+     */
+    protected function paysBackInPoints(Order $order): bool
+    {
+        $order->loadMissing('payment');
+
+        return $order->payment?->refundMethod() === RefundMethodEnum::POINTS;
+    }
+
+    /**
+     * 「마일리지」 환불이 가능한지 검증합니다. (pointsRefundAllowed 의 거절 사유를 고른다)
+     *
+     * @param  Order  $order  주문
+     * @param  float  $cashAmount  현금 환불액
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 비회원 주문 / 마일리지 기능이 꺼진 상점의 현금 환불
+     */
+    protected function assertPointsRefundAllowed(Order $order, float $cashAmount): void
+    {
+        if ($order->user_id === null) {
+            throw OrderClaimException::refundPointsRequireMember();
+        }
+
+        if (! $this->pointsRefundAllowed($order, $cashAmount)) {
+            throw OrderClaimException::refundMethodUnavailable();
+        }
+    }
+
+    /**
+     * 주문의 현금 환불 중 「마일리지로 환불」로 지급한 합계를 돌려줍니다. (주문 상세의 별도 표시 — Q3)
+     *
+     * 마일리지가 원래 환불수단인 결제(`point`)는 「대체 지급」이 아니므로 0 이다 — 결제행 보존 판정
+     * (`executeRefundInTransaction` 의 `$paymentSettled`)과 같은 축이다.
+     *
+     * @param  Order  $order  주문
+     * @return float 마일리지로 지급한 현금 환불 합계 (기준 통화)
+     */
+    public function mileageCreditedTotalForOrder(Order $order): float
+    {
+        if ($this->paysBackInPoints($order)) {
+            return 0.0;
+        }
+
+        return $this->refundRepository->sumCompletedRefundAmountByMethod((int) $order->id, RefundMethodEnum::POINTS);
     }
 
     /**

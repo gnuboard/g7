@@ -41,6 +41,7 @@ return [
         'status_change' => 'Status Changed',
         'sync_status' => 'Status Applied by Sync',
         'status_sync' => 'Status Auto-synced',
+        'manual_paid_effects' => 'Manual payment processing',
         'stock_sync' => 'Stock Synchronized',
         'toggle_active' => 'Active Status Changed',
         'tax_invoice_stale' => 'Tax Invoice Not Handled',
@@ -60,6 +61,7 @@ return [
         'admin_deduct' => 'Admin Deduct',
         'extend_expiry' => 'Expiry Extended',
         'adjust' => 'Earning Edited',
+        'refund_credit' => 'Refund credit',
         // Claims (exchange / return / refund / additional payment / attachment)
         'request' => 'Request Received',
         'option_status_change' => 'Item Status Change',
@@ -106,6 +108,7 @@ return [
         'order_shipping_tracking_update' => 'Tracking number recorded/corrected (item ID: :option_id)',
         'order_tax_invoice_stale' => 'Tax invoice not handled after cancellation (:order_number, :count invoice)|Tax invoice not handled after cancellation (:order_number, :count invoices)',
         'order_status_sync' => 'Order status auto-synced from item statuses (:order_number)',
+        'order_manual_paid_effects' => 'Manual payment processing (:order_number) — applied: :applied / skipped: :skipped',
 
         // Coupon management (Admin)
         'coupon_index' => 'Coupon list viewed',
@@ -244,7 +247,10 @@ return [
         'mileage_earn' => 'Mileage earned (:amount)',
         'mileage_use' => 'Mileage used (:amount)',
         'mileage_restore' => 'Mileage restored (:amount)',
+        'mileage_refund_credit' => 'Refund paid as mileage (:amount)',
         'mileage_expire' => 'Mileage expired (:amount)',
+        'mileage_withdrawal_expire' => 'Mileage forfeited on account withdrawal (:amount)',
+        'mileage_deletion_expire' => 'Mileage forfeited on account deletion (:amount)',
         'mileage_earn_cancel' => 'Mileage earn canceled (:amount)',
         'mileage_admin_earn' => 'Admin granted mileage (:amount)',
         'mileage_admin_deduct' => 'Admin deducted mileage (:amount)',
@@ -293,6 +299,17 @@ return [
     ],
 
     // ChangeDetector field labels
+    // Item names for the manual payment processing activity log (Q13·Q26)
+    'manual_paid' => [
+        'items' => [
+            'apply_stock_deduction' => 'Stock deduction',
+            'apply_mileage_deduction' => 'Used mileage deduction',
+            'record_paid_amount' => 'Payment amount record',
+            'restoration' => 'Totals and item status restoration',
+        ],
+        'none' => '-',
+    ],
+
     'fields' => [
         // Common
         'is_active' => 'Active',

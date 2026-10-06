@@ -48,8 +48,20 @@
                             }
                         },
                         {
+                            "comment": "사유가 입금 전 가상계좌면 그 이유를 말한다(Q17) — 발급된 입금액은 바꿀 수 없어 일부 취소 뒤에는 입금을 확인할 수 없다.",
                             "type": "basic",
                             "name": "Span",
+                            "if": "{{order.data?.payment?.partial_cancel_block_reason === 'vbank_awaiting_deposit'}}",
+                            "props": {
+                                "className": "text-sm text-amber-700 dark:text-amber-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported_vbank_awaiting"
+                        },
+                        {
+                            "comment": "그 밖의 사유(결제수단·PG 제약)",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{order.data?.payment?.partial_cancel_block_reason !== 'vbank_awaiting_deposit'}}",
                             "props": {
                                 "className": "text-sm text-amber-700 dark:text-amber-300"
                             },

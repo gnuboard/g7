@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\BindsApprovalToOrder;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
@@ -529,13 +530,20 @@ class PaymentCallbackController
                 return response('OK', 200)->header('Content-Type', 'text/plain');
             }
 
-            if (! $this->validateVbankNotifyContext($order, [
+            $notifyContext = [
                 'tid' => $tid,
                 'mid' => (string) ($validated['id_merchant'] ?? ''),
                 'amount' => $amt,
                 'account' => (string) ($validated['no_vacct'] ?? ''),
                 'source' => 'PC vbankNotify',
-            ])) {
+            ];
+
+            // 취소된 주문의 입금(P-D1 · Q11) — 주문은 되살리지 않고 기록·운영자 알림만 남긴 뒤 OK 로 재통보를 멈춘다.
+            if ($this->recordDepositOnCancelledOrder($order, $notifyContext)) {
+                return response('OK', 200)->header('Content-Type', 'text/plain');
+            }
+
+            if (! $this->validateVbankNotifyContext($order, $notifyContext)) {
                 return response('FAIL', 200)->header('Content-Type', 'text/plain');
             }
 
@@ -626,13 +634,20 @@ class PaymentCallbackController
                 return response('OK', 200)->header('Content-Type', 'text/plain');
             }
 
-            if (! $this->validateVbankNotifyContext($order, [
+            $notifyContext = [
                 'tid' => $tid,
                 'mid' => (string) ($validated['P_MID'] ?? ''),
                 'amount' => $amt,
                 'account' => $this->extractMobileVbankAccount((string) ($validated['P_RMESG1'] ?? '')),
                 'source' => 'mobile vbankNotify',
-            ])) {
+            ];
+
+            // 취소된 주문의 입금(P-D1 · Q11) — 주문은 되살리지 않고 기록·운영자 알림만 남긴 뒤 OK 로 재통보를 멈춘다.
+            if ($this->recordDepositOnCancelledOrder($order, $notifyContext)) {
+                return response('OK', 200)->header('Content-Type', 'text/plain');
+            }
+
+            if (! $this->validateVbankNotifyContext($order, $notifyContext)) {
                 return response('FAIL', 200)->header('Content-Type', 'text/plain');
             }
 
@@ -668,6 +683,41 @@ class PaymentCallbackController
         } finally {
             $this->releaseOrderCallbackLock($callbackLock);
         }
+    }
+
+    /**
+     * 취소된 주문의 입금통보를 기록합니다. (P-D1 · Q11)
+     *
+     * 발급 때 받은 거래번호·상점 아이디와 맞는 통보만 기록한다 — 통보 위조로 운영자 알림이 남발되지 않게 한다.
+     * 주문을 되살리지 않고 자동 환불도 하지 않는다. 기록·알림은 같은 거래면 한 번이다.
+     *
+     * @param  Order  $order  주문
+     * @param  array{tid: string, mid: string, amount: int, account: string, source: string}  $notify  통보 값
+     * @return bool 취소 주문의 입금으로 기록했으면 true (그 밖은 false — 종전 검증으로 넘어간다)
+     */
+    private function recordDepositOnCancelledOrder(Order $order, array $notify): bool
+    {
+        if ($this->enumValue($order->order_status) !== OrderStatusEnum::CANCELLED->value) {
+            return false;
+        }
+
+        $payment = $order->payment()->first();
+        if (! $payment || $this->enumValue($payment->payment_method) !== PaymentMethodEnum::VBANK->value) {
+            return false;
+        }
+
+        $meta = is_array($payment->payment_meta) ? $payment->payment_meta : [];
+        $expectedTid = trim((string) $payment->transaction_id);
+        $expectedMid = trim((string) ($meta['mid'] ?? $this->apiService->getMid()));
+
+        if ($expectedTid === '' || ! hash_equals($expectedTid, $notify['tid'])
+            || ($expectedMid !== '' && ! hash_equals($expectedMid, $notify['mid']))) {
+            return false;
+        }
+
+        app(DepositAfterCancelRecorder::class)->record($order, (float) $notify['amount'], 'kginicis', $notify['tid']);
+
+        return true;
     }
 
     /**

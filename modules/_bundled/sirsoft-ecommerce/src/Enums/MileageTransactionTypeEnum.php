@@ -11,10 +11,11 @@ enum MileageTransactionTypeEnum: string
     case ADMIN_EARN = 'admin_earn';                     // 관리자 수동 적립
     case ORDER_USE = 'order_use';                       // 주문 시 사용
     case ADMIN_DEDUCT = 'admin_deduct';                 // 관리자 수동 차감
-    case EXPIRED = 'expired';                           // 유효기간 소멸
+    case EXPIRED = 'expired';                           // 소멸(유효기간 만료·회원 탈퇴)
     case REFUND_RESTORE = 'refund_restore';             // 환불 시 복원
     case ORDER_CANCEL_RESTORE = 'order_cancel_restore'; // 주문 취소 시 복원
     case EARN_CANCEL = 'earn_cancel';                   // 기적립 회수
+    case REFUND_CREDIT = 'refund_credit';               // 환불 현금분 마일리지 지급 (무기한)
 
     /**
      * 다국어 라벨을 반환합니다.
@@ -56,7 +57,7 @@ enum MileageTransactionTypeEnum: string
      */
     public function isEarning(): bool
     {
-        return in_array($this, [self::PURCHASE_EARN, self::ADMIN_EARN, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE], true);
+        return in_array($this, [self::PURCHASE_EARN, self::ADMIN_EARN, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE, self::REFUND_CREDIT], true);
     }
 
     /**
@@ -72,8 +73,8 @@ enum MileageTransactionTypeEnum: string
     /**
      * 관리자 내역 화면용 배지 색상 그룹을 반환합니다.
      *
-     * 운영자가 거래 성격을 즉시 구별할 수 있도록 8종을 5색 그룹으로 세분화합니다.
-     * 적립계=green, 사용계=blue, 소멸=gray, 복원계=teal, 수동/회수계=amber.
+     * 운영자가 거래 성격을 즉시 구별할 수 있도록 9종을 5색 그룹으로 세분화합니다.
+     * 적립계=green, 사용계=blue, 소멸=gray, 복원계=teal(환불 지급 포함 — 돌려받은 돈), 수동/회수계=amber.
      *
      * @return string 배지 색상 그룹 (green|blue|gray|teal|amber)
      */
@@ -83,7 +84,7 @@ enum MileageTransactionTypeEnum: string
             self::PURCHASE_EARN => 'green',
             self::ORDER_USE => 'blue',
             self::EXPIRED => 'gray',
-            self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE => 'teal',
+            self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE, self::REFUND_CREDIT => 'teal',
             self::ADMIN_EARN, self::ADMIN_DEDUCT, self::EARN_CANCEL => 'amber',
         };
     }
@@ -101,7 +102,7 @@ enum MileageTransactionTypeEnum: string
     public function userDisplayCategory(): string
     {
         return match ($this) {
-            self::PURCHASE_EARN, self::ADMIN_EARN, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE => 'earn',
+            self::PURCHASE_EARN, self::ADMIN_EARN, self::REFUND_RESTORE, self::ORDER_CANCEL_RESTORE, self::REFUND_CREDIT => 'earn',
             self::ORDER_USE => 'use',
             self::EXPIRED => 'expire',
             self::ADMIN_DEDUCT, self::EARN_CANCEL => 'adjust',

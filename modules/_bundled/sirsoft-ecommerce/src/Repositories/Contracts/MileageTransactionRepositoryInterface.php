@@ -132,6 +132,38 @@ interface MileageTransactionRepositoryInterface
     public function existsRestoreForRefund(int $orderRefundId): bool;
 
     /**
+     * 해당 주문 환불의 현금분 마일리지 지급(refund_credit) 거래가 이미 존재하는지 확인합니다.
+     *
+     * 사용 마일리지 환급(`existsRestoreForRefund`)과 **다른 축**이다 — 같은 환불에서 둘이 함께
+     * 생길 수 있어(혼합 결제를 마일리지로 환불) 타입으로 판정을 가른다.
+     *
+     * @param  int  $orderRefundId  주문 환불 ID
+     * @return bool 존재 여부
+     */
+    public function existsCreditForRefund(int $orderRefundId): bool;
+
+    /**
+     * 주문을 취소하며 돌려준 사용 마일리지 합계를 돌려줍니다. (재활성 회수 판정 — Q14)
+     *
+     * 취소 발 복원(`order_cancel_id` 있음 — 미결제·0원 취소)과, 취소 출처 환불의 복원(`order_refund_id`
+     * 가 가리키는 환불의 출처가 취소)만 센다. 반품·교환 발 복원은 상품이 되살아나지 않으므로 빼고,
+     * 클레임 추가결제 축(`claim_payment_id`)과 결제 실패 복원(두 ID 모두 없음)도 뺀다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array<int, string>  $cancelSourceValues  취소 출처 값 (`RefundSourceTypeEnum::cancellationSourceValues()`)
+     * @return float 복원 합계 (양수)
+     */
+    public function sumCancellationRestoredForOrder(int $orderId, array $cancelSourceValues): float;
+
+    /**
+     * 재활성으로 다시 뺀 사용 마일리지 합계를 돌려줍니다. (`order_use`·`metadata.reason=reactivation`)
+     *
+     * @param  int  $orderId  주문 ID
+     * @return float 재차감 합계 (양수)
+     */
+    public function sumReactivationUsageForOrder(int $orderId): float;
+
+    /**
      * 복원의 원 사용 거래에 동일 order_cancel_id 를 역주입합니다 (연결 거래 추적).
      *
      * 복원(ORDER_CANCEL_RESTORE)을 펼쳤을 때 그 주문에서 마일리지를 소비한 원 사용
@@ -225,13 +257,13 @@ interface MileageTransactionRepositoryInterface
      * 조건: trigger 상태 도달 + {trigger}_at + delay <= now + earn ledger 부재 + 미취소 + 적립액 > 0.
      *
      * @param  string  $triggerColumn  트리거 시점 컬럼 (confirmed_at|delivered_at)
-     * @param  string  $triggerStatus  트리거 상태 값 (confirmed|delivered)
+     * @param  string|array<int, string>  $triggerStatus  대상 상품 상태 (트리거 상태 또는 트리거 이후 상태 목록 — F4)
      * @param  int  $delayDays  적립 지연 일수
      * @param  Carbon  $now  기준 시각
      * @param  int|null  $limit  최대 건수
      * @return \Illuminate\Support\Collection<int, object> 적립 대상 [{option_id, order_id, user_id}]
      */
-    public function getEarnableOptions(string $triggerColumn, string $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection;
+    public function getEarnableOptions(string $triggerColumn, string|array $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection;
 
     /**
      * 해당 주문옵션의 구매 적립건을 조회합니다.
@@ -261,6 +293,24 @@ interface MileageTransactionRepositoryInterface
     public function getActiveLotsForUser(int $userId): Collection;
 
     /**
+     * 회원의 활성 적립건(lot)을 잠가 조회합니다. (탈퇴 소멸 — 동시 사용·소멸 배치와 경합 차단)
+     *
+     * @param  int  $userId  회원 ID
+     * @return Collection<int, MileageTransaction> 활성 lot 컬렉션
+     */
+    public function getActiveLotsForUserForUpdate(int $userId): Collection;
+
+    /**
+     * 회원의 특정 유형 lot 중 아직 남은 금액 합을 구합니다. (소멸되지 않은 것만)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $type  거래 유형 값
+     * @param  string  $currency  통화 코드
+     * @return float 남은 금액 합
+     */
+    public function sumRemainingByType(int $userId, string $type, string $currency): float;
+
+    /**
      * 잔여 있는 특정 lot 들을 조회합니다 (유효기간 연장 대상).
      *
      * 회원을 지정하면 그 회원의 lot 만, null 이면 회원과 무관하게 지정한 lot 전부를 대상으로 한다
@@ -282,12 +332,12 @@ interface MileageTransactionRepositoryInterface
     public function updateExpiry(MileageTransaction $lot, Carbon $expiresAt): void;
 
     /**
-     * 회원의 모든 거래 행을 삭제합니다 (탈퇴/삭제 정리 — CASCADE 의존 금지).
+     * 회원의 거래 행에서 회원 연결만 끊습니다. (회원 완전 삭제 — 거래 기록은 보존, E3)
      *
      * @param  int  $userId  회원 ID
-     * @return int 삭제된 행 수
+     * @return int 연결을 끊은 행 수
      */
-    public function deleteForUser(int $userId): int;
+    public function detachUser(int $userId): int;
 
     /**
      * 클레임 추가결제 건의 마일리지 환급 거래가 이미 있는지 확인합니다. (환급 멱등 축)

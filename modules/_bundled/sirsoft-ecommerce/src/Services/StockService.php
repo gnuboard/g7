@@ -18,6 +18,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
  */
 class StockService
 {
+    /**
+     * @param  ProductOptionRepositoryInterface  $optionRepository  상품 옵션 저장소 (재고 잠금·증감)
+     * @param  ProductRepositoryInterface  $productRepository  상품 저장소 (옵션 재고 합 동기화)
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 저장소 (차감 플래그 정리)
+     */
     public function __construct(
         protected ProductOptionRepositoryInterface $optionRepository,
         protected ProductRepositoryInterface $productRepository,
@@ -70,12 +75,30 @@ class StockService
      */
     public function deductStock(Order $order): void
     {
+        $this->deductStockForOptions($order, $order->options);
+    }
+
+    /**
+     * 지정한 주문 옵션들만 재고를 차감합니다. (수동 결제 처리 — 활성 행만 대상으로 할 때, Q13)
+     *
+     * `deductStock()` 은 주문의 모든 행을 돌아 취소된 행까지 차감한다. 관리자가 결제 전 주문을
+     * 결제완료로 올릴 때는 살아 있는 행만 빼야 하므로 대상 행을 받는다. 훅은 `deductStock()` 과 같은
+     * 인수(주문)로 발화한다.
+     *
+     * @param  Order  $order  주문
+     * @param  iterable<OrderOption>  $options  차감할 주문 옵션
+     * @return void
+     *
+     * @throws InsufficientStockException 재고 부족 시
+     */
+    public function deductStockForOptions(Order $order, iterable $options): void
+    {
         HookManager::doAction('sirsoft-ecommerce.stock.before_deduct', $order);
 
-        DB::transaction(function () use ($order) {
+        DB::transaction(function () use ($options) {
             $productIds = [];
 
-            foreach ($order->options as $orderOption) {
+            foreach ($options as $orderOption) {
                 // 이미 차감된 옵션 스킵 (멱등성 보장)
                 if ($orderOption->is_stock_deducted) {
                     continue;

@@ -80,6 +80,10 @@
               <span class="text-gray-300 dark:text-gray-600">|</span>
               <badge data-type="composite" data-ref="cd_005_status_badge" variant="{{claim?.data?.claim?.status_variant ?? 'default'}}">{{claim?.data?.claim?.status_label ?? ''}}</badge>
               <badge data-type="composite" data-ref="cd_006_guest_badge" data-if="{{claim?.data?.claim?.is_guest_request === true}}" variant="secondary">$t:sirsoft-ecommerce.admin.claim.column.guest_badge</badge>
+              <!-- 재활성 뱃지(Q29) — 취소 유형만 값이 온다. 목록 행과 같은 서버 값을 읽는다. -->
+              <badge data-type="composite" data-ref="cd_006b_reactivated_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated !== true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
+              <!-- 일부만 되살린 취소의 뱃지 -->
+              <badge data-type="composite" data-ref="cd_006c_reactivated_partial_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated === true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
               <span class="text-gray-300 dark:text-gray-600">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requested_at:</span>
               <span data-ref="cd_007_requested_at" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requested_at_formatted ?? ''}}</span>
@@ -162,6 +166,37 @@
             $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_standard
           </button>
           <span data-ref="cd_018_mode_blocked" data-if="{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}" class="text-xs text-gray-500 dark:text-gray-400">{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}</span>
+        </div>
+        <!-- 연결 신청서(보완 5) — 이 신청서와 이어진 원 신청서·후속 환불·처리 결과 취소 내역. 판정·번호·상태 라벨은 전부 서버(`linked_claims`)가 준다. 같은 화면(레이아웃)으로의 이동은 `_local` 이 남으므로 새 창으로 연다(cd_009 와 같은 규칙). 연결이 하나도 없으면 줄 전체가 사라진다. -->
+        <div data-ref="cd_019_linked_claims_row" data-if="{{!!claim?.data?.linked_claims?.source || (claim?.data?.linked_claims?.refunds ?? []).length > 0 || !!claim?.data?.linked_claims?.result_cancel}}" class="mt-4 flex-center gap-3 flex-wrap">
+          <span data-if="{{!!claim?.data?.linked_claims?.source}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.linked.source</span>
+          <a data-ref="cd_020_source_claim_link" data-if="{{!!claim?.data?.linked_claims?.source}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+            <on type="click">
+              <!-- 원 신청서를 새 창으로 연다 — 지금 보던 신청서의 입력 상태를 잃지 않게 한다 -->
+              <open-window path="{{claim.data.linked_claims.source.detail_url}}"/>
+            </on>
+            {{(claim?.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim?.data?.linked_claims?.source?.claim_number ?? '')}}
+          </a>
+          <badge data-type="composite" data-ref="cd_021_source_claim_badge" data-if="{{!!claim?.data?.linked_claims?.source}}" variant="{{claim?.data?.linked_claims?.source?.status_variant ?? 'default'}}" size="sm">{{claim?.data?.linked_claims?.source?.status_label ?? ''}}</badge>
+          <span data-if="{{(claim?.data?.linked_claims?.refunds ?? []).length > 0}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.linked.refunds</span>
+          <span data-ref="cd_022_linked_refund_{{lrIdx}}" data-each="linkedRefund, lrIdx in {{claim?.data?.linked_claims?.refunds ?? []}}" class="flex-center gap-1">
+            <a href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <on type="click">
+                <!-- 후속 환불신청서를 새 창으로 연다 -->
+                <open-window path="{{linkedRefund.detail_url}}"/>
+              </on>
+              {{linkedRefund.claim_number}}
+            </a>
+            <badge data-type="composite" variant="{{linkedRefund.status_variant ?? 'default'}}" size="sm">{{linkedRefund.status_label ?? ''}}</badge>
+          </span>
+          <span data-if="{{!!claim?.data?.linked_claims?.result_cancel}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.linked.result_cancel</span>
+          <a data-ref="cd_023_result_cancel_link" data-if="{{!!claim?.data?.linked_claims?.result_cancel}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+            <on type="click">
+              <!-- 환불이 실행돼 생긴 취소 내역을 새 창으로 연다 -->
+              <open-window path="{{claim.data.linked_claims.result_cancel.detail_url}}"/>
+            </on>
+            {{claim?.data?.linked_claims?.result_cancel?.claim_number ?? ''}}
+          </a>
         </div>
       </div>
       <!-- 탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다. 탭 클릭은 컴포넌트가 제 상태로 처리한다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 컴포넌트가 내부 활성 탭 갱신을 넘겨 버려(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. 형제 선례(상품·게시판 폼)처럼 핸들러를 두지 않는다. 탭 막대는 헤더 묶음 **밖**에 두고 `sticky-tab-nav` 로 스크롤 영역 위에 붙인다(상품 폼과 같은 형태) — 헤더 묶음 안에 두면 sticky 가 부모 경계에 막혀 스크롤과 함께 사라지고, 네 구역이 길어(신청 정보 약 1,300px·결제 정보 약 1,500px) 운영자가 탭으로 돌아가려면 다시 끝까지 올려야 했다(#599 후속 운영 지적). -->

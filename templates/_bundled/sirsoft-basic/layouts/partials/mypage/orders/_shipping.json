@@ -377,11 +377,11 @@
                     ]
                 },
                 {
-                    "comment": "배송 목록",
+                    "comment": "배송 목록 — 취소된 상품의 배송 카드는 뺀다. 그 행의 배송비 몫은 0 이라 「무료배송」 으로 잘못 읽힌다.",
                     "type": "basic",
                     "name": "Div",
                     "iteration": {
-                        "source": "{{order.data.shippings ?? []}}",
+                        "source": "{{(order.data.shippings ?? []).filter(s => (order.data.options ?? []).find(o => o.id === s.order_option_id)?.option_status !== 'cancelled')}}",
                         "item_var": "shipping"
                     },
                     "props": {

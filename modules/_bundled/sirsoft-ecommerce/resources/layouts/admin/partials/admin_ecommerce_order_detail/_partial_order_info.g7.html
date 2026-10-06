@@ -197,8 +197,9 @@
               <div class="whitespace-nowrap">
                 <span class="text-sm font-medium text-gray-900 dark:text-gray-100 block">{{row.shipping_type_label ?? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.parcel')}}</span>
                 <span data-if="{{row.shipping_policy_name}}" class="text-tertiary block">{{row.shipping_policy_name}}</span>
-                <span class="text-tertiary block">{{Number(row.shipping_amount) > 0 ? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.paid_shipping') : $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.free_shipping')}}</span>
-                <span class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}</span>
+                <!-- 취소된 줄은 배송비를 지지 않는다(행 몫 0 — 부분취소·재활성 재계산이 0 으로 쓴다). 「무료배송 0원」 으로 읽히지 않게 숨긴다. -->
+                <span data-if="{{row.option_status !== 'cancelled'}}" class="text-tertiary block">{{Number(row.shipping_amount) > 0 ? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.paid_shipping') : $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.free_shipping')}}</span>
+                <span data-if="{{row.option_status !== 'cancelled'}}" class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}</span>
                 <span data-if="{{row.carrier_name}}" class="text-xs text-gray-600 dark:text-gray-300 block">{{row.carrier_name}}</span>
                 <!-- 운송장 번호 — tracking_url 있으면 택배사 배송조회 링크 -->
                 <a data-if="{{row.tracking_url}}" href="{{row.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 block">{{row.tracking_number ?? ''}}</a>

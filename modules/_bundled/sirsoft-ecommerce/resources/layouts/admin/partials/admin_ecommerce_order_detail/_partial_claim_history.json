@@ -255,6 +255,16 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "환불 행의 원 신청서 번호(보완 5) — 반품·교환에서 생긴 환불이면 그 번호를 함께 적는다(서버가 같은 주문의 신청서에서 찾아 준다).",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{!!claim.source_claim_number}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}"
+                                                },
+                                                {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
@@ -631,6 +641,16 @@
                                                                 "size": "sm"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge"
+                                                        },
+                                                        {
+                                                            "comment": "환불 행의 원 신청서 번호(보완 5)",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{!!claim.source_claim_number}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}"
                                                         },
                                                         {
                                                             "type": "basic",

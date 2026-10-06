@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 
@@ -29,6 +30,22 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
  */
 class OrderClaimHistoryResource extends ClaimResource
 {
+    /** @var array<string, array<int, string>> 출처 유형 → (신청서 id → 번호) — 환불 행의 원 신청서 번호(보완 5) */
+    protected array $sourceNumbers = [];
+
+    /**
+     * 같은 주문의 반품·교환 번호표를 주입합니다. (보완 5 — 추가 쿼리 없이 환불 행에 원 신청서 번호를 싣는다)
+     *
+     * @param  array<string, array<int, string>>  $sourceNumbers  출처 유형(return|exchange) → (id → 번호)
+     * @return static 체이닝용 자기 자신
+     */
+    public function withSourceNumbers(array $sourceNumbers): static
+    {
+        $this->sourceNumbers = $sourceNumbers;
+
+        return $this;
+    }
+
     /**
      * 리소스를 배열로 변환
      *
@@ -43,6 +60,10 @@ class OrderClaimHistoryResource extends ClaimResource
         $data['detail_url'] = $this->resolveDetailUrl($data['claim_number'] ?? null);
         // 「환불 미접수」 뱃지(D9) — 클레임 목록 필터 `pending_refund` 와 같은 술어다(금액 0 판정은 상세가 한다).
         $data['has_pending_refund'] = $this->hasPendingRefund();
+        // 환불 행의 원 신청서 번호(보완 5) — 반품·교환에서 생긴 환불이면 그 신청서 번호, 아니면 null.
+        $data['source_claim_number'] = $this->resource instanceof OrderRefund
+            ? ($this->sourceNumbers[$this->resource->refund_source_type?->value ?? ''][(int) $this->resource->refund_source_id] ?? null)
+            : null;
 
         // 부모의 items 는 ClaimItemResource 컬렉션(통화 주입 완료)이다 — 배열로 풀어
         // 정규화 금액 축을 행마다 덧붙인다. (each() 체인의 반환형은 Support\Collection 이다)

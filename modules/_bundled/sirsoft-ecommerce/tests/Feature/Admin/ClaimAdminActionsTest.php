@@ -635,4 +635,42 @@ class ClaimAdminActionsTest extends ModuleTestCase
 
         $this->assertSame(0, ActivityLog::where('action', 'claim_return.request_update')->count());
     }
+
+    // ================================================================
+    // F1 — 반품 완료 중 쿠폰 복원 실패는 완료 전체를 되돌린다
+    // ================================================================
+
+    /**
+     * 전건 완료 반품의 쿠폰 복원이 실패하면 완료가 되돌려지고 422(`side_effect_failed`)로 알린다 —
+     * 예전에는 기록만 하고 완료로 확정해, 환불은 끝났는데 쿠폰이 사용됨으로 남았다(F1·D2).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=return, gate_side=shipped
+     *
+     * @effects return_completion_rolls_back_when_coupon_restore_fails
+     */
+    public function test_return_completion_rolls_back_when_coupon_restore_fails(): void
+    {
+        // 재계산이 적용하지 못하는 쿠폰이 원 주문에 있었다 = 조건 소멸 → 완료 시 복원 대상.
+        $order = $this->deliveredClaimOrder(orderOverrides: [
+            'promotions_applied_snapshot' => ['coupon_issue_ids' => [987654]],
+        ]);
+        $service = app(OrderReturnService::class);
+        $return = $service->transition($this->requestedReturn($order), ReturnStatusEnum::APPROVED);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTED);
+        $itemId = (int) $return->fresh('returnOptions')->returnOptions->first()->id;
+
+        HookManager::addAction('sirsoft-ecommerce.coupon.restore', function () {
+            throw new \RuntimeException('쿠폰 잠금 실패');
+        }, 5);
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/status", [
+            'status' => 'completed',
+            'completion' => ['restore_stock_by_item' => [$itemId => false], 'create_refund_request' => false],
+        ])->assertStatus(422)
+            ->assertJsonPath('message', __('sirsoft-ecommerce::messages.claims.side_effect_failed'));
+
+        $this->assertSame(ReturnStatusEnum::COLLECTED, $return->fresh()->return_status);
+    }
 }

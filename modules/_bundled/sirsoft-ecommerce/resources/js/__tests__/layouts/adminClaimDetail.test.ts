@@ -917,6 +917,36 @@ describe('결제 정보 — 주문상세 정본 동형 (D17-③)', () => {
       '{{(claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}',
     );
   });
+
+  /**
+   * 「마일리지로 환불」로 지급한 현금분은 환불금액 행의 그중 내역으로 따로 보인다(Q3) — 결제행은
+   * 결제완료로 남으므로 이 줄이 없으면 돈이 카드·계좌로 나가지 않았다는 사실이 화면에 없다.
+   *
+   * @effects claim_payment_shows_the_mileage_credited_cash_share
+   */
+  it('마일리지로 지급한 현금분 행이 주문 집계를 읽는다', () => {
+    expect(byId(paymentSection, 'cp_006_refunded_mileage_credit_{{payIdx}}').if).toBe(
+      '{{(claim?.data?.order?.total_refunded_mileage_credit_amount ?? 0) > 0}}',
+    );
+  });
+
+  /**
+   * 수단을 「마일리지로 환불」로 고르는 자리와 실행 확인 창에서, 현금도 마일리지로 간다는 사실을
+   * 알린다(D1). 표식만 남은 신청서에는 [환불하기]가 장부만 확정한다는 안내가 선다(§14-C).
+   *
+   * @effects claim_refund_execute_explains_points_cash_credit_and_pg_marker
+   */
+  it('마일리지로 환불 안내와 PG 표식 안내가 서버·선택 값을 읽는다', () => {
+    expect(byId(paymentSection, 'cre_017_points_cash_credit_notice').if).toBe(
+      "{{(_local.refundMethod ?? '') === 'points'}}",
+    );
+    expect(byId(paymentSection, 'cre_013c_pg_settled_pending_ledger_notice').if).toBe(
+      '{{claim?.data?.claim?.pg_settled_pending_ledger === true}}',
+    );
+    expect(String(byId(refundExecuteModal, 'crm_010_points_cash_credit_notice').if)).toContain(
+      "_global.claimRefundExecuteContext?.refundMethod === 'points'",
+    );
+  });
 });
 
 describe('이 클레임의 정산 (D18)', () => {

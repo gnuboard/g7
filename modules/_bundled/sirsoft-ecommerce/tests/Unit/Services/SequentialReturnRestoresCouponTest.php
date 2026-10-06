@@ -213,6 +213,11 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
                 .'상품을 여전히 잔여로 세면 쿠폰 조건이 깨지지 않아 복원이 일어나지 않습니다. '
                 .'실제 발화: '.json_encode($captured)
         );
+
+        // 훅 인자만이 아니라 실제 CouponRestoreListener 가 발급 행을 되돌렸는지(T11)
+        $issue = DB::table('ecommerce_promotion_coupon_issues')->find($this->couponIssueId);
+        $this->assertSame('available', $issue->status);
+        $this->assertNull($issue->used_at);
     }
 
     /**
@@ -246,5 +251,6 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
             '아직 상품이 남아 쿠폰 조건이 살아 있는데 복원이 일어났습니다 — 고객이 쓰지 않은 '
                 .'할인을 다시 쓰게 됩니다. 실제 발화: '.json_encode($captured)
         );
+        $this->assertSame('used', DB::table('ecommerce_promotion_coupon_issues')->find($this->couponIssueId)->status);
     }
 }

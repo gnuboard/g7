@@ -293,6 +293,13 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 })->orWhere(function (Builder $cancelled) use ($cutoff) {
                     $cancelled->where('order_status', OrderStatusEnum::CANCELLED->value)
                         ->where(fn (Builder $at) => $this->closedBefore($at, 'cancelled_at', $cutoff));
+                })->orWhere(function (Builder $returned) use ($cutoff) {
+                    // 전량 반품으로 끝난 주문 — 종결 시각은 마지막 반품 완료 시각이다(아래 「기준일 뒤 완료된 반품 없음」이
+                    // 그 시각을 잰다). 반품 신청서 없이 행만 반품완료가 된 옛 주문은 마지막 수정 시각으로 대신한다.
+                    $returned->where('order_status', OrderStatusEnum::RETURNED->value)
+                        ->where(fn (Builder $at) => $at
+                            ->whereHas('returns', fn (Builder $return) => $return->where('return_status', ReturnStatusEnum::COMPLETED->value))
+                            ->orWhere('updated_at', '<=', $cutoff));
                 });
             })
             // 진행 중인 환불이 있으면 종결이 아니다 — 송금 전 환불 계좌 정보를 지우면 환불할 수 없다.

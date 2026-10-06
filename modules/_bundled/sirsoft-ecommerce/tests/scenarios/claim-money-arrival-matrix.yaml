@@ -1,0 +1,66 @@
+feature: 클레임 「돈의 도착」 매트릭스 — 결제 구성 × 경로 × 환불수단 × 우선순위 (#747 C11)
+
+description: |
+  환불신청서가 「완료」로 끝나면 돈이 정확히 도착했는지 다섯 축으로 단언한다 — 상태 · ① PG 호출 금액 ·
+  ② 계좌 기록(신청서·결제행) · ③ 마일리지 원장(사용분 반환 `refund_restore`·현금분 지급 `refund_credit`,
+  지급은 무기한)과 회원 잔액 · ④ 주문 장부(`total_refunded_amount`·`total_refunded_points_amount`) ·
+  ⑤ 결제행(`payment_status`·`cancelled_amount`·`cancel_history` 의 금액·수단·정산 여부).
+  불변식 두 개를 함께 본다 — 정산 이력 합 == 결제행 취소액, 장부 현금 == PG + 계좌 + 지급.
+
+  기대값은 테스트 provider 의 리터럴이다(서비스 재계산 호출 금지). 상품 A 20,000 · B 30,000, 무료배송,
+  쿠폰 없음, 회수·교환 배송비 0. 혼합 결제는 현금 40,000 + 마일리지 10,000(실제 차감 원장 포함).
+  모든 경로가 「접수 → 승인 → [환불하기]」 운영 흐름을 탄다 — 자동 승인 목록과 결정 이력을 비워 접수가
+  요청 상태에서 멈추게 하고, 환불수단 변경은 실행 본문으로 준다. 현금 0원 마일리지 환불은 결제수단
+  게이트와 무관하게 접수에서 자동 완료되는 것이 규칙(결함 4)이라 그 행은 실행 없이 돈만 잰다.
+
+  이번 결함(마일리지로 환불 × 현금 > 0)은 이 표의 한 칸이었다. 표를 세우며 찾은 결함: 반품을 나눠 받아
+  받은 돈을 모두 돌려준 결제행이 「부분취소」로 남았다(앞 회차 반품 상품을 남은 상품으로 셈) — 결제행
+  상태를 누적 취소액으로도 판정하게 고쳤다.
+
+axes:
+  payment:
+    - card
+    - vbank_paid
+    - dbank
+    - card_mileage
+    - dbank_mileage
+    - mileage_only_card
+    - mileage_only_dbank
+    - guest_dbank
+    - bank
+  path:
+    - cancel_full
+    - cancel_partial
+    - return_full
+    - return_partial
+    - return_partial_twice
+    - exchange_downgrade_refund
+    - direct_refund
+    - admin_proxy_refund
+  method:
+    - native
+    - points_override
+    - bank_override
+  priority:
+    - none
+    - pg_first
+    - points_first
+
+exclusions:
+  - { payment: bank, reason: "계좌이체는 기본 비활성 결제수단이라 흐름 수준 픽스처가 없다 — 환불수단 판정은 단위 수준(PaymentMethodRefundPathTest)에서 잰다" }
+  - { payment: [card, vbank_paid, dbank, mileage_only_card, mileage_only_dbank, guest_dbank], priority: [pg_first, points_first], reason: "우선순위는 현금과 마일리지를 함께 낸 혼합 결제에만 의미가 있다" }
+  - { payment: [card_mileage, dbank_mileage], priority: none, reason: "혼합 결제의 환불은 언제나 우선순위 하나로 배분된다 — 접수 기본값은 pg_first 열이 잰다" }
+  - { payment: [card_mileage, dbank_mileage], path: exchange_downgrade_refund, priority: points_first, reason: "교환 차액 환불은 PG_FIRST 배분 규칙을 따른다 — 접수에 우선순위 축이 없다" }
+  - { payment: [card_mileage, dbank_mileage], method: points_override, priority: points_first, reason: "마일리지로 환불의 현금분 지급은 배분과 독립이다 — pg_first 대표 열로 재고, points_first 배분은 native 열이 잰다" }
+  - { payment: [mileage_only_card, mileage_only_dbank], method: [points_override, bank_override], reason: "현금이 0원이라 수단 변경의 의미가 없고 접수가 자동으로 「마일리지」가 된다(02 결함 4)" }
+  - { payment: [vbank_paid, dbank, card_mileage, dbank_mileage, guest_dbank], method: bank_override, reason: "계좌로 변경은 카드 대표 열로 잰다 — 무통장 계열은 native 가 이미 계좌다" }
+
+effects:
+  - refund_completes_only_when_money_arrives                   # 완료 = 다섯 축이 리터럴과 일치
+  - points_refund_credits_cash_share_as_non_expiring_mileage   # 마일리지로 환불은 현금분을 무기한 마일리지로 지급
+  - foreign_method_refund_keeps_payment_row_paid               # 결제수단과 다른 수단으로 지급하면 결제행은 결제완료 유지(Q3·Q16)
+  - guest_or_disabled_points_refund_rejected                   # 비회원·마일리지 꺼짐의 마일리지로 환불은 422, 돈 불변(D1·S5·Q21)
+  - mileage_never_deducted_refunds_zero_points                 # 차감된 적 없는 마일리지는 돌려주지도 장부에 적지도 않는다(Q15)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimMoneyArrivalMatrixTest.php

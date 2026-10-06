@@ -186,10 +186,12 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
      */
     public function sumNetSalesOnDate(string $date): float
     {
-        // 컬럼명은 비한정(unqualified) 사용 — quantity/cancelled_quantity/unit_price 는
-        // order_options 에만 존재하므로 join 상황에서도 모호하지 않다 (테이블 prefix 비의존).
+        // 컬럼명은 비한정(unqualified) 사용 — quantity/unit_price 는 order_options 에만 존재하므로
+        // join 상황에서도 모호하지 않다 (테이블 prefix 비의존).
+        // quantity 는 분할로 이미 잔여 수량이다. cancelled_quantity 는 이력 카운터라 빼면 부분취소 수량이
+        // 두 번 빠진다(748: 6개 → 5개). unsigned 컬럼이라 빼기는 1690 오류도 낸다.
         return (float) $this->salesEligibleOnDateQuery($date)
-            ->selectRaw('COALESCE(SUM(unit_price * (quantity - cancelled_quantity)), 0) as total')
+            ->selectRaw('COALESCE(SUM(unit_price * quantity), 0) as total')
             ->value('total');
     }
 
@@ -199,7 +201,7 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
     public function sumNetQuantityOnDate(string $date): int
     {
         return (int) $this->salesEligibleOnDateQuery($date)
-            ->selectRaw('COALESCE(SUM(quantity - cancelled_quantity), 0) as total')
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total')
             ->value('total');
     }
 

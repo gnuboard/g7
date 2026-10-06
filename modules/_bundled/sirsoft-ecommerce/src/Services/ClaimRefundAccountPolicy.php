@@ -17,6 +17,9 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
  * 주문 축의 술어는 환불 도메인이 소유한다(`OrderRefundRequestService::refundsToBankAccount()` —
  * 사람이 송금하는 수단 + 입금된 가상계좌). 여기에 **실행 수단 축**을 더한다: 카드 주문이라도
  * 운영자가 계좌 수동 환불(`BANK`)을 고르면 그 돈은 계좌로 나가므로 계좌가 필요하다.
+ *
+ * 돌려줄 현금이 없는 주문(현금 0원 — 마일리지로 전액 결제)은 수단과 무관하게 계좌를 묻지 않는다(결함 4) —
+ * 판정은 `OrderRefundRequestService::hasCashToReturn()` 이다.
  */
 class ClaimRefundAccountPolicy
 {
@@ -76,6 +79,12 @@ class ClaimRefundAccountPolicy
      */
     public function missingForRequest(Order $order, array $submitted): bool
     {
+        // 돌려줄 현금이 없으면 계좌가 쓰일 일이 없다(결함 4) — 마일리지로 전액 결제한 주문을 무통장으로
+        // 주문했다는 이유로 계좌를 요구하면 고객이 취소·반품을 접수하지 못한다.
+        if (! $this->refundRequestService->hasCashToReturn($order)) {
+            return false;
+        }
+
         if (! $this->orderRefundsToBankAccount($order)) {
             return false;
         }
@@ -115,8 +124,21 @@ class ClaimRefundAccountPolicy
             return false;
         }
 
-        $method = $methodOverride ?? $refund->refund_method;
+        return $this->paysOutToBankAccount($refund, $methodOverride ?? $refund->refund_method);
+    }
 
+    /**
+     * 이 수단으로 실행하면 현금이 고객 계좌로 나가는지 반환합니다. (계좌 유무·금액과 무관한 수단 축)
+     *
+     * `BANK` 는 운영자가 계좌로 이체하므로 항상 그렇고, `POINTS` 는 회원 원장으로 들어가므로 아니다. 그 밖(PG·미지정)은
+     * 주문 축 술어가 정한다 — 입금된 가상계좌는 PG 가 고객 계좌로 송금하므로 계좌가 쓰인다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  RefundMethodEnum|null  $method  실행 수단
+     * @return bool 계좌로 나가면 true
+     */
+    public function paysOutToBankAccount(OrderRefund $refund, ?RefundMethodEnum $method): bool
+    {
         if ($method === RefundMethodEnum::BANK) {
             return true;
         }
@@ -128,5 +150,34 @@ class ClaimRefundAccountPolicy
         $order = $refund->order;
 
         return $order !== null && $this->orderRefundsToBankAccount($order);
+    }
+
+    /**
+     * 환불 수단마다 계좌가 쓰이는지·받아야 하는지를 반환합니다. (상세 화면의 확인 창용)
+     *
+     * 운영자는 상세에서 수단을 바꾼 뒤 실행하므로, 저장된 수단 하나의 판정으로는 창이 어긋난다 — 수단별로 내려
+     * 화면이 지금 고른 수단의 값을 쓰게 한다. 두 값 모두 실행 게이트와 같은 술어다.
+     *
+     * 실행 게이트는 본문의 현금액으로 판정하므로, 운영자가 상세에서 현금액을 고친 뒤 저장하지 않고 실행하면 저장값 판정
+     * (`required`)과 어긋난다 — 현금 축을 뺀 판정(`required_if_cash`: 현금이 있다면 계좌가 필요한가)도 함께 내려 화면이
+     * 지금 입력한 현금액과 합친다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @return array<string, array{used: bool, required: bool, required_if_cash: bool}> 수단 값 => {계좌로 나가는가,
+     *                                                                                  저장 현금으로 계좌가 필요한가, 현금이 있다면 계좌가 필요한가}
+     */
+    public function judgementsByMethod(OrderRefund $refund): array
+    {
+        $out = [];
+        foreach (RefundMethodEnum::cases() as $method) {
+            $out[$method->value] = [
+                'used' => $this->paysOutToBankAccount($refund, $method),
+                'required' => $this->requiredForRefund($refund, null, $method),
+                // 현금액 1(임의의 양수)로 같은 술어를 돌린다 — 계좌 기재 여부·수단 축만 남는다.
+                'required_if_cash' => $this->requiredForRefund($refund, 1.0, $method),
+            ];
+        }
+
+        return $out;
     }
 }

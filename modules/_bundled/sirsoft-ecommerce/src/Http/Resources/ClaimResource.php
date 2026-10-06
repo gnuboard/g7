@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -18,11 +19,14 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
+use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
  * 클레임 신청서 리소스 (교환·반품·환불·취소 공용 — 유저 목록·상세·비회원 공용)
@@ -272,13 +276,12 @@ class ClaimResource extends BaseApiResource
             ? ($claim->cancel_reason_type ?? '')
             : ($claim->reason_code ?? '');
 
-        // 취소 이력의 사유는 환불 카탈로그에서 읽는다(`OrderCancel::getRefundReasonLabel()` 과 같은 축).
-        // 환불신청서는 스스로 카탈로그 유형을 안다 — 교환·반품에서 파생된 건은 부모의 사유 코드를
-        // 물려받으므로 그 코드가 실제로 등록된 부모 카탈로그를 봐야 한다(S17 트랙 A F-2).
-        // 판정은 `OrderRefund::reasonCatalogType()` 단일 출처를 쓴다(모델 게터·목록 라벨 맵과 공유).
+        // 환불신청서와 취소 이력은 스스로 카탈로그 유형을 안다 — 교환·반품에서 파생된 건은 부모의
+        // 사유 코드를 물려받으므로 그 코드가 실제로 등록된 부모 카탈로그를 봐야 한다(S17 트랙 A F-2).
+        // 판정은 `OrderRefund::reasonCatalogType()`·`OrderCancel::reasonCatalogType()` 단일 출처를
+        // 쓴다(모델 게터·목록 라벨 맵과 공유).
         $catalogType = match (true) {
-            $claim instanceof OrderCancel => ClaimTypeEnum::REFUND->value,
-            $claim instanceof OrderRefund => $claim->reasonCatalogType(),
+            $claim instanceof OrderCancel, $claim instanceof OrderRefund => $claim->reasonCatalogType(),
             default => $type->value,
         };
 
@@ -445,11 +448,31 @@ class ClaimResource extends BaseApiResource
             ] + $this->exchangeModeFields($claim);
         }
 
+        // 결제는 확정됐는데 신청서가 결제대기에 멈춘 상태(B5) — 확정 뒤 전이가 거절된 건이다. 운영자가 상태를 직접 옮겨야 한다.
+        if (($claim instanceof OrderExchange || $claim instanceof OrderReturn) && ! $this->forList) {
+            $status = $claim instanceof OrderExchange ? $claim->exchange_status?->value : $claim->return_status?->value;
+            $data['paid_but_transition_failed'] = $status === 'payment_pending'
+                && $claim->requiresAdditionalPayment()
+                && app(ClaimPaymentService::class)->paidAmount($claim) > 0
+                && app(ClaimPaymentService::class)->outstandingAmount($claim) <= 0;
+        }
+
         if ($claim instanceof OrderRefund) {
+            // 차감된 적 없는 사용 마일리지는 돌려주지 않는다(Q15) — 이 수정 전에 마일리지 몫으로 접수된 신청서도 화면은
+            // 0 과 그 이유를 보인다. 실행이 어차피 0 으로 바꾸므로, 저장값을 그대로 그리면 확인 창이 나가지 않을 돈을 예고한다.
+            $pointsNotDeducted = $this->pointsNotDeducted($claim);
+            $refundPoints = $pointsNotDeducted ? 0.0 : (float) $claim->refund_points_amount;
+            $mcRefundPoints = $pointsNotDeducted ? null : $claim->mc_refund_points_amount;
+
             $data += [
                 'refund_source_type' => $claim->refund_source_type?->value,
                 'refund_method' => $claim->refund_method?->value,
                 'refund_method_label' => $claim->refund_method?->label(),
+                // 실제로 돈이 간 수단별 금액 줄(S7) — 신청서 수단은 결제수단에서 정해져, 카드 주문을 마일리지로만 돌려준
+                // 환불도 「PG사 환불」 이다. 상세의 수단 칸은 이 줄을 보인다(알림의 `refund_breakdown` 과 같은 규칙).
+                'refund_breakdown_formatted' => $this->forList
+                    ? null
+                    : RefundBreakdown::lines($claim, fn (float $amount): string => $this->formatOrderCurrency($amount, $currency)),
                 // PG 플러그인이 사라져 계좌 환불로 떨어진 건인지 (P14).
                 //
                 // 폴백 자체는 운영을 살린다 — 리스너가 없는데 PG 경로로 들어가면 아무도 응답하지
@@ -468,24 +491,45 @@ class ClaimResource extends BaseApiResource
                 // (카드 환불이 잠긴다)가 된다. 서버가 실행 게이트와 같은 술어로 답한다.
                 // 목록 행은 그리지 않는다(위와 같은 N+1 이유) — 상세에서만 판정한다.
                 'refund_account_required' => $this->forList ? null : $this->refundAccountRequired($claim),
+                // 같은 판정을 환불 수단마다 — 운영자가 상세에서 수단을 바꾼 뒤 [환불하기]를 누르므로, 확인 창은 지금
+                // 고른 수단의 값으로 계좌 줄(used)·계좌 입력 칸과 잠금(required)을 세운다. 저장 수단 하나로 그리면
+                // 「마일리지로 환불」로 바꿔도 계좌 줄이 남고, 계좌 없는 신청서는 실행 버튼이 잠긴다.
+                'refund_account_by_method' => $this->forList ? null : app(ClaimRefundAccountPolicy::class)->judgementsByMethod($claim),
                 'refund_amount' => $this->roundToOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount, $currency),
-                'refund_points_amount' => $this->roundToOrderCurrency((float) $claim->refund_points_amount, $currency),
-                'refund_points_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_points_amount, $currency),
+                'refund_points_amount' => $this->roundToOrderCurrency($refundPoints, $currency),
+                'refund_points_amount_formatted' => $this->formatOrderCurrency($refundPoints, $currency),
+                // 사용 마일리지를 차감하지 않은 주문이라 마일리지 몫이 0 인가 — 화면이 「0 (차감되지 않은 마일리지)」로 이유를 보인다.
+                'points_not_deducted' => $pointsNotDeducted,
+                // 「마일리지로 환불」로 완료된 현금 환불액(D1) — 그 돈이 카드·계좌가 아니라 회원 마일리지로
+                // 갔다는 사실을 상세가 따로 말한다(회원 클레임 상세의 「마일리지로 지급」 줄).
+                // 교환으로 받은 상품의 환불이면 그 교환 때 낸 상위 옵션 차액도 낸 수단 그대로 돌려준다(S2·Q9) — 원 주문 환불액과
+                // 따로 보인다(돈이 나가는 결제 건이 다르다).
+                'exchange_difference_refund_total' => $this->roundToOrderCurrency($this->exchangeDifferenceTotal($claim), $currency),
+                'exchange_difference_refund_total_formatted' => $this->formatOrderCurrency($this->exchangeDifferenceTotal($claim), $currency),
+                // 합계와 함께 낸 수단을 말한다(05 S2-3 「X원(카드/마일리지)」) — 상세에서만 결제 건을 읽는다.
+                'exchange_difference_refunds_formatted' => $this->forList
+                    ? null
+                    : $this->exchangeDifferenceFormatted($claim, fn (float $amount): string => $this->formatOrderCurrency($amount, $currency)),
+                'refund_mileage_credit_amount' => $this->roundToOrderCurrency($this->mileageCreditAmount($claim), $currency),
+                'refund_mileage_credit_amount_formatted' => $this->formatOrderCurrency($this->mileageCreditAmount($claim), $currency),
+                // PG 승인 직후 장부 반영이 롤백돼 표식만 남은 건(§14-C) — 「승인 상태 + PG 거래 ID」 조합은 그
+                // 표식에서만 생긴다. 다음 [환불하기]는 PG 를 다시 부르지 않고 장부만 확정한다.
+                'pg_settled_pending_ledger' => $claim->refund_status === RefundStatusEnum::APPROVED && filled($claim->pg_transaction_id),
                 'refund_shipping_amount' => $this->roundToOrderCurrency((float) $claim->refund_shipping_amount, $currency),
                 'refund_shipping_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_shipping_amount, $currency),
                 // 상세의 배송비 대비 행은 교환·반품에서 `mc_claim_shipping_fee` 를 병기한다. 환불 분기가
                 // 이 키를 내보내지 않으면 같은 자리에서 환불 신청서만 외화가 사라진다 — 컬럼은 이미 있고
                 // 노출만 없었다.
                 'mc_refund_shipping_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_shipping_amount),
-                'refund_total' => $this->roundToOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
-                'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
+                'refund_total' => $this->roundToOrderCurrency((float) $claim->refund_amount + $refundPoints, $currency),
+                'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + $refundPoints, $currency),
                 'mc_refund_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_amount),
                 // 화면의 보조 통화 줄은 바로 위 기준 통화 줄(`refund_total_formatted` = 현금 + 마일리지)과
                 // 같은 값의 다른 표기여야 한다. `mc_refund_amount` 는 **현금분만**이라 마일리지가 섞인
                 // 환불에서 두 줄이 서로 다른 금액이 되는데, 둘 다 정상 서식이라 흔적이 남지 않는다.
                 'mc_refund_total' => $this->formatStoredMultiCurrency(
-                    $this->sumMultiCurrency($claim->mc_refund_amount, $claim->mc_refund_points_amount)
+                    $this->sumMultiCurrency($claim->mc_refund_amount, $mcRefundPoints)
                 ),
                 'refund_bank_code' => $this->forList ? null : $claim->refund_bank_code,
                 'refund_bank_name' => $this->forList ? null : $this->resolveRefundBankName($claim->refund_bank_code),
@@ -512,6 +556,17 @@ class ClaimResource extends BaseApiResource
                 'refund_status_label' => $refund?->refund_status?->label(),
                 'cancelled_at_formatted' => $this->formatDateTimeStringForUser($claim->cancelled_at),
             ];
+
+            // 재활성 표시(Q29)는 운영 사건이라 관리자 응답에만 싣는다 — 구매자에게는 취소·환불 기록만 보인다.
+            if ($this->withAdminFields) {
+                $data += [
+                    'reactivated_at' => $claim->reactivated_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
+                    'reactivated_at_formatted' => $claim->reactivated_at ? $this->formatDateTimeStringForUser($claim->reactivated_at) : null,
+                    'reactivated_quantity' => (int) $claim->reactivated_quantity,
+                    'total_cancel_quantity' => $claim->totalCancelQuantity(),
+                    'is_partially_reactivated' => $claim->isPartiallyReactivated(),
+                ];
+            }
         }
 
         // 접수 시점 주문금액 비교(전/후) — 상세에서만 싣는다. 목록의 어느 칸도 이 표를 그리지 않는데
@@ -758,6 +813,39 @@ class ClaimResource extends BaseApiResource
     }
 
     /**
+     * 사용 마일리지를 차감하지 않은 주문이라 마일리지 환불 몫이 0 인지 판정합니다. (Q15)
+     *
+     * 실행(`OrderRefundRequestService` 의 Q15 보정)과 계산 원천(`OrderAdjustmentService`)과 같은 축 — `is_mileage_deducted` —
+     * 이다. 사용 마일리지가 없는 주문은 해당 없음이다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @return bool 미차감 주문이라 마일리지 몫이 0 이면 true
+     */
+    protected function pointsNotDeducted(OrderRefund $claim): bool
+    {
+        // 목록은 주문을 싣지 않으면 판정하지 않는다(행마다 주문을 읽는 N+1 금지) — 상세는 주문을 읽는다.
+        $order = ($claim->relationLoaded('order') || ! $this->forList) ? $claim->order : null;
+
+        return self::orderPointsNotDeducted($order);
+    }
+
+    /**
+     * 주문이 사용 마일리지를 차감하지 않아 그 주문의 환불 마일리지 몫이 0 인지 판정합니다. (Q15)
+     *
+     * 상세(이 리소스)·관리자 목록(`ClaimAdminListResource`)·연결 카드(`ClaimLinkResource`)가 같은 술어를 써야 한
+     * 신청서의 환불 합계가 화면마다 달라지지 않는다.
+     *
+     * @param  Order|null  $order  주문 (없으면 판정하지 않음)
+     * @return bool 미차감 주문이라 마일리지 몫이 0 이면 true
+     */
+    public static function orderPointsNotDeducted(?Order $order): bool
+    {
+        return $order !== null
+            && (float) $order->total_points_used_amount > 0
+            && ! $order->is_mileage_deducted;
+    }
+
+    /**
      * 이 환불을 실행하려면 보낼 계좌가 있어야 하는지 답합니다. (T2-D6)
      *
      * 실행 게이트(`ExecuteRefundRequest::validateRefundBank()`)와 **같은 판정**이다 — 계좌로 나갈
@@ -773,6 +861,85 @@ class ClaimResource extends BaseApiResource
         // 판정은 실행 게이트와 같은 한 곳(`ClaimRefundAccountPolicy::requiredForRefund()`)이다 —
         // 카드 주문의 계좌 수동 환불(`BANK`)도 계좌를 요구한다.
         return app(ClaimRefundAccountPolicy::class)->requiredForRefund($claim);
+    }
+
+    /**
+     * 환불신청서에 잡힌 교환 차액 환급 합계를 구합니다. (S2 — 카드·마일리지 합)
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @return float 교환 차액 환급 합계 (없으면 0)
+     */
+    protected function exchangeDifferenceTotal(OrderRefund $claim): float
+    {
+        $total = 0.0;
+        foreach ($claim->exchange_difference_refunds ?? [] as $entry) {
+            $total += (float) ($entry['amount'] ?? 0) + (float) ($entry['points_amount'] ?? 0);
+        }
+
+        return $total;
+    }
+
+    /**
+     * 교환 차액 환급을 합계와 수단으로 표기합니다. (S2 — 「5,000원 (신용카드)」·「5,000원 (신용카드 3,000원 · 마일리지 2,000원)」)
+     *
+     * 카드 등 PG 로 낸 몫은 그 클레임 결제 건의 결제수단 라벨로, 마일리지로 낸 몫은 「마일리지」로 적는다.
+     * 수단이 하나면 라벨만, 둘 이상이면 수단별 금액을 함께 적는다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @param  callable(float): string  $format  금액 포맷터 (주문 통화)
+     * @return string|null 표기 (환급할 차액이 없으면 null)
+     */
+    protected function exchangeDifferenceFormatted(OrderRefund $claim, callable $format): ?string
+    {
+        $total = $this->exchangeDifferenceTotal($claim);
+        if ($total <= 0.0) {
+            return null;
+        }
+
+        $byLabel = [];
+        $resolver = app(PaymentMethodResolver::class);
+        $claimPayments = app(ClaimPaymentService::class);
+        foreach ($claim->exchange_difference_refunds ?? [] as $entry) {
+            $cash = (float) ($entry['amount'] ?? 0);
+            if ($cash > 0.0) {
+                $method = (string) ($claimPayments->findById((int) ($entry['claim_payment_id'] ?? 0))?->payment_method ?? '');
+                $label = $method !== '' ? $resolver->label($method) : RefundMethodEnum::PG->label();
+                $byLabel[$label] = ($byLabel[$label] ?? 0.0) + $cash;
+            }
+
+            $points = (float) ($entry['points_amount'] ?? 0);
+            if ($points > 0.0) {
+                $label = __('sirsoft-ecommerce::messages.claims.exchange_difference.points');
+                $byLabel[$label] = ($byLabel[$label] ?? 0.0) + $points;
+            }
+        }
+
+        $methods = count($byLabel) === 1
+            ? (string) array_key_first($byLabel)
+            : implode(' · ', array_map(
+                fn (string $label, float $amount): string => __('sirsoft-ecommerce::messages.claims.exchange_difference.part', ['method' => $label, 'amount' => $format($amount)]),
+                array_keys($byLabel),
+                array_values($byLabel),
+            ));
+
+        return __('sirsoft-ecommerce::messages.claims.exchange_difference.format', ['total' => $format($total), 'methods' => $methods]);
+    }
+
+    /**
+     * 「마일리지로 환불」로 완료돼 회원 마일리지로 지급된 현금 환불액을 돌려줍니다. (D1)
+     *
+     * 완료 전에는 0 이다 — 「지급되었습니다」 안내가 실행 전 신청서에 붙으면 고객은 돈이 들어온 줄 안다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @return float 마일리지로 지급한 현금 환불액 (기준 통화)
+     */
+    protected function mileageCreditAmount(OrderRefund $claim): float
+    {
+        if ($claim->refund_method !== RefundMethodEnum::POINTS || $claim->refund_status !== RefundStatusEnum::COMPLETED) {
+            return 0.0;
+        }
+
+        return (float) $claim->refund_amount;
     }
 
     /**

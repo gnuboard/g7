@@ -230,6 +230,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | tracking_summary | object | `{"collection":{"first":"CJ-1","count":2},"redelivery":{"first":null,"count":0}}` | 방향별 서로 다른 운송장 수와 첫 번호 — 목록 「송장」 칸이 「CJ-1 외 1건」 으로 그린다 (교환·반품만) |
 | tracking_prefill | object | `{"collection":{"carrier_id":3,"tracking_number":"CJ-1"},"redelivery":null}` | 회수중·발송중 일괄 모달의 미리 채움 — 살아 있는 행이 **모두 같은 송장**일 때만 값이 선다 (교환·반품만) |
 | is_admin_requested | boolean | `false` | 판매자 접수(D8) 여부 — 목록 「판매자 접수」 뱃지 |
+| refund_progress | object\|null | `{"claim_number": "RF…", "status": "requested", "status_label": "환불신청", "status_variant": "info", "status_icon": "status-requested", "count": 2}` | 교환·반품 행 전용(보완 5 · Q7) — 이 신청서에서 생긴 최신 환불신청서의 진행 상태와 전체 건수. 환불이 없으면 `null`. 페이지당 한 번에 싣는다(출처 축 eager load) |
 | exchange_mode / exchange_mode_label / is_advance_exchange | string / string / boolean | `advance` / `선교환` / `true` | 교환 진행 방식 (교환만) |
 | is_collection_overdue / collection_overdue_days | boolean / integer | `true` / `3` | 선교환 반송 기한 경과 여부·경과 일수 (교환만) |
 | outstanding_amount / _formatted | number\|null / string\|null | `3000` / `3,000원` | 미수납 청구액 (교환·반품만) — **미수납 판정은 상태 라벨이 아니라 이 값으로 한다** (분할 수납 건은 결제대기 라벨 그대로다) |
@@ -238,6 +239,8 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | refund_total / _formatted | number\|null / string\|null | `29000` / `29,000원` | 환불 합계 (환불·취소 — 취소는 환불 행 로드 시) |
 | cancel_type / cancel_type_label | string\|null | `full` / `전체취소` | 취소 구분 (취소만) |
 | refund_status / refund_status_label | string\|null | `completed` / `환불완료` | 취소 발 환불 상태 (취소만) |
+| reactivated_at_formatted | string\|null | `2026-10-05 14:00` | 이 취소로 빠진 상품을 나중에 다시 판매 상태로 되살린 가장 최근 시각 (취소만) — 목록 「재활성됨」 뱃지. 기록 이전의 재활성은 `null` |
+| is_partially_reactivated | boolean | `false` | 취소 수량 중 일부만 되살렸는지 (취소만) — `true` 면 「일부 재활성됨」 뱃지 |
 
 **응답 예시 (200)**
 
@@ -343,6 +346,11 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 행에서 읽는다)이고 `progress_steps` 는 취소 상태 Enum 의 두 칸(신청 → 완료)입니다. 활동 로그
 (`/logs`)는 취소 행 자신의 이력에 취소 발 환불 행의 이력을 합쳐 돌려줍니다(추가결제·첨부 축은 없다).
 
+취소 상품을 나중에 다시 판매 상태로 되살렸으면(주문·상품 재활성) `data.claim` 에 재활성 축이 더해집니다 —
+`reactivated_at`(ISO)·`reactivated_at_formatted`·`reactivated_quantity`(되살린 수량)·`total_cancel_quantity`(이
+취소로 빠진 수량)·`is_partially_reactivated`. 취소·환불 기록은 지우지 않습니다. 이 축은 관리자 응답에만 실리고
+구매자 신청서 상세(`user/claims/{claimNumber}`)에는 없습니다.
+
 `data.claim` 은 유형 스코프 상세(`GET {claimType}/{id}`)와 같은 표현이고, 그 위에 상세 화면이
 쓰는 봉투 축이 더해집니다. 이 봉투가 그 값들의 전달 통로인 이유는 게이트 폭입니다 — 설정
 조회와 배송사 목록은 `sirsoft-ecommerce.settings.read` 게이트라, 클레임 권한만 가진 관리자
@@ -366,12 +374,13 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | order | object\|null | — | 결제 정보 섹션(D17-③)이 그리는 **원 주문의 결제 축**. 주문 상세 엔드포인트는 `orders.read` 게이트라 이 화면이 직접 부르면 클레임 권한만 가진 관리자에게만 403 이 되어 탭이 통째로 빈다. 이 화면이 실제로 그리는 축만 실린다 (아래) |
 | settlement | object\|null | — | '이 클레임의 정산' 의 **완료 시 환불 예정**. 교환·반품에만 있고 환불신청서는 `null`(자기 금액이 헤더 컬럼이다). 값은 완료 처리 모달의 미리보기와 **같은 경로**에서 나온다 (아래) |
 | charge_methods | array | `[{"value": "pay_on_request", "label": "신청 시 결제"}]` | 청구 방식 선택지 (D18). 허용 목록은 설정 `claim.allowed_charge_methods` 가 정하고 그 조회는 `settings.read` 게이트다. 환불신청서는 빈 배열 |
-| refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열 |
+| refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열. `points`(「마일리지로 환불」)는 비회원 주문과, 마일리지 기능이 꺼진 상점의 현금 환불(이 신청서의 `refund_amount` > 0)에서 빠진다 |
 | cancellable | object\|null | — | 취소 가능 금액 산정 결과 (D19). 환불신청서에만 있으며 **그 신청서 문맥**(자기 자신을 선점 집계에서 제외)으로 계산한다. 형태는 [cancellable-amount](#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 응답의 `cancellable` 과 동일하다 — 두 응답이 같은 지점에서 만들어진다 |
 | tracking_groups | object\|null | `{"collection":[…],"redelivery":[…]}` | 배송 정보 탭의 운송장 묶음 — 방향마다 `[{key, direction, no_tracking, carrier_id, carrier_name, tracking_number, tracking_url, items[{claim_item_id, product_name, option_name, quantity, status_label, arrived}], all_arrived, can_deliver, blocked_reason}]`. 송장 없이 도착한 행은 `no_tracking: true` 묶음으로 선다. 환불·취소는 `null` (`data.claim.tracking_groups`) |
 | collection_lane | array\|null | — | 선교환의 「회수」 줄 — 행 수 기준 회수 진행·반송 기한·지연. 일반 교환·반품은 `null` |
 | exchange_mode_abilities | object\|null | `{"can_set_advance": true, "can_set_standard": false, "blocked_reason": null, "advance_enabled": true, "collection_due_days": 14}` | 「진행 방식」 줄의 버튼 게이트 — 서비스가 실제로 거절하는 조건과 같은 판정. 교환이 아니면 `null` |
 | pending_refund | object\|null | `{"amount": 12000, "amount_formatted": "12,000원", "item_count": 1}` | 「환불 미접수」(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 클 때만. 상단 배너·완료 카드·[환불신청서 접수] 버튼이 같은 값을 읽는다 |
+| linked_claims | object | `{"source": null, "refunds": [{"claim_number": "RF…", "status": "completed", "is_live": true, "detail_url": "…", "refund_method_label": "PG사 환불", "refund_total_formatted": "24,000원"}], "latest_refund": {…}, "result_cancel": null}` | 연결 신청서(보완 5). 교환·반품은 이 신청서에서 생긴 환불신청서 전부(출처 축 `refund_source_type`·`refund_source_id` — 반려·철회 후 재접수 이력 포함, id 오름차순), 환불은 원 신청서(`source` — 반품·교환·구형 취소 출처일 때)와 처리 결과 취소 내역(`result_cancel`), 취소는 원 신청서(= 환불신청서). 같은 주문의 신청서만 싣는다. 항목: `claim_type`·`claim_type_label`·`claim_number`·`status`·`status_label`·`status_variant`·`status_icon`·`is_live`(반려·철회 환불이면 false)·`requested_at_formatted`·`detail_url`, 환불이면 `refund_method`·`refund_method_label`·`refund_total`·`refund_total_formatted`·`mc_refund_total`·`refunded_at_formatted`. `detail_url` 은 보는 사람에 맞는 경로다(관리자 `/admin/ecommerce/claims/…`, 회원 `/mypage/claims/…`, 비회원 `{shop}/guest/claims/…`) |
 | attachment_settings | object\|null | `{"max_images": 5, "image_max_size_kb": 2048, "allowed_extensions": ["jpeg","jpg","png","gif","webp"], "accept": ".jpeg,.jpg,.png,.gif,.webp"}` | 첨부 상한·허용 확장자. 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈려 이유 없는 `422` 만 남는다. 취소신청서는 첨부 축이 없어 `null` |
 
 **order 축** (`data.order`)
@@ -394,7 +403,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | refund_amount / refund_amount_formatted | number / string | `55000` / `55,000원` | 지금 완료 처리하면 접수될 환불 예정액 |
-| refund_points_amount / refund_points_amount_formatted | number / string | `0` / `0원` | 환불 예정 마일리지 |
+| refund_points_amount / refund_points_amount_formatted | number / string | `0` / `0원` | 환불 예정 마일리지 (주문 때 쓴 마일리지 반환분 — 화면 문구 「사용 마일리지 반환」) |
 | deducted_shipping_fee / deducted_shipping_fee_formatted | number / string | `3000` / `3,000원` | 환불금 차감 방식일 때 환불액에서 이미 빠진 회수배송비 |
 | refund_product_amount / refund_product_amount_formatted | number\|null / string\|null | `41000` / `41,000원` | 환불 예정액의 상품 몫 (반품만 — 교환은 `null`). 합계만으로는 그 금액의 근거를 알 수 없어 가산 축을 함께 낸다 |
 | refund_shipping_amount / refund_shipping_amount_formatted | number\|null / string\|null | `0` / `0원` | 환불 예정액의 배송비 몫 (반품만 — 교환은 `null`) |
@@ -1049,6 +1058,8 @@ Authorization: Bearer {YOUR_TOKEN}
   - `items[].amount` / `amount_formatted` / `amount_type` — 네 유형의 금액 축을 한 컬럼으로
     그리기 위한 정규화 값. 출처는 교환=옵션 차액 소계, 반품·취소=대상 금액(단가×수량),
     환불=행 환불액입니다.
+  - `source_claim_number` — 환불 행이 반품·교환에서 파생됐으면 그 원 신청서 번호, 아니면 `null`.
+    클레임 내역의 환불 행 옆 「원 신청서」 표시용이며, 목록 전체에 대해 한 번에 채워 추가 쿼리가 없습니다.
     **`amount` 는 언제나 크기(0 이상)이고 방향은 `amount_type` 이 단독으로 나릅니다** —
     `charge`(추가 청구) / `refund`(환불·대상 금액) / `none`(0원). 저가 교환처럼 차액이 음수인
     경우에도 `amount` 는 양수이고 `amount_type` 이 `refund` 가 됩니다. 화면은 유형 분기 없이
@@ -1155,12 +1166,31 @@ Authorization: Bearer {YOUR_TOKEN}
 #### 환불 수단 게이트 — [금액 수정]과 같은 강도
 
 `refund_method` 는 [금액 수정](`PUT …/amounts`)과 **같은 선택지**로 받습니다(상세 봉투의
-`refund_methods` 와 같은 판정). PG 결제창을 쓰지 않은 주문(무통장 등)의 `pg` 는 `422`
+`refund_methods` 와 같은 판정). 「마일리지로 환불」(`points`)은 회원 주문에서만, 현금을 마일리지로 돌려줄 때는
+마일리지 기능이 켜진 상점에서만 받습니다(본문 `refund_amount` 가 있으면 그 값으로 판정 · 비회원 `422`
+`exceptions.claim_refund_points_requires_member` · 기능 꺼짐 `422` `exceptions.claim_refund_method_unavailable`).
+저장된 수단이 `points` 인데 본문 없이 실행해도 같은 판정을 거칩니다. PG 결제창을 쓰지 않은 주문(무통장 등)의 `pg` 는 `422`
 (`exceptions.claim_refund_method_unavailable`)이고, PG 플러그인이 빠져 계좌 환불로 떨어진 주문의
 `pg` 도 막습니다(응답할 리스너가 없습니다). **카드 주문의 계좌 수동 환불(`bank`)은 받습니다** —
 PG 취소가 불가능한 상황에서 운영자가 계좌로 돌려주고 장부를 닫는 운영 경로이며, 그 대신 아래
 계좌 게이트가 계좌를 요구합니다. 예전에는 실효 수단과 다른 값을 전부 `payment_mismatch` 로 막아,
 [금액 수정]으로 저장한 계좌 수동 환불을 실행할 길이 없었습니다.
+
+#### 실행 순서와 실패 처리 (D2 · P-D5)
+
+실행은 한 트랜잭션에서 「되돌릴 수 있는 것은 모두 앞에, PG 는 맨 뒤에」 순서로 갑니다 — 쓴 마일리지
+반환 → (`points` 면) 현금 환불액 마일리지 지급(유효기간 없음) → 재고·쿠폰 복원 → 장부·상품 행·취소신청서·
+결제행 → PG. 마일리지·쿠폰·재고 처리가 실패하면 PG 를 부르지 않고 전체를 되돌린 뒤 `422`
+(`messages.claims.refund_execute_failed`, `errors.detail` 에 원인 문장 — `exceptions.mileage_refund_failed` /
+`coupon_restore_failed` / `stock_restore_failed`)로 답합니다.
+
+결제수단과 다른 수단(마일리지·계좌 송금)으로 돌려준 환불은 결제행의 상태·취소 누적을 바꾸지 않고, 결제행
+취소 이력에만 `refund_method`·`settled_on_payment=false` 와 실제 집행 금액을 남깁니다. 실제로 차감된 적 없는
+사용 마일리지는 반환하지 않고 신청서의 `refund_points_amount` 도 0 으로 확정합니다.
+
+PG 가 승인한 직후 장부 확정이 실패하면 신청서는 `approved` 로 되돌아가되 `pg_transaction_id` 와
+`pg_error_code = LEDGER_COMMIT_FAILED` 표식이 남고(상세 `claim.pg_settled_pending_ledger = true`), 다음
+[환불하기]는 PG 를 다시 부르지 않고 장부만 확정합니다.
 
 #### 환불 계좌 게이트 (T2-D6)
 
@@ -1174,8 +1204,24 @@ PG 취소가 불가능한 상황에서 운영자가 계좌로 돌려주고 장�
    (카드 주문의 계좌 수동 환불 포함), `points` 면 아니며, 그 밖에는 이 주문이 계좌로 환불되는
    주문인지(구매자 접수·신청 화면과 같은 술어 `refundsToBankAccount()` — 무통장·입금된 가상계좌)로 정합니다
 
-같은 판정을 상세 응답이 `claim.refund_account_required` 로 미리 답해 주므로, 화면은 결제수단
-코드로 규칙을 재현하지 않고 그 값으로 계좌 입력 칸과 실행 버튼 잠금을 정합니다.
+같은 판정을 상세 응답이 `claim.refund_account_required`(저장된 수단 기준)로 미리 답해 주므로, 화면은
+결제수단 코드로 규칙을 재현하지 않습니다. 운영자는 상세에서 환불 수단을 바꾼 뒤 실행하므로, 상세 응답은
+같은 술어를 **수단마다** 판정한 `claim.refund_account_by_method` 도 함께 냅니다(목록 행은 `null`).
+
+```json
+"refund_account_by_method": {
+    "pg":     { "used": true,  "required": true,  "required_if_cash": true },
+    "bank":   { "used": true,  "required": true,  "required_if_cash": true },
+    "points": { "used": false, "required": false, "required_if_cash": false }
+}
+```
+
+`used` 는 그 수단으로 실행하면 현금이 고객 계좌로 나가는가(위 3번 — 계좌 유무·금액과 무관), `required` 는
+위 1~3을 모두 만족해 계좌를 받아야 실행되는가(저장된 현금액 기준), `required_if_cash` 는 2번을 빼고 1·3만 본 값(현금이 있다면
+계좌가 필요한가)입니다. 실행 게이트는 본문 `refund_amount` 로 2번을 판정하므로, 환불 실행 확인 창은 지금 고른 수단의 `used` 로
+저장 계좌 줄을, `required_if_cash` 와 **지금 입력한 현금액**(> 0)으로 계좌 입력 칸과 실행 버튼 잠금을 정합니다(저장하지 않은
+금액으로 실행해도 창과 서버가 같은 판정을 냅니다) — 「마일리지로 환불」·카드 취소에서는 저장 계좌가
+있어도 줄이 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 고객 계좌로 송금하므로 줄과 칸이 섭니다.
 
 막지 않던 동안에는 계좌가 빈 채로 실행돼 **돈은 나가지 않았는데 신청서만 `completed` 로
 닫혔고**, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었습니다(2026-09-22 #599 3차 실측 L-8).

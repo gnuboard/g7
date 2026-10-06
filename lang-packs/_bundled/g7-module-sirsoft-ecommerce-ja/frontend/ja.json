@@ -499,7 +499,8 @@
     "available": "利用可能",
     "expiring_soon": "失効予定 {{amount}} P",
     "view_history": "マイレージ履歴",
-    "disabled_notice": "マイレージ機能が無効化されています。"
+    "disabled_notice": "マイレージ機能が無効化されています。",
+    "withdraw_refund_credit_warning": "返金として受け取ったマイレージ {{amount}} P も退会すると失効し、元に戻せません。必要であれば退会前に使用するか、カスタマーセンターにお問い合わせください。"
   },
   "auth": {
     "register_currency": {

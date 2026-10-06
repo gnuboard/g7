@@ -273,6 +273,7 @@
         "confirm_change_address": "Are you sure you want to change the shipping address?",
         "charged_in_payment_currency": "Charged {{amount}} in {{currency}}",
         "claim_additional_paid": "Claim additional payment",
+        "refund_mileage_credit": "Refunded as mileage",
         "delivered_at": "Delivered At",
         "confirmed_at": "Purchase Confirmed At"
     },

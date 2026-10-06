@@ -50,6 +50,7 @@ exclusions:
   - { claim_type: cancel, completion_choice: file_later, reason: "동일" }
 
 effects:
+  - claim_list_refund_progress_badge_navigates_to_refund   # #747 보완 5
   # 기존 핸들러 검증의 목적도 개별 테스트에 역매핑한다.
   - bulk_confirmation_requires_selection_and_status
   - noncomplete_transition_uses_confirmation
@@ -181,10 +182,13 @@ effects:
   - claim_amounts_prohibit_refund_fields_on_return
   - refund_amounts_reject_unknown_refund_method
   # #599 후속 — 목록 행 뱃지(판매자 접수·선교환·회수 지연·환불 미접수)와 운송장 열 「외 N개」
-  - claim_list_row_badges_read_server_flags
+  - claim_list_row_badges_read_server_flags   # 재활성(전체·일부) 두 뱃지 포함 — Q29 (cancel-reactivation-badge.yaml)
   - claim_list_tracking_column_shows_first_waybill_and_more_count
+  # #747 S8 · Q10 — 선교환 「미회수로 완료」 는 상품 대금을 청구하지 않는다는 안내 (동작은 현행 유지)
+  - advance_unreturned_completion_warns_no_charge
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBody.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBodyRender.test.tsx

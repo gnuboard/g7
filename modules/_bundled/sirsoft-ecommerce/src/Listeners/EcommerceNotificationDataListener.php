@@ -146,7 +146,9 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'order_delivered' => $this->extractOrderDelivered($args),
             'order_completed' => $this->extractOrderCompleted($args),
             'order_cancelled' => $this->extractOrderCancelled($args),
-            'new_order_admin' => $this->extractNewOrderAdmin($args),
+            // 결제완료·구매확정 관리자 알림은 신규 주문 관리자 알림과 변수가 같다(module.php 공통 빌더).
+            'new_order_admin', 'order_confirmed_admin', 'order_completed_admin' => $this->extractNewOrderAdmin($args),
+            'deposit_after_cancel_admin' => $this->extractDepositAfterCancelAdmin($args),
             'inquiry_received' => $this->extractInquiryReceived($args),
             'inquiry_replied' => $this->extractInquiryReplied($args),
             'mileage_expiring_soon' => $this->extractMileageExpiringSoon($args),
@@ -331,7 +333,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     // ──────────────────────────────────────────────
 
     /**
-     * 신규 주문 관리자 알림 데이터를 추출합니다.
+     * 운영자용 주문 알림(신규 주문·결제완료·구매확정) 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
      * @return array 추출 결과
@@ -367,6 +369,32 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             ],
             'context' => $this->buildOrderContext($order),
         ];
+    }
+
+    /**
+     * 취소 주문 입금 관리자 알림 데이터를 추출합니다. (P-D1)
+     *
+     * 금액은 결제행에 기록된 입금액(결제 통화)이다 — 주문 총액이 아니다. 고객이 다른 금액을 넣었을 수도 있다.
+     *
+     * @param  array  $args  훅 인수 [$order, {amount, provider}]
+     * @return array 추출 결과
+     */
+    private function extractDepositAfterCancelAdmin(array $args): array
+    {
+        $result = $this->extractNewOrderAdmin($args);
+        $order = $args[0] ?? null;
+
+        if (! $order instanceof Order) {
+            return $result;
+        }
+
+        $amount = (float) ($args[1]['amount'] ?? 0);
+        $currency = (string) ($order->payment?->currency ?: ($order->currency_snapshot['order_currency'] ?? ''));
+        $result['data']['deposit_amount'] = $currency !== ''
+            ? ecommerce_format_price($amount, $currency)
+            : (string) $amount;
+
+        return $result;
     }
 
     /**

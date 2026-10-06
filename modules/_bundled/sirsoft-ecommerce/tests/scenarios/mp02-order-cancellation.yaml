@@ -234,6 +234,54 @@ effects:
   - item_coupon_applied_once_in_recalculation                    # S1-D2 — 상품쿠폰이 재계산에서 두 번 먹지 않는다
   - item_coupon_applied_once_when_present_in_both_snapshot_keys  # S1-D2 — 운영 스냅샷 형식에서도 한 번만
   - partial_cancel_refund_equals_line_amount                     # 쿠폰 걸린 라인 부분취소 환불액 = 그 라인 금액
+  # 소급 매핑 (#747) — 기존 OrderCancellationServiceTest 테스트별 효과. 마일리지 미차감 주문의 환불 0 처리(Q15)로
+  # 픽스처 3건을 고치며 이 파일 전 케이스에 매핑을 달았다(test-scenario-reverse-mapping).
+  - full_cancel_creates_cancel_record
+  - full_cancel_updates_order_status
+  - full_cancel_creates_refund_record
+  - full_cancel_records_refund_source_alongside_order_cancel_id
+  - full_cancel_updates_payment_cancelled_amount
+  - full_cancel_restores_coupons
+  - partial_cancel_creates_cancel_record
+  - partial_cancel_splits_option_quantity
+  - partial_cancel_updates_option_amounts
+  - partial_cancel_updates_shipping_amounts
+  - partial_cancel_updates_order_totals
+  - partial_cancel_increments_cancellation_count
+  - partial_cancel_converts_to_full_when_all_cancelled
+  - cancel_fires_payment_refund_hook
+  - cancel_pg_failure_rolls_back
+  - cancel_without_pg_skips_refund_hook
+  - unpaid_order_cancel_skips_refund
+  - cancel_rejected_when_status_not_cancellable
+  - cancel_allowed_for_configured_status
+  - preview_refund_does_not_modify_db
+  - full_cancel_restores_all_coupons_status_and_used_at
+  - partial_cancel_restores_coupon_when_min_amount_not_met
+  - partial_cancel_does_not_restore_coupon_when_still_met
+  - cancel_does_not_affect_other_order_coupons
+  - cancel_preview_does_not_modify_coupon_or_points
+  - cancel_with_pg_first_updates_refunded_amount_correctly
+  - cancel_with_points_first_updates_refunded_points_correctly
+  - sequential_cancel_accumulates_refunded_amounts
+  - concurrent_partial_cancel_does_not_lose_accumulated_totals
+  - cancel_stores_refund_priority_in_adjustment_result
+  - cancel_preview_does_not_create_refund_record
+  - refund_record_includes_mc_refund_amount
+  - refund_record_includes_mc_refund_points_amount
+  - refund_record_includes_mc_refund_shipping_amount
+  - refund_record_mc_null_when_no_currency_snapshot
+  - partial_cancel_updates_remaining_option_promotion_snapshot
+  - partial_cancel_updates_order_promotion_snapshot
+  - sequential_cancel_uses_updated_snapshot_for_second_cancel
+  - full_cancel_with_restore_on_restores_quantity_once
+  - full_cancel_with_restore_off_keeps_stock
+  - partial_cancel_restores_cancel_quantity_and_resets_cancelled_flag
+  - dbank_paid_order_cancel_skips_pg_and_succeeds
+  - card_cancel_still_fires_pg_hook_and_completes
+  - partial_cancel_allowed_for_operator_zero_paid_order
+  - partial_subset_cancel_keeps_remaining_active
+  - all_items_full_quantity_promotes_to_full_cancel
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php

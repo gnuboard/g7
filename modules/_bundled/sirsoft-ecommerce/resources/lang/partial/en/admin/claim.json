@@ -2,6 +2,13 @@
   "title": "Claim Management",
   "description": "Browse and process exchange, return, refund and cancellation requests",
   "detail": {
+    "linked": {
+      "title": "Follow-up refund requests",
+      "source": "Source request",
+      "refunds": "Refunds",
+      "result_cancel": "Resulting cancellation",
+      "empty": "No refund request has been filed for this request."
+    },
     "title": "Claim Detail",
     "description": "Review and process the progress and history of a claim request",
     "claim_number": "Claim No.",
@@ -157,7 +164,10 @@
       "cancel_type": "Cancellation type",
       "refund_status": "Refund status",
       "refund_amount": "Refund amount",
-      "cancelled_at": "Cancelled at"
+      "cancelled_at": "Cancelled at",
+      "reactivated_at": "Reactivated",
+      "reactivated_value": "{{at}} · {{quantity}} of {{total}} items",
+      "reactivated_hint": "An operator restored the items removed by this cancellation to an active status. The cancellation and refund records are kept."
     },
     "memo": {
       "title": "Admin Memo",
@@ -212,9 +222,13 @@
       "error": "Could not save the amounts.",
       "nothing_to_save": "There is no amount to save.",
       "payments_title": "Additional payments",
+      "void_failed": "The approval could not be reversed at the payment provider. Cancel this payment in the provider's admin console.",
+      "paid_transition_failed": "The payment is complete, but the request could not move to the next step. Change its status manually.",
       "payment_refunded": "Refunded {{amount}}",
+      "void_failed": "The approval could not be reversed at the payment provider. Cancel this payment in the provider's admin console.",
+      "paid_transition_failed": "The payment is complete, but the request could not move to the next step. Change its status manually.",
       "preview_title": "Refund expected on completion",
-      "blocked_already_filed": "A refund request has already been filed for this claim.",
+      "blocked_already_filed": "A refund request has already been filed (see the list above).",
       "blocked_not_applicable": "There is nothing to file a refund request for.",
       "expected_refund": "Expected refund",
       "expected_refund_points": "Expected mileage refund",
@@ -226,8 +240,9 @@
       "earn_recovery_yes": "Recovered on completion",
       "refund_method": "Refund method",
       "refund_amount": "Cash refund",
-      "refund_points_amount": "Mileage refund",
+      "refund_points_amount": "Used mileage returned",
       "refund_shipping_amount": "Shipping refund",
+      "exchange_difference_refund": "Exchange difference refund (to the original method)",
       "refund_total": "Refund total",
       "refunded_at": "Refunded at",
       "file_refund_request": "File refund request",
@@ -244,7 +259,8 @@
       "unavailable": "The cancellable amount could not be calculated.",
       "edit_title": "Adjust refund amounts",
       "cash_amount": "Cash refund",
-      "points_amount": "Mileage refund",
+      "points_amount": "Used mileage returned",
+      "points_not_deducted": "No mileage is returned because the mileage used on this order was never deducted.",
       "limit_hint": "Up to {{amount}}",
       "points_hint": "Available for member orders only.",
       "method_limit_hint": "{{method}} remaining {{amount}}",
@@ -254,6 +270,8 @@
       "save": "Save amounts",
       "execute": "Refund",
       "manual_transfer_notice": "No PG integration was found for this payment method, so the refund fell back to a bank transfer. Send the money manually, then press Refund to mark it complete. Reinstalling the PG plugin restores automatic refunds.",
+      "points_cash_credit_notice": "With \"Refund as mileage\", the cash refund amount is also credited to the member's mileage (no expiry). No card cancellation or bank transfer takes place, and the payment stays as paid.",
+      "pg_settled_pending_ledger_notice": "The PG refund has already gone through, but recording it failed. Press [Refund] to record it without calling the PG again.",
       "executed": "The refund has been executed.",
       "error": "Could not execute the refund.",
       "conflict": "It has already been executed or is in progress. Refresh and check again.",
@@ -261,6 +279,7 @@
         "title": "Confirm refund execution",
         "description": "The refund for claim {{number}} will be executed.",
         "warning": "A refund cannot be undone. Please check the amounts and the refund method.",
+        "points_cash_credit": "The cash refund amount will be credited as mileage.",
         "confirm": "Refund"
       },
       "refund_bank_name": "Refund bank",
@@ -417,6 +436,7 @@
     "view_detail": "View detail"
   },
   "column": {
+    "refund_progress_more": "+{{count}} more",
     "requested_at": "Requested",
     "claim_number": "Claim no.",
     "order_number": "Order no.",
@@ -435,6 +455,8 @@
     "advance_badge": "Advance exchange",
     "overdue_badge": "Return overdue {{days}}d",
     "pending_refund_badge": "Refund not filed",
+    "reactivated_badge": "Reactivated {{at}}",
+    "reactivated_partial_badge": "Partly reactivated {{at}}",
     "tracking": "Waybill",
     "tracking_collection": "Pickup {{number}}",
     "tracking_redelivery": "Reship {{number}}",
@@ -516,6 +538,7 @@
     "refund_later_desc_cancellation": "Without a refund request no money leaves this completion, so no cancellation record is created either. You can file one later from the settlement card on the request detail.",
     "unreturned_title": "Complete as not returned (advance exchange)",
     "unreturned_desc": "The new item was sent but the original never came back. Checked items complete as \"not returned\" without restoring stock.",
+    "unreturned_no_charge_notice": "Completing as not returned does not charge the customer for the item. Charge them separately if needed.",
     "unreturned_reason_placeholder": "Reason for not returned (required)",
     "unreturned_reason_required": "Enter a reason for each item completed as not returned."
   }

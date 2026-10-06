@@ -14,6 +14,8 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
  *
  * 잔액 SSoT = SUM(remaining_amount WHERE remaining_amount > 0 AND 미만료).
  * 거래 행은 불변(ChangeDetector 미사용 — $activityLogFields 불요).
+ *
+ * @property int|null $user_id 회원 ID (회원 완전 삭제 시 NULL — 거래 기록은 보존, E3)
  */
 class MileageTransaction extends Model
 {

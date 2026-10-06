@@ -42,4 +42,25 @@ interface OrderCancelOptionRepositoryInterface
      * @return Collection<int, OrderCancelOption> 상세 행 목록
      */
     public function listByCancelId(int $cancelId): Collection;
+
+    /**
+     * 되살린 행(또는 그 부모 행)을 가리키며 아직 재활성 몫이 남은 완료 취소 상품을 잠가 조회합니다. (Q29)
+     *
+     * 반품·교환 발 환불이 만든 취소신청서는 제외한다 — 그 상품은 반품·교환 상태로 남아 되살아날 수 없다.
+     * 나중 취소부터 되돌리도록 order_cancel_id·id 내림차순이다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array<int>  $orderOptionIds  되살린 행 ID 와 부모 행 ID
+     * @return Collection<int, OrderCancelOption> 후보 취소 상품
+     */
+    public function listReactivatableForRows(int $orderId, array $orderOptionIds): Collection;
+
+    /**
+     * 취소 상품의 재활성 수량을 늘립니다. (Q29)
+     *
+     * @param  OrderCancelOption  $row  취소 상품
+     * @param  int  $quantity  더할 수량
+     * @return void 반환값 없음
+     */
+    public function addReactivatedQuantity(OrderCancelOption $row, int $quantity): void;
 }

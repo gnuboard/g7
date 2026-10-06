@@ -120,6 +120,12 @@ class KgInicisApiService
      */
     private array $settingsSnapshot;
 
+    /**
+     * 플러그인 설정을 읽어 현재 모드(테스트/운영)에 맞는 자격증명을 구성합니다.
+     *
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     * @return void 반환값 없음
+     */
     public function __construct(PluginSettingsService $pluginSettingsService)
     {
         $settings = $pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -169,6 +175,7 @@ class KgInicisApiService
      * 테스트 모드에서만 동작한다 — 에스크로 테스트 MID 는 표준 테스트 키와 다른 inapi 키를 쓴다.
      *
      * @param  bool  $isEscrow  에스크로 결제 여부
+     * @return void 반환값 없음
      */
     public function useEscrowCredentials(bool $isEscrow): void
     {
@@ -303,6 +310,7 @@ class KgInicisApiService
      *
      * @param  bool  $isTest  결제 당시의 테스트 모드 여부
      * @param  string  $mid  결제 당시 저장된 일본 MID (빈 값이면 현재 설정에서 재해석)
+     * @return void 반환값 없음
      */
     public function useStoredCbtCredentials(bool $isTest, string $mid): void
     {
@@ -446,12 +454,22 @@ class KgInicisApiService
         return hash('sha512', $plain);
     }
 
+    /**
+     * PG 서버 호출용 HTTP 클라이언트를 연결·응답 제한시간을 걸어 만듭니다.
+     *
+     * @return PendingRequest 제한시간이 설정된 HTTP 요청 빌더
+     */
     private function pgHttp(): PendingRequest
     {
         return Http::connectTimeout(self::PG_CONNECT_TIMEOUT_SECONDS)
             ->timeout(self::PG_REQUEST_TIMEOUT_SECONDS);
     }
 
+    /**
+     * 거래조회용 HTTP 클라이언트를 만듭니다. 조회는 부작용이 없으므로 재시도를 건다.
+     *
+     * @return PendingRequest 제한시간·재시도가 설정된 HTTP 요청 빌더
+     */
     private function pgInquiryHttp(): PendingRequest
     {
         return $this->pgHttp()
@@ -601,6 +619,7 @@ class KgInicisApiService
      *
      * @param  string  $netCancelUrl  이니시스가 콜백으로 전달한 netCancelUrl
      * @param  string  $authToken  인증 토큰
+     * @return void 반환값 없음
      */
     public function sendNetCancel(string $netCancelUrl, string $authToken): void
     {
@@ -708,6 +727,27 @@ class KgInicisApiService
     }
 
     /**
+     * INIAPI 암호화 대상 필드를 AES-128-CBC(PKCS7) 로 암호화해 base64 로 돌려줍니다.
+     *
+     * 현금영수증 `issueNumber`, 가상계좌 환불 `refundAcctNum` 이 대상이다. 키·IV 는 현재 상점의 INIAPI 키·IV 다.
+     *
+     * @param  string  $plain  평문
+     * @return string base64 암호문
+     *
+     * @throws KgInicisApiException 암호화 실패 시
+     */
+    private function encryptInapiField(string $plain): string
+    {
+        $encrypted = openssl_encrypt($plain, 'aes-128-cbc', $this->inapiKey, OPENSSL_RAW_DATA, $this->inapiIv);
+
+        if ($encrypted === false) {
+            throw new KgInicisApiException('KG Inicis: INIAPI field encryption failed');
+        }
+
+        return base64_encode($encrypted);
+    }
+
+    /**
      * 결제 취소 API 호출 (INIAPI v2)
      *
      * @param  string  $tid  거래번호 (이니시스 TID)
@@ -742,8 +782,8 @@ class KgInicisApiService
             $detail['price'] = (string) $cancelPrice;
             $detail['confirmPrice'] = (string) $confirmPrice;
             $detail['currency'] = 'WON';
-            $detail['tax'] = '0';
-            $detail['taxfree'] = '0';
+            // 과세 분리(`tax`·`taxFree`)는 선택 필드다(P-D8). 승인 때 과세 분리를 보내지 않으므로 취소에도 싣지 않는다 —
+            // 예전의 `tax='0'`·`taxfree='0'` 고정값은 문서 키(`taxFree`)와도 달랐다.
         }
 
         // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 PG 가 취소를 거절한다(P5).
@@ -753,19 +793,24 @@ class KgInicisApiService
         //
         // 반드시 취소 payload 에 실어야 한다. 거래조회(inquiry)에 붙이면 조회는 멀쩡히 돌고
         // 취소만 조용히 거절되어, 운영자에게는 원인 없는 실패로만 보인다.
+        //
+        // 입금된 가상계좌 환불은 전용 경로(`/v2/pg/refund/vacct`·`/v2/pg/partialRefund/vacct`)로 보내고 환불계좌번호는
+        // AES 암호화 대상이다(https://manual.inicis.com/pay/cancel.html) — 현금영수증 `issueNumber` 와 같은 방식.
+        $isVacctRefund = false;
         if ($refundAccount !== null
             && filled($refundAccount['account_number'] ?? null)
             && filled($refundAccount['bank_code'] ?? null)) {
-            $detail['refundAcctNum'] = (string) $refundAccount['account_number'];
+            $detail['refundAcctNum'] = $this->encryptInapiField((string) $refundAccount['account_number']);
             $detail['refundBankCode'] = (string) $refundAccount['bank_code'];
             $detail['refundAcctName'] = (string) ($refundAccount['holder'] ?? '');
+            $isVacctRefund = true;
         }
 
         $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));
         $hashData = hash('sha512', $this->inapiKey.$this->mid.$type.$timestamp.$detailJson);
 
         $baseUrl = $this->isTest ? self::API_BASE_URL_TEST : self::API_BASE_URL_LIVE;
-        $apiUrl = $baseUrl.'/v2/pg/'.$type;
+        $apiUrl = $baseUrl.'/v2/pg/'.$type.($isVacctRefund ? '/vacct' : '');
 
         $payload = [
             'mid' => $this->mid,
@@ -968,20 +1013,7 @@ class KgInicisApiService
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
-        // issueNumber: AES-128-CBC(PKCS7) 암호화 후 base64 인코딩
-        $encrypted = openssl_encrypt(
-            $data['issueNumber'],
-            'aes-128-cbc',
-            $this->inapiKey,
-            OPENSSL_RAW_DATA,
-            $this->inapiIv
-        );
-
-        if ($encrypted === false) {
-            throw new KgInicisApiException('KG Inicis cash receipt: issueNumber encryption failed');
-        }
-
-        $encIssueNumber = base64_encode($encrypted);
+        $encIssueNumber = $this->encryptInapiField((string) $data['issueNumber']);
 
         $detail = [
             'price' => (string) $data['price'],
@@ -1087,6 +1119,12 @@ class KgInicisApiService
         return $result;
     }
 
+    /**
+     * 운영 MID 입력값에 'SIR' 접두어를 붙여 운영 가맹점 ID 를 만듭니다. 이미 접두어가 있으면 그대로 둔다.
+     *
+     * @param  string  $suffix  설정에 입력된 운영 MID (접두어 포함 여부 무관)
+     * @return string 'SIR' 접두어가 붙은 운영 MID (입력이 비면 빈 문자열)
+     */
     private function buildLiveMid(string $suffix): string
     {
         if ($suffix === '') {
@@ -1096,11 +1134,23 @@ class KgInicisApiService
         return str_starts_with($suffix, self::LIVE_MID_PREFIX) ? $suffix : self::LIVE_MID_PREFIX.$suffix;
     }
 
+    /**
+     * 일본결제(CBT) 취소 요청 URL 을 반환합니다. (테스트/운영 분기)
+     *
+     * @return string CBT 취소 URL
+     */
     private function getCbtRefundUrl(): string
     {
         return $this->isTest ? self::CBT_REFUND_URL_TEST : self::CBT_REFUND_URL_LIVE;
     }
 
+    /**
+     * CBT 취소 요청의 clientIp 로 보낼 서버 IP 를 구합니다.
+     *
+     * SERVER_ADDR → 호스트명 조회 → 요청 IP 순으로 유효한 IP 를 찾고, 모두 실패하면 127.0.0.1 을 쓴다.
+     *
+     * @return string 서버 IP 주소
+     */
     private function resolveServerIp(): string
     {
         $serverIp = (string) (request()->server('SERVER_ADDR') ?? '');

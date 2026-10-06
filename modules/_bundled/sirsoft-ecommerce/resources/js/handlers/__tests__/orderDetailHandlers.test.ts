@@ -572,9 +572,30 @@ describe('orderDetailHandlers', () => {
             await processOrderDetailBulkChangeHandler(
                 { handler: 'test', params: { orderId: 1, selectedProducts: [1], batchOrderStatus: 'shipped', changeQuantities: {} } },
                 mockContext
-            );
+            ).catch(() => {});
 
             expect(mockToastError).toHaveBeenCalled();
+        });
+
+        /**
+         * 실패를 삼키면 레이아웃의 성공 분기(`<close-modal/>`)가 돌아 확인 창이 닫히고 운영자가 고른 세 항목이 사라진다(#747 C12 M3).
+         * 사유 토스트는 한 번만 띄우고, 오류는 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다.
+         *
+         * @scenario handler=process_bulk_change
+         * @effects bulk_change_failure_keeps_confirm_modal_open
+         */
+        it('422 실패를 다시 던져 확인 창이 닫히지 않게 한다', async () => {
+            const error: any = new Error('Request failed');
+            error.response = { status: 422, data: { message: '회원 마일리지 잔액이 부족해 주문(A)의 상태를 바꿀 수 없습니다.' } };
+            mockApiPatch.mockRejectedValue(error);
+
+            await expect(processOrderDetailBulkChangeHandler(
+                { handler: 'test', params: { orderId: 1, selectedProducts: [1], batchOrderStatus: 'payment_complete', changeQuantities: {} } },
+                mockContext
+            )).rejects.toBeTruthy();
+
+            expect(mockToastError).toHaveBeenCalledTimes(1);
+            expect(mockToastError).toHaveBeenCalledWith('회원 마일리지 잔액이 부족해 주문(A)의 상태를 바꿀 수 없습니다.');
         });
     });
 

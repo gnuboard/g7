@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
@@ -629,6 +630,8 @@ class ProductInquiryService
                         $inquiry->inquirable_id
                     );
                 } catch (\Exception $e) {
+                    // 교착은 삼키지 않는다 — 바깥 트랜잭션이 이미 되돌려진 뒤 이후 쓰기가 autocommit 으로 남는다(C9).
+                    ConcurrencyErrors::rethrowIfConcurrencyError($e);
                     Log::warning('상품 삭제 시 문의 Post 정리 실패 — 계속 진행', [
                         'product_id' => $productId,
                         'inquiry_id' => $inquiry->id,
@@ -863,6 +866,8 @@ class ProductInquiryService
                     $inquiry->inquirable_id
                 );
             } catch (\Exception $e) {
+                // 교착은 삼키지 않는다 — 바깥 트랜잭션이 이미 되돌려진 뒤 이후 쓰기가 autocommit 으로 남는다(C9).
+                ConcurrencyErrors::rethrowIfConcurrencyError($e);
                 Log::warning('관리자 문의 삭제 — 질문 글 정리 실패, 피벗도 남긴다', [
                     'inquiry_id' => $id,
                     'error' => $e->getMessage(),

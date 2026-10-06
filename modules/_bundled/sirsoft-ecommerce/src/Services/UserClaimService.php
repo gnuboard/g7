@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationResult;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
@@ -11,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -71,6 +73,59 @@ class UserClaimService
         protected ClaimReasonRepositoryInterface $claimReasonRepository,
         protected CurrencyConversionService $currencyService,
     ) {}
+
+    // ───────────────────────────────────────────────
+    // 연결 신청서 (보완 5)
+    // ───────────────────────────────────────────────
+
+    /**
+     * 이 신청서와 이어진 신청서들을 모읍니다. (보완 5)
+     *
+     * - 반품·교환: 이 신청서에서 생긴 환불신청서 전부(출처 축 — 반려·철회 후 재접수 포함, id 오름차순)
+     * - 환불: 원 신청서(반품·교환·구형 취소 출처일 때)와 처리 결과 취소 내역
+     * - 취소: 원 신청서(= 환불신청서)
+     *
+     * 연결 신청서는 언제나 같은 주문으로 한정한다 — 출처 id 가 같은 다른 주문의 행이 섞이지 않게 하는 방어다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array{source: OrderExchange|OrderReturn|OrderRefund|OrderCancel|null, refunds: \Illuminate\Support\Collection<int, OrderRefund>, result_cancel: OrderCancel|null} 연결 신청서
+     */
+    public function linkedClaimsFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
+    {
+        $orderId = (int) $claim->order_id;
+        $sameOrder = fn ($linked) => $linked !== null && (int) $linked->order_id === $orderId ? $linked : null;
+
+        if ($claim instanceof OrderExchange || $claim instanceof OrderReturn) {
+            $sourceType = $claim instanceof OrderExchange ? RefundSourceTypeEnum::EXCHANGE : RefundSourceTypeEnum::RETURN;
+            $refunds = $this->refundRepository->listBySource($sourceType->value, (int) $claim->id)
+                ->filter(fn (OrderRefund $refund) => (int) $refund->order_id === $orderId)
+                ->values();
+
+            return ['source' => null, 'refunds' => $refunds, 'result_cancel' => null];
+        }
+
+        if ($claim instanceof OrderRefund) {
+            $sourceId = (int) ($claim->refund_source_id ?? 0);
+            $source = match ($claim->refund_source_type) {
+                RefundSourceTypeEnum::RETURN => $sourceId > 0 ? $this->returnRepository->findById($sourceId) : null,
+                RefundSourceTypeEnum::EXCHANGE => $sourceId > 0 ? $this->exchangeRepository->findById($sourceId) : null,
+                RefundSourceTypeEnum::CANCEL => $sourceId > 0 ? $this->cancelRepository->findById($sourceId) : null,
+                default => null,
+            };
+
+            return [
+                'source' => $sameOrder($source),
+                'refunds' => collect(),
+                'result_cancel' => $sameOrder($claim->loadMissing('orderCancel')->orderCancel),
+            ];
+        }
+
+        return [
+            'source' => $sameOrder($claim->loadMissing('refund')->refund),
+            'refunds' => collect(),
+            'result_cancel' => null,
+        ];
+    }
 
     // ───────────────────────────────────────────────
     // 신청 가능 옵션 / 설정
@@ -193,7 +248,9 @@ class UserClaimService
      */
     protected function refundAccountRequirement(Order $order): array
     {
-        $required = $this->refundRequestService->refundsToBankAccount($order);
+        // 돌려줄 현금이 없는 주문(마일리지로 전액 결제)은 계좌가 쓰일 일이 없다(결함 4).
+        $required = $this->refundRequestService->refundsToBankAccount($order)
+            && $this->refundRequestService->hasCashToReturn($order);
 
         return [
             'required' => $required,
@@ -223,6 +280,12 @@ class UserClaimService
      */
     protected function refundAutoApproved(Order $order): bool
     {
+        // 마일리지로만 돌려주는 주문은 계좌 송금이 없어 결제수단과 무관하게 자동으로 끝난다(결함 4) —
+        // 안내가 실제 자동 완료와 갈리지 않게 같은 술어를 읽는다.
+        if ($this->refundRequestService->refundsOnlyMileage($order)) {
+            return true;
+        }
+
         $order->loadMissing('payment');
 
         $methodId = $order->payment?->paymentMethodId();
@@ -470,8 +533,7 @@ class UserClaimService
                 // 갈리면 목록(주입 경로)과 상세(모델 게터 경로)가 서로 다른 라벨을 말한다. 환불신청서는
                 // 파생 출처의 카탈로그를 볼 수 있으므로 그 판정을 모델에 위임한다(S17 트랙 A F-2).
                 $type = match (true) {
-                    $isCancel => ClaimTypeEnum::REFUND->value,
-                    $claim instanceof OrderRefund => $claim->reasonCatalogType(),
+                    $isCancel, $claim instanceof OrderRefund => $claim->reasonCatalogType(),
                     default => $claim->claimType()->value,
                 };
                 $code = (string) ($isCancel ? ($claim->cancel_reason_type ?? '') : ($claim->reason_code ?? ''));
@@ -913,18 +975,21 @@ class UserClaimService
      */
     public function withdraw(ClaimTypeEnum $type, OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): OrderExchange|OrderReturn|OrderRefund
     {
-        $withdrawn = match ($type) {
-            ClaimTypeEnum::EXCHANGE => $this->exchangeService->withdraw($claim),
-            ClaimTypeEnum::RETURN => $this->returnService->withdraw($claim),
-            ClaimTypeEnum::REFUND => $this->refundRequestService->withdraw($claim),
-            default => throw OrderClaimException::notWithdrawable(),
-        };
+        // 철회와 추가결제 환급은 한 트랜잭션이다(S6 · D2) — 환급이 거절되면 철회도 되돌려 다시 시도할 수 있게 한다.
+        return DB::transaction(function () use ($type, $claim) {
+            $withdrawn = match ($type) {
+                ClaimTypeEnum::EXCHANGE => $this->exchangeService->withdraw($claim),
+                ClaimTypeEnum::RETURN => $this->returnService->withdraw($claim),
+                ClaimTypeEnum::REFUND => $this->refundRequestService->withdraw($claim),
+                default => throw OrderClaimException::notWithdrawable(),
+            };
 
-        if ($withdrawn instanceof OrderExchange || $withdrawn instanceof OrderReturn) {
-            $this->paymentService->refundPaymentsForClaim($withdrawn, __('sirsoft-ecommerce::messages.claims.withdrawn'));
-        }
+            if ($withdrawn instanceof OrderExchange || $withdrawn instanceof OrderReturn) {
+                $this->paymentService->refundPaymentsForClaim($withdrawn, __('sirsoft-ecommerce::messages.claims.withdrawn'));
+            }
 
-        return $withdrawn;
+            return $withdrawn;
+        });
     }
 
     // ───────────────────────────────────────────────

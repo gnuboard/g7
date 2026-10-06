@@ -9,6 +9,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { manualPaidRequestFields, refreshManualPaidPreview, resetManualPaidState, SALES_STATUSES } from './manualPaidEffectsHandlers';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -207,7 +208,7 @@ export function toggleAllProductsHandler(
  * @param _action 액션 객체
  * @param _context 액션 컨텍스트
  */
-export function buildOrderDetailBulkConfirmDataHandler(
+export async function buildOrderDetailBulkConfirmDataHandler(
     action: ActionWithParams<{
         selectedProducts?: number[];
         batchOrderStatus?: string;
@@ -215,7 +216,7 @@ export function buildOrderDetailBulkConfirmDataHandler(
         batchTrackingNumber?: string;
     }>,
     _context: ActionContext
-): void {
+): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core) return;
 
@@ -383,7 +384,76 @@ export function buildOrderDetailBulkConfirmDataHandler(
         batchTrackingNumber,
     });
 
+    // 수동 결제 처리 항목(Q13) — 창을 열 때마다 세 체크를 모두 켠 채 다시 시작한다.
+    // 수량을 바꿀 때 미리보기를 다시 부를 재료는 `_global` 에 둔다 — 수량 입력은 창의 격리 scope 에서
+    // 돌아 페이지 `_local` 을 읽지 못한다.
+    resetManualPaidState();
+    G7Core.state.set?.({
+        manualPaidContext: {
+            orderNumber: orderData?.order_number ?? '',
+            selectedProducts,
+            status: batchOrderStatus,
+            carrierId: batchCarrierId,
+            trackingNumber: batchTrackingNumber,
+        },
+    }, { merge: 'shallow' });
+
     G7Core.modal?.open?.('modal_batch_change_confirm');
+
+    // 창을 먼저 띄우고 그 안에서 미리보기를 불러온다. 판매 상태로 가는 변경만 대상이다.
+    if (SALES_STATUSES.includes(batchOrderStatus) && orderData?.order_number) {
+        await refreshDetailManualPaidPreview(
+            String(orderData.order_number),
+            selectedProducts,
+            changeQuantities,
+            batchOrderStatus,
+            batchCarrierId,
+            batchTrackingNumber,
+        );
+    }
+}
+
+/**
+ * 주문상세 확인 창의 수동 결제 처리 미리보기를 다시 부릅니다.
+ *
+ * 수량을 줄이면 부모 주문의 파생 상태가 바뀌어(혼합 → 가장 낮은 상태) 결제 코스 진입 여부가 달라지므로
+ * 수량을 바꿀 때마다 다시 부른다. 늦게 도착한 옛 응답은 세대 카운터가 버린다.
+ *
+ * @param orderNumber 주문번호
+ * @param selectedProducts 선택 상품 행 ID
+ * @param changeQuantities 행별 변경 수량
+ * @param status 목표 상태
+ * @param carrierId 택배사 ID
+ * @param trackingNumber 송장번호
+ * @returns 반영 여부
+ */
+async function refreshDetailManualPaidPreview(
+    orderNumber: string,
+    selectedProducts: number[],
+    changeQuantities: Record<number, number>,
+    status: string,
+    carrierId?: string,
+    trackingNumber?: string,
+): Promise<boolean> {
+    const G7Core = (window as any).G7Core;
+    const options = G7Core?.dataSource?.get?.('order')?.data?.options || [];
+
+    const items = selectedProducts.map((optionId: number) => {
+        const option = options.find((opt: { id: number }) => opt.id === optionId);
+
+        return { option_id: optionId, quantity: changeQuantities?.[optionId] ?? option?.quantity ?? 1 };
+    });
+
+    return refreshManualPaidPreview({
+        kind: 'options',
+        orderNumber,
+        body: {
+            items,
+            status,
+            ...(carrierId ? { carrier_id: carrierId } : {}),
+            ...(trackingNumber ? { tracking_number: trackingNumber } : {}),
+        },
+    });
 }
 
 /**
@@ -467,6 +537,8 @@ export async function processOrderDetailBulkChangeHandler(
     if (batchTrackingNumber) {
         body.tracking_number = batchTrackingNumber;
     }
+    // 확인 창에서 고른 세 항목 — 판매 상태로 가는 요청에만 싣는다(서버는 미지정을 「켬」으로 본다).
+    Object.assign(body, manualPaidRequestFields(batchOrderStatus));
 
     try {
         const response = await G7Core.api.patch(
@@ -494,6 +566,7 @@ export async function processOrderDetailBulkChangeHandler(
                 batchTrackingNumber: '',
                 changeQuantities: {},
             });
+            G7Core.state.set?.({ manualPaidPreview: null });
         } else {
             throw new Error(response?.message || '상태 변경에 실패했습니다.');
         }
@@ -508,6 +581,9 @@ export async function processOrderDetailBulkChangeHandler(
             ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.handler.bulk_change_failed')
             ?? '상태 변경에 실패했습니다.'
         );
+        // 실패를 삼키면 확인 창의 성공 분기(`<close-modal/>`)가 돌아 창이 닫히고 운영자가 고른 항목(수량·결제 처리 세 항목)이
+        // 사라진다. 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다 — 사유 토스트는 여기서 한 번만 띄운다.
+        throw error;
     }
 }
 
@@ -595,6 +671,19 @@ export function updateChangeQuantityHandler(
     currentQuantities[optionId] = clamped;
 
     G7Core.state.setLocal({ changeQuantities: currentQuantities });
+
+    // 수량이 바뀌면 부모 파생 상태가 바뀌어 수동 결제 처리 해당 여부가 달라진다(Q13) — 미리보기를 다시 부른다.
+    const context = G7Core.state.get?.()?.manualPaidContext;
+    if (context && SALES_STATUSES.includes(context.status) && context.orderNumber && Array.isArray(context.selectedProducts)) {
+        void refreshDetailManualPaidPreview(
+            String(context.orderNumber),
+            context.selectedProducts,
+            currentQuantities,
+            context.status,
+            context.carrierId,
+            context.trackingNumber,
+        );
+    }
 }
 
 /**

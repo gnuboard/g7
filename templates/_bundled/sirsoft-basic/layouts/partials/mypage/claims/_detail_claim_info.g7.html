@@ -378,7 +378,20 @@
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refund_points_amount</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refund_points_amount_formatted ?? ''}}</span>
       </div>
-      <!-- 환불 계좌 — 계좌번호·예금주는 서버가 마스킹해 내려준다(MasksRefundBankAccount). 화면이 원문을 요구하지 않는다. -->
+      <!-- 교환 차액 환급 — 교환으로 받은 상품을 반품·환불하면 그 교환 때 낸 상위 옵션 차액을 낸 수단 그대로(카드는 카드 취소, 마일리지는 마일리지) 돌려준다(S2·Q9). -->
+      <div data-ref="claim_exchange_difference_refund" data-if="{{(claim.data?.claim?.exchange_difference_refund_total ?? 0) > 0}}" class="flex items-baseline justify-between gap-2">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.exchange_difference_refund</span>
+        <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.exchange_difference_refunds_formatted ?? claim.data?.claim?.exchange_difference_refund_total_formatted ?? ''}}</span>
+      </div>
+      <!-- 「마일리지로 환불」로 완료된 현금 환불액 — 카드·계좌가 아니라 회원 마일리지로 지급됐고 유효기간이 없다는 사실을 함께 알린다(D1·Q2). 완료 전에는 서버가 0 을 준다. -->
+      <div data-ref="claim_refund_mileage_credit" data-if="{{(claim.data?.claim?.refund_mileage_credit_amount ?? 0) > 0}}" class="space-y-1">
+        <div class="flex items-baseline justify-between gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refund_mileage_credit_amount</span>
+          <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refund_mileage_credit_amount_formatted ?? ''}}</span>
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500">$t:claim.detail.refund_mileage_credit_hint</p>
+      </div>
+      <!-- 환불 계좌 —계좌번호·예금주는 서버가 마스킹해 내려준다(MasksRefundBankAccount). 화면이 원문을 요구하지 않는다. -->
       <div data-if="{{!!claim.data?.claim?.refund_bank_code}}" class="flex items-start justify-between gap-2">
         <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.refund_account</span>
         <span class="text-sm text-gray-900 dark:text-white text-right break-all">{{claim.data?.claim?.refund_bank_name ?? claim.data?.claim?.refund_bank_code}} {{claim.data?.claim?.refund_bank_account ?? ''}} {{claim.data?.claim?.refund_bank_holder ?? ''}}</span>
@@ -386,6 +399,47 @@
       <div data-if="{{!!claim.data?.claim?.refunded_at_formatted}}" class="flex items-baseline justify-between gap-2">
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.refunded_at</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.refunded_at_formatted}}</span>
+      </div>
+    </div>
+    <!-- 후속 환불(보완 5 · Q8) — 이 교환·반품에서 생긴 환불의 상태·수단·금액, 그리고 환불·취소 신청서의 원 신청서. 주소는 서버가 회원/비회원을 갈라 준다(`detail_url`) — partial 이 회원 여부를 스스로 판단하지 않는다. 같은 화면으로의 이동이라 앞 신청서의 결제 오류 문구가 남지 않게 지운 뒤 옮긴다. -->
+    <div data-ref="claim_linked_refunds" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') || !!claim.data?.linked_claims?.source}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.linked_title</p>
+      <div data-ref="claim_linked_source" data-if="{{!!claim.data?.linked_claims?.source}}" class="flex items-baseline justify-between gap-2">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_source</span>
+        <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+          <on type="click">
+            <!-- 앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다 -->
+            <set-state target="_local" claimPayError=""/>
+            <navigate path="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true"><query/></navigate>
+          </on>
+          {{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}
+        </button>
+      </div>
+      <p data-ref="claim_linked_refunds_empty" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') &amp;&amp; (claim.data?.linked_claims?.refunds ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_empty</p>
+      <div data-each="linkedRefund in {{claim.data?.linked_claims?.refunds ?? []}}" class="flex items-baseline justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <button type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+            <on type="click">
+              <!-- 앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다 -->
+              <set-state target="_local" claimPayError=""/>
+              <navigate path="{{linkedRefund.detail_url}}" :mergeQuery="true"><query/></navigate>
+            </on>
+            {{linkedRefund.claim_number}}
+          </button>
+          <span>
+            <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{linkedRefund.status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+              <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+              <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+              <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+              <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+              <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+              <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+              <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
+            </class-map>
+            <span>{{linkedRefund.status_label ?? ''}}</span>
+          </span>
+        </div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">{{(linkedRefund.refund_method_label ?? '') + ' · ' + (linkedRefund.refund_total_formatted ?? '') + ' · ' + (linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || '')}}</span>
       </div>
     </div>
   </div>

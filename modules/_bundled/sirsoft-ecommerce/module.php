@@ -25,6 +25,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
+use Modules\Sirsoft\Ecommerce\Listeners\CloseUnpaidVbankOnCancelListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
@@ -1552,6 +1553,7 @@ class Module extends AbstractModule
             $this->newOrderAdminDefinition(),
             $this->orderConfirmedAdminDefinition(),
             $this->orderCompletedAdminDefinition(),
+            $this->depositAfterCancelAdminDefinition(),
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
@@ -2296,6 +2298,40 @@ class Module extends AbstractModule
     }
 
     /**
+     * 취소된 주문에 가상계좌 입금이 들어왔을 때(운영자 수신) 알림 정의. (P-D1 · Q11)
+     *
+     * 고객이 취소한 뒤에 입금해도 PG 통보는 온다. 주문은 되살리지 않고 자동 환불도 하지 않으므로(Q11), 운영자가
+     * 그 돈을 돌려줘야 한다는 사실을 이 알림이 알린다. 결제 플러그인의 입금통보 처리가
+     * `DepositAfterCancelRecorder` 로 훅을 낸다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function depositAfterCancelAdminDefinition(): array
+    {
+        $definition = $this->orderStaffNotificationDefinition(
+            type: 'deposit_after_cancel_admin',
+            hook: 'sirsoft-ecommerce.order.deposit_after_cancel',
+            name: ['ko' => '취소 주문 입금 관리자 알림', 'en' => 'Deposit on a Cancelled Order (Staff)'],
+            description: [
+                'ko' => '취소된 주문의 가상계좌에 입금이 확인되면 운영자에게 발송(자동 환불되지 않음)',
+                'en' => 'Sent to staff when a deposit arrives on the virtual account of a cancelled order (not refunded automatically)',
+            ],
+            heading: ['ko' => '취소된 주문에 입금이 확인되었습니다', 'en' => 'A deposit arrived on a cancelled order'],
+            lead: [
+                'ko' => '{name}님, 취소된 주문의 가상계좌에 {deposit_amount}이(가) 입금되었습니다. 자동으로 환불되지 않으니 고객에게 환불해 주세요.',
+                'en' => 'Dear {name}, {deposit_amount} was deposited to the virtual account of a cancelled order. It is not refunded automatically — please refund the customer.',
+            ],
+            summary: [
+                'ko' => '취소된 주문({order_number})에 {deposit_amount} 입금이 확인되었습니다. 고객에게 환불하세요.',
+                'en' => 'A deposit of {deposit_amount} arrived on cancelled order {order_number}. Please refund the customer.',
+            ],
+        );
+        $definition['variables'][] = ['key' => 'deposit_amount', 'description' => '취소 후 입금된 금액'];
+
+        return $definition;
+    }
+
+    /**
      * 주문 결제완료 도달(운영자 수신) 알림 정의.
      *
      * 무통장 주문은 **입금이 확인되는 순간**이 운영자가 움직여야 하는 시점이다. 신규 주문
@@ -2918,11 +2954,14 @@ class Module extends AbstractModule
                 ],
                 'rows' => [
                     '*' => [],
+                    // 합계 아래에 수단별 금액 줄을 둔다(S7) — 「환불 수단」 한 칸에 현금·마일리지 합계를 묶으면
+                    // 마일리지로만 돌려준 환불이 「PG사 환불」 로 알려진다. 낱개 변수는 운영자 편집용으로 함께 연다.
                     'refund' => [
                         ['ko' => '환불 금액', 'en' => 'Refund Amount', 'var' => 'refund_amount'],
-                        ['ko' => '환불 수단', 'en' => 'Refund Method', 'var' => 'refund_method_label'],
+                        ['ko' => '환불 내역', 'en' => 'Refund Breakdown', 'var' => 'refund_breakdown'],
                     ],
                 ],
+                'extra_variables' => ['refund_method_label', 'refund_cash_amount', 'refund_points_amount'],
             ],
         ];
     }
@@ -2958,8 +2997,11 @@ class Module extends AbstractModule
             'collection_due_date' => '선교환 헌 상품 반송 기한',
             'overdue_days' => '반송 기한을 넘긴 일수',
             'unreturned_item_lines' => '아직 회수되지 않은 상품 목록(줄바꿈 구분)',
-            'refund_amount' => '환불 금액',
-            'refund_method_label' => '환불 수단',
+            'refund_amount' => '환불 금액 (현금 + 마일리지 합계)',
+            'refund_method_label' => '실제 환불 수단 (현금 환불이 없으면 마일리지)',
+            'refund_cash_amount' => '현금으로 환불된 금액 (없으면 빈 값)',
+            'refund_points_amount' => '마일리지로 환불된 금액 (없으면 빈 값)',
+            'refund_breakdown' => '수단별 환불 금액 줄 (줄바꿈 구분)',
             'requester_name' => '신청자 이름',
             // 부분 처리 안내용. 여기 없으면 `claimNotificationVariables()` 의 `?? $key` 폴백이
             // 걸려 운영자의 변수 도움말에 영문 키가 그대로 뜬다.
@@ -3656,6 +3698,7 @@ class Module extends AbstractModule
             ProductInquiryBoardListener::class,
             SearchProductsListener::class,
             CouponRestoreListener::class,
+            CloseUnpaidVbankOnCancelListener::class,
             CouponUseListener::class,
             SeoProductCacheListener::class,
             SeoCategoryCacheListener::class,

@@ -42,6 +42,7 @@ return [
         'status_change' => '상태 변경',
         'sync_status' => '상태 자동 반영',
         'status_sync' => '상태 자동 동기화',
+        'manual_paid_effects' => '수동 결제 처리',
         'stock_sync' => '재고 동기화',
         'toggle_active' => '활성 상태 변경',
         'tax_invoice_stale' => '세금계산서 미처리',
@@ -61,6 +62,7 @@ return [
         'admin_deduct' => '관리자 차감',
         'extend_expiry' => '유효기간 연장',
         'adjust' => '적립건 수정',
+        'refund_credit' => '환불 지급',
         // 클레임 (교환/반품/환불/추가결제/첨부)
         'request' => '신청 접수',
         'option_status_change' => '상품 단위 상태 변경',
@@ -107,6 +109,7 @@ return [
         'order_shipping_tracking_update' => '운송장 기록·정정 (상품 ID: :option_id)',
         'order_tax_invoice_stale' => '취소 후 세금계산서 미처리 (주문: :order_number · :count건)',
         'order_status_sync' => '주문 상태 자동 변경 — 상품 상태에 맞춰 (:order_number)',
+        'order_manual_paid_effects' => '수동 결제 처리 (:order_number) — 적용: :applied / 적용 안 함: :skipped',
 
         // 쿠폰 관리 (Admin)
         'coupon_index' => '쿠폰 목록 조회',
@@ -244,7 +247,10 @@ return [
         'mileage_earn' => '마일리지 적립 (:amount)',
         'mileage_use' => '마일리지 사용 (:amount)',
         'mileage_restore' => '마일리지 복원 (:amount)',
+        'mileage_refund_credit' => '환불금 마일리지 지급 (:amount)',
         'mileage_expire' => '마일리지 소멸 (:amount)',
+        'mileage_withdrawal_expire' => '회원 탈퇴로 마일리지 소멸 (:amount)',
+        'mileage_deletion_expire' => '회원 삭제로 마일리지 소멸 (:amount)',
         'mileage_earn_cancel' => '마일리지 적립 회수 (:amount)',
         'mileage_admin_earn' => '관리자 마일리지 지급 (:amount)',
         'mileage_admin_deduct' => '관리자 마일리지 차감 (:amount)',
@@ -293,6 +299,17 @@ return [
     ],
 
     // ChangeDetector 필드 라벨
+    // 수동 결제 처리 활동 로그의 항목 이름 (Q13·Q26) — 설명 문구의 적용/적용 안 함 목록을 렌더 시점에 번역한다
+    'manual_paid' => [
+        'items' => [
+            'apply_stock_deduction' => '재고 차감',
+            'apply_mileage_deduction' => '사용 마일리지 차감',
+            'record_paid_amount' => '결제금액 기록',
+            'restoration' => '합계·상품 상태 복원',
+        ],
+        'none' => '-',
+    ],
+
     'fields' => [
         // 공통
         'is_active' => '활성 여부',

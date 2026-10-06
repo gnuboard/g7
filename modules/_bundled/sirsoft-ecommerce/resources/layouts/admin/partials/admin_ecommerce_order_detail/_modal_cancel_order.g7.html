@@ -19,7 +19,10 @@
       <!-- 부분취소 불가 안내 (P6). 어떤 수단·PG 조합은 원천적으로 전액취소만 된다 — NICE 가상계좌가 그렇다(코어 취소는 PG 가 항상 거절하고, 우회 API 는 전액취소 전용이며 이는 NICE API 자체의 제약이다). 미리 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 원인 없는 실패를 받는다. -->
       <div data-ref="cancel_partial_unsupported_notice" data-if="{{order.data?.payment?.supports_partial_cancel === false}}" class="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
         <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 mt-0.5"/>
-        <span class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported</span>
+        <!-- 사유가 입금 전 가상계좌면 그 이유를 말한다(Q17) — 발급된 입금액은 바꿀 수 없어 일부 취소 뒤에는 입금을 확인할 수 없다. -->
+        <span data-if="{{order.data?.payment?.partial_cancel_block_reason === 'vbank_awaiting_deposit'}}" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported_vbank_awaiting</span>
+        <!-- 그 밖의 사유(결제수단·PG 제약) -->
+        <span data-if="{{order.data?.payment?.partial_cancel_block_reason !== 'vbank_awaiting_deposit'}}" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported</span>
       </div>
       <!-- PG 에러 알림 영역 -->
       <div data-if="{{_local.cancelError}}" class="alert-danger">

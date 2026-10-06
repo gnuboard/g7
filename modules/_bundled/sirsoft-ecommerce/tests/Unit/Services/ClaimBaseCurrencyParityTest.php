@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
@@ -33,6 +34,8 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
 {
     /**
      * 테스트 종료 시 통화 설정 파일을 정리합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -49,6 +52,10 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
 
     /**
      * 거래 시점 스냅샷이 있으면 두 사본이 같은 통화를 말한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects snapshot_currency_is_reported_identically_by_both_copies
      */
     public function test_snapshot_currency_is_reported_identically_by_both_copies(): void
     {
@@ -61,6 +68,10 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
 
     /**
      * 스냅샷이 없어도, 선언된 기본 통화가 통화 목록에 실재하면 두 사본이 같은 통화를 말한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects declared_default_is_reported_identically_when_it_exists_in_the_list
      */
     public function test_declared_default_is_reported_identically_when_it_exists_in_the_list(): void
     {
@@ -78,6 +89,10 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
      * 실데이터 노출은 현재 0 이다(주문 전건이 거래 시점 스냅샷을 보유). 서비스 사본을 리소스 규칙과
      * 맞추기로 결정하면 이 단언을 `assertSame` 으로 바꾼다 — 그때 형제 서비스 4곳과의 관례 차이를
      * 함께 판단해야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects the_two_copies_diverge_only_when_the_declared_default_was_removed
      */
     public function test_the_two_copies_diverge_only_when_the_declared_default_was_removed(): void
     {
@@ -130,6 +145,9 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
         $service = $reflection->newInstanceWithoutConstructor();
 
         $reflection->getProperty('settingsService')->setValue($service, app(EcommerceSettingsService::class));
+        // 서비스 사본은 판정을 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency`)에 위임한다(#599 P2 #14) —
+        // 그 의존을 주입하지 않으면 판정 전에 초기화되지 않은 속성 오류로 끝난다.
+        $reflection->getProperty('currencyService')->setValue($service, app(CurrencyConversionService::class));
 
         return (new ReflectionMethod(UserClaimService::class, 'orderBaseCurrency'))->invoke($service, $order);
     }
@@ -139,6 +157,7 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
      *
      * @param  string  $declaredDefault  선언된 기본 통화 코드
      * @param  array<int, string>  $codes  통화 목록 (첫 항목이 `is_default`)
+     * @return void 반환값 없음
      */
     private function writeCurrencySettings(string $declaredDefault, array $codes): void
     {

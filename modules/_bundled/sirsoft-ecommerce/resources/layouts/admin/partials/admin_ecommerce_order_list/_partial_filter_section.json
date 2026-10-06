@@ -705,6 +705,30 @@
                                     }
                                 },
                                 {
+                                    "comment": "F-029b 반품완료 — 전량 반품을 마친 주문은 주문 상태가 반품완료가 된다. 칩이 없으면 그 주문만 골라 볼 수 없고 배송완료 필터에서도 빠진다.",
+                                    "id": "f_029b_status_returned",
+                                    "type": "composite",
+                                    "name": "ChipCheckbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.toggleArrayValue",
+                                            "params": {
+                                                "target": "_local",
+                                                "path": "filter.orderStatus",
+                                                "value": "returned"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "returned",
+                                        "checked": "{{(_local.filter.orderStatus || []).includes('returned')}}",
+                                        "icon": "box-archive",
+                                        "label": "$t:sirsoft-ecommerce.admin.order.status.returned",
+                                        "variant": "gray"
+                                    }
+                                },
+                                {
                                     "comment": "F-030",
                                     "id": "f_030_status_confirmed",
                                     "type": "composite",

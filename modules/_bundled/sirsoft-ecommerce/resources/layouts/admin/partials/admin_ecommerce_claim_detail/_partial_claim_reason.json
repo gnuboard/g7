@@ -472,6 +472,53 @@
                             "text": "{{claim?.data?.claim?.cancelled_at_formatted ?? '-'}}"
                         }
                     ]
+                },
+                {
+                    "comment": "재활성 줄(Q29) — 이 취소로 빠진 상품을 나중에 다시 판매 상태로 되살린 경우에만. 취소·환불 기록은 지우지 않으므로 카드 값은 그대로 두고, 되살린 일시와 수량만 덧붙인다.",
+                    "id": "cc_005_reactivated_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!claim?.data?.claim?.reactivated_at_formatted}}",
+                    "props": {
+                        "className": "text-sm py-1.5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_at"
+                                },
+                                {
+                                    "id": "cc_005_reactivated_at",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_value|at={{claim?.data?.claim?.reactivated_at_formatted ?? '-'}}|quantity={{claim?.data?.claim?.reactivated_quantity ?? 0}}|total={{claim?.data?.claim?.total_cancel_quantity ?? 0}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cc_006_reactivated_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint"
+                        }
+                    ]
                 }
             ]
         },

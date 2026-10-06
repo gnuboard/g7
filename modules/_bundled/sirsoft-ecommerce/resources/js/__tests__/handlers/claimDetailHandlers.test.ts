@@ -1065,15 +1065,20 @@ describe('환불 실행 (D18·D19)', () => {
             currencyCode: 'KRW',
             refundAmount: 24000,
             refundPointsAmount: 1000,
-            // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 #14).
+            // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 #14). 교환 차액 환급이 있으면 더한다.
             refundTotal: 25000,
+            exchangeDifferenceTotal: 0,
+            exchangeDifferenceFormatted: '',
             refundMethod: 'pg',
             refundMethodLabel: 'PG사 환불',
             refundBankName: '',
             refundBankAccount: '',
             refundBankHolder: '',
-            // 계좌가 필요한지는 서버가 답한다 — 파라미터가 없으면 「필요 없음」이다.
+            // 계좌가 필요한지는 서버가 답한다 — 수단별 판정도 저장 수단 판정도 없으면 「필요 없음」이다.
             refundAccountRequired: false,
+            // 수단별 판정이 없는 응답이면 계좌 줄은 값이 있을 때 보인다(종전 동작).
+            refundAccountUsed: true,
+            pointsNotDeducted: false,
         });
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_refund_execute');
     });

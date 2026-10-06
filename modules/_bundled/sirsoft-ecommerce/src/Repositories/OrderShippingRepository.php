@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 
@@ -33,6 +34,22 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
         return $this->model
             ->where('id', $id)
             ->update($data) > 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByOrderId(int $orderId): Collection
+    {
+        return $this->model->newQuery()->where('order_id', $orderId)->orderBy('id')->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateRow(OrderShipping $shipping, array $data): bool
+    {
+        return $shipping->update($data);
     }
 
     /**

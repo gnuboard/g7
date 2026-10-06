@@ -5,6 +5,7 @@ return [
         'missing_tid' => '取引番号(tno)がないため返金を進めることができません。',
         'default_reason' => '購入者返金リクエスト',
         'in_progress' => 'NHN KCP 返金はすでに処理中です。',
+        'vbank_requires_bank_transfer' => '入金済みのバーチャル口座決済は NHN KCP で自動返金できません。返金方法を口座返金に変更し、お客様の口座へ直接送金してください。',
     ],
     'escrow' => [
         'invoice_required' => '送り状番号を入力してください。',

@@ -31,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UploadClaimImageRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\WithdrawClaimOnBehalfRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimAdminCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimLinkResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderClaimHistoryResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
@@ -46,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimAdminAbilities;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
+use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -283,9 +285,29 @@ class ClaimController extends AdminBaseController
             return $this->claimDomainError($e);
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (OrderCancellationException $e) {
+            // 완료 처리 중 쿠폰·재고·마일리지 복원이 실패해 전체가 되돌려졌다(D2) — 서버 오류가 아니라
+            // 운영자가 사유를 보고 다시 시도할 일이다.
+            return $this->sideEffectFailed($e);
         } catch (Exception $e) {
             return $this->claimServerError('admin-update-status', $e);
         }
+    }
+
+    /**
+     * 돈·권리 부수효과 실패로 되돌려진 처리를 422 로 알립니다. (D2)
+     *
+     * @param  OrderCancellationException  $e  부수효과 실패 예외
+     * @return JsonResponse 422 응답 (원인 문장을 detail 로 싣는다)
+     */
+    protected function sideEffectFailed(OrderCancellationException $e): JsonResponse
+    {
+        return ResponseHelper::moduleError(
+            'sirsoft-ecommerce',
+            'messages.claims.side_effect_failed',
+            422,
+            ['detail' => $e->getMessage()],
+        );
     }
 
     /**
@@ -312,6 +334,10 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.bulk_status_processed', $result);
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (OrderCancellationException $e) {
+            // 완료 처리 중 쿠폰·재고·마일리지 복원이 실패해 전체가 되돌려졌다(D2) — 서버 오류가 아니라
+            // 운영자가 사유를 보고 다시 시도할 일이다.
+            return $this->sideEffectFailed($e);
         } catch (Exception $e) {
             return $this->claimServerError('admin-bulk-status', $e);
         }
@@ -361,6 +387,10 @@ class ClaimController extends AdminBaseController
             return $this->claimDomainError($e);
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (OrderCancellationException $e) {
+            // 완료 처리 중 쿠폰·재고·마일리지 복원이 실패해 전체가 되돌려졌다(D2) — 서버 오류가 아니라
+            // 운영자가 사유를 보고 다시 시도할 일이다.
+            return $this->sideEffectFailed($e);
         } catch (Exception $e) {
             return $this->claimServerError('admin-option-status', $e);
         }
@@ -456,6 +486,11 @@ class ClaimController extends AdminBaseController
         try {
             $byType = $this->userClaimService->listForOrder($order);
             $reasonLabels = $this->userClaimService->reasonLabelsFor($byType);
+            // 환불 행의 원 신청서 번호(보완 5) — 이미 실은 같은 주문의 반품·교환에서 id → 번호 표를 만든다(추가 쿼리 0).
+            $sourceNumbers = [
+                'return' => collect($byType['return'] ?? [])->mapWithKeys(fn ($c) => [(int) $c->id => (string) $c->return_number])->all(),
+                'exchange' => collect($byType['exchange'] ?? [])->mapWithKeys(fn ($c) => [(int) $c->id => (string) $c->exchange_number])->all(),
+            ];
 
             $claims = collect($byType)
                 ->flatMap(fn ($list) => $list)
@@ -464,6 +499,7 @@ class ClaimController extends AdminBaseController
                 ->map(fn ($claim) => (new OrderClaimHistoryResource($claim))
                     ->withAdminFields()
                     ->withReasonLabels($reasonLabels)
+                    ->withSourceNumbers($sourceNumbers)
                     ->toArray(request()));
 
             return ResponseHelper::moduleSuccess(
@@ -1040,6 +1076,13 @@ class ClaimController extends AdminBaseController
             // 「환불 미접수」(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 크면 금액·건수를,
             // 아니면 null 을 싣는다. 상단 배너·완료 카드·[환불신청서 접수] 버튼이 같은 값을 읽는다.
             'pending_refund' => $this->adminClaimService->pendingRefundFor($claim),
+            // 연결 신청서(보완 5) — 원 신청서 · 후속 환불(출처 축, 재접수 이력 포함) · 처리 결과 취소 내역.
+            // 목록 응답(ClaimResource::forList)에는 싣지 않는다 — 행마다 쿼리가 늘어난다(N+1).
+            'linked_claims' => ClaimLinkResource::envelope(
+                $this->userClaimService->linkedClaimsFor($claim),
+                fn (string $number) => ClaimUrl::adminDetail($number),
+                $claim->order,
+            ),
             // 고객 요청 대리 철회(S14)·신청 내용 수정(S15) 버튼의 게이트 — 단계는 고객 철회·수정과 같고
             // 출처(판매자 접수)는 보지 않는다. 신청서 리소스의 `is_withdrawable`·`is_editable` 은 **구매자**
             // 게이트라(판매자 접수 건은 false) 운영자 버튼에 쓰면 판매자 접수 건에서 버튼이 사라진다.
@@ -1068,7 +1111,7 @@ class ClaimController extends AdminBaseController
                 : $this->adminClaimService->chargeMethodOptions(),
             // 환불 수단 어휘 — 환불 실행 섹션의 라디오. 다른 유형에는 그 축이 없다.
             'refund_methods' => $claim instanceof OrderRefund
-                ? $this->adminClaimService->refundMethodOptions($claim->order)
+                ? $this->adminClaimService->refundMethodOptions($claim->order, (float) $claim->refund_amount)
                 : [],
             // 취소 가능 금액 산정 근거 (D19). 별도 엔드포인트(`orders/{order}/cancellable-amount`)
             // 도 같은 값을 주지만 그 조회는 상세 응답의 도착을 기다려야 주문 id 를 알 수 있어,
@@ -1137,6 +1180,9 @@ class ClaimController extends AdminBaseController
                 'total_refunded_amount_formatted',
                 'total_refunded_points_amount',
                 'total_refunded_points_amount_formatted',
+                // 현금 환불 중 「마일리지로 환불」로 지급한 몫(Q3) — 결제 정보의 「그중」 줄(cp_006).
+                'total_refunded_mileage_credit_amount',
+                'total_refunded_mileage_credit_amount_formatted',
                 'total_tax_amount_formatted',
                 'total_vat_amount_formatted',
                 'total_earned_points_amount',

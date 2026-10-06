@@ -15,6 +15,7 @@ return [
         'missing_tid' => '거래번호(tno)가 없어 환불을 진행할 수 없습니다.',
         'default_reason' => '구매자 환불 요청',
         'in_progress' => 'NHN KCP 환불이 이미 처리 중입니다.',
+        'vbank_requires_bank_transfer' => '입금이 끝난 가상계좌 결제는 NHN KCP 로 자동 환불할 수 없습니다. 환불 수단을 계좌 환불로 바꿔 고객 계좌로 직접 송금해 주세요.',
     ],
     'escrow' => [
         'invoice_required' => '운송장번호를 입력해주세요.',

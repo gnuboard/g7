@@ -1393,6 +1393,11 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
+        'apply_stock_deduction' => '재고 차감',
+        'apply_mileage_deduction' => '사용 마일리지 차감',
+        'record_paid_amount' => '결제금액 기록',
+
         // 관리자 회원 목록 확장 필터 (#705)
         'user_filter_mileage_min' => '마일리지 잔액 최소',
         'user_filter_mileage_max' => '마일리지 잔액 최대',

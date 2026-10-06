@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 
 /**
@@ -198,4 +199,24 @@ interface OrderRefundRepositoryInterface
      * @return int 관리자 직접 환불(`direct`)로 접수된 신청서 수
      */
     public function countByReasonCode(string $reasonCode): int;
+
+    /**
+     * 주문의 완료된 환불 중 지정한 환불수단으로 나간 현금 환불액 합계를 돌려줍니다.
+     *
+     * 「마일리지로 환불」로 지급한 현금분(Q3 — 주문 상세의 별도 표시)을 셀 때 쓴다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  RefundMethodEnum  $method  환불수단
+     * @return float 현금 환불액 합계 (기준 통화)
+     */
+    public function sumCompletedRefundAmountByMethod(int $orderId, RefundMethodEnum $method): float;
+
+    /**
+     * 주문의 완료된 환불 중 지정 출처의 현금 환불액 합계를 돌려줍니다. (재활성 현금 회수 — Q14)
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array<int, string>  $sourceValues  환불 출처 값
+     * @return float 현금 환불액 합계 (기준 통화)
+     */
+    public function sumCompletedCashRefundForOrder(int $orderId, array $sourceValues): float;
 }

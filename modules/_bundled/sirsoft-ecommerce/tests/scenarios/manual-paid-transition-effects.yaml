@@ -1,0 +1,96 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(진입 경로 × 이전 상태 × 세 체크 × 잔액 × 재고 × 회원 × 복원 × 취소 경로 × 쿠폰 × 스냅샷)의 전 조합은
+#   수천 개다. 판정은 한 메서드(planManualPaidTransitionEffects)가 하므로 축마다 대표 조합과 실패·가드
+#   경로를 메서드 하나씩 못박는다(세 체크의 8조합은 dataProvider 로 전수). effects 축은 면제하지 않는다.
+# e2e:allow 확인 창의 표시·잠금은 레이아웃 구조 테스트와 핸들러 테스트가, 실제 화면 동작은 07 문서
+#   Chrome MCP 실측(M 시나리오)이 잰다. Playwright 스펙은 두지 않는다.
+feature: 수동 결제 처리·재활성 확인 창의 세 항목(재고 차감·사용 마일리지 차감·결제금액 기록)과 재활성 복원 (#747 C3)
+
+description: |
+  관리자가 결제 전 주문을 결제완료 이후로 직접 올리거나(P) 취소된 주문·상품을 되살릴 때(R-주문·R-상품),
+  확인 창이 세 항목을 묻는다(Q13·Q14 — 기본 모두 켬, 해당 없는 항목은 숨김). 예전에는 수동 전이가 PG
+  승인·입금확인을 거치지 않아 사용 마일리지·재고가 빠지지 않고 결제금액이 0 원으로 남았으며, 취소 주문을
+  되살려도 취소 때 돌려준 마일리지를 다시 빼지 않았다.
+
+    - 판정은 미리보기 API 와 실행이 같은 메서드를 쓴다. 미리보기는 아무것도 쓰지 않는다.
+    - 요청에 세 값이 없으면 켬이다(기존 API 호환). 결제행에 입금이 이미 기록된 주문은 체크와 무관하게
+      헤더 결제금액을 맞춘다(S2-D4).
+    - 잔액 부족은 422 로 막고 일괄은 모자란 주문번호를 모두 알린다(Q4). 재고 부족도 500 대신 422 와 주문번호.
+    - 재활성 마일리지는 원장 순계산(취소로 돌려준 합 − 재활성으로 다시 뺀 합)으로 회수한다 — 반품·교환 발
+      환급과 클레임 추가결제 축은 제외한다. 돌려준 현금은 환불 누적에서 되돌린다(결제행은 PG 사실대로 둔다).
+    - 재활성은 상품 행과 주문 합계를 취소 엔진과 같은 입력(최초 취소 직전 스냅샷)으로 복원한다(Q26).
+      다른 주문이 이미 쓴 쿠폰이 있으면 막는다(Q27). 입금 전에 취소된 주문은 「결제금액 기록」으로
+      복원 합계를 받은 것으로 기록한다(Q28). PG 결제가 이미 취소된 주문은 경고만 한다(Q24).
+
+coverage_strategy: pairwise
+
+axes:
+  entry_point: [single_update, bulk_update, bulk_update_status, option_bulk_parent_sync, option_bulk_revive]
+  from: [pending_order, pending_payment, cancelled_after_refund, cancelled_unpaid, live_with_cancelled_row]
+  option_stock: [checked, unchecked, omitted, not_applicable]
+  option_mileage: [checked, unchecked, omitted, not_applicable]
+  option_record: [checked, unchecked, omitted, not_applicable, auto_sync]
+  balance: [enough, short]
+  stock: [enough, short]
+  member: [member, guest]
+  restoration: [whole_order, partial_rows, live_order_row, none]
+  cancel_path: [refund, no_refund, partial_then_full]
+  coupon: [none, reclaimable, expired, used_elsewhere, dropped_by_condition]
+  pre_cancel_snapshot: [present, legacy]
+
+effects:
+  # Q13 — 세 항목
+  - manual_paid_transition_applies_three_items_by_default
+  - omitted_flags_default_to_true
+  - unchecked_item_is_skipped_only
+  - not_applicable_items_are_hidden_in_preview
+  - settled_payment_row_auto_syncs_header
+  - unchecked_stock_is_not_restored_on_cancel
+  - unchecked_record_leaves_cash_refund_limit_zero
+  - confirm_deposit_after_manual_paid_does_not_demote_status
+  - manual_paid_effects_activity_log_lists_skipped_items
+  # Q4 — 부족 시 차단
+  - mileage_short_blocks_change_with_422
+  - bulk_mileage_short_is_all_or_nothing_and_names_every_order
+  - stock_short_blocks_change_with_422_and_order_number
+  - option_bulk_parent_sync_is_atomic_with_effects
+  # Q14 — 재활성 회수
+  - reactivation_rededucts_mileage_restored_by_cancellation
+  - reactivation_reclaims_refunded_cash_into_ledger
+  - reactivation_partial_revival_reclaims_row_share_then_sweeps
+  - partial_revival_with_paid_course_entry_deducts_only_revived_stock   # 계획서 검증: P+R-상품 동시 요청의 재고 과다 차감
+  - reactivation_excludes_return_and_claim_payment_restores
+  - reactivation_never_double_deducts
+  - unchecked_mileage_returns_nothing_on_refund
+  # Q26·Q27·Q28 — 복원
+  - reactivation_revives_cancelled_rows_with_order
+  - reactivation_hint_matches_partial_or_full_cancel   # 일부 취소(현재 금액 > 0) 재활성은 부분용 안내, 0원(전체 취소)은 종전 안내
+  - reactivation_restores_order_totals_with_cancel_engine_inputs
+  - reactivation_releases_cancelled_quantity_counter
+  - reactivation_merges_split_rows_back
+  - reactivation_reclaims_coupons_or_blocks_on_conflict
+  - bulk_reactivation_coupon_conflict_is_all_or_nothing
+  - reactivation_reconciles_points_ledger_after_restoration
+  - reactivation_reduces_cancelled_amount_by_reclaimed_only
+  - reactivated_order_refunds_exact_share_on_next_cancel
+  - first_cancellation_keeps_pre_cancel_snapshot
+  - never_paid_reactivation_offers_paid_amount_record
+  - merge_never_mixes_stock_deduction_flags
+  # Q24 — 경고
+  - reactivation_preview_warns_pg_already_cancelled
+  # 미리보기
+  - preview_matches_execution
+  - preview_reports_restoration_and_matches_execution
+  # Q29 — 재활성이 되돌린 취소신청서에 수량·시각을 기록한다 (cancel-reactivation-badge.yaml)
+  - reactivation_marks_reverted_cancel_documents
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ManualPaidTransitionEffectsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ManualPaidTransitionPreviewTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ManualPaidReactivationRestorationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/ManualPaidOptionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderStatusTransitionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReactivationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceStockRedeductTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/manualPaidEffectsHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderManualPaidEffects.test.ts
