@@ -198,7 +198,6 @@
           <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_hint</p>
           <span data-if="{{_local.errors?.['claim.max_images']}}" class="w-full form-error-xs">{{_local.errors?.['claim.max_images']?.[0] ?? ''}}</span>
         </div>
-        <div class="border-t border-gray-100 dark:border-gray-700"/>
         <div data-ref="claim_image_max_size_kb_field" class="flex-center gap-2 flex-wrap">
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label</span>
           <!-- 첨부 이미지 한 장의 용량 상한(KB). 고객·관리자 업로드 검증이 모두 이 값으로 거절하고 고객 신청 화면도 같은 값을 안내하므로, 여기만 바꾸면 화면과 서버가 함께 움직인다. -->

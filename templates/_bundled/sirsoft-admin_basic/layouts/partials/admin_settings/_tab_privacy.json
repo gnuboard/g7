@@ -361,206 +361,214 @@
                             ]
                         },
                         {
-                            "id": "withdrawn_target_list",
+                            "comment": "row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다",
+                            "id": "withdrawn_target_list_row",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}",
-                            "props": {
-                                "className": "rounded-lg border border-gray-200 dark:border-gray-700"
-                            },
                             "children": [
                                 {
-                                    "id": "withdrawn_target_row",
+                                    "id": "withdrawn_target_list",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "px-4 py-3"
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700"
                                     },
                                     "children": [
                                         {
+                                            "id": "withdrawn_target_row",
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                "className": "px-4 py-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2 min-w-0"
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "Div",
                                                             "props": {
-                                                                "className": "text-heading"
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
                                                             },
-                                                            "text": "$t:admin.settings.privacy.targets.rows.withdrawn"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null && privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}",
-                                                            "props": {
-                                                                "className": "badge badge-yellow"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "flex-wrap-center gap-2"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "id": "view_withdrawn_targets",
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}",
-                                                            "actions": [
+                                                            "children": [
                                                                 {
-                                                                    "comment": "탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고\n                         1쪽부터 다시 받은 뒤 연다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyTargets": "{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdrawn"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "refetchDataSource",
-                                                                            "params": {
-                                                                                "dataSourceId": "privacyTargets"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "privacy_targets_modal"
-                                                                        }
-                                                                    ]
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.rows.withdrawn"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null && privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}"
                                                                 }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "className": "btn btn-sm btn-ghost"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.targets.view"
+                                                            ]
                                                         },
                                                         {
-                                                            "id": "run_withdrawn",
                                                             "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}",
-                                                            "actions": [
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
                                                                 {
-                                                                    "comment": "탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로\n                         생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
+                                                                    "id": "view_withdrawn_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}",
                                                                     "actions": [
                                                                         {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyRun": "{{({ key: 'retention:user-withdrawn', label: privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "privacy_run_modal"
-                                                                        },
-                                                                        {
-                                                                            "handler": "apiCall",
-                                                                            "target": "/api/admin/privacy/manual-runs/retention:user-withdrawn/preview",
-                                                                            "auth_required": true,
-                                                                            "params": {
-                                                                                "method": "GET"
-                                                                            },
-                                                                            "onSuccess": {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "privacyRun.preview": "{{response.data}}",
-                                                                                    "privacyRun.loading": false
-                                                                                }
-                                                                            },
-                                                                            "onError": [
+                                                                            "comment": "탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고\n                           1쪽부터 다시 받은 뒤 연다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
                                                                                 {
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "global",
-                                                                                        "privacyRun.loading": false
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
                                                                                     }
                                                                                 },
                                                                                 {
-                                                                                    "handler": "toast",
+                                                                                    "handler": "setState",
                                                                                     "params": {
-                                                                                        "type": "error",
-                                                                                        "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdrawn"
                                                                                     }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_withdrawn",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로\n                           생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'retention:user-withdrawn', label: privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/retention:user-withdrawn/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.manual_run.run"
                                                                 }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "className": "btn btn-sm btn-outline",
-                                                                "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.manual_run.run"
+                                                            ]
                                                         }
                                                     ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "id": "withdrawn_manual_run_status",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run}}",
-                                            "props": {
-                                                "className": "text-hint mt-1"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}",
-                                                    "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400"
-                                                    },
-                                                    "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
                                                 },
                                                 {
+                                                    "id": "withdrawn_manual_run_status",
                                                     "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}",
-                                                    "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run}}",
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "text-hint mt-1"
                                                     },
-                                                    "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}",
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -711,211 +719,218 @@
                             ]
                         },
                         {
-                            "comment": "휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.\n             「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다).",
-                            "id": "dormant_target_list",
+                            "comment": "휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.\n             「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다).\n             row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다.",
+                            "id": "dormant_target_list_row",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}",
-                            "props": {
-                                "className": "rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
-                            },
                             "children": [
                                 {
-                                    "id": "dormant_target_row_{{stage}}",
+                                    "id": "dormant_target_list",
                                     "type": "basic",
                                     "name": "Div",
-                                    "iteration": {
-                                        "source": "{{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}",
-                                        "item_var": "stage"
-                                    },
                                     "props": {
-                                        "className": "px-4 py-3"
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
                                     },
                                     "children": [
                                         {
+                                            "id": "dormant_target_row_{{stage}}",
                                             "type": "basic",
                                             "name": "Div",
+                                            "iteration": {
+                                                "source": "{{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}",
+                                                "item_var": "stage"
+                                            },
                                             "props": {
-                                                "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                "className": "px-4 py-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2 min-w-0"
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "Div",
                                                             "props": {
-                                                                "className": "text-heading"
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
                                                             },
-                                                            "text": "{{$t('admin.settings.privacy.targets.rows.' + stage)}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{privacyPreview?.data?.dormant}}",
-                                                            "props": {
-                                                                "className": "badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "flex-wrap-center gap-2"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "id": "view_{{stage}}_targets",
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{privacyPreview?.data?.dormant?.can_view_targets}}",
-                                                            "actions": [
+                                                            "children": [
                                                                 {
-                                                                    "comment": "휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.\n                         네 단계가 이 한 블록을 돌려 쓴다.",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyTargets": "{{({ path: 'dormant-targets/' + stage, currentPage: 1, hasMore: true, isLoadingMore: false })}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyTargets.title": "{{$t('admin.settings.privacy.targets.title.' + stage)}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "refetchDataSource",
-                                                                            "params": {
-                                                                                "dataSourceId": "privacyTargets"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "privacy_targets_modal"
-                                                                        }
-                                                                    ]
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "{{$t('admin.settings.privacy.targets.rows.' + stage)}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{privacyPreview?.data?.dormant}}",
+                                                                    "props": {
+                                                                        "className": "badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}"
                                                                 }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "className": "btn btn-sm btn-ghost"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.targets.view"
+                                                            ]
                                                         },
                                                         {
-                                                            "id": "run_dormant_stage_{{stage}}",
                                                             "type": "basic",
-                                                            "name": "Button",
-                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}",
-                                                            "actions": [
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
                                                                 {
-                                                                    "comment": "휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로\n                         넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로).",
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
+                                                                    "id": "view_{{stage}}_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets}}",
                                                                     "actions": [
                                                                         {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "global",
-                                                                                "privacyRun": "{{({ key: 'dormant:' + stage, label: privacyManualRuns?.data?.targets?.['dormant:' + stage]?.label ?? '', supportsSkip: !!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.supports_skip_waiting, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "openModal",
-                                                                            "target": "privacy_run_modal"
-                                                                        },
-                                                                        {
-                                                                            "handler": "apiCall",
-                                                                            "target": "/api/admin/privacy/manual-runs/{{'dormant:' + stage}}/preview",
-                                                                            "auth_required": true,
-                                                                            "params": {
-                                                                                "method": "GET"
-                                                                            },
-                                                                            "onSuccess": {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "privacyRun.preview": "{{response.data}}",
-                                                                                    "privacyRun.loading": false
-                                                                                }
-                                                                            },
-                                                                            "onError": [
+                                                                            "comment": "휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.\n                           네 단계가 이 한 블록을 돌려 쓴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
                                                                                 {
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "global",
-                                                                                        "privacyRun.loading": false
+                                                                                        "privacyTargets": "{{({ path: 'dormant-targets/' + stage, currentPage: 1, hasMore: true, isLoadingMore: false })}}"
                                                                                     }
                                                                                 },
                                                                                 {
-                                                                                    "handler": "toast",
+                                                                                    "handler": "setState",
                                                                                     "params": {
-                                                                                        "type": "error",
-                                                                                        "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "{{$t('admin.settings.privacy.targets.title.' + stage)}}"
                                                                                     }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_dormant_stage_{{stage}}",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로\n                           넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로).",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'dormant:' + stage, label: privacyManualRuns?.data?.targets?.['dormant:' + stage]?.label ?? '', supportsSkip: !!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.supports_skip_waiting, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/{{'dormant:' + stage}}/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.manual_run.run"
                                                                 }
-                                                            ],
-                                                            "props": {
-                                                                "type": "button",
-                                                                "className": "btn btn-sm btn-outline",
-                                                                "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}"
-                                                            },
-                                                            "text": "$t:admin.settings.privacy.manual_run.run"
+                                                            ]
                                                         }
                                                     ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "id": "dormant_manual_run_status_{{stage}}",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run}}",
-                                            "props": {
-                                                "className": "text-hint mt-1"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}",
-                                                    "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400"
-                                                    },
-                                                    "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
                                                 },
                                                 {
+                                                    "id": "dormant_manual_run_status_{{stage}}",
                                                     "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}",
-                                                    "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run}}",
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "text-hint mt-1"
                                                     },
-                                                    "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}",
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }

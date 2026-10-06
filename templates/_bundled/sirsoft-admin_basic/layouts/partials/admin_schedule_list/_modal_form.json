@@ -459,7 +459,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack border-t border-gray-200 dark:border-gray-700"
+                        "className": "row-stack"
                     },
                     "children": [
                         {

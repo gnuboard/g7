@@ -1062,13 +1062,6 @@
                             ]
                         },
                         {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "border-t border-gray-100 dark:border-gray-700"
-                            }
-                        },
-                        {
                             "id": "claim_image_max_size_kb_field",
                             "type": "basic",
                             "name": "Div",

@@ -8,7 +8,7 @@
  *
  * @scenario screen=plugins, view=gallery, device=desktop_1440
  *
- * @effects default_is_gallery, toggle_persists_to_local_storage, preference_shared_across_screens, grid_columns_follow_view_mode
+ * @effects default_is_gallery, toggle_persists_to_local_storage, preference_shared_across_screens, grid_columns_follow_view_mode, hidden_toggle_next_to_search_on_desktop, view_toggle_box_fits_buttons_on_mobile
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';
 
@@ -236,6 +236,51 @@ test.describe('확장 목록 — 스위치 재동기와 숨김 항목 (#703)', (
     const back = page.waitForRequest((r) => /\/api\/admin\/modules\?/.test(r.url()));
     await page.getByRole('checkbox', { name: /숨김/ }).click();
     expect(new URL((await back).url()).searchParams.get('include_hidden')).toBe('0');
+    // 마지막 클릭이 부른 재조회와 인증 확인이 테스트 종료와 겹치면 가로채기 콜백이 닫힌 페이지에서 돈다.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
+  // 7.1.0 출시 전 점검 — 툴바가 justify-between 에 자식 셋이라 체크박스가 남는 폭 정중앙(1440px x=698)에 떴고,
+  // 모바일은 class 를 row-stack 으로 통째로 바꿔 보기 전환 상자 안에 8px 이 들어가 49px(버튼 40px)이었다.
+  // @scenario screen=plugins, device=desktop_1440
+  // @effects hidden_toggle_next_to_search_on_desktop, view_toggle_box_fits_buttons_on_mobile
+  test('P11 — 체크박스는 PC 에서 검색칸 바로 왼쪽, 모바일에서 보기 전환 바로 오른쪽에 붙는다', async ({ page, extensionReadToken }) => {
+    await page.route('**/api/admin/auth/user', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      json.data = { ...(json.data ?? {}), is_super: true };
+      await route.fulfill({ response, json });
+    });
+    const measure = () => page.evaluate(() => {
+      const box = (id: string) => document.getElementById(id)!.getBoundingClientRect();
+      const g = box('view_mode_toggle');
+      const l = box('include_hidden_toggle');
+      const s = box('search_bar');
+      const t = box('search_bar_wrapper');
+      const btn = box('view_mode_gallery');
+      return { bH: btn.height, gapLS: s.x - (l.x + l.width), gH: g.height, dyLG: Math.abs((l.y + l.height / 2) - (g.y + g.height / 2)), gapGL: l.x - (g.x + g.width), sBelow: s.y >= g.y + g.height, sRightGap: (t.x + t.width) - (s.x + s.width) };
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await gotoList(page, extensionReadToken, '/admin/plugins', 'plugin_card_grid');
+    await expect(page.locator('#include_hidden_toggle')).toBeVisible({ timeout: 30_000 });
+    const pc = await measure();
+    expect(Math.round(pc.gapLS)).toBe(16);
+    expect(Math.abs(pc.sRightGap)).toBeLessThan(1);
+
+    // portable class 는 폭만 바꾸면 갱신되지 않으므로 새로고침해서 잰다.
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.reload();
+    await page.waitForSelector('#plugin_card_grid .grid > *', { timeout: 60_000 });
+    await expect(page.locator('#include_hidden_toggle')).toBeVisible({ timeout: 30_000 });
+    const mobile = await measure();
+    // 상자 = 버튼 높이 + 위아래 테두리(배율에 따라 1px 미만~1px). 수정 전에는 row-stack 패딩 8px 이 더해졌다.
+    expect(mobile.gH - mobile.bH).toBeLessThanOrEqual(2.5);
+    expect(mobile.dyLG).toBeLessThanOrEqual(2);
+    expect(Math.round(mobile.gapGL)).toBe(16);
+    expect(mobile.sBelow).toBe(true);
+    expect(Math.abs(mobile.sRightGap)).toBeLessThan(1);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 
   // 언어팩도 같은 격자·같은 재동기 신호를 쓴다. 꺼진 팩을 켜는 요청을 가로채 409(같은 로케일 자리 충돌)를

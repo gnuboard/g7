@@ -48,8 +48,12 @@
                   <icon name="arrow-up-right-from-square" class="text-xs"/>
                 </a>
                 <span data-ref="claim_history_card_number_text_{{claim.claim_number}}" data-if="{{!claim.detail_url}}" class="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{{claim.claim_number ?? ''}}</span>
-                <badge data-type="composite" variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
-                <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
+                <!-- 배지 둘을 한 묶음으로 둔다 — 머리줄이 justify-between 이라 자식이 셋이면 환불 대기 배지가 붙을 때 상태 배지가 가운데로 떴다.
+                     ml-auto 는 좁은 폭에서 묶음이 다음 줄로 내려가도 오른쪽에 붙게 한다. -->
+                <div class="flex-center gap-1.5 ml-auto">
+                  <badge data-type="composite" variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
+                  <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
+                </div>
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
               <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>

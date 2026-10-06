@@ -387,7 +387,7 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "mb-6 row-stack"
+                        "className": "flex flex-col gap-3 mb-6"
                     }
                 }
             },

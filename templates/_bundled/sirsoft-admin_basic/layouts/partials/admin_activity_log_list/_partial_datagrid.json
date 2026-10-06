@@ -234,7 +234,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "row-stack"
+                                    "className": "stack-tight"
                                 },
                                 "children": [
                                     {

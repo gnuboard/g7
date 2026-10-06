@@ -828,7 +828,7 @@
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "row-stack"
+                                            "className": "stack-flush"
                                         },
                                         "children": [
                                             {

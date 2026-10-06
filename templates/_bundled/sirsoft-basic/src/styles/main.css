@@ -56,8 +56,9 @@
  * 이 템플릿은 `layouts/**` 를 `@source` 로 앵커하지 않으므로(위 safelist 주석 참조) **레이아웃에
  * 쓰는 임의값은 전부 여기 있어야 한다.** 빠지면 CSS 가 생성되지 않아 크기가 조용히 사라진다.
  * 2rem(32px) · 4rem(64px) · 10px 는 S18.5 축 C 가 `w-8`·`w-16`·`w-2.5` 를 픽셀 그대로 옮기며 합류했다.
+ * 9px 는 `99+` 뱃지(알림/장바구니) — 20px 원 안에 세 자리를 넣는 크기다.
  */
-@source inline("text-[2rem] text-[2.5rem] text-[4rem] text-[10px]");
+@source inline("text-[2rem] text-[2.5rem] text-[4rem] text-[10px] text-[9px]");
 
 /**
  * 기본 sans-serif 폰트

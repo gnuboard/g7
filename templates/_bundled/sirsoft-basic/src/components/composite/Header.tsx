@@ -367,7 +367,8 @@ const Header: React.FC<HeaderProps> = ({
             <Button onClick={() => navigate(`${shopBase}/cart`)} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
               <Icon name="shopping-cart" className="w-5 h-5" />
               {cartCount > 0 && (
-                <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs bg-blue-500 dark:bg-blue-600 text-white rounded-full">
+                // 세 자리(99+)일 때만 9px — 12px 은 20px 원을 넘친다
+                <Span className={`absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center ${cartCount > 99 ? 'text-[9px]' : 'text-xs'} bg-blue-500 dark:bg-blue-600 text-white rounded-full`}>
                   {cartCount > 99 ? '99+' : cartCount}
                 </Span>
               )}

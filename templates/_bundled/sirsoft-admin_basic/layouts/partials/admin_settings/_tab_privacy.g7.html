@@ -71,53 +71,56 @@
           </div>
           <toggle data-type="composite" name="privacy.withdrawn_retention_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div data-ref="withdrawn_target_list" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}" class="rounded-lg border border-gray-200 dark:border-gray-700">
-          <div data-ref="withdrawn_target_row" class="px-4 py-3">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex-wrap-center gap-2 min-w-0">
-                <span class="text-heading">$t:admin.settings.privacy.targets.rows.withdrawn</span>
-                <span data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}</span>
+        <!-- row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다 -->
+        <div data-ref="withdrawn_target_list_row" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}">
+          <div data-ref="withdrawn_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">
+            <div data-ref="withdrawn_target_row" class="px-4 py-3">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-wrap-center gap-2 min-w-0">
+                  <span class="text-heading">$t:admin.settings.privacy.targets.rows.withdrawn</span>
+                  <span data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}</span>
+                </div>
+                <div class="flex-wrap-center gap-2">
+                  <button data-ref="view_withdrawn_targets" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                    <on type="click">
+                      <!-- 탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고
+                           1쪽부터 다시 받은 뒤 연다. -->
+                      <sequence>
+                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets.title="$t:admin.settings.privacy.targets.title.withdrawn"/>
+                        <refetch-data-source dataSourceId="privacyTargets"/>
+                        <open-modal target="privacy_targets_modal"/>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.targets.view
+                  </button>
+                  <button data-ref="run_withdrawn" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}">
+                    <on type="click">
+                      <!-- 탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로
+                           생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다. -->
+                      <sequence>
+                        <set-state target="global" privacyRun="{{({ key: 'retention:user-withdrawn', label: privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                        <open-modal target="privacy_run_modal"/>
+                        <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/retention:user-withdrawn/preview" method="GET">
+                          <success>
+                            <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :privacyRun.loading="false"/>
+                            <toast type="error" message="{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.manual_run.run
+                  </button>
+                </div>
               </div>
-              <div class="flex-wrap-center gap-2">
-                <button data-ref="view_withdrawn_targets" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
-                  <on type="click">
-                    <!-- 탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고
-                         1쪽부터 다시 받은 뒤 연다. -->
-                    <sequence>
-                      <set-state target="global" privacyTargets="{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
-                      <set-state target="global" privacyTargets.title="$t:admin.settings.privacy.targets.title.withdrawn"/>
-                      <refetch-data-source dataSourceId="privacyTargets"/>
-                      <open-modal target="privacy_targets_modal"/>
-                    </sequence>
-                  </on>
-                  $t:admin.settings.privacy.targets.view
-                </button>
-                <button data-ref="run_withdrawn" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}">
-                  <on type="click">
-                    <!-- 탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로
-                         생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다. -->
-                    <sequence>
-                      <set-state target="global" privacyRun="{{({ key: 'retention:user-withdrawn', label: privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
-                      <open-modal target="privacy_run_modal"/>
-                      <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/retention:user-withdrawn/preview" method="GET">
-                        <success>
-                          <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
-                        </success>
-                        <fail>
-                          <set-state target="global" :privacyRun.loading="false"/>
-                          <toast type="error" message="{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"/>
-                        </fail>
-                      </api-call>
-                    </sequence>
-                  </on>
-                  $t:admin.settings.privacy.manual_run.run
-                </button>
+              <div data-ref="withdrawn_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run}}" class="text-hint mt-1">
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}</span>
               </div>
-            </div>
-            <div data-ref="withdrawn_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run}}" class="text-hint mt-1">
-              <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
-              <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}</span>
-              <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -143,54 +146,57 @@
           <toggle data-type="composite" name="privacy.dormant_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <!-- 휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.
-             「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다). -->
-        <div data-ref="dormant_target_list" data-if="{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}" class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-          <div data-each="stage in {{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}" data-ref="dormant_target_row_{{stage}}" class="px-4 py-3">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex-wrap-center gap-2 min-w-0">
-                <span class="text-heading">{{$t('admin.settings.privacy.targets.rows.' + stage)}}</span>
-                <span data-if="{{privacyPreview?.data?.dormant}}" class="badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}</span>
+             「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다).
+             row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다. -->
+        <div data-ref="dormant_target_list_row" data-if="{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}">
+          <div data-ref="dormant_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+            <div data-each="stage in {{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}" data-ref="dormant_target_row_{{stage}}" class="px-4 py-3">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-wrap-center gap-2 min-w-0">
+                  <span class="text-heading">{{$t('admin.settings.privacy.targets.rows.' + stage)}}</span>
+                  <span data-if="{{privacyPreview?.data?.dormant}}" class="badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}</span>
+                </div>
+                <div class="flex-wrap-center gap-2">
+                  <button data-ref="view_{{stage}}_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                    <on type="click">
+                      <!-- 휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.
+                           네 단계가 이 한 블록을 돌려 쓴다. -->
+                      <sequence>
+                        <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/' + stage, currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets.title="{{$t('admin.settings.privacy.targets.title.' + stage)}}"/>
+                        <refetch-data-source dataSourceId="privacyTargets"/>
+                        <open-modal target="privacy_targets_modal"/>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.targets.view
+                  </button>
+                  <button data-ref="run_dormant_stage_{{stage}}" data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}">
+                    <on type="click">
+                      <!-- 휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로
+                           넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로). -->
+                      <sequence>
+                        <set-state target="global" privacyRun="{{({ key: 'dormant:' + stage, label: privacyManualRuns?.data?.targets?.['dormant:' + stage]?.label ?? '', supportsSkip: !!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.supports_skip_waiting, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                        <open-modal target="privacy_run_modal"/>
+                        <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/{{'dormant:' + stage}}/preview" method="GET">
+                          <success>
+                            <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :privacyRun.loading="false"/>
+                            <toast type="error" message="{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.manual_run.run
+                  </button>
+                </div>
               </div>
-              <div class="flex-wrap-center gap-2">
-                <button data-ref="view_{{stage}}_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
-                  <on type="click">
-                    <!-- 휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.
-                         네 단계가 이 한 블록을 돌려 쓴다. -->
-                    <sequence>
-                      <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/' + stage, currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
-                      <set-state target="global" privacyTargets.title="{{$t('admin.settings.privacy.targets.title.' + stage)}}"/>
-                      <refetch-data-source dataSourceId="privacyTargets"/>
-                      <open-modal target="privacy_targets_modal"/>
-                    </sequence>
-                  </on>
-                  $t:admin.settings.privacy.targets.view
-                </button>
-                <button data-ref="run_dormant_stage_{{stage}}" data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}">
-                  <on type="click">
-                    <!-- 휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로
-                         넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로). -->
-                    <sequence>
-                      <set-state target="global" privacyRun="{{({ key: 'dormant:' + stage, label: privacyManualRuns?.data?.targets?.['dormant:' + stage]?.label ?? '', supportsSkip: !!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.supports_skip_waiting, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
-                      <open-modal target="privacy_run_modal"/>
-                      <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/{{'dormant:' + stage}}/preview" method="GET">
-                        <success>
-                          <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
-                        </success>
-                        <fail>
-                          <set-state target="global" :privacyRun.loading="false"/>
-                          <toast type="error" message="{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"/>
-                        </fail>
-                      </api-call>
-                    </sequence>
-                  </on>
-                  $t:admin.settings.privacy.manual_run.run
-                </button>
+              <div data-ref="dormant_manual_run_status_{{stage}}" data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run}}" class="text-hint mt-1">
+                <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}</span>
               </div>
-            </div>
-            <div data-ref="dormant_manual_run_status_{{stage}}" data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run}}" class="text-hint mt-1">
-              <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
-              <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}</span>
-              <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}</span>
             </div>
           </div>
         </div>

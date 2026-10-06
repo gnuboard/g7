@@ -709,11 +709,18 @@
                                             }
                                         },
                                         {
+                                            "comment": "세 자리(99+)일 때만 9px — 12px 은 20px 원을 넘친다(7.1.0 출시 전 점검 실측)",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
-                                            "props": {
-                                                "className": "absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                                            "classMap": {
+                                                "base": "absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white font-bold rounded-full flex items-center justify-center",
+                                                "key": "{{_global.cartCount > 99 ? 'triple' : 'short'}}",
+                                                "variants": {
+                                                    "triple": "text-[9px]",
+                                                    "short": "text-xs"
+                                                },
+                                                "default": "text-xs"
                                             },
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
                                         }

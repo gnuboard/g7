@@ -216,12 +216,12 @@
                     ]
                 },
                 {
-                    "comment": "쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환.",
+                    "comment": "쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환. 반복 상자 묶음이라 row-stack(입력 행 전용) 대신 stack-tight 로 상자 사이 8px 를 둔다(audit row-stack-boxed-child).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories}}",
                     "props": {
-                        "className": "row-stack"
+                        "className": "stack-tight"
                     },
                     "children": [
                         {
@@ -312,11 +312,11 @@
                     ]
                 },
                 {
-                    "comment": "차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환.",
+                    "comment": "차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환. 반복 상자 묶음이라 stack-tight.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "stack-tight"
                     },
                     "children": [
                         {

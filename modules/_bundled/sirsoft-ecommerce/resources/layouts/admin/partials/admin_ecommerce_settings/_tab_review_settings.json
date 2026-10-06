@@ -100,13 +100,6 @@
                             ]
                         },
                         {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "border-t border-gray-100 dark:border-gray-700"
-                            }
-                        },
-                        {
                             "comment": "최대 이미지 수",
                             "type": "basic",
                             "name": "Div",
@@ -164,13 +157,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_hint"
                                 }
                             ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "border-t border-gray-100 dark:border-gray-700"
-                            }
                         },
                         {
                             "comment": "이미지 최대 용량",

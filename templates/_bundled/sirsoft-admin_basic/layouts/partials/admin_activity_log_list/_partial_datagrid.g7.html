@@ -29,7 +29,7 @@
         </div>
         <div data-if="{{row.bulk_changes &amp;&amp; row.bulk_changes.length > 0}}">
           <span class="form-label">$t:admin.activity_log.detail.bulk_changes_title</span>
-          <div class="row-stack">
+          <div class="stack-tight">
             <div data-each="group in row.bulk_changes" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <div class="flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 <span class="flex-1">ID: {{group.model_id}}</span>
