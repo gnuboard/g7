@@ -404,33 +404,29 @@ function startLinkClaimPolling(challenge: ChallengeResponseData, G7Core: any): (
     if (!secret) return;
     if (`${id}:${secret}` === deadKey) return;
 
+    const api = G7Core?.api;
+    if (typeof api?.post !== 'function') return;
     const url = `/api/identity/challenges/${encodeURIComponent(id)}/claim`;
     inFlight = true;
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...getLocaleHeader(),
-          ...getAuthHeader(url),
-        },
-        body: JSON.stringify({ claim_secret: secret }),
-      });
-      if (res.status === 202 || stopped) return;
-      const json = await res.json().catch(() => null);
+      // 코어 `G7Core.api` 로 묻는다 — Bearer·XSRF·화면 언어는 코어가 같은 출처 요청에만 붙인다(템플릿은 로그인 토큰을 읽지 않는다).
+      const json = await api.post(url, { claim_secret: secret });
+      if (stopped) return;
       const token = json?.data?.verification_token;
-      if (res.ok && typeof token === 'string' && token !== '') {
+      if (typeof token === 'string' && token !== '') {
         stopped = true;
         clearInterval(handle);
         await G7Core.dispatch({ handler: 'resolveIdentityChallenge', params: { result: 'verified', token } });
         await G7Core.dispatch({ handler: 'closeModal', target: 'identity-challenge-modal' });
         return;
       }
+      // 아직 링크를 열지 않았으면(202 pending) 다음 주기에 다시 묻는다.
+      if (json?.data?.status === 'pending') return;
       deadKey = `${id}:${secret}`;
-    } catch {
-      /* 일시 오류 — 다음 주기에 다시 묻는다 */
+    } catch (err: any) {
+      // 서버가 답한 실패(거절·이미 사용·만료)는 같은 건·같은 비밀값으로 다시 묻지 않는다.
+      // 응답이 없는 일시 오류(네트워크)는 다음 주기에 다시 묻는다.
+      if (err?.response) deadKey = `${id}:${secret}`;
     } finally {
       inFlight = false;
     }

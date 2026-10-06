@@ -42,6 +42,9 @@ test('회원이 새로고침해도 장바구니 키를 다시 발급하지 않�
 
   await page.goto('/');
   await waitForMemberBoot(page);
+  // 첫 방문은 저장된 키가 없어 initCartKey 가 한 번 발급한다 — 그 발급이 끝난 뒤를 기준점으로 삼는다.
+  // 부하가 크면(병렬 워커) 부팅 뒤 2초 안에 끝나지 않아, 늦게 끝난 첫 발급을 새로고침 발급으로 세게 된다.
+  await page.waitForFunction(() => !!localStorage.getItem('g7_cart_key'), null, { timeout: 30_000 });
   const firstKey = await cartKey();
   const issuesAfterBoot = keyIssues;
 

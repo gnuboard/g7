@@ -6,6 +6,7 @@
  * challenge 시작 응답의 일회용 비밀값으로 서버에 결과를 물어, 토큰을 받으면 원래 요청을 이어 간다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ApiClient from '@core/api/ApiClient';
 import { sirsoftBasicIdentityLauncher, rememberIdentityClaimHandler } from '../identityLauncher';
 
 let requests: Array<{ url: string; body: Record<string, unknown> }> = [];
@@ -13,21 +14,44 @@ let claimAnswers: Array<{ status: number; json: unknown }> = [];
 let dispatched: Array<Record<string, any>> = [];
 let resolveDeferred: (v: unknown) => void = () => {};
 
-const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
-  requests.push({ url, body: JSON.parse(String(init?.body ?? '{}')) });
-  if (url.endsWith('/claim')) {
-    const next = claimAnswers.shift() ?? { status: 202, json: { success: true, data: { status: 'pending' } } };
-    return { ok: next.status < 300, status: next.status, json: async () => next.json } as any;
-  }
-  return {
-    ok: true,
-    status: 201,
-    json: async () => ({
-      success: true,
-      data: { id: 'ch_link', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'link', claim_secret: 'S'.repeat(48) },
-    }),
-  } as any;
+/** 다음 challenge 시작 응답을 바꿀 때 쓴다(한 번 쓰고 비운다). 없으면 링크 방식 응답. */
+let nextStart: unknown = null;
+
+/** 템플릿이 fetch 를 직접 부르면 안 된다 — 요청은 코어 `G7Core.api` 로만 나간다(로그인 토큰을 템플릿이 읽지 않는다). */
+const directFetch = vi.fn(async () => {
+  throw new Error('direct fetch');
 });
+
+/**
+ * 실제 코어 ApiClient 를 만들고 전송 직전 요청을 가로챈다 (네트워크 없음).
+ *
+ * @return 코어 ApiClient
+ */
+function createCapturingCoreApi(): ApiClient {
+  const client = new ApiClient();
+  client.getInstance().defaults.adapter = async (config: any) => {
+    requests.push({ url: String(config.url), body: JSON.parse(String(config.data ?? '{}')) });
+    let status = 201;
+    let data: unknown;
+    if (String(config.url).endsWith('/claim')) {
+      const next = claimAnswers.shift() ?? { status: 202, json: { success: true, data: { status: 'pending' } } };
+      status = next.status;
+      data = next.json;
+    } else {
+      data = nextStart ?? {
+        success: true,
+        data: { id: 'ch_link', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'link', claim_secret: 'S'.repeat(48) },
+      };
+      nextStart = null;
+    }
+    const response = { data, status, statusText: String(status), headers: {}, config, request: {} };
+    if (status >= 400) {
+      throw Object.assign(new Error(`Request failed with status code ${status}`), { config, response });
+    }
+    return response;
+  };
+  return client;
+}
 
 const payload = {
   policy_key: 'core.auth.password_reset',
@@ -44,14 +68,16 @@ beforeEach(() => {
   requests = [];
   claimAnswers = [];
   dispatched = [];
-  vi.stubGlobal('fetch', mockFetch);
+  nextStart = null;
+  directFetch.mockClear();
+  vi.stubGlobal('fetch', directFetch);
   (window as any).G7Core = {
     dispatch: vi.fn(async (action: Record<string, any>) => {
       dispatched.push(action);
       if (action.handler === 'resolveIdentityChallenge') resolveDeferred({ status: action.params?.result, token: action.params?.token });
     }),
     state: { get: vi.fn(() => ({})), getGlobal: vi.fn(() => ({})), getLocal: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
-    api: { getToken: vi.fn(() => null) },
+    api: createCapturingCoreApi(),
     identity: {
       createDeferred: vi.fn(() => new Promise((r) => { resolveDeferred = r; })),
       redirectExternally: vi.fn(() => Promise.resolve({ status: 'cancelled' })),
@@ -86,6 +112,7 @@ describe('sirsoftBasicIdentityLauncher — 링크 방식 완료 받아 가기', 
     expect(claims[0].body.claim_secret).toBe('S'.repeat(48));
     expect(result).toEqual({ status: 'verified', token: 'TOKEN-1' });
     expect(dispatched.some((a) => a.handler === 'closeModal')).toBe(true);
+    expect(directFetch).not.toHaveBeenCalled();
     // 비밀값은 전역 상태에 쓰지 않는다(개발자 도구로 누구나 볼 수 있다).
     const stateWrites = JSON.stringify(((window as any).G7Core.state.set as any).mock?.calls ?? []);
     expect(stateWrites).not.toContain('S'.repeat(48));
@@ -122,10 +149,7 @@ describe('sirsoftBasicIdentityLauncher — 링크 방식 완료 받아 가기', 
    */
   it('인증번호 방식(비밀값 없음)은 결과를 묻지 않는다', async () => {
     // @scenario surface=launcher_link_claim
-    mockFetch.mockImplementationOnce(async (url: string, init?: RequestInit) => {
-      requests.push({ url, body: JSON.parse(String(init?.body ?? '{}')) });
-      return { ok: true, status: 201, json: async () => ({ success: true, data: { id: 'ch_code', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' } }) } as any;
-    });
+    nextStart = { success: true, data: { id: 'ch_code', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' } };
 
     const pending = sirsoftBasicIdentityLauncher({ ...payload, purpose: 'sensitive_action', render_hint: 'text_code' } as any);
     await vi.advanceTimersByTimeAsync(10000);

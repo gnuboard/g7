@@ -106,7 +106,7 @@ TS);
      * @return void 반환값 없음
      */
     #[Test]
-    public function 화살표_함수_initPlugin_도_재등록_진입점으로_인정한다(): void
+    public function 화살표_함수_init_plugin_도_재등록_진입점으로_인정한다(): void
     {
         $entry = $this->entryPointsFor('resources/js/index.ts', <<<'TS'
 const initPlugin = (): void => {
@@ -131,7 +131,7 @@ TS);
      * @return void 반환값 없음
      */
     #[Test]
-    public function 템플릿의_G7TemplateHandlers_전역은_재등록_경로로_인정한다(): void
+    public function 템플릿의_g7_template_handlers_전역은_재등록_경로로_인정한다(): void
     {
         $entry = $this->entryPointsFor('src/index.ts', <<<'TS'
 const handlerMap = { a: () => {} };

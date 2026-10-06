@@ -95,6 +95,7 @@
                                             "text": "{{_local._kgOcReceipt?.receipt_label || $t('sirsoft-pay_kginicis.user.receipt_label')}}"
                                         },
                                         {
+                                            "comment": "보기 — 마운트 때 받아 둔 영수증 조회 응답으로 창을 연다. 클릭과 같은 틱에 열어야 팝업 차단에 걸리지 않아 다시 조회하지 않는다.",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [

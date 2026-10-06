@@ -6,21 +6,38 @@
  * 늘 목적 공통 문구가 나갔다. 서버는 받은 정책 키를 그 정책이 켜져 있고 목적이 같을 때만 쓴다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ApiClient from '@core/api/ApiClient';
 import { sirsoftAdminBasicIdentityLauncher } from '../identityLauncher';
 
 let bodies: Array<Record<string, unknown>> = [];
 
-const mockFetch = vi.fn(async (_url: string, init?: RequestInit) => {
-  bodies.push(JSON.parse(String(init?.body ?? '{}')));
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({
+/** 템플릿이 fetch 를 직접 부르면 안 된다 — 요청은 코어 `G7Core.api` 로만 나간다(로그인 토큰을 템플릿이 읽지 않는다). */
+const directFetch = vi.fn(async () => {
+  throw new Error('direct fetch');
+});
+
+/**
+ * 실제 코어 ApiClient 를 만들고 전송 직전 요청을 가로챈다 (네트워크 없음).
+ *
+ * @return 코어 ApiClient
+ */
+function createCapturingCoreApi(): ApiClient {
+  const client = new ApiClient();
+  client.getInstance().defaults.adapter = async (config: any) => {
+    bodies.push(JSON.parse(String(config.data ?? '{}')));
+    const status = 200;
+    const data = {
       success: true,
       data: { id: 'ch_1', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' },
-    }),
-  } as any;
-});
+    };
+    const response = { data, status, statusText: String(status), headers: {}, config, request: {} };
+    if (status >= 400) {
+      throw Object.assign(new Error(`Request failed with status code ${status}`), { config, response });
+    }
+    return response;
+  };
+  return client;
+}
 
 const payload = (policy_key?: string) => ({
   policy_key,
@@ -33,11 +50,12 @@ const payload = (policy_key?: string) => ({
 
 beforeEach(() => {
   bodies = [];
-  vi.stubGlobal('fetch', mockFetch);
+  directFetch.mockClear();
+  vi.stubGlobal('fetch', directFetch);
   (window as any).G7Core = {
     dispatch: vi.fn(async () => undefined),
     state: { get: vi.fn(() => ({})), getGlobal: vi.fn(() => ({ currentUser: { email: 'member@example.test' } })), getLocal: vi.fn(() => ({})), set: vi.fn() },
-    api: { getToken: vi.fn(() => 'MEMBER-TOKEN') },
+    api: createCapturingCoreApi(),
     identity: {
       createDeferred: vi.fn(() => Promise.resolve({ status: 'cancelled' })),
       redirectExternally: vi.fn(() => Promise.resolve({ status: 'cancelled' })),

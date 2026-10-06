@@ -147,7 +147,7 @@ describe('sirsoftAdminBasicIdentityLauncher — challenge 요청 로케일 헤�
 describe('sirsoftAdminBasicIdentityLauncher — challenge 시작 요청', () => {
   // @scenario surface=identity_launcher_challenge
   // @effects identity_challenge_via_core_api
-  it('G7Core.api 로 /api/identity/challenges 에 purpose·provider_id·target 을 보낸다', async () => {
+  it('G7Core.api 로 /api/identity/challenges 에 policy_key·purpose·provider_id·target 을 보낸다', async () => {
     (window as any).G7Core = makeG7Core();
 
     await sirsoftAdminBasicIdentityLauncher({
@@ -157,6 +157,7 @@ describe('sirsoftAdminBasicIdentityLauncher — challenge 시작 요청', () => 
 
     expect(sent[0].url).toBe('/api/identity/challenges');
     expect(JSON.parse(String(sent[0].data))).toEqual({
+      policy_key: 'core.user.change_password',
       purpose: 'sensitive_action',
       provider_id: 'g7:core.mail',
       target: { email: 'admin@example.com' },

@@ -23,6 +23,7 @@
         <!-- 영수증 — 결제가 끝났으면 결제사 영수증, 일본 결제(CBT)는 결제확인서(편의점 입금 대기면 입금정보). 클릭한 틱에서 창을 열어야 팝업 차단에 걸리지 않으므로 받아 둔 응답을 그대로 넘긴다 -->
         <div data-ref="kginicis_oc_receipt_row" data-if="{{(orderData?.data?.payment?.payment_status === 'paid' &amp;&amp; !!_local._kgOcReceipt?.receipt_url) || (_local._kgOcReceipt?.receipt_type === 'cbt_confirmation' &amp;&amp; (_local._kgOcReceipt?.receipt_fields ?? []).length > 0)}}" class="flex justify-between items-center text-sm">
           <span class="text-gray-600 dark:text-gray-400">{{_local._kgOcReceipt?.receipt_label || $t('sirsoft-pay_kginicis.user.receipt_label')}}</span>
+          <!-- 보기 — 마운트 때 받아 둔 영수증 조회 응답으로 창을 연다. 클릭과 같은 틱에 열어야 팝업 차단에 걸리지 않아 다시 조회하지 않는다. -->
           <button type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
             <on type="click">
               <action handler="sirsoft-pay_kginicis.openReceipt" receipt="{{_local._kgOcReceipt}}"/>

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -228,7 +229,7 @@ class KginicisHostTrustTest extends PluginTestCase
             $this->assertStringStartsWith($site.'/api/plugins/sirsoft-pay_kginicis/payment/', $url, $key);
 
             $route = app('router')->getRoutes()->match(
-                \Illuminate\Http\Request::create(substr($url, strlen($site)), 'POST')
+                Request::create(substr($url, strlen($site)), 'POST')
             );
             $this->assertContains('POST', $route->methods(), $key);
         }

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Ckeditor5\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -26,7 +27,7 @@ class ImageUploadRequest extends FormRequest
     /**
      * 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -57,11 +58,11 @@ class ImageUploadRequest extends FormRequest
         $maxSizeMb = (int) plugin_setting('sirsoft-ckeditor5', 'imageMaxSizeMb', 2);
 
         return [
-            'upload.required'  => __('sirsoft-ckeditor5::messages.upload.required'),
-            'upload.file'      => __('sirsoft-ckeditor5::messages.upload.invalid_file'),
-            'upload.image'     => __('sirsoft-ckeditor5::messages.upload.not_image'),
-            'upload.mimes'     => __('sirsoft-ckeditor5::messages.upload.invalid_mime'),
-            'upload.max'       => __('sirsoft-ckeditor5::messages.upload.too_large', ['max' => $maxSizeMb]),
+            'upload.required' => __('sirsoft-ckeditor5::messages.upload.required'),
+            'upload.file' => __('sirsoft-ckeditor5::messages.upload.invalid_file'),
+            'upload.image' => __('sirsoft-ckeditor5::messages.upload.not_image'),
+            'upload.mimes' => __('sirsoft-ckeditor5::messages.upload.invalid_mime'),
+            'upload.max' => __('sirsoft-ckeditor5::messages.upload.too_large', ['max' => $maxSizeMb]),
         ];
     }
 

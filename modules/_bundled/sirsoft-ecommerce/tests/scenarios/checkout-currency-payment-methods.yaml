@@ -28,4 +28,3 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Checkout/PaymentMethodsForCurrencyTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-plugin-payment-method.spec.ts
-

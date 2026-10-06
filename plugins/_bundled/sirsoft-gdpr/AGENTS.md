@@ -215,6 +215,8 @@ cd plugins/_bundled/sirsoft-gdpr && npm run test:e2e -- specs/<대상>.spec.ts
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.
 <!-- @generated:test-commands END -->
 
+E2E 의 게스트→로그인 시나리오는 `php artisan playwright:seed-gdpr-guest-login --json --suffix=<꼬리>`(CLI + `G7_PLAYWRIGHT_BYPASS=1`)로 게스트 세션과 회원을 시드합니다. 시드 주체는 지우고 다시 만드는 고정값이라, 이 시드를 쓰는 spec 이 병렬 워커에서 동시에 돌면 서로의 데이터를 지웁니다 — fixture(`tests/Playwright/fixtures/gdpr-guest-login-seed.ts`)는 spec 파일마다 다른 `--suffix` 를 넘깁니다. 이 시드를 쓰는 새 spec 도 그 fixture 를 거칩니다.
+
 ## 8. 문서 목차
 
 <!-- @generated:docs-index START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
