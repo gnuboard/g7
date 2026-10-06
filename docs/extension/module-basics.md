@@ -131,6 +131,14 @@
 - artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan module:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
 - 사용 사례: 학습용 샘플 모듈(예: `gnuboard7-hello_module`), 내부 전용 통합 모듈
 
+### state_contracts · integrations 필드 (선택)
+
+`module.json` 의 `state_contracts` 는 다른 확장이 읽으라고 내놓는 전역 상태(`_global.{이름}`)의 이름·모양·쓰기 허용 주체이고,
+`integrations` 는 「있으면 연동되고 없어도 동작하는」 확장 목록입니다(`dependencies` 와 달리 설치를 막지 않음). 각각
+`getStateContracts()`·`getIntegrations()` 로 자동 파싱됩니다. 형식과 규칙은
+[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts)과
+[선택 연동](plugin-development.md#2-의존성-dependency)을 따릅니다.
+
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
 | 메서드 | 반환 타입 | 설명 |

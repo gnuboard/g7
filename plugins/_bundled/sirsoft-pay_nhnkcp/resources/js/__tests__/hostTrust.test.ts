@@ -19,7 +19,7 @@ const PG_PAYMENT = {
     order_number: 'ORD-HOST-001',
     order_name: 'Host Trust Order',
     amount: 10000,
-    pay_method: 'card',
+    payment_method: 'card',
 };
 
 let apiGet: ReturnType<typeof vi.fn>;

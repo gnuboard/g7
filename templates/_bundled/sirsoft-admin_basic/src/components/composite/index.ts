@@ -167,6 +167,9 @@ export type { ExtensionBadgeProps, ExtensionType } from './ExtensionBadge';
 export { Badge } from './Badge';
 export type { BadgeProps } from './Badge';
 
+export { BrandMark } from './BrandMark';
+export type { BrandMarkProps, BrandMarkData } from './BrandMark';
+
 // 민섭: 이커머스 레이아웃 작업 도중 추가 {
 export { SearchableDropdown } from './SearchableDropdown';
 export type { SearchableDropdownProps, SearchableDropdownOption } from './SearchableDropdown';

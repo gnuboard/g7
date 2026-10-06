@@ -81,6 +81,10 @@ class Module extends AbstractModule
                 'description' => ['ko' => '관리자 주문 목록 결제수단 표시 라벨', 'en' => 'Admin order list payment method display label'],
                 'parameters' => ['label' => 'string|null - 앞선 구독자가 채운 표시 라벨', 'payment' => 'OrderPayment - 주문 결제 레코드'],
                 'return' => 'string|null'],
+            ['name' => 'sirsoft-ecommerce.checkout.filter_payment_methods_for_currency', 'type' => 'filter',
+                'description' => ['ko' => '결제 통화에서 고를 수 있는 결제수단 (뺄 수만 있음)', 'en' => 'Payment methods selectable for a payment currency (remove only)'],
+                'parameters' => ['methodIds' => 'array - 후보 결제수단 id', 'currency' => 'string - 결제 통화 (ISO 4217)'],
+                'return' => 'array'],
         ];
     }
 

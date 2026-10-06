@@ -74,6 +74,9 @@
 `uploadTemplateImage` 는 **카카오 규격 검증**이 붙는 자리입니다 — jpg/png · 500KB 이하 ·
 가로 500px 이상 · 가로:세로 2:1. 규격 위반은 업로드 단계에서 사유와 함께 거부해야 합니다.
 통과시키면 검수 신청 후 카카오가 반려하는데, 그때는 이미 며칠이 지나 있습니다.
+업로드는 multipart 지만 코어 API 클라이언트(`G7Core.api.post(url, formData)`)로 보냅니다 — Bearer 부착,
+401 처리(토큰 갱신·재로그인 유도), 운영자 로케일(`Accept-Language`)을 코어가 맡으므로 핸들러가 로그인
+토큰을 읽어 헤더를 만들지 않습니다. 4xx·5xx 는 예외로 오므로 응답 본문의 사유를 꺼내 배너에 싣습니다.
 
 핸들러 TS 를 고치면 빌드가 필요합니다 — `php artisan plugin:build` 후
 `plugin:update --force`. 프론트엔드 변경은 Playwright spec 을 함께 갱신·실행합니다.

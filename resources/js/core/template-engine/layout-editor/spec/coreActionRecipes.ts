@@ -330,6 +330,12 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     ],
     build: { handler: 'emitEvent', params: { event: '{{event}}', data: '{{data}}' } },
   },
+  // C21a 방문자 동의 상태 다시 읽기 (engine-v1.78.0, #639) — 동의 저장 성공 뒤에 둔다
+  refreshConsent: {
+    label: `$t:${L}.refresh_consent.label`,
+    params: [],
+    build: { handler: 'refreshConsent' },
+  },
   // C22 서버에 보내고 결과 처리 — onSuccess/onError 는 친화 중첩 액션 빌더(action-list)로 편집.
   // 응답 후속 동작(결제 진입·상태 저장·이동 등)을 코드 없이 추가/순서/속성 편집한다.
   apiCall: {

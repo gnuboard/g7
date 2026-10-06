@@ -472,6 +472,34 @@
                             ]
                         },
                         {
+                            "comment": "간편결제 서비스명 — 이커머스 주문 상세의 결제수단 칸은 기본 결제수단(신용카드)만 안다. 이 결제의 원 수단(카카오페이 등)은 거래 조회(nicepay_status)가 주는 원 수단 코드를 번역 키로 풀어 여기서 밝힌다. 종전에는 주입 스크립트가 이커머스 결제수단 칸의 글자를 직접 고쳐 썼다(#639).",
+                            "id": "nicepay_easy_pay_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(nicepay_status.data?._embedded_pg_provider)}}",
+                            "props": {
+                                "className": "flex items-center gap-2 mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(nicepay_status.data?._embedded_pg_provider ?? '').toUpperCase())}}"
+                                }
+                            ]
+                        },
+                        {
                             "id": "nicepay_payments_list_{{pIdx}}",
                             "type": "basic",
                             "name": "Div",

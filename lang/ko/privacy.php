@@ -43,4 +43,8 @@ return [
             'expire' => '비밀번호 만료 처리',
         ],
     ],
+    // 동의 스냅샷 공개 조회(GET /api/consent) 응답 문구.
+    'consent' => [
+        'fetch_success' => '방문자 동의 상태를 확인했습니다.',
+    ],
 ];

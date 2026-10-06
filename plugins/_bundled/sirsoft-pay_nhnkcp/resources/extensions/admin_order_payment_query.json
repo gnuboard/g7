@@ -251,6 +251,26 @@
                                     "text": "{{kcp_status.data?.card_name ?? kcp_status.data?.bank_name ?? kcp_status.data?.use_pay_method ?? '-'}}"
                                 },
                                 {
+                                    "comment": "간편결제 원 수단(PAYCO·네이버페이·카카오페이·애플페이) — 이커머스 결제수단 칸은 PG 를 모르므로 이 패널이 보여 준다. 남의 화면 글자를 고치지 않는다",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!kcp_status.data?._embedded_pg_provider_label}}",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.admin.result_easy_pay"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!kcp_status.data?._embedded_pg_provider_label}}",
+                                    "props": {
+                                        "data-testid": "nhnkcp-admin-easy-pay-label",
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{kcp_status.data?._embedded_pg_provider_label}}"
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {

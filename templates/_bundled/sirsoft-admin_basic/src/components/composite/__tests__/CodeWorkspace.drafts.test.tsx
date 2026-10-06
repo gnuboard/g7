@@ -30,18 +30,28 @@ vi.mock('@monaco-editor/react', () => ({
 
 const NAMESPACE = 'g7le.codeEditor.test';
 const SERVER_A = '<layout name="a"/>';
+/** 초안은 관리자 회원마다 갈린다(#639 ⑩) — 저장 키에 로그인 회원 uuid 가 들어간다 */
+const MEMBER_UUID = 'admin-test';
+const DRAFTS_KEY = `${NAMESPACE}.${MEMBER_UUID}.drafts`;
 
 beforeEach(() => {
   window.localStorage.clear();
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  (window as any).G7Core = {
+    ...((window as any).G7Core ?? {}),
+    AuthManager: { getInstance: () => ({ getUser: () => ({ uuid: MEMBER_UUID }) }) },
+  };
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  if ((window as any).G7Core) {
+    delete (window as any).G7Core.AuthManager;
+  }
 });
 
 function storedDrafts(): Record<string, { value: string; baseRevision: number }> {
-  return JSON.parse(window.localStorage.getItem(`${NAMESPACE}.drafts`) ?? '{}');
+  return JSON.parse(window.localStorage.getItem(DRAFTS_KEY) ?? '{}');
 }
 
 describe('CodeWorkspace — 초안 저장', () => {
@@ -94,7 +104,7 @@ describe('CodeWorkspace — 초안 복원', () => {
   /** @effects code_workspace_offers_drafts_instead_of_restoring_them */
   it('진입 시 초안이 있으면 배너로 알리되 편집기를 건드리지 않는다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:a': { value: 'yesterday', savedAt: Date.now() - 60000, baseRevision: 3 } }),
     );
 
@@ -110,7 +120,7 @@ describe('CodeWorkspace — 초안 복원', () => {
   /** @effects code_workspace_restores_drafts_on_demand */
   it('[복원] 을 누르면 그때 편집기에 들어간다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:a': { value: 'yesterday', savedAt: Date.now() - 60000, baseRevision: 3 } }),
     );
 
@@ -127,7 +137,7 @@ describe('CodeWorkspace — 초안 복원', () => {
   /** @effects code_workspace_discards_drafts_on_demand */
   it('[버리기] 를 누르면 저장소에서 지운다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:a': { value: 'yesterday', savedAt: Date.now() - 60000, baseRevision: 3 } }),
     );
 
@@ -404,7 +414,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
     // **마운트 뒤에** 다른 탭이 적는다 — 이 문서의 메모리 맵에는 없는 키다. 진입 시점에
     // 이미 있던 초안으로 재면 통째 덮어쓰기여도 통과해 버려 변별력이 없다.
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:other': { value: 'from-other-tab', savedAt: Date.now(), baseRevision: 1 } }),
     );
 
@@ -465,7 +475,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
    */
   it('진입 때 읽어 둔 옛 사본이 그 뒤 다른 탭이 적은 새 초안을 덮지 않는다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:other': { value: 'old-copy', savedAt: Date.now(), baseRevision: 1 } }),
     );
 
@@ -475,7 +485,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
 
     // 마운트 뒤 다른 탭이 같은 키에 더 새 초안을 적는다.
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:other': { value: 'newer-from-other-tab', savedAt: Date.now() + 60_000, baseRevision: 1 } }),
     );
 
@@ -516,7 +526,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
 
     // 그 뒤 다른 탭이 같은 파일을 고쳐 새 초안을 적는다.
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:a': { value: 'other-tab-after-save', savedAt: Date.now() + 60_000, baseRevision: 4 } }),
     );
 
@@ -546,7 +556,7 @@ describe('CodeWorkspace — 초안 수명', () => {
     const EIGHT_DAYS = 8 * 24 * 60 * 60 * 1000;
 
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({
         'layout:stale': { value: 'old', savedAt: Date.now() - EIGHT_DAYS, baseRevision: 1 },
         'layout:fresh': { value: 'new', savedAt: Date.now(), baseRevision: 1 },
@@ -567,7 +577,7 @@ describe('CodeWorkspace — 초안 수명', () => {
     const EIGHT_DAYS = 8 * 24 * 60 * 60 * 1000;
 
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({
         'layout:stale': { value: 'old', savedAt: Date.now() - EIGHT_DAYS, baseRevision: 1 },
       }),
@@ -604,7 +614,7 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
   /** @effects code_workspace_marks_missing_file_tab */
   it('서버에 없는 키는 탭에 「없는 파일」 로 표시한다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
     );
 
@@ -629,7 +639,7 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
   /** @effects code_workspace_shows_missing_file_bar_with_rescue */
   it('없는 파일을 열면 복원분을 보여 주고 살릴 길을 준다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
     );
 
@@ -679,7 +689,7 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
    */
   it('새 이름으로 살린 뒤 retiredKey 로 알리면 없는 파일 탭을 닫고 초안을 지운다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
     );
 
@@ -775,7 +785,7 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
   /** @effects code_workspace_missing_file_is_read_only */
   it('없는 파일은 저장할 수 없으므로 편집기를 잠근다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
     );
 
@@ -806,7 +816,7 @@ describe('CodeWorkspace — 없어진 파일의 초안', () => {
   /** @effects code_workspace_known_keys_empty_marks_nothing_missing */
   it('목록을 아직 못 받았으면 아무것도 「없는 파일」 로 몰지 않는다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:gone': { value: '<!--GHOST-->', savedAt: Date.now(), baseRevision: 2 } }),
     );
 

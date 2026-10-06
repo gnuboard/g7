@@ -436,6 +436,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_payment_method_badge.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_payment_query.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/checkout_payment_error.g7.html',
+        'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/user_order_complete_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/user_order_show.g7.html',
         'plugins/_bundled/sirsoft-pay_kginicis/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_payment_method_badge.g7.html',

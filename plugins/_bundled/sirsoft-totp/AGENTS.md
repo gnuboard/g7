@@ -190,6 +190,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 자격증명 컬럼을 늘렸다면 `TotpCredential::$hidden` 과 `casts()` 를 함께 검토 — 시크릿·백업 코드 계열은 어떤 응답에도 실리면 안 됩니다
 - [ ] 자격증명 파기 경로를 늘렸다면 `totp_credentials.user_id` 는 CASCADE 가 아니므로 리스너 명시 삭제가 따라와야 합니다
 - [ ] 평문 시크릿·백업 코드를 내려주는 응답을 추가·변경했다면 "1회 노출" 계약이 깨지지 않는지 확인 — 조회 경로로는 절대 내려가지 않습니다
+- [ ] 프론트 핸들러를 추가했다면 `resources/js/handlers/index.ts` 의 `handlerMap` 에 넣는다 — 부팅 등록과 로케일 전환 뒤 재등록(`window.__SirsoftTotp.initPlugin()`)이 모두 이 맵을 읽는다. `initPlugin()` 에는 QR 관측자 같은 1회성 부팅 작업을 넣지 않는다
+- [ ] `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 후 `dist/js/plugin.iife.js` 를 함께 커밋 (`sourceMappingURL` 잔존 금지)
 
 ## 6. 금지 패턴
 
@@ -210,6 +212,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 본인 등록 API 경로에 사용자 식별자를 두기 | `/enrollment` — 대상은 항상 호출자 본인 | 남의 자격증명을 가리킬 수 있는 표면 자체를 만들지 않는다 |
 | `install()` 에서 `TotpIdentityProvider::PROVIDER_ID` 등 `src/` 클래스 상수 참조 | 리터럴 `'totp'` 사용 | `install()` 은 코어 PluginManager 가 이 플러그인의 PSR-4 오토로드를 등록하기 전에 호출된다 |
 | provider 설정을 `config()` 로 읽기 | `PluginSettingsService::get('sirsoft-totp')` 로 매 요청 직접 조회 | 코어 `PluginSettingsService::save()` 는 인메모리 캐시만 비우므로 `config()` 로 읽으면 변경된 설정이 다음 요청에 반영되지 않는다 |
+| `dispatcher.registerHandler` 를 변수로 떼어 수신자 없이 호출 | `register.call(dispatcher, …)` 로 수신자를 붙인다 | `registerHandler` 는 내부에서 `this.customHandlers` 를 쓴다. 수신자 없이 부르면 예외가 나고, 그 예외가 부팅 함수를 끊어 QR 관측자까지 설치되지 않았다 |
+| `window.__SirsoftTotp` 를 지우거나 `initPlugin` 이름을 바꾸기 | 전역 `{ identifier, initPlugin }` 을 그대로 둔다 | 로케일 전환 뒤 코어는 `__` 로 시작하는 전역에서 `initPlugin()` 을 찾아 부른다. 없으면 언어를 바꾼 뒤 「전체 복사」가 동작하지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -218,9 +222,9 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 6개 | `plugins/_bundled/sirsoft-totp/tests` |
-| Vitest | 5개 | `vitest.config.ts` |
+| Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

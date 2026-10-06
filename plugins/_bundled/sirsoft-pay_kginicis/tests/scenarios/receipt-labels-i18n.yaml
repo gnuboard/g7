@@ -26,4 +26,4 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/UserReceiptLabelLocaleTest.php
-  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/receiptLabelsI18n.test.ts
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/receiptLabelsI18n.test.tsx

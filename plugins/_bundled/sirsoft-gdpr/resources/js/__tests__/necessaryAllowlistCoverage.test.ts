@@ -513,6 +513,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
         reason: '파일 트리 너비 — `storageKey` 는 레이아웃이 넘기는 `g7le.codeEditor.<레이아웃>`.',
     },
     {
+        site: 'key ← modules/_bundled/sirsoft-ecommerce/resources/js/handlers/orderHandlers.ts',
+        reason: '주문 목록 표시 컬럼 — 키 끝에 관리자 회원 uuid 를 붙여 `g7_order_visible_columns_<uuid>` 로 저장한다(관리자별 업무 설정). 출하 카탈로그의 `g7_order_*` 가 덮으므로 파기 면제.',
+    },
+    {
         site: 'key ← resources/js/core/template-engine/ActionDispatcher.ts',
         reason: '`saveToLocalStorage` 핸들러 — 키를 레이아웃 액션이 넘긴다. 레이아웃이 임의로 정하는 값이라 목록으로 열거할 수 없다.',
     },

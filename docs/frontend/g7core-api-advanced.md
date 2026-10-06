@@ -506,15 +506,29 @@ const renderExpandedContent = useCallback((row: any) => {
 > 상세 내용: [auth-system.md](auth-system.md)
 
 ```typescript
+// G7Core.AuthManager 는 클래스다 — 인스턴스를 얻어 쓴다
+const authManager = G7Core.AuthManager.getInstance();
+
 // 현재 사용자 정보
-const user = G7Core.AuthManager.getUser();
+const user = authManager.getUser();
 
 // 로그인 상태 확인
-const isLoggedIn = G7Core.AuthManager.isAuthenticated();
+const isLoggedIn = authManager.isAuthenticated();
 
-// 토큰 조회
-const token = G7Core.AuthManager.getToken();
+// 현재 인증 상태 사본 ({ isAuthenticated, user, type })
+const state = authManager.getState();
+
+// 인증 상태 변경 구독 — 반환값은 해제 함수
+const off = authManager.on('authStateChange', (next) => {
+  console.log(next.isAuthenticated);
+});
+off();
+
+// 토큰 조회는 API 클라이언트에서
+const token = G7Core.api.getToken();
 ```
+
+`on()` 은 지난 이벤트를 다시 보내지 않으므로 최초 상태는 `getState()` 로 읽습니다. 이벤트 목록은 [auth-system.md](auth-system.md#이벤트-처리)를 참고합니다.
 
 ### G7Core.api
 
@@ -1077,20 +1091,19 @@ declare global {
       useTransitionState: () => TransitionState;
       useTranslation: () => { t: TranslationFunction };
 
-      // 위지윅 편집기
-      wysiwyg: {
-        isEditMode: () => boolean;
-        setEditMode: (layoutName: string, templateId: string) => void;
-        clearEditMode: () => void;
-        getCurrentLayoutName: () => string | null;
-        getCurrentTemplateId: () => string | null;
-        isEditModeFromUrl: () => boolean;
-        getEditModeUrl: (route: string, templateId: string) => string;
-        enterEditMode: (route: string, templateId: string) => void;
-        exitEditMode: () => void;
-        getVersion: () => string;
-        getPhase: () => number;
-      };
+      // 방문자 동의 (engine-v1.78.0+) — 사용자 템플릿에서만 런타임이 있다
+      consent: Readonly<{
+        getSnapshot: () => ConsentSnapshot | null;
+        refresh: () => Promise<ConsentSnapshot | null>;
+        subscribe: (listener: (snapshot: ConsentSnapshot) => void) => () => void;
+      }>;
+
+      // 전역 상태 공개 계약 (engine-v1.78.0+)
+      stateContracts: Readonly<{
+        get: (name: string) => StateContract | null;
+        list: () => Readonly<Record<string, StateContract>>;
+        ownerOf: (name: string) => string | null;
+      }>;
 
       // 기타
       AuthManager: AuthManagerType;
@@ -1104,13 +1117,30 @@ declare global {
     };
   }
 }
+
+interface ConsentSnapshot {
+  contractVersion: number; // 현재 1
+  status: 'unknown' | 'ready' | 'none';
+  categories: Record<string, boolean>; // necessary 는 항상 true
+  needsRenewal: boolean;
+  policyVersion: string | null;
+}
+
+interface StateContract {
+  owner: string; // 'core' | 'module:{id}' | 'plugin:{id}' | 'template:{id}'
+  description: Record<string, string>;
+  schema: Record<string, any>;
+  writers: string[]; // '@template' = 활성 템플릿
+}
 ```
+
+`G7Core.consent` 와 `G7Core.stateContracts` 의 동작은 [G7Core 기본 API](g7core-api.md#방문자-동의-g7coreconsent)를 참고합니다.
 
 ---
 
 ## 관련 문서
 
-- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정, 확장 자산
+- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약
 - [state-management.md](state-management.md) - 전역 상태 관리 상세
 - [components.md](components.md) - 컴포넌트 개발 규칙
 - [data-binding.md](data-binding.md) - 데이터 바인딩 문법

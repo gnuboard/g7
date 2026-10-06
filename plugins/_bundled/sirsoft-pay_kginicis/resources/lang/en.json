@@ -85,7 +85,8 @@
         "cvs_code": "Convenience store code",
         "cvs_confirmation_no": "Confirmation number",
         "cvs_receipt_no": "Receipt number",
-        "cvs_payment_term": "Deposit deadline"
+        "cvs_payment_term": "Deposit deadline",
+        "easy_pay_label": "Easy pay"
     },
     "admin": {
         "test_mode_badge": "Test Payment",
@@ -226,7 +227,8 @@
         "escrow_deny_confirm_done_at": "Confirmed At",
         "escrow_deny_confirm_status_label": "Purchase Status",
         "escrow_deny_confirm_buyer_denied": "Denied by Buyer",
-        "escrow_deny_confirm_buyer_denied_at": "Date"
+        "escrow_deny_confirm_buyer_denied_at": "Date",
+        "easy_pay_provider": "Easy pay: {{provider}}"
     },
     "settings": {
         "title": "KG Inicis Settings",

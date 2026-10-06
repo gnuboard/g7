@@ -127,9 +127,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -193,9 +193,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 39개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 40개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 19개 | `vitest.config.ts` |
-| Playwright | 6개 | `tests/Playwright` |
+| Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).

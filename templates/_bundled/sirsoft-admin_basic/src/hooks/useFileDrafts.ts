@@ -52,6 +52,20 @@ const DEFAULT_MAX_BYTES = 2 * 1024 * 1024;
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
+ * 지금 로그인한 관리자의 uuid 를 구합니다 (주문 목록 「컬럼 선택」과 같은 방식).
+ *
+ * @returns 회원 uuid, 모르면 null
+ */
+function currentMemberUuid(): string | null {
+  try {
+    const uuid = (window as any).G7Core?.AuthManager?.getInstance?.()?.getUser?.()?.uuid;
+    return typeof uuid === 'string' && uuid !== '' ? uuid : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * localStorage 를 안전하게 읽습니다.
  *
  * 사생활 보호 창·차단된 사이트 데이터에서는 접근 자체가 예외를 던진다. 초안이 없는 것은
@@ -60,7 +74,11 @@ const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
  * @param storageKey 저장 키
  * @returns 읽은 초안 맵 (실패·부재 시 빈 객체)
  */
-function readDrafts(storageKey: string, maxAgeMs: number = DEFAULT_MAX_AGE_MS): FileDraftMap {
+function readDrafts(storageKey: string | null, maxAgeMs: number = DEFAULT_MAX_AGE_MS): FileDraftMap {
+  if (storageKey === null) {
+    return {};
+  }
+
   try {
     const raw = window.localStorage.getItem(storageKey);
 
@@ -155,7 +173,12 @@ export function useFileDrafts({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   maxBytes = DEFAULT_MAX_BYTES,
 }: UseFileDraftsOptions): UseFileDraftsResult {
-  const storageKey = useMemo(() => `${namespace}.drafts`, [namespace]);
+  // 초안은 작성물이라 관리자 회원마다 갈린다(#639 ⑩) — 같은 브라우저를 쓰는 다른 관리자에게
+  // 「저장하지 않은 편집」이 뜨면 안 된다. `namespace` 는 글꼴 크기 같은 기기 선호 키의 접두이기도 하므로
+  // 건드리지 않고 uuid 는 이 훅 안에서만 넣는다. 회원을 모르면 초안을 남기지 않는다(null) — 공용 키에 다시 쓰면
+  // 같은 결함이 돌아온다.
+  const memberUuid = useMemo(() => currentMemberUuid(), []);
+  const storageKey = useMemo(() => (memberUuid ? `${namespace}.${memberUuid}.drafts` : null), [namespace, memberUuid]);
 
   // 진입 시점의 스냅샷 — 이후 내가 쓰는 초안이 여기 섞이면 "복원할까요" 배너가
   // 방금 내가 친 글자를 두고 다시 뜬다. 그래서 최초 1회만 읽고 갱신하지 않는다.
@@ -177,6 +200,19 @@ export function useFileDrafts({
 
     draftsRef.current = readDrafts(storageKey);
   }, [storageKey]);
+
+  // 회원 구분 없이 남은 옛 키는 누구 것인지 가를 수 없으므로 읽지 않고 지운다.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(`${namespace}.drafts`);
+    } catch {
+      // 지우지 못해도 읽지 않으므로 다른 관리자에게 보이지 않는다.
+    }
+  }, [namespace]);
 
   /**
    * 아직 브라우저에 실리지 못한 쓰기가 남았는지.
@@ -208,7 +244,7 @@ export function useFileDrafts({
    * 내가 지운 키는 지운 시각보다 늦게 적힌 초안이 없을 때만 덜어낸다. 다른 탭이 적은 초안은 함께 살아남는다.
    */
   const flush = useCallback(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || storageKey === null) {
       return;
     }
 
@@ -297,7 +333,7 @@ export function useFileDrafts({
     draftsRef.current = {};
     setPendingDrafts({});
 
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || storageKey === null) {
       return;
     }
 

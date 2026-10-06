@@ -1,41 +1,43 @@
 /**
  * 동의 상태 브리지
  *
- * 동의 연동 모드에서 「지금 이 방문자가 분석 쿠키에 동의했는가」를 브라우저 쪽에서
- * 압니다. 서버도 매 요청에서 다시 확인하므로 이 판정은 **보내지 않아도 될 요청을
- * 미리 거르는 용도**이지 보안 경계가 아닙니다.
+ * 동의 연동 모드에서 「지금 이 방문자가 분석 쿠키에 동의했는가」를 브라우저 쪽에서 압니다. 서버도 매
+ * 요청에서 다시 확인하므로 이 판정은 **보내지 않아도 될 요청을 미리 거르는 용도**이지 보안 경계가 아닙니다.
  *
- * 동의를 확인할 곳이 없으면(코어 동의 필터에 답하는 확장이 없으면) 막지 않고 그대로
- * 보냅니다 — 서버가 익명 모드로 내려가 개인정보 없이 수집하기 때문입니다.
+ * 판정 출처는 코어 동의 런타임(`resources/js/core/consent`)입니다 — 방문자 통계는 범용 방문자 동의 공개
+ * 계약의 소비자이며, 자체 조회·자체 이벤트를 두지 않습니다(#639).
  *
- * 코어는 동의를 관리하는 확장이 무엇인지 모릅니다. 상태는 코어 API 로 묻고, 변경은 코어 이름의
- * 이벤트로 받습니다. 동의 관리 확장은 동의를 저장한 뒤 이 이벤트를 발행합니다(계약:
- * `docs/extension/hooks.md` 「방문자 통계 동의 계약」).
+ * - 스냅샷 `none`(동의 관리 제공자 없음): 막지 않는다 — 서버가 익명 모드로 내려가 개인정보 없이 수집한다.
+ * - `ready`: 분석 동의 = 재동의 대상 아님 && `analytics`.
+ * - `unknown`: 현재 세대의 첫 판정 전(부팅 직후·로그인/로그아웃 직후)이면 비콘을 들고 기다리고, 판정이
+ *   끝난 뒤에도 `unknown` 이면 동의하지 않은 것으로 본다.
  */
 
-/** 동의 상태 조회 경로 (코어 API) */
-const CONSENT_STATUS_URL = '/api/analytics/consent';
+/** 브리지가 읽는 동의 스냅샷 모양 (코어 런타임의 공개 계약) */
+export interface ConsentSnapshotLike {
+  status: 'unknown' | 'ready' | 'none';
+  categories: Record<string, boolean>;
+  needsRenewal: boolean;
+}
 
-/**
- * 동의 변경 알림 이벤트 이름 (코어 소유).
- *
- * `detail.has_consent` 에 새 동의 여부(boolean)를 싣는다. 없으면 코어 API 로 다시 묻는다.
- */
-export const ANALYTICS_CONSENT_CHANGED_EVENT = 'g7:analytics-permission-changed';
+/** 브리지가 쓰는 동의 출처 (코어 동의 런타임) */
+export interface ConsentSource {
+  /** 현재 스냅샷 */
+  getSnapshot(): ConsentSnapshotLike;
+  /** 현재 세대의 첫 조회가 끝나지 않았는지 */
+  isPending(): boolean;
+  /** 조회 완료 구독 (해제 함수 반환) */
+  onSettled(listener: (snapshot: ConsentSnapshotLike) => void): () => void;
+}
 
 /** 동의 상태 */
 export interface ConsentState {
   /** 동의를 확인할 곳이 있는지 */
   source: 'provider' | 'none';
-  /** 분석 쿠키 동의 여부 (확인할 곳이 없으면 null) */
+  /** 분석 쿠키 동의 여부 (확인할 곳이 없거나 아직 모르면 null) */
   granted: boolean | null;
 }
 
-/**
- * 동의 상태를 지켜봅니다.
- *
- * 부팅 때 한 번 읽고, 그 뒤로는 동의 화면이 보내는 변경 알림으로 갱신합니다.
- */
 /**
  * 동의 확인이 전송의 전제가 되는지 판정합니다.
  *
@@ -51,74 +53,44 @@ export function consentGateRequired(pluginActive: boolean, privacyMode?: string)
   return pluginActive && privacyMode === 'consent';
 }
 
-export class ConsentBridge {
-  /** 현재 동의 상태 */
-  private state: ConsentState = { source: 'none', granted: null };
+/**
+ * 스냅샷에서 분석 동의를 파생합니다 (서버 `ConsentSnapshot::permitsAnalytics()` 와 같은 규칙).
+ *
+ * @param snapshot 스냅샷
+ * @returns 분석 동의 여부
+ */
+export function permitsAnalytics(snapshot: ConsentSnapshotLike): boolean {
+  return snapshot.status === 'ready' && !snapshot.needsRenewal && snapshot.categories?.analytics === true;
+}
 
-  /** 첫 조회가 끝났는가 (실패로 끝나도 true — 그 뒤의 「모름」은 대기가 아니라 미동의로 다룬다) */
-  private settled = false;
+export class ConsentBridge {
+  /** 조회 완료 구독 해제 함수 */
+  private offSettled: (() => void) | null = null;
 
   /**
    * 동의 브리지를 만듭니다.
    *
-   * @param pluginActive 동의를 확인할 곳이 있는지
-   * @param getAuthToken 로그인 토큰을 돌려주는 함수 (없으면 게스트로 조회)
+   * @param gateRequired 동의 확인이 전송의 전제인지 (동의 연동 모드 + 동의 관리 제공자 있음)
+   * @param source 코어 동의 런타임 (없으면 게이트가 서도 판정할 곳이 없어 보내지 않는다)
+   * @param onSettled 판정이 끝날 때마다 부르는 함수 (들고 있던 비콘을 내보내거나 버리게 한다)
    */
   constructor(
-    private readonly pluginActive: boolean,
-    private readonly getAuthToken?: () => string | null,
-  ) {
-    if (pluginActive) {
-      this.state = { source: 'provider', granted: null };
-    }
-  }
+    private readonly gateRequired: boolean,
+    private readonly source: ConsentSource | null = null,
+    private readonly onSettled?: () => void,
+  ) {}
 
   /**
-   * 동의 상태를 읽어 오고 변경 알림을 구독합니다.
-   *
-   * 실패해도 예외를 밖으로 내보내지 않습니다 — 동의를 확인하지 못한 것이 화면을
-   * 망가뜨리면 안 됩니다.
+   * 조회 완료를 구독합니다. 이미 판정이 끝나 있으면 곧바로 알립니다.
    *
    * @returns 완료 Promise
    */
   async start(): Promise<void> {
-    if (!this.pluginActive) return;
+    if (!this.gateRequired || !this.source || this.offSettled) return;
 
-    await this.refresh();
+    this.offSettled = this.source.onSettled(() => this.onSettled?.());
 
-    this.settled = true;
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, this.handleChange);
-    }
-  }
-
-  /**
-   * 코어 API 로 동의 여부를 다시 읽습니다.
-   *
-   * @returns 완료 Promise
-   */
-  private async refresh(): Promise<void> {
-    try {
-      // 회원의 동의는 회원 번호로 저장된다. 토큰을 싣지 않으면 서버가 게스트 세션으로
-      // 조회해, 동의한 회원도 「미동의」로 읽혀 그 방문이 통째로 빠진다.
-      const token = this.getAuthToken?.();
-      const headers: Record<string, string> = { Accept: 'application/json' };
-
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const response = await fetch(CONSENT_STATUS_URL, {
-        credentials: 'same-origin',
-        headers,
-      });
-
-      if (response.ok) {
-        const body = await response.json();
-        this.state.granted = (body?.data?.has_consent ?? body?.has_consent) === true;
-      }
-    } catch {
-      // 조회 실패는 「모름」이다 — 동의했다고 단정하지 않는다.
-    }
+    if (!this.source.isPending()) this.onSettled?.();
   }
 
   /**
@@ -127,9 +99,8 @@ export class ConsentBridge {
    * @returns 없음
    */
   stop(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, this.handleChange);
-    }
+    this.offSettled?.();
+    this.offSettled = null;
   }
 
   /**
@@ -138,24 +109,27 @@ export class ConsentBridge {
    * @returns 전송 가능 여부
    */
   allowsSending(): boolean {
-    // 확인할 곳이 없으면 막지 않는다 — 서버가 익명 모드로 처리한다.
-    if (this.state.source === 'none') return true;
+    if (!this.gateRequired) return true;
+    if (!this.source) return false;
 
-    // 아직 못 읽었으면 보내지 않는다. 동의 여부를 모르는 채 모으지 않는다.
-    return this.state.granted === true;
+    const snapshot = this.source.getSnapshot();
+
+    // 확인할 곳이 없으면 막지 않는다 — 서버가 익명 모드로 처리한다.
+    if (snapshot.status === 'none') return true;
+
+    return permitsAnalytics(snapshot);
   }
 
   /**
-   * 동의 여부를 아직 읽지 못했는지 판정합니다.
+   * 동의 여부를 아직 판정하지 못했는지 반환합니다.
    *
-   * 확인할 곳이 있는데 조회가 끝나지 않은 상태다. 이때 온 비콘은 버리지 말고 조회가 끝날 때까지
-   * 들고 있어야 한다 — 첫 화면 비콘은 조회보다 먼저 나가므로, 버리면 동의한 방문자의 진입
-   * 화면·새로고침이 전부 빠진다(#682 S3 라운드 13).
+   * 부팅 직후와 로그인·로그아웃 직후다. 이때 온 비콘은 버리지 말고 판정이 끝날 때까지 들고 있어야 한다 —
+   * 첫 화면 비콘은 조회보다 먼저 나가고, 로그인 직후 화면 이동의 비콘은 재조회보다 먼저 나간다.
    *
-   * @returns 조회 대기 중이면 true
+   * @returns 판정 대기 중이면 true
    */
   isPending(): boolean {
-    return this.state.source === 'provider' && this.state.granted === null && !this.settled;
+    return this.gateRequired && this.source !== null && this.source.isPending();
   }
 
   /**
@@ -164,26 +138,12 @@ export class ConsentBridge {
    * @returns 동의 상태
    */
   current(): ConsentState {
-    return { ...this.state };
+    if (!this.gateRequired || !this.source) return { source: 'none', granted: null };
+
+    const snapshot = this.source.getSnapshot();
+    if (snapshot.status === 'none') return { source: 'none', granted: null };
+    if (snapshot.status === 'unknown') return { source: 'provider', granted: null };
+
+    return { source: 'provider', granted: permitsAnalytics(snapshot) };
   }
-
-  /**
-   * 동의 변경 알림을 반영합니다.
-   *
-   * @param event 동의 변경 이벤트
-   * @returns 없음
-   */
-  private handleChange = (event: Event): void => {
-    const detail = (event as CustomEvent).detail ?? {};
-
-    // 코어 계약의 모양은 `{ has_consent: boolean }` 하나다. 값을 싣지 않은 알림이면 코어 API 로
-    // 다시 묻는다 — 모양을 추측해 읽으면 동의 관리 확장의 내부 형식에 코어가 묶인다.
-    if (typeof detail?.has_consent === 'boolean') {
-      this.state.granted = detail.has_consent;
-
-      return;
-    }
-
-    void this.refresh();
-  };
 }

@@ -58,11 +58,6 @@ describe('sirsoft-admin_basic — 이동 폴백·복귀 주소', () => {
   // @effects template_identity_fallback_passes_return_url_path
   it('본인인증 모달을 못 열면 인증 화면에 return_url=<경로> 를 넘긴다', async () => {
     const redirectExternally = vi.fn(() => Promise.resolve({ status: 'cancelled' }));
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, data: { id: 'ch_1', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' } }),
-    })));
     (window as any).G7Core = {
       dispatch: vi.fn(async (action: { handler: string }) => {
         if (action.handler === 'openModal') {
@@ -70,7 +65,13 @@ describe('sirsoft-admin_basic — 이동 폴백·복귀 주소', () => {
         }
       }),
       state: { get: vi.fn(() => ({})), getGlobal: vi.fn(() => ({})), getLocal: vi.fn(() => ({})), set: vi.fn() },
-      api: { getToken: vi.fn(() => null) },
+      // challenge 시작은 코어 G7Core.api 로 나간다 (ApiClient 는 응답 본문을 돌려준다)
+      api: {
+        post: vi.fn(async () => ({
+          success: true,
+          data: { id: 'ch_1', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' },
+        })),
+      },
       identity: { createDeferred: vi.fn(() => Promise.resolve({ status: 'cancelled' })), redirectExternally },
     };
 

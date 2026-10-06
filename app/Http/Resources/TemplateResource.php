@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Helpers\DependencyEnricher;
 use App\Services\ExtensionStaticCacheService;
 use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
@@ -35,6 +36,7 @@ class TemplateResource extends BaseApiResource
             'status' => $this->getValue('status'),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
+            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
             'dependencies_met' => $this->areDependenciesMet(),
             'icon_url' => $this->getValue('icon_url'),
             'icon_source' => $this->getValue('icon_source', 'none'),
@@ -149,6 +151,7 @@ class TemplateResource extends BaseApiResource
             ),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
+            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),

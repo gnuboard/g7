@@ -1,8 +1,9 @@
 <!-- 주문서의 결제수단 칸 — 목록을 여기 적지 않고 운영자가 켜 둔 카탈로그(`paymentSettings`)를 그대로 편다.
      그래서 결제수단이 늘어도 이 조각은 손대지 않는다. 이름·아이콘·브랜드 마크도 카탈로그가 준 값이다.
      고른 뒤 추가 입력이 필요한 수단(가상계좌·무통장)만 그 아래에 자기 칸을 편다.
-     칸 id(checkout_payment_method_section)와 버튼의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다 —
-     KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 제목·이름 글자가 아니라 이것으로만 찾는다(글자는 언어마다 다르다). -->
+     칸 id(checkout_payment_method_section)와 버튼의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다.
+     결제 통화에서 고를 수 없는 수단(예: 엔화 결제의 일부 PG 수단)은 서버가 체크아웃 응답 `allowed_payment_methods` 로 알려 주고
+     여기서 그 목록으로 거른다(#639 D17) — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다. -->
 <partial description="결제 방법 선택 섹션 (PC/모바일 반응형) - 환경설정 활성 결제수단을 동적 렌더링">
   <div data-ref="checkout_payment_method_section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
@@ -18,7 +19,7 @@
     <!-- 결제 방법 선택 카드 (활성화된 결제수단 동적 렌더링) -->
     <grid data-type="layout" :cols="3" :gap="4" class="mb-4">
       <responsive on="portable" :cols="1" :gap="3" class="mb-3"/>
-      <button data-each="method, methodIdx in {{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos))}}" type="button" data-testid="checkout-payment-method-{{method.id}}" data-payment-method="{{method.id}}" class="{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}">
+      <button data-each="method, methodIdx in {{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos) &amp;&amp; (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(m.id)))}}" type="button" data-testid="checkout-payment-method-{{method.id}}" data-payment-method="{{method.id}}" class="{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}">
         <responsive on="portable" class="{{_computed.selectedPaymentMethod === method.id ? 'p-3 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}"/>
         <on type="click">
           <!-- 결제수단 전환 시 이전 수단이 소유하던 입력값을 함께 비운다. 확장 슬롯(현금영수증 등)과 환불계좌 블록은 결제수단 조건부로 언마운트되지만 _local 값은 남으므로, 초기화하지 않으면 무통장에서 입력한 값이 카드 주문 payload 에 그대로 실린다. -->

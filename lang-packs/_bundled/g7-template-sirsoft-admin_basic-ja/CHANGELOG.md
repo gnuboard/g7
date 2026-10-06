@@ -8,6 +8,7 @@
 
 ### Added
 
+- 환경설정 > 개인정보 탭의 「동의 관리 제공자」 카드 문구(`settings.privacy.consent_provider.*` — 제목·설명·자동 선택·제공자 2개 이상/선택 제공자 비활성/제공자 없음/동의 수집 꺼짐 안내), 확장 상세 창의 「함께 쓰면 연동되는 확장」 절(`extension_integrations.*`), 방문자 통계 설정의 「제공자 선택 필요」·「개인정보 탭에서 고르기」(`analytics.settings.privacy.consent_source_needs_selection`·`consent_source_choose`)의 일본어 번역을 추가했습니다.
 - 회원관리 목록의 새 필터 영역 문구를 일본어로 번역했습니다 — 필터 행 이름 12개(계정 상태·권한 그룹·가입일·최근 로그인·관리자 여부·계정 잠금·휴면 전환일·상태 변경일·언어·국가·이메일 인증·본인인증, `admin.users.filter.*`)와 선택지, 빠른 기간 버튼, 권한 그룹 검색 안내 문구, 상세 영역 제목, 상세검색·검색편집·초기화 버튼, 새 검색 대상(휴대폰/전화·회원번호/고유ID·관리자 메모), 계정 상태 4종(ブロック·退会·登録待機中·休眠), 새 열 이름(닉네임·이메일 인증일·본인인증일)과 이름 정렬입니다. 상태 이름은 코어 팩(`user.status.*`)과 같은 표기로 맞췄습니다.
 - 알림 정의 목록의 새 알림 이름 2종(비밀번호 만료 사전 안내·비밀번호 만료, `admin.settings.notification_definitions.types.*`)을 일본어로 번역했습니다.
 - 보안 탭 「활동 로그(접속기록) 보관」 카드 문구(`admin.settings.security.activity_log_retention.*` — 제목·설명·보관 기간 칸·법정 최소 안내)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면에서 이 카드만 한국어로 보입니다.
@@ -18,7 +19,7 @@
   번역을 추가했습니다. 없으면 ja 화면에 원문 키가 그대로 보입니다.
 - 방문자 통계 정보주체 요청 화면에서 검색 전에 보이는 안내 카드 문구(`analytics.privacy_requests.prompt_title`·`prompt_description`)를 일본어로 번역했습니다.
   없으면 일본어 로케일에서 이 카드만 번역되지 않은 채 보입니다.
-- 방문자 통계 동의 출처 「방문자마다 추적 허용을 정하는 확장」(`analytics.settings.privacy.consent_sources.provider`)과 레이아웃 편집기에 쓰이는 개인정보 조치 대상·직권 실행 창 이름의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기에 쓰이는 개인정보 조치 대상·직권 실행 창 이름의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기 「화면 상태」 고르개의 「개인정보 보유기간 탭」 항목 이름(`editor.state.tab.privacy_retention`, 「個人情報の保有期間タブ」)의 일본어 번역을 추가했습니다.
 - 환경설정 > 개인정보 탭의 「지금 실행」 버튼(탈퇴 회원 잔여정보 파기·휴면 4단계)과 직권 실행 확인 창(대상 건수·처리 방식·대기기간 생략 체크·되돌릴 수 없음 경고)·진행 상태 줄 문구(`admin.settings.privacy.manual_run.*`), 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 조치 대상을 단계마다 한 줄로 정리하면서 줄 이름(`admin.settings.privacy.targets.rows.*`, 「休眠転換事前通知」 등)과 공용 「対象を表示」(`targets.view`)를 더하고, 쓰지 않게 된 단계별 보기 버튼·합산 배지 문구는 뺐습니다.
 - 환경설정 > 개인정보 탭의 「대상 보기」 버튼과 조치 대상 명단 창 문구를 일본어로 번역했습니다 — 탈퇴 회원 잔여정보 파기와 휴면 4단계(사전 안내·전환·탈퇴 예고·자동 탈퇴)별 버튼과 창 제목, 안내·합계·빈 목록·불러오는 중·닫기(`settings.privacy.targets.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)입니다. 휴면은 같은 화면의 다른 문구와 같은 「休眠」으로 적었습니다.
@@ -37,8 +38,7 @@
 - 관리자 로그인의 인증 앱(OTP) 단계와 환경설정 > 보안의 2단계 인증 적용 범위 문구를 일본어로 번역했습니다 — 앱 코드 입력 안내·라벨·입력 예시·백업 코드 안내(`login.two_factor.*`)와 범위 선택 항목(`settings.security.two_factor_scope*`) 입니다. 없으면 일본어 로케일의 관리자 로그인 화면과 보안 설정에 한국어가 섞여 보입니다.
 
 - 방문자 통계 화면이 저장 코드 대신 보일 이름의 일본어 번역을 추가했습니다 — 집계 실행 주체(`analytics.diagnostics.run_triggers.*`)·
-  큐 연결(`analytics.diagnostics.queue_connections.*`)·봇 캐시 상태(`analytics.bots.cache_statuses.*`)·동의 출처
-  (`analytics.settings.privacy.consent_sources.*`).
+  큐 연결(`analytics.diagnostics.queue_connections.*`)·봇 캐시 상태(`analytics.bots.cache_statuses.*`).
 
 - 수집 진단 화면의 확장 선언 경고 줄(`analytics.diagnostics.declaration_warnings_title`·`declaration_warnings_description`)과
   검색어 탭 안내(`analytics.referrers.keywords_https_hint`)의 일본어 번역을 추가했습니다.
@@ -103,7 +103,6 @@
 
 ### Removed
 
-- 특정 동의 플러그인 이름을 적던 동의 출처 문구(`consent_sources.gdpr`) 번역을 정리했습니다.
 - 방문자 목록의 쓰이지 않는 열 이름(`analytics.visitors.columns.timeline`) 일본어 번역을 지웠습니다 — 원본
   언어 파일에서 같은 키가 빠졌습니다(방문자 목록에 그 열이 없습니다).
 

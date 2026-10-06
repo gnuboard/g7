@@ -63,7 +63,6 @@ effects:
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.dynamicHandler.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/spec/actionRecipeEngine.test.ts
-  - resources/js/core/template-engine/layout-editor/__tests__/spec/coreActionRecipes.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-pg-dynamic-dispatch.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderResponsePaymentHandlerTest.php
 

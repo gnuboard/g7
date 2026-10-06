@@ -1,0 +1,24 @@
+feature: 동의 관리 제공자·연동 확장 관리자 화면 (#639 §4.1~4.3)
+
+description: |
+  관리자가 동의 관리 제공자의 선택 상태를 보고 고르는 화면과, 확장 간 선택 연동을 확인하는 화면.
+
+    환경설정 > 개인정보 탭 맨 위   「동의 관리 제공자」 카드 — 자동(현재 제공자)·등록 제공자 선택, 상태별 안내 하나
+    방문자 통계 설정 > 개인정보 탭  동의 출처 배지 — auto·selected 초록, none 회색, ambiguous·missing 주황 + 개인정보 탭 링크
+    확장 관리 > 상세 모달 3종       「함께 쓰면 연동되는 확장」 — 이름·미설치·비활성 배지, 선언 없으면 숨김
+
+  안내는 서버가 판정한 선택 상태(`_meta.consent_selection`, `collection.consent_selection`)로만 띄운다.
+
+axes:
+  case: [admin_card, admin_badge, admin_detail]
+
+effects:
+  - admin_privacy_tab_shows_consent_provider_state
+  - analytics_badge_follows_consent_selection
+  - extension_detail_shows_integrations
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-consent-provider-and-integrations.test.tsx
+
+limitations:
+  - "실제 저장 왕복(제공자 선택 저장 → 재조회 → 안내 갱신)은 Feature 테스트(ConsentProviderSettingTest)와 Chrome MCP 매트릭스가 덮는다."

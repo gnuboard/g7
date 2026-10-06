@@ -15,7 +15,8 @@ export { AnalyticsTracker } from './Tracker';
 export type { BeaconPayload, TrackerOptions } from './Tracker';
 export type { AnalyticsClientSettings } from './exclusions';
 export { resolvePageTitle } from './pageTitle';
-export { ConsentBridge } from './consent';
+export { ConsentBridge, permitsAnalytics } from './consent';
+export type { ConsentSource, ConsentSnapshotLike } from './consent';
 
 /** 트래커와 정리 함수 */
 export interface TrackerHandle {

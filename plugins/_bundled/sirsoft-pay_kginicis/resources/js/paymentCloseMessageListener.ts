@@ -4,7 +4,7 @@ import {
     markStandardPaySdkForReload,
     removeKoreanPaymentForms,
 } from './paymentDomCleanup';
-import { buildGuestOwnershipHeaders, isSameOriginUrl } from './guestOrderToken';
+import { buildGuestOwnershipHeaders } from './guestOrderToken';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 const CLOSE_MESSAGE_SOURCE = PLUGIN_IDENTIFIER;
@@ -42,8 +42,31 @@ function isPaymentCloseMessage(data: unknown): data is PaymentCloseMessage {
     return message.source === CLOSE_MESSAGE_SOURCE && message.type === CLOSE_MESSAGE_TYPE;
 }
 
+/**
+ * 쇼핑몰 경로 앞머리를 템플릿 상태 계약(`_global.shopBase`)에서 읽습니다.
+ *
+ * 쇼핑몰 경로는 운영자가 바꿀 수 있어(`/shop`·`/store`·루트) 경로를 글자로 박으면 다른 설치본에서
+ * 체크아웃을 알아보지 못한다. 엔진이 아직 상태를 채우기 전이면 null 이다.
+ *
+ * @returns 경로 앞머리(루트면 빈 문자열) 또는 null
+ */
+function readShopBase(): string | null {
+    try {
+        const shopBase = (window as any).G7Core?.state?.get?.()?.shopBase;
+
+        return typeof shopBase === 'string' ? shopBase.replace(/\/+$/, '') : null;
+    } catch {
+        return null;
+    }
+}
+
 function isCheckoutPage(): boolean {
-    return /\/shop\/checkout\/?$/.test(window.location.pathname);
+    const shopBase = readShopBase();
+    if (shopBase === null) {
+        return false;
+    }
+
+    return window.location.pathname.replace(/\/+$/, '') === `${shopBase}/checkout`;
 }
 
 function windowRecord(): Record<string, unknown> {
@@ -57,22 +80,6 @@ function getActiveStandardPaymentCloseContext(): StandardPaymentCloseReportConte
     }
 
     return context as StandardPaymentCloseReportContext;
-}
-
-function resolveApiUrl(url: string): string {
-    if (/^https?:\/\//i.test(url) || url.startsWith('/api/')) {
-        return url;
-    }
-
-    if (url.startsWith('/plugins/')) {
-        return `/api${url}`;
-    }
-
-    if (url.startsWith('plugins/')) {
-        return `/api/${url}`;
-    }
-
-    return url;
 }
 
 /**
@@ -230,24 +237,17 @@ export async function reportStandardPaymentWindowClosed(
     const ownershipHeaders = buildGuestOwnershipHeaders();
 
     try {
-        const apiClient = ((window as any).G7Core)?.api;
-        if (typeof apiClient?.post === 'function') {
-            if (Object.keys(ownershipHeaders).length > 0) {
-                await apiClient.post(context.closeReportUrl, payload, { headers: ownershipHeaders });
-            } else {
-                await apiClient.post(context.closeReportUrl, payload);
-            }
+        const apiClient = (window as any).G7Core?.api;
+        if (typeof apiClient?.post !== 'function') {
+            logger.warn('G7Core.api not available while reporting KG payment window close', { reason });
+
+            return;
+        }
+
+        if (Object.keys(ownershipHeaders).length > 0) {
+            await apiClient.post(context.closeReportUrl, payload, { headers: ownershipHeaders });
         } else {
-            const url = resolveApiUrl(context.closeReportUrl);
-            await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(isSameOriginUrl(url) ? ownershipHeaders : {}),
-                },
-                body: JSON.stringify(payload),
-                keepalive: true,
-            });
+            await apiClient.post(context.closeReportUrl, payload);
         }
     } catch (error) {
         logger.warn('failed to report KG payment window close', { reason, error });
@@ -298,7 +298,8 @@ function scheduleCheckoutSubmittingStateReset(reason: string, clearPendingOnSucc
             return;
         }
 
-        if (!isCheckoutPage() || attempts >= RESET_RETRY_LIMIT) {
+        // 쇼핑몰 경로(`_global.shopBase`)가 아직 채워지지 않았으면 체크아웃 여부를 모르므로 한도까지 다시 본다.
+        if ((!isCheckoutPage() && readShopBase() !== null) || attempts >= RESET_RETRY_LIMIT) {
             return;
         }
 

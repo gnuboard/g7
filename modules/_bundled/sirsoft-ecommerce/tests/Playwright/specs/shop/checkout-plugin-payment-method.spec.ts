@@ -549,3 +549,45 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
     expect(payload.escrowProducts![0].unitPrice).toBe(serverEscrowProducts[0].unitPrice);
   });
 });
+
+test.describe('결제 통화별 결제수단 표시 (#639 D17)', () => {
+  test.beforeEach(async ({ page, noPermissionToken }) => {
+    await authenticatePage(page, noPermissionToken);
+    await page.addInitScript((locale) => localStorage.setItem('g7_locale', locale), CART_LOCALE);
+    await page.goto('/shop');
+    await page.waitForLoadState('domcontentloaded');
+    await dismissCookieNotice(page);
+    await seedCheckout(page);
+  });
+
+  /**
+   * 주문서는 서버가 알려 준 허용 목록(`allowed_payment_methods`) 밖의 결제수단 버튼을 그리지 않는다.
+   *
+   * 실제 JPY 제한은 결제 플러그인 설정(이니시스 일본 결제)에 달려 있어 상점마다 다르다. 이 spec 은
+   * 화면 쪽 계약만 잠근다 — 체크아웃 응답의 허용 목록을 무통장입금 하나로 바꿔 내려 보내고, 다른 활성
+   * 수단 버튼이 사라지는지 본다. 서버 판정(직접 POST 422)은 PHPUnit `PaymentMethodsForCurrencyTest` 가 잠근다.
+   *
+   * @scenario currency=JPY, method=disallowed
+   *
+   * @effects checkout_display_and_validation_share_currency_filter
+   */
+  test('허용 목록 밖의 결제수단 버튼은 주문서에 그려지지 않는다', async ({ page }) => {
+    const active = (await activePaymentMethods(page)).map((m) => m.id);
+    test.skip(active.length < 2, '활성 결제수단이 하나뿐이면 거르는 효과를 볼 수 없다');
+
+    await page.route('**/api/modules/sirsoft-ecommerce/checkout?**', async (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      const response = await route.fetch();
+      const json = await response.json();
+      if (json?.data) json.data.allowed_payment_methods = ['dbank'];
+      await route.fulfill({ response, json });
+    });
+
+    await gotoCheckout(page);
+
+    await expect(paymentMethod(page, 'dbank')).toBeVisible();
+    for (const id of active.filter((m) => m !== 'dbank')) {
+      await expect(paymentMethod(page, id), `${id} 는 허용 목록 밖인데 버튼이 그려졌다`).toHaveCount(0);
+    }
+  });
+});

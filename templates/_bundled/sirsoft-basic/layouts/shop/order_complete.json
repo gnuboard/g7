@@ -1014,7 +1014,8 @@
                                         ]
                                     },
                                     {
-                                        "comment": "결제 금액 요약",
+                                        "comment": "결제 금액 요약 — 결제 플러그인 조각(영수증·매출전표·가상계좌 안내)이 이 id 끝에 붙는다(#639, 쇼핑몰 docs/extension-points.md 약속)",
+                                        "id": "order_complete_payment_summary",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {

@@ -450,6 +450,19 @@ class OrderProcessingService
      * 채택하면 스냅샷 환율에 코드가 없어 체크아웃이 차단된다. 저장된 선호 값 자체는 지우지
      * 않는다 — 그 통화가 다시 등록되면 자동으로 복원되는 것이 올바른 동작이다.
      *
+     * 기본 통화(default_currency)를 폴백으로 쓴다. 체크아웃 표시와 주문 생성 검증의 결제수단 통화 제한(#639 D17)이
+     * 주문 생성과 같은 통화로 판정하도록 공개한다.
+     *
+     * @return string 결정된 통화 코드
+     */
+    public function resolvePaymentCurrency(): string
+    {
+        return $this->resolveActiveCurrency($this->currencyConversionService->getDefaultCurrency());
+    }
+
+    /**
+     * 결제 통화를 결정합니다 (기본 통화를 인자로 받음).
+     *
      * @param  string  $baseCurrency  기본 통화(폴백)
      * @return string 결정된 통화 코드
      */

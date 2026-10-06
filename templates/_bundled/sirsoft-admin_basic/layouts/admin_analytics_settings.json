@@ -1029,6 +1029,7 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "동의 출처 배지 (#639) — 코어 동의 매니저의 선택 상태(`collection.consent_selection`)로 색과 말을 고른다.\n            auto·selected 는 초록 제공자 이름, none 은 회색 「없음」, ambiguous·missing 은 주황 「제공자 선택 필요」와 개인정보 탭 링크.\n            조회 권한이 없으면 모르는 것을 고장으로 말하지 않도록 회색 「확인 권한 없음」.",
                                         "id": "consent_source_row",
                                         "type": "basic",
                                         "name": "Div",
@@ -1048,10 +1049,41 @@
                                                 "type": "composite",
                                                 "name": "Badge",
                                                 "props": {
-                                                    "color": "{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}",
-                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? (['provider', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}",
+                                                    "color": "{{!_computed.canReadAnalytics ? 'gray' : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'green' : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'orange' : 'gray'))}}",
+                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? (analytics_status?.data?.collection?.consent_provider_label ?? '') : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? $t('admin.analytics.settings.privacy.consent_source_needs_selection') : $t('admin.analytics.settings.privacy.consent_source_none')))}}",
                                                     "size": "sm"
                                                 }
+                                            },
+                                            {
+                                                "comment": "링크는 선택이 필요한 상태(ambiguous·missing)이고, 목적지(환경설정 개인정보 탭)를 열 권한(core.settings.read)이 있을 때만 그린다.",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{_computed.canReadAnalytics && ['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '')}}",
+                                                "props": {
+                                                    "className": "contents"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "consent_source_choose_link",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{_computed.canReadDefinitions}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/settings?tab=privacy"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                        },
+                                                        "text": "$t:admin.analytics.settings.privacy.consent_source_choose"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     },

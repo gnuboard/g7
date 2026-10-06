@@ -216,8 +216,15 @@ class FrontendInventory
      * 로케일 전환 후 액션이 무반응이 되는 결함을 막는 계약이므로, 노출 여부 자체가
      * 문서에 드러나야 합니다.
      *
+     * - 핸들러 등록은 `.registerHandler` 를 찾는다 — 호출(`registerHandler(`)만 찾으면 메서드를 변수로 떼어 별칭으로
+     *   부르는 확장(`const register = dispatcher.registerHandler; register.call(…)`)을 놓친다(#639 ④, TOTP).
+     * - 재등록 전역은 `window.__{Name}` 이고, 템플릿은 `window.G7TemplateHandlers` 맵도 인정한다 — 코어가 로케일 전환 때
+     *   그 맵을 다시 등록하므로 「미노출」 경고는 거짓이다.
+     * - 초기화 함수는 `function initX(` 와 화살표·함수 표현식(`const initX = (…) =>`, `const initX = function`)을 모두 인정한다.
+     * - 핸들러를 등록하는데 재등록 전역이 없으면 `missingReinit` 이다.
+     *
      * @param  array<string, mixed>  $record  확장 레코드
-     * @return array{global: string|null, initFunction: string|null, source: string|null}
+     * @return array{global: string|null, initFunction: string|null, source: string|null, registersHandlers: bool, missingReinit: bool}
      */
     private function collectEntryPoints(array $record): array
     {
@@ -234,22 +241,34 @@ class FrontendInventory
             $global = null;
             if (preg_match('/window[^;\n]*\)\.\s*(__\w+)\s*=/', $content, $m)) {
                 $global = $m[1];
+            } elseif (preg_match('/\.\s*(G7TemplateHandlers)\s*=/', $content, $m)) {
+                $global = $m[1];
             }
 
             $init = null;
             foreach (['initModule', 'initPlugin', 'initTemplate'] as $fn) {
-                if (preg_match('/function\s+'.$fn.'\s*\(/', $content)) {
+                $declared = preg_match('/function\s+'.$fn.'\s*\(/', $content) === 1
+                    || preg_match('/(?:const|let|var)\s+'.$fn.'\s*(?::[^=]+)?=\s*(?:async\s+)?(?:function\b|(?:\([^)]*\)|\w+)\s*(?::[^=]+)?=>)/', $content) === 1;
+                if ($declared) {
                     $init = $fn;
                     break;
                 }
             }
 
-            if ($global !== null || $init !== null) {
-                return ['global' => $global, 'initFunction' => $init, 'source' => $rel];
+            $registers = preg_match('/\.registerHandler\b/', $content) === 1 || $global === 'G7TemplateHandlers';
+
+            if ($global !== null || $init !== null || $registers) {
+                return [
+                    'global' => $global,
+                    'initFunction' => $init,
+                    'source' => $rel,
+                    'registersHandlers' => $registers,
+                    'missingReinit' => $registers && $global === null,
+                ];
             }
         }
 
-        return ['global' => null, 'initFunction' => null, 'source' => null];
+        return ['global' => null, 'initFunction' => null, 'source' => null, 'registersHandlers' => false, 'missingReinit' => false];
     }
 
     /**
@@ -424,6 +443,13 @@ class FrontendInventory
         return is_file($abs) ? $markup : $rel;
     }
 
+    /**
+     * 하위 디렉토리의 JSON 파일을 상대 경로 목록으로 모읍니다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @param  string  $sub  확장 루트 기준 하위 디렉토리
+     * @return array<int, string> 상대 경로 목록
+     */
     private function collectJsonFiles(array $record, string $sub): array
     {
         $dir = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $sub);

@@ -947,10 +947,11 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "전역 plugins 는 코어 소유 계약이다 — 자기 식별자 하위 키만 갱신한다(#639 state_contracts)",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "plugins": "{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"
+                                                            "plugins.sirsoft-ckeditor5": "{{_local.form}}"
                                                         }
                                                     },
                                                     {

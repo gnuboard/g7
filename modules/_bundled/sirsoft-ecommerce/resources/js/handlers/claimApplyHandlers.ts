@@ -89,6 +89,18 @@ export interface SecondaryCurrencyAmount {
     formatted: string;
 }
 
+/**
+ * 엔진이 커스텀 핸들러에 넘기는 액션 컨텍스트 중 이 파일이 쓰는 부분.
+ *
+ * `setState` 는 핸들러를 부른 컴포넌트의 로컬 상태 writer 다.
+ */
+type HandlerContext = ActionContext & {
+    setState?: (updates: Record<string, any>) => void;
+};
+
+/** 로컬 상태 쓰기 함수 */
+type LocalWriter = (updates: Record<string, any>) => void;
+
 /** 미리보기 debounce 타이머 */
 let claimEstimateDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1054,11 +1066,11 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
  * }
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function initClaimApplyHandler(
     action: ActionWithParams<{ claimType?: string; preselected?: string; claimable?: any }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1089,7 +1101,7 @@ export function initClaimApplyHandler(
         scheduleClaimEstimate(G7Core, {
             claimApiBase: String(seeded.claimApiBase ?? ''),
             isGuest: seeded.claimIsGuest === true,
-        });
+        }, context);
 
         return;
     }
@@ -1202,11 +1214,11 @@ export function initClaimApplyHandler(
  * { "handler": "sirsoft-ecommerce.toggleClaimItem", "params": { "index": 0, "claimApiBase": "..." } }
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function toggleClaimItemHandler(
     action: ActionWithParams<{ index?: number; claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1240,18 +1252,18 @@ export function toggleClaimItemHandler(
         claimResolvedBranch: resolveSelectedRefundBranch(items),
     });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
  * 신청 상품 전체 선택 토글 핸들러
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function toggleClaimSelectAllHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1279,7 +1291,7 @@ export function toggleClaimSelectAllHandler(
         claimResolvedBranch: resolveSelectedRefundBranch(items),
     });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1289,11 +1301,11 @@ export function toggleClaimSelectAllHandler(
  * 입력 칸이 넘는 값을 그대로 보여 주면 요약이 그 수량으로 계산된 것처럼 읽힌다.
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function updateClaimQuantityHandler(
     action: ActionWithParams<{ index?: number; value?: unknown; claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1336,7 +1348,7 @@ export function updateClaimQuantityHandler(
 
     G7Core.state.setLocal({ claimItems: items });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1346,11 +1358,11 @@ export function updateClaimQuantityHandler(
  * 바뀌면 미리보기를 다시 부른다.
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function setClaimReasonHandler(
     action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1366,25 +1378,25 @@ export function setClaimReasonHandler(
         claimSubmitError: null,
     });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
  * 청구 방식(축1) 선택 핸들러
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function setClaimChargeMethodHandler(
     action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
     G7Core.state.setLocal({ claimChargeMethod: String(action.params?.value ?? '') });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1469,11 +1481,11 @@ export function setClaimRefundAccountFieldHandler(
  * { "handler": "sirsoft-ecommerce.changeClaimRefundPriority", "params": { "value": "points_first", "claimApiBase": "...", "isGuest": false } }
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function changeClaimRefundPriorityHandler(
     action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1482,7 +1494,7 @@ export function changeClaimRefundPriorityHandler(
 
     G7Core.state.setLocal({ claimRefundPriority: value });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1534,36 +1546,36 @@ export function startClaimRedeliveryEditHandler(
  * 우편번호·국가가 바뀌면 도서산간이 다시 판정되므로 미리보기를 다시 부른다.
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function applyClaimRedeliveryHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
     G7Core.state.setLocal({ claimRedeliveryEditing: false });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
  * 재발송지 되돌리기 핸들러 (원 배송지로 복귀)
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function resetClaimRedeliveryHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
     G7Core.state.setLocal({ claimRedelivery: null, claimRedeliveryEditing: false });
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1648,11 +1660,11 @@ export function setClaimChangeProductModeHandler(
  * 모달이 연 그 index 의 줄만 갱신한다.
  *
  * @param action 액션 객체
- * @param _context 액션 컨텍스트
+ * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
  */
 export function applyClaimChangeProductHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
-    _context: ActionContext
+    context: HandlerContext
 ): void {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
@@ -1716,7 +1728,7 @@ export function applyClaimChangeProductHandler(
     G7Core.state.setLocal({ claimItems: items, changeProductTarget: null });
     G7Core.modal?.close?.('modal_claim_change_product');
 
-    scheduleClaimEstimate(G7Core, action.params ?? {});
+    scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
@@ -1727,29 +1739,32 @@ export function applyClaimChangeProductHandler(
  *
  * @param G7Core G7Core 인스턴스
  * @param params 액션 파라미터 (claimApiBase / isGuest)
+ * @param context 핸들러가 받은 액션 컨텍스트 (콜백의 상태 반영 대상)
  */
-function scheduleClaimEstimate(G7Core: any, params: { claimApiBase?: string; isGuest?: boolean }): void {
+function scheduleClaimEstimate(
+    G7Core: any,
+    params: { claimApiBase?: string; isGuest?: boolean },
+    context?: HandlerContext
+): void {
     const claimApiBase = params.claimApiBase ?? '';
 
     if (!claimApiBase) return;
 
-    // engine-v1.24.7: ActionDispatcher 의 try/finally 가 debounce 콜백 전에 __g7ActionContext 를
-    // 복원하므로, 콜백 실행 시점의 컨텍스트를 캡처해 두었다가 복원해야 setLocal 이 붙는다.
-    const savedActionContext = (window as any).__g7ActionContext;
+    // 콜백은 액션 실행이 끝난 뒤에 돈다 — 그때의 `G7Core.state.setLocal()` 은 핸들러를 부른 컴포넌트를
+    // 모르므로 정본 `_local` 만 바뀐다. 핸들러가 받은 컨텍스트의 `setState` 를 잡아 두었다가 같은 값을
+    // 함께 실어 그 컴포넌트에도 반영한다(엔진 내부 전역을 바꿔 끼우지 않는다).
+    const componentSetState = typeof context?.setState === 'function' ? context.setState : null;
+    const writeLocal: LocalWriter = (updates) => {
+        G7Core.state.setLocal(updates);
+        componentSetState?.(updates);
+    };
 
     if (claimEstimateDebounceTimer) {
         clearTimeout(claimEstimateDebounceTimer);
     }
 
     claimEstimateDebounceTimer = setTimeout(() => {
-        const previousContext = (window as any).__g7ActionContext;
-        (window as any).__g7ActionContext = savedActionContext;
-
-        try {
-            void estimateClaimInternal(G7Core, claimApiBase, params.isGuest === true);
-        } finally {
-            (window as any).__g7ActionContext = previousContext;
-        }
+        void estimateClaimInternal(G7Core, claimApiBase, params.isGuest === true, writeLocal);
     }, 400);
 }
 
@@ -1763,8 +1778,14 @@ function scheduleClaimEstimate(G7Core: any, params: { claimApiBase?: string; isG
  * @param G7Core G7Core 인스턴스
  * @param claimApiBase 주문 스코프 API 기준 경로
  * @param isGuest 비회원 여부
+ * @param writeLocal 로컬 상태 writer (debounce 콜백은 핸들러 컨텍스트로 만든 writer 를 넘긴다)
  */
-async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest: boolean): Promise<void> {
+async function estimateClaimInternal(
+    G7Core: any,
+    claimApiBase: string,
+    isGuest: boolean,
+    writeLocal: LocalWriter = (updates) => G7Core.state.setLocal(updates)
+): Promise<void> {
     const local = G7Core.state.getLocal();
     const claimType = String(local.claimType ?? '');
     const items = buildClaimItemsPayload(local.claimItems ?? []);
@@ -1774,7 +1795,7 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
     if (items.length === 0 || !local.claimReason) {
         // 아직 계산할 수 없는 상태다 — 옛 금액을 남기면 지금 선택의 결과처럼 읽힌다.
         claimEstimateGeneration += 1;
-        G7Core.state.setLocal({
+        writeLocal({
             claimEstimate: null,
             claimEstimateFormatted: null,
             claimEstimateLoading: false,
@@ -1811,7 +1832,7 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
         };
     }
 
-    G7Core.state.setLocal({ claimEstimateLoading: true });
+    writeLocal({ claimEstimateLoading: true });
 
     try {
         const response = await G7Core.api.post(
@@ -1852,7 +1873,7 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
             ? Number(payload?.total_charge_amount ?? 0) - Number(latest.claimEditOriginalCharge ?? 0)
             : 0;
 
-        G7Core.state.setLocal({
+        writeLocal({
             claimItems: nextItems,
             claimEstimate: payload,
             claimEstimateFormatted: formatClaimEstimate(payload, currency),
@@ -1873,7 +1894,7 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
             ?? t('sirsoft-ecommerce.user.claim_apply.estimate_failed', '예상 금액을 계산하지 못했습니다.');
         const userFixable = isUserFixableClaimError(error);
 
-        G7Core.state.setLocal({
+        writeLocal({
             claimEstimate: null,
             claimEstimateFormatted: null,
             claimEstimateLoading: false,

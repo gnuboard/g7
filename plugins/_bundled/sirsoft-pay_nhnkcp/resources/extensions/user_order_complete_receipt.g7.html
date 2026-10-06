@@ -32,7 +32,11 @@
               <!-- 매출전표 불러오기 — 받아 온 전표를 팝업으로 띄우고, 한 번 불러온 뒤에는 버튼을 감춘다 -->
               <sequence>
                 <set-state target="local" :_kcpOcReceiptLoading="true"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt" method="GET">
+                <!-- 주문 완료 화면은 회원·비회원이 함께 쓴다 — 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 주소를 부른다(전역 헤더는 이 플러그인 주소에 조회 토큰을 붙이지 않는다) -->
+                <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt" method="GET">
+                  <field name="headers">
+                    <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                  </field>
                   <success>
                     <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{response.data.receipt_url}}" _kcpOcCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
                   </success>

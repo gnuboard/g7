@@ -79,11 +79,6 @@ describe('sirsoft-basic — 복귀 주소·이동 폴백', () => {
     fakeLocation.search = '?tab=info';
     fakeLocation.hash = '#contact';
     const redirectExternally = vi.fn(() => Promise.resolve({ status: 'cancelled' }));
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, data: { id: 'ch_1', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' } }),
-    })));
     (window as any).G7Core = {
       dispatch: vi.fn(async (action: { handler: string }) => {
         if (action.handler === 'openModal') {
@@ -91,7 +86,13 @@ describe('sirsoft-basic — 복귀 주소·이동 폴백', () => {
         }
       }),
       state: { get: vi.fn(() => ({})), getGlobal: vi.fn(() => ({})), getLocal: vi.fn(() => ({})), set: vi.fn() },
-      api: { getToken: vi.fn(() => null) },
+      // challenge 시작은 코어 G7Core.api 로 나간다 (ApiClient 는 응답 본문을 돌려준다)
+      api: {
+        post: vi.fn(async () => ({
+          success: true,
+          data: { id: 'ch_1', expires_at: new Date(Date.now() + 300000).toISOString(), render_hint: 'text_code' },
+        })),
+      },
       identity: { createDeferred: vi.fn(() => Promise.resolve({ status: 'cancelled' })), redirectExternally },
     };
 

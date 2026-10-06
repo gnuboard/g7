@@ -17,6 +17,7 @@ const SITE_MOBILE_CALLBACK_URL = `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/pa
 const INICIS_MOBILE_PAY_URL = 'https://mobile.inicis.com/smart/payment/';
 
 const PG_PAYMENT = {
+    payment_method: 'card',
     order_number: 'ORD-HOST-001',
     order_name: 'Host Trust Order',
     amount: 1000,
@@ -49,7 +50,7 @@ function mockInicisMobileEnvironment(mobileCallbackUrl: string, mobilePaymentUrl
                     japan_enabled: false,
                     japan_mid: '',
                     callback_urls: {
-                        mobile_signature: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/signature`,
+                        mobile_signature: `${SITE_ORIGIN}/api/plugins/sirsoft-pay_kginicis/payment/mobile/signature`,
                         mobile_callback: mobileCallbackUrl,
                         mobile_vbank_notify: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
                     },
@@ -88,8 +89,8 @@ function mockInicisCbtEnvironment(cbtAuthUrl: string): void {
                     japan_configured: true,
                     japan_mid: 'CBTTEST001',
                     callback_urls: {
-                        cbt_checkout_token: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token`,
-                        cbt_hash_data: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data`,
+                        cbt_checkout_token: `${SITE_ORIGIN}/api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token`,
+                        cbt_hash_data: `${SITE_ORIGIN}/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data`,
                         cbt_callback: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/callback`,
                         cbt_cvs_notify: `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify`,
                         cbt_auth_url: cbtAuthUrl,
@@ -179,7 +180,7 @@ describe('KG 이니시스 — PG 전송 주소·제출 주소·영수증 창', (
     it('client-config 가 상대 경로 결과 수신 주소를 주면 모바일 결제 폼을 제출하지 않는다', async () => {
         mockInicisMobileEnvironment('/plugins/sirsoft-pay_kginicis/payment/mobile/callback');
 
-        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' } });
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' } } });
 
         expect(submitSpy).toHaveBeenCalledTimes(0);
         expect(modalOpen).toHaveBeenCalledWith('kginicis_payment_error_modal');
@@ -190,7 +191,7 @@ describe('KG 이니시스 — PG 전송 주소·제출 주소·영수증 창', (
     it('서명 응답의 모바일 제출 주소가 이니시스 도메인이 아니면 결제 폼을 제출하지 않는다', async () => {
         mockInicisMobileEnvironment(SITE_MOBILE_CALLBACK_URL, 'https://evil.example/pay');
 
-        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' } });
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' } } });
 
         expect(apiPost).toHaveBeenCalledTimes(1);
         expect(submitSpy).toHaveBeenCalledTimes(0);
@@ -203,7 +204,7 @@ describe('KG 이니시스 — PG 전송 주소·제출 주소·영수증 창', (
         mockInicisCbtEnvironment('https://evil.example/pay');
 
         await requestPaymentHandler({
-            params: { pgPaymentData: { ...PG_PAYMENT, currency: 'JPY' }, paymentMethod: 'card' },
+            params: { pgPaymentData: { ...PG_PAYMENT, currency: 'JPY', payment_method: 'card' } },
         });
 
         expect(apiPost).toHaveBeenCalledTimes(2);
@@ -217,7 +218,7 @@ describe('KG 이니시스 — PG 전송 주소·제출 주소·영수증 창', (
         expect(window.location.origin).not.toBe(SITE_ORIGIN);
         mockInicisMobileEnvironment(SITE_MOBILE_CALLBACK_URL);
 
-        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' } });
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' } } });
 
         expect(submitSpy).toHaveBeenCalledTimes(1);
         expect((submitSpy.mock.instances[0] as unknown as HTMLFormElement).action).toBe(INICIS_MOBILE_PAY_URL);

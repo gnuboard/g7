@@ -162,6 +162,7 @@ class DiagnosticsService
     {
         $today = AnalyticsClock::today();
         $yesterday = Carbon::parse($today)->subDay()->toDateString();
+        $selection = $this->privacy->consentSelection();
 
         return [
             'enabled' => $config->enabled,
@@ -172,7 +173,11 @@ class DiagnosticsService
                 ? PrivacyMode::Anonymous->value
                 : $config->privacyMode->value,
             'anonymous_fallback_reason' => $this->privacy->anonymousFallbackReason($config),
-            'consent_source' => $this->privacy->consentSource(),
+            'consent_source' => $selection->governsConsent() ? PrivacyService::SOURCE_PROVIDER : PrivacyService::SOURCE_NONE,
+            // 동의 출처 배지 — 제공자를 고르지 못한 상태(ambiguous·missing)는 운영자가 환경설정 개인정보
+            // 탭에서 골라야 한다. 출처(`provider`)만 보면 그 상태가 정상 연동과 구별되지 않는다.
+            'consent_selection' => $selection->state,
+            'consent_provider_label' => $selection->provider?->getLabel(),
             // 실패 로그의 주소도 방문 원장과 같은 마스킹 규칙을 받는다(마이그레이션 주석). 그 사실을
             // 함께 싣지 않으면 운영자가 뒤 옥텟이 지워진 값을 원래 주소로 읽고 그 주소로 차단·문의한다
             // — 형제 경로(`VisitorController::show`·`PrivacyController::subjects`)와 같은 키다.

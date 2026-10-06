@@ -24,6 +24,7 @@ import { evaluateComputedDefinitions } from './helpers/ComputedEvaluator';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { getConsentRuntime } from '../consent';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
@@ -2040,6 +2041,23 @@ export class ActionDispatcher {
       }
     });
 
+    // refreshConsent: 방문자 동의 스냅샷을 다시 조회한다 (engine-v1.78.0, #639)
+    // 동의를 저장한 화면(쿠키 배너·마이페이지 동의 카드)이 성공 뒤에 부른다. 코어 동의 런타임이
+    // `_global.consent` 를 갱신하고 `consent:changed` 리스너(차단 엔진 동기화 등)가 끝날 때까지 기다린 뒤
+    // 끝나므로, 같은 시퀀스의 다음 동작(토스트 등)은 동기화 이후에 실행된다. 관리자 화면처럼 런타임이
+    // 없으면 아무 일도 하지 않는다.
+    //
+    // @example <action handler="refreshConsent"/>
+    this.registerHandler('refreshConsent', async () => {
+      const runtime = getConsentRuntime();
+      if (!runtime) {
+        logger.warn('refreshConsent: consent runtime is not available (admin template?)');
+        return;
+      }
+
+      await runtime.refresh();
+    });
+
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
     // 예: 비회원의 /api/auth/user 401은 정상 동작이므로 레이아웃 errorHandling으로 전파 방지
@@ -2069,6 +2087,7 @@ export class ActionDispatcher {
       { name: 'reloadTranslations', description: '다국어 파일을 다시 로드합니다' },
       { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
       { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
+      { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
       { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
       { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
       { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },

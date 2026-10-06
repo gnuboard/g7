@@ -5,11 +5,10 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 6종 / 호출 지점 16곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 13곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 5종 / 호출 지점 15곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 13곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.analytics.consent_revoked` | action | — | `src/Listeners/GdprAnalyticsConsentListener.php:146` |
 | `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:168` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
@@ -24,12 +23,36 @@
 소스의 호출 지점을 자동 감지한 결과입니다. 자기 섹션을 기여하려는 확장은 gdpr 이 아니라 **코어
 문서의 계약**을 보고 `addFilter` 하면 되며, gdpr 설치 여부와 무관하게 구독할 수 있습니다.
 
-동의 granted/revoked 두 훅 모두 `GdprUserConsent $consent, string $source` 를 인자로 넘깁니다. `$source` 값은
+동의 granted/revoked 두 훅은 `?GdprUserConsent $consent, string $source, string $consentKey, ?int $userId, ?string $sessionId`
+를 넘깁니다. **`$consent` 는 null 일 수 있습니다** — 게스트(회원 상태 행이 없다)와 필수 항목의 변경이 그렇습니다.
+무엇이 바뀌었는지는 `$consentKey` 로, 누구의 동의인지는 `$userId`(회원) 또는 `$sessionId`(게스트)로 판단하세요.
+뒤 세 인자는 #639 에서 덧붙였고, 앞 두 인자만 받는 기존 구독자는 그대로 동작합니다. `$source` 값은
 `banner`/`mypage`/`mypage_renew_all`/`register`/`withdraw` 중 하나이며, 어떤 화면에서 동의가
 바뀌었는지 구분해야 하는 리스너(예: 배너 동의만 특정 방식으로 처리하고 싶은 경우)는 이 값으로
 분기합니다. `revoked` 는 명시적 철회(마이페이지)뿐 아니라 회원탈퇴로 인한 일괄 철회
 (`source=withdraw`)에서도 발화됩니다 — "동의 취소" 이벤트를 하나로 통일해 구독자가 두 경로를
 따로 처리하지 않아도 되게 합니다.
+
+**코어 동의 계약 쪽은 이 훅이 아니라 코어 액션을 구독하세요.** 이 플러그인은 쿠키 동의 변경을
+`GdprConsentChangeRelayListener` 가 모아 요청이 끝날 때 코어 범용 액션 `core.consent.changed`
+(`string $providerId, ConsentSubject $subject, array $changes`)로 한 번 다시 알립니다. `$changes` 에는 직전 결정과
+**달라진** 카테고리만 실립니다 — 위 두 훅은 게스트에게 이전 값과 상관없이 저장마다 나가므로, 중계 리스너가 훅 직전에
+남은 동의 이력의 바로 앞 행과 비교해 같은 값은 뺍니다(한 번도 동의하지 않은 방문자의 첫 「모두 거부」는 철회가 아님). 다른 확장이 「방문자 동의가
+바뀌었다」에 반응하려면 그 코어 액션을 구독해야 동의 관리 확장이 바뀌어도 코드가 그대로 동작합니다
+(코어 `docs/extension/consent-provider.md`).
+
+**위 표에 실리지 않는 발행 훅** — 이름을 `self::PLUGIN_ID.'...'` 로 이어 붙여 만들어 자동 감지가 못 잡습니다.
+
+| 훅 이름 | 유형 | 인자 | 발행 위치 |
+|---|---|---|---|
+| `sirsoft-gdpr.consent.before_update` | action | `?int $userId, string $consentKey, array $data` | `GdprConsentService` 동의 갱신 직전 |
+| `sirsoft-gdpr.consent.filter_update_data` | filter | `array $data, ?int $userId, string $consentKey` | 같은 자리 — 저장할 값 가공 |
+| `sirsoft-gdpr.policy_version.before_publish` | action | `array $data` | `GdprPolicyVersionService` 정책 버전 발행 직전 |
+| `sirsoft-gdpr.policy_version.filter_publish_data` | filter | `array $data` | 같은 자리 — 발행 값 가공 |
+| `sirsoft-gdpr.policy_version.after_publish` | action | `GdprPolicyVersion $version` | 발행 직후 |
+| `sirsoft-gdpr.settings.before_save` | action | `array $payload` | `GdprSettingsService` 설정 저장 직전 |
+| `sirsoft-gdpr.settings.filter_save_payload` | filter | `array $payload` | 같은 자리 — 저장 값 가공 |
+| `sirsoft-gdpr.settings.after_save` | action | `array $savedSettings` | 저장 직후 |
 
 **필수 저장 키 제공 계약 — `sirsoft-gdpr.necessary_storage.filter_provided_keys` (filter)**
 
@@ -53,18 +76,17 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
-| `core.analytics.consent_session_id` | filter | `GdprAnalyticsConsentListener` | `resolveConsentSessionId` | 10 |
-| `core.analytics.tracking_permission` | filter | `GdprAnalyticsConsentListener` | `answerTrackingPermission` | 10 |
-| `core.analytics.visitor_has_consent` | filter | `GdprAnalyticsConsentListener` | `answerVisitorHasConsent` | 10 |
 | `core.auth.logout` | action (미선언) | `GdprAuthLogoutListener` | `forgetGdprCookies` | 10 |
 | `core.auth.record_consents` | action (미선언) | `GdprAuthConsentListener` | `recordRegisterConsents` | 10 |
+| `core.consent.registered_providers` | filter | `RegisterGdprConsentProviderListener` | `register` | 20 |
 | `core.notification.after_channel_send` | action (미선언) | `GdprAnnualNoticeListener` | `sent` | - |
 | `core.notification.channel_send_failed` | action (미선언) | `GdprAnnualNoticeListener` | `failed` | - |
 | `core.notification.filter_default_definitions` | filter | `GdprAnnualNoticeListener` | `defaults` | 20 |
 | `core.privacy.manual_run_targets` | filter | `GdprAnnualNoticeListener` | `addManualRunTarget` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `GdprUserWithdrawListener` | `handleWithdraw` | 10 |
 | `core.user.before_delete` | action (미선언) | `GdprUserDeleteListener` | `cascadePluginData` | 10 |
-| `sirsoft-gdpr.consent.revoked` | action (미선언) | `GdprAnalyticsConsentListener` | `relayConsentRevoked` | 10 |
+| `sirsoft-gdpr.consent.granted` | action (미선언) | `GdprConsentChangeRelayListener` | `onGranted` | 20 |
+| `sirsoft-gdpr.consent.revoked` | action (미선언) | `GdprConsentChangeRelayListener` | `onRevoked` | 20 |
 | `sirsoft-gdpr.notification.extract_data` | filter | `GdprAnnualNoticeListener` | `extract` | - |
 <!-- @generated:hooks-subscribed END -->
 
@@ -81,16 +103,23 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
-| `GdprAnalyticsConsentListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/GdprAnalyticsConsentListener.php` |
 | `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |
+| `GdprConsentChangeRelayListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/GdprConsentChangeRelayListener.php` |
 | `GdprUserDeleteListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprUserDeleteListener.php` |
 | `GdprUserWithdrawListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprUserWithdrawListener.php` |
+| `RegisterGdprConsentProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterGdprConsentProviderListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-4개 리스너가 전부 훅 1개씩만 구독하는 것은 각자 트리거가 회원 생명주기의 서로 다른 순간
+`RegisterGdprConsentProviderListener` 는 코어 필터 `core.consent.registered_providers` 에 이 플러그인의 동의
+제공자(`GdprConsentProvider`)를 더합니다 — 코어·다른 확장의 「이 방문자가 무엇에 동의했나」에 코어 계약으로 답하는
+자리입니다(배너를 끄면 `isAvailable()` 이 false). `GdprConsentChangeRelayListener` 는 위 「코어 동의 계약」 단락의
+중계자입니다. 예전 `GdprAnalyticsConsentListener`(코어 방문자 통계 전용 필터 3종에 답하던 리스너)는 코어가 그 질문을
+동의 제공자 계약으로 흡수하면서 없어졌습니다.
+
+회원 생명주기 리스너 4개가 전부 훅 1개씩만 구독하는 것은 각자 트리거가 회원 생명주기의 서로 다른 순간
 (로그인 로그아웃/동의 기록/탈퇴/완전삭제)이라 합쳐도 이득이 없기 때문입니다.
 `GdprAuthLogoutListener` 는 로그아웃 시 `gdpr_session` 게스트 쿠키를 폐기합니다 — 로그인
 후에는 신원이 회원으로 바뀌므로, 로그아웃 시 남아 있는 게스트 세션 쿠키가 다음 방문자와

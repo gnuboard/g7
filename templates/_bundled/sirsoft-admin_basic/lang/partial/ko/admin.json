@@ -1,4 +1,10 @@
 {
+  "extension_integrations": {
+    "title": "함께 쓰면 연동되는 확장",
+    "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
+    "not_installed": "미설치",
+    "inactive": "비활성"
+  },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
     "view_site": "사이트 보기"
@@ -2352,6 +2358,17 @@
     "app_key_regenerated": "어플리케이션 키가 재생성되었습니다.",
     "cache_cleared": "모든 캐시가 삭제되었습니다.",
     "privacy": {
+      "consent_provider": {
+        "title": "동의 관리 제공자",
+        "desc": "방문자의 쿠키·추적 동의를 판단할 확장을 고릅니다. 다른 확장과 방문자 통계는 여기서 고른 제공자의 판단을 따릅니다.",
+        "label": "제공자",
+        "auto": "자동",
+        "auto_current": "자동 (현재: {{provider}})",
+        "ambiguous": "동의 관리 제공자가 2개 이상입니다. 하나를 고르기 전까지 모든 방문자의 동의는 「확인 불가」로 처리되어 외부 스크립트와 분석이 멈춥니다.",
+        "missing": "선택한 제공자가 비활성화되었습니다. 다른 제공자를 고르세요.",
+        "none_no_provider": "동의 관리 확장이 없습니다. 방문자 통계는 익명으로 수집됩니다.",
+        "none_unavailable": "선택한 제공자의 동의 수집이 꺼져 있습니다(예: GDPR 배너 사용 안 함). 동의 관리 없이 운영되며 방문자 통계는 익명으로 수집됩니다."
+      },
       "policy_notice_title": "켜기 전에 개인정보 처리방침을 먼저 고치세요",
       "policy_notice_desc": "아래 기능은 회원의 개인정보를 되돌릴 수 없게 파기하거나 계정 상태를 바꿉니다. 법은 사전 안내 후 운영할 것을 요구하므로, 처리방침에 보유기간·휴면 정책을 먼저 적고 공지한 뒤에 켜세요.",
       "target_count": "대상 {{count}}명",
@@ -3852,10 +3869,8 @@
       "privacy": {
         "consent_source_label": "동의 출처",
         "consent_source_none": "없음",
-        "consent_sources": {
-          "provider": "방문자마다 추적 허용을 정하는 확장",
-          "filter": "확장이 연결한 동의 판정"
-        },
+        "consent_source_needs_selection": "제공자 선택 필요",
+        "consent_source_choose": "개인정보 탭에서 고르기",
         "mode_label": "개인정보 수준",
         "modes": {
           "full": {

@@ -252,9 +252,6 @@ return [
         'index_success' => 'Loaded the visitor list.',
         'anonymous_mode_notice' => 'In anonymous mode the visitor key rotates daily — visits by the same person are only grouped within a single day.',
     ],
-    'consent' => [
-        'fetch_success' => 'Checked the visitor consent status.',
-    ],
     'summary' => [
         'fetch_success' => 'Loaded the visitor summary.',
         'disabled' => 'The public visitor summary is turned off.',

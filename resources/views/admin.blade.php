@@ -54,6 +54,8 @@
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
                 trustedScriptHosts: @json($trustedScriptHosts ?? []),
+                // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
+                stateContracts: @json((object) ($stateContracts ?? [])),
                 appConfig: @json($appConfig ?? []),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,

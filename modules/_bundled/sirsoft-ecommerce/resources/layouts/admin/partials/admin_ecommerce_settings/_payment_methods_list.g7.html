@@ -13,7 +13,9 @@
         <div data-if="{{!$method._orphaned}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
           <icon name="grip-vertical" class="text-lg"/>
         </div>
-        <icon name="{{$method._cached_icon ?? 'circle-question'}}" class="text-secondary text-2xl"/>
+        <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639) -->
+        <brand-mark data-type="composite" data-if="{{$method._cached_brand_mark}}" brandMark="{{$method._cached_brand_mark}}" :size="28"/>
+        <icon data-if="{{!$method._cached_brand_mark}}" name="{{$method._cached_icon ?? 'circle-question'}}" class="text-secondary text-2xl"/>
         <div class="flex-1 min-w-0">
           <!-- 이름 + 상태 배지 줄. 배지는 shrink-0 이라 좁아지면 이름이 줄어야 하는데, min-w-0 이 없으면 flex 항목의 기본 min-width:auto 때문에 줄지 못하고 글자 단위로 접힌다. -->
           <div class="flex-center gap-2 min-w-0">

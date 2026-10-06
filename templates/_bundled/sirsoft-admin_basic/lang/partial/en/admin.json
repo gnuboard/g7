@@ -1,4 +1,10 @@
 {
+  "extension_integrations": {
+    "title": "Works together with",
+    "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
+    "not_installed": "Not installed",
+    "inactive": "Inactive"
+  },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
     "view_site": "View site"
@@ -2352,6 +2358,17 @@
     "app_key_regenerated": "Application key has been regenerated.",
     "cache_cleared": "All cache has been cleared.",
     "privacy": {
+      "consent_provider": {
+        "title": "Consent provider",
+        "desc": "Choose the extension that decides visitors' cookie and tracking consent. Other extensions and visitor analytics follow the provider chosen here.",
+        "label": "Provider",
+        "auto": "Automatic",
+        "auto_current": "Automatic (current: {{provider}})",
+        "ambiguous": "More than one consent provider is installed. Until you choose one, every visitor's consent is treated as \"unknown\", so external scripts and analytics stop.",
+        "missing": "The selected provider has been deactivated. Choose another provider.",
+        "none_no_provider": "No consent management extension is installed. Visitor analytics are collected anonymously.",
+        "none_unavailable": "The selected provider is not collecting consent (for example, the GDPR banner is turned off). The site runs without consent management and visitor analytics are collected anonymously."
+      },
       "policy_notice_title": "Update your privacy policy before turning these on",
       "policy_notice_desc": "The settings below irreversibly erase members’ personal data or change account status. The law requires advance notice, so document the retention and dormancy policy and announce it before enabling.",
       "target_count": "{{count}} member(s) affected",
@@ -3852,10 +3869,8 @@
       "privacy": {
         "consent_source_label": "Consent source",
         "consent_source_none": "None",
-        "consent_sources": {
-          "provider": "An extension that decides tracking per visitor",
-          "filter": "Consent check connected by an extension"
-        },
+        "consent_source_needs_selection": "Choose a provider",
+        "consent_source_choose": "Choose in the Privacy tab",
         "mode_label": "Privacy level",
         "modes": {
           "full": {

@@ -5,32 +5,43 @@
  * SDK 로드/goPay 호출/모바일 redirect 등 외부 부수효과 의존 흐름은
  * tests/scenarios 매니페스트(통합 시나리오)에서 다루며, 본 단위 테스트는
  * "초기 가드 + catch 블록 정상 호출" 두 축에 집중합니다.
+ *
+ * 결제수단은 액션 인자(`paymentMethod` → `pgPaymentData.payment_method`)로만 받고, SignData 발급은 G7Core.api 로
+ * 보낸다 — 엔진 내부 화면 상태(`window.__templateApp`)·로그인 토큰 직접 읽기·원시 fetch 를 쓰지 않는다(#639).
+ *
+ * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
 
+/** 서버(buildPgPaymentData)가 내려주는 모양 — 결제수단 ID 를 함께 싣는다 */
 const PG_PAYMENT = {
     order_number: 'ORD-001',
     order_name: 'Test Order',
     amount: 10000,
+    payment_method: 'card',
     customer_email: 'buyer@example.com',
     customer_phone: '01012345678',
 };
 
 describe('requestPaymentHandler', () => {
     let apiGet: ReturnType<typeof vi.fn>;
+    let apiPost: ReturnType<typeof vi.fn>;
     let setLocalSpy: ReturnType<typeof vi.fn>;
     let toastErrorSpy: ReturnType<typeof vi.fn>;
+    let globalState: Record<string, unknown>;
 
     beforeEach(() => {
         apiGet = vi.fn();
+        apiPost = vi.fn();
         setLocalSpy = vi.fn();
         toastErrorSpy = vi.fn();
+        globalState = {};
         (window as Record<string, unknown>).G7Core = {
-            api: { get: apiGet },
-            state: { setLocal: setLocalSpy },
+            api: { get: apiGet, post: apiPost },
+            state: { setLocal: setLocalSpy, get: () => globalState },
             toast: { error: toastErrorSpy },
         };
     });
@@ -40,6 +51,8 @@ describe('requestPaymentHandler', () => {
         vi.restoreAllMocks();
     });
 
+    // @scenario concern=payment_entry
+    // @effects payment_entry_guarded
     it('pgPaymentData가 없으면 console.error 후 조기 반환', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -52,6 +65,28 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario concern=payment_entry
+    // @effects payment_method_from_action_argument_only
+    it('결제수단이 액션 인자에 없으면 결제를 시작하지 않는다 — 화면 상태나 card 로 추측하지 않는다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        (window as unknown as Record<string, unknown>).__templateApp = {
+            globalState: { _local: { paymentMethod: 'vbank' } },
+        };
+
+        try {
+            const { payment_method: _omit, ...withoutMethod } = PG_PAYMENT;
+            await requestPaymentHandler({ params: { pgPaymentData: withoutMethod } });
+
+            expect(apiGet).not.toHaveBeenCalled();
+            expect(setLocalSpy).toHaveBeenCalledWith({ isSubmittingOrder: false });
+            expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('결제 중 오류가 발생'));
+        } finally {
+            delete (window as unknown as Record<string, unknown>).__templateApp;
+        }
+    });
+
+    // @scenario concern=payment_entry
+    // @effects payment_entry_guarded
     it('client config 응답에 data 가 없으면 console.error 후 조기 반환', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockResolvedValue({}); // data 누락
@@ -65,6 +100,8 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario concern=payment_entry
+    // @effects payment_entry_guarded
     it('client config API 자체가 throw 하면 catch 블록에서 toast.error + setLocal 복구', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('Network error'));
@@ -75,7 +112,7 @@ describe('requestPaymentHandler', () => {
             expect.stringContaining('requestPayment error'),
             expect.any(Error)
         );
-        // catch 블록은 paymentMethod 기본값 'card' 로 setLocal 복구
+        // 서버가 내려준 결제수단(pgPaymentData.payment_method)으로 복구
         expect(setLocalSpy).toHaveBeenCalledWith({
             isSubmittingOrder: false,
             paymentMethod: 'card',
@@ -85,6 +122,8 @@ describe('requestPaymentHandler', () => {
         );
     });
 
+    // @scenario concern=payment_entry
+    // @effects payment_method_from_action_argument_only
     it('paramPaymentMethod 가 명시되면 catch 시 그 값으로 복구', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('boom'));
@@ -102,6 +141,8 @@ describe('requestPaymentHandler', () => {
         });
     });
 
+    // @scenario concern=payment_entry
+    // @effects payment_entry_guarded
     it('catch 블록은 결제 진행 플래그를 반드시 false 로 리셋', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('fail'));
@@ -124,15 +165,16 @@ describe('requestPaymentHandler', () => {
      *   덮어쓰이면 PayMethod 가 항상 CARD 로 고정.
      *
      * 검증 전략: navigator.userAgentData.mobile = true 로 모바일 판정 강제.
-     *   fetch (signData) 와 apiGet (client-config + order) 을 mock 한 뒤,
+     *   G7Core.api.post (signData) 와 apiGet (client-config + order) 을 mock 한 뒤,
      *   HTMLFormElement.prototype.submit 를 spy 로 가로채 form 의 hidden input
      *   PayMethod 값을 검증한다 (실제 NicePay 모바일 endpoint 로 redirect 되지 않음).
      */
     describe('모바일 환경 일반 결제수단 PayMethod 매핑', () => {
         const NICEPAY_MOBILE_HOST = 'web.nicepay.co.kr';
+        const SIGN_DATA_URL = 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/sign-data';
 
         let submitSpy: ReturnType<typeof vi.spyOn>;
-        let fetchSpy: ReturnType<typeof vi.fn>;
+        let fetchSpy: ReturnType<typeof vi.spyOn>;
         let originalUserAgentData: PropertyDescriptor | undefined;
 
         beforeEach(() => {
@@ -148,7 +190,7 @@ describe('requestPaymentHandler', () => {
                         data: {
                             mid: 'SRpaytestm',
                             sdk_url: 'https://example/sdk.js',
-                            sign_data_url: 'https://shop.example.test/api/plugins/sirsoft-pay_nicepayments/sign-data',
+                            sign_data_url: SIGN_DATA_URL,
                             callback_url: 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback',
                             useEscrow: false,
                         },
@@ -160,15 +202,12 @@ describe('requestPaymentHandler', () => {
                 return Promise.resolve({});
             });
 
-            fetchSpy = vi.fn().mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    ediDate: '20260101000000',
-                    signData: 'fake-sig',
-                    mid: 'SRpaytestm',
-                }),
+            apiPost.mockResolvedValue({
+                ediDate: '20260101000000',
+                signData: 'fake-sig',
+                mid: 'SRpaytestm',
             });
-            (window as unknown as Record<string, unknown>).fetch = fetchSpy;
+            fetchSpy = vi.spyOn(globalThis, 'fetch');
 
             submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
         });
@@ -180,12 +219,11 @@ describe('requestPaymentHandler', () => {
                 delete (navigator as unknown as Record<string, unknown>).userAgentData;
             }
             submitSpy.mockRestore();
-            delete (window as unknown as Record<string, unknown>).fetch;
         });
 
-        function getSubmittedPayMethod(): string | null {
+        function getSubmittedField(name: string): string | null {
             const form = submitSpy.mock.instances[0] as HTMLFormElement;
-            const input = form.querySelector('input[name="PayMethod"]') as HTMLInputElement | null;
+            const input = form.querySelector(`input[name="${name}"]`) as HTMLInputElement | null;
             return input?.value ?? null;
         }
 
@@ -194,125 +232,150 @@ describe('requestPaymentHandler', () => {
             return form.action;
         }
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it("가상계좌(vbank)는 PayMethod='VBANK' 로 모바일 endpoint 에 POST", async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'vbank' },
             });
 
             expect(submitSpy).toHaveBeenCalledTimes(1);
-            expect(getSubmittedPayMethod()).toBe('VBANK');
+            expect(getSubmittedField('PayMethod')).toBe('VBANK');
             expect(getSubmittedFormAction()).toContain(NICEPAY_MOBILE_HOST);
         });
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it("계좌이체(bank)는 PayMethod='BANK' 로 모바일 endpoint 에 POST", async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'bank' },
             });
 
             expect(submitSpy).toHaveBeenCalledTimes(1);
-            expect(getSubmittedPayMethod()).toBe('BANK');
+            expect(getSubmittedField('PayMethod')).toBe('BANK');
             expect(getSubmittedFormAction()).toContain(NICEPAY_MOBILE_HOST);
         });
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it("휴대폰결제(phone)는 PayMethod='CELLPHONE' 로 모바일 endpoint 에 POST", async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'phone' },
             });
 
             expect(submitSpy).toHaveBeenCalledTimes(1);
-            expect(getSubmittedPayMethod()).toBe('CELLPHONE');
+            expect(getSubmittedField('PayMethod')).toBe('CELLPHONE');
             expect(getSubmittedFormAction()).toContain(NICEPAY_MOBILE_HOST);
         });
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it("신용카드(card)는 PayMethod='CARD'", async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
             });
 
             expect(submitSpy).toHaveBeenCalledTimes(1);
-            expect(getSubmittedPayMethod()).toBe('CARD');
+            expect(getSubmittedField('PayMethod')).toBe('CARD');
         });
 
-        it('SignData 요청은 주문자 이메일과 전화번호를 함께 전송', async () => {
+        // @scenario concern=pay_method_mapping
+        // @effects payment_method_from_action_argument_only
+        it('paymentMethod 미명시 시 서버가 내려준 pgPaymentData.payment_method 를 쓴다 — 엔진 화면 상태는 보지 않는다', async () => {
+            (window as unknown as Record<string, unknown>).__templateApp = {
+                globalState: { _local: { paymentMethod: 'card' } },
+            };
+
+            try {
+                await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' } } });
+
+                expect(getSubmittedField('PayMethod')).toBe('VBANK');
+            } finally {
+                delete (window as unknown as Record<string, unknown>).__templateApp;
+            }
+        });
+
+        // @scenario concern=sign_data_member
+        // @effects sign_data_via_core_api
+        it('SignData 요청은 G7Core.api 로 주문자 이메일과 전화번호를 함께 전송 — 원시 fetch 를 쓰지 않는다', async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
             });
 
-            expect(fetchSpy).toHaveBeenCalledTimes(1);
-            const [, init] = fetchSpy.mock.calls[0];
-            expect(JSON.parse(String(init?.body))).toEqual({
+            expect(apiPost).toHaveBeenCalledTimes(1);
+            const [url, body] = apiPost.mock.calls[0];
+            expect(url).toBe(SIGN_DATA_URL);
+            expect(body).toEqual({
                 amt: PG_PAYMENT.amount,
                 moid: PG_PAYMENT.order_number,
                 buyer_email: PG_PAYMENT.customer_email,
                 buyer_phone: PG_PAYMENT.customer_phone,
             });
+            expect(fetchSpy).not.toHaveBeenCalled();
+            expect(getSubmittedField('SignData')).toBe('fake-sig');
         });
 
-        it('비회원이면 SignData 요청에 조회 토큰을 싣는다 — 실패 주문 재결제 복구의 소유자 증명', async () => {
-            window.localStorage.removeItem('auth_token');
-            window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+        // @scenario concern=sign_data_guest
+        // @effects sign_data_via_core_api, guest_token_read_from_public_state_contract
+        it('비회원이면 SignData 요청에 공개 상태 계약의 조회 토큰을 싣는다 — 실패 주문 재결제 복구의 소유자 증명', async () => {
+            globalState.guestOrderToken = '1999999999|guest-token';
 
-            try {
-                await requestPaymentHandler({
-                    params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
-                });
+            await requestPaymentHandler({
+                params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+            });
 
-                const [, init] = fetchSpy.mock.calls[0];
-                const headers = init?.headers as Record<string, string>;
-                expect(headers['X-Guest-Order-Token']).toBe('1999999999|guest-token');
-                expect(headers.Authorization).toBeUndefined();
-            } finally {
-                window.sessionStorage.removeItem('g7_guest_order_token');
-            }
+            const headers = (apiPost.mock.calls[0][2]?.headers ?? {}) as Record<string, string>;
+            expect(headers['X-Guest-Order-Token']).toBe('1999999999|guest-token');
+            expect(headers.Authorization).toBeUndefined();
         });
 
-        it('회원이면 SignData 요청에 Bearer 만 싣고 비회원 토큰은 싣지 않는다', async () => {
+        // @scenario concern=sign_data_member
+        // @effects sign_data_via_core_api
+        it('회원 Bearer 는 플러그인이 싣지 않는다 — 저장소의 로그인 토큰을 읽지 않고 G7Core.api 에 맡긴다', async () => {
             window.localStorage.setItem('auth_token', 'member-token');
-            window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
 
             try {
                 await requestPaymentHandler({
                     params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
                 });
 
-                const [, init] = fetchSpy.mock.calls[0];
-                const headers = init?.headers as Record<string, string>;
-                expect(headers.Authorization).toBe('Bearer member-token');
+                const headers = (apiPost.mock.calls[0][2]?.headers ?? {}) as Record<string, string>;
+                expect(headers.Authorization).toBeUndefined();
                 expect(headers['X-Guest-Order-Token']).toBeUndefined();
             } finally {
                 window.localStorage.removeItem('auth_token');
-                window.sessionStorage.removeItem('g7_guest_order_token');
             }
         });
 
-        it("paymentMethod 미명시 시 _local.paymentMethod 로 fallback", async () => {
-            (window as unknown as Record<string, unknown>).__templateApp = {
-                globalState: { _local: { paymentMethod: 'vbank' } },
-            };
+        // @scenario concern=sign_data_member
+        // @effects payment_entry_guarded
+        it('SignData 발급이 실패하면 결제 폼을 제출하지 않고 오류를 알린다', async () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            apiPost.mockRejectedValue(new Error('403'));
 
-            await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
+            await requestPaymentHandler({
+                params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+            });
 
-            expect(getSubmittedPayMethod()).toBe('VBANK');
-
-            delete (window as unknown as Record<string, unknown>).__templateApp;
+            expect(submitSpy).not.toHaveBeenCalled();
+            expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('결제 중 오류가 발생'));
         });
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it("간편결제(nicepay_kakaopay)는 PayMethod='CARD' + DirectKakao=Y", async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'nicepay_kakaopay' },
             });
 
-            const form = submitSpy.mock.instances[0] as HTMLFormElement;
-            const reservedInput = form.querySelector('input[name="NicepayReserved"]') as HTMLInputElement | null;
-            const mallReservedInput = form.querySelector('input[name="MallReserved"]') as HTMLInputElement | null;
-            const mallReserved1Input = form.querySelector('input[name="MallReserved1"]') as HTMLInputElement | null;
-
-            expect(getSubmittedPayMethod()).toBe('CARD');
-            expect(reservedInput?.value).toBe('DirectKakao=Y');
-            expect(mallReservedInput?.value).toBe('nicepay_easy_pay_method=nicepay_kakaopay');
-            expect(mallReserved1Input?.value).toBe('nicepay_kakaopay');
+            expect(getSubmittedField('PayMethod')).toBe('CARD');
+            expect(getSubmittedField('NicepayReserved')).toBe('DirectKakao=Y');
+            expect(getSubmittedField('MallReserved')).toBe('nicepay_easy_pay_method=nicepay_kakaopay');
+            expect(getSubmittedField('MallReserved1')).toBe('nicepay_kakaopay');
         });
 
+        // @scenario concern=pay_method_mapping
+        // @effects mobile_pay_method_mapped
         it('모바일 form 은 acceptCharset=euc-kr', async () => {
             await requestPaymentHandler({
                 params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'vbank' },
@@ -336,10 +399,14 @@ describe('requestPaymentHandler', () => {
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://web.nicepay.co.kr/v3/webstd/js/nicepay-3.0.js';
 
+    // @scenario concern=sdk_host
+    // @effects sdk_host_gated
     it('신뢰 호스트 https URL 은 통과한다', () => {
         expect(() => assertTrustedSdkUrl(TRUSTED_SDK_URL)).not.toThrow();
     });
 
+    // @scenario concern=sdk_host
+    // @effects sdk_host_gated
     it.each([
         ['미신뢰 호스트', 'https://cdn.evil.com/sdk.js'],
         ['http (평문)', TRUSTED_SDK_URL.replace('https://', 'http://')],
@@ -353,6 +420,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         expect(() => assertTrustedSdkUrl(url as string)).toThrow();
     });
 
+    // @scenario concern=sdk_host
+    // @effects sdk_host_gated
     it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
@@ -363,6 +432,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         );
     });
 
+    // @scenario concern=sdk_host
+    // @effects sdk_host_gated
     it('manifest 가 호스트별 사유를 함께 선언한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')

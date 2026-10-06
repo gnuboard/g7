@@ -38,6 +38,7 @@
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
+| `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` | filter | `RestrictPaymentMethodsForCurrencyListener` | `filter` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
@@ -136,6 +137,7 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
+| `RestrictPaymentMethodsForCurrencyListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestrictPaymentMethodsForCurrencyListener.php` |
 | `ScrubEscrowRecipientOnOrderAnonymizeListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ScrubEscrowRecipientOnOrderAnonymizeListener.php` |
 | `ValidateCbtSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateCbtSettingsListener.php` |
 <!-- @generated:listeners END -->
@@ -155,16 +157,24 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 | `resources/extensions/admin_order_list_payment_method_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_order_list_payment_method_badges` |
 | `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
 | `resources/extensions/checkout_payment_error.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
+| `resources/extensions/user_order_complete_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/order_complete` |
 | `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
 `checkout_payment_error.g7.html`은 체크아웃 화면에 KG 이니시스 특유의 오류 메시지(예: 계약되지
-않은 결제수단 선택 시 안내)를 끼워 넣고, `user_order_show.g7.html`은 주문 상세에 영수증 버튼을
-추가합니다. 관리자 쪽 두 조각(`admin_order_list_payment_method_badge`/`admin_order_payment_query`)은
+않은 결제수단 선택 시 안내)를 끼워 넣고, `user_order_show.g7.html`은 주문 상세·신청서 상세의 결제 정보
+카드에 간편결제 이름·입금 안내·영수증·결제확인서를, `user_order_complete_receipt.g7.html`은 주문 완료 화면에
+간편결제 이름·영수증 버튼을 붙입니다. 관리자 쪽 두 조각(`admin_order_list_payment_method_badge`/`admin_order_payment_query`)은
 "이 주문이 테스트 모드로 결제됐는가"와 "PG 거래 상태를 다시 조회"를 관리자 화면에서 바로
-확인하게 하는 운영 편의 기능입니다 — 실제 결제 로직과는 분리돼 있어 이 조각만 비활성화해도
-결제 자체는 영향받지 않습니다.
+확인하게 하는 운영 편의 기능이고, `admin_order_payment_query` 는 결제수단 칸에 간편결제 이름도 덧붙입니다 —
+실제 결제 로직과는 분리돼 있어 이 조각만 비활성화해도 결제 자체는 영향받지 않습니다.
+
+예전에는 이 일들 중 상당수를 화면 주입 스크립트가 했습니다(주소 글자 매칭, DOM 폴링, `window.fetch`·`history.pushState`
+덮어쓰기, 로그인 토큰 직접 읽기). #639 에서 모두 조각과 서버 훅으로 옮겼습니다. 조각이 붙는 자리는 이커머스·템플릿이 약속한
+id·확장점만 씁니다 — `mypage_order_payment_provider_slot`(템플릿), `order_complete_payment_summary`(템플릿 `shop/order_complete`),
+`payment_method_block_{{payIdx}}`(이커머스 관리자 주문 상세). 대상 쪽이 그 자리를 없애면 조각은 오류 없이 사라지므로, 대상
+확장을 올린 뒤에는 화면에 여전히 나타나는지 확인합니다.
 
 목록 배지 조각은 **자기 배지와 자기 테스트 결제 맵(`kginicis_test_map`)만** 갖습니다. 주문 목록의
 컬럼은 이커머스 레이아웃이 단일 출처이므로 컬럼 배열을 복사해 덮지 않고, 다른 PG 의 테스트 결제

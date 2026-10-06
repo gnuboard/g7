@@ -114,6 +114,9 @@ import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLaunche
 // 서버 기기 감지값(appConfig.isIos) 클라이언트 보정 (iPadOS 데스크탑 UA 케이스)
 import { correctIosDeviceState } from './handlers/deviceCorrection';
 
+// 인증 경계 비회원 저장값 정리 (#639 ⑦)
+import { installAuthBoundaryStorageCleanup } from './handlers/authBoundaryStorage';
+
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
 import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
@@ -158,6 +161,9 @@ export function initTemplate(): void {
         // 서버 UA 판정이 놓친 iPadOS(데스크탑 UA) 를 클라 신호로 보정 → appConfig.isIos.
         // 애플페이 iOS 게이팅(체크아웃 레이아웃 iteration 필터)이 이 값을 참조한다.
         correctIosDeviceState();
+
+        // 로그인·로그아웃 경계에서 카트키·비회원 주문 토큰을 정리·재발급한다(#639 ⑦). 다시 불려도 구독은 하나다.
+        installAuthBoundaryStorageCleanup();
       } else {
         retryCount++;
         if (retryCount <= maxRetries) {

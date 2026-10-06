@@ -51,7 +51,7 @@ class PublicTemplateCacheAmplificationTest extends TestCase
      */
     private const UNTHROTTLED_PUBLIC_ROUTES = [
         'api.public.analytics.collect',
-        'api.public.analytics.consent',
+        'api.public.consent',
         'api.public.analytics.summary',
         'api.public.templates.assets',
         'api.public.templates.layout-attachment-file',

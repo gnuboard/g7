@@ -31,6 +31,9 @@
         <span class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.app_time ?? '-'}}</span>
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_pay_method</span>
         <span class="text-gray-900 dark:text-gray-100">{{kcp_status.data?.card_name ?? kcp_status.data?.bank_name ?? kcp_status.data?.use_pay_method ?? '-'}}</span>
+        <!-- 간편결제 원 수단(PAYCO·네이버페이·카카오페이·애플페이) — 이커머스 결제수단 칸은 PG 를 모르므로 이 패널이 보여 준다. 남의 화면 글자를 고치지 않는다 -->
+        <span data-if="{{!!kcp_status.data?._embedded_pg_provider_label}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_easy_pay</span>
+        <span data-if="{{!!kcp_status.data?._embedded_pg_provider_label}}" data-testid="nhnkcp-admin-easy-pay-label" class="text-gray-900 dark:text-gray-100">{{kcp_status.data?._embedded_pg_provider_label}}</span>
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_res_cd</span>
         <span class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.res_cd ?? '-'}}</span>
         <span data-if="{{(kcp_status.data?.cancelled_amount ?? 0) > 0}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_cancelled_amount</span>

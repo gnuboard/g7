@@ -30,6 +30,7 @@
 | `activeModal` | `string \| null` | 현재 최상위 모달 ID | 모달 시스템 (하위 호환) |
 | `sidebarOpen` | `boolean` | 사이드바 열림 상태 | 반응형 레이아웃 |
 | `errorMessage` | `string \| null` | 에러 메시지 (에러 모달용) | 에러 처리 |
+| `consent` | `{contractVersion, status, categories, needsRenewal, policyVersion}` | 방문자 동의 스냅샷 — 사용자 템플릿에서만 코어 동의 런타임이 쓴다 (engine-v1.78.0). 확장은 읽기만 하고 `refreshConsent`·`G7Core.consent` 로 갱신을 요청한다 | 동의 제공자 계약 (`docs/extension/consent-provider.md`) |
 
 ### toasts (토스트 시스템)
 
@@ -722,6 +723,22 @@ const unsubscribe = G7Core.state.subscribe((state) => {
 // 구독 해제
 unsubscribe();
 ```
+
+컴포넌트에서 구독하면 언마운트 때 반드시 해제합니다. effect 가 해제 함수를 그대로 돌려주면 됩니다.
+
+```tsx
+useEffect(() => {
+  const unsubscribe = G7Core.state.subscribe((state) => {
+    setSidebarOpen(state.sidebarOpen === true);
+  });
+
+  return unsubscribe;
+}, []);
+```
+
+해제하지 않으면 화면을 떠난 뒤에도 리스너가 남고, 화면을 오갈 때마다 하나씩 쌓입니다.
+
+> engine-v1.78.0 이전에는 `subscribe()` 가 해제 함수 대신 `undefined` 를 돌려줘 위 패턴으로 해제되지 않았습니다. engine-v1.78.0 부터 실제 해제 함수를 돌려줍니다.
 
 ### G7Core.state.getDataSource(dataSourceId)
 

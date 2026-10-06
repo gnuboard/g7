@@ -464,6 +464,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `loadFromLocalStorage` | localStorage 읽기 | 키 | resultTo |
 | `setLocale` | 앱 언어 변경 | - | locale |
 | `emitEvent` | 커스텀 이벤트 발화 | 이벤트명 | payload |
+| `refreshConsent` | 방문자 동의 스냅샷(`_global.consent`) 다시 읽기 — 사용자 템플릿 전용, 구독자(`consent:changed`)가 끝날 때까지(최대 3초) 기다린 뒤 다음 액션으로 진행 (engine-v1.78.0) | - | - |
 | `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | src | id, async |
 | `callExternal` | 외부 SDK 함수 호출 | 함수 경로 | args |
 | `callExternalEmbed` | 외부 SDK 임베드 호출 | 함수 경로 | args, container |

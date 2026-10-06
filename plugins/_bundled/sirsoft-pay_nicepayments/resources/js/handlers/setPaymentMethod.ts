@@ -68,16 +68,38 @@ export function setPaymentMethodHandler(action: any): void {
     }
 }
 
-// 코어 결제 버튼(신용카드 등) 클릭 시에도 간편결제 선택 표시 해제
-export function initEasyPayWatcher(): void {
-    const templateApp = (window as any).__templateApp;
-    if (typeof templateApp?.onGlobalStateChange !== 'function') return;
+/** 직전 구독의 해제 함수 — 재초기화(initPlugin 재호출)마다 새로 구독하기 전에 먼저 푼다 */
+let unsubscribeEasyPayWatcher: (() => void) | null = null;
 
-    templateApp.onGlobalStateChange((state: any) => {
-        const paymentMethod = state?._local?.paymentMethod;
+/**
+ * 코어 결제 버튼(신용카드 등) 클릭 시에도 간편결제 선택 표시를 해제하는 감시를 겁니다.
+ *
+ * 공개 API `G7Core.state.subscribe()` 로 상태 변화를 받고, 선택한 결제수단은 `G7Core.state.getLocal()` 로 읽는다.
+ * 언어 전환 등으로 코어가 initPlugin 을 다시 부르면 이 함수도 다시 불리므로, 앞서 건 구독을 먼저 풀어
+ * 리스너가 쌓이지 않게 한다(#639 — 종전에는 엔진 내부 `__templateApp.onGlobalStateChange` 에 걸고 해제 함수를 버렸다).
+ */
+export function initEasyPayWatcher(): void {
+    const state = (window as any).G7Core?.state;
+    if (typeof state?.subscribe !== 'function') return;
+
+    unsubscribeEasyPayWatcher?.();
+    unsubscribeEasyPayWatcher = null;
+
+    const unsubscribe = state.subscribe(() => {
+        const paymentMethod = state.getLocal?.()?.paymentMethod;
         if (typeof paymentMethod !== 'string') return;
         if (!paymentMethod.startsWith('nicepay_')) {
             clearEasyPayButtonStyles();
         }
     });
+
+    unsubscribeEasyPayWatcher = typeof unsubscribe === 'function' ? unsubscribe : null;
+}
+
+/**
+ * 간편결제 선택 표시 감시를 풉니다 (테스트·정리용).
+ */
+export function disposeEasyPayWatcher(): void {
+    unsubscribeEasyPayWatcher?.();
+    unsubscribeEasyPayWatcher = null;
 }

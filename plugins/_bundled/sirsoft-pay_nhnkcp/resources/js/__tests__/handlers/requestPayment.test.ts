@@ -5,6 +5,8 @@
  * iframe SDK 로드 / KCP_Pay_Execute 호출 등 외부 부수효과 의존 흐름은
  * tests/scenarios 매니페스트(통합 시나리오)에서 다루며, 본 단위 테스트는
  * "초기 가드 + catch 블록 정상 호출" 두 축에 집중합니다.
+ *
+ * 시나리오: plugins/_bundled/sirsoft-pay_nhnkcp/tests/scenarios/request-payment-handler.yaml
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -22,7 +24,7 @@ const PG_PAYMENT = {
     order_number: 'ORD-001',
     order_name: 'Test Order',
     amount: 10000,
-    pay_method: 'card',
+    payment_method: 'card',
 };
 
 describe('requestPaymentHandler', () => {
@@ -50,6 +52,8 @@ describe('requestPaymentHandler', () => {
         document.body.innerHTML = '';
     });
 
+    // @scenario area=entry_guard
+    // @effects early_return_without_payment_data
     it('pgPaymentData가 없으면 console.error 후 조기 반환', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -62,6 +66,8 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario area=entry_guard
+    // @effects apple_pay_blocked_off_ios
     it('iOS 모바일 기기가 아니면 Apple Pay 결제 요청을 client config 호출 전 차단', async () => {
         await requestPaymentHandler({
             params: {
@@ -81,6 +87,8 @@ describe('requestPaymentHandler', () => {
         expect(modalOpenSpy).toHaveBeenCalledWith('nhnkcp_payment_error_modal');
     });
 
+    // @scenario area=currency
+    // @effects non_krw_blocked
     it('KRW가 아닌 통화는 client config 호출 전 차단', async () => {
         await requestPaymentHandler({
             params: {
@@ -99,6 +107,8 @@ describe('requestPaymentHandler', () => {
         expect(modalOpenSpy).toHaveBeenCalledWith('nhnkcp_payment_error_modal');
     });
 
+    // @scenario area=client_config
+    // @effects client_config_failure_handled
     it('client config 응답에 data 가 없으면 console.error 후 조기 반환', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockResolvedValue({}); // data 누락
@@ -112,13 +122,15 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario area=client_config
+    // @effects client_config_failure_handled
     it('client config API 자체가 throw 하면 catch 블록에서 setLocal 복구', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('Network error'));
 
         await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
 
-        // catch 블록은 paymentMethod를 pgPaymentData.pay_method 또는 'card' 로 setLocal 복구
+        // catch 블록은 액션 인자의 결제수단(pgPaymentData.payment_method)으로 setLocal 복구
         expect(setLocalSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
@@ -127,13 +139,15 @@ describe('requestPaymentHandler', () => {
         );
     });
 
-    it('pay_method 가 vbank 면 catch 시 그 값으로 복구', async () => {
+    // @scenario area=payment_method_source
+    // @effects payment_method_from_action_args
+    it('서버가 실은 payment_method 가 vbank 면 catch 시 그 값으로 복구', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('boom'));
 
         await requestPaymentHandler({
             params: {
-                pgPaymentData: { ...PG_PAYMENT, pay_method: 'vbank' },
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' },
             },
         });
 
@@ -145,6 +159,38 @@ describe('requestPaymentHandler', () => {
         );
     });
 
+    // @scenario area=payment_method_source
+    // @effects payment_method_from_action_args
+    it('결제수단은 액션 인자로만 정한다 — 호출부 paymentMethod 가 우선이고, 옛 pay_method 키나 화면 상태는 보지 않는다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        apiGet.mockRejectedValue(new Error('boom'));
+        (window as any).G7Core.state.getLocal = vi.fn(() => ({ paymentMethod: 'nhnkcp_kakaopay' }));
+
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' }, paymentMethod: 'bank' },
+        });
+        expect(setLocalSpy).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethod: 'bank' }));
+
+        expect((window as any).G7Core.state.getLocal).not.toHaveBeenCalled();
+    });
+
+    // @scenario area=payment_method_source
+    // @effects payment_method_from_action_args
+    it('결제수단이 액션 인자에도 서버 값에도 없으면 신용카드로 대신 열지 않고 결제 오류로 끝낸다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { payment_method: _omit, ...withoutMethod } = PG_PAYMENT;
+
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...withoutMethod, pay_method: 'vbank' } },
+        });
+
+        expect(apiGet, '결제창 설정을 부르지 않는다').not.toHaveBeenCalled();
+        expect(setLocalSpy).toHaveBeenCalledWith(expect.objectContaining({ isSubmittingOrder: false }));
+        expect(modalOpenSpy).toHaveBeenCalledWith('nhnkcp_payment_error_modal');
+    });
+
+    // @scenario area=frame_close
+    // @effects frame_close_detected_once
     it('KCP 결제 iframe 이 제거되면 닫힘 콜백을 한 번만 실행', async () => {
         vi.useFakeTimers();
 
@@ -171,6 +217,8 @@ describe('requestPaymentHandler', () => {
         vi.useRealTimers();
     });
 
+    // @scenario area=frame_close
+    // @effects frame_close_detected_once
     it('KCP 결제 iframe 감시를 중지하면 제거되어도 닫힘 콜백을 실행하지 않음', async () => {
         vi.useFakeTimers();
 
@@ -191,6 +239,8 @@ describe('requestPaymentHandler', () => {
         vi.useRealTimers();
     });
 
+    // @scenario area=tax_split
+    // @effects tax_fields_rebalanced
     it('복합과세 분할 필드를 실결제액 기준으로 재배분', () => {
         const fields = buildKcpTaxFields({
             ...PG_PAYMENT,
@@ -211,12 +261,16 @@ describe('requestPaymentHandler', () => {
         ).toBe(19000);
     });
 
+    // @scenario area=currency
+    // @effects non_krw_blocked
     it('KCP 통화 가드는 빈 값과 KRW만 허용', () => {
         expect(isSupportedKcpCurrency(undefined)).toBe(true);
         expect(isSupportedKcpCurrency('KRW')).toBe(true);
         expect(isSupportedKcpCurrency('usd')).toBe(false);
     });
 
+    // @scenario area=easy_pay_fields
+    // @effects easy_pay_method_returned
     it('간편결제 원 결제수단을 KCP callback 반환 필드에 싣는다', () => {
         expect(buildKcpEasyPayReturnFields('nhnkcp_naverpay', true)).toEqual({
             param_opt_1: 'nhnkcp_naverpay',
@@ -228,6 +282,8 @@ describe('requestPaymentHandler', () => {
 
     // 서버는 pay_method 를 보내지 않고 payment_method 만 싣는다 — 그 키로 PC 결제창 수단을 정해야
     // 가상계좌·계좌이체 주문이 카드 결제창으로 열리지 않는다(2026-10-01 테스트 상점 실측: 가상계좌 주문에 카드 창).
+    // @scenario area=pc_pay_method
+    // @effects pc_window_method_from_server
     it('PC 결제창 수단은 서버가 저장한 payment_method 로 정한다', () => {
         expect(resolveKcpPcPayMethod('vbank', false)).toBe('001000000000');
         expect(resolveKcpPcPayMethod('bank', false)).toBe('010000000000');
@@ -252,10 +308,14 @@ describe('requestPaymentHandler', () => {
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://pay.kcp.co.kr/plugin/payplus_web.jsp';
 
+    // @scenario area=sdk_host
+    // @effects sdk_host_allowlisted
     it('신뢰 호스트 https URL 은 통과한다', () => {
         expect(() => assertTrustedSdkUrl(TRUSTED_SDK_URL)).not.toThrow();
     });
 
+    // @scenario area=sdk_host
+    // @effects sdk_host_allowlisted
     it.each([
         ['미신뢰 호스트', 'https://cdn.evil.com/sdk.js'],
         ['http (평문)', TRUSTED_SDK_URL.replace('https://', 'http://')],
@@ -269,6 +329,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         expect(() => assertTrustedSdkUrl(url as string)).toThrow();
     });
 
+    // @scenario area=sdk_host
+    // @effects sdk_host_allowlisted
     it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
@@ -279,6 +341,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         );
     });
 
+    // @scenario area=sdk_host
+    // @effects sdk_host_allowlisted
     it('manifest 가 호스트별 사유를 함께 선언한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')

@@ -1181,6 +1181,7 @@ return [
         'password_expiry_scope_in' => '적용 범위는 전체 회원·관리자만·지정한 역할·회원만 중 하나여야 합니다.',
         'password_expiry_action_in' => '만료 시 동작은 변경해야 로그인·다음에 변경 허용 중 하나여야 합니다.',
         'password_expiry_notice_days_lt_expiry_days' => '사전 안내일은 만료 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 만료와 안내가 같은 날 일어납니다.',
+        'privacy_consent_provider_unknown' => '선택한 동의 관리 제공자를 찾을 수 없습니다. 목록에서 다시 고르세요.',
     ],
 
     // 본인인증 정책 검증 메시지
@@ -1310,6 +1311,7 @@ return [
         'identity_purpose_providers' => '목적별 프로바이더',
         'identity_challenge_ttl_minutes' => 'Challenge 만료 시간',
         'identity_max_attempts' => '최대 시도 횟수',
+        'privacy_consent_provider' => '동의 관리 제공자',
         'privacy_withdrawn_retention_enabled' => '탈퇴 회원 잔여정보 파기',
         'privacy_withdrawn_retention_days' => '탈퇴 회원 잔여정보 보유기간',
         'privacy_dormant_enabled' => '휴면 계정 전환',

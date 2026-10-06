@@ -245,7 +245,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [activity-logs.md](activity-logs.md) | `activity-logs` | 3 |
-| [analytics.md](analytics.md) | `analytics` | 29 |
+| [analytics.md](analytics.md) | `analytics` | 28 |
 | [attachment.md](attachment.md) | `attachment` | 1 |
 | [attachments.md](attachments.md) | `attachments` | 4 |
 | [auth.md](auth.md) | `auth` | 18 |
@@ -271,7 +271,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [password.md](password.md) | `password` | 1 |
 | [permissions.md](permissions.md) | `permissions` | 1 |
 | [plugins.md](plugins.md) | `plugins` | 27 |
-| [privacy.md](privacy.md) | `privacy` | 2 |
+| [privacy.md](privacy.md) | `privacy` | 3 |
 | [profile.md](profile.md) | `profile` | 4 |
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 12 |

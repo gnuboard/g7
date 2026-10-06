@@ -10,6 +10,7 @@ use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Tests\Concerns\FakesConsentProviders;
 
 /**
  * 진단 API — 「왜 아무것도 안 세어지는가」에 답하는 화면.
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\File;
  */
 class DiagnosticsControllerTest extends AnalyticsApiTestCase
 {
+    use FakesConsentProviders;
+
     /**
      * 진단이 수집·큐·집계·저장·환경을 함께 보고하는지 확인합니다.
      *
@@ -168,6 +171,40 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
         $this->actingAs($admin)
             ->getJson('/api/admin/analytics/collect-failures?reason=there_is_no_such_reason')
             ->assertStatus(422);
+    }
+
+    /**
+     * 진단 응답이 동의 제공자 선택 상태와 제공자 이름을 싣는지 확인합니다 (#639 §4.2).
+     *
+     * 동의 출처(`provider`)만 실으면 제공자를 고르지 못한 상태(ambiguous·missing)가 정상 연동과 구별되지
+     * 않는다 — 화면은 그때 「제공자 선택 필요」 배지를 띄워야 한다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects diagnostics_report_consent_selection_and_provider_label
+     */
+    public function test_diagnostics_report_consent_selection_and_provider_label(): void
+    {
+        $this->resetConsentProviders();
+        $read = fn () => $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/diagnostics')->assertOk()->json('data.collection');
+
+        $none = $read();
+        $this->assertSame('none', $none['consent_selection']);
+        $this->assertSame('none', $none['consent_source']);
+        $this->assertNull($none['consent_provider_label']);
+
+        $this->fakeConsentProvider('alpha');
+        $auto = $read();
+        $this->assertSame('auto', $auto['consent_selection']);
+        $this->assertSame('provider', $auto['consent_source']);
+        $this->assertSame('Fake alpha', $auto['consent_provider_label']);
+
+        $this->fakeConsentProvider('beta');
+        $ambiguous = $read();
+        $this->assertSame('ambiguous', $ambiguous['consent_selection']);
+        $this->assertNull($ambiguous['consent_provider_label']);
     }
 
     /**

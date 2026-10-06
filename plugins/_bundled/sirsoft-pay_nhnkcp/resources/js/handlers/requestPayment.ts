@@ -19,7 +19,6 @@ interface PgPaymentData {
     order_name: string;
     amount: number;
     currency?: string;
-    pay_method?: string;
     /**
      * 서버가 저장한 결제수단 ID — 확장 수단이면 확장 ID 그대로(예: 'nhnkcp_naverpay').
      * 확장 결제수단이 1급 시민이 되면서 서버가 원본 수단을 알고 내려준다(#475).
@@ -302,15 +301,23 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         return;
     }
 
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다.
-    // params.paymentMethod 는 인터셉터 시절의 잔재이나 직접 호출 경로 호환을 위해 우선 존중한다.
-    const paymentMethod = paramPaymentMethod
-        ?? pgPaymentData.payment_method
-        ?? pgPaymentData.pay_method
-        ?? 'card';
+    // 결제수단은 액션 인자로만 받는다 — 호출부가 넘긴 paymentMethod, 없으면 같은 인자의 pgPaymentData 에 서버가
+    // 저장해 실은 payment_method(확장 수단이면 확장 ID 그대로)다. 화면 상태나 다른 저장소에서 다시 찾지 않는다.
+    // 둘 다 없으면 서버와 다른 수단(예: 신용카드)으로 대신 열지 않고 결제 오류로 끝낸다(KG이니시스·나이스페이먼츠와 같은 규칙).
+    const paymentMethod = paramPaymentMethod ?? pgPaymentData.payment_method;
     const isEasyPay = typeof paymentMethod === 'string' && paymentMethod.startsWith('nhnkcp_');
 
     const G7Core = (window as any).G7Core;
+
+    if (typeof paymentMethod !== 'string' || paymentMethod === '') {
+        console.error('[sirsoft-pay_nhnkcp] payment method is required (paymentMethod or pgPaymentData.payment_method)');
+        G7Core?.state?.setLocal?.({
+            paymentErrorMessage: t('payment.error.method_missing', '결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요.'),
+            isSubmittingOrder: false,
+        });
+        G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+        return;
+    }
     let closeReportContext: PaymentCloseReportContext | null = null;
 
     try {

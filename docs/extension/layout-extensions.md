@@ -78,7 +78,36 @@ injection 또는 modals/data_sources/scripts/init_actions 보유, EP: 병합할 
 필수: 플러그인이 자기 화면을 가질 때 라우트는 plugins/{identifier}/ 네임스페이스 안에 선언
    (다른 확장이 소유한 경로를 선언하면 설치 순서에 따라 화면이 조용히 바뀐다)
 필수: 다른 확장의 화면에 UI 를 끼워 넣을 때는 확장 지점(layout_extensions) 사용
+필수: 다른 모듈·플러그인의 화면을 target_layout 으로 지목하면 그 확장을 manifest dependencies 또는 integrations 에 선언
+필수: 남의 화면에 끼우는 조각이 쓰는 전역 키는 자기 접두 또는 자기 state_contracts 이름 (아래 접두 규칙)
 ```
+
+### 대상 화면이 없을 때와 선언
+
+대상 화면이 없는 설치에서 코어는 그 조각을 **건너뛸 뿐 오류를 내지 않습니다**(아래 「템플릿 대상 판정」). 그래서 조각은 대상 확장이 없어도
+안전하지만, 그 사실이 **선언을 생략해도 된다는 뜻은 아닙니다.** 다른 모듈·플러그인이 소유한 화면을 `target_layout` 으로 지목하면 그 확장을
+`integrations`(있으면 연동, 없어도 동작) 또는 `dependencies`(없으면 동작 불가)에 선언합니다 — 선언이 없으면 운영자와 상대 확장 개발자가 그
+결합을 알 수 없고, 상대가 화면 이름을 바꾸면 조각이 조용히 사라집니다. 정적 검사 `extension-undeclared-extension-reference` 가 조각의
+`target_layout` 을 소유 확장으로 되돌려 확인합니다. 템플릿의 화면(`admin_settings` 등 코어 화면 계약)은 어느 템플릿이든 같은 이름이라
+선언 대상이 아닙니다. 선언 형식은 [플러그인 개발 — 의존성](plugin-development.md#2-의존성-dependency)에 있습니다.
+
+### 조각의 전역 상태 키 접두 규칙
+
+조각은 **남의 화면**에 끼워집니다. 그 화면도 전역 상태(`_global`)를 쓰므로, 조각이 무접두 이름(`grantTarget`, `cashReceiptForm` 등)을 쓰면 화면
+주인이나 같은 화면의 다른 조각이 같은 이름을 쓰는 순간 서로의 값을 덮습니다 — 오류 없이 화면만 틀립니다.
+
+조각이 쓰는 전역 키는 다음 중 하나여야 합니다.
+
+| 허용 | 예 |
+| --- | --- |
+| 자기 접두 + 대문자 또는 `_` | `gdprGrantTargetKey`, `ecommerceCashReceiptForm` |
+| 자기 manifest `state_contracts` 에 선언한 이름 | 쇼핑몰의 `preferredCurrency` |
+| 코어 `plugins`·`modules` 의 자기 식별자 하위 | `plugins.sirsoft-ckeditor5` |
+
+접두는 식별자의 vendor 뒤 이름에서 분류어(`pay_`, `message_`, `verification_`)를 뗀 camelCase 입니다(`sirsoft-gdpr` → `gdpr`,
+`sirsoft-pay_kginicis` → `kginicis`). 이미 관례가 있는 확장은 그 접두를 씁니다(나이스페이먼츠 `nicepay`, 토스페이먼츠 `toss`,
+비즈뿌리오 `bz`). 정적 검사 `overlay-global-key-prefix` 가 조각 마크업(`resources/extensions/*.g7.html`)을 확인합니다. 다른 확장이 읽어야 하는
+값이면 접두 대신 `state_contracts` 로 공개 계약을 선언합니다 — [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts).
 
 ---
 

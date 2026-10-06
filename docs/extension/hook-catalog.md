@@ -41,7 +41,6 @@
 | `core.analytics.campaign_params` | filter | 1 |  |
 | `core.analytics.collect_failures_validation_rules` | filter | 2 |  |
 | `core.analytics.collect_validation_rules` | filter | 2 |  |
-| `core.analytics.consent_session_id` | filter | 2 |  |
 | `core.analytics.csv_columns` | filter | 3 |  |
 | `core.analytics.csv_row` | filter | 3 |  |
 | `core.analytics.data_purged` | action | 1 |  |
@@ -76,11 +75,9 @@
 | `core.analytics.subject_export` | filter | 5 |  |
 | `core.analytics.subject_exported` | action | 1 |  |
 | `core.analytics.subject_validation_rules` | filter | 2 |  |
-| `core.analytics.tracking_permission` | filter | 3 |  |
 | `core.analytics.tracking_request_received` | action | 1 |  |
 | `core.analytics.ua_rules` | filter | 1 |  |
 | `core.analytics.visit_limit_exceeded` | action | 1 |  |
-| `core.analytics.visitor_has_consent` | filter | 3 |  |
 | `core.analytics.visitor_index_validation_rules` | filter | 2 |  |
 | `core.analytics.visitor_show_validation_rules` | filter | 2 |  |
 | `core.assets.custom_assets` | filter | 3 |  |
@@ -134,6 +131,8 @@
 | `core.auth.verify_password_rules` | filter | 1 | 호환용 옛 이름 → `core.auth.verify_password_validation_rules` |
 | `core.auth.verify_password_validation_rules` | filter | 1 |  |
 | `core.consent.allowed_types` | filter | 1 |  |
+| `core.consent.changed` | action | 3 |  |
+| `core.consent.registered_providers` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |

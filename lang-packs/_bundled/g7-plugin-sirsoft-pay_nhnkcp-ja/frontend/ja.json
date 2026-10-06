@@ -8,7 +8,8 @@
       "nhnkcp_test_mode_status": "テストモード状態",
       "nhnkcp_test_map": "テスト決済マップ",
       "settings": "決済設定",
-      "vbank_info": "仮想口座情報"
+      "vbank_info": "仮想口座情報",
+      "nhnkcp_mock_deposit": "模擬入金情報"
     }
   },
   "messages": {
@@ -70,6 +71,7 @@
     "result_app_no": "承認番号",
     "result_app_time": "承認日時",
     "result_pay_method": "決済方法",
+    "result_easy_pay": "簡単決済",
     "result_res_cd": "応答コード",
     "escrow_badge": "エスクロー",
     "escrow_delivery_title": "KCPエスクロー配送登録",
@@ -189,7 +191,8 @@
       "krw_only": "NHN KCP は KRW 決済のみに対応しています。({{currency}})",
       "mobile_approval_key_failed": "KCP モバイル承認キーの取得に失敗しました",
       "pg_error": "KCP エラー [{{code}}]: {{message}}",
-      "applepay_ios_only": "Apple Pay は iOS デバイスでのモバイル決済のみ可能です。"
+      "applepay_ios_only": "Apple Pay は iOS デバイスでのモバイル決済のみ可能です。",
+      "method_missing": "決済手段の情報がないため決済を進められません。注文書をもう一度開いてください。"
     }
   }
 }

@@ -47,6 +47,11 @@
 
 설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다 — 코어가 플러그인
 디렉토리의 이 고정 경로를 찾으므로 파일 이름을 바꾸면 설정 화면 자체가 사라집니다.
+
+저장에 성공하면 화면이 전역 상태 `plugins.sirsoft-ckeditor5` 하나만 새 값으로 바꿉니다. 전역
+`plugins` 는 코어 소유 공개 계약이라 확장은 자기 식별자 하위 키에만 쓸 수 있습니다 — 예전처럼
+`plugins` 전체를 사본으로 다시 쓰면 그 사이 다른 확장이 바꾼 값을 되돌릴 수 있고, 정적 검사
+(`state-contract-write-ownership`)가 막습니다.
 <!-- @intent END -->
 
 ## 권한

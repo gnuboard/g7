@@ -132,7 +132,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       setCurrentPath(newPath);
     });
 
-    return unsubscribe;
+    // 언마운트 시 구독 해제 — 코어는 해제 함수를 돌려준다(함수가 아니면 정리할 것이 없다)
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, []);
 
   // 브라우저 뒤로가기/앞으로가기 감지

@@ -816,6 +816,7 @@ return [
     'order' => [
         'payment_method_unavailable' => '現在ご利用いただけない決済手段です。他の決済手段を選択してください。',
         'payment_method_not_selectable' => '選択できない決済手段です。',
+        'payment_method_not_allowed_for_currency' => ':currency 決済では選択できない決済手段です。',
         'ids' => [
             'required' => '変更する注文を選択してください。',
             'array' => '注文IDは配列形式である必要があります。',

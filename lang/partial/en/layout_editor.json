@@ -1346,6 +1346,9 @@
       "label": "Change language",
       "param_target": "Language"
     },
+    "refresh_consent": {
+      "label": "Reload visitor consent"
+    },
     "emit_event": {
       "label": "Send a component event",
       "param_event": "Event name",

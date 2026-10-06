@@ -63,8 +63,8 @@ interface BuildOrderColumnsParams {
  *
  * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록 DataGrid 는 컬럼을
  * `_partial_order_datagrid.json` 에 직접 열거하며, 그 정의만이 셀 내용(`cellChildren`)을
- * 갖는다. 형제 `loadVisibleColumnsHandler` 도 같은 상태이고, 배선된 것은
- * `saveVisibleColumnsHandler` 하나다. 나중에 이 핸들러를 배선하려면 레이아웃 컬럼 정의의
+ * 갖는다. (형제 `saveVisibleColumnsHandler`·`loadVisibleColumnsHandler` 는 #639 부터 주문 목록이 쓴다.)
+ * 나중에 이 핸들러를 배선하려면 레이아웃 컬럼 정의의
  * `cellChildren` 을 함께 가져오는 경로부터 만들어야 한다 — 아래 claim 컬럼 주석 참조.
  *
  * @example
@@ -571,6 +571,37 @@ interface SaveVisibleColumnsParams {
     columns: string[];
 }
 
+/** 회원 구분 없이 쓰던 옛 저장 키 (#639 ⑩ 이전) */
+const LEGACY_VISIBLE_COLUMNS_KEY = 'g7_order_visible_columns';
+
+/**
+ * 주문 목록 표시 컬럼의 저장 키를 구합니다 (#639 ⑩).
+ *
+ * 표시 컬럼은 관리자의 업무 설정이라 회원마다 갈린다 — 같은 브라우저의 다른 관리자에게 앞 사람의 설정이 실리면 안 된다.
+ * 형식은 코어 `ColumnSelector` 와 같이 키 끝에 회원 uuid 를 붙인다. 회원을 모르면 null(저장하지 않음).
+ *
+ * @returns 저장 키 또는 null
+ */
+function visibleColumnsKey(): string | null {
+    try {
+        const uuid = (window as any).G7Core?.AuthManager?.getInstance?.()?.getUser?.()?.uuid;
+        return typeof uuid === 'string' && uuid !== '' ? `${LEGACY_VISIBLE_COLUMNS_KEY}_${uuid}` : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 회원 구분 없는 옛 값을 지웁니다 — 누구 것인지 가를 수 없으므로 읽지 않는다.
+ */
+function discardLegacyVisibleColumns(): void {
+    try {
+        localStorage.removeItem(LEGACY_VISIBLE_COLUMNS_KEY);
+    } catch {
+        // 지우지 못해도 읽지 않으므로 다른 관리자에게 실리지 않는다.
+    }
+}
+
 /**
  * 컬럼 표시/숨김 설정 저장 핸들러
  *
@@ -586,9 +617,15 @@ export function saveVisibleColumnsHandler(
 ): { success: boolean } {
     const params = action.params || ({} as SaveVisibleColumnsParams);
     const { columns = [] } = params;
+    const key = visibleColumnsKey();
+
+    discardLegacyVisibleColumns();
+    if (key === null) {
+        return { success: false };
+    }
 
     try {
-        localStorage.setItem('g7_order_visible_columns', JSON.stringify(columns));
+        localStorage.setItem(key, JSON.stringify(columns));
     } catch (e) {
         logger.warn('[saveVisibleColumns] LocalStorage 저장 실패:', e);
         return { success: false };
@@ -600,10 +637,10 @@ export function saveVisibleColumnsHandler(
 /**
  * 컬럼 표시/숨김 설정 로드 핸들러
  *
- * LocalStorage에서 표시 컬럼 설정을 로드합니다.
+ * LocalStorage에서 지금 관리자의 표시 컬럼 설정을 로드합니다 (#639 ⑩ — 회원 uuid 키).
  *
- * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록은 `loadFromLocalStorage`
- * 로 같은 키를 직접 읽으므로, 아래 폴백 11키는 배선되는 날을 위한 예비다.
+ * 주문 목록 초기화(`admin_ecommerce_order_list` 의 init)가 이 핸들러로 읽는다. 예전처럼 레이아웃이
+ * `loadFromLocalStorage` 로 공용 키를 직접 읽으면 다른 관리자의 설정이 실린다. 회원 구분 없는 옛 값은 지운다.
  *
  * @param action 액션 객체 (params 포함)
  * @param _context 액션 컨텍스트
@@ -633,8 +670,14 @@ export function loadVisibleColumnsHandler(
         'claim',
     ];
 
+    discardLegacyVisibleColumns();
+    const key = visibleColumnsKey();
+    if (key === null) {
+        return defaultColumns;
+    }
+
     try {
-        const saved = localStorage.getItem('g7_order_visible_columns');
+        const saved = localStorage.getItem(key);
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed)) {

@@ -136,6 +136,9 @@ effects:
   - upload_in_progress_locks_save_buttons_not_cancel
   - upload_rejects_concurrent_selection_while_in_flight
   - upload_result_discarded_when_modal_reseeded
+  # 업로드 요청 경로 (#639) — 코어 API 클라이언트 경유(Bearer·401·로케일은 코어), 실패 시 이미지 값 무효화
+  - image_upload_sent_through_core_api_client
+  - image_upload_failure_clears_image_value
   # 화면·서버 판정 일치 (라운드 5)
   - save_chain_click_actions_carry_reentrancy_guard
   - manage_row_actions_match_row_footer_visibility

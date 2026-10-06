@@ -107,10 +107,12 @@ _단건 응답: `data` 객체의 필드._
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 세 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 다섯 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
+| _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
+| _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -351,6 +353,7 @@ HTTP/1.1 200
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
 | identity.max_attempts | body | integer | 아니오 | min 1, max 20 | challenge 최대 시도 횟수 (연속 실패 시 잠금 — 재전송 필요) |
+| privacy.consent_provider | body | string | 아니오 | 빈 값 · 등록된 동의 제공자 id · 현재 저장값 | 방문자 동의를 판단할 동의 관리 제공자. 빈 값이면 자동(수집 중인 제공자 1개면 그것, 2개 이상이면 고르기 전까지 모든 방문자 「확인 불가」). 저장값을 허용하는 이유: 고른 제공자가 비활성화된 상태에서 다른 칸만 고쳐 저장할 때 화면이 옛 id 를 다시 보낸다. 그 밖의 값은 422 |
 | privacy.withdrawn_retention_enabled | body | boolean | 아니오 | — | 탈퇴 회원 잔여 개인정보의 2차 파기 사용 여부 (기본 false). 켜면 매일 배치가 보유기간이 지난 탈퇴 회원의 연락처·주소·본인인증 식별자를 되돌릴 수 없게 지운다 |
 | privacy.withdrawn_retention_days | body | integer | 아니오 | min 1, max 3650 | 탈퇴 시점부터 잔여 정보를 보유할 일수 (기본 365). 경과분만 파기 대상 |
 | privacy.dormant_enabled | body | boolean | 아니오 | — | 장기 미접속 회원의 휴면 전환 사용 여부 (기본 false). 활동 기준은 `max(users.last_login_at, personal_access_tokens.last_used_at)` |

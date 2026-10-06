@@ -22,7 +22,6 @@ import { Input } from '../basic/Input';
 import { Img } from '../basic/Img';
 import { Avatar } from './Avatar';
 import type { EditorAttrs } from '../../types';
-import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -34,9 +33,9 @@ export interface AvatarUploaderProps {
   fallbackText?: string;
   /** 아바타 크기 */
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  /** 업로드 API 엔드포인트 (기본: /api/me/avatar). 동일 출처일 때만 토큰을 싣는다 */
+  /** 업로드 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
   uploadEndpoint?: string;
-  /** 삭제 API 엔드포인트 (기본: /api/me/avatar). 동일 출처일 때만 토큰을 싣는다 */
+  /** 삭제 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
   deleteEndpoint?: string;
   /** 업로드 성공 콜백 */
   onUploadSuccess?: (data: { avatar: string; attachment_id: number }) => void;
@@ -150,19 +149,15 @@ export function AvatarUploader({
     return G7Core?.t?.(key) ?? key;
   }, []);
 
-  // CSRF 토큰 가져오기
-  const getCsrfToken = useCallback((): string | null => {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-    if (match) {
-      return decodeURIComponent(match[1]);
+  // API 오류에서 사용자에게 보일 메시지 추출 — 서버 응답이 있으면 그 message, 없으면 기본 문구,
+  // 응답 자체가 없으면(네트워크 오류 등) 원래 오류 메시지
+  const toErrorMessage = useCallback((error: unknown, fallbackKey: string): string => {
+    const response = (error as { response?: { data?: { message?: string } } })?.response;
+    if (response) {
+      return response.data?.message || t(fallbackKey);
     }
-    return null;
-  }, []);
-
-  // 인증 토큰 가져오기 (ApiClient에서 토큰 조회)
-  const getAuthToken = useCallback((): string | null => {
-    return G7Core?.api?.getToken?.() ?? null;
-  }, []);
+    return error instanceof Error ? error.message : String(error);
+  }, [t]);
 
   // 실제 업로드 실행 함수
   const executeUpload = useCallback(async (file: File) => {
@@ -176,27 +171,21 @@ export function AvatarUploader({
       const formData = new FormData();
       formData.append('avatar', file);
 
-      // API 호출 — 토큰은 동일 출처 대상에만 싣는다(엔드포인트는 레이아웃 prop, KVE-2026-2350)
-      const sameOrigin = isSameOriginRequest(uploadEndpoint);
-      const csrfToken = sameOrigin ? getCsrfToken() : null;
-      const authToken = sameOrigin ? getAuthToken() : null;
-      const response = await fetch(uploadEndpoint, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
-        },
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || t('attachment.upload_failed'));
+      // API 호출 — 코어 `G7Core.api` 로 보낸다. 엔드포인트는 레이아웃 prop 이지만 Bearer·XSRF 는 코어가
+      // 동일 출처 대상에만 싣는다(KVE-2026-2350). multipart 경계는 브라우저가 붙인다
+      const api = (window as any).G7Core?.api;
+      if (typeof api?.post !== 'function') {
+        throw new Error(t('attachment.upload_failed'));
       }
-
-      const data = await response.json();
+      let data: any;
+      try {
+        data = await api.post(uploadEndpoint, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } catch (apiError) {
+        throw new Error(toErrorMessage(apiError, 'attachment.upload_failed'));
+      }
+      data = data ?? {};
       const result = data.data || data;
 
       // 로컬 상태 즉시 업데이트 (빠른 피드백)
@@ -229,7 +218,7 @@ export function AvatarUploader({
         inputRef.current.value = '';
       }
     }
-  }, [uploadEndpoint, onUploadSuccess, onUploadError, getCsrfToken, getAuthToken, t]);
+  }, [uploadEndpoint, onUploadSuccess, onUploadError, toErrorMessage, t]);
 
   // 파일 선택 핸들러
   const handleFileChange = useCallback(
@@ -277,24 +266,16 @@ export function AvatarUploader({
     setErrorMessage(null);
 
     try {
-      // 토큰은 동일 출처 대상에만 싣는다(엔드포인트는 레이아웃 prop, KVE-2026-2350)
-      const sameOrigin = isSameOriginRequest(deleteEndpoint);
-      const csrfToken = sameOrigin ? getCsrfToken() : null;
-      const authToken = sameOrigin ? getAuthToken() : null;
-      const response = await fetch(deleteEndpoint, {
-        method: 'DELETE',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || t('attachment.delete_failed'));
+      // 코어 `G7Core.api` 로 보낸다 — 엔드포인트는 레이아웃 prop 이지만 Bearer·XSRF 는 코어가 동일 출처
+      // 대상에만 싣는다(KVE-2026-2350)
+      const api = (window as any).G7Core?.api;
+      if (typeof api?.delete !== 'function') {
+        throw new Error(t('attachment.delete_failed'));
+      }
+      try {
+        await api.delete(deleteEndpoint);
+      } catch (apiError) {
+        throw new Error(toErrorMessage(apiError, 'attachment.delete_failed'));
       }
 
       // 로컬 상태 즉시 업데이트 (빠른 피드백)
@@ -321,7 +302,7 @@ export function AvatarUploader({
     } finally {
       setIsDeleting(false);
     }
-  }, [deleteEndpoint, onDeleteSuccess, onDeleteError, getCsrfToken, getAuthToken, t]);
+  }, [deleteEndpoint, onDeleteSuccess, onDeleteError, toErrorMessage, t]);
 
   // 삭제 버튼 클릭 핸들러 (확인 다이얼로그 표시 또는 즉시 삭제)
   const handleDeleteClick = useCallback(() => {

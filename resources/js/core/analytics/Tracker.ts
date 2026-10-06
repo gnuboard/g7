@@ -8,7 +8,7 @@
  * 실패했다고 방문자가 보던 화면이 멈추거나 느려지면 안 됩니다.
  */
 
-import { ConsentBridge, consentGateRequired } from './consent';
+import { ConsentBridge, consentGateRequired, type ConsentSource } from './consent';
 import { type AnalyticsClientSettings, isPrerendering, isWebDriver, shouldSkip } from './exclusions';
 import { resolvePageTitle, type TitleSource } from './pageTitle';
 
@@ -108,8 +108,10 @@ export interface BeaconPayload {
 export interface TrackerOptions {
   /** 수집 설정 (노출된 키만) */
   settings: AnalyticsClientSettings;
-  /** 동의 관리 플러그인 활성 여부 */
+  /** 동의 관리 제공자가 있는지 (서버가 인라인한 `consent_provider`) */
   consentPluginActive?: boolean;
+  /** 코어 동의 런타임 — 동의 연동 모드의 판정 출처 */
+  consentSource?: ConsentSource | null;
   /** 사이트 로케일 */
   locale?: string;
   /** 인증 토큰 조회 (회원·관리자 방문을 가르는 데 쓴다) */
@@ -158,7 +160,8 @@ export class AnalyticsTracker {
     // IP 저장 모드 사이트에서 미동의 방문자의 화면 이동이 전부 빠진다.
     this.consent = new ConsentBridge(
       consentGateRequired(options.consentPluginActive === true, options.settings.privacy_mode),
-      options.getAuthToken,
+      options.consentSource ?? null,
+      () => this.flushHeld(),
     );
   }
 
@@ -168,8 +171,8 @@ export class AnalyticsTracker {
    * @returns 완료 Promise
    */
   async start(): Promise<void> {
+    // 판정이 끝날 때마다(부팅 직후·로그인/로그아웃 직후) 브리지가 flushHeld 를 부른다.
     await this.consent.start();
-    this.flushHeld();
   }
 
   /**

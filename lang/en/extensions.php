@@ -8,6 +8,7 @@ return [
     ],
 
     'errors' => [
+        'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',

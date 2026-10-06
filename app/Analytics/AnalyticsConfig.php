@@ -269,8 +269,8 @@ readonly class AnalyticsConfig
             return self::ANONYMOUS_REASON_NO_CONSENT_SOURCE;
         }
 
-        // IP 저장 모드인데 식별자 추적 허용을 방문자마다 정하는 확장이 있다(코어 필터
-        // `core.analytics.tracking_permission` 에 답한다) — 그런 확장은 허용 전 쿠키를 막는다. 방문자
+        // IP 저장 모드인데 동의 관리 제공자가 있다(동의 출처 `provider`) — 그런 제공자는 방문자가
+        // 기능·분석 쿠키를 허용하기 전에는 쿠키를 막는다. 방문자
         // 쿠키가 브라우저에 남지 않으므로 비콘마다 새 방문자 키가 생겨 방문·순방문자가 페이지뷰만큼
         // 부풀고 이탈률이 100% 가 된다. 허용 전 방문자는 처음부터 일자 회전 해시로 묶는다.
         if ($this->privacyMode === PrivacyMode::Full && $consentSource === 'provider') {

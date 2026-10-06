@@ -140,6 +140,24 @@ function startHandlerRegistration(): void {
     }, 100);
 }
 
+/**
+ * 코어 재초기화(로케일 전환) 때 불리는 진입점 — 새 디스패처에 핸들러를 다시 꽂는다.
+ *
+ * 로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{Name}.initPlugin()` 을 부른다. 이 전역이
+ * 없어 언어를 바꾼 뒤 `sirsoft-totp.copyToClipboard` 가 디스패처에서 빠졌다(#639 ④, 실측 2026-10-05). QR 관측자 같은
+ * 1회성 부팅 작업은 넣지 않는다.
+ *
+ * @returns 반환값 없음
+ */
+function initPlugin(): void {
+    registerHandlers();
+}
+
+if (typeof window !== 'undefined') {
+    // 재등록 진입점 — 이름 고정 (TemplateApp.reinitializePluginHandlers). 문서 생성기가 이 모양으로 찾는다.
+    (window as unknown as Record<string, unknown>).__SirsoftTotp = { identifier: PLUGIN_IDENTIFIER, initPlugin };
+}
+
 // 최초 렌더 + 이후 DOM 변화 추적. 레이아웃 엔진이 화면을 다시 그려도 QR 이 따라온다.
 if (typeof document !== 'undefined') {
     const start = (): void => {
@@ -170,4 +188,4 @@ if (typeof document !== 'undefined') {
     }
 }
 
-export { renderQrSvg };
+export { initPlugin, renderQrSvg };

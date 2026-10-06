@@ -2061,7 +2061,7 @@ HTTP/1.1 200
 | shipping.intl_city | body | string | 아니오 | max 100 | 도시 (국제 주소) |
 | shipping.intl_state | body | string | 아니오 | max 100 | 주/도 (국제 주소) |
 | shipping.intl_postal_code | body | string | 아니오 | max 20 | 우편번호 (국제 주소) |
-| payment_method | body | string | 예 | — | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422 |
+| payment_method | body | string | 예 | — | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422. 결제 통화(회원 선호 통화 → `X-Currency` → 기본 통화)에서 고를 수 없는 수단도 422(`payment_method_not_allowed_for_currency`) — 판정은 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 이고 주문서 응답의 `allowed_payment_methods` 와 같다(#639) |
 | expected_total_amount | body | number | 예 | min 0 | 프론트가 계산한 예상 결제금액 (서버 재계산값과 대조해 금액 위변조 검증) |
 | shipping_memo | body | string | 아니오 | max 500 | 배송 요청사항 메모 |
 | depositor_name | body | string | 아니오 | max 50 | depositor 이름 (식별자) |

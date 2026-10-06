@@ -1062,6 +1062,7 @@ return [
         'password_expiry_scope_in' => '適用範囲は全会員・管理者のみ・指定したロール／会員のみのいずれかである必要があります。',
         'password_expiry_action_in' => '有効期限切れ時の動作は「変更しないとログイン不可」「後で変更を許可」のいずれかである必要があります。',
         'password_expiry_notice_days_lt_expiry_days' => '事前通知日数は有効期間より短い必要があります。同じか長い場合、事前通知なしに有効期限切れと通知が同じ日に行われます。',
+        'privacy_consent_provider_unknown' => '選択した同意管理プロバイダーが見つかりません。一覧からもう一度選択してください。',
     ],
     'identity_policy' => [
         'key_required' => 'ポリシーキーを入力してください。',
@@ -1300,6 +1301,7 @@ return [
         'notification_channel_id' => '通知チャネル識別子',
         'notification_channel_is_active' => '通知チャネル使用有無',
         'notification_channel_sort_order' => '通知チャネルソート順序',
+        'privacy_consent_provider' => '同意管理プロバイダー',
         'privacy_withdrawn_retention_enabled' => '退会会員残存情報削除',
         'privacy_withdrawn_retention_days' => '退会会員残存情報保有期間',
         'privacy_dormant_enabled' => '休眠状態のアカウント変更',

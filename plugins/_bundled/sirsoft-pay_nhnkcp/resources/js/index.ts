@@ -1,10 +1,11 @@
+/**
+ * NHN KCP 플러그인 엔트리
+ *
+ * ActionDispatcher 에 핸들러를 등록하여 레이아웃에서 "sirsoft-pay_nhnkcp.requestPayment" 형태로 부를 수 있게 한다.
+ * 주문 상세·주문 완료·관리자 화면에 붙는 표시는 모두 레이아웃 조각(`resources/extensions`)이 맡는다 — 이 엔트리는
+ * 화면 DOM 을 찾거나 고치지 않고, 코어 함수(fetch·history)를 덮어쓰지 않는다.
+ */
 import { handlerMap } from './handlers';
-import { installOrderResponseInterceptor } from './orderResponseInterceptor';
-import { installOrderCompleteReceiptInjector } from './orderCompleteReceiptInjector';
-import { installMypageOrderShowInjector } from './mypageOrderShowInjector';
-import { installAdminApplePayNoticeInjector } from './adminApplePayNoticeInjector';
-import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
-import { installAdminOrderPaymentDisplayInjector } from './adminOrderPaymentDisplayInjector';
 import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 
 /**
@@ -84,17 +85,20 @@ function registerHandlers(): number {
     return count;
 }
 
-function initPlugin(): void {
-    // 결제 실패로 돌아온 화면이면 서버에 보고한다. 브라우저 리턴 콜백은 PG 서명도 IP 증명도
-    // 없어 주문 상태를 바꾸지 않으므로, 소유권을 대조하는 close-report 가 정당한 결제 실패를
-    // 기록하는 유일한 경로다. 저장해 둔 정보가 없으면 아무 일도 하지 않는다.
-    void reportPaymentFailureOnReturn();
-
+/**
+ * 핸들러를 등록합니다. 로케일 전환 시 코어가 다시 부르는 재등록 진입점이다.
+ *
+ * ActionDispatcher 가 아직 준비되지 않았으면 100ms 간격으로 최대 5초 재시도한다.
+ *
+ * @param onRegistered 등록에 성공했을 때 한 번 부를 콜백 (부팅 때만 넘긴다)
+ */
+function initPlugin(onRegistered?: () => void): void {
     const doInit = () => {
         const count = registerHandlers();
 
         if (count > 0) {
             logger.info(`${count} handler(s) registered`);
+            onRegistered?.();
             return;
         }
 
@@ -107,6 +111,7 @@ function initPlugin(): void {
             if (result > 0) {
                 clearInterval(interval);
                 logger.info(`${result} handler(s) registered (after ${retries} retries)`);
+                onRegistered?.();
                 return;
             }
 
@@ -124,16 +129,17 @@ function initPlugin(): void {
     }
 }
 
-installOrderResponseInterceptor();
-installOrderCompleteReceiptInjector();
-installMypageOrderShowInjector();
-installAdminApplePayNoticeInjector();
-installAdminPaymentMethodBrandInjector();
-installAdminOrderPaymentDisplayInjector();
-initPlugin();
+// 부팅 — 핸들러를 등록하고, 코어가 준비되면 결제 실패로 돌아온 화면인지 한 번 확인해 서버에 보고한다.
+// 브라우저 리턴 콜백은 PG 서명도 IP 증명도 없어 주문 상태를 바꾸지 않으므로, 소유권을 대조하는
+// close-report 가 정당한 결제 실패를 기록하는 유일한 경로다. 저장해 둔 정보가 없으면 아무 일도 하지 않는다.
+// 보고는 G7Core.api 로만 보내므로 코어가 준비된 뒤(핸들러 등록 성공)에 한다.
+initPlugin(() => {
+    void reportPaymentFailureOnReturn();
+});
 
 (window as Record<string, unknown>).__SirsoftNhnkcp = {
     identifier: PLUGIN_IDENTIFIER,
     handlers: Object.keys(handlerMap),
-    initPlugin,
+    // 재등록 진입점은 핸들러 등록만 한다(인자 없이 불린다) — 부팅 1회 작업을 다시 돌리지 않는다.
+    initPlugin: () => initPlugin(),
 };

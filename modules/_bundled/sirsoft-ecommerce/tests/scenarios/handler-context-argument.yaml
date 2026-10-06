@@ -1,0 +1,23 @@
+feature: 쇼핑몰 핸들러는 엔진 내부 전역이 아니라 자기가 받은 액션 컨텍스트로 상태를 반영한다
+
+description: |
+  주문 취소 모달의 환불 예상금액과 클레임 신청서의 미리보기는 입력을 debounce 로 묶어 나중에
+  계산한다. 콜백이 돌 때는 액션 실행이 끝나 엔진이 핸들러를 부른 컴포넌트를 모르므로, 종전에는
+  엔진 내부 전역(`__g7ActionContext`)을 저장했다가 바꿔 끼웠고, 상품 복사의 새 상품코드는 모달
+  여부를 엔진 내부 스택(`__g7LayoutContextStack`)으로 판정했다. 엔진이 내부 구조를 바꾸면 조용히
+  깨지는 자리라(#639 ⑤), 이제 핸들러가 받은 컨텍스트의 `setState` 와 데이터 컨텍스트의 `$parent` 만 쓴다.
+
+axes:
+  handler:
+    - cancel_quantity_debounce
+    - refund_priority_debounce
+    - claim_estimate_debounce
+    - copy_product_code
+
+effects:
+  - deferred_state_reaches_the_calling_component
+  - modal_detected_from_handler_context
+  - engine_private_globals_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/handlerContextArgument.test.ts

@@ -129,6 +129,54 @@ class UserReceiptControllerTest extends PluginTestCase
     }
 
     /**
+     * 입금 대기 가상계좌 주문은 은행코드를 함께 준다 — 저장된 코드가 없으면 은행 이름으로 찾는다.
+     *
+     * 주문 상세 입금 안내 조각(user_order_show)이 관리자에게만 보여 주는 값이다. 예전에는 화면 스크립트가
+     * 은행 이름표를 들고 있었으나 조각으로 옮기며 서버가 계산한다.
+     *
+     * @scenario viewer=member_session, payment=vbank_waiting
+     *
+     * @effects vbank_bank_code_returned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_receipt_response_includes_vbank_bank_code_for_waiting_vbank(): void
+    {
+        $this->mockPluginSettings();
+        $user = User::factory()->create();
+
+        foreach ([['88', '신한은행', '88'], [null, '국민은행', '04'], [null, '알 수 없는 은행', null]] as [$storedCode, $bankName, $expected]) {
+            $order = OrderFactory::new()->create([
+                'user_id' => $user->id,
+                'order_number' => 'ORD-VBANK-'.random_int(10000, 99999),
+                'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+                'total_amount' => 1000,
+                'total_due_amount' => 1000,
+                'total_paid_amount' => 0,
+            ]);
+
+            OrderPaymentFactory::new()->create([
+                'order_id' => $order->id,
+                'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+                'payment_method' => PaymentMethodEnum::VBANK,
+                'pg_provider' => 'kginicis',
+                'transaction_id' => 'StdpayVBNKINIpayTest'.random_int(100000, 999999),
+                'vbank_code' => $storedCode,
+                'vbank_name' => $bankName,
+                'vbank_number' => '56211234567890',
+                'paid_amount_local' => 0,
+                'payment_meta' => [],
+            ]);
+
+            $this->actingAs($user)
+                ->getJson("/api/plugins/sirsoft-pay_kginicis/user/orders/{$order->order_number}/receipt")
+                ->assertOk()
+                ->assertJsonPath('data.receipt_type', 'inicis_receipt')
+                ->assertJsonPath('data.vbank_bank_code', $expected);
+        }
+    }
+
+    /**
      * Bearer 토큰으로 로그인한 회원도 본인 주문 영수증을 받는다.
      *
      * @scenario viewer=member_bearer, payment=domestic_card

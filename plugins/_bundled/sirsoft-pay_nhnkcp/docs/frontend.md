@@ -91,52 +91,59 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 구성하기 때문입니다.
 <!-- @intent END -->
 
-## 비회원 주문의 자격 증명
+## 화면 표시는 레이아웃 조각, 상태는 공개 API
 
 <!-- @intent START -->
-영수증·결제수단 표시는 주문 정보를 서버에서 다시 조회해 만든다. 이 요청은 레이아웃의
-`globalHeaders` 배선을 타지 않는 직접 호출(`fetch`)이므로, 자격 증명을 호출부가 직접 실어야 한다.
+이 플러그인의 스크립트는 남의 화면을 찾거나 고치지 않는다. 주문 상세·주문 완료·관리자 화면에 붙는 표시는 모두
+레이아웃 조각(`resources/extensions/*.g7.html`)이 자기 데이터 소스로 그리고, 스크립트는 핸들러 등록과 결제창 열기·
+결제창 닫힘 보고만 맡는다 (#639). 상태는 공개 API(`G7Core.state.get()`·`subscribe()`, `G7Core.api`)와 공개 상태 계약
+(`_global.guestOrderToken`)으로만 읽는다.
 
-- 회원: `Authorization: Bearer …`
-- 비회원: `X-Guest-Order-Token: …` (코어 storageHandlers 가 sessionStorage 에 저장, 전역 상태 폴백)
+| 화면 | 맡는 곳 |
+|---|---|
+| 관리자 주문 상세 — KCP 거래 정보·간편결제 원 수단·에스크로 배송 등록 | `admin_order_payment_query` (데이터 소스 `kcp_status`·`kcp_escrow_delivery`) |
+| 관리자 주문 목록 — 테스트 결제 배지 | `admin_order_list_payment_method_badge` (확장점 `admin_order_list_payment_method_badges`) |
+| 관리자 결제수단 설정 — 브랜드 배지 | 결제수단 카탈로그 `brand_mark` 선언(`RegisterEasyPayMethodsListener`, 병합 결과 `_cached_brand_mark`). 그리는 일은 이커머스 관리자 결제수단 목록 몫이다 |
+| 관리자 결제수단 설정 — 애플페이 iOS 전용 안내 | 카탈로그 설명 `payment_methods.applepay.description` |
+| 주문서 — 비 iOS 기기에서 애플페이 감춤 | 카탈로그 `requires_ios` (템플릿이 `_global.appConfig.isIos` 로 거른다) |
+| 내 주문·신청서 상세 — 가상계좌 안내·매출전표·테스트 모드 모의입금 | `user_order_show` (확장점 `mypage_order_payment_provider_slot`, 데이터 소스 `nhnkcp_mock_deposit`) |
+| 주문 완료 — 가상계좌 안내·매출전표 | `user_order_complete_receipt` (대상 id `order_complete_payment_summary`) |
 
-두 경로 모두 `plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/guestOrderToken.ts` 의 `buildOrderRequestHeaders()` 한 곳을 거친다.
-비회원 분기를 비우면 서버는 그 주문을 찾을 수 없다고 응답하고, 화면에는 영수증 버튼이 아예
-나타나지 않는다 — 예외도 콘솔 오류도 남지 않아 운영자가 원인을 알 수 없다. 서버(`UserReceiptController`)는
-비회원을 이미 지원하므로, 이 배선이 빠지면 서버 기능이 도달 불가 상태로만 남는다.
-
-주문 상세 화면의 경로 판정(`ORDER_SHOW_RE`)도 회원(`/mypage/orders/{N}`)과
-비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
-조회가 시작조차 되지 않는다.
-
-영수증 조회 응답은 공통 형식(`{ success, message, data }`)이고 매출전표·현금영수증 주소는 `data` 안에 있다.
-주입 스크립트는 응답 본문의 `data` 를, 레이아웃 조각은 `response.data.*`(주문 완료) · 직전 apiCall 결과
-`$prev.data.*`(마이페이지 「매출전표 보기」)를 읽는다. 최상위에서 읽으면 버튼은 그려져도 빈 주소로 팝업이 열린다.
-주입 스크립트가 그리는 버튼·가상계좌 안내 글자는 `resources/lang` 의 `user.*` 키로 그린다(`translate.ts`).
-테스트 모드 모의입금 도구도 같다 — 정보 API 응답의 `data` 를 읽고, 제목·입력 이름·버튼·관리자 안내는 `user.mock_*` 키로 그린다.
-일본어 등 다른 언어의 번역은 언어팩이 맡는다(플러그인은 ko·en 원본만 갖는다).
+**깨뜨리면 안 되는 것**: `window.fetch`·`history.pushState`·`history.replaceState` 를 덮어쓰지 않는다 · 로그인 토큰을
+저장소에서 읽어 Bearer 를 붙이지 않는다(`G7Core.api` 가 싣고 401 도 처리한다) · 화면을 주소 정규식이나 제목 글자,
+클래스 모양으로 찾지 않는다. 정적 검사 `extension-private-core-internals` 가 앞의 둘을 막는다.
 <!-- @intent END -->
 
-### 결제 정보 카드는 id 로만 찾는다
+### 매출전표 요청의 자격 증명
 
-주문 상세·신청서 상세에 영수증 버튼·입금 안내를 붙이는 주입 스크립트는 결제 정보 카드를 템플릿이 약속한 `id="order_payment_info_panel"` 로만
-찾는다. 화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다
-(약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
+주문 상세 카드의 「매출전표 보기」와 주문 완료의 「매출전표 불러오기」는 회원·비회원이 함께 쓴다. 두 조각의 요청은
+선택 인증(`auth_mode=optional`)으로 회원 토큰을 싣고, 비회원은 공개 상태 `_global.guestOrderToken` 을
+`X-Guest-Order-Token` 헤더로 싣는다(전역 헤더는 이 플러그인 주소에 조회 토큰을 붙이지 않는다). 영수증 조회 응답은
+공통 형식(`{ success, message, data }`)이라 조각은 `$prev.data.*`(내 주문 상세)·`response.data.*`(주문 완료)를 읽는다.
+최상위에서 읽으면 버튼은 그려져도 빈 주소로 팝업이 열린다.
 
-간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
-`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다.
+### 테스트 모드 모의입금 도구
 
-### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
-
-관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지·애플페이 iOS 전용 안내를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
-`data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+`user_order_show` 의 데이터 소스 `nhnkcp_mock_deposit` 은 로그인 전용 주소(`auth:sanctum`)라 `auth_mode=required` 로
+두어 비회원이면 요청하지 않고, 주소에 주문번호가 있는 주문 상세에서만(`if: route.order_number`) 부른다 — 신청서 상세는
+주소가 신청번호다. 서버는 조건(테스트 모드·본인 또는 관리자·입금 대기 가상계좌)이 맞지 않으면 `data.available=false`
+로 답하고, 조각은 NHN KCP 가상계좌 주문이면서 `available=true` 일 때만 KCP 테스트 입금통보 폼을 그린다. 글자는
+`user.mock_*` 키로 그린다(일본어는 언어팩).
 
 ### 스크립트가 그리는 글자는 번역 키로 낸다
 
 결제 안내·오류 문구(`payment.error.krw_only`·`applepay_ios_only`·`mobile_approval_key_failed`·`pg_error`)는 `translateNhnkcp(key, 대체 문구, 값)` 로 낸다 —
 `{{이름}}` 자리는 값으로 채우고, 번역 엔진이 없을 때만 한국어 대체 문구를 쓴다. 화면 언어(`documentElement.lang`)로 한국어/영어를 가르던 분기는 없앴다.
 PG 가 돌려준 오류 원문(`resMsg`)은 그대로 보여 준다. 플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.
+
+## 결제창 진입 핸들러의 결제수단
+
+<!-- @intent START -->
+`requestPayment` 는 결제수단을 **액션 인자로만** 정한다 — 호출부가 넘긴 `paymentMethod`, 없으면 같은 인자의
+`pgPaymentData.payment_method`(서버가 주문에 저장한 값, 확장 수단이면 확장 ID 그대로)다. 화면 상태(`_local`)나
+옛 `pay_method` 키는 보지 않는다. 둘 다 없는 응답(구버전 서버)만 신용카드로 연다. 결제 통화는 서버가 주문 스냅샷으로
+정해 실은 `pgPaymentData.currency` 를 쓴다(KCP 는 KRW 전용).
+<!-- @intent END -->
 
 ## 결제창 닫힘 보고의 소유자 증명
 
@@ -146,48 +153,16 @@ PG 가 돌려준 오류 원문(`resMsg`)은 그대로 보여 준다. 플러그�
 제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
 
 - 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
-- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+- 비회원: 공개 상태 `_global.guestOrderToken` 을 `X-Guest-Order-Token` 헤더로 싣는다(`resources/js/guestOrderToken.ts`).
+  회원 주문은 서버가 로그인 사용자로만 판정하므로 이 헤더가 함께 실려도 결과가 같다.
 
-헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
-상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
-토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
-결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
-<!-- @intent END -->
+요청은 `G7Core.api` 로만 보낸다 — `fetch` 로 따로 보내는 폴백은 없다. 서버(client-config)가 주는 보고 주소는 사이트 절대
+URL(`https://사이트/plugins/…/payment/close-report`, `/api` 없음)이므로 `toApiPath()` 가 경로만 꺼내 같은 사이트 API 로
+보낸다. 출처는 버리므로 조회 토큰이 다른 사이트로 새지 않는다. 재결제 준비가 실패하면 예외를 그대로 던져 결제창을 열지 않고,
+닫힘 보고 실패는 경고만 남긴다(결제대기 주문은 이커머스 만료 정리 잡이 정리한다).
 
-## 주문 화면 주입의 폴링·조회 규약
-
-<!-- @intent START -->
-주문 상세 화면에 결제 정보를 덧붙이는 인젝터 둘 — 관리자 주문 상세 결제수단 표시
-(`adminOrderPaymentDisplayInjector.ts`), 마이페이지·비회원 주문 상세의 결제수단 표시·영수증 행·모의입금 안내
-(`mypageOrderShowInjector.ts`) — 는 대상 DOM 이 그려질 때까지 재시도하며, 폴링과 서버 조회를
-`resources/js/orderScreenPolling.ts` 에 맡긴다. 예전 `setInterval` 폴러는 틱이 앞선 비동기 조회를 기다리지 않아
-첫 응답이 올 때까지 400ms 마다 같은 조회를 새로 보냈고(조회마다 서버가 KCP API 까지 간다), 라우트가 바뀔 때마다
-폴러가 쌓였다. 마이페이지는 안내 블록을 하나 붙일 때마다 틱이 다시 돌아 영수증을 또 조회했다.
-
-- **직렬 폴러** — `createOrderScreenPoller()`(기본 400ms · 최대 30틱)는 한 틱의 비동기 작업이 끝난 뒤에야 다음
-  틱을 예약한다. 인젝터마다 폴러를 모듈 수준에 **하나만** 두고, `start(key, tick)` 은 같은 key 면 무시하고 다른
-  key 면 이전 폴러를 멈춘다. 대상 경로를 벗어나면 `stop()` 한다. 틱은 `isActive()` 를 받아, 응답을 기다리는 사이
-  폴러가 멈췄으면 DOM 을 건드리지 않고 끝낸다.
-- **화면 진입당 1회 조회** — 영수증(`nhnkcp-receipt:{주문번호}`)·모의입금(`nhnkcp-mock-deposit:{주문번호}`)·관리자
-  거래 조회는 `requestOncePerOrderScreen()` 으로만 보낸다. 한 화면 진입(같은 경로) 동안 key 별로 한 번 보내고
-  결과를 **실패까지 포함해** 재사용한다. 캐시 키에 회원·비회원 토큰이 들어가 토큰이 늦게 준비되면 그때 한 번 더
-  보낸다. 라우트 변경 처리 첫머리의 `enterOrderScreen()` 이 경로가 바뀌면 이전 결과를 버린다. 영수증 버튼 클릭은
-  이 경로를 쓰지 않고 매번 새로 조회한다.
-- **관리자 주문 상세는 레이아웃 확장의 데이터 소스를 재사용** — 같은 화면의 `admin_order_payment_query` 확장이
-  `transaction-status` 를 데이터 소스 `kcp_status` 로 이미 받으므로 인젝터는 `G7Core.dataSource.get('kcp_status')`
-  값을 쓴다(`readSharedDataSource`). 값이 아직 없으면 최대 20틱(약 8초) 기다리고, 그래도 없으면(확장 미적용·조회
-  실패) 화면 진입당 한 번만 직접 조회한다. 라우트 전환 직후 남아 있는 이전 주문 값을 새 값으로 오인하지 않도록
-  `history.pushState`·`popstate` 직후 `rememberLeavingDataSources(['kcp_status'])` 로 떠나는 값을 기억해 두고, 그
-  값과 같은 객체는 쓰지 않는다. 이 재사용 전에는 주문 상세를 열 때마다 거래 조회가 두 번 나갔다.
-- **주문 데이터 로딩 대기** — 마이페이지 인젝터는 `isOrderDataLoading()`(데이터 컨텍스트에 `order` 키가 있고 값이
-  아직 `undefined`)인 동안 기다린다. 「주문 정보 없음」 분기(다른 결제대행사 주문·비회원 화면에서 모의입금 안내를
-  찾는 분기)는 불러오기가 끝난 뒤에만 탄다.
-- **모의입금 조회는 로그인 전용** — `vbank-mock-deposit-info` 는 `auth:sanctum` 라우트라 비회원 조회 토큰으로는 늘
-  401 이다. `fetchMockDepositInfo()` 는 회원 인증 토큰(`getAuthToken()`)이 없으면 요청하지 않고 `null` 을 돌려준다.
-  이 두 가드가 없던 때는 비회원 주문 상세가 불러오는 도중 다른 결제대행사 주문에도 모의입금 조회를 보내 401 이 났다.
-
-**깨뜨리면 안 되는 것**: 인젝터 안에서 `setInterval` 이나 직접 `fetch` 루프로 되돌리지 않는다 · 결과 캐시에서
-실패를 빼지 않는다 · 레이아웃 확장의 데이터 소스 ID `kcp_status` 를 바꾸면 인젝터 상수 `STATUS_DATA_SOURCE` 도 함께
-바꾼다(어긋나면 매번 20틱을 기다린 뒤 직접 조회로 떨어져 중복 조회가 되살아난다) · 모의입금 라우트의 미들웨어를
-바꾸면 토큰 가드도 다시 맞춘다. 회귀는 Vitest `resources/js/__tests__/orderPaymentDisplayInjectors.test.ts` 가 지킨다.
+결제 실패로 돌아온 화면의 보고(`reportPaymentFailureOnReturn`)는 핸들러 등록이 성공한 뒤(코어 준비 뒤) 부팅 때 한 번만 돈다
+— 재등록 진입점(`initPlugin()`)은 핸들러 등록만 다시 한다. 템플릿이 세션 저장소의 조회 토큰을 전역 상태에 되살리기 전일 수
+있으므로 `waitForGuestOrderToken()` 이 `G7Core.state.subscribe()` 로 최대 3초 기다린 뒤 보낸다(회원이면 토큰이 생기지 않아
+제한 시간 뒤 보낸다).
 <!-- @intent END -->

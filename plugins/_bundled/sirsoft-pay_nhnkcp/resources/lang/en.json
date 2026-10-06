@@ -8,7 +8,8 @@
             "nhnkcp_easy_pay_config": "Easy Pay Config",
             "nhnkcp_test_map": "Test Payment Map",
             "settings": "Payment Settings",
-            "vbank_info": "Virtual Account Info"
+            "vbank_info": "Virtual Account Info",
+            "nhnkcp_mock_deposit": "Mock Deposit Info"
         }
     },
     "messages": {
@@ -73,6 +74,7 @@
         "result_app_no": "Original Approval No.",
         "result_app_time": "Original Approval Time",
         "result_pay_method": "Pay Method",
+        "result_easy_pay": "Easy Pay",
         "result_res_cd": "Original Approval Result Code",
         "result_cancelled_amount": "Cancelled Amount",
         "result_cancelled_at": "Cancelled At",
@@ -189,7 +191,8 @@
             "krw_only": "NHN KCP supports KRW payments only. ({{currency}})",
             "mobile_approval_key_failed": "Failed to get the KCP mobile approval key",
             "pg_error": "KCP error [{{code}}]: {{message}}",
-            "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices."
+            "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices.",
+            "method_missing": "The payment method is missing, so the payment cannot continue. Please reopen the order form."
         }
     }
 }

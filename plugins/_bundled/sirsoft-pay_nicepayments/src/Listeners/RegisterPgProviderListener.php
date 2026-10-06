@@ -105,7 +105,9 @@ class RegisterPgProviderListener implements HookListenerInterface
             // 보안: PG 로 보내는 결과 수신 주소(ReturnURL) — 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL.
             'callback_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nicepayments/payment/callback'),
             'sign_data_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nicepayments/payment/sign-data'),
-            'close_report_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nicepayments/payment/close-report'),
+            // 닫힘 보고는 API 라우트(src/routes/api.php)다 — 웹 경로(/plugins/...)에는 이 라우트가 없다. 프론트는 이 값을
+            // 읽지 않고 자기 API 상대 경로로 부른다(paymentCloseReport.ts) — 이 키는 client-config 응답 형태를 유지하려고 남긴다.
+            'close_report_url' => SiteUrl::absolute('/api/plugins/sirsoft-pay_nicepayments/payment/close-report'),
             'useEscrow' => (bool) ($settings['use_escrow'] ?? false),
             'enabled_easy_pays' => $enabledEasyPays,
         ]);

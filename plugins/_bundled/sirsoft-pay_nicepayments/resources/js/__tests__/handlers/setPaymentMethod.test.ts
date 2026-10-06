@@ -11,10 +11,15 @@
  *
  * 이제 확장 결제수단이 1급 시민이므로 위장이 없고, `serverPaymentMethod` 도 제거됐습니다.
  *
+ * 간편결제 선택 표시 감시(initEasyPayWatcher)는 공개 API `G7Core.state.subscribe()` 로 걸고 해제 함수를 쥔다 —
+ * 코어가 재초기화 때 initPlugin 을 다시 부르면 앞 구독을 풀고 새로 건다(#639).
+ *
+ * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
+ *
  * @see https://github.com/gnuboard/dev-g7/issues/475
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { setPaymentMethodHandler } from '../../handlers/setPaymentMethod';
+import { disposeEasyPayWatcher, initEasyPayWatcher, setPaymentMethodHandler } from '../../handlers/setPaymentMethod';
 
 describe('setPaymentMethodHandler', () => {
     let setLocalSpy: ReturnType<typeof vi.fn>;
@@ -30,17 +35,23 @@ describe('setPaymentMethodHandler', () => {
         delete (window as Record<string, unknown>).G7Core;
     });
 
+    // @scenario concern=payment_method_selection
+    // @effects selected_method_saved_unchanged
     it('paymentMethod가 없으면 setLocal을 호출하지 않는다', () => {
         setPaymentMethodHandler({ params: {} });
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario concern=payment_method_selection
+    // @effects selected_method_saved_unchanged
     it('일반 결제수단(card)은 그대로 저장', () => {
         setPaymentMethodHandler({ params: { paymentMethod: 'card' } });
 
         expect(setLocalSpy).toHaveBeenCalledWith({ paymentMethod: 'card' });
     });
 
+    // @scenario concern=payment_method_selection
+    // @effects selected_method_saved_unchanged
     it('가상계좌(vbank)도 그대로 저장', () => {
         setPaymentMethodHandler({ params: { paymentMethod: 'vbank' } });
 
@@ -48,6 +59,8 @@ describe('setPaymentMethodHandler', () => {
     });
 
     describe('간편결제 (nicepay_*) — 확장 ID 를 위장하지 않는다', () => {
+        // @scenario concern=payment_method_selection
+        // @effects selected_method_saved_unchanged
         it.each([
             ['네이버페이', 'nicepay_naverpay'],
             ['카카오페이', 'nicepay_kakaopay'],
@@ -58,6 +71,8 @@ describe('setPaymentMethodHandler', () => {
             expect(setLocalSpy).toHaveBeenCalledWith({ paymentMethod: method });
         });
 
+        // @scenario concern=payment_method_selection
+        // @effects selected_method_saved_unchanged
         it('serverPaymentMethod 를 더 이상 저장하지 않는다 (card 위장 제거)', () => {
             setPaymentMethodHandler({ params: { paymentMethod: 'nicepay_naverpay' } });
 
@@ -66,9 +81,79 @@ describe('setPaymentMethodHandler', () => {
         });
     });
 
+    // @scenario concern=payment_method_selection
+    // @effects selected_method_saved_unchanged
     it('G7Core가 없으면 조용히 무시 (optional chaining)', () => {
         delete (window as Record<string, unknown>).G7Core;
         // 던지지 않고 정상 종료해야 함
         expect(() => setPaymentMethodHandler({ params: { paymentMethod: 'card' } })).not.toThrow();
+    });
+});
+
+describe('initEasyPayWatcher — 공개 상태 구독', () => {
+    let listeners: Set<() => void>;
+    let local: Record<string, unknown>;
+
+    beforeEach(() => {
+        listeners = new Set();
+        local = {};
+        (window as Record<string, unknown>).G7Core = {
+            state: {
+                subscribe: vi.fn((listener: () => void) => {
+                    listeners.add(listener);
+
+                    return () => listeners.delete(listener);
+                }),
+                getLocal: () => local,
+            },
+        };
+        document.body.innerHTML = `
+            <div id="nicepay_checkout_payment_section">
+                <p>간편결제</p>
+                <div><button style="box-shadow: 0 0 0 2px #fff">카카오페이</button></div>
+            </div>`;
+    });
+
+    afterEach(() => {
+        disposeEasyPayWatcher();
+        delete (window as Record<string, unknown>).G7Core;
+        document.body.innerHTML = '';
+    });
+
+    // @scenario concern=state_subscription
+    // @effects subscription_released_before_resubscribe
+    it('재초기화로 다시 불려도 구독은 하나만 남는다 — 앞 구독의 해제 함수를 부른다', () => {
+        initEasyPayWatcher();
+        initEasyPayWatcher();
+        initEasyPayWatcher();
+
+        expect((window as any).G7Core.state.subscribe).toHaveBeenCalledTimes(3);
+        expect(listeners.size).toBe(1);
+
+        disposeEasyPayWatcher();
+        expect(listeners.size).toBe(0);
+    });
+
+    // @scenario concern=state_subscription
+    // @effects easy_pay_highlight_cleared_on_core_method
+    it('코어 결제수단으로 바뀌면 간편결제 선택 표시를 지운다 — 선택값은 G7Core.state.getLocal() 로 읽는다', () => {
+        initEasyPayWatcher();
+        const button = document.querySelector('button') as HTMLButtonElement;
+
+        local = { paymentMethod: 'nicepay_kakaopay' };
+        listeners.forEach((listener) => listener());
+        expect(button.style.boxShadow).not.toBe('');
+
+        local = { paymentMethod: 'card' };
+        listeners.forEach((listener) => listener());
+        expect(button.style.boxShadow).toBe('');
+    });
+
+    // @scenario concern=state_subscription
+    // @effects subscription_released_before_resubscribe
+    it('공개 구독 API 가 없으면 아무것도 걸지 않는다', () => {
+        (window as Record<string, unknown>).G7Core = { state: {} };
+
+        expect(() => initEasyPayWatcher()).not.toThrow();
     });
 });

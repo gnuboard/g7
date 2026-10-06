@@ -56,7 +56,7 @@ final class ActionHandlerManifest
         // storage
         'saveToLocalStorage', 'loadFromLocalStorage',
         // i18n / event / script / reload
-        'setLocale', 'emitEvent', 'loadScript', 'callExternal', 'callExternalEmbed',
+        'setLocale', 'emitEvent', 'refreshConsent', 'loadScript', 'callExternal', 'callExternalEmbed',
         'reloadExtensions', 'reloadRoutes', 'refresh', 'remount', 'reloadTranslations',
         'reloadModuleHandlers', 'reloadPluginHandlers',
     ];

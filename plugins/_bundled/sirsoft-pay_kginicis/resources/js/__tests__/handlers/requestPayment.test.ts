@@ -18,6 +18,7 @@ import {
 const SITE_ORIGIN = 'https://shop.example.test';
 
 const PG_PAYMENT = {
+    payment_method: 'card',
     order_number: 'ORD-001',
     order_name: 'Test Order',
     amount: 10000,
@@ -42,6 +43,8 @@ describe('requestPaymentHandler', () => {
         vi.restoreAllMocks();
     });
 
+    // @scenario flow=entry_guard
+    // @effects payment_entry_fails_closed
     it('pgPaymentData가 없으면 조기 반환', async () => {
         await requestPaymentHandler({ params: {} });
 
@@ -49,6 +52,29 @@ describe('requestPaymentHandler', () => {
         expect(setLocalSpy).not.toHaveBeenCalled();
     });
 
+    // @scenario flow=entry_guard
+    // @effects payment_method_read_from_action_argument_only
+    it('액션 인자에 결제수단이 없으면 화면 상태를 뒤지거나 card 로 채우지 않고 결제창을 열지 않는다', async () => {
+        const { payment_method: _omitted, ...withoutMethod } = PG_PAYMENT;
+        (window as Record<string, unknown>).G7Core = {
+            api: { get: apiGet },
+            state: { setLocal: setLocalSpy, getLocal: () => ({ paymentMethod: 'kginicis_naverpay' }) },
+            modal: { open: vi.fn() },
+        };
+
+        await requestPaymentHandler({ params: { pgPaymentData: withoutMethod } });
+
+        expect(apiGet).not.toHaveBeenCalled();
+        expect(setLocalSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                isSubmittingOrder: false,
+                paymentErrorMessage: 'KG Inicis payment method is missing from pg_payment_data.',
+            }),
+        );
+    });
+
+    // @scenario flow=entry_guard
+    // @effects payment_entry_fails_closed
     it('client config 응답에 data 가 없으면 catch 블록에서 setLocal 복구', async () => {
         apiGet.mockResolvedValue({}); // data 누락
 
@@ -62,6 +88,8 @@ describe('requestPaymentHandler', () => {
         );
     });
 
+    // @scenario flow=entry_guard
+    // @effects payment_entry_fails_closed
     it('client config API 자체가 throw 하면 catch 블록에서 setLocal 복구', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet.mockRejectedValue(new Error('Network error'));
@@ -142,11 +170,12 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         return fields;
     }
 
+    // @scenario flow=pc_standard
+    // @effects pc_standard_form_follows_manual
     it('X 버튼 취소 시 체크아웃 SPA를 새로고침하지 않도록 닫기 전용 closeUrl 을 전달', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'card',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' },
             },
         });
 
@@ -162,11 +191,12 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect(fields.payViewType).toBe('overlay');
     });
 
+    // @scenario flow=pc_standard
+    // @effects pc_standard_form_follows_manual
     it('한국 표준 결제 폼은 KRW 주문을 WON 통화코드로만 전송한다', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: { ...PG_PAYMENT, currency: 'KRW' },
-                paymentMethod: 'card',
+                pgPaymentData: { ...PG_PAYMENT, currency: 'KRW', payment_method: 'card' },
             },
         });
 
@@ -175,11 +205,12 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect(fields.currency).toBe('WON');
     });
 
+    // @scenario flow=pc_standard
+    // @effects payment_entry_fails_closed
     it('USD 같은 제3통화는 한국 표준 결제로 보내지 않고 중단한다', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: { ...PG_PAYMENT, currency: 'USD' },
-                paymentMethod: 'card',
+                pgPaymentData: { ...PG_PAYMENT, currency: 'USD', payment_method: 'card' },
             },
         });
 
@@ -194,6 +225,8 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         );
     });
 
+    // @scenario flow=pc_standard
+    // @effects payment_entry_fails_closed
     it('라이브 표준 결제 설정이 미완료이면 결제창 호출 전에 중단한다', async () => {
         apiGet.mockResolvedValue({
             data: {
@@ -204,8 +237,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
 
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'card',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' },
             },
         });
 
@@ -220,6 +252,8 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         );
     });
 
+    // @scenario flow=pc_standard
+    // @effects payment_entry_fails_closed
     it('비활성화된 KG 이니시스 간편결제 수단은 직접 결제 호출을 중단한다', async () => {
         apiGet.mockResolvedValue({
             data: {
@@ -230,8 +264,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
 
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'kginicis_naverpay',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'kginicis_naverpay' },
             },
         });
 
@@ -245,6 +278,8 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         );
     });
 
+    // @scenario flow=pc_standard
+    // @effects pc_standard_form_follows_manual
     it('이전 KG 결제 폼 잔재를 제거하고 새 폼만 생성한다', async () => {
         const staleForm = document.createElement('form');
         staleForm.id = 'kginicis_pay_form_stale';
@@ -252,8 +287,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
 
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'card',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' },
             },
         });
 
@@ -263,11 +297,12 @@ describe('requestPaymentHandler — PC closeUrl', () => {
         expect(document.getElementById('kginicis_pay_form_stale')).toBeNull();
     });
 
+    // @scenario flow=pc_standard
+    // @effects pc_standard_form_follows_manual
     it('네이버페이는 KG 이니시스 다이렉트 호출 파라미터로 요청한다', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'kginicis_naverpay',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'kginicis_naverpay' },
             },
         });
 
@@ -296,6 +331,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
  */
 describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
     const CBT_PG_PAYMENT = {
+        payment_method: 'card',
         order_number: 'JP-ORD-001',
         order_name: 'JP Test Order',
         amount: 2,
@@ -391,6 +427,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         return fields;
     }
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('currency=JPY + japan_enabled + japan_mid 면 CBT 분기로 진입해 cbtauth 로 폼 전송', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CBT_PG_PAYMENT } });
 
@@ -434,11 +472,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(extraData.gmoPayment.merchantName).toBe('サンプルストア');
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('일본 CBT 신용카드 선택 시 결제창 paymethod 를 CARD 로 제한', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: CBT_PG_PAYMENT,
-                paymentMethod: 'card',
+                pgPaymentData: { ...CBT_PG_PAYMENT, payment_method: 'card' },
             },
         });
 
@@ -447,11 +486,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(extraData.payment.paymethod).toEqual(['CARD']);
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('일본 PayPay 결제수단 선택 시 CBT 결제창 paymethod 를 PAYpay 로 제한', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: CBT_PG_PAYMENT,
-                paymentMethod: 'kginicis_japan_paypay',
+                pgPaymentData: { ...CBT_PG_PAYMENT, payment_method: 'kginicis_japan_paypay' },
             },
         });
 
@@ -460,11 +500,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(extraData.payment.paymethod).toEqual(['PAYpay']);
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('일본 편의점 결제수단 선택 시 CBT 결제창 paymethod 를 CVS 로 제한', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: CBT_PG_PAYMENT,
-                paymentMethod: 'kginicis_japan_cvs',
+                pgPaymentData: { ...CBT_PG_PAYMENT, payment_method: 'kginicis_japan_cvs' },
             },
         });
 
@@ -476,11 +517,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         );
     });
 
+    // @scenario flow=cbt
+    // @effects payment_entry_fails_closed
     it('일본 전용 결제수단은 JPY 주문에서만 허용', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: { ...CBT_PG_PAYMENT, currency: 'KRW' },
-                paymentMethod: 'kginicis_japan_paypay',
+                pgPaymentData: { ...CBT_PG_PAYMENT, currency: 'KRW', payment_method: 'kginicis_japan_paypay' },
             },
         });
 
@@ -494,11 +536,12 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         );
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('JPY 결제수단 제한 옵션이 꺼져 있으면 한국 KG 간편결제 선택 시 기존 CBT fallback 을 유지', async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: CBT_PG_PAYMENT,
-                paymentMethod: 'kginicis_kakaopay',
+                pgPaymentData: { ...CBT_PG_PAYMENT, payment_method: 'kginicis_kakaopay' },
             },
         });
 
@@ -509,6 +552,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(extraData.payment.paymethod).toEqual(['CARD', 'CVS', 'PAYpay']);
     });
 
+    // @scenario flow=cbt
+    // @effects payment_entry_fails_closed
     it('JPY 결제수단 제한 옵션이 켜져 있으면 한국 KG 간편결제 선택 시 CBT 전체 paymethod 로 fallback 하지 않고 중단', async () => {
         apiGet.mockResolvedValue({
             data: {
@@ -519,8 +564,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
 
         await requestPaymentHandler({
             params: {
-                pgPaymentData: CBT_PG_PAYMENT,
-                paymentMethod: 'kginicis_kakaopay',
+                pgPaymentData: { ...CBT_PG_PAYMENT, payment_method: 'kginicis_kakaopay' },
             },
         });
 
@@ -534,6 +578,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         );
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('timestamp 가 yyyyMMddHHmmss 형식 (14자 숫자, epoch ms 아님)', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CBT_PG_PAYMENT } });
 
@@ -551,6 +597,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(hashCallArgs.timestamp).toBe(fields.timestamp);
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('buyerTel 은 customer_phone 값으로 전송 (매뉴얼 선택 파라미터)', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CBT_PG_PAYMENT } });
 
@@ -560,6 +608,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(fields.buyerEmail).toBe(CBT_PG_PAYMENT.customer_email);
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('customer_phone 누락 시 buyerTel 은 빈 문자열로 안전 처리', async () => {
         const noPhone = { ...CBT_PG_PAYMENT, customer_phone: undefined };
 
@@ -569,6 +619,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         expect(fields.buyerTel).toBe('');
     });
 
+    // @scenario flow=cbt
+    // @effects cbt_form_follows_manual
     it('returnUrl 은 서버가 준 cbt_callback 절대 주소 + oid 쿼리', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CBT_PG_PAYMENT } });
 
@@ -580,6 +632,8 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
         );
     });
 
+    // @scenario flow=cbt
+    // @effects payment_entry_fails_closed
     it('JPY 주문에서 CBT 설정이 부족하면 한국 결제로 fallback 하지 않고 중단', async () => {
         apiGet.mockResolvedValue({
             data: { ...CLIENT_CONFIG.data, japan_mid: '', japan_configured: false },
@@ -615,6 +669,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
  */
 describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
     const PG_PAYMENT = {
+        payment_method: 'card',
         order_number: 'ORD-MOBILE-001',
         order_name: 'Mobile Test',
         amount: 1000,
@@ -699,11 +754,12 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         vi.restoreAllMocks();
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it("휴대폰 결제(phone) → P_INI_PAYMENT='MOBILE' (매뉴얼 표준)", async () => {
         await requestPaymentHandler({
             params: {
-                pgPaymentData: PG_PAYMENT,
-                paymentMethod: 'phone',
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'phone' },
             },
         });
 
@@ -714,9 +770,11 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(fields.P_INI_PAYMENT).not.toBe('HPP');
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it('모바일 결제 폼 제출 전 복귀 표시를 남겨 뒤로가기 시 blur 상태를 해제할 수 있게 한다', async () => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' } },
         });
 
         const form = document.body.querySelector('form') as HTMLFormElement | null;
@@ -724,6 +782,8 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(consumeMobilePaymentReturnPending()).toBe(true);
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it('iPadOS 데스크탑 UA도 모바일 결제 폼으로 분기한다', async () => {
         Object.defineProperty(window.navigator, 'userAgent', {
             value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 ' +
@@ -740,7 +800,7 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         });
 
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card' } },
         });
 
         expect(submitSpy).toHaveBeenCalledTimes(1);
@@ -750,13 +810,15 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(fields.P_INI_PAYMENT).toBe('CARD');
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it.each([
         ['card', 'CARD'],
         ['vbank', 'VBANK'],
         ['bank', 'BANK'],
     ])("결제수단 %s → P_INI_PAYMENT='%s' (매뉴얼 표준 유지)", async (paymentMethod, expected) => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: paymentMethod } },
         });
         const fields = getLastSubmittedFormFields();
         expect(fields.P_INI_PAYMENT).toBe(expected);
@@ -767,9 +829,11 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
      * (manual.inicis.com/pay/stdpay_m.html). 누락 시 PG 가 MX1006 으로 반려.
      * 운영 검증으로 Playwright 재현 후 확인.
      */
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it("휴대폰결제 → P_HPP_METHOD='2' 필수 전송 (MX1006 회귀 차단)", async () => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'phone' },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'phone' } },
         });
         const fields = getLastSubmittedFormFields();
         expect(fields.P_INI_PAYMENT).toBe('MOBILE');
@@ -777,13 +841,15 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(fields.P_HPP_METHOD).toBe('2');
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it.each([
         ['card'],
         ['vbank'],
         ['bank'],
     ])("결제수단 %s → P_HPP_METHOD 미전송 (휴대폰결제 전용)", async (paymentMethod) => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: paymentMethod } },
         });
         const fields = getLastSubmittedFormFields();
         expect(fields.P_HPP_METHOD).toBeUndefined();
@@ -795,9 +861,11 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
      * URL 로 통보되지만, 모바일은 요청에 P_NOTI_URL 을 직접 명시해야 KG 이니시스가
      * 입금 통보를 보낼 수 있다.
      */
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it("가상계좌(vbank) 결제 → P_NOTI_URL 필수 전송", async () => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'vbank' },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' } },
         });
         const fields = getLastSubmittedFormFields();
         expect(fields.P_INI_PAYMENT).toBe('VBANK');
@@ -806,21 +874,25 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         );
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it.each([
         ['card'],
         ['bank'],
         ['phone'],
     ])("결제수단 %s → P_NOTI_URL 미전송 (가상계좌 전용)", async (paymentMethod) => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: paymentMethod } },
         });
         const fields = getLastSubmittedFormFields();
         expect(fields.P_NOTI_URL).toBeUndefined();
     });
 
+    // @scenario flow=mobile
+    // @effects mobile_form_follows_manual
     it('모바일 네이버페이는 wcard 엔드포인트와 선택 결제수단 추적 쿼리를 전송한다', async () => {
         await requestPaymentHandler({
-            params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'kginicis_naverpay' },
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'kginicis_naverpay' } },
         });
 
         const form = document.body.querySelector('form') as HTMLFormElement;
@@ -850,10 +922,14 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://stdpay.inicis.com/stdjs/INIStdPay.js';
 
+    // @scenario flow=sdk_gate
+    // @effects sdk_host_allowlisted
     it('신뢰 호스트 https URL 은 통과한다', () => {
         expect(() => assertTrustedSdkUrl(TRUSTED_SDK_URL)).not.toThrow();
     });
 
+    // @scenario flow=sdk_gate
+    // @effects sdk_host_allowlisted
     it.each([
         ['미신뢰 호스트', 'https://cdn.evil.com/sdk.js'],
         ['http (평문)', TRUSTED_SDK_URL.replace('https://', 'http://')],
@@ -867,6 +943,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         expect(() => assertTrustedSdkUrl(url as string)).toThrow();
     });
 
+    // @scenario flow=sdk_gate
+    // @effects sdk_host_allowlisted
     it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
@@ -877,6 +955,8 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         );
     });
 
+    // @scenario flow=sdk_gate
+    // @effects sdk_host_allowlisted
     it('manifest 가 호스트별 사유를 함께 선언한다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')

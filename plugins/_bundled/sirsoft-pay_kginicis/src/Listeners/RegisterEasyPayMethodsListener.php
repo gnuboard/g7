@@ -11,9 +11,9 @@ use App\Contracts\Extension\HookListenerInterface;
  *
  * 코어 sirsoft-ecommerce.settings.filter_available_payment_methods 필터 훅을 구독해
  * builtin 결제수단 배열의 'phone' (휴대폰결제) 항목 뒤, 'point' (포인트결제) 항목 앞에
- * KG 이니시스 전용 결제수단을 삽입한다. 각 entry 의 defaults.pg_provider 는 null — 코어/이커머스의
- * "PG 선택 불필요" 상태로 표시되며, 기본 PG 사 설정과 무관하게 KG 이니시스 결제창이
- * 열린다 (orderResponseInterceptor 가 'kginicis_*' prefix 를 인식하여 KG 흐름으로 강제).
+ * KG 이니시스 전용 결제수단을 삽입한다. 각 entry 의 defaults.pg_provider 는 KG 이니시스로 고정(pg_locked)되어
+ * 기본 PG 사 설정과 무관하게 KG 이니시스 결제창이 열린다(#475). 브랜드 마크(brand_mark)도 이 카탈로그가
+ * 내려 주고 화면이 그대로 그린다 — 예전처럼 화면 스크립트가 그려진 아이콘을 바꿔 끼우지 않는다(#639).
  *
  * 국내 결제수단 ID 는 requestPayment handler 의 EasyPayMethod / DirectShowOpt 매핑과 일치:
  *   - kginicis_samsung_pay  → 'onlyssp' / 'd_samsungpay=Y'

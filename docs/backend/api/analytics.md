@@ -192,7 +192,8 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | top.pages / top.referrers / top.countries | array | 상위 목록 (설정 `top_n_overview` 건) |
 | realtime.count / realtime.visitors[] | integer / array | 현재 접속자 수와 최근 목록. 이 경로에서는 주소를 담지 않는다 |
 | meta.mode | string | 개인정보 수집 모드 (full, consent, anonymous) |
-| meta.consent_source | string | 동의를 물어볼 곳. `none` 이면 동의 모드라도 익명으로 모은다 — 화면이 그 사실을 경고로 띄운다 |
+| meta.consent_source | string | 동의 출처 — `provider`(동의 관리 제공자가 있다) · `none`(없다). `none` 이면 동의 모드라도 익명으로 모은다 — 화면이 그 사실을 경고로 띄운다 |
+| meta.consent_selection | string | 동의 제공자 선택 상태 — `none`·`auto`·`selected`·`ambiguous`·`missing`. `ambiguous`·`missing` 이면 출처는 `provider` 지만 모든 방문자가 「동의 확인 불가」로 판정된다 |
 | meta.collection_enabled | boolean | 수집 마스터 스위치. 꺼져 있으면 화면 상단에 안내를 띄운다 |
 | meta.geoip_enabled | boolean | 지역 조회 사용 여부 (꺼져 있으면 지역 화면이 안내만 보인다) |
 | meta.queue_backlogged / meta.queue_pending_jobs | boolean / integer | 큐 적체. 워커가 멈추면 비콘은 204 를 받고도 원장에 닿지 않는다 |
@@ -537,6 +538,8 @@ _없음._
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | collection.enabled / mode / consent_source | mixed | 수집이 켜져 있는지, 어떤 모드로, 동의를 어디서 받는지 |
+| collection.consent_selection | string | 동의 제공자 선택 상태 — `none`·`auto`·`selected`·`ambiguous`·`missing`. 화면의 동의 출처 배지가 읽는다(`ambiguous`·`missing` 이면 「제공자 선택 필요」) |
+| collection.consent_provider_label | string\|null | 답하는 동의 제공자 이름 (`auto`·`selected` 일 때만) |
 | collection.effective_mode | string | 실제로 도는 사이트 모드. 운영자가 고른 `mode` 와 다를 수 있다(익명 폴백). 동의 관리 플러그인 때문에 **동의 전 방문자만** 익명으로 모일 때는 `full` 이고 사유가 `anonymous_fallback_reason` 에 실린다 |
 | collection.anonymous_fallback_reason | string\|null | 익명으로 내려간 사유. `consent_source_missing`(동의 모드인데 물어볼 곳이 없음) · `consent_plugin_blocks_cookies`(동의 관리 플러그인이 동의 전 방문자 쿠키를 막음). 내려가지 않았으면 `null` |
 | collection.last_tracked_at | string\|null | 마지막으로 무언가 세어진 때 |
@@ -963,28 +966,6 @@ _없음._
 로그인 없이 누구나 부르므로 응답을 60초 캐시합니다.
 <!-- @generated:end:api.public.analytics.summary -->
 
-### GET /api/analytics/consent
-<!-- @generated:start:api.public.analytics.consent -->
-- **라우트명**: `api.public.analytics.consent`
-- **컨트롤러**: `App\Http\Controllers\Api\Public\AnalyticsConsentController@show`
-- **인증/권한**: 공개 (`optional.sanctum` — 토큰이 있으면 회원으로 묻는다) · `throttle:60,1,analytics_consent`
-
-**요청 파라미터**
-
-_없음._
-
-**응답 필드** (`data` 내부)
-
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| consent_source | string | 동의 출처 — `provider`(추적 허용 필터 구독자 있음) · `filter`(동의 필터 구독자만) · `none` |
-| has_consent | boolean\|null | 동의 연동 모드이고 답하는 확장이 있으면 동의 여부, 그 밖에는 `null`(판정 대상 아님 — 트래커가 막지 않는다) |
-
-브라우저 트래커가 동의 연동 모드에서 「이 방문자가 동의했는가」를 미리 알아 보내지 않아도 될 비콘을
-거르는 데 씁니다. 서버도 수집할 때마다 같은 판정을 다시 하므로 보안 경계가 아닙니다. 수집 경로와 같은
-코어 필터(`core.analytics.consent_session_id` → `core.analytics.visitor_has_consent`)를 거쳐 답하므로 브라우저는
-동의를 관리하는 확장의 경로를 몰라도 됩니다.
-<!-- @generated:end:api.public.analytics.consent -->
 
 ---
 ---
@@ -994,10 +975,6 @@ _없음._
 | 훅 | 종류 | 용도 |
 | --- | --- | --- |
 | `core.analytics.collect_validation_rules` | filter | 비콘 검증 규칙에 확장 필드를 더한다 |
-| `core.analytics.visitor_has_consent` | filter | 동의 연동 모드에서 이 방문자가 동의했는지 답한다. 인자 `(null, ?int $userId, ?string $sessionId)`, 기본값 `null`(답할 확장 없음) |
-| `core.analytics.tracking_permission` | filter | 이 방문자를 식별자(IP·방문자 쿠키)로 추적해도 되는지 답한다. 인자 `(null, ?int $userId, ?string $sessionId)`. 구독자가 있으면 IP 저장 모드에서도 허용되지 않은 방문자는 익명으로 모이고 동의 출처는 `provider` 가 된다 |
-| `core.analytics.consent_revoked` | action | 방문자가 분석 동의를 철회했음을 알린다(진단 카운터). 동의를 관리하는 확장이 발행한다 |
-| `core.analytics.consent_session_id` | filter | 동의 조회에 쓸 세션 식별자를 수집 요청 조립 시점에 정한다. 인자 `($default, Request $request)`, 기본값은 시작된 라라벨 세션 ID(없으면 `null`). 게스트 동의를 자기 식별자로 저장하는 동의 관리 확장이 답한다 — 요청이 살아 있을 때 정해 싣으므로 큐 적재에도 그대로 간다 |
 | `core.analytics.tracking_request_received` | action | 적재를 넘겨받는다. 코어 리스너가 `'sync' => true` 로 구독해 **요청 안에서** 돈다 — 구독하는 확장도 같은 전제로 쓴다 |
 | `core.analytics.after_track` | action | 적재 결과를 관찰한다 (방문 ID·액션 ID·종류) |
 | `core.analytics.visit_limit_exceeded` | action | 한 방문의 액션 상한 초과를 알린다 |

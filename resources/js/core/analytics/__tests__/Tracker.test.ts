@@ -18,6 +18,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnalyticsTracker } from '../Tracker';
+import type { ConsentSnapshotLike, ConsentSource } from '../consent';
+
+/** 코어 동의 런타임 흉내 — 판정 대기·완료를 테스트가 직접 조작한다 */
+interface FakeConsentSource extends ConsentSource {
+  /** 판정을 끝낸다 (완료 리스너를 부른다) */
+  settle: (snapshot: Partial<ConsentSnapshotLike> & { status: ConsentSnapshotLike['status'] }) => void;
+  /** 인증 경계처럼 다시 판정 대기로 돌린다 */
+  resetPending: () => void;
+}
+
+/**
+ * 코어 동의 런타임을 흉내 낸다. 처음에는 판정 대기(unknown)다.
+ *
+ * @returns 가짜 동의 출처
+ */
+function fakeConsentSource(): FakeConsentSource {
+  let snapshot: ConsentSnapshotLike = { status: 'unknown', categories: { necessary: true }, needsRenewal: false };
+  let pending = true;
+  const listeners = new Set<(s: ConsentSnapshotLike) => void>();
+
+  return {
+    getSnapshot: () => snapshot,
+    isPending: () => pending,
+    onSettled: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    settle: (next) => {
+      snapshot = { categories: { necessary: true }, needsRenewal: false, ...next };
+      pending = false;
+      listeners.forEach((listener) => listener(snapshot));
+    },
+    resetPending: () => {
+      snapshot = { status: 'unknown', categories: { necessary: true }, needsRenewal: false };
+      pending = true;
+    },
+  };
+}
 
 /**
  * jsdom 의 navigator 에는 doNotTrack 이 없어 spyOn 이 통하지 않는다.
@@ -64,31 +102,15 @@ describe('AnalyticsTracker', () => {
     .map(([, init]) => JSON.parse(init.body));
 
   /**
-   * 동의 조회 응답을 흉내 낸다 — 수집 요청은 성공으로 돌려준다.
+   * 동의 연동 모드 트래커 (동의 관리 제공자 있음) — 판정 출처는 코어 동의 런타임 흉내다.
    *
-   * @param status 조회 결과 (`fail` 이면 네트워크 오류, 숫자면 그 상태 코드의 !ok 응답)
+   * @param source 동의 출처
+   * @returns 트래커
    */
-  const mockConsentLookup = (status: Record<string, boolean> | 'fail' | number): void => {
-    fetchMock.mockReset();
-    fetchMock.mockImplementation(async (url: string) => {
-      if (String(url).includes('/consent/cookie/status')) {
-        if (status === 'fail') throw new Error('network');
-        if (typeof status === 'number') {
-          // 본문은 동의로 읽히는 모양이다 — !ok 를 무시하고 본문을 읽으면 red 가 된다.
-          return { ok: false, status, json: async () => ({ data: { consents: { analytics: true } } }) };
-        }
-
-        return { ok: true, json: async () => ({ data: { consents: status } }) };
-      }
-
-      return { ok: true };
-    });
-  };
-
-  /** 동의 연동 모드 트래커 (플러그인 활성) */
-  const consentTracker = (): AnalyticsTracker => new AnalyticsTracker({
+  const consentTracker = (source: ConsentSource): AnalyticsTracker => new AnalyticsTracker({
     settings: { ...SETTINGS, privacy_mode: 'consent' },
     consentPluginActive: true,
+    consentSource: source,
   });
 
   /** 예약된 전송을 실행하고 마지막 페이로드를 돌려준다 */
@@ -119,10 +141,7 @@ describe('AnalyticsTracker', () => {
   // @scenario mode=consent, source=beacon, exclusion=consent
   // @effects consent_bridge_blocks_sending_until_consent_is_known
   it('동의 연동 모드에서는 동의를 확인하기 전까지 보내지 않는다', () => {
-    const tracker = new AnalyticsTracker({
-      settings: { ...SETTINGS, privacy_mode: 'consent' },
-      consentPluginActive: true,
-    });
+    const tracker = consentTracker(fakeConsentSource());
 
     tracker.trackPageview({ path: '/' });
 
@@ -134,43 +153,59 @@ describe('AnalyticsTracker', () => {
   it('동의 조회보다 먼저 온 첫 화면은 버리지 않고 들고 있다가, 동의로 확인되면 보내고 아니면 버린다', async () => {
     // 첫 화면 비콘은 부팅 직후 동기로 나가 동의 조회보다 늘 먼저다. 버리면 동의한 방문자가
     // 새로 들어오거나 새로고침한 화면이 한 건도 안 남는다(#682 S3 라운드 13 브라우저 실측).
-    const run = async (consents: Record<string, boolean> | 'fail') => {
-      fetchMock.mockReset();
-      fetchMock.mockImplementation(async (url: string) => {
-        if (String(url).includes('/consent/cookie/status')) {
-          if (consents === 'fail') throw new Error('network');
-
-          return { ok: true, json: async () => ({ data: { consents } }) };
-        }
-
-        return { ok: true };
-      });
-
-      const tracker = new AnalyticsTracker({
-        settings: { ...SETTINGS, privacy_mode: 'consent' },
-        consentPluginActive: true,
-      });
+    const run = async (settled: Partial<ConsentSnapshotLike> & { status: ConsentSnapshotLike['status'] }) => {
+      fetchMock.mockClear();
+      const source = fakeConsentSource();
+      const tracker = consentTracker(source);
 
       tracker.trackPageview({ path: '/' });
       vi.runAllTimers();
-      const beforeSettle = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/analytics/collect')).length;
+      const beforeSettle = collected().length;
 
       await tracker.start();
+      source.settle(settled);
       vi.runAllTimers();
 
-      const sent = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/analytics/collect'));
+      const sent = collected();
       tracker.stop();
 
-      return { beforeSettle, sent: sent.map(([, init]) => JSON.parse(init.body)) };
+      return { beforeSettle, sent };
     };
 
-    const granted = await run({ analytics: true });
+    const granted = await run({ status: 'ready', categories: { necessary: true, analytics: true } });
     expect(granted.beforeSettle, '조회가 끝나기 전에는 보내지 않는다').toBe(0);
     expect(granted.sent).toHaveLength(1);
     expect(granted.sent[0]).toMatchObject({ t: 'pageview', init: true });
 
-    expect((await run({ analytics: false })).sent, '미동의면 들고 있던 비콘을 버린다').toHaveLength(0);
-    expect((await run('fail')).sent, '조회에 실패해도 동의로 단정하지 않는다').toHaveLength(0);
+    expect((await run({ status: 'ready', categories: { necessary: true, analytics: false } })).sent, '미동의면 들고 있던 비콘을 버린다').toHaveLength(0);
+    expect((await run({ status: 'unknown' })).sent, '조회에 실패해도(unknown) 동의로 단정하지 않는다').toHaveLength(0);
+    expect((await run({ status: 'ready', categories: { analytics: true }, needsRenewal: true })).sent, '재동의 대상은 동의로 보지 않는다').toHaveLength(0);
+    expect((await run({ status: 'none' })).sent, '동의 관리 제공자가 없다고 확인되면 보낸다(서버가 익명 처리)').toHaveLength(1);
+  });
+
+  // @scenario mode=consent, source=beacon, visit_state=open
+  // @effects consented_visitors_first_page_is_held_until_consent_is_known
+  it('로그인·로그아웃으로 판정이 다시 대기로 돌아가면 그 사이의 화면 이동도 들고 있다가 새 판정으로 보낸다 (#639)', async () => {
+    // 로그인은 SPA 이동이다 — 로그인 직후 화면의 비콘은 동의 재조회보다 먼저 나간다. 버리면 회원으로
+    // 들어온 첫 화면이 통째로 빠지고, 옛(게스트) 판정으로 보내면 동의하지 않은 회원이 세어진다.
+    const source = fakeConsentSource();
+    const tracker = consentTracker(source);
+    await tracker.start();
+    source.settle({ status: 'ready', categories: { necessary: true, analytics: false } });
+
+    tracker.trackPageview({ path: '/login' });
+    vi.runAllTimers();
+    expect(collected(), '게스트는 미동의').toHaveLength(0);
+
+    source.resetPending();
+    tracker.trackPageview({ path: '/' });
+    vi.runAllTimers();
+    expect(collected(), '새 판정 전에는 보내지 않는다').toHaveLength(0);
+
+    source.settle({ status: 'ready', categories: { necessary: true, analytics: true } });
+    vi.runAllTimers();
+    expect(collected().map((body) => body.title)).toEqual(['/']);
+    tracker.stop();
   });
 
   // @scenario source=beacon, visit_state=new
@@ -479,8 +514,8 @@ describe('AnalyticsTracker', () => {
   // @scenario mode=consent, source=beacon, visit_state=new
   // @effects consented_visitors_first_page_is_held_until_consent_is_known
   it('동의 조회 전에 들고 있는 비콘은 5건까지만이고, 동의로 확인되면 그 5건만 보낸다', async () => {
-    mockConsentLookup({ analytics: true });
-    const tracker = consentTracker();
+    const source = fakeConsentSource();
+    const tracker = consentTracker(source);
 
     // 조회가 오래 걸리는 동안 화면을 7번 옮겼다 — 무한히 쌓지 않는다.
     for (let i = 1; i <= 7; i++) tracker.trackPageview({ path: `/p${i}` });
@@ -488,6 +523,7 @@ describe('AnalyticsTracker', () => {
     expect(collected(), '조회 전에는 보내지 않는다').toHaveLength(0);
 
     await tracker.start();
+    source.settle({ status: 'ready', categories: { necessary: true, analytics: true } });
     vi.runAllTimers();
 
     expect(collected().map((body) => body.title)).toEqual(['/p1', '/p2', '/p3', '/p4', '/p5']);
@@ -497,8 +533,8 @@ describe('AnalyticsTracker', () => {
   // @scenario mode=consent, source=beacon, exclusion=opt_out
   // @effects tracker_honours_do_not_track_and_opt_out, consented_visitors_first_page_is_held_until_consent_is_known
   it('들고 있는 사이에 수집 제외를 고르면 동의로 확인돼도 그 비콘을 보내지 않는다', async () => {
-    mockConsentLookup({ analytics: true });
-    const tracker = consentTracker();
+    const source = fakeConsentSource();
+    const tracker = consentTracker(source);
 
     tracker.trackPageview({ path: '/' });
 
@@ -506,6 +542,7 @@ describe('AnalyticsTracker', () => {
     document.cookie = 'g7_analytics_optout=1';
 
     await tracker.start();
+    source.settle({ status: 'ready', categories: { necessary: true, analytics: true } });
     vi.runAllTimers();
 
     expect(collected()).toHaveLength(0);
@@ -514,23 +551,23 @@ describe('AnalyticsTracker', () => {
 
   // @scenario mode=consent, source=beacon, exclusion=consent
   // @effects consented_visitors_first_page_is_held_until_consent_is_known, consent_bridge_blocks_sending_until_consent_is_known
-  it('동의 조회가 !ok 로 끝나면 본문을 믿지 않고 들고 있던 비콘을 버린다', async () => {
-    for (const status of [401, 500]) {
-      mockConsentLookup(status);
-      const tracker = consentTracker();
+  it('동의 판정이 unknown 으로 끝나면 들고 있던 비콘을 버리고, 그 뒤 화면도 미동의로 다룬다', async () => {
+    // 런타임은 조회 실패(401·500·형식 오류)를 unknown 으로 둔다 — 본문을 추측해 동의로 읽지 않는다.
+    const source = fakeConsentSource();
+    const tracker = consentTracker(source);
 
-      tracker.trackPageview({ path: '/' });
-      await tracker.start();
-      vi.runAllTimers();
+    tracker.trackPageview({ path: '/' });
+    await tracker.start();
+    source.settle({ status: 'unknown' });
+    vi.runAllTimers();
 
-      expect(collected(), `상태 ${status}`).toHaveLength(0);
+    expect(collected()).toHaveLength(0);
 
-      // 조회는 끝났다 — 그 뒤의 화면도 「모름」이 아니라 미동의로 다뤄 들고 있지 않는다.
-      tracker.trackPageview({ path: '/next' });
-      vi.runAllTimers();
-      expect(collected(), `상태 ${status} 이후`).toHaveLength(0);
-      tracker.stop();
-    }
+    // 판정은 끝났다 — 그 뒤의 화면도 「모름」이 아니라 미동의로 다뤄 들고 있지 않는다.
+    tracker.trackPageview({ path: '/next' });
+    vi.runAllTimers();
+    expect(collected()).toHaveLength(0);
+    tracker.stop();
   });
 
   // @scenario source=beacon

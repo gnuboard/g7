@@ -80,6 +80,7 @@ class PluginManager implements PluginManagerInterface
     use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesSeoVariables;
+    use Traits\ValidatesStateContracts;
     use Traits\ValidatesTranslationPath;
 
     /**
@@ -449,6 +450,9 @@ class PluginManager implements PluginManagerInterface
             // SEO 변수명 중복 검증
             $this->validateSeoVariables($plugin, 'plugin');
 
+            // 전역 상태 공개 계약 이름 충돌 검증 (#639)
+            $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
+
             // 플러그인 설치 실행
             $onProgress?->__invoke('validate', __('extensions.progress.validate'));
             $plugin->clearLifecycleFailureReason();
@@ -638,6 +642,9 @@ class PluginManager implements PluginManagerInterface
                 'plugin'
             );
         }
+
+        // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
+        $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
 
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
@@ -1292,6 +1299,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $plugin->getVersion(),
                     'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+                    'integrations' => $this->enrichIntegrations($plugin->getIntegrations()),
                     'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1315,6 +1323,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => true,
@@ -1338,6 +1347,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1411,6 +1421,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $record->version,
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+                    'integrations' => $this->enrichIntegrations($plugin->getIntegrations()),
                     'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -1483,6 +1494,7 @@ class PluginManager implements PluginManagerInterface
             'metadata' => $metadata,
             'requires_core' => $plugin->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+            'integrations' => $this->enrichIntegrations($plugin->getIntegrations()),
             // 선언은 {name, description, categories} 계층이지만 상세 창은 분류 배열을 그린다 —
             // 모듈 정보(ModuleManager::getModuleInfo)와 같은 모양으로 categories 만 내보낸다.
             'permissions' => $plugin->getPermissions()['categories'] ?? [],
@@ -1541,6 +1553,7 @@ class PluginManager implements PluginManagerInterface
                 'metadata' => $pluginMetadata,
                 'requires_core' => $plugin->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+                'integrations' => $this->enrichIntegrations($plugin->getIntegrations()),
                 'permissions' => $plugin->getPermissions()['categories'] ?? [],
                 'roles' => $plugin->getRoles(),
                 'config' => $plugin->getConfigValues(),
@@ -1569,6 +1582,7 @@ class PluginManager implements PluginManagerInterface
             'metadata' => $metadata,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+            'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
             'permissions' => $metadata['permissions']['categories'] ?? $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
             'config' => $metadata['config'] ?? [],
@@ -1795,6 +1809,17 @@ class PluginManager implements PluginManagerInterface
         }
 
         return $record->status === ExtensionStatus::Active->value;
+    }
+
+    /**
+     * 선택 연동 선언(`integrations`)을 화면 표시용으로 보강합니다 (#639).
+     *
+     * @param  mixed  $integrations  manifest 의 integrations 값
+     * @return array<int, array<string, mixed>> 보강된 연동 목록
+     */
+    protected function enrichIntegrations(mixed $integrations): array
+    {
+        return DependencyEnricher::enrichIntegrations($integrations);
     }
 
     /**

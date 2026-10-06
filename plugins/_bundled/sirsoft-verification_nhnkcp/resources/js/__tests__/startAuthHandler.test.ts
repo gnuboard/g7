@@ -263,8 +263,11 @@ describe('startAuth 핸들러', () => {
         vi.useFakeTimers();
         const popup = { closed: false, close: vi.fn() };
         vi.stubGlobal('open', vi.fn(() => popup));
-        const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ success: true }) }));
+        // 코어 API 클라이언트로 보낸다(Bearer·401 은 코어 몫) — raw fetch 는 쓰지 않는다
+        const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        const apiPost = vi.fn(async () => ({ success: true }));
+        (window as any).G7Core.api = { post: apiPost };
         globalState.identityChallenge = {
             provider_id: 'nhnkcp',
             purpose: 'signup',
@@ -277,11 +280,11 @@ describe('startAuth 핸들러', () => {
         vi.advanceTimersByTime(500);
         await vi.runAllTicks?.();
 
-        const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+        const calls = apiPost.mock.calls as unknown as Array<[string, unknown?]>;
         const cancelCall = calls.find(([url]) => String(url).includes('/cancel'));
         expect(cancelCall, '취소 엔드포인트 호출이 있어야 한다').toBeTruthy();
         expect(cancelCall![0]).toBe('/api/identity/challenges/challenge-abandoned/cancel');
-        expect(cancelCall![1].method).toBe('POST');
+        expect(fetchMock).not.toHaveBeenCalled();
 
         vi.useRealTimers();
     });

@@ -104,6 +104,8 @@ export { ExtensionBadge } from './ExtensionBadge';
 export type { ExtensionBadgeProps, ExtensionType } from './ExtensionBadge';
 export { Badge } from './Badge';
 export type { BadgeProps } from './Badge';
+export { BrandMark } from './BrandMark';
+export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { SearchableDropdown } from './SearchableDropdown';
 export type { SearchableDropdownProps, SearchableDropdownOption } from './SearchableDropdown';
 export { TagSelect } from './TagSelect';

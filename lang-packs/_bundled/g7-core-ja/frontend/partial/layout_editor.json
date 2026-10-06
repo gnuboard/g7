@@ -1318,6 +1318,9 @@
       "label": "言語を変更",
       "param_target": "言語"
     },
+    "refresh_consent": {
+      "label": "訪問者の同意状態を再読み込み"
+    },
     "emit_event": {
       "label": "コンポーネントイベントを送信",
       "param_event": "イベント名",

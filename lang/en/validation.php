@@ -1188,6 +1188,7 @@ return [
         'password_expiry_scope_in' => 'The scope must be all members, administrators only, or selected roles and members.',
         'password_expiry_action_in' => 'The expiry action must be either require change to sign in or allow changing later.',
         'password_expiry_notice_days_lt_expiry_days' => 'The advance notice must be shorter than the expiry period. If it is equal or longer, the notice and the expiry happen on the same day, leaving no advance notice at all.',
+        'privacy_consent_provider_unknown' => 'The selected consent management provider could not be found. Choose one from the list again.',
     ],
 
     // Identity verification policy validation messages
@@ -1317,6 +1318,7 @@ return [
         'identity_purpose_providers' => 'purpose-to-provider mapping',
         'identity_challenge_ttl_minutes' => 'challenge TTL',
         'identity_max_attempts' => 'maximum attempts',
+        'privacy_consent_provider' => 'consent management provider',
         'privacy_withdrawn_retention_enabled' => 'withdrawn member data erasure',
         'privacy_withdrawn_retention_days' => 'withdrawn member data retention period',
         'privacy_dormant_enabled' => 'dormant account transition',

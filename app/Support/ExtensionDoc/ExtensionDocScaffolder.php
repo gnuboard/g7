@@ -798,6 +798,36 @@ class ExtensionDocScaffolder
                 ], $requiredBy),
             );
 
+        // 선택 연동(#639) — 선언이 있는 확장에만 절을 둔다(없음 문장으로 모든 문서를 바꾸지 않는다).
+        $integrates = $ctx['deps']['integrates'] ?? [];
+        if ($integrates !== []) {
+            $sections[] = '';
+            $sections[] = '**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)';
+            $sections[] = '';
+            $sections[] = $this->table(
+                ['확장', '유형', '번들'],
+                array_map(fn (array $d): array => [
+                    $this->code($d['id']),
+                    ExtensionInventory::typeLabel(rtrim($d['type'], 's')),
+                    $d['bundled'] ? '✅' : '—',
+                ], $integrates),
+            );
+        }
+
+        $integratedBy = $ctx['deps']['integratedBy'] ?? [];
+        if ($integratedBy !== []) {
+            $sections[] = '';
+            $sections[] = '**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)';
+            $sections[] = '';
+            $sections[] = $this->table(
+                ['확장', '유형'],
+                array_map(fn (array $d): array => [
+                    $this->code($d['id']),
+                    ExtensionInventory::typeLabel($d['type']),
+                ], $integratedBy),
+            );
+        }
+
         return implode("\n", $sections);
     }
 
@@ -2073,9 +2103,13 @@ class ExtensionDocScaffolder
             ['재등록 진입점', $entry['initFunction'] !== null ? $this->code($entry['initFunction'].'()') : '**미노출**'],
         ];
 
-        $note = $entry['global'] === null || $entry['initFunction'] === null
-            ? '재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).'
-            : '로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.';
+        $note = match (true) {
+            ($entry['missingReinit'] ?? false) => '⚠️ **재등록 전역 누락** — 이 엔트리는 액션 핸들러를 등록하지만 재등록 전역(`window.__{Name}`)이 없습니다. 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).',
+            $entry['global'] === 'G7TemplateHandlers' => '템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.',
+            ! ($entry['registersHandlers'] ?? true) => '이 엔트리는 액션 핸들러를 등록하지 않으므로 재등록 계약 대상이 아닙니다. 전역 객체는 외부에서 확장 존재를 확인하는 용도로만 남습니다.',
+            $entry['global'] === null || $entry['initFunction'] === null => '재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).',
+            default => '로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.',
+        };
 
         return $this->table(['항목', '값'], $rows)."\n\n".$note;
     }

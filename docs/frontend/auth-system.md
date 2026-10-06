@@ -11,7 +11,7 @@
 2. 토큰 자동 갱신: 401 응답 시 자동 처리
 3. 컨텍스트 분리: admin/user 분리 관리
 4. 로그인: login 핸들러 또는 AuthManager.login()
-5. 이벤트: auth:login, auth:logout 이벤트 구독 가능
+5. 이벤트: on(event, handler) 로 login, logout, tokenRefreshed, authStateChange 구독 (해제 함수 반환)
 ```
 
 ---
@@ -346,20 +346,62 @@ AuthManager는 이벤트 기반으로 인증 상태 변경을 알립니다:
 ```typescript
 const authManager = AuthManager.getInstance();
 
-// 인증 상태 변경 감지
-authManager.on('authStateChange', (state) => {
-  console.log('Auth state:', state.isAuthenticated, state.user);
+// 최초 상태는 getState() 로 읽는다 (on 은 지난 이벤트를 다시 보내지 않는다)
+render(authManager.getState());
+
+// 인증 상태 변경 감지 — on() 은 해제 함수를 돌려준다
+const offState = authManager.on('authStateChange', (state) => {
+  render(state);
 });
 
-// 로그아웃 감지
-authManager.on('logout', () => {
-  console.log('User logged out');
+// 로그아웃 감지 — 인자는 로그아웃 직전 상태
+const offLogout = authManager.on('logout', (previousState) => {
+  console.log('User logged out', previousState.type);
 });
+
+// 화면을 떠날 때 해제
+offState();
+offLogout();
 ```
 
+React 컴포넌트에서는 effect 정리 함수로 해제합니다.
+
+```tsx
+useEffect(() => {
+  const authManager = G7Core.AuthManager.getInstance();
+  setAuth(authManager.getState());
+
+  return authManager.on('authStateChange', (state) => setAuth(state));
+}, []);
+```
+
+**메서드**:
+
+| 메서드 | 설명 |
+|--------|------|
+| `on(event, handler)` | 핸들러를 등록하고 해제 함수를 반환 |
+| `off(event, handler)` | 등록한 핸들러를 해제 (등록 때와 같은 참조) |
+| `getState()` | 현재 인증 상태의 사본 (`{ isAuthenticated, user, type }`) |
+
 **사용 가능한 이벤트**:
-- `authStateChange`: 인증 상태가 변경될 때
-- `logout`: 사용자가 로그아웃할 때
+
+| 이벤트 | 발생 시점 | 핸들러 인자 |
+|--------|-----------|-------------|
+| `login` | 로그인 또는 2단계 인증 완료로 세션이 열릴 때 | 새 인증 상태 |
+| `logout` | `logout()` 이 끝날 때 (서버 호출 실패여도 발생) | 로그아웃 직전 상태 |
+| `tokenRefreshed` | 토큰 갱신에 성공했을 때 | 없음 |
+| `authStateChange` | 인증 상태가 바뀔 때 (아래 참고) | 현재 인증 상태 |
+
+`authStateChange` 는 다음 경우에 발생합니다.
+
+- 로그인으로 세션이 열릴 때 (`login` 바로 뒤)
+- `checkAuth()` 가 사용자 정보를 받았을 때 (이미 인증 상태였어도 발생)
+- `logout()` 이 끝날 때 (`logout` 바로 뒤, 한 번만)
+- 토큰이 없거나 인증 확인이 실패해 인증 상태에서 비인증 상태로 바뀔 때 (비인증에서 비인증으로는 발생하지 않음)
+
+**최초 상태는 `getState()` 로 읽습니다.** 첫 인증 확인은 확장 번들이 실리기 전에 끝날 수 있고, `on()` 은 이미 지나간 이벤트를 다시 보내지 않습니다. 구독을 건 시점의 상태는 `getState()` 로 먼저 읽고, 이후 변경만 이벤트로 받습니다.
+
+**해제를 빠뜨리지 않습니다.** 화면을 오가며 구독을 걸고 풀지 않으면 화면을 떠난 뒤에도 핸들러가 남아 쌓입니다.
 
 ---
 

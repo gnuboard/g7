@@ -3,34 +3,65 @@
  *
  * `apiEndpoint` 는 레이아웃 prop 이라 편집 권한만 있는 계정이 표현식으로 외부 주소를 넣을 수 있다.
  * 관리자가 상단바에서 언어를 바꾸면 관리자 토큰이 그 주소로 갔다. 토큰은 동일 출처 대상에만 싣는다.
+ *
+ * 컴포넌트는 요청을 코어 `G7Core.api` 로 보내고 토큰 첨부를 코어에 맡긴다. 그래서 이 테스트는 실제 코어
+ * ApiClient 를 `G7Core.api` 로 세우고, 전송 직전 요청(최종 주소·헤더)을 어댑터에서 가로채 판정한다.
+ * XSRF 헤더는 axios 가 동일 출처 요청에만 붙이며(브라우저 어댑터 단계), 여기서는 Bearer 만 잰다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import ApiClient from '@core/api/ApiClient';
 import { LanguageSelector } from '../LanguageSelector';
 
+interface SentRequest {
+  method: string;
+  url: string;
+  origin: string;
+  headers: Record<string, unknown>;
+}
+
+/**
+ * 실제 코어 ApiClient 를 만들고 전송 직전 요청을 가로챈다 (네트워크 없음).
+ *
+ * @param sent 가로챈 요청을 쌓을 배열
+ * @return 코어 ApiClient
+ */
+function createCapturingCoreApi(sent: SentRequest[]): ApiClient {
+  const client = new ApiClient();
+  const instance = client.getInstance();
+  instance.defaults.adapter = async (config: any) => {
+    const full = instance.getUri({ baseURL: config.baseURL, url: config.url });
+    const headers = typeof config.headers?.toJSON === 'function' ? config.headers.toJSON() : { ...config.headers };
+    sent.push({
+      method: String(config.method).toUpperCase(),
+      url: config.url,
+      origin: new URL(full, window.location.href).origin,
+      headers,
+    });
+    return { data: { success: true }, status: 200, statusText: 'OK', headers: {}, config, request: {} };
+  };
+  return client;
+}
+
 describe('LanguageSelector — 언어 저장 요청 대상 출처', () => {
-  const originalApi = (window as any).G7Core?.api;
-  let requests: Array<{ url: string; headers: Record<string, string> }>;
+  const g7 = (window as any).G7Core;
+  const originalApi = g7.api;
+  const originalLocale = g7.locale;
+  let requests: SentRequest[];
 
   beforeEach(() => {
-    (window as any).__templateApp = { changeLocale: vi.fn().mockResolvedValue(undefined) };
-    // 코어 판정이 없는 환경(폴백 경로)으로 고정한다
-    (window as any).G7Core.api = {};
-    localStorage.setItem('auth_token', 'ADMIN-TOKEN');
-    document.cookie = 'XSRF-TOKEN=xsrf-value; path=/';
     requests = [];
-    global.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-      requests.push({ url: String(url), headers: (init?.headers ?? {}) as Record<string, string> });
-      return { ok: true, json: async () => ({ success: true }) } as Response;
-    }) as unknown as typeof fetch;
+    g7.api = createCapturingCoreApi(requests);
+    g7.locale = { change: vi.fn().mockResolvedValue(undefined) };
+    localStorage.setItem('auth_token', 'ADMIN-TOKEN');
+    global.fetch = vi.fn().mockRejectedValue(new Error('raw fetch must not be used')) as unknown as typeof fetch;
   });
 
   afterEach(() => {
-    delete (window as any).__templateApp;
-    (window as any).G7Core.api = originalApi;
+    g7.api = originalApi;
+    g7.locale = originalLocale;
     localStorage.clear();
-    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
   });
 
   const chooseEnglish = async (apiEndpoint?: string) => {
@@ -43,31 +74,38 @@ describe('LanguageSelector — 언어 저장 요청 대상 출처', () => {
     unmount();
   };
 
-  /**
-   * @effects extension_token_same_origin_only
-   */
-  it('교차 출처 apiEndpoint 에는 Bearer·XSRF 를 싣지 않는다', async () => {
-    // @scenario sink=language_selector, target=cross_origin
-    for (const apiEndpoint of ['https://evil.example/lang', '//evil.example/lang', '/\\evil.example/lang']) {
-      requests = [];
+  // @scenario sink=language_selector, target=cross_origin
+  // @effects extension_token_same_origin_only
+  it('교차 출처 apiEndpoint 에는 Bearer 를 싣지 않는다', async () => {
+    for (const apiEndpoint of ['https://evil.example/lang', '//evil.example/lang']) {
+      requests.length = 0;
       await chooseEnglish(apiEndpoint);
 
       expect(requests).toHaveLength(1);
-      expect(requests[0].url).toBe(apiEndpoint);
+      expect(new URL(requests[0].origin).hostname).toBe('evil.example');
       expect(requests[0].headers.Authorization).toBeUndefined();
-      expect(requests[0].headers['X-XSRF-TOKEN']).toBeUndefined();
     }
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  /**
-   * @effects extension_token_same_origin_only
-   */
-  it('동일 출처 apiEndpoint 는 종전대로 Bearer·XSRF 를 싣는다 (정상 회귀)', async () => {
-    // @scenario sink=language_selector, target=same_origin
+  // @scenario sink=language_selector, target=cross_origin
+  // @effects extension_token_same_origin_only
+  it('백슬래시 변형(/\\host)은 외부로 나가지 않고 자기 서버 /api 아래로 간다', async () => {
+    await chooseEnglish('/\\evil.example/lang');
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].origin).toBe(window.location.origin);
+  });
+
+  // @scenario sink=language_selector, target=same_origin
+  // @effects extension_token_same_origin_only
+  it('동일 출처 apiEndpoint 는 종전대로 Bearer 를 싣는다 (정상 회귀)', async () => {
     await chooseEnglish();
 
+    expect(requests).toHaveLength(1);
+    expect(requests[0].method).toBe('PATCH');
     expect(requests[0].url).toBe('/api/admin/users/me/language');
+    expect(requests[0].origin).toBe(window.location.origin);
     expect(requests[0].headers.Authorization).toBe('Bearer ADMIN-TOKEN');
-    expect(requests[0].headers['X-XSRF-TOKEN']).toBe('xsrf-value');
   });
 });

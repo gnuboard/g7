@@ -200,7 +200,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 587개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 588개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 214개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 44개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |

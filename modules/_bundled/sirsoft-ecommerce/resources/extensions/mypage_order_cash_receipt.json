@@ -123,7 +123,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "cashReceiptForm": "{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"
+                                                "ecommerceCashReceiptForm": "{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"
                                             }
                                         },
                                         {
@@ -379,9 +379,9 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "cashReceiptForm.receipt_type": "income",
-                                                                "cashReceiptForm.identifier_type": "{{_global.cashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.cashReceiptForm?.identifier_type ?? 'phone')}}",
-                                                                "cashReceiptForm.identifier": "{{_global.cashReceiptForm?.identifier_type === 'business' ? '' : (_global.cashReceiptForm?.identifier ?? '')}}"
+                                                                "ecommerceCashReceiptForm.receipt_type": "income",
+                                                                "ecommerceCashReceiptForm.identifier_type": "{{_global.ecommerceCashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone')}}",
+                                                                "ecommerceCashReceiptForm.identifier": "{{_global.ecommerceCashReceiptForm?.identifier_type === 'business' ? '' : (_global.ecommerceCashReceiptForm?.identifier ?? '')}}"
                                                             }
                                                         }
                                                     ],
@@ -389,7 +389,7 @@
                                                         "type": "radio",
                                                         "name": "receipt_type",
                                                         "value": "income",
-                                                        "checked": "{{(_global.cashReceiptForm?.receipt_type ?? 'income') === 'income'}}",
+                                                        "checked": "{{(_global.ecommerceCashReceiptForm?.receipt_type ?? 'income') === 'income'}}",
                                                         "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                                                     }
                                                 },
@@ -417,7 +417,7 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "cashReceiptForm.receipt_type": "expense"
+                                                                "ecommerceCashReceiptForm.receipt_type": "expense"
                                                             }
                                                         }
                                                     ],
@@ -425,7 +425,7 @@
                                                         "type": "radio",
                                                         "name": "receipt_type",
                                                         "value": "expense",
-                                                        "checked": "{{_global.cashReceiptForm?.receipt_type === 'expense'}}",
+                                                        "checked": "{{_global.ecommerceCashReceiptForm?.receipt_type === 'expense'}}",
                                                         "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                                                     }
                                                 },
@@ -463,15 +463,15 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "cashReceiptForm.identifier_type": "{{$event.target.value}}",
-                                                "cashReceiptForm.identifier": ""
+                                                "ecommerceCashReceiptForm.identifier_type": "{{$event.target.value}}",
+                                                "ecommerceCashReceiptForm.identifier": ""
                                             }
                                         }
                                     ],
                                     "props": {
                                         "name": "identifier_type",
-                                        "value": "{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}",
-                                        "options": "{{(_global.cashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}",
+                                        "value": "{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}",
+                                        "options": "{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     }
                                 }
@@ -500,14 +500,14 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "cashReceiptForm.identifier": "{{$event.target.value}}"
+                                                "ecommerceCashReceiptForm.identifier": "{{$event.target.value}}"
                                             }
                                         }
                                     ],
                                     "props": {
                                         "type": "text",
                                         "name": "identifier",
-                                        "value": "{{_global.cashReceiptForm?.identifier ?? ''}}",
+                                        "value": "{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     }
@@ -515,11 +515,11 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!!_global.cashReceiptForm?.error}}",
+                                    "if": "{{!!_global.ecommerceCashReceiptForm?.error}}",
                                     "props": {
                                         "className": "block text-red-500 text-xs mt-1"
                                     },
-                                    "text": "{{_global.cashReceiptForm?.error ?? ''}}"
+                                    "text": "{{_global.ecommerceCashReceiptForm?.error ?? ''}}"
                                 }
                             ]
                         },
@@ -575,9 +575,9 @@
                                             "params": {
                                                 "method": "POST",
                                                 "body": {
-                                                    "receipt_type": "{{_global.cashReceiptForm?.receipt_type ?? 'income'}}",
-                                                    "identifier_type": "{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}",
-                                                    "identifier": "{{_global.cashReceiptForm?.identifier ?? ''}}"
+                                                    "receipt_type": "{{_global.ecommerceCashReceiptForm?.receipt_type ?? 'income'}}",
+                                                    "identifier_type": "{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}",
+                                                    "identifier": "{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}"
                                                 },
                                                 "headers": {
                                                     "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}"
@@ -588,7 +588,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "cashReceiptForm": null
+                                                        "ecommerceCashReceiptForm": null
                                                     }
                                                 },
                                                 {
@@ -613,7 +613,7 @@
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
-                                                    "cashReceiptForm.error": "{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"
+                                                    "ecommerceCashReceiptForm.error": "{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"
                                                 }
                                             }
                                         }
@@ -621,7 +621,7 @@
                                     "props": {
                                         "type": "button",
                                         "className": "px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{!(_global.cashReceiptForm?.identifier ?? '')}}"
+                                        "disabled": "{{!(_global.ecommerceCashReceiptForm?.identifier ?? '')}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.order.cash_receipt.issue"
                                 }

@@ -1,0 +1,33 @@
+feature: 결제 실패 보고는 코어 API 클라이언트와 쇼핑몰 공개 상태 계약으로만 소유자를 증명한다
+
+description: |
+  결제창에서 실패·닫힘으로 돌아오면 결제 요청 직전에 저장해 둔 주문 정보로 close-report 에 보고한다.
+  서버는 주문 소유자만 받아 준다 — 회원은 `G7Core.api` 가 싣는 Bearer, 비회원은 쇼핑몰 공개 상태 계약
+  `_global.guestOrderToken` 을 실은 `X-Guest-Order-Token` 이다. 종전에는 브라우저 저장소의 로그인 토큰과
+  템플릿의 세션 저장소 키를 직접 읽고, `G7Core.api` 가 없으면 raw fetch 로 보냈다(#639 ⑤). 플러그인은
+  화면 초기화보다 먼저 돌므로 템플릿이 계약 값을 올릴 때까지 기다린다(상한 5초).
+
+# 복귀 상태와 소유 증명은 실패로 돌아온 경우에만 함께 의미가 있다(보고하지 않는 복귀는 증명을 보지 않는다) —
+# 교차 대신 의미 있는 경우만 한 축으로 나열한다.
+axes:
+  case:
+    - failed_guest_token
+    - failed_no_token
+    - failed_contract_late
+    - failed_contract_absent
+    - failed_no_api
+    - completed
+    - other_order
+    - unmarked
+    - none_saved
+
+effects:
+  - failure_reported_once_with_saved_order
+  - unrelated_return_not_reported
+  - guest_token_read_from_global_contract
+  - no_private_storage_read
+  - report_waits_for_contract_before_sending
+  - no_raw_fetch_fallback
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/paymentCloseReport.test.ts

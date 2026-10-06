@@ -48,6 +48,7 @@ import {
 } from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
+import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -645,6 +646,23 @@ export class TemplateApp {
 
             logger.log('AuthManager event handlers registered');
 
+            // 2.1 방문자 동의 런타임 (사용자 템플릿 전용, engine-v1.78.0 #639)
+            //
+            // `preloadAuth` 가 끝난 뒤에 시작한다 — 인증 여부가 정해져야 조회 방식을 고를 수 있다. 비인증이면 토큰
+            // 없이 부른다(서버에서 폐기된 토큰이 남은 방문자가 그 토큰으로 부르면 401 → 공개 페이지에서 로그인 화면으로
+            // 튕긴다 — 방어는 defaultConsentRuntimeDeps.fetchSnapshot). 확장 에셋보다 먼저 세워 확장이 부팅 때
+            // `_global.consent` 와 `G7Core.consent` 를 바로 읽을 수 있게 한다. 첫 조회는 기다리지 않는다.
+            if (this.config.templateType === 'user') {
+                installConsentRuntime(
+                    defaultConsentRuntimeDeps(
+                        (snapshot) => this.setGlobalState({ consent: snapshot }),
+                        // `_global` 사본 전체를 되쓰는 쓰기가 consent 를 옛 값으로 되돌리면 런타임이 되싣는다
+                        (listener) => this.onGlobalStateChange((state) => listener((state as any).consent)),
+                    ),
+                    (window as any).G7Config?.consentInitial,
+                );
+            }
+
             // 2.5 ApiClient에 onUnauthorized 콜백 설정
             // 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
             const apiClient = getApiClient();
@@ -878,9 +896,11 @@ export class TemplateApp {
 
             this.analytics = createTracker({
                 settings,
-                // 동의를 확인할 곳이 있는지는 서버가 계산해 싣는다(코어 동의 필터 구독자 유무) —
+                // 동의 관리 제공자가 있는지는 서버가 계산해 싣는다(동의 제공자 선택 상태가 none 이 아님) —
                 // 코어는 동의를 관리하는 확장이 무엇인지 모른다.
                 consentPluginActive: settings.consent_provider === true,
+                // 판정 출처는 코어 동의 런타임이다 — 방문자 통계는 범용 방문자 동의 계약의 소비자다.
+                consentSource: getConsentRuntime(),
                 locale: this.config.locale,
                 getAuthToken: () => {
                     try {
@@ -3604,10 +3624,17 @@ export class TemplateApp {
     /**
      * 전역 상태 변경 리스너 등록
      *
+     * 해제 함수를 돌려줍니다. 화면 컴포넌트는 언마운트 때 이 함수를 불러야 리스너가 쌓이지 않습니다 —
+     * 종전에는 `undefined` 를 돌려줘, 반환값을 해제 함수로 쓰던 호출부(상품 카드·관리자 사이드바·본인인증
+     * 실행기)가 화면을 떠날 때마다 리스너를 남겼습니다(실측: 상품 목록 왕복 20회에 29 → 281, #639).
+     *
      * @param listener 상태 변경 시 호출될 콜백 함수
+     * @returns 구독 해제 함수
      */
-    onGlobalStateChange(listener: (state: GlobalState) => void): void {
+    onGlobalStateChange(listener: (state: GlobalState) => void): () => void {
         this.globalStateListeners.add(listener);
+
+        return () => this.offGlobalStateChange(listener);
     }
 
     /**
