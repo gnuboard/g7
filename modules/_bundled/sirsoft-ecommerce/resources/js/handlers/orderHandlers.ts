@@ -927,8 +927,11 @@ export async function executeOrderBulkActionHandler(
         // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다.
         // axios 는 error.message 에 "Request failed with status code 422" 같은 raw 문구만 담으므로
         // 실제 사유가 들어있는 error.response.data.message 를 먼저 추출한다(confirmDeposit 동일 패턴).
+        // 5xx 본문(`Server Error`)과 전송 실패·본문 없는 응답의 axios 원문(`Request failed with status code 500`·
+        // `Network Error`)은 사유가 아니다 — 띄우면 운영자가 영문 내부 문구를 읽는다(S1-D12). 번역된 폴백으로 넘긴다.
         const errorData = error?.response?.data || error?.data || {};
-        const serverMessage = errorData?.message || error?.message;
+        const status = Number(error?.response?.status ?? error?.status ?? 0);
+        const serverMessage = status >= 500 ? null : (typeof errorData?.message === 'string' && errorData.message !== '' ? errorData.message : null);
         G7Core.toast?.error?.(
             serverMessage
             || G7Core.t?.('sirsoft-ecommerce.admin.order.bulk.error')

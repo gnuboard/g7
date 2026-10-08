@@ -379,7 +379,9 @@ class MobileCallbackController
                 'payment_device' => 'mobile',
             ], $totPrice);
 
-            $order->payment()->update(['pg_provider' => 'kginicis']);
+            // 에스크로를 켠 상점의 결제는 에스크로 MID 로 승인된다 — [구매결정]·에스크로 배송 등록·환불이 이 표시로 판정한다 (S4-D18)
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+            $order->payment()->update(['pg_provider' => 'kginicis', 'is_escrow' => $this->apiService->isEscrowEnabled() && $selectedEasyPayMethod === null]);
             $this->queueReceiptCookie($moid);
 
             return redirect($this->resolveSuccessUrl($moid));
@@ -499,14 +501,18 @@ class MobileCallbackController
 
         if ($vactDate && strlen((string) $vactDate) === 8) {
             try {
-                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate.$vactTime);
+                // 입금 기한은 한국 시각이다 — 앱 시간대(UTC)로 그대로 읽으면 9시간 늦게 저장된다.
+                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate.$vactTime, 'Asia/Seoul')->setTimezone(config('app.timezone', 'UTC'));
             } catch (\Exception) {
                 $vbankDueAt = null;
             }
         }
 
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $order->payment()->update(array_filter([
             'pg_provider' => 'kginicis',
+            // 에스크로를 켠 상점의 가상계좌는 에스크로 MID 로 발급된다 (S4-D18)
+            'is_escrow' => $this->apiService->isEscrowEnabled(),
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'transaction_id' => $tid ?: null,
             'vbank_code' => $result['P_VACT_BANK_CODE'] ?? $result['P_FN_CD1'] ?? null,
@@ -526,6 +532,9 @@ class MobileCallbackController
                 'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_VBANK_ISSUE_RESPONSE_KEYS),
             ],
         ], fn ($v) => $v !== null));
+
+        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+        $this->orderService->onVbankAccountIssued($order);
 
         Log::info('KG Inicis mobile: vbank account issued', [
             'P_OID' => $order->order_number,

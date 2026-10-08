@@ -213,6 +213,16 @@
                                             "text": "{{claimRow.refund_amount_formatted}}"
                                         },
                                         {
+                                            "comment": "사용 마일리지 반환액 — 환불신청서가 현금과 함께 싣는 금액이다(EC-694). 없으면 줄을 그리지 않는다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{claimRow.refund_applicable && (claimRow.refund_points_amount ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.complete.row_points|amount={{claimRow.refund_points_amount_formatted}}"
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{!claimRow.refund_applicable && claimRow.blocked_reason === 'claim_refund_request_exists'}}",
@@ -454,6 +464,17 @@
                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_amount|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}|amount={{_global.claimCompletePreview?.totals?.refund_amount_total_formatted}}"
+                        },
+                        {
+                            "comment": "함께 만들 환불신청서가 돌려줄 사용 마일리지 합계(EC-694) — 현금 합계만 말하면 운영자는 마일리지 반환을 모른 채 완료한다. 통화가 섞여 합계 표기가 없으면 그리지 않는다.",
+                            "id": "cc_011b_refund_now_desc_points",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.claimCompleteCreateRefundRequest !== false && (_global.claimCompletePreview?.totals?.refund_points_amount_total ?? 0) > 0 && (_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted ?? null) != null}}",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc_points|amount={{_global.claimCompletePreview?.totals?.refund_points_amount_total_formatted}}"
                         },
                         {
                             "comment": "대상이 여러 통화에 걸치면 서버가 합계 표기를 내지 않는다 — 그때는 건수만 말한다. 화면이 숫자를 더해 기호를 붙이면 단위만 틀린 합계가 나간다.",

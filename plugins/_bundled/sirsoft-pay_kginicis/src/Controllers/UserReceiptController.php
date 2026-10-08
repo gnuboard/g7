@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
@@ -117,6 +118,7 @@ class UserReceiptController extends PublicBaseController
                 'p.vbank_number',
                 'p.vbank_due_at',
                 'p.payment_meta',
+                'p.is_escrow',
             ])
             ->first();
 
@@ -180,6 +182,7 @@ class UserReceiptController extends PublicBaseController
             'embedded_pg_provider' => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
             'embedded_pg_provider_label' => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
             'vbank_bank_code' => $this->vbankBankCode($payment),
+            'escrow_confirm_url' => $this->escrowConfirmUrl($orderNumber, (bool) ($payment->is_escrow ?? false)),
         ]);
     }
 
@@ -199,6 +202,30 @@ class UserReceiptController extends PublicBaseController
         $name = trim((string) ($payment->vbank_name ?? ''));
 
         return $name !== '' ? (self::VBANK_BANK_CODES[$name] ?? null) : null;
+    }
+
+    /**
+     * 로그인한 본인의 에스크로 결제에 구매결정 창 한시 서명 주소를 만듭니다 (S4-D19).
+     *
+     * 사이트 화면 로그인은 API 토큰이라 [구매결정] 이 여는 새 창에는 로그인 정보가 실리지 않는다 — 토큰으로 본인을
+     * 확인한 이 응답이 회원 번호를 담은 10분짜리 서명 주소를 주고, 구매결정 창은 그 서명을 본인 확인으로 받는다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  bool  $isEscrow  에스크로 결제 여부
+     * @return string|null 상대 서명 주소(비회원·에스크로 아님이면 null)
+     */
+    private function escrowConfirmUrl(string $orderNumber, bool $isEscrow): ?string
+    {
+        if (! $isEscrow || ! Auth::check()) {
+            return null;
+        }
+
+        return URL::temporarySignedRoute(
+            'web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show',
+            now()->addMinutes(10),
+            ['orderNumber' => $orderNumber, 'uid' => Auth::id()],
+            absolute: false,
+        );
     }
 
     /**

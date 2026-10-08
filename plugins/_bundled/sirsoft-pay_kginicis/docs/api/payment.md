@@ -1022,13 +1022,16 @@ PC 에스크로 구매결정 결과를 KG 이니시스 팝업으로부터 수신
 <!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show -->
 - **라우트명**: `web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController@show`
-- **인증/권한**: 로그인 필요 (라우트 미들웨어가 아니라 컨트롤러가 판정 — 비로그인은 401 안내 HTML)
+- **인증/권한**: 본인 확인 필요 — 웹 세션 로그인, 또는 영수증 조회 API(`escrow_confirm_url`)가 토큰 로그인 회원에게 내려 준 10분 한시 서명 주소(`uid`·`expires`·`signature`). 라우트 미들웨어가 아니라 컨트롤러가 판정하며, 둘 다 없거나 서명이 틀리면 401 안내 HTML
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | 영숫자·`_`·`-` (`close` 제외) | 구매결정할 주문의 주문번호. 로그인 사용자 본인의 KG 이니시스 에스크로 결제(`is_escrow=true`, `transaction_id` 존재)를 찾는 키로 사용된다. |
+| uid | query | integer | 아니오(서명 주소일 때 예) | 회원 번호 | 서명 주소의 본인 회원 번호 — 세션 로그인이 없을 때 이 값과 서명으로 본인을 확인한다. |
+| expires | query | integer | 아니오(서명 주소일 때 예) | 유닉스 시각 | 서명 만료 시각(발급 후 10분). |
+| signature | query | string | 아니오(서명 주소일 때 예) | HMAC | 상대 경로(`absolute:false`) 기준 서명 — 요청 Host 와 무관하다. |
 
 **요청 예시**
 
@@ -1054,7 +1057,7 @@ HTTP/1.1 200 OK
 Content-Type: text/html; charset=UTF-8
 
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko"><!-- 문서 언어·제목·안내 문구는 화면 언어(app()->getLocale())를 따른다 — 영어 화면이면 lang="en"·「Escrow purchase decision」 -->
 <head>
     <meta charset="UTF-8">
     <title>에스크로 구매결정</title>
@@ -1082,7 +1085,7 @@ Content-Type: text/html; charset=UTF-8
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 401 | Unauthorized | 비로그인 상태로 접근한 경우 — 로그인 필요 안내 HTML(`text/html`)을 401 로 돌려준다. 라우트에 `auth` 미들웨어를 걸지 않는다(이 앱에는 로그인 라우트가 없어 종전에는 500 으로 끝났다) |
+| 401 | Unauthorized | 세션 로그인도 유효한 서명 주소(만료 전·본인 uid)도 없이 접근한 경우 — 로그인 필요 안내 HTML(`text/html`)을 401 로 돌려준다. 라우트에 `auth` 미들웨어를 걸지 않는다(이 앱에는 로그인 라우트가 없어 종전에는 500 으로 끝났다) |
 | 404 | Not Found | `orderNumber` 에 해당하는 주문이 접속 사용자 본인 소유가 아니거나, 해당 주문에 거래번호가 있는 KG 이니시스 에스크로 결제(`pg_provider=kginicis`, `is_escrow=true`)가 없는 경우 |
 
 <!-- @generated:end -->

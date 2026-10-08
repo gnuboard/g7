@@ -2072,11 +2072,25 @@
                                                             "actions": [
                                                                 {
                                                                     "type": "change",
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "_local",
-                                                                        "refundAmount": "{{$event.target.value}}"
-                                                                    }
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "refundAmount": "{{$event.target.value}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "comment": "아래 합계 줄의 표기를 상점 통화 꼴로 다시 적는다(S3-D27) — 화면 표현식은 통화 포맷터를 부를 수 없다.",
+                                                                            "handler": "sirsoft-ecommerce.formatRefundInputTotal",
+                                                                            "params": {
+                                                                                "refundAmount": "{{$event.target.value}}",
+                                                                                "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
+                                                                                "currencyCode": "{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}"
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ],
                                                             "props": {
@@ -2146,11 +2160,24 @@
                                                             "actions": [
                                                                 {
                                                                     "type": "change",
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "_local",
-                                                                        "refundPointsAmount": "{{$event.target.value}}"
-                                                                    }
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "refundPointsAmount": "{{$event.target.value}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "sirsoft-ecommerce.formatRefundInputTotal",
+                                                                            "params": {
+                                                                                "refundAmount": "{{_local.refundAmount ?? ''}}",
+                                                                                "refundPointsAmount": "{{$event.target.value}}",
+                                                                                "currencyCode": "{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}"
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ],
                                                             "props": {
@@ -2240,7 +2267,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "입력 두 칸의 합 — 서버 왕복 없이 화면이 더한 값이라 통화 기호를 붙이지 않고 서버가 준 통화 코드를 그대로 병기한다. 기호를 화면이 붙이면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나간다. 합은 셸 computed(`refundInputTotal`)가 소수 8자리에서 반올림해 부동소수 오차(0.1 + 0.2 = 0.30000000000000004)를 걷어 낸 값이다 — 어느 통화의 소수 자릿수(최대 8)보다 깊은 자리라 값은 바뀌지 않는다.",
+                                            "comment": "입력 두 칸의 합 — 같은 화면의 다른 금액·실행 창(S3-D1)과 같은 상점 통화 표기(`22,500원`)로 그린다(S3-D27). 숫자에 통화 코드를 이어 붙이면 자릿수 구분 없는 `22500 KRW` 가 되어 금액마다 꼴이 달랐다. 첫 표기는 상세 응답의 `refund_total_formatted`(서버 통화 포맷)가 채우고, 두 칸이 바뀌면 핸들러가 상점 통화 설정으로 다시 적는다 — 화면이 기호를 직접 붙이지 않으므로 기본 통화가 원이 아닌 상점에서도 단위가 어긋나지 않는다. 표기를 아직 받지 못한 순간에만 반올림한 합(`refundInputTotal` — 부동소수 오차를 소수 8자리에서 걷어 낸 값)과 통화 코드를 보인다.",
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
@@ -2262,7 +2289,7 @@
                                                     "props": {
                                                         "className": "text-gray-900 dark:text-gray-100"
                                                     },
-                                                    "text": "{{(_computed.refundInputTotal ?? 0) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? '')}}"
+                                                    "text": "{{_local.refundInputTotalFormatted || ((_computed.refundInputTotal ?? 0) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''))}}"
                                                 }
                                             ]
                                         },
@@ -2370,6 +2397,7 @@
                                                                 "refundAmount": "{{_local.refundAmount ?? ''}}",
                                                                 "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
                                                                 "refundMethod": "{{_local.refundMethod ?? ''}}",
+                                                                "refundMethodLabel": "{{claim?.data?.claim?.refund_method_label ?? ''}}",
                                                                 "refundMethods": "{{claim?.data?.refund_methods ?? []}}",
                                                                 "refundBankName": "{{claim?.data?.claim?.refund_bank_name ?? ''}}",
                                                                 "refundBankAccount": "{{claim?.data?.claim?.refund_bank_account ?? ''}}",

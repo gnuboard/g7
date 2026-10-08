@@ -205,7 +205,7 @@
               <span class="font-mono text-gray-700 dark:text-gray-300">{{noti.received_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
               <span class="text-gray-500 dark:text-gray-400 font-mono">{{noti.result_code ?? '-'}}</span>
               <span class="text-gray-700 dark:text-gray-300">{{noti.result_msg ?? ''}}</span>
-              <span data-if="{{noti.depositor}}" class="text-gray-600 dark:text-gray-400 ml-auto">{{noti.depositor + ' / ' + (noti.amt ?? 0).toLocaleString() + '원'}}</span>
+              <span data-if="{{noti.depositor}}" class="text-gray-600 dark:text-gray-400 ml-auto">{{noti.depositor + ' / ' + $t('sirsoft-ecommerce.currency.krw_prefix') + (noti.amt ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix')}}</span>
             </div>
           </div>
         </div>

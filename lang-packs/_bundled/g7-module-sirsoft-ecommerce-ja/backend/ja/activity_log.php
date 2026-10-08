@@ -187,6 +187,7 @@ return [
         'user_order_create' => '注文完了 (#:order_id)',
         'user_order_option_confirm' => '購入確認 (オプション #:option_id)',
         'mileage_earn' => 'マイレージ積立 (:amount)',
+        'mileage_earn_scheduled' => 'マイレージ積立予定 (:amount) — 積立時点で付与',
         'mileage_use' => 'マイレージ使用 (:amount)',
         'mileage_restore' => 'マイレージ復元 (:amount)',
         'mileage_refund_credit' => '返金のマイレージ付与 (:amount)',

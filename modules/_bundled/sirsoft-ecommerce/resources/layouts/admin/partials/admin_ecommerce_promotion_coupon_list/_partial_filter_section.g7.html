@@ -413,7 +413,7 @@
               <set-state target="local" filter.createdBy="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:sirsoft-ecommerce.common.remove">
             <on type="click">
               <!-- 고른 사람 지우기. 선택과 검색 결과를 함께 비워, 지운 뒤에도 이전 후보 목록이 남지 않게 한다. -->
               <set-state target="local" filter.createdBy="" :creatorSearchResults="[]"/>

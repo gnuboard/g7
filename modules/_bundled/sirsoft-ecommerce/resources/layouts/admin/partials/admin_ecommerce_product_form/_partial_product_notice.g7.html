@@ -32,6 +32,11 @@
             <option value="">$t:sirsoft-ecommerce.admin.product.placeholders.notice_template</option>
             <option data-each="template, tplIdx in {{notice_templates?.data?.data ?? []}}" value="{{template.id}}">{{$localized(template.name)}}</option>
           </select>
+          <!-- 고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다 -->
+          <div data-ref="notice_template_forbidden_notice" data-if="{{notice_templates?.data?.unavailable === true}}" class="flex items-center gap-2 mt-2 text-sm text-amber-700 dark:text-amber-300">
+            <icon name="circle-exclamation" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.notice_templates</span>
+          </div>
         </div>
       </div>
       <div data-ref="notice_items_section">

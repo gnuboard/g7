@@ -57,7 +57,7 @@
                                     "props": {
                                         "className": "text-gray-900 dark:text-gray-100"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundAmountFormatted ?? ''}}"
                                 }
                             ]
                         },
@@ -83,7 +83,7 @@
                                     "props": {
                                         "className": "text-purple-600 dark:text-purple-400"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundPointsAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundPointsAmountFormatted ?? ''}}"
                                 }
                             ]
                         },
@@ -270,7 +270,7 @@
                                     "props": {
                                         "className": "text-gray-900 dark:text-gray-100"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundTotal ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundTotalFormatted ?? ''}}"
                                 }
                             ]
                         }

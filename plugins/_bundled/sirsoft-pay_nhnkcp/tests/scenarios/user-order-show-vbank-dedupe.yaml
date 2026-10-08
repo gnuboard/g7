@@ -1,0 +1,26 @@
+feature: KCP 내 주문 상세 — 가상계좌 입금 안내·영수증 행 한 번만
+
+description: |
+  결제 정보 카드(partials/mypage/orders/_payment)의 PG 슬롯에 KCP 확장 조각(user_order_show)이 가상계좌 안내·
+  영수증 행을 그리고, 보조 스크립트(mypageOrderShowInjector)도 같은 블록을 id 로 찾아 없으면 붙인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D10):
+    - 조각의 가상계좌 블록에 id 가 없어 주입기가 `kcp-mp-vbank-row` 를 못 찾고 같은 안내를 하나 더 붙였다
+      (주문 상세에 「가상계좌 입금 안내」 2개). 영수증 행은 조각이 `kcp-mp-receipt-row` 를 달아 한 번만 나왔다.
+      가상계좌 블록에도 주입기와 같은 id 를 단다.
+    - id 만으로는 부족했다(실측: 반영 뒤에도 같은 id 블록 2개). 주입기는 화면 상태에서 주문을 먼저 읽어 조각이
+      그려지기 전에 확인·주입한다. 처음 «없다» 고 본 회차에는 붙이지 않고 다음 회차(400ms)에 다시 본 뒤, 그래도
+      없을 때(조각이 없는 템플릿)만 붙인다.
+
+axes:
+  block: [vbank_info, receipt_row, vbank_info_late_extension, vbank_info_no_extension]
+
+effects:
+  - vbank_block_rendered_once    # 가상계좌 안내는 조각 하나만(주입기는 id 를 보고 건너뜀)
+  - receipt_row_rendered_once    # 영수증 행도 같은 방식으로 하나만
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/userOrderShowVbankDedupe.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — m2 KCP 가상계좌 주문 상세에서 「가상계좌 입금 안내」 블록 수 1

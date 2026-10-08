@@ -147,7 +147,7 @@
     },
     "delete": {
       "title": "Delete coupon?",
-      "message": "This action cannot be undone. The coupon and all related posts will be permanently deleted.",
+      "message": "This action cannot be undone. The coupon and its product and category assignments will be deleted.",
       "warning": "Deleted coupons cannot be recovered.",
       "delete": "Delete"
     },

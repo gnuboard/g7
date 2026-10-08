@@ -85,7 +85,7 @@
 | charge_method | string | 아니오 | `pay_on_request` / `pay_on_approval` / `deduct_from_refund` / `free`(배송비 0, 청구 방식 없음 — D7) |
 | claim_shipping_fee | numeric | 아니오 | 사유로 자동 계산한 배송비를 덮어쓴다 (min 0) |
 | refund_priority · refund_bank | — | 아니오 | 고객 신청과 같다 |
-| redelivery_address | object | 아니오 | 교환 재발송지 |
+| redelivery_address | object | 아니오 | 교환 재발송지 — 고객 신청과 같은 칸(해외 주문의 도시·주 `city`·`state` 포함) |
 | approve | boolean | 아니오 | 「접수와 함께 승인」(기본 `true`, D6). 추가결제가 필요한 건은 승인 대신 결제대기로 간다 |
 
 **응답 `201`**: `data.claim`(ClaimResource) · `data.claim_number` · `data.payment_requested` ·
@@ -126,14 +126,20 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 있을 때만 다룰 수 있다 — 주문을 볼 수 없는 운영자가 신청서로 같은 주문의 내용·환불 계좌를 보거나
 환불을 실행하지 못하게 한다.
 
+판정은 **그 라우트의 클레임 권한 범위와 운영자의 주문 조회(`sirsoft-ecommerce.orders.read`) 범위의
+교집합**이다. 주문 조회를 `self` 로 묶은 운영자는 클레임 권한을 전체(null)로 두어도 자기 주문 조회 범위
+밖 신청서를 아래 어느 경로로도 다루지 못한다. 주문 조회 권한을 **보유하지 않은** 운영자(클레임 전담
+역할)는 클레임 권한 범위만으로 판정한다 — 보유하지 않은 권한은 범위 진술이 아니다.
+
 | 경로 | 판정 지점 | 스코프 밖일 때 |
 | --- | --- | --- |
 | `GET /admin/claims` (목록·`counts`) | 저장소가 쿼리에 조건을 건다 | 행·건수에서 빠진다 |
 | `/admin/{claimType}/{id}/…`, `/admin/claims/{claimNumber}(/logs)`, `/admin/refunds/{id}/execute` 등 단건 | 신청서를 찾은 뒤 **그 라우트의 권한 식별자**로 판정 | `403 auth.scope_denied` |
 | `POST /admin/claims/bulk-status`, `POST /admin/claims/completion-preview` | 목록과 같은 조건으로 대상 전부를 센다 | 하나라도 밖이면 전량 `403` |
-| `/admin/orders/{order}/claims`, `/admin/orders/{order}/cancellable-amount` | 권한 미들웨어가 바인딩된 주문으로 판정 | `403 auth.scope_denied` |
+| `/admin/orders/{order}/claims`, `/admin/orders/{order}/cancellable-amount` | 권한 미들웨어가 바인딩된 주문으로 클레임 권한을, 컨트롤러가 주문 조회 범위를 판정 | `403 auth.scope_denied` |
+| `/admin/orders/{order}/claims/request-context`, `…/claims/preview`, `…/exchanges`, `…/returns`, `…/cancel-refund` (직권 접수) | 위와 같다(`claims.create` + 주문 조회 범위) | `403 auth.scope_denied` |
 
-스코프가 전체(null)인 역할에는 아무 조건도 붙지 않는다.
+클레임 권한과 주문 조회 모두 범위가 전체(null)인 역할에는 아무 조건도 붙지 않는다.
 
 ### 500 응답
 
@@ -290,8 +296,10 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 }
 ```
 
-`counts` 는 유형 공통 필터(기간·검색·회원구분)만 반영합니다 — 상태·귀책·청구 필터는 유형마다
-어휘가 달라 다른 탭 건수에 적용할 수 없습니다.
+`counts` 는 유형 공통 필터(기간·검색·회원구분·금액·통화)만 반영합니다 — 상태·귀책·청구 필터는 유형마다
+어휘가 달라 다른 탭 건수에 적용할 수 없습니다. 관리자 목록 화면은 서브탭을 바꿀 때 이 공통 필터를 그대로
+이어 보내므로, 다른 탭의 뱃지 숫자가 곧 그 탭을 눌렀을 때 보이는 건수입니다(현재 탭 뱃지는 유형 종속
+필터까지 반영한 목록 건수).
 
 `carriers` 는 회수중·발송중 일괄 전이 모달의 택배사 선택지입니다(교환·반품 탭만, 그 외 빈 배열).
 배송사 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 이 응답이 유일한
@@ -369,7 +377,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | progress_steps | array | — | 진행단계 스텝퍼 (아래) |
 | transition_options | array | `[{"value": "approved", "label": "반품승인"}]` | 상세 「신청서 상태 변경」 칸의 선택지. **심사 어휘**(결제 요청·승인·보류·반려) 중 지금 상태에서 갈 수 있는 것만이고, 그중 **눌러도 거절될 값은 싣지 않는다** — 고객이 낼 돈이 없는 신청서의 `payment_pending`(→ `claim_payment_not_required`), 신청 시점 결제 미수납 건의 `approved`(→ `claim_payment_outstanding`), 상품 일부가 신청서보다 앞선 건의 `rejected`(→ `claim_transition_not_allowed`). 회수·발송 단계는 상품 칸, 완료는 [완료 처리] 가 입구라 여기 서지 않는다. 취소신청서는 빈 배열 |
 | completable_item_count | integer | `1` | 지금 완료할 수 있는 신청 상품 수 — 완료 절차가 대상으로 삼는 상품과 같은 판정(반품은 회수중·회수도착, 교환은 발송중·발송도착). 상세 [완료 처리] 버튼은 0 이면 꺼지고 안내 건수도 이 값이다. 환불·취소는 `0` |
-| redelivery_address_differs | boolean\|null | `false` | 최종 재발송지가 주문 배송지와 다른가. 저장된 두 주소의 비교로 도출하며 별도 컬럼이 없다. 재발송 축이 없는 유형은 `null` — `false`(같다)와 구분된다 |
+| redelivery_address_differs | boolean\|null | `false` | 최종 재발송지가 주문 배송지와 다른가. 저장된 두 주소의 비교로 도출하며 별도 컬럼이 없다. 스냅샷에 없는 칸(도시·주 칸이 생기기 전에 저장된 신청서의 `city`·`state`)은 비교하지 않는다. 재발송 축이 없는 유형은 `null` — `false`(같다)와 구분된다 |
 | carriers | array | `[{"value": 3, "label": "CJ대한통운", …}]` | 회수·재발송 송장의 택배사 선택지. 형태는 `admin/shipping-carriers/active` 와 같다. 환불은 회수·재발송 축이 없어 빈 배열 |
 | order | object\|null | — | 결제 정보 섹션(D17-③)이 그리는 **원 주문의 결제 축**. 주문 상세 엔드포인트는 `orders.read` 게이트라 이 화면이 직접 부르면 클레임 권한만 가진 관리자에게만 403 이 되어 탭이 통째로 빈다. 이 화면이 실제로 그리는 축만 실린다 (아래) |
 | settlement | object\|null | — | '이 클레임의 정산' 의 **완료 시 환불 예정**. 교환·반품에만 있고 환불신청서는 `null`(자기 금액이 헤더 컬럼이다). 값은 완료 처리 모달의 미리보기와 **같은 경로**에서 나온다 (아래) |
@@ -377,7 +385,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열. `points`(「마일리지로 환불」)는 비회원 주문과, 마일리지 기능이 꺼진 상점의 현금 환불(이 신청서의 `refund_amount` > 0)에서 빠진다 |
 | cancellable | object\|null | — | 취소 가능 금액 산정 결과 (D19). 환불신청서에만 있으며 **그 신청서 문맥**(자기 자신을 선점 집계에서 제외)으로 계산한다. 형태는 [cancellable-amount](#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 응답의 `cancellable` 과 동일하다 — 두 응답이 같은 지점에서 만들어진다 |
 | tracking_groups | object\|null | `{"collection":[…],"redelivery":[…]}` | 배송 정보 탭의 운송장 묶음 — 방향마다 `[{key, direction, no_tracking, carrier_id, carrier_name, tracking_number, tracking_url, items[{claim_item_id, product_name, option_name, quantity, status_label, arrived}], all_arrived, can_deliver, blocked_reason}]`. 송장 없이 도착한 행은 `no_tracking: true` 묶음으로 선다. 환불·취소는 `null` (`data.claim.tracking_groups`) |
-| collection_lane | array\|null | — | 선교환의 「회수」 줄 — 행 수 기준 회수 진행·반송 기한·지연. 일반 교환·반품은 `null` |
+| collection_lane | array\|null | — | 선교환의 「회수」 줄 — 수량 기준 회수 진행(송장마다 행이 갈려도 개수로 센다)·반송 기한·지연. 일반 교환·반품은 `null` |
 | exchange_mode_abilities | object\|null | `{"can_set_advance": true, "can_set_standard": false, "blocked_reason": null, "advance_enabled": true, "collection_due_days": 14}` | 「진행 방식」 줄의 버튼 게이트 — 서비스가 실제로 거절하는 조건과 같은 판정. 교환이 아니면 `null` |
 | pending_refund | object\|null | `{"amount": 12000, "amount_formatted": "12,000원", "item_count": 1}` | 「환불 미접수」(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 클 때만. 상단 배너·완료 카드·[환불신청서 접수] 버튼이 같은 값을 읽는다 |
 | linked_claims | object | `{"source": null, "refunds": [{"claim_number": "RF…", "status": "completed", "is_live": true, "detail_url": "…", "refund_method_label": "PG사 환불", "refund_total_formatted": "24,000원"}], "latest_refund": {…}, "result_cancel": null}` | 연결 신청서(보완 5). 교환·반품은 이 신청서에서 생긴 환불신청서 전부(출처 축 `refund_source_type`·`refund_source_id` — 반려·철회 후 재접수 이력 포함, id 오름차순), 환불은 원 신청서(`source` — 반품·교환·구형 취소 출처일 때)와 처리 결과 취소 내역(`result_cancel`), 취소는 원 신청서(= 환불신청서). 같은 주문의 신청서만 싣는다. 항목: `claim_type`·`claim_type_label`·`claim_number`·`status`·`status_label`·`status_variant`·`status_icon`·`is_live`(반려·철회 환불이면 false)·`requested_at_formatted`·`detail_url`, 환불이면 `refund_method`·`refund_method_label`·`refund_total`·`refund_total_formatted`·`mc_refund_total`·`refunded_at_formatted`. `detail_url` 은 보는 사람에 맞는 경로다(관리자 `/admin/ecommerce/claims/…`, 회원 `/mypage/claims/…`, 비회원 `{shop}/guest/claims/…`) |
@@ -492,6 +500,13 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 
 첨부 삭제 로그는 그 첨부 행이 이미 지워졌으므로 이 목록에 실리지 않습니다 — 로그 자체는
 `properties` 스냅샷과 함께 `activity_logs` 에 남습니다.
+
+사람이 누르지 않은 전이 — 환불 자동 진행(승인·완료), 청구 0원 자동 승인, 결제 뒤 자동 승인 — 는
+작업자(`user_id`)가 비어 있고 화면은 그것을 시스템으로 읽습니다. 작업자는 코어가 `Auth::id()` 로
+채우므로 모듈은 이 전이들을 `Support\SystemActor::run()` 안에서 실행합니다. 접수 줄과 결제 확정은
+고객이 한 일이라 고객이 작업자입니다. 운영자가 [주문취소] 로 시작한 자동 진행은 그 운영자가
+작업자입니다. 이 범위에서 발화해 큐로 간 훅은 `SystemActorContextListener` 가 컨텍스트에 표지를
+실어(`hook.context.capture`) 워커가 복원할 때 작업자를 비웁니다(`hook.context.restore`).
 
 ---
 
@@ -695,6 +710,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 교환 재발송 = 회수도착·발송준비중·발송중(선교환은 승인부터). 밖이면 `422 claim_tracking_item_not_eligible`.
 회수지가 다른 상품을 한 운송장으로 묶으면 `422 claim_tracking_mixed_return_address`(R8).
 발송중 행의 재발송 송장을 고치면 그 행의 교환품 새 주문상품 배송 행 송장도 함께 바뀝니다(R11).
+그 새 배송 행은 원 배송 행의 정책·송장만 승계하고 **배송비 칸은 0** 이다 — 배송비는 원 행에 남는다(재발송은 고객이 낸 배송이 아니다).
 
 **응답**: `200` `data.claim`(상세 ClaimResource — 행마다 `collection_*`/`redelivery_*` 송장 필드 갱신) ·
 `data.split`(쪼갠 행 `[{id, quantity, remainder_id, remainder_quantity}]`) / `404` / `422`.
@@ -785,7 +801,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | --- | --- | --- | --- |
 | reason_code | string | 아니오 | 사유 코드 (그 유형의 활성 사유) |
 | reason_detail | string | 아니오 | 상세 사유 (max 1000) |
-| redelivery_address | object | 아니오 | 교환 재발송지 (국가는 바꿀 수 없다) |
+| redelivery_address | object | 아니오 | 교환 재발송지 (국가는 바꿀 수 없다, 해외 주문의 도시·주 `city`·`state` 포함) |
 
 **응답**: `200` `data.claim` / `404` / `422 claim_not_editable`·사유 부재.
 
@@ -940,6 +956,10 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 
 수정 전후 금액과 작업자는 `sirsoft-ecommerce.claim.{type}.amounts_updated` 훅으로 발행되어
 활동 로그의 기록 근거가 됩니다.
+
+교환·반품의 청구액을 고치면 **아직 내지 않은 결제 대기 건**이 그 금액을 따라갑니다 — 올리면 차액 대기 건이 생기고,
+내리면 대기 건 금액이 줄거나 닫힙니다. **이미 낸 결제 건은 자동 환급하지 않습니다**(초과 수납은 운영이 처리). 받은 뒤
+이미 낸 금액 이하로 내리면 남아 있던 차액 대기 건만 닫힙니다(`charge_settled`).
 
 ---
 
@@ -1171,7 +1191,10 @@ Authorization: Bearer {YOUR_TOKEN}
 `exceptions.claim_refund_points_requires_member` · 기능 꺼짐 `422` `exceptions.claim_refund_method_unavailable`).
 저장된 수단이 `points` 인데 본문 없이 실행해도 같은 판정을 거칩니다. PG 결제창을 쓰지 않은 주문(무통장 등)의 `pg` 는 `422`
 (`exceptions.claim_refund_method_unavailable`)이고, PG 플러그인이 빠져 계좌 환불로 떨어진 주문의
-`pg` 도 막습니다(응답할 리스너가 없습니다). **카드 주문의 계좌 수동 환불(`bank`)은 받습니다** —
+`pg` 도 막습니다(응답할 리스너가 없습니다). 이때는 카드처럼 PG 를 거친 결제이므로 거절 사유가 일반 문장이 아니라
+`exceptions.pg_provider_inactive`(그 결제 플러그인이 꺼져 있으니 켜거나 환불 수단을 계좌 환불로 바꾸라는 안내)입니다 —
+[금액 수정] 저장도 같은 문장입니다. 반대로 플러그인이 꺼진 동안 계좌로 폴백 접수된 카드 신청서는 플러그인이 돌아오면
+상세의 `refund_method` 가 실행 때 쓰일 수단(`pg`)을 보이고, 운영자가 그와 다른 수단을 고른 때만 그 선택이 고정됩니다. **카드 주문의 계좌 수동 환불(`bank`)은 받습니다** —
 PG 취소가 불가능한 상황에서 운영자가 계좌로 돌려주고 장부를 닫는 운영 경로이며, 그 대신 아래
 계좌 게이트가 계좌를 요구합니다. 예전에는 실효 수단과 다른 값을 전부 `payment_mismatch` 로 막아,
 [금액 수정]으로 저장한 계좌 수동 환불을 실행할 길이 없었습니다.

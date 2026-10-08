@@ -856,7 +856,7 @@
                                     "props": {
                                         "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}"
                                     },
-                                    "text": "{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}"
+                                    "text": "{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : (chargePaymentMethod === 'card' ? $t('claim.apply.payment_method_card') : ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_method_labels?.[chargePaymentMethod] ?? chargePaymentMethod))}}"
                                 }
                             ]
                         }

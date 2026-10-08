@@ -43,7 +43,8 @@
                     "props": {
                         "type": "button",
                         "className": "absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed",
-                        "disabled": "{{_computed.isReadOnly}}"
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "aria-label": "$t:common.delete"
                     },
                     "children": [
                         {

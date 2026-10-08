@@ -1,0 +1,30 @@
+feature: 상품 등록·수정 폼 — 선택지 조회 권한이 없을 때 폼은 그리고 그 칸만 비운다
+
+description: |
+  상품 조회·등록·수정 권한은 있지만 배송정책 조회·상품 라벨 조회 같은 선택지 조회 권한이 없는 운영자에게
+  상품 등록 화면 본문 전체가 「403 Access Denied」 로 바뀌었다. 선택지 데이터 소스 7개(분류·브랜드·
+  고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급)가 모두 「오류면 본문을 오류 화면으로」 였고, 그
+  안내는 「이 페이지 권한 없음」 이라 무엇이 빠졌는지 알 수 없었다. 진행형 소스는 폼을 그린 뒤 늦게
+  실패해 폼이 그려졌다가 오류 화면으로 바뀌기도 했다.
+
+  제품 결정 (b): 선택지 소스가 403 이면 상위 오류 처리로 전파하지 않고(suppress) 빈 목록 + `unavailable`
+  표지로 떨어뜨린 뒤, 그 칸 아래에 「… 조회 권한이 없습니다」 를 말한다. 「등록된 것이 없다」 빈 상태와는
+  구분한다(실재하는 것을 없다고 읽게 하지 않는다). 배송정책은 비워 저장해도 거절되지 않고 주문 계산이
+  기본 배송정책으로 폴백하므로, 그 칸 안내는 「고르지 않으면 기존·기본 정책이 적용된다」고 말한다.
+  403 이 아닌 실패(500 등)는 종전대로 본문 오류 화면이다.
+
+  수정 이력: 이커머스 1.3.0 전수 실측 S5 → 제품 결정 (2026-10-08), 후속 B 세션 B1.
+
+axes:
+  source: [categories, brands, notice_templates, common_infos, shipping_policies, product_labels, roles]
+
+effects:
+  - product_form_selector_forbidden_does_not_replace_form
+  - product_form_selector_forbidden_falls_back_to_empty
+  - product_form_selector_forbidden_notice_under_field
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormSelectorForbidden.test.tsx
+
+validation:
+  browser_check: 상품 조회·등록 권한만 있고 배송정책·상품 라벨 조회 권한이 없는 운영자로 상품 등록 화면 — 폼이 그려지고 배송정책·라벨 칸 아래에 권한 없음 안내, 그 칸 선택지는 비어 있음

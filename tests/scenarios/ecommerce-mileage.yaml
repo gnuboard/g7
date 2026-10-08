@@ -114,6 +114,10 @@ effects:
   # 따로 적으면 설정을 바꿨을 때 한쪽만 따라간다.
   - earn_trigger_maps_each_case_to_its_timestamp_column
   - user_mileage_history_filters_by_four_display_categories
+  # 마이페이지 마일리지 탭 화면(sirsoft-basic 레이아웃) — 탭·라우트·데이터소스·요약 카드·빈 상태·비활성 안내·다크 모드
+  - mypage_mileage_tab_renders_balance_history_and_disabled_state
+  # 내역 금액은 숫자 + P(요약 칸과 같은 단위) — 통화 서식(amount_formatted 「240원」)을 쓰면 「240원 P」 (이커머스 전수 실측 S4-D12)
+  - mypage_mileage_history_amount_is_signed_points_not_currency
   - user_display_category_collapses_restore_admin_into_adjust
   - member_balance_injected_into_admin_user_detail_and_mypage_profile_via_resource_hook
   - member_balance_injection_uses_cache_not_ledger_sum

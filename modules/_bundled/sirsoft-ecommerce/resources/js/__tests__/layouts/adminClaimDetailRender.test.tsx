@@ -674,6 +674,36 @@ describe('재발송지 뱃지 2종 (D14)', () => {
   });
 });
 
+describe('재발송지 주소 — 해외 주문 (S2-D8)', () => {
+  /**
+   * 해외 재발송지는 도시·주를 따로 담는다 — 운영자가 보는 주소에서 빠지면 교환품을 보낼 수 없다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_redelivery_address_shows_the_international_city_and_state
+   */
+  it('재발송지 주소 줄에 도시·주가 함께 나온다', async () => {
+    const utils = await renderProbe(
+      shippingSection as Node,
+      claimResponse({
+        redelivery_address_snapshot: {
+          recipient_name: 'Jane Doe',
+          phone: '+1-212-555-0101',
+          zipcode: '10118',
+          address1: '350 5th Ave',
+          address2: 'Suite 2',
+          city: 'New York',
+          state: 'NY',
+          country_code: 'US',
+          changed_by_user: false,
+        },
+      })
+    );
+
+    expect(document.getElementById('cs_012_redelivery_address')?.textContent ?? '').toContain('10118 350 5th Ave Suite 2 New York NY');
+    utils.cleanup();
+  });
+});
+
 describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
   /**
    * 청구액이 없는 건에는 결제 두 칸이 없다 — 서버가 추린 배열을 그대로 그린다.

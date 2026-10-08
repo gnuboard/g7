@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Claims;
 
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
@@ -185,5 +186,33 @@ class ChargeIncreaseAfterPaymentTest extends ModuleTestCase
         $completed = $this->admin->complete($return->fresh(), [], new ClaimCompletionOptions(restoreStockByItem: [], createRefundRequest: true));
 
         $this->assertSame(ReturnStatusEnum::COMPLETED, $completed->fresh()->return_status);
+    }
+
+    /**
+     * 올렸던 청구액을 이미 낸 금액 이하로 다시 내리면 **차액 결제 대기 건이 닫힌다** — 낸 건은 그대로 둔다. (S1-D13)
+     *
+     * 받은 뒤 내리는 경로는 정산을 아예 건너뛰어(초과 수납 자동 환급을 하지 않기로 한 결정 2026-09-23), 올릴 때 만든
+     * 차액 결제 대기 건이 「결제대기」 로 남았다 — 더는 받을 돈이 아닌데 구매자·운영자 화면 모두에 남는다
+     * (실측: RT…0332184010 4,000원 결제 → 5,000원으로 올림 → 3,000원으로 내림 → 1,000원 결제대기 잔존).
+     *
+     * @scenario charge_method=pay_on_request, stage=after_payment
+     *
+     * @effects charge_decrease_after_payment_closes_the_pending_difference
+     *
+     * @return void 반환값 없음
+     */
+    public function test_decrease_below_the_paid_amount_closes_the_pending_difference(): void
+    {
+        $return = $this->paidReturn();
+        $this->admin->updateAmounts($return, ['claim_shipping_fee' => 5000]);
+        $this->assertNotNull($this->payments->listForClaim($return->fresh())->first(fn ($p) => $p->isPending()));
+
+        $this->admin->updateAmounts($return->fresh(['returnOptions']), ['claim_shipping_fee' => 2000]);
+
+        $payments = $this->payments->listForClaim($return->fresh());
+        $this->assertNull($payments->first(fn ($p) => $p->isPending()), '더는 받을 돈이 아닌 결제 대기 건이 남았다');
+        $paid = $payments->first(fn ($p) => $p->payment_status === ClaimPaymentStatusEnum::PAID);
+        $this->assertNotNull($paid, '이미 낸 건은 그대로 남아야 한다');
+        $this->assertEquals(0.0, (float) $paid->refunded_amount, '관리자 금액 인하로 자동 환급하지 않는다(운영 결정)');
     }
 }

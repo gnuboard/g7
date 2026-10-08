@@ -91,6 +91,7 @@ effects:
   - claim_detail_items_show_exchange_target
   - claim_detail_item_status_badge_only_when_different
   - claim_detail_shipping_card_absent_for_refund
+  - claim_detail_redelivery_shows_the_international_city_and_state # 해외 재발송지 도시·주 (S2-D8)
   - claim_detail_contrast_axis_shows_both_sides
   - claim_detail_refund_account_reads_the_claim_row
   - claim_detail_reject_reason_leads_the_reason_card
@@ -153,6 +154,7 @@ effects:
   - claim_payment_method_choices_exclude_mileage_for_guests  # 비회원에겐 마일리지를 권하지 않는다
   - claim_detail_pending_payment_method_can_be_rechosen      # 둘 이상이면 상세에서 다시 고른다
   - claim_pay_handler_sends_the_chosen_method                # 고른 수단이 서버로 간다
+  - claim_payment_method_choices_carry_their_own_labels      # 카드·마일리지 밖의 수단은 카탈로그 이름으로 보인다 (S1-D14)
 
   # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
   - claim_detail_comparison_renders_from_frozen_snapshot

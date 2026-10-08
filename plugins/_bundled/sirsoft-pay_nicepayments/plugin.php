@@ -203,6 +203,7 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\PaymentRefundListener::class,
             Listeners\VbankCloseListener::class,

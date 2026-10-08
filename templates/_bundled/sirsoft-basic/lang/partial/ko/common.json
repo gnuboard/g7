@@ -72,5 +72,11 @@
   },
   "theme_select": "화면 테마",
   "expand": "펼치기",
-  "collapse": "접기"
+  "collapse": "접기",
+  "quantity": "수량",
+  "quantity_decrease": "수량 감소",
+  "quantity_increase": "수량 증가",
+  "close_menu": "메뉴 닫기",
+  "page_transitioning": "페이지 전환 중",
+  "page_loading": "페이지 로딩 중"
 }

@@ -48,6 +48,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
@@ -172,6 +173,22 @@ class OrderProcessingService
                 'recalculated_amount' => $recalculatedFinalAmount,
             ]);
             throw new OrderAmountChangedException($storedFinalAmount, $recalculatedFinalAmount);
+        }
+
+        // 실제로 배송할 국가(제출값)가 임시 주문에 저장된 국가와 다르면 그 국가로 다시 계산한다.
+        // 주문서 진입 때 시드된 배송국가·기본 배송지 채움은 미리보기(GET)로만 계산되고 임시 주문에
+        // 저장되지 않아, 화면은 해외 배송비인데 재계산은 국내 배송비로 갈라졌다(해외 주소 직접 입력 주문 422).
+        // 반대로 국내 금액을 보내면 해외 배송비를 덜 낸 주문이 통과했다. 위의 금액 변동 검사는 저장된 주소
+        // 기준으로 먼저 끝내 두고(가격 변동 감지 유지), 여기서는 배송국가 차이만 맞춘다.
+        $alignedTempOrder = $this->alignTempOrderShippingCountry($tempOrder, $shippingInfo);
+        if ($alignedTempOrder !== null) {
+            $tempOrder = $alignedTempOrder;
+            $calculationInput = $this->buildCalculationInputFromTempOrder($tempOrder);
+            $calculationResult = $this->orderCalculationService->calculate($calculationInput);
+
+            if ($calculationResult->hasValidationErrors()) {
+                throw new OrderProcessingException(__('sirsoft-ecommerce::exceptions.order_calculation_validation_failed'));
+            }
         }
 
         // ⚠️ 프론트엔드 전달 금액과 서버 재계산 금액 검증
@@ -942,8 +959,8 @@ class OrderProcessingService
                     $key = $item['key'] ?? [];
                     $value = $item['value'] ?? [];
 
-                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key[config('app.fallback_locale', 'ko')] ?? array_values($key)[0] ?? '') : $key;
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
+                    $localizedKey = is_array($key) ? LocalizedText::pick($key, $locale) : $key;
+                    $localizedValue = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
 
                     if ($localizedKey !== '' && $localizedValue !== '') {
                         $parts[] = $localizedKey.': '.$localizedValue;
@@ -1580,6 +1597,37 @@ class OrderProcessingService
     }
 
     /**
+     * 제출한 배송국가가 임시 주문에 저장된 배송국가와 다르면 임시 주문을 제출값으로 다시 계산해 저장합니다.
+     *
+     * 배송비는 배송국가로 정해지므로 주문 금액도 실제 배송할 국가 기준이어야 한다. 쿠폰·마일리지는
+     * 저장된 값을 그대로 쓴다(TempOrderService::updateTempOrder 가 미전송 항목을 유지).
+     * 우편번호(도서산간)는 주문서의 우편번호 검색이 임시 주문에 바로 저장하므로 비교하지 않는다.
+     *
+     * @param  TempOrder  $tempOrder  임시 주문
+     * @param  array  $shippingInfo  주문 요청의 배송지 입력값
+     * @return TempOrder|null 다시 저장한 임시 주문, 배송국가가 같으면 null
+     */
+    protected function alignTempOrderShippingCountry(TempOrder $tempOrder, array $shippingInfo): ?TempOrder
+    {
+        $submittedCountry = strtoupper(trim((string) ($shippingInfo['country_code'] ?? ''))) ?: 'KR';
+        $stored = $tempOrder->getShippingAddress() ?? [];
+        $storedCountry = strtoupper(trim((string) ($stored['country_code'] ?? ''))) ?: 'KR';
+
+        if ($submittedCountry === $storedCountry) {
+            return null;
+        }
+
+        $submittedZipcode = trim((string) ($shippingInfo['zipcode'] ?? $shippingInfo['intl_postal_code'] ?? '')) ?: null;
+
+        return $this->tempOrderService->updateTempOrder(
+            userId: $tempOrder->user_id,
+            cartKey: $tempOrder->cart_key,
+            usePoints: null,
+            shippingAddress: new ShippingAddress(countryCode: $submittedCountry, zipcode: $submittedZipcode),
+        );
+    }
+
+    /**
      * 임시 주문에서 계산 입력 DTO를 구성합니다.
      *
      * TempOrderService::getTempOrderWithCalculation()의 패턴을 따릅니다.
@@ -1740,9 +1788,12 @@ class OrderProcessingService
      */
     protected function clearOrderedCartItems(Order $order): void
     {
-        $cartItems = $order->order_meta['cart_items'] ?? [];
+        $orderMeta = $order->order_meta ?? [];
+        $cartItems = $orderMeta['cart_items'] ?? [];
 
-        if (empty($cartItems)) {
+        // 주문당 한 번만 정리한다 — 가상계좌는 계좌 발급 때 정리하고 입금 완료 때 다시 불리므로, 두 번째 호출이
+        // 같은 상품을 더 담아 둔 수량까지 깎지 않게 한다.
+        if (empty($cartItems) || ! empty($orderMeta['cart_cleared_at'])) {
             return;
         }
 
@@ -1768,6 +1819,35 @@ class OrderProcessingService
 
         if (! empty($deleteIds)) {
             $this->cartRepository->deleteByIds($deleteIds);
+        }
+
+        $this->orderRepository->update($order, [
+            'order_meta' => array_merge($orderMeta, ['cart_cleared_at' => Carbon::now()->toIso8601String()]),
+        ]);
+    }
+
+    /**
+     * 가상계좌 계좌 발급이 끝난 주문의 후속 처리 — 주문한 장바구니 항목을 정리합니다.
+     *
+     * 가상계좌는 재고 차감이 입금 완료 시점(payment_complete)이라 장바구니도 입금 때까지 남았다. 고객에게는
+     * 계좌를 받은 순간 주문이 끝난 것이므로 이 시점에 정리한다. 재고는 종전대로 입금 완료 때 차감한다.
+     * 결제사 플러그인이 발급 정보를 저장한 직후 부른다. 같은 주문에 두 번 불러도 한 번만 정리한다.
+     * 정리가 실패해도 발급 처리(결제 흐름)는 끊지 않는다 — 장바구니는 입금 완료 때 다시 정리된다.
+     *
+     * @param  Order  $order  계좌가 발급된 주문
+     * @return void 반환값 없음
+     */
+    public function onVbankAccountIssued(Order $order): void
+    {
+        try {
+            $this->clearOrderedCartItems($order);
+        } catch (\Exception $e) {
+            // 교착은 삼키지 않는다 — 바깥 트랜잭션이 이미 되돌려진 뒤 이후 쓰기가 autocommit 으로 남는다(C9).
+            ConcurrencyErrors::rethrowIfConcurrencyError($e);
+            Log::warning('Cart cleanup failed on vbank issue', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -2004,7 +2084,7 @@ class OrderProcessingService
         // 아래 입금 기록만 수행한다. 결제완료만 비교하면 상품준비중 주문이 completePayment 로
         // 들어가 결제완료로 **되돌아가고** 마일리지·재고·알림이 다시 돈다.
         if ($markOrderComplete && ! $this->isOrderPastPayment($order)) {
-            return $this->completePayment($order, [], (int) round($amount));
+            return $this->completePayment($order, [], $this->depositAmountInMinorUnits($order, $amount));
         }
 
         // 입금 기록만 수행: 결제완료 전이(마일리지/재고/알림) 없이 payment 만 PAID 로 정합화.
@@ -2067,9 +2147,9 @@ class OrderProcessingService
         }
 
         // 결제예정금액 정확 일치 검증 (completePayment 와 동일 기준).
-        // $amount 는 결제 통화(order_currency) 청구액(validatePayment 2단계 기준)이므로
-        // paid_amount_local 에 그대로 들어가고, paid_amount_base 는 base 진실값으로 동결한다.
-        $this->validatePaymentAmount($order, (int) round($amount));
+        // $amount 는 결제 통화(order_currency) 주 단위 입금액이므로 paid_amount_local 에 그대로
+        // (센트까지) 들어가고, paid_amount_base 는 base 진실값으로 동결한다.
+        $this->validatePaymentAmount($order, $this->depositAmountInMinorUnits($order, $amount));
 
         // 기록 전 주문 스냅샷 — 입금 기록 훅이 넘겨 활동 로그가 바뀐 결제금액을 변경 내역으로 남긴다.
         $beforeSnapshot = $order->toArray();
@@ -2078,7 +2158,7 @@ class OrderProcessingService
             $payment->update([
                 'payment_status' => PaymentStatusEnum::PAID,
                 'paid_at' => Carbon::now(),
-                'paid_amount_local' => (int) round($amount),
+                'paid_amount_local' => $amount,
                 'paid_amount_base' => (float) $order->total_due_amount,
             ]);
 
@@ -2158,19 +2238,48 @@ class OrderProcessingService
         // (buildPgPaymentData → resolveOrderPaymentChargeAmount)·각 PG 콜백 승인액과 동일 SSoT 다.
         // base(total_due_amount) 를 직접 비교하면 base≠결제 통화(예: base JPY, 결제 KRW)일 때
         // PG 청구액(환산 KRW)과 단위가 어긋나 "결제금액 불일치" 회귀가 발생한다.
-        $expectedChargeAmount = $this->currencyConversionService->resolveOrderPaymentChargeAmount($order);
+        $charge = $this->currencyConversionService->resolveSnapshotPaymentCharge(
+            (float) $order->total_due_amount,
+            $order->currency_snapshot ?? []
+        );
 
-        if ($expectedChargeAmount !== $pgAmount) {
+        if ($charge['minor_unit_amount'] !== $pgAmount) {
+            // 진단 값은 결제 통화 주 단위로 싣는다 — 예상 = 결제예정 청구액, 실제 = 받은 금액.
+            // 최소 화폐단위 정수를 그대로 base 통화로 찍으면 USD 주문이 「예상 ₩17, 실제 ₩1,706」 처럼 읽힌다.
+            $scale = 10 ** $charge['decimal_places'];
+
             throw new PaymentAmountMismatchException(
-                $pgAmount,
-                $expectedChargeAmount,
+                (float) $charge['amount'],
+                $pgAmount / $scale,
                 [
                     'stage' => 'pg_amount_verification',
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
-                ]
+                ],
+                $charge['currency']
             );
         }
+    }
+
+    /**
+     * 결제 통화 주 단위 입금액을 PG 비교 기준과 같은 최소 화폐단위 정수로 바꿉니다.
+     *
+     * 관리자 입금확인 창은 결제예정금액을 결제 통화 주 단위($17.06)로 안내하고 그대로 입력받는다.
+     * 금액 검증 2단계는 최소 화폐단위(1706)로 비교하므로, 정수로 자르기만 하면(17) 소수 통화 주문의
+     * 올바른 입금이 늘 불일치로 거절된다. KRW 처럼 소수 자릿수 0 인 통화는 값이 그대로다.
+     *
+     * @param  Order  $order  주문 (currency_snapshot 보유)
+     * @param  float  $amount  결제 통화 주 단위 입금액
+     * @return int 결제 통화 최소 화폐단위 정수
+     */
+    protected function depositAmountInMinorUnits(Order $order, float $amount): int
+    {
+        $charge = $this->currencyConversionService->resolveSnapshotPaymentCharge(
+            (float) $order->total_due_amount,
+            $order->currency_snapshot ?? []
+        );
+
+        return (int) round($amount * (10 ** $charge['decimal_places']));
     }
 
     /**
@@ -2512,10 +2621,35 @@ class OrderProcessingService
      * [입금확인]도 사라진다. 결제행이 이미 「돈을 받았다」는 기록이므로 운영자 선택 사항이 아니다.
      * 멱등이다 — 헤더가 채워지면 조건이 거짓이 된다.
      *
+     * 결제 전 주문의 취소 접수도 이 메서드로 헤더를 맞춘다(S3-D7) — 받은 돈이 헤더에 없으면 환불 산정이 0원이 된다.
+     *
      * @param  Order  $order  주문
      * @return float|null 맞춘 금액 (맞추지 않았으면 null)
      */
     public function syncPaidHeaderFromSettledPayment(Order $order): ?float
+    {
+        $updates = $this->settledPaymentHeaderUpdates($order);
+
+        if ($updates === null) {
+            return null;
+        }
+
+        $order->update($updates);
+
+        return (float) $updates['total_paid_amount'];
+    }
+
+    /**
+     * 결제행 수납액으로 맞출 주문 헤더 값을 계산합니다. (저장하지 않음 — S2-D4 · S3-D7)
+     *
+     * 판정·금액의 정본이다. 저장하는 `syncPaidHeaderFromSettledPayment()` 와 DB 를 바꾸지 않는 취소 미리보기
+     * (`OrderCancellationService::previewRefund`)가 같은 값을 쓴다 — 둘이 따로 계산하면 취소 창이 예고한 환불액과
+     * 접수된 환불신청서의 금액이 갈린다.
+     *
+     * @param  Order  $order  주문
+     * @return array{total_paid_amount: float, total_due_amount: float, paid_at: mixed, mc_total_paid_amount: mixed}|null 헤더 갱신값 (맞출 것이 없으면 null)
+     */
+    public function settledPaymentHeaderUpdates(Order $order): ?array
     {
         $order->loadMissing('payment');
         $settled = $order->payment?->payment_status === PaymentStatusEnum::PAID;
@@ -2530,14 +2664,12 @@ class OrderProcessingService
         $paidAmount = $this->resolveSettledBaseAmount($order);
         $snapshot = $order->currency_snapshot ?? $this->buildCurrencySnapshot();
 
-        $order->update([
+        return [
             'total_paid_amount' => $paidAmount,
             'total_due_amount' => max(0.0, (float) $order->total_due_amount - $paidAmount),
             'paid_at' => $order->paid_at ?? $order->payment->paid_at ?? Carbon::now(),
             'mc_total_paid_amount' => $this->buildMultiCurrencyAmount($paidAmount, $snapshot),
-        ]);
-
-        return $paidAmount;
+        ];
     }
 
     /**

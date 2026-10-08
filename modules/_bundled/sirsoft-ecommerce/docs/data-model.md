@@ -222,7 +222,7 @@
 **개인정보 보유기간 처리(이슈 #636)의 흔적**: 익명화된 주문은 `order_meta` 에 `privacy_anonymized_at`
 (ISO 8601)을 남깁니다 — 스키마를 바꾸지 않고 멱등 표지로 쓰며, 주소 테이블의 NOT NULL 칸에는
 `***` 가 들어갑니다. 교환·반품·환불 신청서의 환불 계좌 명의·번호·상세 사유·관리자 메모도 NULL 이 되고, 교환의
-`redelivery_address_snapshot` 은 같은 치환값으로 가려집니다. 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
+`redelivery_address_snapshot` 은 모양을 유지한 채 같은 기준으로 가려집니다 — 받는 분·연락처·우편번호·주소는 치환값, 상세 주소와 해외 주소의 도시·주(`city`·`state`)는 NULL(주문 주소의 `address_detail`·`intl_city`·`intl_state` 와 같은 처리). 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
 지우는 테이블 전수: `ecommerce_claim_images`(행 — 파일은 커밋 뒤, 임시 첨부 포함) · `ecommerce_claim_payments` ·
 `ecommerce_order_exchange_options` · `_exchanges` · `_return_options` · `_returns` · `ecommerce_order_shippings` · `_refund_options` · `_refunds` · `_cancel_options` ·
 `_cancels` · `_tax_invoices` · `_cash_receipts` · `_payments` · `_options` · `_addresses` · `ecommerce_orders`,

@@ -11,6 +11,7 @@ test_files:
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/WebhookControllerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/AdminWebhookUrlTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/VirtualAccountDueDateTimezoneTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterTossPaymentMethodsListenerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterPgProviderClientConfigTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RegisterPgProviderListenerTest.php
@@ -80,6 +81,7 @@ exclusions:
 
 # 후속 효과 체인
 effects:
+  - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler
   - enabled_methods_exposed_with_core_mapping
   - vbank_account_stored_without_completing

@@ -89,6 +89,8 @@ class StoreExchangeRequest extends FormRequest
             'redelivery_address.zipcode' => ['nullable', 'string', 'max:20'],
             'redelivery_address.address1' => ['nullable', 'string', 'max:255'],
             'redelivery_address.address2' => ['nullable', 'string', 'max:255'],
+            'redelivery_address.city' => ['nullable', 'string', 'max:100'],
+            'redelivery_address.state' => ['nullable', 'string', 'max:100'],
             'redelivery_address.country_code' => [
                 'nullable',
                 'string',
@@ -161,6 +163,8 @@ class StoreExchangeRequest extends FormRequest
             'redelivery_address.zipcode' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_zipcode'),
             'redelivery_address.address1' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address1'),
             'redelivery_address.address2' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address2'),
+            'redelivery_address.city' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_city'),
+            'redelivery_address.state' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_state'),
             'redelivery_address.country_code' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_country_code'),
             'redelivery_address.changed_by_user' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_changed_by_user'),
         ];

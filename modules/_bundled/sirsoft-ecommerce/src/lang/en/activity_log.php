@@ -245,6 +245,7 @@ return [
         'user_order_create' => 'Order placed (#:order_id)',
         'user_order_option_confirm' => 'Purchase confirmed (Option #:option_id)',
         'mileage_earn' => 'Mileage earned (:amount)',
+        'mileage_earn_scheduled' => 'Mileage earn scheduled (:amount) — granted at the earn point',
         'mileage_use' => 'Mileage used (:amount)',
         'mileage_restore' => 'Mileage restored (:amount)',
         'mileage_refund_credit' => 'Refund paid as mileage (:amount)',

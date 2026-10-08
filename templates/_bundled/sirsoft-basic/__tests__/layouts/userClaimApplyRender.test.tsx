@@ -31,7 +31,8 @@
  *   claim_apply_refund_account_shown_only_for_bank_refunds,
  *   claim_apply_submit_blocked_until_the_refund_account_is_filled,
  *   claim_apply_refund_branch_locks_cross_branch_items,
- *   claim_withdraw_modal_states_consequences
+ *   claim_withdraw_modal_states_consequences,
+ *   claim_apply_redelivery_shows_the_international_address
  *
  * @vitest-environment jsdom
  */
@@ -710,6 +711,54 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   });
 
   /**
+   * 결제 수단 라디오는 수단마다 제 이름으로 보인다 — 값만 보고 `point` 가 아니면 모두
+   * 「카드·간편결제」로 그리면 계좌이체를 고르면서 카드로 낸다고 읽는다.
+   *
+   * 회귀 배경 (S1-D14, 2026-10-07 실측): 허용 수단을 `['card','bank']` 로 두자 두 라디오가
+   * 모두 「카드·간편결제」였다.
+   *
+   * @scenario claim_type=exchange, charge_method=pay_on_request, preview_result=ok
+   * @effects claim_payment_method_choices_carry_their_own_labels
+   */
+  it('결제 수단 — 카드·마일리지 밖의 수단은 서버 표시명으로 보인다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimChargeMethod: 'pay_on_request',
+        claimItems: [{ order_option_id: 422, selected: true }],
+        claimReason: 'color_mismatch',
+        claimEstimate: {
+          price_difference: 2000,
+          charge_method: 'pay_on_request',
+          requires_payment: true,
+          adjustment: { refund_total: 0 },
+        },
+        claimableSnapshot: {
+          settings: {
+            allowed_charge_methods: ['pay_on_request'],
+            charge_payment_methods: ['card', 'bank'],
+            charge_payment_method_labels: { card: '신용카드', bank: '계좌이체' },
+            max_images: 5,
+            image_max_size_kb: 2048,
+          },
+        },
+      })
+    );
+    active = utils;
+
+    const labelOf = (value: string) =>
+      container
+        .querySelector<HTMLInputElement>(`input[type=radio][name=claimPaymentMethod][value=${value}]`)
+        ?.closest('label')
+        ?.textContent?.trim();
+
+    expect(labelOf('bank')).toBe('계좌이체');
+    // 카드는 종전 안내 문구(간편결제까지 묶어 부르는 이름)를 지킨다 — 이 환경은 식 안의
+    // `$t()` 를 키 그대로 돌려주므로 키로 잰다.
+    expect(labelOf('card')).toBe('claim.apply.payment_method_card');
+  });
+
+  /**
    * @scenario claim_type=refund, charge_method=none, refund_branch=auto
    * @effects claim_apply_refund_branch_drives_notice_and_submit_label
    */
@@ -1370,5 +1419,120 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
 
     expect(findSubmitButton(container)?.disabled).toBe(false);
     expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_required_to_submit');
+  });
+});
+
+// ================================================================
+// S2-D8 — 해외 주문의 교환 재발송지 (2026-10-07 S4 실측 → 인계)
+// ================================================================
+
+/** 재발송지 카드를 주문 데이터소스와 함께 감싼다 — 원 배송지는 `order.data.shipping_address` 에서 온다. */
+function redeliveryLayout(): any {
+  return {
+    data_sources: [
+      { id: 'order', type: 'api', endpoint: '/api/modules/sirsoft-ecommerce/user/orders/X', method: 'GET', auto_fetch: true },
+    ],
+    components: [inlinePartials(loadPartial('_apply_redelivery.json'))],
+  };
+}
+
+/** 미국 배송 주문 — 체크아웃은 해외 주문의 국내 주소 칸을 빈 문자열로 남긴다. */
+const US_SHIPPING_ADDRESS = {
+  recipient_name: 'Jane Doe',
+  recipient_phone: '+1-212-555-0101',
+  recipient_country_code: 'US',
+  recipient_country_name: 'United States',
+  zipcode: '',
+  address: '',
+  address_detail: '',
+  address_line_1: '350 5th Ave',
+  address_line_2: 'Suite 2',
+  intl_city: 'New York',
+  intl_state: 'NY',
+  intl_postal_code: '10118',
+};
+
+async function renderRedelivery(shippingAddress: Record<string, any>, local: Record<string, any> = {}) {
+  const utils = createLayoutTest(redeliveryLayout(), {
+    initialState: { _local: { claimType: 'exchange', ...local } },
+    locale: 'ko',
+    translations: KO_TRANSLATIONS,
+    componentRegistry: setupRegistry(),
+  });
+  utils.mockApi('order', { response: { data: { shipping_address: shippingAddress } } });
+
+  const { container } = await utils.render();
+
+  return { utils, container };
+}
+
+describe('교환 재발송지 — 해외 주문 (S2-D8)', () => {
+  let active: { cleanup: () => void } | null = null;
+
+  afterEach(() => {
+    active?.cleanup();
+    active = null;
+  });
+
+  /**
+   * 요약이 국내 칸만 이어 붙이면 해외 주문은 「Jane Doe / +1-212-555-0101 ()」 처럼 주소가 비고
+   * 빈 괄호만 남는다(주문 710 실측).
+   *
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_redelivery_shows_the_international_address
+   */
+  it('원 배송지 요약에 해외 주소(거리·도시·주·우편번호)를 보인다', async () => {
+    const { utils, container } = await renderRedelivery(US_SHIPPING_ADDRESS);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('(10118) 350 5th Ave Suite 2, New York, NY');
+    expect(text).not.toContain('()');
+  });
+
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_redelivery_shows_the_international_address
+   */
+  it('국내 주문 요약은 종전 모양 그대로다 — 도시·주 자리가 끼지 않는다', async () => {
+    const { utils, container } = await renderRedelivery({
+      recipient_name: '홍길동', recipient_phone: '010-1234-5678', recipient_country_code: 'KR',
+      zipcode: '06236', address: '서울 강남구 테헤란로 1', address_detail: '101호',
+      address_line_1: null, address_line_2: null, intl_city: null, intl_state: null, intl_postal_code: null,
+    });
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('(06236) 서울 강남구 테헤란로 1 101호');
+    expect(text).not.toContain(', ,');
+  });
+
+  /**
+   * [변경] 폼은 해외 주문에만 도시·주 칸을 더한다 — 서버 스냅샷이 두 칸을 따로 담는다.
+   *
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_redelivery_shows_the_international_address
+   */
+  it('해외 주문의 [변경] 폼에는 도시·주 칸이 있고, 국내 주문에는 없다', async () => {
+    const editing = {
+      claimRedeliveryEditing: true,
+      claimRedelivery: { recipient_name: 'Jane Doe', phone: '+1', zipcode: '10118', address1: '350 5th Ave', address2: '', city: 'New York', state: 'NY', country_code: 'US' },
+    };
+    const intl = await renderRedelivery(US_SHIPPING_ADDRESS, editing);
+    active = intl.utils;
+    const values = Array.from(intl.container.querySelectorAll('input')).map((input) => (input as HTMLInputElement).value);
+    expect(values).toEqual(expect.arrayContaining(['New York', 'NY']));
+    expect(intl.container.textContent ?? '').toContain(KO_CLAIM.apply.city);
+    intl.utils.cleanup();
+
+    const domestic = await renderRedelivery(
+      { recipient_country_code: 'KR', zipcode: '06236', address: '서울', address_detail: '' },
+      { ...editing, claimRedelivery: { ...editing.claimRedelivery, city: '', state: '', country_code: 'KR' } },
+    );
+    active = domestic.utils;
+    expect(domestic.container.textContent ?? '').not.toContain(KO_CLAIM.apply.city);
   });
 });

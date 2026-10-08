@@ -8,6 +8,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { HtmlContent } from './HtmlContent';
 import type { EditorAttrs } from '../../types';
+import { getSiteLocale } from '../../support/siteLocale';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -19,11 +20,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return G7Core()?.locale?.supported?.() ?? ['ko', 'en'];
-};
-
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return G7Core()?.locale?.current?.() ?? 'ko';
 };
 
 // 언어 코드로 언어명 가져오기 (다국어 키 사용)
@@ -200,7 +196,8 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
 }) => {
   // 지원 언어 목록
   const supportedLocales = useMemo(() => getSupportedLocales(), []);
-  const defaultLocale = useMemo(() => getCurrentLocale(), []);
+  // 필수(*) 언어 탭 — 보는 언어가 아니라 사이트 기본 언어(서버 필수 규칙과 같은 값)
+  const defaultLocale = useMemo(() => getSiteLocale(), []);
 
   // 현재 선택된 언어 탭 (다국어 모드)
   const [currentLocale, setCurrentLocale] = useState(defaultLocale);

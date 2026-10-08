@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 관리자 환불 실행 요청 ('환불하기' — D18)
@@ -143,9 +144,14 @@ class ExecuteRefundRequest extends FormRequest
 
             if (! in_array($method, $allowed, true)) {
                 // 금액 수정 경로가 같은 위반에 내는 문구와 같다(`OrderClaimException::refundMethodUnavailable()`).
+                // PG 결제인데 막혔다면 그 주문의 결제 플러그인이 꺼진 것이다 — 사유와 해결책을 따로 말한다(S3-D25).
+                $pluginOff = $method === RefundMethodEnum::PG->value
+                    && app(OrderRefundRequestService::class)->pgRefundBlockedByInactivePlugin($order);
                 $validator->errors()->add(
                     'refund_method',
-                    __('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable')
+                    $pluginOff
+                        ? __('sirsoft-ecommerce::exceptions.pg_provider_inactive', ['provider' => (string) $order->payment->pg_provider])
+                        : __('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable')
                 );
             }
         });

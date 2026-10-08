@@ -242,7 +242,7 @@
                                         "if": "{{row.thumbnail_url}}",
                                         "props": {
                                             "src": "{{row.thumbnail_url}}",
-                                            "alt": "{{row.name}}",
+                                            "alt": "{{row.name_localized ?? ''}}",
                                             "className": "w-full h-full aspect-square object-cover rounded"
                                         }
                                     },

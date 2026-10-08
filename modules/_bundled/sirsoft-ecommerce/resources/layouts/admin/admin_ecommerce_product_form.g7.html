@@ -33,7 +33,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -45,7 +55,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -57,7 +77,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -69,7 +99,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -81,7 +121,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -92,7 +142,17 @@
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -103,7 +163,17 @@
     <field name="cache">
       <field name="ttl" :value="600"/>
     </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
     <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
       <default>
         <show-error-page target="content"/>
       </default>
@@ -162,6 +232,8 @@
       </field>
     </set-state>
     <action handler="sirsoft-ecommerce.setDefaultShippingPolicy" if="{{!route.itemCode}}"/>
+    <!-- 수정·복사 진입: 위 기본값(true)대로 두면 기본이 아닌 정책을 쓰는 상품도 「기본 배송정책 사용」 이 켜진 채 선택지가 잠긴다. 저장된 정책이 기본 정책일 때만 켠다 -->
+    <set-state if="{{!!route.itemCode || !!query?.copy_id}}" target="local" ui.useDefaultShippingPolicy="{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p =&gt; p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) &amp;&amp; p.is_default === true)}}"/>
   </init>
   <slot name="content">
     <div data-ref="product_form_content" data-key="form" data-debounce="300" class="admin-page-content">
@@ -237,7 +309,8 @@
               <div class="flex-1 min-w-0">
                 <responsive on="portable" class="w-full text-center"/>
                 <p class="text-primary font-medium truncate">{{$localized(copy_source?.data?.name) || '-'}}</p>
-                <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}</p>
+                <!-- 원본 코드는 진입 주소의 copy_id 에서 — 복사 데이터의 product_code 는 새 상품용으로 미리 채번한 코드다 -->
+                <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}</p>
                 <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
               </div>
               <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">

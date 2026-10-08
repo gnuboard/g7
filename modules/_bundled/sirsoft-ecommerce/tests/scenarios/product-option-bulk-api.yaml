@@ -1,0 +1,33 @@
+feature: 관리자 옵션 일괄 변경 API (bulk-price · bulk-stock · bulk-update)
+
+description: |
+  상품 목록·옵션 관리에서 여러 옵션의 판매가 조정액·재고를 한 번에 바꾸는 관리자 API.
+  판매가 비율(%) 변경은 옵션 판매가(상품 판매가 + 조정액)를 기준으로 계산하고 결과를 조정액으로 저장한다.
+  재고는 0 아래로 내려가지 않고, 잘못된 ID 형식·누락은 422, 비로그인은 401 이다.
+
+axes:
+  endpoint: [bulk_price, bulk_stock, bulk_update]
+  case: [apply, validation, auth]
+
+exclusions:
+  - { endpoint: bulk_stock, case: auth, reason: "인증 미들웨어가 세 경로 공통 — bulk_price·bulk_update 쪽 auth 로 충분" }
+
+effects:
+  - price_won_increase_applied
+  - price_won_decrease_applied
+  - price_fixed_applied
+  - price_percent_based_on_option_selling_price
+  - mixed_ids_resolved_to_options
+  - stock_increase_applied
+  - stock_decrease_applied
+  - stock_never_negative
+  - stock_set_applied
+  - invalid_request_rejected_422
+  - unauthenticated_rejected_401
+  - bulk_changes_applied
+  - items_applied_individually
+  - bulk_changes_override_items
+  - option_name_null_locales_allowed
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductOptionControllerTest.php

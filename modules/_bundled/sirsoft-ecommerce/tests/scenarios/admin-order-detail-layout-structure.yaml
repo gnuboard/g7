@@ -40,6 +40,7 @@ effects:
   - admin_claim_request_context_error_distinguishes_forbidden_from_failure  # 문맥 조회 실패는 403=권한 없음, 그 밖=불러오지 못함 (2026-09-26 3차 검증 인터뷰)
   - admin_return_request_carries_refund_priority_and_prefilled_bank  # 반품 직권 접수 창은 종전 취소 창 조건으로 환불 계좌·우선순위 칸을 세우고 주문 결제 정보로 계좌를 미리 채운다(validate-plan A1)
   - admin_claim_textareas_use_camelcase_max_length  # 직권 접수·대리 철회·신청 수정 입력칸이 maxLength(camelCase)로 한도를 건다(validate branch M9)
+  - admin_request_modal_seeds_the_international_redelivery_address  # 직권 접수 창 재발송지의 해외 도시·주 칸(S2-D8)
   - admin_request_preview_amounts_are_formatted_in_order_currency  # 직권 접수 창 금액 줄은 previewFormatted(주문 통화 표기)를 읽는다(Chrome 실측 V-A1-m)
   - admin_claim_request_gate_hint_shows_when_any_button_is_disabled  # 셋 중 하나만 꺼져도 게이트 안내가 곁에 선다(Chrome 실측 P-1)
   # ① 셸 — 데이터소스·computed·모달 집합

@@ -216,6 +216,104 @@ class NoPurchasableOptionRejectionTest extends ModuleTestCase
     }
 
     /**
+     * 판매 중지(비활성) 옵션을 직접 지정해 담으면 판매 불가로 거절한다.
+     *
+     * 종전에는 옵션을 지정하지 않을 때만 비활성 옵션을 건너뛰고, 옵션 id 를 지정하면 상품 소속인지만 봐서
+     * 판매 중지 옵션이 장바구니에 담겼다.
+     *
+     * @scenario entry=cart_add, option_rows=explicit_inactive
+     *
+     * @effects explicit_inactive_option_rejected_as_unavailable, rejection_creates_nothing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cart_add_rejects_explicit_inactive_option(): void
+    {
+        $product = $this->createOnSaleProduct();
+        $inactive = ProductOptionFactory::new()->forProduct($product)->inactive()->create(['stock_quantity' => 100]);
+        $cartKey = 'ck_'.str_repeat('s', 32);
+
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $product->id,
+            'items' => [['product_option_id' => $inactive->id, 'quantity' => 1]],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.code', 'cart_unavailable')
+            ->assertJsonPath('errors.has_status_issue', true);
+        $this->assertSame(0, Cart::where('cart_key', $cartKey)->count());
+    }
+
+    /**
+     * 판매 중지 옵션을 직접 지정한 바로 구매도 판매 불가로 거절하고 임시 주문을 만들지 않는다.
+     *
+     * @scenario entry=direct_checkout, option_rows=explicit_inactive
+     *
+     * @effects explicit_inactive_option_rejected_as_unavailable, rejection_creates_nothing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_direct_checkout_rejects_explicit_inactive_option(): void
+    {
+        $user = $this->createUser();
+        $product = $this->createOnSaleProduct();
+        $inactive = ProductOptionFactory::new()->forProduct($product)->inactive()->create(['stock_quantity' => 100]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/modules/sirsoft-ecommerce/checkout', [
+                'direct_items' => [
+                    ['product_id' => $product->id, 'product_option_id' => $inactive->id, 'quantity' => 1],
+                ],
+            ]);
+
+        // 주문서 생성은 판매 불가 품목을 400 + cart_unavailable(판매 상태 사유)로 돌려준다(상품 판매 중지와 같은 계약).
+        $response->assertStatus(400)
+            ->assertJsonPath('errors.code', 'cart_unavailable')
+            ->assertJsonPath('errors.has_status_issue', true);
+        $this->assertSame(0, TempOrder::where('user_id', $user->id)->count());
+    }
+
+    /**
+     * 담은 뒤 판매 중지된 옵션은 장바구니에서 구매 불가로 표시되고, 그 행으로 주문서를 만들 수 없다.
+     *
+     * 종전에는 장바구니가 정상 상품처럼 체크된 채 보였고 주문까지 만들어졌다.
+     *
+     * @scenario entry=cart_add, option_rows=explicit_inactive
+     *
+     * @effects cart_marks_inactive_option_unavailable, explicit_inactive_option_rejected_as_unavailable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cart_item_with_option_deactivated_after_adding_is_unavailable(): void
+    {
+        $user = $this->createUser();
+        $product = $this->createOnSaleProduct();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $cart = Cart::create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $option->update(['is_active' => false]);
+
+        $query = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/modules/sirsoft-ecommerce/cart/query', []);
+        $query->assertOk();
+        $row = collect($query->json('data.items'))->firstWhere('id', $cart->id);
+        $this->assertNotNull($row);
+        $this->assertFalse($row['available']);
+        $this->assertSame('suspended', $row['unavailable_reason']);
+
+        $checkout = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/modules/sirsoft-ecommerce/checkout', ['item_ids' => [$cart->id]]);
+        $checkout->assertStatus(400)
+            ->assertJsonPath('errors.code', 'cart_unavailable')
+            ->assertJsonPath('errors.has_status_issue', true);
+        $this->assertSame(0, TempOrder::where('user_id', $user->id)->count());
+    }
+
+    /**
      * 무료 배송정책을 둔 판매중 상품을 옵션 없이 만듭니다.
      *
      * @return Product 생성한 상품 (옵션 행 없음)

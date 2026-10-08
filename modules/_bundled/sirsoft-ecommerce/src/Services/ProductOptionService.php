@@ -323,17 +323,21 @@ class ProductOptionService
             return;
         }
 
-        // 소수 통화 대응: 정수 절사 대신 소수 2자리로 반올림 보존
+        $productSellingPrice = (float) ($option->product?->selling_price ?? 0);
+
+        // 소수 통화 대응: 정수 절사 대신 소수 2자리로 반올림 보존.
+        // 비율(percent)은 옵션 판매가(상품 판매가 + 조정액)를 기준으로 계산한 뒤 조정액으로 되돌린다 —
+        // 조정액에만 곱하면 조정액 0 인 옵션은 「판매가 10% 인하」 를 해도 값이 그대로였다(EC-699).
         $newValue = match ($method) {
             'set' => $value,
             'add' => (float) $option->price_adjustment + $value,
             'subtract' => (float) $option->price_adjustment - $value,
-            'percent' => round((float) $option->price_adjustment * (1 + $value / 100), 2),
+            'percent' => round(($productSellingPrice + (float) $option->price_adjustment) * (1 + $value / 100) - $productSellingPrice, 2),
             default => (float) $option->price_adjustment,
         };
 
         // 옵션 판매가 하한 0 — 조정액이 상품 판매가만큼 음수가 되면 그 이상 내려가지 않는다
-        $floor = -1 * (float) ($option->product?->selling_price ?? 0);
+        $floor = -1 * $productSellingPrice;
         $newValue = max($newValue, $floor);
 
         $this->repository->update($optionId, ['price_adjustment' => $newValue]);

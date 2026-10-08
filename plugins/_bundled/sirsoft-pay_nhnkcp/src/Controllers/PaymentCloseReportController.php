@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -95,6 +96,16 @@ class PaymentCloseReportController
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'payment_already_paid',
+                ]);
+            }
+
+            // 가상계좌가 이미 발급된(입금대기) 주문은 주문 상태가 아직 결제 전이라 위 가드를 통과한다.
+            // 발급 콜백과 경쟁해 늦게 온 닫힘 보고가 그 주문을 실패·취소로 덮으면 고객은 받은 계좌로
+            // 입금할 수 없다 — 결제창이 승인·발급 단계로 넘어가기 전(READY)만 실패로 기록한다.
+            if ($order->payment && $order->payment->payment_status !== PaymentStatusEnum::READY) {
+                return ResponseHelper::success('common.success', [
+                    'status' => 'ignored',
+                    'reason' => 'payment_not_ready',
                 ]);
             }
 

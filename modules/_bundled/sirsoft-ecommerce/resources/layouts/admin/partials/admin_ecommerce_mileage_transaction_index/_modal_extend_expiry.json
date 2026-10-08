@@ -194,7 +194,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).\n            성공 갈래에서 `mileageExtend` 를 비우는 것은 다음 연장에 이전 선택이 남지 않게 하기\n            위해서다. 실패 갈래는 창을 닫지 않고 서버 응답을 통째로 담아 위 배너에 넘긴다.",
+                            "comment": "일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).\n            성공 갈래에서 `mileageExtend` 와 목록 화면의 표 선택(`$parent._local.selectedItems`)을 함께\n            비우는 것은 다음 연장에 이전 선택이 남지 않게 하기 위해서다 — 표 선택이 남으면 체크가 켜진 채\n            버튼이 다시 눌려 같은 적립건이 한 번 더 연장된다. 실패 갈래는 창을 닫지 않고 서버 응답을\n            통째로 담아 위 배너에 넘기며, 선택은 고쳐서 다시 시도할 수 있게 그대로 둔다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -215,6 +215,21 @@
                                         "body": "{{({ lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}"
                                     },
                                     "onSuccess": [
+                                        {
+                                            "comment": "표 선택 해제는 창을 닫기 **전에** 한다 — 창이 닫히면 `$parent` 가 가리킬 레이아웃 문맥이 사라져 쓰기가 버려진다.\n                  두 자리에 같은 값을 쓴다(docs/frontend/modal-usage.md 「부모 폼 커밋」): 창의 `$parent._local` 쓰기는 액션이 읽는\n                  `_global._local` 미러에서 빠지므로, 화면 쪽만 비우면 다음 [일괄 연장]이 옛 선택을 실어 보낼 수 있다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "_local.selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "selectedItems": []
+                                            }
+                                        },
                                         {
                                             "handler": "closeModal"
                                         },

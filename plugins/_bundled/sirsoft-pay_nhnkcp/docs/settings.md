@@ -16,7 +16,7 @@
 | `redirect_fail_url` | `string` | `{shopBase}/checkout` | 결제 실패 리다이렉트 URL |
 | `use_escrow` | `boolean` | `false` | 에스크로 결제 활성화 |
 | `escrow_test_site_cd` | `string` | - | 테스트 에스크로 사이트 코드 |
-| `vbank_expire_days` | `integer` | `3` | 가상계좌 입금 만료(일) |
+| `vbank_expire_days` | `integer` | `3` | 가상계좌 입금 만료(일) — 사용 안 함 |
 | `easy_pay_allow_with_other_pg` | `boolean` | `false` | - |
 | `easy_pay_payco` | `boolean` | `false` | - |
 | `easy_pay_naverpay` | `boolean` | `false` | - |

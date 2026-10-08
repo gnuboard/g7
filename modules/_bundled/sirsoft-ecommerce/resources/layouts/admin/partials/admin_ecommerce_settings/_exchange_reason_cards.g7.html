@@ -24,7 +24,7 @@
           <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.name</span>
           <div class="excel-card-value flex-1">
             <!-- 교환 사유 문구(언어별). 접수된 교환 건은 사유 코드만 저장하고 표시할 때 이 문구를 빌려 오므로, 고치면 지난 교환 건의 사유 표시도 함께 바뀐다. -->
-            <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.exchange_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.exchange_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <set-state target="local" form.claim.exchange_reasons="{{(_local.form?.claim?.exchange_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
               </on>

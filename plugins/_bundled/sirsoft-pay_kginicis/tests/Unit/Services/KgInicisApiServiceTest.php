@@ -352,6 +352,38 @@ class KgInicisApiServiceTest extends PluginTestCase
     }
 
     /**
+     * 사유를 넘기지 않은 취소·CBT 환불·현금영수증 취소·구매거절 확인은 화면 언어의 기본 문구를 보낸다(한국어 고정 아님).
+     *
+     * @scenario call=cancel
+     *
+     * @effects default_pg_messages_follow_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_default_pg_messages_follow_locale(): void
+    {
+        app()->setLocale('en');
+        $service = $this->makeService();
+
+        Http::fake(['*' => Http::response(['resultCode' => '00', 'resultMsg' => 'OK', 'tid' => 'T'], 200)]);
+
+        $service->cancelPayment('TID_ORIG', 'Card');
+        $service->refundCbtPayment('CBT_TID');
+        $service->cancelCashReceipt('CSH_TID');
+        $service->denyConfirmEscrow(['originalTid' => 'ESC_TID']);
+
+        $cancel = __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason', [], 'en');
+        $cashCancel = __('sirsoft-pay_kginicis::messages.cash_receipt.cancel_reason', [], 'en');
+        $confirmer = __('sirsoft-pay_kginicis::messages.escrow.default_confirmer', [], 'en');
+
+        Http::assertSent(fn ($request) => ($request['data']['tid'] ?? null) === 'TID_ORIG' && $request['data']['msg'] === $cancel);
+        Http::assertSent(fn ($request) => ($request['tid'] ?? null) === 'CBT_TID' && $request['msg'] === $cancel);
+        Http::assertSent(fn ($request) => ($request['data']['tid'] ?? null) === 'CSH_TID' && $request['data']['msg'] === $cashCancel);
+        Http::assertSent(fn ($request) => ($request['originalTid'] ?? null) === 'ESC_TID' && $request['dcnfName'] === $confirmer);
+        $this->assertSame('Administrator', $confirmer);
+    }
+
+    /**
      * 부분취소는 type=partialRefund 로 취소 금액을 실어 보낸다.
      *
      * @scenario call=cancel

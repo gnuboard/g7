@@ -35,6 +35,7 @@ axes:
 effects:
   - claim_apply_init_seeds_rows_and_selection_from_the_right_source
   - claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
+  - claim_apply_redelivery_prefills_the_international_address # 해외 주문 재발송지 첫 채움 (S2-D8)
   - claim_apply_refund_account_is_validated_and_preserved
   - claim_apply_preview_amounts_come_from_the_server
   - claim_apply_submit_uses_the_type_specific_endpoint_and_payload

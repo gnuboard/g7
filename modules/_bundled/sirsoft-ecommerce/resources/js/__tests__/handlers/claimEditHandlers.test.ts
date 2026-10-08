@@ -37,6 +37,8 @@ import {
     buildClaimEditImages,
     saveClaimEditHandler,
     estimateClaimHandler,
+    resetClaimRedeliveryHandler,
+    applyClaimRedeliveryHandler,
 } from '../../handlers/claimApplyHandlers';
 import { removeClaimImageHandler } from '../../handlers/claimImageHandlers';
 
@@ -596,6 +598,9 @@ describe('클레임 수정 — 저장', () => {
         };
         mockG7Core.api.patch.mockResolvedValue({ success: true, data: {} });
 
+        // 구매자가 [변경] → [적용] 으로 세운 값이다.
+        applyClaimRedeliveryHandler({ handler: 'applyClaimRedelivery', params: {} } as any, {} as any);
+
         await saveClaimEditHandler(
             { handler: 'saveClaimEdit', params: { claimEditApiBase: MEMBER_CLAIM_BASE } },
             {} as any
@@ -605,6 +610,52 @@ describe('클레임 수정 — 저장', () => {
         // 값이 같아도 바꾼 사실 자체가 운영자에게 남아야 할 기록이다(D14).
         expect(body.redelivery_address.changed_by_user).toBe(true);
         expect(body.redelivery_address.zipcode).toBe('06236');
+    });
+
+    /**
+     * [원 배송지로 되돌리기] 뒤 저장은 재발송지를 null 로 보낸다 — 키를 빼면 서버는 "손대지
+     * 않음"으로 읽어 앞서 바꿔 둔 주소를 그대로 둔다. 화면은 원 배송지를 보여 주는데 신청서에는
+     * 바꾼 주소가 남는다(2026-10-06 S2 실측 EX20261006-1447332830).
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
+    it('원 배송지로 되돌린 뒤 저장하면 재발송지를 null 로 보낸다', async () => {
+        mockLocalState.claimRedelivery = { zipcode: '63000', address1: '제주 서귀포시 1', changed_by_user: true };
+        mockG7Core.api.patch.mockResolvedValue({ success: true, data: {} });
+
+        resetClaimRedeliveryHandler({ handler: 'resetClaimRedelivery', params: {} } as any, {} as any);
+
+        await saveClaimEditHandler(
+            { handler: 'saveClaimEdit', params: { claimEditApiBase: MEMBER_CLAIM_BASE } },
+            {} as any
+        );
+
+        const body = mockG7Core.api.patch.mock.calls[0][1];
+
+        expect(Object.prototype.hasOwnProperty.call(body, 'redelivery_address')).toBe(true);
+        expect(body.redelivery_address).toBeNull();
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_save_sends_only_editable_fields
+     */
+    it('재발송지에 손대지 않은 저장은 재발송지 키를 싣지 않는다 (되돌림과 구분한다)', async () => {
+        // 수정 화면은 신청서에 동결된 재발송지로 열린다(initClaimEditHandler) — 그 값이 있다는
+        // 사실만으로 보내면 사유만 고친 저장이 `changed_by_user` 를 true 로 뒤집어 운영자 화면에
+        // 「고객 변경」이 뜬다(2026-10-06 S2 실측 EX20261006-1506451469).
+        mockLocalState.claimRedelivery = { zipcode: '13529', address1: '경기 성남시', changed_by_user: false };
+        mockG7Core.api.patch.mockResolvedValue({ success: true, data: {} });
+
+        await saveClaimEditHandler(
+            { handler: 'saveClaimEdit', params: { claimEditApiBase: MEMBER_CLAIM_BASE } },
+            {} as any
+        );
+
+        expect(Object.prototype.hasOwnProperty.call(mockG7Core.api.patch.mock.calls[0][1], 'redelivery_address')).toBe(false);
     });
 
     /**

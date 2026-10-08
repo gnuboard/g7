@@ -116,6 +116,8 @@ effects:
   - partial_cancel_preview_reaches_recalculation_path_not_full_cancel_shortcut # 잔여 옵션이 있어야 재계산 경로 진입(전량취소 조기반환 아님)
   - recalculation_never_reads_coupon_usage_state_in_snapshot_mode # 스냅샷 모드 재계산은 쿠폰 사용 상태를 읽지 않음
   - coupon_restore_on_min_amount_shortfall_unchanged_after_reset_removal # 최소주문금액 미달 쿠폰 복원 동작 불변(회귀 가드)
+  - partial_cancel_after_a_prior_refund_compares_against_the_amount_still_paid # 일부 환불 뒤 「취소 전 실결제」·보조 통화는 남은 결제액(S3-D14)
+  - zero_refund_closed_row_is_not_refunded_again # 0원으로 닫힌 행은 마지막 상품 취소에서 다시 환불되지 않는다(S3-D18)
 
   # 치환 입력이 없는 취소·반품·교환 미리보기는 변경 전과 바이트 단위로 같다 (#599 후속 등가성 픽스처)
   - cancel_preview_output_unchanged_with_empty_substitutions

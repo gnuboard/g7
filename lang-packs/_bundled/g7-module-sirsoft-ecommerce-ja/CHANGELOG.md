@@ -11,6 +11,10 @@
 - 결제 통화에서 쓸 수 없는 결제수단을 골랐을 때의 주문 거절 문구(`validation.order.payment_method_not_allowed_for_currency`)의 일본어 번역을 추가했습니다.
 - 대시보드 「오늘」 배지로 연 주문 목록에 보이는 사이트 시간대 기준 안내(`admin/order.filter.site_day_notice`)와, 주문 목록 날짜 기준 인자 검증 문구(`validation.orders.date_basis.in`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
+- 관리자 주문 상세 관리자 메모 저장 실패 안내(`admin/order.detail.handler.memo_save_failed` — 「管理者メモの保存に失敗しました。」)와 반품·교환 [완료 처리] 창의 사용 마일리지 반환 표기 2건(`admin/claim.complete.row_points`·`refund_now_desc_points`)의 일본어 번역을 추가했습니다.
+- 쇼핑몰 환경설정에서 저장하지 않은 변경이 있을 때 탭 이동 전에 묻는 확인 창 문구(`admin/settings.unsaved_tab_change.*` — 「保存していない変更があります」·[とどまる]·[移動])의 일본어 번역을 추가했습니다.
+- 상품 등록·수정 화면에서 선택지 조회 권한이 없을 때 칸 아래에 뜨는 안내 7건(`admin/product.selector_forbidden.*` — 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급, 예: 「配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。」)의 일본어 번역을 추가했습니다.
+- 교환 재발송지의 해외 주소 도시·주 칸 문구 — 관리자 대리 접수 창 입력 안내(`admin/order.claim_request.city`·`state`)와 검증 항목명(`validation.request_attributes.redelivery_city`·`redelivery_state`) — 의 일본어 번역(「都市」「州/道」)을 추가했습니다.
 - 부분 취소 주문을 되살리는 확인 창의 안내(`admin/order.manual_paid.restoration_hint_partial`)와, 사용 마일리지를 차감하지 않은 주문의 환불 확인 창 안내(`admin/claim.detail.refund_execute.points_not_deducted`)의 일본어 번역을 추가했습니다.
 - 관리자 주문 목록 주문 상태 필터의 「반품완료」 칩 이름(`admin/order.status.returned`)의 일본어 번역을 추가했습니다.
 - 관리자 회원 목록의 쇼핑몰 조건 필터(마일리지 잔액·배송지) 문구와 그 검증 항목명을 일본어로 번역했습니다(`admin.user_filter.*`·`validation.attributes.user_filter_*`).
@@ -184,6 +188,10 @@
 - 원화(KRW) 금액이 **엔화 단위(円)로 표시되던 것**을 바로잡았습니다. 일본어로 보는 화면에서
   6,000원이 「6,000円」으로 나와, 같은 화면에 함께 표시되는 실제 엔화 환산액(¥690)과 모순됐습니다.
   통화 단위는 보는 언어가 아니라 그 돈이 무엇인지로 정해지므로 「ウォン」으로 표기합니다.
+- 쿠폰 삭제 확인 창 안내(`admin/promotion_coupon` 의 `delete.message`)가 「쿠폰과 모든 게시글이 영구 삭제된다」고 잘못 옮겨져 있던 것을, 쿠폰과 그 쿠폰의 적용 상품·카테고리 지정이 함께 삭제된다는 원문대로 고쳤습니다.
+- 결제 직후 남는 활동 로그 「마일리지 적립 예정」(`activity_log.description.mileage_earn_scheduled`)의 일본어 번역을 추가했습니다 — 결제 때 「적립」으로 남던 기록이 아직 지급하지 않은 적립임을 밝힙니다.
+- 관리자 주문 상세 현금영수증 [발급취소] 확인 창 문구(`admin/order.detail.cash_receipt.cancel_confirm`)의 일본어 번역을 추가했습니다.
+- 화면이 계산한 원화 금액의 접두·접미(`currency.krw_prefix`·`krw_suffix`, 접미 「ウォン」)를 추가했습니다 — 종전에는 일본어 화면에서도 「5,000원」으로 보였습니다.
 
 ### Changed
 
@@ -191,6 +199,7 @@
 - 사용 중인 클레임 사유를 삭제하려 할 때의 안내를 「주문 취소에서 사용 중」에서 「이미 사용 중」으로 바꿨습니다 — 교환·반품·환불 신청에서 쓰인 사유에도 같은 안내가 나옵니다.
 - 사용 마일리지 반환 축의 문구를 「使用マイレージ返還」으로, 환불수단 마일리지를 「マイレージで返金」으로 바꿨습니다.
 - 마일리지 거래 유형 `expired` 의 일본어 표시를 「有効期限失効」에서 「失効」로 바꿨습니다.
+- 관리자 클레임 상세에서 상품을 수량으로 나눠 처리했을 때의 안내(`admin/claim.detail.items.bulk_split_notice`)를 원문 변경에 맞춰 다시 번역했습니다 — 남은 수량은 「신청 상태」 가 아니라 나누기 전 상태 그대로 남습니다.
 
 ### Removed
 

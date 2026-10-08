@@ -34,6 +34,10 @@
 `api` 정책의 `base_fee` 는 외부 API 호출이 실패했을 때 사용할 폴백 배송비입니다. 0 을 허용하면
 외부 API 장애가 그대로 무료배송이 되므로 0 을 거부합니다.
 
+배송방법이 `custom`(직접 배송)인 국가 설정은 `custom_shipping_name` 의 **사이트 기본 언어**(`app.site_locale`) 이름이
+필수입니다(422 키 `country_settings.{i}.custom_shipping_name.{사이트 기본 언어}`). 요청 언어와 무관합니다 — 다른 언어로
+보는 관리자도 같은 칸을 채웁니다.
+
 **구간(`ranges.tiers[]`) 규칙**
 
 구간의 종료값(`max`)은 **포함**입니다 — `max: 5` 인 구간은 값 5까지 그 구간입니다.

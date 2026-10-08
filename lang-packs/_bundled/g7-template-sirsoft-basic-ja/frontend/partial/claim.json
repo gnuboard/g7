@@ -39,6 +39,8 @@
     "zipcode": "郵便番号",
     "address1": "住所",
     "address2": "詳細住所",
+    "city": "都市",
+    "state": "州/道",
     "summary_title": "申請要約",
     "estimate_loading": "予想金額を計算しています。",
     "estimate_pending": "商品と理由を選択すると金額が計算されます。",

@@ -160,6 +160,20 @@ class KgInicisApiService
     }
 
     /**
+     * 상점이 「에스크로 사용」 을 켰는지 반환합니다.
+     *
+     * 켜져 있으면 결제창이 useescrow 를 실어 에스크로 MID 로 결제한다 — 승인·발급 콜백이 결제 행에 에스크로
+     * 표시(is_escrow)를 남기는 근거다(S4-D18). PC 결제창은 간편결제에도 useescrow 를 두고, 모바일 결제창만
+     * 간편결제에서 뺀다(S4-D21).
+     *
+     * @return bool 에스크로 사용이면 true
+     */
+    public function isEscrowEnabled(): bool
+    {
+        return (bool) ($this->settingsSnapshot['use_escrow'] ?? false);
+    }
+
+    /**
      * 현재 테스트 모드인지 반환합니다.
      *
      * @return bool 테스트 모드면 true
@@ -545,16 +559,17 @@ class KgInicisApiService
      *
      * @param  string  $tid  CBT 승인 TID
      * @param  int|null  $cancelPrice  null 이면 전체취소, 값이 있으면 부분취소
-     * @param  string  $msg  취소 사유
+     * @param  string|null  $msg  취소 사유 (null 이면 화면 언어의 기본 문구)
      * @param  int|null  $totalAmount  부분취소 전 취소 가능 총액
      * @return array PG 응답 데이터
      */
     public function refundCbtPayment(
         string $tid,
         ?int $cancelPrice = null,
-        string $msg = '관리자 취소',
+        ?string $msg = null,
         ?int $totalAmount = null,
     ): array {
+        $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'Refund' : 'PartialRefund';
         $paymethod = 'CBT';
         $timestamp = date('YmdHis');
@@ -753,7 +768,7 @@ class KgInicisApiService
      * @param  string  $tid  거래번호 (이니시스 TID)
      * @param  string  $payMethod  결제수단 (사용하지 않음, 하위 호환용)
      * @param  int|null  $cancelPrice  취소 금액 (null이면 전액 취소)
-     * @param  string  $msg  취소 사유
+     * @param  string|null  $msg  취소 사유 (null 이면 화면 언어의 기본 문구)
      * @param  int|null  $totalAmount  원결제 금액 (부분취소 시 confirmPrice 계산용)
      * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
      * @return array PG 응답 데이터
@@ -764,10 +779,11 @@ class KgInicisApiService
         string $tid,
         string $payMethod,
         ?int $cancelPrice = null,
-        string $msg = '관리자 취소',
+        ?string $msg = null,
         ?int $totalAmount = null,
         ?array $refundAccount = null,
     ): array {
+        $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'refund' : 'partialRefund';
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
@@ -964,7 +980,7 @@ class KgInicisApiService
             'clientIp' => $clientIp,
             'timestamp' => $timestamp,
             'originalTid' => $data['originalTid'],
-            'dcnfName' => $data['dcnfName'] ?? '관리자',
+            'dcnfName' => $data['dcnfName'] ?? __('sirsoft-pay_kginicis::messages.escrow.default_confirmer'),
             'hashData' => $hashData,
         ];
 
@@ -1066,13 +1082,14 @@ class KgInicisApiService
      * 메뉴얼: https://manual.inicis.com/rtpay/cancel.html
      *
      * @param  string  $receiptTid  현금영수증 발급 TID
-     * @param  string  $msg  취소 사유
+     * @param  string|null  $msg  취소 사유 (null 이면 화면 언어의 기본 문구)
      * @return array PG 응답 (resultCode '00' = 성공, cshrCancelNum = 현금영수증 취소승인번호)
      *
      * @throws \Exception API 호출 실패 시
      */
-    public function cancelCashReceipt(string $receiptTid, string $msg = '현금영수증 발행취소'): array
+    public function cancelCashReceipt(string $receiptTid, ?string $msg = null): array
     {
+        $msg ??= __('sirsoft-pay_kginicis::messages.cash_receipt.cancel_reason');
         $type = 'refund';
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';

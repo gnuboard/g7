@@ -32,6 +32,7 @@
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateTossSettingsListener` | `validateBeforeSave` | 10 |
+| `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
@@ -103,6 +104,7 @@
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RegisterTossPaymentMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTossPaymentMethodsListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
+| `ValidateRedirectUrlSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateRedirectUrlSettingsListener.php` |
 | `ValidateTossSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateTossSettingsListener.php` |
 | `VbankCloseListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/VbankCloseListener.php` |
 <!-- @generated:listeners END -->

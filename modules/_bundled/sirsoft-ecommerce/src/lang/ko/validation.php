@@ -2295,6 +2295,8 @@ return [
         'redelivery_zipcode' => '우편번호',
         'redelivery_address1' => '주소',
         'redelivery_address2' => '상세 주소',
+        'redelivery_city' => '도시',
+        'redelivery_state' => '주/도',
         'redelivery_country_code' => '배송 국가',
         'redelivery_changed_by_user' => '배송지 변경 여부',
         'full_cancel' => '전체 취소 여부',

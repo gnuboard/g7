@@ -2295,6 +2295,8 @@ return [
         'redelivery_zipcode' => 'zip code',
         'redelivery_address1' => 'address',
         'redelivery_address2' => 'address details',
+        'redelivery_city' => 'city',
+        'redelivery_state' => 'state / province',
         'redelivery_country_code' => 'shipping country',
         'redelivery_changed_by_user' => 'address changed',
         'full_cancel' => 'full cancellation',

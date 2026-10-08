@@ -420,7 +420,7 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
     /**
      * 일치하는 nonce 를 실은 콜백은 종전대로 계좌를 저장한다.
      *
-     * @effects mobile_vbank_callback_with_matching_state_persists_account
+     * @effects mobile_vbank_callback_with_matching_state_persists_account, kcp_vbank_issue_marks_payment_waiting_deposit
      *
      * @return void 반환값 없음
      */
@@ -440,5 +440,7 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
         $this->assertSame('정상은행', $payment->vbank_name);
         $this->assertSame('NHN KCP', $payment->vbank_holder);
         $this->assertSame('mobile', $payment->payment_device);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame('nhnkcp', $payment->pg_provider);
     }
 }

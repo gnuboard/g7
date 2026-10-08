@@ -141,7 +141,7 @@ class ClaimProgressStepsTest extends ModuleTestCase
     }
 
     /**
-     * 선교환의 진행단계는 회수 칸 없이 발송 단계로 가고, 헌 물건의 회수는 「회수」 줄이 행 수로 센다 —
+     * 선교환의 진행단계는 회수 칸 없이 발송 단계로 가고, 헌 물건의 회수는 「회수」 줄이 센다(이 시험은 1개씩 갈라 행 수와 수량이 같다 — 수량 기준은 아래 시험) —
      * 대기·회수중·도착이 섞이면 줄 상태는 가장 뒤처진 대기다. 일반 교환에는 회수 줄이 없다.
      *
      * @scenario exchange_mode=advance, stage=redelivery
@@ -188,6 +188,50 @@ class ClaimProgressStepsTest extends ModuleTestCase
         $this->assertNotContains('collecting', $values);
         $this->assertNotContains('collected', $values);
         $this->assertSame('redelivering', collect(ClaimProgressSteps::for($fresh))->firstWhere('state', 'current')['value']);
+    }
+
+    /**
+     * 회수 줄은 **수량**으로 센다 — 화면 문구가 「3개 중 2개 도착」처럼 개수를 말하기 때문이다.
+     * 한 행에 담긴 3개 중 2개를 한 송장으로 보내면 행은 둘(2개·1개)로 갈리는데, 행 수로 세면
+     * 처음엔 「1개 중 0개」, 도착 뒤엔 「2개 중 1개」가 되어 실제 개수와 어긋난다.
+     *
+     * 회귀 배경 (S1-D15, 2026-10-07 실측): 3개 교환 → 2개 회수 도착 → 「2개 중 1개 도착」.
+     *
+     * @scenario exchange_mode=advance, stage=redelivery
+     *
+     * @effects advance_collection_lane_counts_quantities_not_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_advance_collection_lane_counts_quantities_not_rows(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.advance_exchange_enabled', true);
+        $service = app(OrderExchangeService::class);
+        $order = $this->deliveredClaimOrder(quantity: 3, exchangeFee: 0);
+        $exchange = $service->requestExchange($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 3]],
+            'reason_code' => 'size_mismatch',
+        ]);
+
+        $exchange = $service->setExchangeMode($exchange->fresh(), ExchangeModeEnum::ADVANCE);
+        $exchange = $service->transition($exchange->fresh(), ExchangeStatusEnum::APPROVED);
+        $exchange = $service->transition($exchange, ExchangeStatusEnum::REDELIVERING, $this->claimTrackingFor(ExchangeStatusEnum::REDELIVERING));
+
+        $before = ClaimProgressSteps::collectionLane($exchange->fresh(['exchangeOptions']));
+        $this->assertSame(3, $before['total'], '한 행에 담긴 3개를 1개로 셌습니다.');
+        $this->assertSame(3, $before['pending']);
+
+        $carrier = $this->testClaimCarrier();
+        $itemId = (int) $exchange->fresh('exchangeOptions')->exchangeOptions->first()->id;
+        $service->writeItemTracking($exchange->fresh(), ClaimTrackingDirectionEnum::COLLECTION, [['id' => $itemId, 'quantity' => 2]], $carrier->id, 'LANE-Q');
+        $service->deliverTracking($exchange->fresh(), ClaimTrackingDirectionEnum::COLLECTION, $carrier->id, 'LANE-Q');
+
+        $lane = ClaimProgressSteps::collectionLane($exchange->fresh(['exchangeOptions']));
+
+        $this->assertSame(3, $lane['total'], '행 수(2)로 셌습니다.');
+        $this->assertSame(2, $lane['collected']);
+        $this->assertSame(1, $lane['pending']);
+        $this->assertSame('pending', $lane['state']);
     }
 
     /**

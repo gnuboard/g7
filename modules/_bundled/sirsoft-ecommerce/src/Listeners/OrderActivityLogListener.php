@@ -930,9 +930,12 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleMileageEarn(float $earnedPoints, Order $order): void
     {
+        // 결제 완료 시점의 훅은 **예정**이다 — 마일리지는 적립 시점 설정(구매확정 등)에 맞춰 적립 배치가 지급하고,
+        // 그때 `UserMileageService` 가 「마일리지 적립」을 따로 남긴다. 이 줄을 「적립」이라 쓰면 원장에 적립 행이
+        // 없는 주문도 적립된 것처럼 읽힌다(S3-D21).
         $this->logActivity('mileage.earn', [
             'loggable' => $order,
-            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_scheduled',
             'description_params' => [
                 'order_number' => $order->order_number,
                 'amount' => $this->formatOrderAmount($order, (float) $earnedPoints),

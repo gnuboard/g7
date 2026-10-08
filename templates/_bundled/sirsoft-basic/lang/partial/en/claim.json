@@ -40,6 +40,8 @@
     "zipcode": "Postal code",
     "address1": "Address",
     "address2": "Address line 2",
+    "city": "City",
+    "state": "State / Province",
     "summary_title": "Summary",
     "estimate_loading": "Calculating the estimate...",
     "estimate_pending": "Select items and a reason to see the estimate.",

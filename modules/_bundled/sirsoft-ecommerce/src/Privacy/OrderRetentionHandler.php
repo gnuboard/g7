@@ -145,7 +145,10 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 $status = $order->order_status instanceof OrderStatusEnum
                     ? $order->order_status
                     : OrderStatusEnum::tryFrom((string) $order->order_status);
-                $closedAt = $order->confirmed_at ?? $order->cancelled_at ?? $order->updated_at;
+                // 전량 반품으로 끝난 주문은 마지막 반품 완료 시각이 종결 시각이다(대상 판정과 같은 기준) — 수정 시각을
+                // 바탕에 두면 반품 완료 뒤 운영자 메모 같은 수정이 종결일을 늦춰 보인다. 완료 반품이 없는 옛 주문만 수정 시각.
+                $returnedWithCompletion = $status === OrderStatusEnum::RETURNED && $order->last_return_completed_at !== null;
+                $closedAt = $order->confirmed_at ?? $order->cancelled_at ?? ($returnedWithCompletion ? null : $order->updated_at);
 
                 foreach (['last_refunded_at', 'last_exchange_completed_at', 'last_return_completed_at'] as $column) {
                     $completedAt = $order->{$column} ? Carbon::parse($order->{$column}) : null;

@@ -1,0 +1,26 @@
+feature: 관리자 페이지 전환 로딩 막대
+
+description: |
+  관리자 페이지 전환 로딩 막대
+
+  수정 이력: 이커머스 전수 실측 S5-D17 형제(검증 지적) (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11]
+  # c01: isPending이 false일 때 아무것도 렌더링하지 않아야 한다
+  # c02: isPending이 true일 때 로딩 바를 렌더링해야 한다
+  # c03: 로딩 막대의 읽기 이름은 화면 언어를 따른다(한국어 고정 글자가 아니다)
+  # c04: 움직이는 띠가 다크 모드 색을 함께 갖는다
+  # c05: TransitionManager를 구독해야 한다
+  # c06: 언마운트 시 구독을 해제해야 한다
+  # c07: TransitionManager가 없을 때 경고를 출력해야 한다
+  # c08: isPending 상태 변경 시 UI가 업데이트되어야 한다
+  # c09: custom className을 적용할 수 있어야 한다
+  # c10: custom style을 적용할 수 있어야 한다
+  # c11: fixed positioning과 z-index를 적용해야 한다
+
+effects:
+  - page_transition_indicator_behaves
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/PageTransitionIndicator.test.tsx

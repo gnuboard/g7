@@ -213,6 +213,64 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 운영자에게 가는 「고객이 ~을(를) 신청했습니다」 는 **고객이 낸 신청**에만 나간다.
+     *
+     * 운영자가 직권 접수한 반품·교환, 반품·교환 완료가 만든 환불, 운영자가 대리 접수한 환불은 같은
+     * `notify_requested` 훅을 지나지만 고객 신청이 아니다 — 그대로 보내면 운영자 전원이 사실과 다른
+     * 알림을 받는다(2026-10-07 실측: 반품 완료로 생긴 환불 1건에 운영자 21명 × 2채널). 고객 수신 알림은
+     * 그대로 나간다.
+     *
+     * @effects staff_requested_alert_only_for_customer_requests
+     *
+     * @return void 반환값 없음
+     */
+    public function test_staff_requested_alert_is_skipped_unless_the_customer_filed_it(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $customerReturn = $this->requestedReturn($order);
+
+        $this->assertEmpty(
+            $this->listener->extractData($this->emptyResult(), 'return_requested_admin', [$customerReturn->fresh()])['context']['skip'] ?? null,
+            '고객이 낸 반품은 운영자에게 알린다.'
+        );
+
+        $staffReturn = $this->requestedReturn($this->deliveredClaimOrder());
+        $staffReturn->forceFill(['requested_by_admin' => $order->user_id])->save();
+
+        $this->assertTrue(
+            (bool) ($this->listener->extractData($this->emptyResult(), 'return_requested_admin', [$staffReturn->fresh()])['context']['skip'] ?? false),
+            '운영자가 직권 접수한 반품을 「고객이 신청」 으로 알리면 안 된다.'
+        );
+        $this->assertEmpty(
+            $this->listener->extractData($this->emptyResult(), 'return_requested', [$staffReturn->fresh()])['context']['skip'] ?? null,
+            '고객 수신 알림은 직권 접수여도 나간다.'
+        );
+
+        $refund = fn (RefundSourceTypeEnum $source, string $number) => OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => $source,
+            'refund_source_id' => $source === RefundSourceTypeEnum::DIRECT ? null : 1,
+            'refund_number' => $number,
+            'refund_status' => RefundStatusEnum::REQUESTED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 1000,
+            'refund_points_amount' => 0,
+        ])->fresh();
+
+        $this->assertEmpty(
+            $this->listener->extractData($this->emptyResult(), 'refund_requested_admin', [$refund(RefundSourceTypeEnum::DIRECT, 'RF-DIRECT-1')])['context']['skip'] ?? null,
+            '고객이 직접 낸 환불 신청은 운영자에게 알린다.'
+        );
+
+        foreach ([RefundSourceTypeEnum::RETURN, RefundSourceTypeEnum::EXCHANGE, RefundSourceTypeEnum::ADMIN] as $source) {
+            $this->assertTrue(
+                (bool) ($this->listener->extractData($this->emptyResult(), 'refund_requested_admin', [$refund($source, 'RF-'.strtoupper($source->value).'-1')])['context']['skip'] ?? false),
+                $source->value.' 출처 환불은 고객 신청이 아니다.'
+            );
+        }
+    }
+
+    /**
      * 추출 단계의 기본 링크는 **언제나 고객 링크**여야 한다.
      *
      * 관리자 주소는 수신자가 정해진 뒤 personalize 가 올린다. 추출 단계에서 유형 이름으로

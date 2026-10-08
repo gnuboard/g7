@@ -1,5 +1,5 @@
 {
-    "comment": "주문 완료 화면에 KCP 매출전표 보기를 덧붙이는 조각",
+    "comment": "주문 완료 화면에 KCP 매출전표 보기를 덧붙이는 조각\n     e2e:allow S4-D13 — 자동 취소 경고에 입금 전 조건만 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
     "target_layout": "shop/order_complete",
     "injections": [
         {
@@ -134,6 +134,7 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "if": "{{!orderData?.data?.payment?.paid_at}}",
                             "props": {
                                 "className": "text-xs text-amber-600 dark:text-amber-400"
                             },

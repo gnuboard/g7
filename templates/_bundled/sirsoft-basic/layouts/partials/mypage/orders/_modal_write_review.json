@@ -38,11 +38,31 @@
                                 {
                                     "type": "basic",
                                     "name": "Img",
+                                    "if": "{{$parent._local.reviewTarget?.thumbnail_url}}",
                                     "props": {
                                         "src": "{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}",
                                         "alt": "{{$parent._local.reviewTarget?.product_name ?? ''}}",
                                         "className": "w-full h-full object-cover"
                                     }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!$parent._local.reviewTarget?.thumbnail_url}}",
+                                    "props": {
+                                        "className": "w-full h-full flex items-center justify-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "image",
+                                                "size": "lg",
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         },

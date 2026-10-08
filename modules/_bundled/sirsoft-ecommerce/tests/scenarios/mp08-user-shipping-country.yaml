@@ -42,6 +42,8 @@ effects:
   - not_shippable_blocks_purchase                 # D1 — 미지원 상품 구매 차단(카트/체크아웃/주문생성)
   - mixed_cart_blocks_all                         # D1 — 혼재 시 주문 전체 차단(부분주문 없음)
   - intl_address_persisted_on_order               # B2 — 해외 주소 필드 OrderAddress 보존
+  - order_priced_by_submitted_country             # 주문 생성은 제출한 배송지(국가·우편번호)로 임시 주문을 맞춘 뒤 재계산(직접 입력 해외 주소 422 방지)
+  - foreign_address_domestic_amount_rejected      # 해외 주소 + 국내 배송비 금액 제출은 금액 불일치로 차단
   - addressbook_intl_mapping_on_select            # B3 — 주소록 해외주소 선택 시 체크아웃 폼 intl_* 매핑
   - snapshot_preserves_shipping_country           # B5 — 취소/환불 스냅샷에 배송국가/우편번호 보존
   - notification_includes_shipping_country        # B6 — 주문 알림에 배송지(국가) 변수 노출

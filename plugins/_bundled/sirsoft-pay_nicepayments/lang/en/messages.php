@@ -42,4 +42,7 @@ return [
         'refund_bank_cd' => 'refund bank code',
         'refund_acct_nm' => 'refund account holder',
     ],
+    'settings' => [
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
 ];

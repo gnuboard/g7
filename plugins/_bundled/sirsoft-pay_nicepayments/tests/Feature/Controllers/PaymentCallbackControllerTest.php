@@ -995,6 +995,93 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('BuyerEmail', $meta['pg_raw_response']);
         $this->assertArrayNotHasKey('BuyerTel', $meta['pg_raw_response']);
         $this->assertArrayNotHasKey('NewSensitiveField', $meta['pg_raw_response']);
+
+        // VbankExpDate·VbankExpTime 은 한국 시각이다 — 저장은 UTC(앱 시간대)로 환산(20260521 235959 KST = 14:59:59 UTC).
+        $this->assertSame('2026-05-21 14:59:59', $payment->vbank_due_at->copy()->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * 가상계좌 계좌가 발급되면 입금 전이라도 주문한 장바구니 항목을 정리한다 — 재고 차감이 입금 완료 시점이라
+     * 장바구니도 입금 때까지 남아, 주문을 마친 고객의 장바구니에 같은 상품이 그대로 보였다.
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_clears_ordered_cart_items(): void
+    {
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+        $this->mockPluginSettings();
+        $product = \Modules\Sirsoft\Ecommerce\Models\Product::factory()->create();
+        $option = \Modules\Sirsoft\Ecommerce\Models\ProductOption::factory()->create(['product_id' => $product->id]);
+        $cart = \Modules\Sirsoft\Ecommerce\Models\Cart::create([
+            'user_id' => \App\Models\User::factory()->create()->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], ['cart_items' => [['cart_id' => $cart->id, 'quantity' => 1]]]),
+        ]);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(array_merge(
+                $this->makeAuthorizeResponse('VBANK_ISSUE_CART', $order->order_number, 30000, '4100'),
+                [
+                    'PayMethod' => 'VBANK',
+                    'VbankBankCode' => '004',
+                    'VbankBankName' => '국민은행',
+                    'VbankNum' => '1234567891',
+                    'VbankExpDate' => '20260521',
+                    'VbankExpTime' => '235959',
+                ]
+            ), 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $this->makeCallbackParams($order->order_number, 30000, ['PayMethod' => 'VBANK']))
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
+    }
+
+    /**
+     * 입금 기한 형식이 깨진 발급 응답도 발급은 기록하고 기한만 비운다(예외로 발급 처리가 끊기지 않는다).
+     *
+     * KCP·KG 는 기한 파싱을 예외 처리로 감싸는데 나이스만 감싸지 않아, 형식이 다른 기한이 오면 발급 기록 전체가 실패했다.
+     *
+     * @effects vbank_issue_tolerates_malformed_due_date
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_with_malformed_due_date_still_records_issue(): void
+    {
+        $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
+        $this->mockPluginSettings();
+
+        $params = $this->makeCallbackParams($order->order_number, 30000, [
+            'PayMethod' => 'VBANK',
+        ]);
+
+        Http::fake([
+            'pay.nicepay.co.kr/v1/authorize' => Http::response(array_merge(
+                $this->makeAuthorizeResponse('VBANK_ISSUE_BAD_DUE', $order->order_number, 30000, '4100'),
+                [
+                    'PayMethod' => 'VBANK',
+                    'VbankBankCode' => '004',
+                    'VbankBankName' => '국민은행',
+                    'VbankNum' => '1234567890',
+                    'VbankExpDate' => '2026-05-21',
+                    'VbankExpTime' => '23:59',
+                ]
+            ), 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_nicepayments/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $payment = $order->payment->fresh();
+        $this->assertSame('1234567890', $payment->vbank_number);
+        $this->assertNull($payment->vbank_due_at);
     }
 
     /**

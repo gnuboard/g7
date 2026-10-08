@@ -10,7 +10,7 @@ description: |
 
   ① **상태 줄은 발송 단계만 쓴다**(§3-3). 승인 → 발송준비중·발송중·발송도착 → 완료. 회수 3단계는 선교환
      전이표에 없고, 헌 물건의 회수 진행은 상품 행(회수 송장·도착 시각·미회수 표시)이 따로 말한다.
-     진행단계 카드는 발송 줄 아래 「회수」 줄을 행 수로 센다.
+     진행단계 카드는 발송 줄 아래 「회수」 줄을 수량으로 센다(행이 갈려도 개수 그대로 — S1-D15).
 
   ② **완료는 두 축을 모두 본다**(§3-4). 교환품이 발송중·발송도착이고 헌 물건이 오는 중이거나 도착했어야
      한다. 헌 물건이 출발하지 않은 행은 「미회수로 완료」(D3 — 사유 필수, 재고 불변)로만 끝낸다.
@@ -51,6 +51,7 @@ effects:
   - exchange_status_advance_transition_table_is_pinned
   - exchange_status_advance_progress_sequence_skips_collection
   - advance_progress_draws_a_collection_lane_by_row_count
+  - advance_collection_lane_counts_quantities_not_rows   # 한 행이 송장마다 갈려도 수량으로 센다 (S1-D15)
   - header_arrival_stamp_waits_for_every_living_item
   # 완료 · 미회수 (§3-4 · D3)
   - advance_completion_needs_both_axes

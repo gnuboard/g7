@@ -1,3 +1,4 @@
+// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
@@ -43,6 +44,60 @@ interface PgPaymentData {
     customer_email?: string;
     customer_phone?: string;
     goods_cl?: string; // 휴대폰결제 상품 유형: '0'=디지털컨텐츠, '1'=실물
+    /**
+     * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
+     * (`ClaimPaymentRedirect::cancelled` — 회원/비회원 경로·`?claim_payment=cancelled` 포함).
+     */
+    claim_cancel_return_url?: string;
+    /**
+     * 가상계좌 주문의 입금 기한(쇼핑몰 자동취소 기한 — ISO 8601, 한국 시각). 결제창에 계좌 만료 시각으로 넘긴다.
+     * 없으면 나이스 기본 기한으로 계좌가 열린다.
+     */
+    vbank_due_at?: string;
+}
+
+/**
+ * 주문 입금 기한(ISO 8601, 한국 시각)을 나이스 `VbankExpDate` 형식(YYYYMMDDHHmm)으로 바꿉니다.
+ *
+ * 서버가 한국 시각(+09:00)으로 싣으므로 글자 자리만 잘라 쓴다 — 브라우저 시간대로 다시 환산하지 않는다.
+ *
+ * @param dueAt 주문 입금 기한
+ * @returns YYYYMMDDHHmm, 형식이 맞지 않으면 null
+ */
+function toVbankExpDate(dueAt: string | undefined): string | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dueAt ?? '');
+    return m ? `${m[1]}${m[2]}${m[3]}${m[4]}${m[5]}` : null;
+}
+
+/**
+ * 나이스 가상계좌 결제창의 입금자명(예금주명) 한도 — EUC-KR 10바이트(한글 5자).
+ *
+ * 가상계좌 결제창은 구매자명(BuyerName)을 입금자명 기본값으로 쓰고, 한도를 넘으면 「10bytes 이하」로 거절한다.
+ */
+const VBANK_DEPOSITOR_MAX_BYTES = 10;
+
+/**
+ * 문자열을 EUC-KR 바이트 한도 안으로 글자 단위로 자릅니다(한글 1자 = 2바이트, ASCII = 1바이트).
+ *
+ * 글자 중간에서 자르지 않는다 — 다음 글자가 한도를 넘으면 그 앞에서 멈춘다.
+ *
+ * @param value 원래 문자열
+ * @param maxBytes 바이트 한도
+ * @returns 한도 안의 앞부분
+ */
+function cutToEucKrBytes(value: string, maxBytes: number): string {
+    let bytes = 0;
+    let result = '';
+    for (const ch of value) {
+        const size = ch.charCodeAt(0) <= 0x7f ? 1 : 2;
+        if (bytes + size > maxBytes) {
+            break;
+        }
+        bytes += size;
+        result += ch;
+    }
+
+    return result;
 }
 
 interface RequestPaymentParams {
@@ -344,6 +399,19 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             MallReserved1: '',
         };
 
+        // 가상계좌 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한). 넘기지 않으면 나이스 기본 기한으로 열리고
+        // 콜백이 그 값(VbankExpDate)으로 주문 기한을 덮어써 주문서 안내와 어긋난다.
+        const vbankExpDate = payMethod === 'VBANK' ? toVbankExpDate(pgPaymentData.vbank_due_at) : null;
+        if (vbankExpDate) {
+            formFields.VbankExpDate = vbankExpDate;
+        }
+
+        // 가상계좌 결제창은 구매자명을 입금자명 기본값으로 쓰고 EUC-KR 10바이트를 넘으면 결제를 거절한다 —
+        // 한글 6자 이상 주문자가 가상계좌로 결제할 수 없었다. 다른 결제수단은 원래 이름을 그대로 넘긴다.
+        if (payMethod === 'VBANK') {
+            formFields.BuyerName = cutToEucKrBytes(formFields.BuyerName, VBANK_DEPOSITOR_MAX_BYTES);
+        }
+
         // 휴대폰결제: 상품 유형 덮어쓰기 (0:디지털컨텐츠, 1:실물)
         if (payMethod === 'CELLPHONE') {
             formFields.GoodsCl = pgPaymentData.goods_cl ?? '1';
@@ -461,6 +529,16 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             if (form.parentNode) form.parentNode.removeChild(form);
             (window as unknown as Record<string, unknown>)['__sirsoftNicepayPaymentInProgress'] = false;
             G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
+
+            // 클레임 추가결제 — 서버가 준 신청서 상세(`?claim_payment=cancelled`)로 돌아간다.
+            // 머물면 신청서 화면의 [결제하기]가 「결제 진행 중…」에 묶이고 취소 안내도 없다
+            // (신청서 화면의 진행 표시는 결제창이 열린 동안 일부러 끄지 않는다 — 돌아온 화면이 다시 읽는다).
+            const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
+            if (typeof claimReturnUrl === 'string' && claimReturnUrl !== '') {
+                window.location.href = claimReturnUrl;
+                return;
+            }
+
             if (resultMsg) G7Core?.toast?.error?.(resultMsg);
         };
 

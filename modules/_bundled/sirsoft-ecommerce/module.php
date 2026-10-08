@@ -51,6 +51,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
+use Modules\Sirsoft\Ecommerce\Listeners\SystemActorContextListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
@@ -254,7 +255,9 @@ class Module extends AbstractModule
                 // 내용·환불 계좌를 보거나 환불을 실행할 수 있으면 주문 스코프가 우회된다. 판정 대상
                 // 모델은 신청서가 아니라 **그 주문**이다 — `{order}` 로 묶인 라우트는 미들웨어가,
                 // `{id}` 로 신청서를 받는 라우트는 `ClaimScopeGuard` 가, 목록은 저장소가
-                // (`FiltersAdminClaimList::applyAdminClaimScope()`) 같은 판정을 한다.
+                // (`FiltersAdminClaimList::applyAdminClaimScope()`) 같은 판정을 한다. 판정은 클레임 권한
+                // 범위와 그 운영자의 주문 조회(`orders.read`) 범위의 교집합이다 — 클레임 권한을 「전체」 로
+                // 두어도 주문 조회 범위를 넘지 못한다(`Support\ClaimScopePermissions`).
                 [
                     'identifier' => 'claims',
                     'resource_route_key' => 'order',
@@ -3712,6 +3715,7 @@ class Module extends AbstractModule
             UserShippingCountryInfoListener::class,
             UserPreferenceCoreSaveListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
+            SystemActorContextListener::class,
             AssignDefaultShippingCountryOnRegisterListener::class,
             UserMileageCleanupListener::class,
             EcommerceNotificationDataListener::class,

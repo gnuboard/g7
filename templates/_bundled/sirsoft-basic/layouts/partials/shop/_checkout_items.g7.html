@@ -21,7 +21,10 @@
           <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="flex-shrink-0">
             <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
               <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"/>
-              <img src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
+              <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
+              <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+                <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+              </div>
             </div>
           </a>
           <!-- 상품 정보 -->

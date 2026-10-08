@@ -52,7 +52,7 @@
                 </on>
               </multilingual-tag-input>
             </div>
-            <button data-if="{{((_local.ui.optionInputs ?? []).length) > 1 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+            <button data-if="{{((_local.ui.optionInputs ?? []).length) > 1 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label="$t:common.delete">
               <on type="click">
                 <!-- 옵션 축 빼기 — 축이 하나뿐이면 뺄 수 없다 -->
                 <action handler="sirsoft-ecommerce.removeOptionInput" index="{{optIdx}}"/>
@@ -217,7 +217,7 @@
                     </toggle>
                   </td>
                   <td class="px-3 py-2 text-center">
-                    <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400">
+                    <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400" aria-label="$t:common.delete">
                       <on type="click">
                         <!-- 이 옵션 줄 지우기 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.deleteOption" rowIndex="{{optIdx}}"/>
@@ -259,7 +259,7 @@
                   </on>
                 </toggle>
               </div>
-              <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-red-500 dark:text-red-400">
+              <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-red-500 dark:text-red-400" aria-label="$t:common.delete">
                 <on type="click">
                   <!-- 이 옵션 줄 지우기 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                   <action handler="sirsoft-ecommerce.deleteOption" index="{{optIdx}}"/>
@@ -411,7 +411,7 @@
                     </toggle>
                     <label class="text-label">$t:sirsoft-ecommerce.admin.product.options.required</label>
                   </div>
-                  <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                  <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:common.delete">
                     <on type="click">
                       <!-- 추가옵션 그룹 통째로 빼기 -->
                       <action handler="sirsoft-ecommerce.removeAdditionalOption" index="{{addIdx}}"/>
@@ -484,7 +484,7 @@
                       <label class="text-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_allow_custom_text</label>
                     </div>
                     <!-- 선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
-                    <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6">
+                    <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6" aria-label="$t:common.delete">
                       <on type="click">
                         <!-- 선택지 하나 빼기 — 그룹은 최소 하나를 남긴다 -->
                         <action handler="sirsoft-ecommerce.removeAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}"/>

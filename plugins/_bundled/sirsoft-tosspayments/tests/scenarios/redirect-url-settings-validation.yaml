@@ -1,0 +1,25 @@
+feature: 결제 후 이동 주소 설정 검증 (sirsoft-tosspayments)
+
+description: |
+  결제 플러그인 설정의 「결제 후 이동 주소」(성공·실패)는 `{shopBase}`·`/`(뒤에 / 아님)·`http(s)://` 로 시작하고 공백이 없어야 한다.
+  비우면 기본값을 쓴다. 다른 도메인으로 새는 `//host` 와 `javascript:` 는 받지 않는다.
+
+  수정 이력 (이커머스 전수 실측 S5 — S5-D26):
+    - 스키마가 type string 뿐이라 「not a url」 같은 글자가 그대로 저장돼, 결제를 마친 구매자가 상대 경로로 보내져
+      깨진 화면을 만났다. 코어 필터 `core.plugin_settings.update_validation_rules` 에 리스너를 달아 형식을 검증한다.
+
+axes:
+  case: [invalid, valid, message, other_plugin, registration]
+
+effects:
+  - invalid_redirect_url_rejected   # 잘못된 주소는 두 칸 모두 422
+  - valid_redirect_url_accepted     # 형식에 맞는 주소·빈 값은 통과
+  - error_message_translated        # 오류 문구가 번역 키가 아닌 문장
+  - other_plugin_rules_untouched    # 다른 플러그인 규칙 불변
+  - listener_registered             # 필터 구독 + 플러그인 등록
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/ValidateRedirectUrlSettingsListenerTest.php
+
+validation:
+  browser_check: 플러그인 설정 화면에서 이동 주소에 「not a url」·「//evil.example.com/x」 저장 → 422·칸별 오류, 원래 주소 저장 → 200 (S5 V8 NP-80 재실측)

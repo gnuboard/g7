@@ -986,7 +986,7 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
      *
      * 결제행 축은 결제가 실제로 끝난 상태(`paid`·`partial_cancelled`)일 때만 본다 — 결제행은 생성될 때부터
      * `paid_amount_base` 에 결제예정금액이 들어 있어, 상태를 보지 않으면 결제금액 기록을 끈 수동 결제완료
-     * 주문(Q13)을 「현금 있음」으로 오판한다.
+     * 주문(Q13)을 「현금 있음」으로 오판한다. 결제 전 주문도 결제행에 입금이 기록돼 있으면 현금이 있다(S3-D7).
      *
      * @return void 반환값 없음
      *
@@ -997,9 +997,14 @@ class OrderRefundRequestServiceTest extends ModuleTestCase
         $order = $this->paidClaimOrder();
         $payment = $order->payment;
 
-        // ① 결제 전 주문 → 돌려줄 돈이 없다
+        // ① 결제 전 주문(결제행 입금 대기) → 돌려줄 돈이 없다
         $order->forceFill(['order_status' => OrderStatusEnum::PENDING_PAYMENT])->save();
+        $payment->forceFill(['payment_status' => PaymentStatusEnum::READY])->save();
         $this->assertFalse($this->service->hasCashToReturn($order->fresh('payment')));
+
+        // ①-b 결제 전 주문인데 결제행에 입금이 기록됨([입금확인] 「기록만」) → 있다 (S3-D7)
+        $payment->forceFill(['payment_status' => PaymentStatusEnum::PAID])->save();
+        $this->assertTrue($this->service->hasCashToReturn($order->fresh('payment')));
 
         // ② 헤더 0 + 결제행 0 → 없다 (마일리지 전액 결제)
         $order->forceFill(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE, 'total_paid_amount' => 0, 'total_refunded_amount' => 0])->save();

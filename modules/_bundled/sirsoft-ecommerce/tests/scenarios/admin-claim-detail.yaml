@@ -92,6 +92,7 @@ effects:
   - claim_shipping_redelivery_marked_not_applicable
   - claim_redelivery_two_badges_distinct
   - claim_redelivery_changed_by_user_badge_alone
+  - claim_redelivery_address_shows_the_international_city_and_state # 해외 재발송지 도시·주 (S2-D8)
   - claim_redelivery_address_differs_badge_alone
   - claim_carrier_options_come_from_detail_response
   - claim_collection_tracking_saved
@@ -144,6 +145,7 @@ effects:
   # 분할 결과 안내("2개 승인, 1개 신청 상태로 남음")의 유일한 케이스 — 대장 밖에 두면
   # 지워도 커버리지 게이트가 아무 말을 하지 않는다.
   - claim_item_split_reports_remainder
+  - claim_item_split_notice_keeps_the_current_state_wording   # 분할 잔여는 분할 전 상태에 남는다 — 「신청 상태」 로 적지 않음 (S1-D10)
   - claim_items_grid_renders_server_formatted_amounts
   - claim_items_grid_hides_zero_difference
   - claim_items_grid_marks_option_change_by_flag
@@ -205,6 +207,7 @@ effects:
   - claim_detail_change_actions_read_event_target_value   # change 액션이 이벤트 대상의 값을 읽는다
   - claim_detail_message_key_collection_is_not_empty      # 문구 키 모집단이 비면 red
   - claim_detail_transition_bar_state_key_round_trips     # 전이 바의 상태 키가 왕복한다
+  - claim_detail_transition_apply_shows_spinner           # 상태 변경 [일괄 적용] 저장 중 스피너 (2026-10-07 실측 — 잠기기만 하고 표시 없음)
   - claim_detail_uses_no_unknown_handler_alias            # 등록되지 않은 핸들러 별칭을 쓰지 않는다
   - claim_item_transition_network_error_shows_localized_message # 통신 실패도 번역된 문구로 알린다
   - claim_refund_execute_disabled_unless_approved         # [환불하기]는 승인된 건에서만 눌린다
@@ -240,6 +243,7 @@ effects:
   # 상세 액션 핸들러 (claimHandlers) — 진행 방식·대리 철회·신청 내용 수정·뒤늦은 재고 복구·미회수 완료·송장 미리 채움
   - claim_item_tracking_direction_prefills_common_waybill
   - claim_item_bulk_status_select_prefills_common_waybill
+  - claim_item_selection_change_recomputes_prefilled_waybill  # 상태를 고른 뒤 송장 없는 행을 더 고르면 자동 송장을 비운다 (2026-10-07 실측)
   - claim_exchange_mode_confirm_opens_with_context
   - claim_exchange_mode_puts_mode_and_refetches_detail
   - claim_exchange_mode_requires_claim_id

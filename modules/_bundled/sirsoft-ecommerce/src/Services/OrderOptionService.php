@@ -33,6 +33,25 @@ use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
  */
 class OrderOptionService
 {
+    /**
+     * 수량 분할로 복제하는 배송 행에 덮어쓸 금액 칸 (S3-D9).
+     *
+     * 복제본은 배송정책 승계(클레임 배송비 조회)가 목적이고 배송비는 원 행에만 남는다 — 금액까지 복제하면
+     * 나눠 보낸 주문의 고객 「배송 현황」에 같은 배송비가 줄마다 다시 보인다(주문 헤더 합계는 행 수로 세지 않는다).
+     */
+    private const SPLIT_SHIPPING_ZERO_AMOUNTS = [
+        'base_shipping_amount' => 0,
+        'extra_shipping_amount' => 0,
+        'total_shipping_amount' => 0,
+        'shipping_discount_amount' => 0,
+        'return_shipping_amount' => 0,
+        'mc_base_shipping_amount' => null,
+        'mc_extra_shipping_amount' => null,
+        'mc_total_shipping_amount' => null,
+        'mc_shipping_discount_amount' => null,
+        'mc_return_shipping_amount' => null,
+    ];
+
     /** 결제·입금 처리 서비스 (늦은 해석 — processing()) */
     private ?OrderProcessingService $orderProcessingService = null;
 
@@ -284,7 +303,7 @@ class OrderOptionService
                 $originShipping = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
 
                 if ($originShipping !== null) {
-                    $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id);
+                    $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, self::SPLIT_SHIPPING_ZERO_AMOUNTS);
                 }
 
                 // 원본 레코드 = 원본 - 분할 (잔여분)
@@ -447,7 +466,7 @@ class OrderOptionService
             $originShipping = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
 
             if ($originShipping !== null) {
-                $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, [
+                $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, self::SPLIT_SHIPPING_ZERO_AMOUNTS + [
                     'shipped_at' => $originShipping->shipped_at,
                     'estimated_arrival_at' => $originShipping->estimated_arrival_at,
                     'delivered_at' => $originShipping->delivered_at,
@@ -466,8 +485,8 @@ class OrderOptionService
      * 배송 관련 상태 전이 시 택배사·송장번호를 해당 옵션의 배송 레코드에 기록합니다.
      *
      * 관리자 주문상태 변경(일괄변경)에서 배송준비중/배송중/배송완료로 전이할 때 입력한
-     * 택배사·송장번호(metadata)를 옵션 단위 배송 레코드에 반영한다. 배송 상태가 아니거나
-     * metadata 에 배송정보가 없으면 아무 것도 하지 않는다(상태만 변경되는 경로 무영향).
+     * 택배사·송장번호(metadata)를 옵션 단위 배송 레코드에 반영한다. 배송 상태가 아니면 아무 것도
+     * 하지 않는다. metadata 에 배송정보가 없으면 송장은 그대로 두고 배송중·배송완료의 진행 상태·시각만 옮긴다.
      *
      * 배송 진행 상태·시각도 함께 옮긴다(`shippingRecordStateFor()`) — 회원 주문상세의
      * 「배송 현황」 카드가 이 레코드를 읽으므로, 송장만 쓰면 배송완료 주문이 고객에게
@@ -483,8 +502,16 @@ class OrderOptionService
         $carrierId = $metadata['carrier_id'] ?? null;
         $trackingNumber = $metadata['tracking_number'] ?? null;
 
-        // 배송정보가 전혀 없으면 기록할 것이 없음.
+        // 배송정보가 없어도 배송중·배송완료 전이는 배송 레코드의 진행 상태·시각을 옮긴다 — 송장은
+        // 배송중으로 보낼 때 한 번 넣고 배송완료는 상태만 바꾸는 것이 보통이라, 여기서 돌아서면
+        // 배송완료 주문의 레코드가 `shipped` 에 남아 고객 「배송 현황」이 배송중으로 보인다(S3-D5).
+        // 송장·택배사는 건드리지 않고(저장소가 빈 값을 거른다), 송장 기록 훅도 내지 않는다.
         if (($carrierId === null || $carrierId === '') && ($trackingNumber === null || $trackingNumber === '')) {
+            $state = $this->shippingRecordStateFor($newStatus);
+            if ($state !== []) {
+                $this->orderShippingRepository->updateProgressByOrderOptionId($option->id, $state);
+            }
+
             return;
         }
 
@@ -510,6 +537,13 @@ class OrderOptionService
                 $this->shippingRecordStateFor($newStatus)
             )
         );
+
+        // 송장은 첫 배송 행에만 쓰지만 진행 상태·시각은 그 상품의 배송 행 전부에 옮긴다 — 수량을 나눠 보낸
+        // 상품은 송장마다 행이 있어, 첫 행만 고치면 나머지 송장이 이전 단계에 남는다(S3-D5).
+        $state = $this->shippingRecordStateFor($newStatus);
+        if ($state !== []) {
+            $this->orderShippingRepository->updateProgressByOrderOptionId($option->id, $state);
+        }
 
         // 송장 기록·정정 전용 훅 (F11).
         //
@@ -544,10 +578,12 @@ class OrderOptionService
      * 시각은 **이미 찍혀 있으면 덮지 않는다** — 운영자가 배송완료를 취소했다가 다시 거는 등
      * 같은 단계를 두 번 지날 때 최초 발생 시각이 사라지지 않게 한다.
      *
+     * 주문 목록 일괄 변경(`OrderService::bulkUpdate()`)도 이 값을 쓴다 — 전이 → 배송 레코드 상태의 대응이 두 곳에 갈리지 않게 한다.
+     *
      * @param  OrderStatusEnum  $newStatus  전이 목표 상태
      * @return array<string, mixed> 배송 레코드에 덮어쓸 컬럼 (해당 없으면 빈 배열)
      */
-    private function shippingRecordStateFor(OrderStatusEnum $newStatus): array
+    public function shippingRecordStateFor(OrderStatusEnum $newStatus): array
     {
         return match ($newStatus) {
             OrderStatusEnum::SHIPPING => [

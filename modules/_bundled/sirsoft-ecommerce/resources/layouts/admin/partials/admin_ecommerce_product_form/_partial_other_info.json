@@ -178,11 +178,36 @@
                                     "id": "no_labels_available",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!(product_labels?.data?.data ?? []).length}}",
+                                    "if": "{{product_labels?.data?.unavailable !== true && !(product_labels?.data?.data ?? []).length}}",
                                     "props": {
                                         "className": "w-full text-center text-label-subtle py-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.no_available"
+                                },
+                                {
+                                    "comment": "라벨 조회 권한이 없어 선택지가 비었을 때는 「라벨 없음」 이 아니라 권한이 없다고 말한다",
+                                    "id": "label_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{product_labels?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "w-full flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.product_labels"
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -830,6 +855,31 @@
                                         "isSearchable": true,
                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                     }
+                                },
+                                {
+                                    "comment": "등급 목록을 받지 못했을 때(403)의 안내 — 다른 선택지 소스와 같은 처리다",
+                                    "id": "allowed_roles_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{roles?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.roles"
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "허용 역할 검증 에러 (구매대상제한 선택 시 역할 미선택 차단)",

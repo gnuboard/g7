@@ -44,6 +44,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\RecordsClaimTracking;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ReportsClaimRequestUpdate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 반품 클레임 서비스
@@ -425,7 +426,8 @@ class OrderReturnService
         // 위임해 게이트·타임스탬프·상품 상태 동기화·훅이 수동 승인과 같은 경로를 타게 한다.
         if ($this->shouldAutoApproveZeroCharge($orderReturn)) {
             try {
-                return $this->transition($orderReturn, ReturnStatusEnum::APPROVED);
+                // 누른 사람이 없는 전이다 — 고객 요청 안에서 돌아도 작업자는 시스템이다(S1-D16).
+                return SystemActor::run(fn () => $this->transition($orderReturn, ReturnStatusEnum::APPROVED));
             } catch (OrderClaimException $e) {
                 // 접수는 이미 커밋됐고 접수 훅도 나갔다. 자동 승인만 실패했으면(접수 직후 다른 요청이
                 // 상태를 바꾼 경우 등) 그 전이만 건너뛰고 접수를 마친다 — 예외를 그대로 올리면 신청서는
@@ -1597,6 +1599,8 @@ class OrderReturnService
                     $ownCompleted[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->return_quantity];
                 }
             }
+            // 나눠 처리한 행은 같은 주문옵션을 가리킨다 — 합치지 않으면 비교 환불액이 한 행 몫만큼 작게 잡힌다.
+            $ownCompleted = $this->mergeClaimItemQuantities($ownCompleted, []);
             $this->assertDeductCoversCharge($order, $ownCompleted, (float) $return->claim_shipping_fee, $return->charge_method, $this->refundPriorityOf($return));
             // 이미 환불된 몫 — 다른 신청서의 완료분과 **이 신청서의 앞 회차에서 환불신청서에 담긴
             // 완료분**(S7). 재계산 기준선에는 들어가지만 이번 환불신청서에는 들어가면 안 된다(중복
@@ -1787,6 +1791,10 @@ class OrderReturnService
             ];
         }
 
+        // 수량을 나눠 처리하면 같은 주문옵션을 가리키는 행이 둘 이상이 된다 — 재계산 입력은 주문옵션 단위 맵이라
+        // 그대로 넘기면 뒤 행이 앞 행을 덮어 그 몫이 환불 예고에서 빠진다(실제 접수 `completedClaimItems()` 는 합산).
+        $claimItems = $this->mergeClaimItemQuantities($claimItems, []);
+
         // 「이미 접수됨」 은 이번에 접수할 몫이 하나도 없다는 뜻이다 — 완료 대상도 없고 환불이 연결되지
         // 않은 완료 상품도 없는데 환불이 연결된 완료 상품은 있는 경우(S7 — 회차마다 접수).
         $alreadyFiled = $targets === []
@@ -1836,7 +1844,7 @@ class OrderReturnService
             $priorItems !== [],
             $refundPriority,
         );
-        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult, $priorResult));
+        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult, $priorResult, $order->currency_snapshot ?? []));
         // 상품 환불 몫의 기준선 — 앞 신청서가 이미 빼 간 상태의 소계에서 출발해야 한다.
         $priorResultSnapshot = $priorResult?->recalculatedSnapshot ?? $result->originalSnapshot;
 
@@ -2756,7 +2764,7 @@ class OrderReturnService
         ?AdjustmentResult $priorResult = null,
         ?AdjustmentResult $grossResult = null,
     ): OrderRefund {
-        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult ?? $result, $priorResult));
+        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult ?? $result, $priorResult, $order->currency_snapshot ?? []));
 
         $refund = $this->refundRepository->create([
             'order_id' => $order->id,
@@ -3019,9 +3027,10 @@ class OrderReturnService
      *
      * @param  AdjustmentResult  $full  이 신청서까지 포함한 누적 결과
      * @param  AdjustmentResult|null  $prior  다른 신청서 몫만의 기준선
+     * @param  array  $currencySnapshot  주문 통화 스냅샷 (통화별 소수 자릿수 — 맵 차분의 끝자리 정리)
      * @return array{refund_amount: float, refund_points_amount: float, refund_shipping_amount: float, mc_refund_amount: array|null, mc_refund_points_amount: array|null, mc_refund_shipping_amount: array|null} 이 신청서 몫
      */
-    protected function refundDeltaAgainstPrior(AdjustmentResult $full, ?AdjustmentResult $prior): array
+    protected function refundDeltaAgainstPrior(AdjustmentResult $full, ?AdjustmentResult $prior, array $currencySnapshot = []): array
     {
         if (! $prior instanceof AdjustmentResult) {
             return [
@@ -3038,9 +3047,9 @@ class OrderReturnService
             'refund_amount' => max(0.0, (float) $full->refundAmount - (float) $prior->refundAmount),
             'refund_points_amount' => max(0.0, (float) $full->refundPointsAmount - (float) $prior->refundPointsAmount),
             'refund_shipping_amount' => (float) $full->shippingDifference - (float) $prior->shippingDifference,
-            'mc_refund_amount' => $this->subtractMoneyMap($full->mcRefundAmount, $prior->mcRefundAmount),
-            'mc_refund_points_amount' => $this->subtractMoneyMap($full->mcRefundPointsAmount, $prior->mcRefundPointsAmount),
-            'mc_refund_shipping_amount' => $this->subtractMoneyMap($full->mcRefundShippingAmount, $prior->mcRefundShippingAmount, allowNegative: true),
+            'mc_refund_amount' => $this->subtractMoneyMap($full->mcRefundAmount, $prior->mcRefundAmount, currencySnapshot: $currencySnapshot),
+            'mc_refund_points_amount' => $this->subtractMoneyMap($full->mcRefundPointsAmount, $prior->mcRefundPointsAmount, currencySnapshot: $currencySnapshot),
+            'mc_refund_shipping_amount' => $this->subtractMoneyMap($full->mcRefundShippingAmount, $prior->mcRefundShippingAmount, allowNegative: true, currencySnapshot: $currencySnapshot),
         ];
     }
 
@@ -3084,6 +3093,16 @@ class OrderReturnService
             $delta['mc_refund_points_amount'] = array_map(fn () => 0.0, $delta['mc_refund_points_amount']);
         }
 
+        // 현금 맵도 옮긴 뒤의 현금액으로 다시 낸다 — 기준 통화 현금액만 바꾸면 통화별 맵은 옮기기 전 몫을 말해,
+        // 고객 화면에 23,000원 옆으로 13,000원어치 외화가 찍힌다(S3-D13). 환율은 주문 currency_snapshot 의 동결 환율이다.
+        $currencySnapshot = $order->currency_snapshot ?? [];
+        if ($currencySnapshot !== []) {
+            $delta['mc_refund_amount'] = $this->currencyService->convertToMultiCurrencyWithSnapshot($cash, $currencySnapshot);
+            if ($points > 0.0) {
+                $delta['mc_refund_points_amount'] = $this->currencyService->convertToMultiCurrencyWithSnapshot($points, $currencySnapshot);
+            }
+        }
+
         return $delta;
     }
 
@@ -3093,9 +3112,10 @@ class OrderReturnService
      * @param  array<string, float|int>|null  $full  빼일 값
      * @param  array<string, float|int>|null  $prior  뺄 값
      * @param  bool  $allowNegative  음수를 허용할지 (배송비 차액은 음수가 뜻을 가진다)
+     * @param  array  $currencySnapshot  주문 통화 스냅샷 (통화별 소수 자릿수)
      * @return array<string, float>|null 차분 맵 (원본이 null 이면 null)
      */
-    protected function subtractMoneyMap(?array $full, ?array $prior, bool $allowNegative = false): ?array
+    protected function subtractMoneyMap(?array $full, ?array $prior, bool $allowNegative = false, array $currencySnapshot = []): ?array
     {
         if ($full === null) {
             return null;
@@ -3104,7 +3124,12 @@ class OrderReturnService
         $out = [];
 
         foreach ($full as $code => $amount) {
-            $delta = (float) $amount - (float) ($prior[$code] ?? 0);
+            // 두 맵은 이미 통화 자릿수로 끊긴 값이다 — 빼기만 하면 이진 부동소수 꼬리(17.08 − 7.42 = 9.659999999999998)가
+            // 그대로 저장된다(S3-D13 · EC-486 과 같은 꼴). 그 통화의 소수 자릿수로 다시 끊는다.
+            $delta = round(
+                (float) $amount - (float) ($prior[$code] ?? 0),
+                $this->currencyService->getDecimalPlaces((string) $code, $currencySnapshot ?: null),
+            );
             $out[$code] = $allowNegative ? $delta : max(0.0, $delta);
         }
 

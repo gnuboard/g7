@@ -1,0 +1,25 @@
+feature: 주문서 배송지 관리 창 — 저장 안내 문구와 「기본 배송지로 설정」 라벨
+
+description: |
+  주문서 배송지 관리 창에서 배송지를 추가·수정하면 그에 맞는 안내(「추가되었습니다」/「수정되었습니다」)가 뜨고,
+  「기본 배송지로 설정」 은 체크박스뿐 아니라 문구를 눌러도 켜진다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D9):
+    - 저장 성공 처리가 편집 중 배송지(`editingAddress`)를 먼저 비운 뒤 안내 문구를 `editingAddress?.id` 로
+      골라, 기존 배송지를 고쳐도 「배송지가 추가되었습니다.」 가 떴다. 안내를 먼저 띄우고 비운다.
+      마이페이지 배송지 창은 편집 값을 비우지 않아 정상이었다.
+    - 라벨에 `for`, 체크박스에 `id` 가 없어 문구를 눌러도 체크되지 않았다(마이페이지 창은 이어져 있음).
+
+axes:
+  save_mode: [create, update, label_click]
+
+effects:
+  - create_success_says_added        # 새 배송지 저장 → 「배송지가 추가되었습니다.」
+  - update_success_says_updated      # 기존 배송지 저장 → 「배송지가 수정되었습니다.」
+  - default_label_toggles_checkbox   # 「기본 배송지로 설정」 문구 클릭 → 체크박스 켜짐
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/checkout-address-save-feedback.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 주문서 [배송지 관리] 수정 저장 안내, 새 배송지 폼에서 문구 클릭 후 저장 → 기본 표시 이동

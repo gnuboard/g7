@@ -252,3 +252,45 @@ describe('결제 실패 화면 복귀 보고', () => {
         expect(post).not.toHaveBeenCalled();
     });
 });
+
+/**
+ * 서버가 주는 닫힘 보고 주소는 사이트 주소 기준 절대 URL 이다(`SiteUrl::absolute`).
+ *
+ * G7Core.api 는 `/api` 를 앞에 붙이는 경로를 받으므로 절대 URL 을 그대로 넘기면 `/plugins/...`(접두 없음)로
+ * 나가 404 가 났다 — 결제창 닫힘 보고와 재시도 준비가 모두 실패했다.
+ */
+describe('사이트 주소 절대 URL 닫힘 보고·재시도', () => {
+    // 앞 describe 가 window.location 을 바꿔 두므로 실행 시점의 출처로 만든다.
+    const abs = (): string => `${window.location.origin}/plugins/sirsoft-pay_nhnkcp/payment/close-report`;
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        vi.restoreAllMocks();
+    });
+
+    it('같은 출처 절대 URL 은 G7Core.api 에 /plugins 경로로 넘긴다 (닫힘 보고)', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        await reportPaymentWindowClosed({ closeReportUrl: abs(), oid: 'ORD-KCP-ABS-001', price: 15000, payment_method: 'card' });
+
+        expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nhnkcp/payment/close-report', expect.objectContaining({ oid: 'ORD-KCP-ABS-001' }));
+    });
+
+    it('같은 출처 절대 URL 이어도 재시도 준비는 /plugins/.../payment/retry 로 넘긴다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        await preparePaymentRetry({ closeReportUrl: abs(), oid: 'ORD-KCP-ABS-002', price: 15000 });
+
+        expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nhnkcp/payment/retry', expect.objectContaining({ oid: 'ORD-KCP-ABS-002' }));
+    });
+
+    it('G7Core API 가 없으면 같은 출처 절대 URL 을 /api/plugins 경로로 fetch 한다', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+
+        await reportPaymentWindowClosed({ closeReportUrl: abs(), oid: 'ORD-KCP-ABS-003', price: 15000 });
+
+        expect(fetchSpy).toHaveBeenCalledWith('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', expect.objectContaining({ method: 'POST' }));
+    });
+});

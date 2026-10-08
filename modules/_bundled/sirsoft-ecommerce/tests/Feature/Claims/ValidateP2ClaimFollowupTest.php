@@ -187,6 +187,9 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
      * 수정 전 금액 수정은 결제수단(`needsPgProvider`)만 보고 PG 를 저장했고, 실행 게이트는
      * 실효 수단(`determineRefundMethod`)을 보고 막았다 — 저장한 수단으로 실행할 길이 없었다.
      *
+     * 카드 결제인데 PG 환불을 받는 리스너가 없다는 것은 그 결제 플러그인이 꺼졌다는 뜻이라, 거절 문장은
+     * 일반 문장이 아니라 플러그인 꺼짐 사유와 해결책이다(S3-D25 — 실행 경로와 같은 문장).
+     *
      * @return void 반환값 없음
      *
      * @scenario defect=refund_method_single_gate
@@ -199,7 +202,7 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
         $refund = app(UserClaimService::class)->requestRefund($order, $this->payload($order, 'changed_mind', null))['refund'];
 
         $this->assertClaimException(
-            'claim_refund_method_unavailable',
+            'pg_provider_inactive',
             fn () => app(OrderRefundRequestService::class)->updateAmounts($refund, ['refund_method' => RefundMethodEnum::PG->value]),
         );
 

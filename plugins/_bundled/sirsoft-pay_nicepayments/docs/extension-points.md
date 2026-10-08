@@ -30,6 +30,7 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 40 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
+| `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
@@ -115,6 +116,7 @@
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
+| `ValidateRedirectUrlSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateRedirectUrlSettingsListener.php` |
 | `VbankCloseListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/VbankCloseListener.php` |
 <!-- @generated:listeners END -->
 

@@ -1211,5 +1211,14 @@
     "manage_common_info": "Manage Common Info",
     "manage_notice_template": "Manage Product Notices",
     "create_shipping_policy": "Create Shipping Policy"
+  },
+  "selector_forbidden": {
+    "categories": "You do not have permission to view categories, so no category can be selected.",
+    "brands": "You do not have permission to view brands, so no brand can be selected.",
+    "notice_templates": "You do not have permission to view product notice templates, so templates cannot be loaded. You can still fill in the notice items manually.",
+    "common_infos": "You do not have permission to view common information, so none can be selected.",
+    "shipping_policies": "You do not have permission to view shipping policies, so no policy can be selected. If you save without choosing one, the policy already assigned is kept, or the default shipping policy applies if none is assigned.",
+    "product_labels": "You do not have permission to view product labels, so no label can be selected.",
+    "roles": "You do not have permission to load the member role list, so no role can be selected."
   }
 }

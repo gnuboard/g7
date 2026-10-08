@@ -144,7 +144,7 @@
                                                 "value": "{{reason.name ?? {}}}",
                                                 "layout": "compact",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name_ko_placeholder",
-                                                "error": "{{_local.errors?.['claim.return_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.return_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
+                                                "error": "{{_local.errors?.['claim.return_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.return_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }

@@ -22,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
@@ -464,10 +465,17 @@ class ClaimResource extends BaseApiResource
             $refundPoints = $pointsNotDeducted ? 0.0 : (float) $claim->refund_points_amount;
             $mcRefundPoints = $pointsNotDeducted ? null : $claim->mc_refund_points_amount;
 
+            // 상세는 **실행 때 쓰일 수단**을 보인다(S3-D26) — 플러그인이 꺼진 동안 계좌로 폴백된 카드 신청서는
+            // 플러그인이 돌아오면 PG 로 실행된다. 저장값(계좌)을 그대로 보이면 실행 창이 계좌를 요구하고 그 값이
+            // 운영자 선택으로 박혀 PG 를 부르지 않는다. 목록 행은 리스너 조회가 행마다 돌지 않도록 저장값 그대로다.
+            $shownMethod = $this->forList
+                ? $claim->refund_method
+                : app(OrderRefundRequestService::class)->effectiveRefundMethod($claim);
+
             $data += [
                 'refund_source_type' => $claim->refund_source_type?->value,
-                'refund_method' => $claim->refund_method?->value,
-                'refund_method_label' => $claim->refund_method?->label(),
+                'refund_method' => $shownMethod?->value,
+                'refund_method_label' => $shownMethod?->label(),
                 // 실제로 돈이 간 수단별 금액 줄(S7) — 신청서 수단은 결제수단에서 정해져, 카드 주문을 마일리지로만 돌려준
                 // 환불도 「PG사 환불」 이다. 상세의 수단 칸은 이 줄을 보인다(알림의 `refund_breakdown` 과 같은 규칙).
                 'refund_breakdown_formatted' => $this->forList
@@ -612,9 +620,11 @@ class ClaimResource extends BaseApiResource
                 ? (new ClaimPaymentResource($this->paymentBlock['pending_payment']))->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
                 : null;
             $data['payment_entry'] = $this->paymentBlock['payment_entry'];
-            // 대기 건을 낼 수 있는 수단 — 화면이 수단을 다시 고르게 하는 근거다. 값만 싣고
-            // 라벨은 화면이 붙인다(신청 화면이 `charge_payment_methods` 를 그리는 방식과 같다).
+            // 대기 건을 낼 수 있는 수단 — 화면이 수단을 다시 고르게 하는 근거다. 표시명은
+            // 카탈로그 이름을 함께 싣는다 — 값만 주면 화면이 `point` 밖의 수단을 모두 카드로
+            // 불렀다(S1-D14). 신청 화면의 `charge_payment_method_labels` 와 같은 모양이다.
             $data['available_payment_methods'] = $this->paymentBlock['available_payment_methods'] ?? [];
+            $data['available_payment_method_labels'] = (object) ($this->paymentBlock['available_payment_method_labels'] ?? []);
         }
 
         return $data;

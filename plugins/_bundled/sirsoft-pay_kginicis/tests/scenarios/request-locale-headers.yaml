@@ -1,0 +1,21 @@
+feature: 화면 스크립트 조회의 화면 언어
+
+description: |
+  주문 상세·주문 완료·관리자 주문 상세의 주입기는 영수증·결제 표시·거래 조회를 `fetch` 로 직접 보내고, 응답의 글자
+  (영수증 줄 이름·버튼, 결제수단 표시 이름)를 화면에 붙인다. 코어 API 요청처럼 화면 언어(g7_locale)를 Accept-Language 로 싣는다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D16):
+    - 직접 보내는 조회에 언어 헤더가 없어 서버가 브라우저 기본 언어로 글자를 만들었다. 실측: 한국어·일본어 화면의
+      KG이니시스 비회원 주문 상세에 「Receipt / View Receipt」 줄이 붙었다. 세 PG 의 같은 경로를 함께 고친다.
+
+axes:
+  case: [locale_ja, locale_unset, all_injector_requests, receipt_lookup_ko]
+
+effects:
+  - request_carries_screen_locale   # 화면 언어가 있으면 Accept-Language 로 싣고, 없으면 브라우저 기본값에 맡긴다
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/requestLocaleHeaders.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 비회원 KG 결제완료 주문 상세를 ko·en·ja 로 열어 영수증 줄 언어(요청 헤더 Accept-Language 포함)

@@ -114,6 +114,8 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 클래스 모양으로 찾지 않는다. 정적 검사 `extension-private-core-internals` 가 앞의 둘을 막는다.
 <!-- @intent END -->
 
+가상계좌 입금 안내의 **입금 금액**은 레이아웃 확장(`user_order_show`)이 결제예정금액(`total_due_amount_formatted`, 마일리지 차감 뒤)을 먼저 읽고, 그 값이 없는 비회원 응답에서는 주문금액(`total_amount_formatted`)으로 대신한다. 입금 대기 중에는 주문금액과 결제예정금액이 같은 값(둘 다 마일리지 차감 뒤)이고, 입금이 들어오면 결제예정금액이 줄어든다 — 입금할 금액의 기준 필드는 결제예정금액이다.
+
 ### 매출전표 요청의 자격 증명
 
 주문 상세 카드의 「매출전표 보기」와 주문 완료의 「매출전표 불러오기」는 회원·비회원이 함께 쓴다. 두 조각의 요청은
@@ -165,4 +167,17 @@ URL(`https://사이트/plugins/…/payment/close-report`, `/api` 없음)이므�
 — 재등록 진입점(`initPlugin()`)은 핸들러 등록만 다시 한다. 템플릿이 세션 저장소의 조회 토큰을 전역 상태에 되살리기 전일 수
 있으므로 `waitForGuestOrderToken()` 이 `G7Core.state.subscribe()` 로 최대 3초 기다린 뒤 보낸다(회원이면 토큰이 생기지 않아
 제한 시간 뒤 보낸다).
+<!-- @intent END -->
+
+## 클레임 추가결제 창을 닫을 때
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제는 주문 결제가 아니다. 이커머스가 결제 데이터에 `pg_payment_data.claim_cancel_return_url`
+(회원은 신청서 상세 `?claim_payment=cancelled`, 비회원은 주문 조회 화면 — `ClaimPaymentRedirect::cancelled`)을 실어 보내면,
+결제창을 닫을 때 닫힘 보고를 보내지 않고 그 주소로 이동한다. 닫힘 보고는 결제대기 **주문**을 실패로 바꾸는 요청이라
+클레임 결제에는 대상이 없고, 이동하지 않으면 신청서 상세가 「결제 진행 중…」 버튼에 멈춘 채 안내도 뜨지 않는다.
+신청은 그대로 남고, 신청서 상세가 「결제를 취소하셨습니다」 안내와 함께 [결제하기]를 다시 연다.
+
+처리 위치: `resources/js/handlers/requestPayment.ts` 의 `finishCancelledPayment()`. 클레임 결제면 재결제 준비(`/payment/retry`)와
+닫힘 기억(`rememberPendingClose`)도 건너뛴다 — 클레임 결제 번호(`CP…`)는 주문번호가 아니어서 `retry` 가 404 를 내고 결제창이 열리지 않았다.
 <!-- @intent END -->

@@ -556,7 +556,9 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 창이 부모 폼을 고쳐야 하는지, 자기가 저장해야 하는지를 먼저 정하고 그에 맞는 형태를 고른다.
 
 > 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 이 형태를 쓰는 곳은
-> `_modal_ip_restriction_rule_form` 하나이며, 새로 쓸 때는 이 절을 근거로 삼는다.
+> `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`(관리자 템플릿 환경설정),
+> `_modal_default_confirm`(이커머스 공통정보)·`_modal_extend_expiry`(이커머스 마일리지 내역)이며,
+> 새로 쓸 때는 이 절을 근거로 삼는다.
 
 ### Footer 스타일 규칙
 

@@ -1,5 +1,5 @@
-// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe.
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
+import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
@@ -7,6 +7,7 @@ import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
+import { useLabelledByPrecedingLabel } from '../../hooks/useLabelledByPrecedingLabel';
 
 /** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 J D-J11) */
 const selectSearchPlaceholder = (): string => {
@@ -53,6 +54,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   searchable?: boolean;
   /** 검색 input placeholder */
   searchPlaceholder?: string;
+  /** 값이 비었을 때 버튼에 흐리게 보이는 안내 글자 — 버튼의 읽기 이름도 된다 */
+  placeholder?: string;
   /**
    * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
    * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트
@@ -100,6 +103,7 @@ export const Select: React.FC<SelectProps> = ({
   searchPlaceholder,
   placeholder,
   editorAttrs,
+  'aria-label': ariaLabel,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,6 +113,8 @@ export const Select: React.FC<SelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const nativeSelectRef = useRef<HTMLSelectElement>(null);
+  const valueTextId = useId();
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -272,6 +278,15 @@ export const Select: React.FC<SelectProps> = ({
     buttonRef.current?.focus();
   };
 
+  // 바로 앞의 보이는 라벨을 이름으로 잇는다 — 호출처가 aria-label·aria-labelledby 를 줬으면 건드리지 않는다.
+  // 기본 select 는 select 자신, 목록형은 바깥 상자의 앞 형제를 보고 이름은 버튼에 단다.
+  const hasOwnName = !!(ariaLabel || (props as Record<string, unknown>)['aria-labelledby']);
+  const precedingLabelId = useLabelledByPrecedingLabel(
+    normalizedOptions ? containerRef : nativeSelectRef,
+    !hasOwnName,
+    normalizedOptions ? buttonRef : nativeSelectRef,
+  );
+
   // options가 없으면 기본 select 사용 (children 지원)
   // .select 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
   // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend 방지.
@@ -282,10 +297,13 @@ export const Select: React.FC<SelectProps> = ({
       : ['select', className].filter(Boolean).join(' ');
     return (
       <select
+        ref={nativeSelectRef}
         className={mergedClassName}
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
+        aria-label={ariaLabel}
+        aria-labelledby={precedingLabelId}
         {...editorAttrs}
         {...props}
       >
@@ -337,14 +355,13 @@ export const Select: React.FC<SelectProps> = ({
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        // 라벨 + 지금 고른 값(또는 안내 글자)을 함께 읽는다 — 「배송비 부과 정책, 고정 배송비」
+        aria-labelledby={precedingLabelId ? `${precedingLabelId} ${valueTextId}` : undefined}
       >
         {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
             버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
-        {selectedLabel ? (
-          <Span className="truncate">{selectedLabel}</Span>
-        ) : (
-          <Span className="truncate text-gray-400 dark:text-gray-500">{placeholder || '\u00A0'}</Span>
-        )}
+        <Span id={valueTextId} className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

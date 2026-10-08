@@ -1,7 +1,7 @@
 import { default as React } from 'react';
 export interface ModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (event?: Event | React.SyntheticEvent) => void;
     title?: string;
     /** 타이틀 앞에 렌더링할 컴포넌트 배열 (레이아웃 JSON) */
     titlePrefix?: any[];

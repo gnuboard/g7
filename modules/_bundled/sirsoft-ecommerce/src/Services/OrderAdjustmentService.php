@@ -205,6 +205,7 @@ class OrderAdjustmentService
                 $excludedItems,
                 $refundPriority,
                 $adjustment->getAdditionalCharges(),
+                $successorOverrides,
             );
         }
 
@@ -551,7 +552,10 @@ class OrderAdjustmentService
             'base_shipping_amount' => (float) $order->base_shipping_amount,
             'extra_shipping_amount' => (float) $order->extra_shipping_amount,
             'shipping_discount_amount' => (float) $order->shipping_discount_amount,
-            'total_paid_amount' => (float) $order->total_paid_amount,
+            // 지금 남아 있는 결제액 — 이미 돌려준 현금은 뺀다. 비교의 다른 줄(판매가·배송비·과세)은 지금 주문을 그리므로,
+            // 처음 결제 총액을 두면 일부 환불 뒤 「실결제 60,000 → 0」 옆에 「환불 예정 32,500」이 찍히고 취소 차단
+            // 판정도 이미 돌려준 만큼 추가결제 필요를 놓친다(S3-D14). 첫 취소는 환불 누계가 0 이라 종전 값과 같다.
+            'total_paid_amount' => max(0.0, (float) $order->total_paid_amount - (float) $order->total_refunded_amount),
             'total_points_used_amount' => (float) $order->total_points_used_amount,
             'total_deposit_used_amount' => (float) $order->total_deposit_used_amount,
             // 실결제 발생 신호(취소 차단 게이트 SSoT) — payment_status === PAID 가 1차 신호(운영자 강제
@@ -564,10 +568,31 @@ class OrderAdjustmentService
             'total_tax_free_amount' => (float) $order->total_tax_free_amount,
             'total_vat_amount' => (float) $order->total_vat_amount,
             'total_earned_points_amount' => (float) $order->total_earned_points_amount,
-            'item_count' => $order->options
-                ->where('option_status', '!=', OrderStatusEnum::CANCELLED)
-                ->sum('quantity'),
+            'item_count' => $this->countAccountableItems($order),
         ];
+    }
+
+    /**
+     * 비교 카드의 상품수량 — 정가 합계(`CalculationSnapshotPresenter::listPriceTotal()`)와 같은 회계 주체만 셉니다.
+     *
+     * 취소 행만 빼면 교환이 끝난 주문에서 교환완료로 닫힌 원 행과 그것을 승계한 후속 행이 둘 다 세어져, 같은 카드의
+     * 정가 합계는 3개 몫인데 상품수량은 4개로 나온다(S3-D16). 원 행이 아직 교환 진행 중인 후속 행은 원 행이 주체다.
+     *
+     * @param  Order  $order  주문 (options 로드됨)
+     * @return int 상품수량
+     */
+    private function countAccountableItems(Order $order): int
+    {
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return (int) $order->options
+            ->reject(fn ($option) => in_array($option->option_status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED], true)
+                || ($option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true)))
+            ->sum('quantity');
     }
 
     /**
@@ -980,6 +1005,7 @@ class OrderAdjustmentService
      * @param  array  $excludedItems  제외 대상 아이템
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  float  $additionalCharges  환불액에서 차감할 추가 비용 (취소는 0)
+     * @param  array  $successorOverrides  후속 행 회계 단가 오버라이드 (`resolveSuccessorOverrides()` — 부분취소 장부와 같은 단가)
      * @return AdjustmentResult 전량 제외 결과
      */
     private function buildFullCancelResult(
@@ -990,16 +1016,22 @@ class OrderAdjustmentService
         array $excludedItems,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
         float $additionalCharges = 0,
+        array $successorOverrides = [],
     ): AdjustmentResult {
+        // 취소 장부의 취소액은 부분취소(`buildAdjustedItems()`)와 같은 **할인 전 단가 × 수량**이다.
+        // 환불 상세 행(`RefundExecutionService::buildRefundOptionRows()`)이 이 값을 정가로 보고 원 행의
+        // 할인 비율을 뺀다 — 여기서 할인 반영 후 금액(`subtotal_paid_amount`)을 적으면 할인이 두 번
+        // 빠져, 쿠폰 주문 전체취소의 행 환불액 합계가 신청서 총액보다 할인만큼 모자랐다(S3-D3).
         $adjustedItems = [];
         foreach ($order->options as $option) {
             if ($option->option_status === OrderStatusEnum::CANCELLED) {
                 continue;
             }
+            $unitPrice = $successorOverrides[(int) $option->id]['unit_price'] ?? (float) $option->unit_price;
             $adjustedItems[] = [
                 'order_option_id' => $option->id,
                 'cancel_quantity' => $option->quantity,
-                'cancel_amount' => (float) $option->subtotal_paid_amount,
+                'cancel_amount' => $unitPrice * $option->quantity,
             ];
         }
 
@@ -1026,7 +1058,24 @@ class OrderAdjustmentService
         $remainingPg = max(0.0, $originalPaidAmount - (float) $order->total_refunded_amount);
         $remainingPoints = max(0.0, $originalPointsUsed - (float) $order->total_refunded_points_amount);
 
-        $totalRefundable = max(0, ($remainingPg + $remainingPoints) - $additionalCharges);
+        $refundableBase = $remainingPg + $remainingPoints;
+
+        // 환불 0원으로 닫힌 행이 있으면 그 행 값은 환불 누계에 잡히지 않는다 — 「결제액 − 환불 누계」만 보면
+        // 마지막 상품을 뺄 때 닫힌 행 값까지 다시 나간다(S3-D18). 부분 경로(`calculate()`)와 같이 종결 행을 뺀
+        // 기준선(지금 남은 상품의 결제 몫)을 상한으로 둔다. 종결 행이 없으면 두 값은 같아 종전 결과와 같다.
+        if ($this->hasClosedRows($order)) {
+            $activeInput = $this->buildRecalcInput($order, [], $successorOverrides);
+
+            if (! empty($activeInput->items)) {
+                $activeResult = $this->calculationService->calculate($activeInput);
+                $refundableBase = min(
+                    $refundableBase,
+                    (float) $activeResult->summary->finalAmount + (float) $activeResult->summary->pointsUsed,
+                );
+            }
+        }
+
+        $totalRefundable = max(0, $refundableBase - $additionalCharges);
 
         if ($refundPriority === RefundPriorityEnum::POINTS_FIRST) {
             $refundPointsAmount = min($totalRefundable, $remainingPoints);
@@ -2065,7 +2114,14 @@ class OrderAdjustmentService
      */
     private function buildMcOriginalSnapshot(Order $order): ?array
     {
-        return $this->snapshotPresenter->mcOriginal($order);
+        // 기준 통화 줄(`captureOrderSnapshot`)과 같은 값 — 이미 돌려준 현금을 뺀 지금 남은 결제액을 환산한다.
+        // 주문의 `mc_total_paid_amount` 는 결제 총액 맵이라 그대로 읽으면 한 칸에 두 시점이 섞인다(S3-D14 후속).
+        $refunded = (float) $order->total_refunded_amount;
+        $netPaid = $refunded > 0
+            ? max(0.0, (float) $order->total_paid_amount - $refunded)
+            : null;
+
+        return $this->snapshotPresenter->mcOriginal($order, null, null, $netPaid);
     }
 
     /**

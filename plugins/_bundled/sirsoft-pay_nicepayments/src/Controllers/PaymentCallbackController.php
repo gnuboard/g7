@@ -608,7 +608,13 @@ class PaymentCallbackController
             $vbankDueAt = null;
             if (isset($pgResponse['VbankExpDate'])) {
                 $dateStr = $pgResponse['VbankExpDate'].($pgResponse['VbankExpTime'] ?? '235959');
-                $vbankDueAt = Carbon::createFromFormat('YmdHis', $dateStr);
+                // 입금 기한은 한국 시각이다 — 앱 시간대(UTC)로 그대로 읽으면 9시간 늦게 저장된다.
+                // 형식이 다른 기한이 와도 발급 기록은 이어간다(Carbon 형식 예외가 결제 통화 오류 분기로 잡혀 발급이 끊기던 것 방지).
+                try {
+                    $vbankDueAt = Carbon::createFromFormat('YmdHis', $dateStr, 'Asia/Seoul')->setTimezone(config('app.timezone', 'UTC'));
+                } catch (\Exception) {
+                    $vbankDueAt = null;
+                }
             }
 
             $payment->payment_status = PaymentStatusEnum::WAITING_DEPOSIT;
@@ -635,6 +641,9 @@ class PaymentCallbackController
             ];
             // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $payment->save();
+
+            // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+            $this->orderService->onVbankAccountIssued($lockedOrder);
 
             return 'recorded';
         });

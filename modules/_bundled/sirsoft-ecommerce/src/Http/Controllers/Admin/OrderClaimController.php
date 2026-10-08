@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimRequestService;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimScopeGuard;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -30,19 +31,26 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  *
  * 주문 상세 상품 표의 선택 바에서 고객을 대신해 교환·반품·취소·환불을 접수한다. 라우트가 `{order}` 를
  * 모델로 묶으므로 권한 스코프는 미들웨어가 판정한다(`claims.create` — 주문의 스코프를 물려받는다).
+ * 미들웨어는 라우트 권한 하나만 보므로, 운영자의 주문 조회 범위는 `ClaimScopeGuard` 가 보탠다(EC-667 —
+ * 주문 조회를 「본인만」 으로 묶은 운영자가 남의 주문에 직권 접수하지 못한다).
  * 도메인 거절은 `MapsClaimErrors::claimDomainError()` 가 422 로 바꾼다.
  */
 class OrderClaimController extends AdminBaseController
 {
     use MapsClaimErrors;
 
+    /** 직권 접수 권한 — 라우트 게이트와 같은 식별자 */
+    private const PERMISSION_CREATE = 'sirsoft-ecommerce.claims.create';
+
     /**
      * @param  AdminClaimRequestService  $requestService  관리자 직권 접수 서비스
      * @param  AdminClaimService  $adminClaimService  관리자 클레임 서비스 (사유·청구 방식 선택지)
+     * @param  ClaimScopeGuard  $claimScope  권한 스코프 가드 (주문 조회 범위 결합)
      */
     public function __construct(
         protected AdminClaimRequestService $requestService,
         protected AdminClaimService $adminClaimService,
+        protected ClaimScopeGuard $claimScope,
     ) {}
 
     /**
@@ -68,6 +76,8 @@ class OrderClaimController extends AdminBaseController
     public function context(Order $order): JsonResponse
     {
         try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.retrieved', [
                 'order_id' => $order->id,
                 'gates' => $this->requestService->gateStatuses(),
@@ -80,6 +90,8 @@ class OrderClaimController extends AdminBaseController
                     [['value' => AdminClaimRequestService::CHARGE_FREE, 'label' => __('sirsoft-ecommerce::messages.claims.charge_free')]],
                 ),
             ]);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-request-context', $e);
         }
@@ -95,11 +107,15 @@ class OrderClaimController extends AdminBaseController
     public function preview(AdminClaimRequestPreviewRequest $request, Order $order): JsonResponse
     {
         try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
             $preview = $this->requestService->preview($order, $request->claimType(), $request->toServiceInput());
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.preview_success', $this->normalizePreview($preview));
         } catch (OrderClaimException $e) {
             return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-request-preview', $e);
         }
@@ -115,6 +131,8 @@ class OrderClaimController extends AdminBaseController
     public function storeExchange(AdminStoreExchangeRequest $request, Order $order): JsonResponse
     {
         try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
             $result = $this->requestService->requestExchange($order, $request->toServiceInput(), Auth::id());
 
             return $this->requestedResponse($result);
@@ -137,6 +155,8 @@ class OrderClaimController extends AdminBaseController
     public function storeReturn(AdminStoreReturnRequest $request, Order $order): JsonResponse
     {
         try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
             $result = $this->requestService->requestReturn($order, $request->toServiceInput(), Auth::id());
 
             return $this->requestedResponse($result);
@@ -159,6 +179,8 @@ class OrderClaimController extends AdminBaseController
     public function storeCancelRefund(AdminStoreCancelRefundRequest $request, Order $order): JsonResponse
     {
         try {
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_CREATE);
+
             $outcome = $this->requestService->requestCancelOrRefund($order, [
                 'full_cancel' => $request->isFullCancel(),
                 'items' => $request->getCancelItems(),

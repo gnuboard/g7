@@ -41,6 +41,7 @@ effects:
   - list_bulk_confirm_shipping_states_require_tracking_and_stay_closed
   # ② 목록 일괄 실행
   - list_bulk_action_422_toasts_server_message_once
+  - list_bulk_action_server_error_toasts_localized_fallback   # 5xx·전송 실패는 원문 대신 번역 폴백 (S1-D12)
   # ③ 상세 옵션 일괄 실행
   - detail_bulk_change_sends_carrier_under_carrier_id_key
   - detail_bulk_change_omits_carrier_id_when_not_entered

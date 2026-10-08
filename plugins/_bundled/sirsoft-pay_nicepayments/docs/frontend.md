@@ -111,7 +111,11 @@
   조건이 걸린 바깥 블록에 걸면 다른 결제사 주문·입금 대기 주문에도, 주문을 받기 전 첫 렌더에도(주문번호 빈 주소) 조회가 나간다.
 - **주문번호는 불러온 주문에서 읽는다** — 마이페이지 조각은 `order.data.order_number`, 주문 완료 조각은
   `orderData.data.order_number`. 결제 정보 카드는 주소에 주문번호가 없는 교환·반품·환불 신청서 상세에서도 같은 조각으로 쓰인다.
-- 가상계좌 입금 안내도 마이페이지 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌 `vbank_due_at_formatted` 를 그대로 쓴다.
+- 가상계좌 입금 안내도 마이페이지 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌 `vbank_due_at_formatted` 를 그대로 쓴다. 취소된 주문(`payment_status`·`order_status` 가 cancelled)엔
+  그리지 않고, 자동 취소 경고는 입금 전에만 보인다. 입금 금액은 결제예정금액(`total_due_amount_formatted`, 마일리지 차감 뒤)을 먼저
+  읽고, 그 값이 없는 비회원 응답에서만 주문금액(`total_amount_formatted`)으로 대신한다.
+- 관리자 결제 조회 조각의 가상계좌 입금 통지 금액은 이커머스 원화 접두·접미 번역 키(`sirsoft-ecommerce.currency.krw_prefix`·`krw_suffix`)로
+  적는다 — 고정 「원」이면 영어 관리자에게도 「5,000원」이 보인다.
 - 관리자 쇼핑몰 설정의 결제수단 브랜드 마크는 이 플러그인이 결제수단 카탈로그에 싣는다(`RegisterEasyPayMethodsListener` 의
   `brand_mark` → 이커머스 `_cached_brand_mark`). 그리는 것은 화면 소유자(이커머스·템플릿) 몫이다 — 종전의 브랜드 마크 주입
   스크립트는 걷어냈다.
@@ -175,4 +179,16 @@
 
 나이스페이의 결제창 서명 발급(`sign-data`)도 `G7Core.api` 로 같은 헤더를 실어 보낸다. 실패한 같은 주문을 다시 결제할 때 서버가
 주문을 결제대기로 되살리는데, 그 복구는 주문 소유자만 할 수 있기 때문이다.
+<!-- @intent END -->
+
+## 클레임 추가결제 창을 닫을 때
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제는 주문 결제가 아니다. 이커머스가 결제 데이터에 `pg_payment_data.claim_cancel_return_url`
+(회원은 신청서 상세 `?claim_payment=cancelled`, 비회원은 주문 조회 화면 — `ClaimPaymentRedirect::cancelled`)을 실어 보내면,
+결제창을 닫을 때 닫힘 보고를 보내지 않고 그 주소로 이동한다. 닫힘 보고는 결제대기 **주문**을 실패로 바꾸는 요청이라
+클레임 결제에는 대상이 없고, 이동하지 않으면 신청서 상세가 「결제 진행 중…」 버튼에 멈춘 채 안내도 뜨지 않는다.
+신청은 그대로 남고, 신청서 상세가 「결제를 취소하셨습니다」 안내와 함께 [결제하기]를 다시 연다.
+
+처리 위치: `resources/js/handlers/requestPayment.ts` 의 결제창 닫힘 처리(정리 후 이동).
 <!-- @intent END -->

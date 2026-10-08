@@ -60,6 +60,7 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimItemCollectionState;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 교환 클레임 서비스
@@ -289,7 +290,7 @@ class OrderExchangeService
      *                          - charge_method: ClaimChargeMethodEnum|string|null
      *                          - requested_by: 신청자 ID (비회원이면 null)
      *                          - refund_priority: RefundPriorityEnum (선택)
-     *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, country_code, changed_by_user}
+     *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, city, state, country_code, changed_by_user}
      *                          - operator: bool (선택 — 운영자 직권 접수. 기간·신청가능상태 대신 물리 게이트, 판매자 귀책 사유 허용 — D5)
      *                          - requested_by_admin: 대리 접수 관리자 ID (선택 — 값이 있으면 판매자 접수, 고객 철회·수정 불가 — D8)
      *                          - shipping_fee_override: 운영자가 정한 클레임 배송비 (선택 — D7)
@@ -428,7 +429,8 @@ class OrderExchangeService
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다.
         if ($this->shouldAutoApproveZeroCharge($exchange)) {
             try {
-                return $this->transition($exchange, ExchangeStatusEnum::APPROVED);
+                // 누른 사람이 없는 전이다 — 고객 요청 안에서 돌아도 작업자는 시스템이다(S1-D16).
+                return SystemActor::run(fn () => $this->transition($exchange, ExchangeStatusEnum::APPROVED));
             } catch (OrderClaimException $e) {
                 // 접수는 이미 커밋됐고 접수 훅도 나갔다. 승인 시점의 재고 차감이 실패하면(접수와 거의
                 // 동시에 다른 주문이 마지막 재고를 가져간 경우) 자동 승인만 건너뛰고 '교환신청' 으로
@@ -2370,7 +2372,7 @@ class OrderExchangeService
 
         $snapshot = $base;
 
-        foreach (['recipient_name', 'phone', 'zipcode', 'address1', 'address2', 'country_code'] as $field) {
+        foreach (['recipient_name', 'phone', 'zipcode', 'address1', 'address2', 'city', 'state', 'country_code'] as $field) {
             if (array_key_exists($field, $input) && $input[$field] !== null && $input[$field] !== '') {
                 $snapshot[$field] = $field === 'country_code'
                     ? strtoupper(trim((string) $input[$field]))
@@ -2409,7 +2411,13 @@ class OrderExchangeService
         }
 
         foreach ($this->orderShippingAddressSnapshot($order) as $field => $value) {
-            if (($snapshot[$field] ?? null) !== $value) {
+            // 도시·주 칸이 생기기 전에 저장된 스냅샷에는 그 키가 없다 — 없는 칸은 비교하지 않는다.
+            // 비교하면 해외 주문의 예전 신청서가 손대지 않았는데도 모두 '배송지 다름' 이 된다.
+            if (! array_key_exists($field, $snapshot)) {
+                continue;
+            }
+
+            if ($snapshot[$field] !== $value) {
                 return true;
             }
         }
@@ -2420,8 +2428,11 @@ class OrderExchangeService
     /**
      * 주문 배송지를 재발송지 스냅샷 형태로 반환합니다.
      *
+     * 해외 주문은 국내 칸(우편번호·주소·상세주소)이 빈 문자열이라 해외 칸(우편번호·거리 주소 두 줄)으로
+     * 채우고, 도시·주는 `city`·`state` 로 따로 담는다. 국내 주문은 두 칸이 null 이다.
+     *
      * @param  Order  $order  주문
-     * @return array{recipient_name: string|null, phone: string|null, zipcode: string|null, address1: string|null, address2: string|null, country_code: string} 배송지
+     * @return array{recipient_name: string|null, phone: string|null, zipcode: string|null, address1: string|null, address2: string|null, city: string|null, state: string|null, country_code: string} 배송지
      */
     protected function orderShippingAddressSnapshot(Order $order): array
     {
@@ -2433,6 +2444,8 @@ class OrderExchangeService
             'zipcode' => $address?->zipcode ?: $address?->intl_postal_code,
             'address1' => $address?->address ?: $address?->address_line_1,
             'address2' => $address?->address_detail ?: $address?->address_line_2,
+            'city' => $address?->intl_city ?: null,
+            'state' => $address?->intl_state ?: null,
             'country_code' => ExchangeRedeliveryCountryUnchanged::orderShippingCountry($order),
         ];
     }
@@ -3411,7 +3424,19 @@ class OrderExchangeService
             return;
         }
 
+        // 배송비는 원 행에 남긴다 — 이 재발송은 고객이 낸 배송이 아니다. 금액째 복제하면 교환품 줄이
+        // 「유료배송 · 배송비」 로 보이고 구매자 「배송 현황」 에 같은 배송비가 한 줄 더 생긴다(S1-D11, 수량 분할 복제본과 같은 규칙 S3-D9).
         $this->orderShippingRepository->replicateForOrderOption($shipping, $successor->id, [
+            'base_shipping_amount' => 0,
+            'extra_shipping_amount' => 0,
+            'total_shipping_amount' => 0,
+            'shipping_discount_amount' => 0,
+            'return_shipping_amount' => 0,
+            'mc_base_shipping_amount' => null,
+            'mc_extra_shipping_amount' => null,
+            'mc_total_shipping_amount' => null,
+            'mc_shipping_discount_amount' => null,
+            'mc_return_shipping_amount' => null,
             'shipping_status' => ShippingStatusEnum::SHIPPED,
             'carrier_id' => $item->redelivery_carrier_id,
             'tracking_number' => $item->redelivery_tracking_number,
@@ -3421,6 +3446,10 @@ class OrderExchangeService
 
     /**
      * 후속 주문옵션과 그 배송 행을 배송완료로 옮깁니다. (재발송도착 · 발송중 완료)
+     *
+     * 후속 주문옵션은 `shipping` 으로 생겨 구매자가 발송중에 구매확정할 수 있다. 확정은 받았다는
+     * 뜻이므로 상태는 그대로 두고 배송 행만 도착으로 옮긴다 — 배송완료로 되돌리면 구매확정 → 배송완료
+     * 역전이를 전이 가드가 거절해 도착·완료 처리가 통째로 막힌다.
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
      * @return void 반환값 없음
@@ -3435,14 +3464,16 @@ class OrderExchangeService
             return;
         }
 
-        $this->orderOptionService->changeStatusWithQuantity(
-            $successor,
-            OrderStatusEnum::DELIVERED,
-            (int) $successor->quantity,
-            [],
-            restoreStockOnCancel: false,
-            mergeSiblings: false,
-        );
+        if ($successor->option_status !== OrderStatusEnum::CONFIRMED) {
+            $this->orderOptionService->changeStatusWithQuantity(
+                $successor,
+                OrderStatusEnum::DELIVERED,
+                (int) $successor->quantity,
+                [],
+                restoreStockOnCancel: false,
+                mergeSiblings: false,
+            );
+        }
 
         // 배송 행도 배송완료로 옮긴다 — 구매자 주문상세 「배송 현황」 카드는 배송 행을 읽으므로, 상품만 옮기면
         // 상품 줄은 배송완료인데 카드는 배송중으로 남았다(#599 후속 실주문 실측). 상태 변경이 송장을 싣지 않아
@@ -4187,7 +4218,13 @@ class OrderExchangeService
 
             $redelivery = null;
 
-            if (! empty($payload['redelivery_address']) && is_array($payload['redelivery_address'])) {
+            if (array_key_exists('redelivery_address', $payload) && $payload['redelivery_address'] === null) {
+                // 명시적 null = 바꿔 둔 재발송지를 버리고 원 배송지로 되돌린다(수정 화면의
+                // [원 배송지로 되돌리기]). 키가 없는 것("손대지 않음")과 구분해야 화면이 보여 주는
+                // 주소와 신청서에 남는 주소가 갈리지 않는다. 직전 스냅샷을 base 로 쓰지 않는다.
+                $redelivery = $this->buildRedeliveryAddressSnapshot($order, null);
+                $updates['redelivery_address_snapshot'] = $redelivery;
+            } elseif (! empty($payload['redelivery_address']) && is_array($payload['redelivery_address'])) {
                 $redelivery = $this->buildRedeliveryAddressSnapshot(
                     $order,
                     $payload['redelivery_address'],

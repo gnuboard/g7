@@ -482,7 +482,9 @@ class PaymentCallbackController
         $dueDate = $vbank['dueDate'] ?? null;
         if (is_string($dueDate) && $dueDate !== '') {
             try {
-                $dueAt = Carbon::parse($dueDate);
+                // dueDate 는 오프셋(+09:00)이 붙은 한국 시각이다 — 앱 시간대(UTC)로 바꿔 저장하지 않으면 datetime 캐스트가
+                // 한국 시각 숫자를 그대로 UTC 칸에 넣어 기한이 9시간 늦게 저장된다(KCP·KG·나이스와 같은 처리).
+                $dueAt = Carbon::parse($dueDate)->setTimezone(config('app.timezone', 'UTC'));
             } catch (\Exception) {
                 $dueAt = null;
             }

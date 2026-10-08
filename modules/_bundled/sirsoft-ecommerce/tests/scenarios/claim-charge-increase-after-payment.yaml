@@ -16,6 +16,7 @@ axes:
 effects:
   - charge_increase_after_payment_creates_pending_difference
   - claim_completion_blocked_while_outstanding
+  - charge_decrease_after_payment_closes_the_pending_difference   # 받은 뒤 이하로 내리면 차액 대기 건을 닫는다(환급은 안 함) (S1-D13)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ChargeIncreaseAfterPaymentTest.php

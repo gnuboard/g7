@@ -61,7 +61,9 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * 권한 스코프는 **주문의 것을 물려받는다**(`module.php` 의 `claims` 권한). `{claimType}/{id}`·번호
  * 경로는 파라미터가 모델로 바인딩되지 않아 미들웨어의 스코프 판정이 건너뛰므로, 신청서를 찾은 뒤
  * `ClaimScopeGuard` 가 **그 라우트의 권한 식별자**로 다시 판정한다(조회는 `claims.read`, 전이는
- * `claims.update-status` …). 목록·건수는 저장소가 같은 조건을 쿼리에 건다.
+ * `claims.update-status` …). 목록·건수는 저장소가 같은 조건을 쿼리에 건다. 어느 경로든 운영자의
+ * 주문 조회 범위를 함께 건다(두 범위의 교집합 — EC-667). `orders/{order}/…` 경로도 미들웨어가 라우트
+ * 권한만 보므로 가드가 주문 조회 범위를 보탠다.
  */
 class ClaimController extends AdminBaseController
 {
@@ -444,6 +446,9 @@ class ClaimController extends AdminBaseController
     public function cancellableAmount(CancellableAmountRequest $request, Order $order): JsonResponse
     {
         try {
+            // 미들웨어는 라우트 권한(`claims.read`)만 본다 — 주문 조회 범위는 가드가 보탠다(EC-667).
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_READ);
+
             $result = $this->adminClaimService->cancellableAmountForOrder(
                 $order,
                 $request->refundId(),
@@ -484,6 +489,9 @@ class ClaimController extends AdminBaseController
     public function orderClaims(Order $order): JsonResponse
     {
         try {
+            // 미들웨어는 라우트 권한(`claims.read`)만 본다 — 주문 조회 범위는 가드가 보탠다(EC-667).
+            $this->claimScope->assertOrderAccessible($order, self::PERMISSION_READ);
+
             $byType = $this->userClaimService->listForOrder($order);
             $reasonLabels = $this->userClaimService->reasonLabelsFor($byType);
             // 환불 행의 원 신청서 번호(보완 5) — 이미 실은 같은 주문의 반품·교환에서 id → 번호 표를 만든다(추가 쿼리 0).
@@ -1053,7 +1061,7 @@ class ClaimController extends AdminBaseController
             'abilities' => ClaimAdminAbilities::forUser(Auth::user()),
             'complete_defaults' => $this->adminClaimService->completionDefaults(),
             'progress_steps' => $this->adminClaimService->progressSteps($claim),
-            // 선교환의 「회수」 줄(행 수 기준 회수 진행·반송 기한·지연) — 일반 교환·반품은 null.
+            // 선교환의 「회수」 줄(수량 기준 회수 진행·반송 기한·지연) — 일반 교환·반품은 null.
             'collection_lane' => ClaimProgressSteps::collectionLane($claim),
             // '배송지 다름' 뱃지의 근거 (D14). 저장된 두 주소의 비교로 도출하므로 화면이
             // 주소 필드를 다시 대조하지 않는다 — 대조 규칙이 두 곳에 생기면 한쪽만 바뀐다.

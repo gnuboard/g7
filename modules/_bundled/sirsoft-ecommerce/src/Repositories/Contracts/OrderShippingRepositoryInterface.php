@@ -104,6 +104,19 @@ interface OrderShippingRepositoryInterface
     public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping;
 
     /**
+     * 주문 옵션의 **모든** 배송 레코드에 배송 진행 상태·발생 시각을 반영합니다.
+     *
+     * 수량을 나눠 보낸 상품은 송장마다 배송 행이 따로 있다. 상태 전이(배송중·배송완료)는 그 상품의 행 전부에
+     * 적용해야 한다 — 첫 행만 고치면 나머지 송장이 배송중으로 남아 고객 「배송 현황」이 갈린다. 송장·택배사는
+     * 건드리지 않으며, 발생 시각은 행마다 **비어 있을 때만** 기록한다(같은 단계를 다시 지나도 덮지 않음).
+     *
+     * @param  int  $orderOptionId  주문 옵션 ID
+     * @param  array  $state  ['shipping_status' => string, 'shipped_at' => mixed, 'delivered_at' => mixed] 부분 배열
+     * @return int 갱신한 배송 레코드 수
+     */
+    public function updateProgressByOrderOptionId(int $orderOptionId, array $state): int;
+
+    /**
      * 주문 옵션의 첫 배송 레코드를 조회합니다.
      *
      * @param  int  $orderOptionId  주문 옵션 ID

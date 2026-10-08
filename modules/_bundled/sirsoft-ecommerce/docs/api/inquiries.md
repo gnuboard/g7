@@ -363,7 +363,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":19,"product_id":1732,"product":{"id":1732,"product…` | 내 문의 항목 배열 (각 항목: id, product 요약, product_name, is_answered, 게시판 연동 시 title/category/content/is_secret/reply/attachments) |
+| items | array | `[{"id":19,"product_id":1732,"product":{"id":1732,"product…` | 내 문의 항목 배열 (각 항목: id, product 요약, product_name(`product_name_snapshot` 의 현재 로케일 값 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다), is_answered, 게시판 연동 시 title/category/content/is_secret/reply/attachments) |
 | meta | object | `{"current_page":1,"per_page":25,"total":39,"last_page":2,…` | 페이지네이션 메타 (current_page/per_page/total/last_page/from/to, 문의 게시판 연동 여부 inquiry_available, abilities 답변·삭제 권한, board_settings) |
 
 **응답 예시**

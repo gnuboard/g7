@@ -43,6 +43,7 @@ effects:
   - order_option_events_log_status_transitions_with_label_keys
   - coupon_and_mileage_side_effects_are_logged
   - handler_stays_silent_when_there_is_nothing_to_log
+  - payment_time_earn_log_reads_as_scheduled # 결제 완료 시점 적립 훅은 「적립 예정」으로 남긴다(S3-D21)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php

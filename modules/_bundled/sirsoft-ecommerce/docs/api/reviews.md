@@ -705,7 +705,7 @@ _단건 응답: `data` 객체의 필드 (상태가 변경된 리뷰 리소스). 
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID |
 | user | object | `{"uuid":"a234c2b1-...","name":"API 문서 샘플 사용자","email":"apidoc-sample-user@example.com"}` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용, 주문 옵션에서 복사) |
-| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 |
+| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 리뷰 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -830,7 +830,7 @@ _단건 응답: `data` 객체의 필드 (생성된 리뷰 리소스, HTTP 201). 
 | order_option_id | integer | `1` | 리뷰가 연결된 주문 옵션 ID (요청값 그대로) |
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID (로그인 사용자) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (주문 옵션의 `option_snapshot` 을 복사) |
-| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 |
+| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
 | rating | integer | `5` | 별점 (1~5, 요청값 그대로) |
 | content | string | `예시 내용입니다.` | 리뷰 내용 (10~2000자, 요청값 그대로) |
 | content_mode | string | `text` | 콘텐츠 모드: text / html (미지정 시 text) |

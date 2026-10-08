@@ -144,12 +144,41 @@ class BulkPriceSubtractTest extends ModuleTestCase
             ->patchJson('/api/modules/sirsoft-ecommerce/admin/options/bulk-update', [
                 'ids' => [$this->product->id.'-'.$this->option->id],
                 'bulk_changes' => [
-                    'price_adjustment' => ['method' => 'percent', 'value' => 50],
+                    'price_adjustment' => ['method' => 'percent', 'value' => -150],
                 ],
             ])
             ->assertStatus(200);
 
-        // -9000 × 1.5 = -13,500 → 판매가 10,000 을 넘는 인하는 -10,000 으로 멈춘다
+        // 옵션 판매가 1,000(10,000 − 9,000) 의 150% 인하 = -500 → 판매가 0 아래로는 내려가지 않아 조정액 -10,000
         $this->assertEquals(-10000, (float) $this->option->refresh()->price_adjustment);
+    }
+
+    /**
+     * 상품 목록 「판매가 일괄 변경 — 인하 + %」는 옵션 판매가(상품 판매가 + 조정액)를 그 비율만큼 내린다.
+     *
+     * 조정액이 0 인 옵션에도 판매가가 실제로 내려가야 한다. 종전에는 조정액에만 비율을 곱해(0 × 0.9 = 0)
+     * 화면 안내(「판매가를 10% 인하합니다」)와 달리 판매가가 그대로였다(EC-699).
+     *
+     * @scenario endpoint=products_bulk_update, method=percent, result=within_floor
+     *
+     * @effects percent_based_on_option_selling_price
+     *
+     * @return void 반환값 없음
+     */
+    public function test_product_bulk_update_percent_decrease_lowers_option_selling_price(): void
+    {
+        $this->option->update(['price_adjustment' => 0]);
+
+        $this->actingAs($this->adminUser)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/products/bulk-update', [
+                'ids' => [$this->product->id],
+                'option_bulk_changes' => [
+                    'price_adjustment' => ['method' => 'percent', 'value' => -10],
+                ],
+            ])
+            ->assertStatus(200);
+
+        // 옵션 판매가 10,000 → 9,000 (조정액 -1,000)
+        $this->assertEquals(-1000, (float) $this->option->refresh()->price_adjustment);
     }
 }

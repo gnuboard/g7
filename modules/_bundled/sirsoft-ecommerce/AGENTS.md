@@ -136,12 +136,15 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 기록되고, 계좌를 묻지 않으며, 결제수단 자동승인 게이트를 거치지 않습니다(`hasCashToReturn`).
 입금 전 주문의 취소는 받은 돈이 없으므로 재계산 결과를 `total_paid_amount` 가 아니라 `total_due_amount`(받을 돈)로
 보내고 결제행은 입금 대기(`ready`)로 둡니다 — 남은 상품의 금액으로 [입금확인] 을 할 수 있어야 하기 때문입니다.
+단 [입금확인] 「기록만」으로 결제행에 입금이 기록된 결제 전 주문(`RefundExecutionService::hasRecordedDepositBeforePayment`)은
+받은 돈이 있는 주문입니다 — 취소 접수가 헤더에 받은 돈을 먼저 올리고(`syncPaidHeaderFromSettledPayment`, 미리보기는 같은 값의 사본)
+환불신청서를 만듭니다(S3-D7). 그 신청서가 열려 있는 동안 입금기한 만료 자동취소는 그 주문을 다시 집지 않습니다.
 
 **취소신청서(`OrderCancel` + `OrderCancelOption`)는 환불이 집행되는 순간 생깁니다.** 만드는
 지점은 `OrderCancellationService::recordCancellation()` **하나**이며, 그 메서드가 주문 장부
 확정(합계 재계산 · 누적 컬럼 · 상품 상태 전이 · 결제행 정리)까지 함께 맡습니다. 취소 단위는
 주문이 아니라 **옵션**입니다. 환불할 돈이 없는 주문(미결제·0원)만 환불신청서 없이 취소신청서가
-즉시 생깁니다.
+즉시 생깁니다(입금이 기록된 결제 전 주문은 미결제가 아닙니다 — 위 S3-D7).
 
 금액 계산은 `OrderAdjustmentService` 가 이미 적용된 쿠폰·마일리지의 안분을 되돌립니다
 (`adjustment.filter_restore_promotions` 필터로 그 안분 규칙을 확장할 수 있습니다). 쿠폰 복원·

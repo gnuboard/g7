@@ -10,6 +10,10 @@
 
 - 선택 상자 검색 결과 없음 문구(`common.no_results`, 「検索結果がありません」)의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기 「화면 상태」 고르개의 게시판 상태 이름 2건(「답글 펼침」·「검증 실패」, `editor.state.*`)을 일본어로 번역했습니다.
+- 주문완료 화면에서 같은 이름의 배송지가 이미 있어 저장하지 않았다는 안내(`shop.order_complete.address_name_exists`)의 일본어 번역을 추가했습니다.
+- 해외 주문의 교환 신청 화면 재발송지 [변경] 폼에 새로 생긴 도시·주 칸 라벨(`claim.apply.city`·`claim.apply.state` — 「都市」「州/道」)의 일본어 번역을 추가했습니다. 체크아웃 해외 주소 칸과 같은 표현입니다.
+- 내 정보·내 정보 수정의 배송국가 칸에 저장한 나라가 지금 배송할 수 없어 적용되지 않는다는 안내(`mypage.shipping_country_settings.saved_not_applied` — 「保存された配送国 {{saved}} は現在配送できない国のため適用されません。現在適用中の配送国: {{applied}}」)의 일본어 번역을 추가했습니다.
+- 주문서 결제 금액 상자의 마일리지 차감 전 금액 행 라벨(`shop.checkout.amount_before_points` — 「マイレージ差引前の金額」)의 일본어 번역을 추가했습니다.
 - 사용 마일리지를 차감하지 않은 주문의 반품·취소 신청 화면 반환액 표기(`claim.apply.comparison.refund_points_not_deducted` — 「0円（差し引かれていないマイレージ）」)의 일본어 번역을 추가했습니다.
 - 본인인증 메일 링크를 연 화면(본인 확인 결과 안내)의 일본어 문구를 추가했습니다.
 - 로그인 비밀번호 변경 단계·비밀번호 규칙 안내·마이페이지 비밀번호 상태 문구(`auth.password_change.*`·`auth.password_rules.*`·`mypage.profile.password_status.*`)를 일본어로 번역했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 없음).
@@ -59,6 +63,8 @@
 - 회원 주문·클레임 상세의 「마일리지로 환불」 금액과 유효기간 안내 문구(「マイレージで返金」·「マイレージで付与」)를 추가했습니다.
 - 회원 클레임 상세의 「교환 차액 환급」 줄 문구를 추가했습니다.
 - 회원·비회원 신청서 상세의 「환불 진행」 칸 문구(`claim.detail.linked_title`·`linked_source`·`linked_empty`)를 추가했습니다.
+- 수량 칸·+/- 버튼, 모바일 메뉴 닫기 버튼, 페이지 전환·로딩 표시의 읽기 이름(`common.quantity`·`common.quantity_decrease`·`common.quantity_increase`·`common.close_menu`·`common.page_transitioning`·`common.page_loading`)의 일본어 번역을 추가했습니다.
+- 장바구니 상품 줄 삭제 버튼의 읽기 이름(`shop.cart.delete_item` — 「상품 삭제」)의 일본어 번역을 추가했습니다.
 
 ### Removed
 

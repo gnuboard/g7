@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 
 /**
@@ -21,6 +22,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
  */
 class StoreShippingPolicyRequest extends FormRequest
 {
+    use ResolvesSiteLocale;
+
     /**
      * 권한 검사는 라우트의 permission 미들웨어가 담당하므로 FormRequest 레벨은 통과시킵니다.
      *
@@ -555,7 +558,7 @@ class StoreShippingPolicyRequest extends FormRequest
             return;
         }
 
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         foreach ($countrySettings as $i => $cs) {
             if (($cs['shipping_method'] ?? '') !== 'custom') {

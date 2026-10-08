@@ -1,0 +1,17 @@
+feature: 쿠폰 기간 표기의 사이트 시간대
+
+description: |
+  쿠폰의 사용 기간·발급 기간 표기가 저장된 UTC 가 아니라 사이트 시간대의 날짜로 나온다.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07).
+
+axes:
+  case: [c01, c02]
+  # c01: test_valid_period_formatted_uses_site_timezone_dates
+  # c02: test_issue_period_formatted_uses_site_timezone_dates
+
+effects:
+  - coupon_period_uses_site_timezone
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/CouponPeriodFormattedTimezoneTest.php

@@ -85,6 +85,20 @@
             <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="redelivery.address2" value="{{$event.target.value}}"/>
           </on>
         </input>
+        <!-- 해외 주문의 도시 — 재발송지 스냅샷이 따로 담는 칸이라 빠지면 주소가 완결되지 않는다(S2-D8). 국내 주문에는 칸이 없어 핸들러의 해외 표식으로 가른다. -->
+        <input data-if="{{_global.adminClaimRequest?.redeliveryInternational === true}}" type="text" :maxLength="100" class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.order.claim_request.city" value="{{_global.adminClaimRequest?.redelivery?.city ?? ''}}">
+          <on type="change">
+            <!-- 교환 재발송지 — 도시 (해외) -->
+            <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="redelivery.city" value="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <!-- 해외 주문의 주/지역 -->
+        <input data-if="{{_global.adminClaimRequest?.redeliveryInternational === true}}" type="text" :maxLength="100" class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.order.claim_request.state" value="{{_global.adminClaimRequest?.redelivery?.state ?? ''}}">
+          <on type="change">
+            <!-- 교환 재발송지 — 주/지역 (해외) -->
+            <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="redelivery.state" value="{{$event.target.value}}"/>
+          </on>
+        </input>
       </div>
       <!-- 환불 계좌 (반품만) — 종전 취소 창과 같은 조건·같은 문구다: 사람이 송금하는 결제수단(가상계좌·무통장)이고 돌려줄 돈이 있을 때만 선다. 주문 때 적은 계좌를 핸들러가 미리 채운다(`payment.refund_bank_*`). -->
       <div data-ref="acr_012_refund_bank" data-if="{{_global.adminClaimRequest?.type === 'return' &amp;&amp; ['vbank', 'dbank'].includes(order.data?.payment?.payment_method) &amp;&amp; ((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0)}}">

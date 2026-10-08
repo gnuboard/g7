@@ -209,7 +209,10 @@ class ValidateP2MoneyLedgerTest extends ModuleTestCase
         $order = $this->paidClaimOrder();
         $refund = $this->makeDirectRefund($order, $order->options->first(), 1);
 
+        // PG 가 **받아서** 거절한 경우다 — 리스너가 `handled` 를 싣지 않으면 서비스는 플러그인 비활성(P-D6)으로
+        // 읽어 다른 키를 낸다. 실제 PG 리스너는 자기 결제면 handled 를 켠다(S3-D19 — 픽스처 갱신).
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn (array $default) => array_merge($default, [
+            'handled' => true,
             'success' => false,
             'error_code' => 'DECLINED',
             'error_message' => 'declined by issuer',

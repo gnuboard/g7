@@ -42,6 +42,7 @@ exclusions:
   - { threat: forged_approval_url_host, context: kakaopay_callback, reason: "동일" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # DB 영구 replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival_db
   - replay_response_is_idempotent_ok
@@ -98,6 +99,7 @@ effects:
   - auth_callback_keeps_pre_authorize_failure_retryable_when_amount_matches_order
   - auth_callback_softens_pre_authorize_failures_to_silent_redirect
   - vbank_issue_stores_only_whitelisted_pg_response_fields
+  - vbank_issue_tolerates_malformed_due_date   # 기한 형식이 깨져도 발급 기록, 기한만 null (KCP·KG 와 같은 예외 처리)
   - auth_callback_stores_only_whitelisted_pg_response_fields
   - auth_callback_stores_easy_pay_display_metadata
   - auth_callback_redirects_to_complete_page_on_valid_payment

@@ -479,14 +479,22 @@
                                         }
                                     },
                                     {
-                                        "comment": "audit:allow layout-list-context-navigate-merge-query 유형 전환은 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). `type` 만 갈아끼운다.",
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 유형 전환은 유형 종속 필터의 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). 대신 서브탭 뱃지를 센 유형 공통 필터(`ClaimListRequest::countFilters()` — 기간·검색·회원구분·금액·통화)는 그대로 이어 간다: 뱃지는 \"그 탭으로 가면 몇 건이 보이는가\" 인데, 이것까지 버리면 「반품 4」를 눌러 17건을 보게 된다.",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/ecommerce/claims",
                                             "replace": true,
                                             "transition_overlay_target": "claim_datagrid__body",
                                             "query": {
-                                                "type": "{{$args[0]}}"
+                                                "type": "{{$args[0]}}",
+                                                "from": "{{query.from || null}}",
+                                                "to": "{{query.to || null}}",
+                                                "search_field": "{{query.search_field || null}}",
+                                                "search_keyword": "{{query.search_keyword || null}}",
+                                                "requester_type": "{{query.requester_type || null}}",
+                                                "min_amount": "{{query.min_amount || null}}",
+                                                "max_amount": "{{query.max_amount || null}}",
+                                                "currency_code": "{{query.currency_code || null}}"
                                             }
                                         }
                                     }

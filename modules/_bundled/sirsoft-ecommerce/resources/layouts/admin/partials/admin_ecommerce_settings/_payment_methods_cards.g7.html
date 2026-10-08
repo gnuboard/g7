@@ -32,7 +32,7 @@
                 <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>
               </on>
             </toggle>
-            <button data-if="{{$method._orphaned}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <button data-if="{{$method._orphaned}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned">
               <on type="click">
                 <!-- 결제수단 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다. -->
                 <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}" :hasChanges="true"/>

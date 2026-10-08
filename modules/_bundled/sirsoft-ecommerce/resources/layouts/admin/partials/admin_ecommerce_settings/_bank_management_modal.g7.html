@@ -71,7 +71,7 @@
               </td>
               <!-- 삭제 버튼 -->
               <td data-if="{{!$parent._computed.isReadOnly}}" class="text-center align-top">
-                <button type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                <button type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.delete">
                   <on type="click">
                     <!-- 은행 삭제. 이미 그 은행으로 등록된 계좌가 있어도 여기서는 막지 않는다 — 정합성 판정은 저장 시 서버가 한다. -->
                     <set-state target="$parent._local" form.order_settings.banks="{{($parent._local.form?.order_settings?.banks ?? []).filter((_, i) => i !== bank._idx)}}"/>

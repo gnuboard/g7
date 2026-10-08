@@ -54,7 +54,10 @@
               <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
               <navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/>
             </on>
-            <img src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
+            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
+            <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+              <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+            </div>
           </button>
           <!-- 상품 정보 -->
           <div class="flex-1 min-w-0">

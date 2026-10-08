@@ -245,6 +245,7 @@ return [
         'user_order_create' => '주문 완료 (#:order_id)',
         'user_order_option_confirm' => '구매확인 (옵션 #:option_id)',
         'mileage_earn' => '마일리지 적립 (:amount)',
+        'mileage_earn_scheduled' => '마일리지 적립 예정 (:amount) — 적립 시점에 지급',
         'mileage_use' => '마일리지 사용 (:amount)',
         'mileage_restore' => '마일리지 복원 (:amount)',
         'mileage_refund_credit' => '환불금 마일리지 지급 (:amount)',

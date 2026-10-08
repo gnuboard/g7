@@ -34,8 +34,8 @@
               <set-state target="global" mileageManual.memberSearchKeyword="{{$event.target.value}}"/>
               <api-call :auth_required="true" if="{{String($event.target.value ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
-                  <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. -->
-                  <set-state target="global" mileageManual.memberSearchResults="{{response?.data ?? []}}" mileageManual.memberSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
+                  <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다). -->
+                  <set-state target="global" mileageManual.memberSearchResults="{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? [])}}" mileageManual.memberSearchResultsKeyword="{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null)}}"/>
                 </success>
                 <query keyword="{{$event.target.value}}"/>
               </api-call>

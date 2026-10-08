@@ -24,7 +24,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input data-type="composite" value="{{type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 유형 이름(언어별). 고객 화면에 그대로 보인다. -->
                 <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>

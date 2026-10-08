@@ -85,7 +85,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon"
+                                        "className": "btn-icon",
+                                        "aria-label": "$t:common.edit"
                                     },
                                     "children": [
                                         {
@@ -124,7 +125,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                        "className": "btn-icon text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                        "aria-label": "$t:common.delete"
                                     },
                                     "children": [
                                         {

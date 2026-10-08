@@ -931,7 +931,7 @@
                                                     "props": {
                                                         "className": "text-xs text-secondary"
                                                     },
-                                                    "text": "{{payment?.cash_receipt_provider ?? ''}}"
+                                                    "text": "{{payment?.cash_receipt_provider_label ?? ''}}"
                                                 }
                                             ]
                                         },
@@ -1266,41 +1266,71 @@
                                             },
                                             "actions": [
                                                 {
-                                                    "comment": "관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401.",
+                                                    "comment": "요청 중에는 잠근다 — 두 번 누르면 결제사 재발급이 두 번 나간다(S3-D22).",
                                                     "type": "click",
-                                                    "handler": "apiCall",
-                                                    "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt/reissue",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "POST"
-                                                    },
-                                                    "onSuccess": [
+                                                    "handler": "sequence",
+                                                    "actions": [
                                                         {
-                                                            "handler": "refetchDataSource",
+                                                            "handler": "setState",
                                                             "params": {
-                                                                "dataSourceId": "order"
+                                                                "target": "global",
+                                                                "isCashReceiptBusy": true
                                                             }
                                                         },
                                                         {
-                                                            "handler": "toast",
+                                                            "comment": "관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401.",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt/reissue",
+                                                            "auth_required": true,
                                                             "params": {
-                                                                "type": "success",
-                                                                "message": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_success"
-                                                            }
+                                                                "method": "POST"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isCashReceiptBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "order"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_success"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isCashReceiptBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_failed')}}"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
-                                                    ],
-                                                    "onError": {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_failed')}}"
-                                                        }
-                                                    }
+                                                    ]
                                                 }
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"
+                                                "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white",
+                                                "disabled": "{{_global.isCashReceiptBusy === true}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue"
                                         },
@@ -1320,39 +1350,70 @@
                                             },
                                             "actions": [
                                                 {
-                                                    "comment": "관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401.",
+                                                    "comment": "결제사 취소는 되돌릴 수 없다 — 확인을 받고, 요청 중에는 잠근다(S3-D22). 확인을 취소하면 순차 동작 전체가 서지 않는다.",
                                                     "type": "click",
-                                                    "handler": "apiCall",
-                                                    "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "DELETE"
-                                                    },
-                                                    "onSuccess": [
+                                                    "handler": "sequence",
+                                                    "actions": [
                                                         {
-                                                            "handler": "refetchDataSource",
+                                                            "handler": "setState",
                                                             "params": {
-                                                                "dataSourceId": "order"
+                                                                "target": "global",
+                                                                "isCashReceiptBusy": true
                                                             }
                                                         },
                                                         {
-                                                            "handler": "toast",
+                                                            "comment": "관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401.",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt",
+                                                            "auth_required": true,
                                                             "params": {
-                                                                "type": "success",
-                                                                "message": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_success"
-                                                            }
+                                                                "method": "DELETE"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isCashReceiptBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "order"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_success"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isCashReceiptBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_failed')}}"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
                                                     ],
-                                                    "onError": {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_failed')}}"
-                                                        }
-                                                    }
+                                                    "confirm": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_confirm"
                                                 }
                                             ],
                                             "props": {
+                                                "disabled": "{{_global.isCashReceiptBusy === true}}",
                                                 "type": "button",
                                                 "className": "px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                             },

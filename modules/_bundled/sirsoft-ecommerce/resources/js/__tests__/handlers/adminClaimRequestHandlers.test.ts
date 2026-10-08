@@ -179,12 +179,60 @@ describe('접수 창 열기 (openAdminClaimRequest)', () => {
             zipcode: '06236',
             address1: '서울 강남구 테헤란로 1',
             address2: '101호',
+            city: '',
+            state: '',
         });
+        expect(state.redeliveryInternational).toBe(false);
         expect(state.approve).toBe(true);
         expect(state.submitting).toBe(false);
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_admin_claim_request');
         // 반품은 교환 옵션을 부르지 않는다
         expect(mockG7Core.api.get).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 해외 주문은 국내 주소 칸이 빈 문자열로 온다 — 해외 칸(거리·도시·주·우편번호)으로 채워야 창이
+     * 빈 주소로 열리지 않고, 접수 본문에도 도시·주가 실린다(2026-10-07 S4 실측 → S2-D8).
+     *
+     * @scenario claim_type=exchange, gate_side=shipped
+     * @effects admin_request_modal_seeds_the_international_redelivery_address
+     */
+    it('해외 주문은 재발송지를 해외 주소 칸으로 채우고 도시·주까지 접수 본문에 싣는다', async () => {
+        await openRequest('exchange', {
+            shippingAddress: {
+                recipient_name: 'Jane Doe',
+                recipient_phone: '+1-212-555-0101',
+                zipcode: '',
+                address: '',
+                address_detail: '',
+                address_line_1: '350 5th Ave',
+                address_line_2: 'Suite 2',
+                intl_city: 'New York',
+                intl_state: 'NY',
+                intl_postal_code: '10118',
+                recipient_country_code: 'US',
+            },
+        });
+
+        expect(mockGlobalState.adminClaimRequest.redelivery).toEqual({
+            recipient_name: 'Jane Doe',
+            phone: '+1-212-555-0101',
+            zipcode: '10118',
+            address1: '350 5th Ave',
+            address2: 'Suite 2',
+            city: 'New York',
+            state: 'NY',
+        });
+        expect(mockGlobalState.adminClaimRequest.redeliveryInternational).toBe(true);
+
+        // 미리보기는 사유가 있어야 돌고, 우편번호가 바뀔 때 다시 불린다 — 그 본문에 고친 도시와 그대로인 주가 함께 실린다.
+        setField('reasonCode', 'defective');
+        await flushPreview();
+        setField('redelivery.city', 'Boston');
+        setField('redelivery.zipcode', '02108');
+        await flushPreview();
+
+        expect(previewCalls().at(-1)![1].redelivery_address).toEqual(expect.objectContaining({ zipcode: '02108', city: 'Boston', state: 'NY' }));
     });
 
     /**
@@ -413,6 +461,28 @@ describe('청구 미리보기 (setAdminClaimRequestField · setAdminClaimRequest
 
         expect(mockGlobalState.adminClaimRequest.previewError).toBe('청구액을 계산하지 못했습니다.');
         expect(mockGlobalState.adminClaimRequest.previewLoading).toBe(false);
+    });
+
+    /**
+     * 서버가 터진 5xx 의 본문 문구는 사유가 아니다 — 운영 환경(디버그 끔)의 500 은 언제나 `{"message":"Server Error"}`
+     * 를 싣는다. 그것을 그대로 띄우면 운영자는 영문 원문을 본다(S1-D9 실측: 사유 고른 뒤 미리보기 500 → 창에 「Server Error」).
+     *
+     * @effects admin_request_server_error_shows_localized_message
+     */
+    it('5xx 응답의 본문 문구 대신 번역된 폴백 문구를 띄운다 (미리보기·접수)', async () => {
+        await openRequest('return');
+        mockG7Core.api.post.mockRejectedValueOnce({ response: { status: 500, data: { message: 'Server Error' } } });
+
+        setField('reasonCode', 'change_of_mind');
+        await flushPreview();
+
+        expect(mockGlobalState.adminClaimRequest.previewError).toBe('청구액을 계산하지 못했습니다.');
+
+        mockG7Core.api.post.mockRejectedValueOnce({ response: { status: 503, data: { message: 'Service Unavailable' } } });
+
+        await expect(submitAdminClaimRequestHandler({ handler: 'sirsoft-ecommerce.submitAdminClaimRequest' }, mockContext)).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('접수하지 못했습니다.');
     });
 
     /**

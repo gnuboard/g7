@@ -177,8 +177,10 @@ describe('설정 클레임 탭 — 구성', () => {
    * @effects settings_claim_reason_sub_tab_follows_url
    */
   it('상위 탭 전환은 고른 하위 탭을 비워, 다시 돌아오면 주소(sub_tab 없음)와 화면(교환)이 어긋나지 않는다', () => {
+    // 탭 전환은 「저장하지 않은 변경」 확인 창(S5-D41) 뒤로 갈렸다 — 정리는 변경이 없을 때의 갈래(if 없는 else)가 하고, 창 [이동] 은 같은 목록을 부모 폼에 한다(adminEcommerceSettingsUnsavedTabChange 가 키 일치를 단언)
     const onTabChange = findNode(settingsShell, (n) => n?.id === 'tab_navigation').actions.find((a: any) => a.event === 'onTabChange');
-    const clear = onTabChange.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
+    const elseBranch = onTabChange.conditions.find((c: any) => c.if === undefined);
+    const clear = elseBranch.then.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
     expect(clear.params).toHaveProperty('claimReasonTab', null);
   });
 
@@ -446,16 +448,17 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     ['교환', exchangeSection, 'exchangeReasonForm', 'claim.exchange_reasons'],
     ['반품', returnSection, 'returnReasonForm', 'claim.return_reasons'],
     ['환불', refundSection, 'refundReasonForm', 'claim.refund_reasons'],
-  ])('%s 사유명 필수 판정은 현재 로케일이다 — ko 고정 금지 (D23)', (_label, layout, form, section) => {
-    // 화면이 `name.ko` 를 고정으로 요구하면 en/ja 로케일 운영자는 `*` 붙은 칸을 채워도 저장 버튼에서
-    // 막히고, 서버(현재 로케일 필수)와 규칙이 갈린다. 게이트·오류 플래그·행 오류 바인딩 세 곳 모두
-    // 현재 로케일을 읽어야 한다.
+  ])('%s 사유명 필수 판정은 사이트 기본 언어다 — 보는 언어·ko 고정 금지 (D23 → B3)', (_label, layout, form, section) => {
+    // 필수 언어는 서버 규칙과 같은 사이트 기본 언어(`_global.appConfig.siteLocale`)다(제품 결정 2026-10-08, 후속 B 세션 B3).
+    // 화면이 보는 언어나 `ko` 고정으로 판정하면 서버(사이트 기본 언어 필수)와 규칙이 갈려, `*` 붙은 칸을
+    // 채워도 저장 버튼에서 막히거나 422 를 받는다. 게이트·오류 플래그·행 오류 바인딩 세 곳 모두 같은 축을 읽는다.
     const text = JSON.stringify(layout);
 
     expect(text.includes(`_local.${form}?.name?.ko`), 'ko 고정 게이트가 남아 있다').toBe(false);
-    expect(text.includes(`_local.${form}?.name?.[($locale ?? 'ko')]`)).toBe(true);
+    expect(text.includes(`_local.${form}?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')]`)).toBe(true);
+    expect(text.includes(`_local.${form}?.name?.[($locale ?? 'ko')]`), '보는 언어 게이트가 남아 있다').toBe(false);
     expect(text.includes(`'${section}.' + reason._idx + '.name.ko'`), '행 오류 바인딩이 ko 고정이다').toBe(false);
-    expect(text.includes(`'${section}.' + reason._idx + '.name.' + ($locale ?? 'ko')`)).toBe(true);
+    expect(text.includes(`'${section}.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')`)).toBe(true);
   });
 
   /**
@@ -471,7 +474,8 @@ describe('사유 카탈로그 3종 — 각자의 상태 키를 읽고 쓴다', (
     const input = findNode(layout, (n) => n.name === 'MultilingualInput');
 
     expect(input).toBeDefined();
-    expect(String(input.props?.error ?? '')).toContain(`'${section}.' + reason._idx + '.name.' + ($locale ?? 'ko')`);
+    // 서버 422 키는 name.{사이트 기본 언어}(후속 B 세션 B3)
+    expect(String(input.props?.error ?? '')).toContain(`'${section}.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')`);
   });
 
 });
@@ -1024,26 +1028,28 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     /**
      * @effects settings_claim_reason_name_required_locale_is_current_locale
      */
-    it('확정 게이트는 현재 로케일의 이름을 요구한다 (시드와 같은 축)', () => {
-      const gates = partialSources.flatMap((source) => source.match(/name\?\.\[\(\$locale \?\? 'ko'\)\]/g) ?? []);
-      expect(gates.length, '확정 게이트가 현재 로케일을 읽지 않는다 — 시드만 넓히면 서버 422 를 화면이 막지 못한다').toBeGreaterThanOrEqual(5);
+    it('확정 게이트는 사이트 기본 언어의 이름을 요구한다 (서버 규칙과 같은 축)', () => {
+      const gates = partialSources.flatMap((source) => source.match(/name\?\.\[\(_global\.appConfig\?\.siteLocale \?\? \$locale \?\? 'ko'\)\]/g) ?? []);
+      expect(gates.length, '확정 게이트가 사이트 기본 언어를 읽지 않는다 — 서버 422 를 화면이 막지 못한다').toBeGreaterThanOrEqual(5);
+      const viewerLocaleGates = partialSources.flatMap((source) => source.match(/name\?\.\[\(\$locale \?\? 'ko'\)\]/g) ?? []);
+      expect(viewerLocaleGates, '확정 게이트가 보는 언어로 되돌아갔다').toEqual([]);
       const koFixed = partialSources.flatMap((source) => source.match(/Form\?\.name\?\.ko/g) ?? []);
       expect(koFixed, '확정 게이트가 ko 고정으로 되돌아갔다').toEqual([]);
     });
 
     // 읽는 쪽의 모집단은 게이트만이 아니다. 저장 실패 시 서버가 돌려주는 422 키는
-    // `...name.{현재로케일}` 이라, 오류 조회 키가 ko 고정이면 비-ko 관리자에게는 필드
+    // `...name.{사이트 기본 언어}` 라, 오류 조회 키가 ko 고정이면 비-ko 관리자에게는 필드
     // 오류가 **표시되지 않는다**(토스트만 뜬다). 두 소비처가 같은 축을 보는지 함께 고정한다.
     /**
      * @effects settings_server_field_error_keys_follow_the_current_locale
      */
-    it('서버 422 필드 오류 조회 키도 현재 로케일을 쓴다', () => {
+    it('서버 422 필드 오류 조회 키도 사이트 기본 언어를 쓴다', () => {
       const errorKeys = partialSources.flatMap(
-        (source) => source.match(/\.name\.' \+ \(\$locale \?\? 'ko'\)/g) ?? []
+        (source) => source.match(/\.name\.' \+ \(_global\.appConfig\?\.siteLocale \?\? \$locale \?\? 'ko'\)/g) ?? []
       );
       expect(
         errorKeys.length,
-        '오류 조회 키가 현재 로케일을 읽지 않는다 — 비-ko 관리자는 어느 칸이 문제인지 알 수 없다',
+        '오류 조회 키가 사이트 기본 언어를 읽지 않는다 — 서버 422 키(name.{사이트 기본 언어})와 어긋나 어느 칸이 문제인지 알 수 없다',
       ).toBeGreaterThanOrEqual(5);
 
       const koFixedErrorKeys = partialSources.flatMap(

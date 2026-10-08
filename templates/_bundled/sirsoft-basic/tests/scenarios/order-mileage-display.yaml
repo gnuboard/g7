@@ -1,0 +1,33 @@
+feature: 주문 화면 마일리지 표시
+
+description: |
+  주문서 결제 금액 요약·주문완료 결제 요약·마이페이지 주문 카드는 마일리지를 쓰거나 적립하면 그 행을 보이고,
+  서버가 내보내는 키(summary.points_used_formatted · order.total_points_used_amount(_formatted) ·
+  order.total_earned_points_amount(_formatted))를 바인딩한다.
+
+  주문서 요약 상자는 마일리지를 쓰면 「상품 금액 → 마일리지 차감 전 금액 → 마일리지 사용 → 적립 예정 → 총 결제금액」 순으로 보인다.
+  차감 전 금액 행은 마일리지를 쓸 때만 보인다.
+
+  수정 이력:
+    - 이슈 #44 전수조사: 마일리지 시스템 도입 전 완성된 주문 화면들이 마일리지 사용·적립 행을 빠뜨리거나
+      서버가 내보내지 않는 키를 바인딩하던 회귀를 막는다.
+    - 이커머스 전수 실측 [13] 후속C: 주문서 「결제 예정금액」 행이 마일리지 차감 전 금액인데 마일리지 사용 행 아래에 있어
+      차감 후 금액처럼 읽혔고, 관리자 화면의 「결제예정금액」(차감 후)과 같은 말이 두 뜻으로 쓰였다. 라벨을
+      「마일리지 차감 전 금액」으로 바꾸고 마일리지 사용 행 위로 옮겼다. 장바구니 요약의 「결제 예정금액」은 그대로 둔다.
+
+axes:
+  points: [used, none]
+
+effects:
+  - checkout_points_used_row_binds_exposed_key           # 주문서 마일리지 사용 행 — points_used > 0 조건, points_used_formatted
+  - amount_before_points_row_above_points_used           # 주문서 차감 전 금액 행이 마일리지 사용 행보다 위
+  - amount_before_points_label_distinct_from_payment_due # 라벨 「마일리지 차감 전 금액」, 값은 summary.payment_amount
+  - amount_before_points_row_hidden_without_points       # 마일리지 0 이면 차감 전 금액 행 없음
+  - order_complete_shows_points_used_and_earned          # 주문완료 결제 요약 마일리지 사용·적립 예정 행
+  - mypage_order_card_shows_points_used_and_earned       # 마이페이지 주문 카드 마일리지 사용·적립 예정 표시
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/order-mileage-display.test.tsx
+
+validation:
+  browser_check: 전용 Chrome 실측 — 측정 회원 무통장 주문서에서 마일리지 일부 적용·0 적용, ko/en 라벨(주문 버튼은 누르지 않음)

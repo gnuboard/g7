@@ -66,7 +66,7 @@
         <div data-each="def, defIdx in {{ecommerceNotificationDefinitions?.data?.data ?? []}}" class="admin-card mb-3">
           <div class="flex-start gap-3">
             <div class="flex-shrink-0 pt-0.5">
-              <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{(_local.expandedNotifications ?? {})[def.id] ? 'true' : 'false'}}">
                 <on type="click">
                   <!-- 이 알림 줄의 상세 펼침/접힘. 여러 줄을 동시에 펼칠 수 있어 id 별 참/거짓 맵으로 담는다. -->
                   <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>

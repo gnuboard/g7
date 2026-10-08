@@ -165,4 +165,31 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
 
         return $shipping;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateProgressByOrderOptionId(int $orderOptionId, array $state): int
+    {
+        if (! isset($state['shipping_status'])) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        foreach ($this->model->where('order_option_id', $orderOptionId)->get() as $shipping) {
+            $payload = ['shipping_status' => $state['shipping_status']];
+
+            foreach (['shipped_at', 'delivered_at'] as $timestamp) {
+                if (isset($state[$timestamp]) && $shipping->{$timestamp} === null) {
+                    $payload[$timestamp] = $state[$timestamp];
+                }
+            }
+
+            $shipping->fill($payload)->save();
+            $updated++;
+        }
+
+        return $updated;
+    }
 }

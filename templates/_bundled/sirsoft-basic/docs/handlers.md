@@ -543,6 +543,11 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 | `currencyCode` | string | ❌ | 통화 코드 (미지정 시 표시 통화 → 기본 통화 순) |
 | `locale` | string | ❌ | 로케일 (미지정 시 브라우저 로케일) |
 
+원화(KRW·₩)는 보는 언어의 접두·접미를 이커머스 번역 키 `sirsoft-ecommerce.currency.krw_prefix`·`krw_suffix` 에서 읽어
+붙인다 — ko 「10,000원」·en 「₩10,000」·ja 「10,000ウォン」. 서버 금액 표기(`*_formatted`)와 같은 규칙이라 한 화면에서
+섞이지 않는다. 번역을 읽지 못하면 종전 표기(금액 뒤 「원」)로 돌아간다. 레이아웃 표현식에서 원화 금액을 직접 이어 붙일
+때도 `$t('sirsoft-ecommerce.currency.krw_prefix') + 금액 + $t('sirsoft-ecommerce.currency.krw_suffix')` 로 적고 고정 「원」을 쓰지 않는다.
+
 통화 표기는 **쇼핑몰 설정**(`language_currency.currencies`)의 기호와 소수 자릿수를 따릅니다.
 고정 통화표를 두지 않으므로 운영자가 추가한 통화도 그대로 표기됩니다.
 

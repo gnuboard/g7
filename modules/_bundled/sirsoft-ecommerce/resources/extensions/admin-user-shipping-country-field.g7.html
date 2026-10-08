@@ -6,6 +6,8 @@
   주입이 **두 군데**로 갈린다 — 탭 목록에 항목 하나(`user_form_tabs`, inject_props)와 그 탭이 펼칠
   본문(`extension_form_content`, append_child). 본문만 넣으면 카드는 뜨는데 **책갈피 탭이 없어**
   찾아갈 수가 없다. 둘을 잇는 것은 `id` 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+  그래서 탭 항목의 `if` 는 카드의 표시 조건(해외배송 켜짐 포함)과 **같은 식**이다 — 해외배송을 끈
+  쇼핑몰에서 탭만 남으면 눌러도 갈 곳이 없는 빈 탭이 된다.
   폭은 `md:w-64` 를 쓴다 — `sm:w-64` 는 관리자 템플릿 safelist 에 없어 CSS 가 생성되지 않고,
   그러면 `w-full` 만 남아 Select 래퍼가 내용 폭으로 접힌다(실측 113px). -->
 <extension target-layout="admin_user_form" priority="331">
@@ -13,7 +15,7 @@
     <props>
       <prop name="tabs">
         <append>
-          <item id="ext_user_shipping_country" label="$t:sirsoft-ecommerce.admin.user_shipping_country.title" iconName="earth-americas" if="{{!!route?.id}}"/>
+          <item id="ext_user_shipping_country" label="$t:sirsoft-ecommerce.admin.user_shipping_country.title" iconName="earth-americas" if="{{!!route?.id &amp;&amp; user?.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}"/>
         </append>
       </prop>
     </props>

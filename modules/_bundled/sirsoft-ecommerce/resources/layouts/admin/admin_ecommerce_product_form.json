@@ -82,7 +82,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -108,7 +118,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -134,7 +154,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -160,7 +190,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -186,7 +226,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -208,7 +258,17 @@
             "cache": {
                 "ttl": 300
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -230,7 +290,17 @@
             "cache": {
                 "ttl": 600
             },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "unavailable": true
+                }
+            },
             "errorHandling": {
+                "403": {
+                    "comment": "상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다",
+                    "handler": "suppress"
+                },
                 "default": {
                     "handler": "showErrorPage",
                     "params": {
@@ -389,6 +459,15 @@
         {
             "handler": "sirsoft-ecommerce.setDefaultShippingPolicy",
             "if": "{{!route.itemCode}}"
+        },
+        {
+            "comment": "수정·복사 진입: 위 기본값(true)대로 두면 기본이 아닌 정책을 쓰는 상품도 「기본 배송정책 사용」 이 켜진 채 선택지가 잠긴다. 저장된 정책이 기본 정책일 때만 켠다",
+            "handler": "setState",
+            "if": "{{!!route.itemCode || !!query?.copy_id}}",
+            "params": {
+                "target": "local",
+                "ui.useDefaultShippingPolicy": "{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p => p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) && p.is_default === true)}}"
+            }
         }
     ],
     "slots": {
@@ -813,12 +892,13 @@
                                                                 "text": "{{$localized(copy_source?.data?.name) || '-'}}"
                                                             },
                                                             {
+                                                                "comment": "원본 코드는 진입 주소의 copy_id 에서 — 복사 데이터의 product_code 는 새 상품용으로 미리 채번한 코드다",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
                                                                     "className": "text-label"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}"
+                                                                "text": "$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}"
                                                             },
                                                             {
                                                                 "type": "basic",

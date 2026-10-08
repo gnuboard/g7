@@ -198,7 +198,7 @@
 | refund_product_amount_formatted | string | `0원` | 환불 상품 금액 표기 |
 | mc_additional_product_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 추가 상품 금액의 보조 통화 맵. 신청 상품 행에 박제된 차액(`mc_price_difference`)을 부호별로 갈라 **서버가 합산**한 값이다 — 화면이 통화별 금액을 직접 더하면 그 규칙이 화면마다 갈리고 환율을 다시 보게 된다. 신청 상품 관계가 로드되지 않은 응답에서는 근거가 없어 `null` 이며 화면은 그 줄을 세우지 않는다 |
 | mc_refund_product_amount | object\|null | `{"KRW":1000,"USD":0.75}` | 환불 상품 금액의 보조 통화 맵. 기준 통화 줄이 `−` 를 앞에 붙여 그리므로 **절대값**으로 낸다 |
-| redelivery_address_snapshot | object\|null | — | 재발송지 스냅샷 (`recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`, `changed_by_user`) |
+| redelivery_address_snapshot | object\|null | — | 재발송지 스냅샷 (`recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `city`, `state`, `country_code`, `changed_by_user`). 해외 주문은 국내 칸이 비어 있어 `zipcode`·`address1`·`address2` 를 해외 우편번호·거리 주소 두 줄로 채우고 도시·주를 `city`·`state` 에 담는다(국내 주문은 두 칸 `null`). 두 칸이 생기기 전에 저장된 스냅샷에는 키가 없다 |
 | redelivered_at_formatted | string\|null | `null` | **신청서 전체**의 재발송 완료 일시 (S2 — 상품별은 행 `redelivered_at_formatted`) |
 | exchange_mode / exchange_mode_label / is_advance_exchange | string / string / boolean | `advance` / `선교환` / `true` | 진행 방식 — 선교환은 새 물건을 먼저 보내고 헌 물건을 나중에 회수한다 |
 | collection_due_at_formatted | string\|null | `2026-10-09` | 선교환 헌 물건 반송 기한 (발송이 시작되면 잡힌다) |
@@ -261,7 +261,8 @@
 | outstanding_amount_formatted | string | `3,000원` | 미수납액 표기 |
 | pending_payment | object\|null | — | 결제 대기 중인 건 (없으면 `null`) |
 | payment_entry | object\|null | — | 결제 대기 건이 있으면 결제 진입 4키(`requires_pg_payment`, `pg_provider`, `pg_payment_handler`, `pg_payment_data`) — [claim-payments.md](claim-payments.md) 참조 |
-| available_payment_methods | array | `["card", "point"]` | 대기 건을 **지금 낼 수 있는** 결제 수단 값 목록(라벨은 화면이 붙인다). 허용 목록 `claim.charge_payment_methods` 를 신청자 자격(비회원은 마일리지 제외)으로 거른 것으로 `pay()` 와 같은 게이트다. 대기 건이 없으면 `[]`. 대기 건의 수단을 더는 낼 수 없게 됐을 때(마일리지 잔액 부족·운영자가 수단을 내림) 화면이 다른 수단을 골라 `pay` 에 `payment_method` 로 싣는 근거다 |
+| available_payment_methods | array | `["card", "point"]` | 대기 건을 **지금 낼 수 있는** 결제 수단 값 목록. 허용 목록 `claim.charge_payment_methods` 를 신청자 자격(비회원은 마일리지 제외)으로 거른 것으로 `pay()` 와 같은 게이트다. 대기 건이 없으면 `[]`. 대기 건의 수단을 더는 낼 수 없게 됐을 때(마일리지 잔액 부족·운영자가 수단을 내림) 화면이 다른 수단을 골라 `pay` 에 `payment_method` 로 싣는 근거다 |
+| available_payment_method_labels | object | `{"card": "신용카드", "bank": "계좌이체"}` | `available_payment_methods` 의 값마다 현재 언어 표시명(결제수단 카탈로그 이름). 화면은 `card`·`point` 를 자체 문구로, 그 밖의 수단은 이 이름으로 그린다. 대기 건이 없으면 빈 객체 |
 
 **주문금액 비교 블록** (상세 응답 전용 — 목록 행에는 키 자체가 없다)
 
@@ -529,7 +530,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`, `available_payment_methods`) 포함 |
+| claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`, `available_payment_methods`, `available_payment_method_labels`) 포함 |
 | progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
 | linked_claims | object | — | 연결 신청서(보완 5 · Q8) — 관리자 상세와 같은 구조([admin-claims.md](admin-claims.md) 상세 봉투의 `linked_claims`). `detail_url` 은 회원이면 `/mypage/claims/…`, 비회원 조회면 `{shop}/guest/claims/…` 다. 비회원 조회(`guest/orders/{orderNumber}/claims/{claimNumber}`)도 같은 봉투다 |
 
@@ -609,7 +610,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비 청구 방식 (교환·반품) |
 | add_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 업로드(`pending`) 첨부 ID 목록 |
 | remove_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 떼어낼 첨부 ID 목록 (이 신청서 소속만). 이 신청서 소속이 아닌 ID 는 조용히 무시된다. **고객이 올린 첨부만** 뗄 수 있다 — 운영자·주체 미상 첨부가 섞이면 아무것도 바꾸지 않고 422(`claim_image_not_removable`) |
-| redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `recipient_name`(max 50), `phone`(max 20), `zipcode`(max 20), `address1`/`address2`(max 255), `country_code`(2자, 원 배송지와 같은 국가만), `changed_by_user`(boolean) |
+| redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `recipient_name`(max 50), `phone`(max 20), `zipcode`(max 20), `address1`/`address2`(max 255), `city`/`state`(max 100, 해외 주문의 도시·주), `country_code`(2자, 원 배송지와 같은 국가만), `changed_by_user`(boolean) |
 | refund_bank | body | object | 아니오 | 세 값이 **함께** 와야 한다 | 환불 계좌 — `bank_code`(max 10), `account_number`(max 50), `holder`(max 50) — 접수(POST)와 같은 키·같은 상한이다. 셋 중 일부만 채워 보내면 `validation.claims.refund_bank.incomplete` 로 거절된다 (은행만 바뀌고 계좌번호가 옛 값으로 남으면 운영자가 없는 계좌로 이체한다). 셋이 다 빈 채로 보내면 **기록된 계좌를 지우지 않고 그대로 둔다** — 표시 응답은 마스킹된 값이라 화면이 원문을 되돌려 보낼 수 없기 때문이다. 실제 송금 대상(주문 결제행)은 여기서 바뀌지 않는다 |
 
 **요청 예시**
@@ -674,7 +675,7 @@ Content-Type: application/json
 
 <!-- @generated:end -->
 
-**설명** 승인 전(`is_editable=true`)에만 신청 내용을 고칩니다. 사유를 바꾸면 귀책 구분이 따라 바뀌고, 교환·반품은 배송비를 다시 계산해 총 청구액을 갱신합니다. 청구액이 달라지면 서버가 **차액을 정산**합니다 — 늘어난 만큼은 새 결제 건(`payment` + 결제 진입 4키)을 만들어 응답 최상위에 싣고, 이미 낸 금액이 새 청구액보다 크면 그 초과분을 결제 건에서 환급합니다(환급 결과는 `claim.payments` 의 `refunded_amount` 로 드러난다). 청구액이 0 이 되면 `charge_method` 는 `null` 로 비워지고 대기 중이던 결제 건은 취소됩니다. 재발송지는 원 배송지와 같은 국가 안에서만 바꿀 수 있습니다(국가가 바뀌면 배송비 산정 근거가 달라지므로 거절).
+**설명** 승인 전(`is_editable=true`)에만 신청 내용을 고칩니다. 사유를 바꾸면 귀책 구분이 따라 바뀌고, 교환·반품은 배송비를 다시 계산해 총 청구액을 갱신합니다. 청구액이 달라지면 서버가 **차액을 정산**합니다 — 늘어난 만큼은 새 결제 건(`payment` + 결제 진입 4키)을 만들어 응답 최상위에 싣고, 이미 낸 금액이 새 청구액보다 크면 그 초과분을 결제 건에서 환급합니다(환급 결과는 `claim.payments` 의 `refunded_amount` 로 드러난다). 청구액이 0 이 되면 `charge_method` 는 `null` 로 비워지고 대기 중이던 결제 건은 취소됩니다. 재발송지는 원 배송지와 같은 국가 안에서만 바꿀 수 있습니다(국가가 바뀌면 배송비 산정 근거가 달라지므로 거절). `redelivery_address` 를 **`null` 로 보내면** 고객이 지정했던 재발송지를 지우고 주문 배송지로 되돌립니다(`changed_by_user=false`) — 수정 화면의 [원 배송지로 되돌리기] 가 이 값을 보냅니다. 키를 아예 보내지 않으면 저장된 재발송지를 그대로 둡니다. 화면은 재발송지를 손대지 않은 저장에서 이 키를 싣지 않습니다(저장값을 다시 보내면 「고객 지정」 표시가 붙기 때문).
 
 ---
 

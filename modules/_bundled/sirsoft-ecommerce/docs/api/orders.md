@@ -639,7 +639,7 @@ _단건 응답: `data` 객체의 필드._
 | options | array | `[{"id":1263,"option_status":"payment_complete","option_st…` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
 | shipping_address | object | `{"id":319,"address_type":"shipping","orderer_name":"박대수",…` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
-| payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |
+| payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액). 무통장 결제행은 현금영수증 발급 프로바이더 `cash_receipt_provider`(id)와 그 현재 언어 표시명 `cash_receipt_provider_label`(등록 항목의 `name_key` 번역 → `name` → id 순)을 함께 싣는다. `has_cash_to_return`(bool)은 이 주문에 돌려줄 현금이 남아 있는지(주문 장부·결제행 수납액 기준 — [입금확인]에서 입금만 기록한 결제 전 주문도 포함) — 취소 창의 환불 계좌 칸 노출 근거 |
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
@@ -648,7 +648,7 @@ _단건 응답: `data` 객체의 필드._
 | shippings | array | `[]` | 배송 이력 목록 (OrderShippingResource 배열 — 배송유형·택배사·송장번호) |
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | object | `{"coupon_issue_ids":[7330],"item_coupons":[],"discount_co…` | 적용된 프로모션 스냅샷 (재계산용) |
-| shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
+| shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다. 정책의 `standalone_shipping_amount_formatted` 는 저장된 문자열(주문 당시 언어 표기)이 아니라 응답 시점 언어로 다시 포맷한 값이다 — 저장 스냅샷 자체는 바꾸지 않는다 |
 | shipping_policy_applied_snapshot (비회원 응답) | object | `{"items": [{"product_option_id": 481, "policy": {"policy_name": "국내 무료배송", "standalone_shipping_amount": 0, "standalone_shipping_amount_formatted": "무료배송"}}]}` | 비로그인(비회원 조회 토큰) 응답은 **표시용 필드만** 내보낸다 — `policy_name` · `standalone_shipping_amount(_formatted)`. 정책 id·계산 근거와 배송지 메타(`address`)는 제외된다. 비회원 주문 상세 화면이 회원과 같은 partial 로 상품별 정책명·개별 배송비를 그리므로 필드 자체를 빼면 그 줄만 오류 없이 사라진다 |
 | admin_memo | string\|null | `null` | 관리자 메모 (내부 관리용 — 관리자 응답에서만 값이 실리고 고객·회원 응답은 `null`) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
@@ -2080,7 +2080,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | status_icon | string\|null | `status-preparing` | 상태를 상징하는 **아이콘 의미 토큰** (`OrderStatusEnum::icon()`) — 목록 행 상태 뱃지가 라벨 앞에 아이콘을 함께 그린다 |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | recipient_country_code | string | `KR` | 배송국가 코드 (ISO 3166-1 alpha-2, shippingAddress 로드 시) |
-| recipient_country_name | object | `{"ko":"한국","en":"South Korea"}` | 배송국가 현지화명 (로케일별 국가명 맵) |
+| recipient_country_name | object | `{"ko":"한국","en":"South Korea","ja":"大韓民国"}` | 배송국가 현지화명 (로케일별 국가명 맵) — 코어 국가 사전(ko·en)에 없는 언어는 상점 배송국가 설정(`shipping.available_countries[].name`)의 이름으로 채운다 |
 | ordered_at | string | `2026-07-29T14:36:24+00:00` | ordered 일시 |
 | ordered_at_formatted | string | `2026-07-29 23:36:24` | `ordered_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_amount | integer | `30000` | 최종 주문금액 (상품합계 − 할인 + 배송비) |
@@ -2358,6 +2358,8 @@ HTTP/1.1 201
 | 필드 | 타입 | 용도 |
 | --- | --- | --- |
 | `escrow_products` | array | 에스크로 결제(가상계좌·계좌이체)에서 필수인 상품 상세 배열. 각 원소는 `{id, name, code, unitPrice, quantity}` 형식이며 `unitPrice`는 개당가(합계 아님), `name`은 현재 로케일로 로컬라이즈됩니다. 에스크로 사용 여부는 PG 프론트에서 결정하므로 항상 조립되어 내려가고, 비에스크로 결제는 이 필드를 무시합니다. |
+
+가상계좌 주문에는 `vbank_due_at`(string, ISO 8601 · 한국 시각 `+09:00`)이 더 실립니다 — 주문이 정한 입금 기한(설정 `order_settings.auto_cancel_days`, 주문서 「입금 기한: N일 이내」와 같은 값)입니다. 결제 플러그인은 이 값을 결제사의 계좌 만료 파라미터(KG이니시스 `acceptmethod` 의 `vbank(YYYYMMDDhhmm)`·모바일 `P_VBANK_DT`/`P_VBANK_TM`, 나이스페이먼츠 `VbankExpDate`, NHN KCP `vcnt_expire_term`/`vcnt_expire_term_time`)로 넘겨, 계좌 기한·주문서 안내·자동취소 시점이 결제사와 무관하게 같게 합니다. 가상계좌가 아니면 키가 없습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders/{id}
@@ -3526,6 +3528,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | reasons.refund | array | — | 취소·환불 사유 카탈로그 |
 | settings.allowed_charge_methods | string[] | `["deduct_from_refund","pay_on_request"]` | 허용된 배송비 청구 방식 (환경설정 `claim.allowed_charge_methods`) |
 | settings.charge_payment_methods | string[] | `["card","point"]` | 추가결제에 쓸 수 있는 결제 수단 (환경설정 `claim.charge_payment_methods`) |
+| settings.charge_payment_method_labels | object | `{"card":"신용카드","point":"포인트결제"}` | `charge_payment_methods` 의 값마다 현재 언어 표시명(결제수단 카탈로그 이름). 화면은 `card`·`point` 를 자체 문구로, 그 밖의 수단은 이 이름으로 그린다 |
 | settings.max_images | integer | `5` | 신청서당 첨부 이미지 상한 (`claim.max_images`) |
 | settings.image_max_size_kb | integer | `5120` | 첨부 1장 크기 상한 KB (`claim.image_max_size_kb`) |
 | settings.allowed_extensions | string[] | `["jpeg","jpg","png","gif","webp"]` | 서버가 받는 확장자 전수. 화면의 파일 선택창 필터와 서버 검증이 이 하나를 읽는다 |
@@ -3569,6 +3572,7 @@ Authorization: Bearer {YOUR_TOKEN}
         "settings": {
             "allowed_charge_methods": ["deduct_from_refund", "pay_on_request", "pay_on_approval"],
             "charge_payment_methods": ["card", "point"],
+            "charge_payment_method_labels": { "card": "신용카드", "point": "포인트결제" },
             "max_images": 5,
             "image_max_size_kb": 5120,
             "allowed_extensions": ["jpeg", "jpg", "png", "gif", "webp"],

@@ -22,6 +22,7 @@
       <field name="refundAmount" value="{{data.claim?.refund_amount === undefined || data.claim?.refund_amount === null ? '' : String(data.claim.refund_amount)}}"/>
       <field name="refundPointsAmount" value="{{data.claim?.refund_points_amount === undefined || data.claim?.refund_points_amount === null ? '' : String(data.claim.refund_points_amount)}}"/>
       <field name="refundMethod" value="{{data.claim?.refund_method ?? ''}}"/>
+      <field name="refundInputTotalFormatted" value="{{data.claim?.refund_total_formatted ?? ''}}"/>
     </init-local>
   </data-source>
   <!-- 상세와 같은 번호 축을 읽는다 — 상세 응답이 도착해야 유형·id 를 알 수 있는 형태였다면 이 조회가 그 응답을 기다려야 하고, 기다리는 동안 활동 로그 섹션이 빈 채로 열린다. -->

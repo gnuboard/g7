@@ -1,5 +1,5 @@
 <!-- 내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다. -->
-<partial description="마이페이지 프로필 - View 모드 (시안 기반 레이아웃)">
+<partial _e2e_allow="e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)" description="마이페이지 프로필 - View 모드 (시안 기반 레이아웃)">
   <div class="space-y-6">
     <blur-until-loaded sources="user"/>
     <responsive on="portable" class="space-y-4"/>
@@ -198,6 +198,8 @@
         <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.shipping_country_settings.title</h3>
       </div>
       <p class="text-base text-gray-900 dark:text-white font-medium">{{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name) || (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')}}</p>
+      <!-- 저장해 둔 국가를 운영자가 배송 가능 목록에서 내리면 화면·서버는 기본 국가로 계산한다 — 그 사실과 지금 적용 중인 국가를 함께 보인다. -->
+      <p data-if="{{user.data?.ecommerce_preferred_shipping_country !== undefined &amp;&amp; user.data?.ecommerce_preferred_shipping_country !== null &amp;&amp; !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === user.data?.ecommerce_preferred_shipping_country)}}" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === user.data?.ecommerce_preferred_shipping_country)?.name, 'sirsoft-ecommerce::settings.countries.' + (user.data?.ecommerce_preferred_shipping_country ?? '') + '.name') || user.data?.ecommerce_preferred_shipping_country}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:mypage.shipping_country_settings.edit_hint</p>
     </div>
     <!-- 서명 및 자기소개 카드 -->

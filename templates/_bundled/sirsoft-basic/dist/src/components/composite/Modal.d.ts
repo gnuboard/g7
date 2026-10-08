@@ -1,7 +1,7 @@
 import { default as React } from 'react';
 export interface ModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (event?: Event | React.SyntheticEvent) => void;
     title?: string;
     /**
      * 타이틀 옆에 표시할 아이콘 이름 (Font Awesome)

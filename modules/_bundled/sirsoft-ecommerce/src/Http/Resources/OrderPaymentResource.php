@@ -50,6 +50,10 @@ class OrderPaymentResource extends BaseApiResource
             'auto_approves_refund' => ! $this->payment_method
                 || app(PaymentMethodResolver::class)->autoApprovesRefund($this->paymentMethodId())
                 || ! $this->orderHasCashToReturn(),
+            // 이 주문에 돌려줄 현금이 남아 있는가 — 관리자 취소 창이 환불 계좌 칸을 세우는 근거다(S3-D7).
+            // 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이라 헤더만 읽는 화면은 계좌 칸을 감추는데,
+            // 서버(`CancelOrderRequest`)는 같은 판정(`hasCashToReturn`)으로 계좌를 요구한다 — 화면이 이 값을 함께 읽는다.
+            'has_cash_to_return' => $this->resource->order !== null && $this->orderHasCashToReturn(),
             // 이 결제가 **부분취소를 지원하는가** (P6).
             //
             // PG 마다 제약이 다르고, 어떤 조합은 원천적으로 전액취소만 된다 — 예: NICE 가상계좌는
@@ -136,6 +140,8 @@ class OrderPaymentResource extends BaseApiResource
             // 주문상세의 현금영수증 카드가 이 리소스만 보고 렌더 여부를 판정할 수 있도록 함께 내린다
             // (프로바이더는 상점 전역 설정이지만 카드는 결제 정보 안에 있다).
             'cash_receipt_provider' => app(EcommerceSettingsService::class)->getCashReceiptProvider(),
+            // 화면 표기용 발급사 이름 — id 를 그대로 보이면 「현금영수증 tosspayments」처럼 내부 식별자가 찍힌다(S3-D17).
+            'cash_receipt_provider_label' => $this->cashReceiptProviderLabel(),
             // 머신 ISO8601 — 표시는 cash_receipt_issued_at_formatted 사용
             'cash_receipt_issued_at' => $this->cash_receipt_issued_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601, display uses cash_receipt_issued_at_formatted sibling
             'cash_receipt_issued_at_formatted' => $this->formatDateTimeStringForUser($this->cash_receipt_issued_at),
@@ -274,5 +280,37 @@ class OrderPaymentResource extends BaseApiResource
             'amount_formatted' => $this->formatCurrencyPrice((float) ($record['amount'] ?? 0), $currency),
             'deposited_at' => $record['deposited_at'] ?? null,
         ];
+    }
+
+    /**
+     * 현재 선택된 현금영수증 발급사의 표시명을 반환합니다. (미설정이면 null)
+     *
+     * 등록 항목의 다국어 키(`name_key`)가 현재 언어로 번역되면 그 값을, 아니면 `name` 을, 그것도 없으면 id 를 쓴다.
+     *
+     * @return string|null 발급사 표시명
+     */
+    private function cashReceiptProviderLabel(): ?string
+    {
+        $settings = app(EcommerceSettingsService::class);
+        $providerId = $settings->getCashReceiptProvider();
+
+        if ($providerId === null) {
+            return null;
+        }
+
+        foreach ($settings->getRegisteredCashReceiptProviders() as $entry) {
+            if (($entry['id'] ?? null) !== $providerId) {
+                continue;
+            }
+
+            $key = $entry['name_key'] ?? null;
+            if (is_string($key) && $key !== '' && __($key) !== $key) {
+                return __($key);
+            }
+
+            return (string) ($entry['name'] ?? $providerId);
+        }
+
+        return $providerId;
     }
 }

@@ -25,11 +25,22 @@ class OrderReorderTest extends ModuleTestCase
 {
     private User $user;
 
+    /**
+     * 재주문 API 주소를 만듭니다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return string 재주문 API 경로
+     */
     private function endpoint(int $orderId): string
     {
         return "/api/modules/sirsoft-ecommerce/user/orders/{$orderId}/reorder";
     }
 
+    /**
+     * 재주문을 요청할 회원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +53,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=plain_row
      *
      * @effects order_options_added_to_cart_with_added_count
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_adds_order_options_to_cart(): void
     {
@@ -89,6 +102,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=split_row_self_parent
      *
      * @effects split_head_row_included_in_reorder
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_includes_split_head_rows(): void
     {
@@ -147,6 +162,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=skip_reason_is_specific
      *
      * @effects reorder_skip_reason_uses_user_message
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_skip_reason_is_specific(): void
     {
@@ -181,11 +198,49 @@ class OrderReorderTest extends ModuleTestCase
     }
 
     /**
+     * 담지 못한 행의 상품명은 보는 언어 → 앱 폴백 언어(app.fallback_locale) 순으로 고른다 — ko·en 고정 순서가 아니다
+     *
+     * @scenario basis_case=skip_name_uses_fallback_locale
+     *
+     * @effects reorder_skip_name_follows_app_fallback_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reorder_skip_name_follows_app_fallback_locale(): void
+    {
+        config(['app.fallback_locale' => 'en']);
+        app()->setLocale('fr');
+
+        $product = ProductFactory::new()->create();
+        $option = ProductOptionFactory::new()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 0,
+        ]);
+
+        $order = OrderFactory::new()->paid()->forUser($this->user)->create();
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'product_name' => ['ko' => '한글 상품명', 'en' => 'English Product'],
+            'quantity' => 1,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withHeader('Accept-Language', 'fr')
+            ->postJson($this->endpoint($order->id));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.skipped.0.product_name', 'English Product');
+    }
+
+    /**
      * 남의 주문을 재주문하면 422 이고 장바구니에는 아무것도 담기지 않는다
      *
      * @scenario basis_case=other_users_order
      *
      * @effects foreign_or_missing_order_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_rejects_other_users_order(): void
     {
@@ -206,6 +261,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=unauthenticated
      *
      * @effects reorder_requires_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_requires_authentication(): void
     {
@@ -222,6 +279,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=out_of_stock_row
      *
      * @effects unavailable_rows_reported_in_skipped, order_options_added_to_cart_with_added_count
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_skips_out_of_stock_options(): void
     {
@@ -271,6 +330,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=nonexistent_order
      *
      * @effects foreign_or_missing_order_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_returns_422_for_nonexistent_order(): void
     {
@@ -286,6 +347,8 @@ class OrderReorderTest extends ModuleTestCase
      * @scenario basis_case=existing_cart_row
      *
      * @effects existing_cart_row_quantity_accumulated
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_increments_existing_cart_quantity(): void
     {

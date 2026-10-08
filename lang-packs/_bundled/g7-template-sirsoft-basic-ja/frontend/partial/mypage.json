@@ -34,7 +34,8 @@
     "edit_hint": "配送国はユーザー情報編集で一緒に変更されます。",
     "save_button": "保存",
     "saved": "配送国が変更されました。",
-    "save_failed": "配送国変更に失敗しました。"
+    "save_failed": "配送国変更に失敗しました。",
+    "saved_not_applied": "保存された配送国 {{saved}} は現在配送できない国のため適用されません。現在適用中の配送国: {{applied}}"
   },
   "notification_settings": {
     "title": "掲示板通知設定",

@@ -782,5 +782,11 @@
       "preview_failed": "Could not load the target count.",
       "editor_label": "Shop retention manual run"
     }
+  },
+  "unsaved_tab_change": {
+    "title": "You have unsaved changes",
+    "message": "You have unsaved changes — they will be lost if you move to another tab. Do you want to move?",
+    "stay": "Stay",
+    "leave": "Move"
   }
 }

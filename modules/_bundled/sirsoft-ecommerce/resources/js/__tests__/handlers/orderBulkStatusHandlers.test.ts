@@ -414,6 +414,46 @@ describe('executeOrderBulkActionHandler - 422 서버 검증 메시지 노출 (�
             'Request failed with status code 422'
         );
     });
+
+    /**
+     * 서버가 터진 5xx 와 전송 실패는 사유가 없다 — 본문 없는 500 이면 axios 원문 「Request failed with status
+     * code 500」, 운영 환경 500 이면 「Server Error」 가 토스트에 그대로 떴다(S1-D12 실측: 주문 목록 일괄 변경).
+     * 번역된 일괄 실패 문구로 떨어져야 한다.
+     *
+     * @scenario handler=execute_list_bulk_action
+     * @effects list_bulk_action_server_error_toasts_localized_fallback
+     */
+    it('5xx·전송 실패는 원문 대신 번역된 일괄 실패 문구를 띄운다', async () => {
+        const cases: any[] = [];
+
+        const emptyBody: any = new Error('Request failed with status code 500');
+        emptyBody.isAxiosError = true;
+        emptyBody.response = { status: 500, data: '' };
+        cases.push(emptyBody);
+
+        const serverError: any = new Error('Request failed with status code 500');
+        serverError.isAxiosError = true;
+        serverError.response = { status: 500, data: { message: 'Server Error' } };
+        cases.push(serverError);
+
+        const transport: any = new Error('Network Error');
+        transport.isAxiosError = true;
+        cases.push(transport);
+
+        for (const error of cases) {
+            mockGlobalState = { bulkConfirmData: { selectedItems: [101], orderStatus: 'preparing' } };
+            mockG7Core.toast.error.mockClear();
+            mockG7Core.api.patch.mockRejectedValueOnce(error);
+
+            await expect(executeOrderBulkActionHandler(
+                { handler: 'sirsoft-ecommerce.executeOrderBulkAction', params: {} } as any,
+                mockContext
+            )).rejects.toBeTruthy();
+
+            expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+            expect(mockG7Core.toast.error).toHaveBeenCalledWith('sirsoft-ecommerce.admin.order.bulk.error');
+        }
+    });
 });
 
 describe('processOrderDetailBulkChangeHandler - 422 서버 검증 메시지 노출 (옵션일괄)', () => {

@@ -1805,7 +1805,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300",
+                                        "aria-label": "$t:common.remove"
                                     },
                                     "children": [
                                         {

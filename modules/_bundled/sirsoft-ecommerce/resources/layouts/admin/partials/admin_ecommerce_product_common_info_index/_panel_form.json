@@ -393,9 +393,11 @@
                                                                     "handler": "sequence",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "폼 값도 함께 켠다 — 확인 창의 [확인] 은 창만 닫고, 반영은 폼 저장 때 나간다. 켜지 않으면 스위치만 켜져 보이고 저장에는 false 가 나갔다. 거부는 [취소] 가 되돌린다.",
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "local",
+                                                                                "form.is_default": true,
                                                                                 "defaultModal": {
                                                                                     "isOpen": true
                                                                                 }

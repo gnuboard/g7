@@ -27,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
 use Modules\Sirsoft\Ecommerce\Support\ClaimOutstanding;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 클레임 추가결제 서비스 (S5)
@@ -139,7 +140,7 @@ class ClaimPaymentService
             return null;
         }
 
-        $requestedBy = $claim->requested_by === null ? null : (int) $claim->requested_by;
+        $requestedBy = $this->payerUserIdOf($claim);
         $method = $paymentMethod === null || $paymentMethod === ''
             ? $this->resolveDefaultPaymentMethodFor($requestedBy)
             : $this->resolvePaymentMethod($paymentMethod);
@@ -204,7 +205,7 @@ class ClaimPaymentService
         $payment = $this->paymentRepository->findPendingByPayable($claim->claimType()->value, $claim->id);
 
         if ($payment === null) {
-            $method = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+            $method = $this->resolveDefaultPaymentMethodFor($this->payerUserIdOf($claim));
 
             // 통화 기준도 같은 이유로 결제행 앞에서 본다 — 미루면 승인 시도가 결제대기로 옮긴
             // 신청서와 낼 수 없는 결제행을 남긴다(`initiateForRequest()`·`settleChargeDifference()` 동형).
@@ -849,7 +850,7 @@ class ClaimPaymentService
         if ($pending === null) {
             // 신규 결제행도 생성 전에 신청자 자격을 본다 — 허용 목록의 첫 수단이 마일리지인 상점에서
             // 비회원 신청서의 차액 결제행이 `point` 로 만들어지면 그 건은 다시 열리지 않는다.
-            $newMethod = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+            $newMethod = $this->resolveDefaultPaymentMethodFor($this->payerUserIdOf($claim));
         }
 
         // 수정 경로도 결제행을 건드리기 전에 통화 기준을 본다 — 여기서 미루면 신청서 수정과 차액
@@ -1177,7 +1178,8 @@ class ClaimPaymentService
         }
 
         try {
-            $this->transitionClaim($claim, 'approved');
+            // 결제 확정은 낸 사람이 한 일이지만 그 뒤 승인은 설정이 한 일이다 — 작업자는 시스템(S1-D16).
+            SystemActor::run(fn () => $this->transitionClaim($claim, 'approved'));
         } catch (OrderClaimException $e) {
             // 결제는 확정됐다 — 승인만 운영자 몫으로 남긴다(신규 옵션 재고 부족 등).
             Log::info('[claim.payment] 결제 확정 후 자동 승인 건너뜀 — 결제완료 유지', [
@@ -1598,6 +1600,27 @@ class ClaimPaymentService
         if ($paymentMethod === PaymentMethodEnum::POINT->value && $userId === null) {
             throw OrderClaimException::pointPaymentRequiresMember();
         }
+    }
+
+    /**
+     * 클레임 추가결제를 낼 회원 id 를 반환합니다. (비회원 주문이면 null)
+     *
+     * 운영자 직권 접수 건은 `requested_by` 가 비회원 신청과 똑같이 null 이다. 그 값으로 결제할 사람을 정하면
+     * 회원 주문의 판매자 접수 건이 비회원 취급되어 마일리지가 선택지·기본 수단에서 빠진다(S3-D15). 신청서의
+     * 비회원 판정(`isGuestRequest`)과 같이 **주문의 주인**으로 가른다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @return int|null 결제할 회원 id
+     */
+    public function payerUserIdOf(OrderExchange|OrderReturn $claim): ?int
+    {
+        if ($claim->requested_by !== null) {
+            return (int) $claim->requested_by;
+        }
+
+        $claim->loadMissing('order');
+
+        return $claim->order?->user_id === null ? null : (int) $claim->order->user_id;
     }
 
     /**

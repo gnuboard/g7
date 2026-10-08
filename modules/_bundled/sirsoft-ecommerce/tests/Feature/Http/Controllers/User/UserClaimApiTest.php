@@ -30,6 +30,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -945,6 +946,35 @@ class UserClaimApiTest extends ModuleTestCase
         $stranger = $this->createUser();
         $this->actingAs($stranger)->getJson($this->base()."/claims/{$return->return_number}")->assertNotFound();
         $this->actingAs($this->user)->getJson($this->base().'/claims/NOPE-0000')->assertNotFound();
+    }
+
+    /**
+     * 상세가 대기 건을 낼 수 있는 수단마다 표시명을 함께 싣는다
+     *
+     * 값만 실으면 화면은 `point` 가 아닌 수단을 모두 「카드·간편결제」로 그린다 — 계좌이체를
+     * 고르면서 카드로 낸다고 읽게 된다(S1-D14, 2026-10-07 실측).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_method_choices_carry_their_own_labels
+     */
+    public function test_show_labels_every_available_payment_method(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', ['card', 'bank']);
+        app(EcommerceSettingsService::class)->clearCache();
+
+        $order = $this->myDeliveredOrder();
+        $result = app(UserClaimService::class)->requestReturn($order, ['items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'pay_on_request', 'requested_by' => $this->user->id], [], 'card');
+        $return = $result['claim'];
+
+        $response = $this->actingAs($this->user)->getJson($this->base()."/claims/{$return->return_number}")
+            ->assertOk()
+            ->assertJsonPath('data.claim.available_payment_methods', ['card', 'bank']);
+
+        $labels = $response->json('data.claim.available_payment_method_labels');
+        $this->assertIsArray($labels, '수단 표시명이 실리지 않는다');
+        $this->assertSame(app(PaymentMethodResolver::class)->label('bank'), $labels['bank'] ?? null);
+        $this->assertNotSame($labels['card'] ?? null, $labels['bank'] ?? null);
     }
 
     /**

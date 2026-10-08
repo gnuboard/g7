@@ -1,0 +1,24 @@
+feature: KG이니시스 주문 상세 영수증 줄 하나만
+
+description: |
+  주문 상세(회원·비회원) 결제 정보 카드의 PG 슬롯에 확장 조각(user_order_show)이 「영수증 [영수증 조회]」 줄을 그리고,
+  주입기(mypageOrderShowInjector)는 조각이 없는 신청서 상세에 같은 줄을 붙인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D16):
+    - 결제를 마친 KRW 주문 상세에서 조각 줄과 주입기 줄이 함께 보였다(실측: 비회원 KG 가상계좌 주문, 줄 2개).
+      조각 줄에 주입기 id(kginicis-mp-receipt-row)를 달고, 주입기는 조각이 그리는 화면(주문 상세·결제일시·거래번호·
+      JPY 아님)에서는 조각이 아직 안 그려졌어도 붙이지 않는다.
+
+axes:
+  case: [fragment_contract, order_show_paid_krw, claim_show_paid_krw]
+
+effects:
+  - fragment_receipt_row_carries_injector_id
+  - injector_skips_row_when_fragment_draws_it
+  - injector_skips_row_on_claim_show_too   # 신청서 상세도 같은 결제 정보 카드(공용 슬롯)라 조각이 그린다 — 주입기는 붙이지 않는다(S4 마감 검증)
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/mypageReceiptRowDedupe.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 비회원 KG 결제완료 주문 상세 영수증 줄 수 1(ko·en·ja)

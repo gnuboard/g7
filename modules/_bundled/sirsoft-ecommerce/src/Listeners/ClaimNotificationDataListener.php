@@ -8,6 +8,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\TimezoneHelper;
 use App\Services\NotificationRecipientCapability;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -171,12 +172,39 @@ class ClaimNotificationDataListener implements HookListenerInterface
             }
         }
 
+        $context = $this->buildClaimContext($claim);
+
+        // 운영자에게 가는 「고객이 ~을(를) 신청했습니다」 는 고객이 낸 신청에만 나간다. 직권 접수·완료가 만든
+        // 환불·대리 접수 환불도 같은 `notify_requested` 훅을 지나므로 그대로 두면 운영자 전원이 사실과 다른
+        // 알림을 받는다(2026-10-07 실측). 고객 수신 정의(`_admin` 접미 없음)는 건드리지 않는다.
+        if (str_ends_with($type, '_requested_admin') && ! $this->isCustomerFiled($claim)) {
+            $context['skip'] = true;
+        }
+
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => array_merge($this->buildClaimData($claim, $snapshot), $summary, $snapshotText),
-            'context' => $this->buildClaimContext($claim),
+            'context' => $context,
         ];
+    }
+
+    /**
+     * 고객이 직접 낸 신청인지 판정합니다. (운영자 「신청 접수」 알림의 발송 조건)
+     *
+     * 교환·반품은 운영자 직권 접수 표지(`requested_by_admin`)가 없을 때, 환불은 출처가 고객 직접 접수(`direct`)일
+     * 때만 고객 신청이다 — 반품·교환·취소 발 환불과 운영자 대리 접수(`admin`)는 운영자 처리의 결과다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return bool 고객이 낸 신청이면 true
+     */
+    private function isCustomerFiled(OrderExchange|OrderReturn|OrderRefund $claim): bool
+    {
+        if ($claim instanceof OrderRefund) {
+            return $claim->refund_source_type === RefundSourceTypeEnum::DIRECT;
+        }
+
+        return ! $claim->isAdminRequested();
     }
 
     /**

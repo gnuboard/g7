@@ -1,0 +1,19 @@
+feature: 상품 수정·복사 화면의 「기본 배송정책 사용」 스위치 초기값
+
+description: |
+  상품 폼이 ui.useDefaultShippingPolicy 를 늘 true 로 시작해, 기본이 아닌 배송정책을 쓰는 상품을 열어도 스위치가
+  「기본 사용」 으로 켜지고 정책 선택지가 잠겼다. 수정·복사 진입에서는 저장된 정책이 기본 정책일 때만 켠다.
+
+  수정 이력: 이커머스 전수 실측 S5-D40 (2026-10-08) — §5 회귀 축(배송정책 생성 → 상품 연결) 뒤 다시 열기.
+
+axes:
+  case: [c01, c02, c03]
+
+effects:
+  - product_form_default_shipping_toggle_matches_saved
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormDefaultShippingToggle.test.ts
+
+validation:
+  browser_check: 기본이 아닌 배송정책을 쓰는 상품 수정 화면 — 「기본 배송정책 사용」 꺼짐, 그 정책이 골라진 채 선택지 활성

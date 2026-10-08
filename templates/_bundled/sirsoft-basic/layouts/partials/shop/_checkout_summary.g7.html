@@ -1,6 +1,6 @@
 <!-- 주문서 오른쪽 요약 기둥과 최종 「결제하기」. 금액은 전부 `checkoutData.data.calculation` 이 준 값이고
      화면에서 다시 더하지 않는다 — 왼쪽 칸들이 바꾸는 것은 조건뿐이고 계산은 늘 서버가 한다. -->
-<partial description="결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)">
+<partial _e2e_allow="e2e:allow S4-D14 — 결제하기 잠금의 결제수단 판정을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다." description="결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)">
   <div class="sticky top-4">
     <responsive on="portable" class=""/>
     <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -110,15 +110,18 @@
             </div>
           </div>
         </div>
+        <!-- 마일리지 차감 전 금액 (마일리지 사용 시) — summary.payment_amount 는 마일리지를 빼기 전 금액이다. 마일리지 사용 행 아래에 두면
+             차감 후 금액으로 읽혀 관리자 화면의 「결제예정금액」(차감 후)과 뜻이 갈렸다. 장바구니 요약의 「결제 예정금액」은 그대로 둔다.
+             e2e:allow 서버 값(summary.payment_amount) 하나를 그리는 표시 전용 행의 위치·라벨·노출 조건 변경이라 화면 판정 로직이 없다.
+             순서·라벨 키·points_used 조건은 __tests__/layouts/order-mileage-display.test.tsx 가 고정하고, ko/en/ja·모바일 실측은 후속C 이력의 브라우저 매트릭스에 있다. -->
+        <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm pt-2">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.amount_before_points</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
+        </div>
         <!-- 사용 포인트 (마일리지 사용 시) -->
         <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm">
           <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.points_used</span>
           <span class="font-medium text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.points_used_formatted ?? '-'}}</span>
-        </div>
-        <!-- 결제 예정금액 -->
-        <div class="flex justify-between text-sm pt-2">
-          <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.payment_amount</span>
-          <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
         </div>
         <!-- 적립 예정 마일리지 -->
         <div data-if="{{(checkoutData.data.calculation?.summary?.points_earning ?? 0) > 0}}" class="flex justify-between text-sm">
@@ -148,7 +151,7 @@
       <div data-if="{{checkoutData.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
       <!-- 결제 버튼 — 배송지 필수값·처리 중·배송 불가 상품 외에, 고를 결제수단이 하나도 없을 때도 잠근다(무통장입금만 켜져 있고
            입금 계좌가 없으면 서버가 무통장입금을 내려주지 않는다 — 그대로 누르면 「입금 은행 선택」 422 로만 끝났다, #703) -->
-      <button type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(paymentSettings.data?.order_settings?.payment_methods ?? []).some(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos))}}">
+      <button type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(_computed.selectablePaymentMethods ?? []).length}}">
         <responsive on="portable" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-base hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
         <on type="click">
           <sequence>

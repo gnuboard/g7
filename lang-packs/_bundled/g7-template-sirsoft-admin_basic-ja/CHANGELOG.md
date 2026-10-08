@@ -95,6 +95,11 @@
 - 공통 UI 접근 가능한 이름 문구(전체 선택·행 선택·더보기·선택 지우기·화면 테마·사용자 메뉴·값 보기/숨기기·파일 고르개·수신자 규칙 삭제) 일본어를 추가했습니다.
 - 파일 업로더의 0바이트 파일 안내(`attachment.empty_file`)와 크기 초과 안내(`attachment.file_too_large`), 업로드 응답 해석 실패 안내(`attachment.upload_response_invalid`)의 일본어를 추가했습니다. 정보 탭 「Write Only」 값(`admin.settings.info.write_only`)을 「Write 単一」 로 번역했습니다.
 - 관리자 기본 레이아웃 페이지 제목(`admin.base_layout_title`)과 언어팩 manifest 미리보기 실패 안내(`admin.language_packs.messages.preview_failed`)의 일본어 번역을 추가했습니다.
+- 아이콘 버튼의 읽기 이름 「外す」(`common.remove` — 칩·선택 해제)의 일본어 번역을 추가했습니다.
+- 화면 이동 중 로딩 막대의 읽기 이름 「ページ読み込み中」(`common.page_loading`)의 일본어 번역을 추가했습니다.
+- 관리자 머리말 계정 메뉴 버튼의 읽기 이름 「アカウントメニュー」(`common.account_menu`)의 일본어 번역을 추가했습니다.
+- 다국어 입력칸 언어 제거 버튼의 읽기 이름 「{{language}} の入力を削除」(`common.remove_language`)의 일본어 번역을 추가했습니다.
+- 다국어 태그 칸의 태그 제거 버튼 읽기 이름 「{{tag}} を外す」(`common.remove_tag`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

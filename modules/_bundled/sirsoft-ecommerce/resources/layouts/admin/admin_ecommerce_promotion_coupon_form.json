@@ -168,7 +168,8 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors"
+                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors",
+                                                    "aria-label": "$t:common.back"
                                                 },
                                                 "children": [
                                                     {

@@ -99,7 +99,12 @@
           </multilingual-tab-panel>
         </div>
       </div>
-      <div data-ref="common_info_empty_state" data-if="{{!(common_infos?.data?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <!-- 공통정보 조회 권한이 없어 선택지가 비었을 때는 「등록된 공통정보 없음」 이 아니라 권한이 없다고 말한다 — 실재하는 안내문을 없다고 읽게 하지 않는다 -->
+      <div data-ref="common_info_forbidden_notice" data-if="{{common_infos?.data?.unavailable === true}}" class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+        <icon name="circle-exclamation" class="text-base"/>
+        <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos</span>
+      </div>
+      <div data-ref="common_info_empty_state" data-if="{{common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
         <p class="text-sm">$t:sirsoft-ecommerce.admin.product.common_info.empty</p>
       </div>
     </div>

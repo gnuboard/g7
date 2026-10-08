@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 1:1 문의 리소스
@@ -74,7 +75,7 @@ class ProductInquiryResource extends BaseApiResource
 
         $locale = app()->getLocale();
 
-        return $snapshot[$locale] ?? $snapshot[config('app.fallback_locale', 'ko')] ?? array_values($snapshot)[0] ?? '';
+        return LocalizedText::pick($snapshot, $locale);
     }
 
     /**

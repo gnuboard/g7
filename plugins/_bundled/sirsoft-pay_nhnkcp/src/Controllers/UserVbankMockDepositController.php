@@ -85,7 +85,7 @@ class UserVbankMockDepositController extends AuthBaseController
         $isVbank = $payment->isVirtualAccount();
 
         // 가상계좌 계좌번호가 발급됐고 아직 입금완료가 아닌 상태
-        // (handleVbankIssued는 payment_status를 ready로 유지하므로 isPaid 역확인)
+        // (발급 전 결제행 READY 와 발급 뒤 WAITING_DEPOSIT 을 모두 받도록 isPaid 역확인)
         if (! $isVbank || ! $payment->vbank_number || $payment->isPaid()) {
             return $this->unavailable();
         }

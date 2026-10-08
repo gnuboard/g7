@@ -276,8 +276,8 @@ class OrderResource extends BaseApiResource
             'promotions_applied_snapshot' => $this->promotions_applied_snapshot,
             // 항상 신형 구조(`{items: [...], address: {...}}`)로 정규화해 내보낸다.
             // 백필 전 구형 행이 남아 있어도 화면은 한 형태만 보면 되고, `items` 가 JSON
-            // 배열로 직렬화되므로 프론트의 `.find(...)` 가 안전하다.
-            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::normalize(
+            // 배열로 직렬화되므로 프론트의 `.find(...)` 가 안전하다. 상품별 배송비 표기는 보는 사람의 언어로 다시 만든다.
+            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::forViewer(
                 $this->shipping_policy_applied_snapshot
             ),
 

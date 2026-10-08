@@ -1822,7 +1822,7 @@
                                                     "props": {
                                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                                     },
-                                                    "text": "{{claimPayMethodOption === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}"
+                                                    "text": "{{claimPayMethodOption === 'point' ? $t('claim.apply.payment_method_point') : (claimPayMethodOption === 'card' ? $t('claim.apply.payment_method_card') : (claim.data?.claim?.available_payment_method_labels?.[claimPayMethodOption] ?? claimPayMethodOption))}}"
                                                 }
                                             ]
                                         }

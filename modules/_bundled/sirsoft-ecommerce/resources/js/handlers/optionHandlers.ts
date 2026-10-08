@@ -25,13 +25,23 @@ function getSupportedLocales(): string[] {
 }
 
 /**
- * 기본 로케일을 가져옵니다.
+ * 필수로 채워야 하는 로케일(사이트 기본 언어)을 가져옵니다.
+ *
+ * 서버 검증(LocaleRequiredTranslatable)은 요청 언어가 아니라 사이트 기본 언어(`app.site_locale`)를 필수로
+ * 보고, 관리자 다국어 입력도 같은 칸에 필수(*)를 붙인다. 옵션 조합으로 만든 이름도 그 칸에 넣어야
+ * 다른 언어로 보는 관리자가 만들거나 이어 고친 상품이 저장된다(이커머스 전수 실측 S5, 제품 결정 2026-10-08).
+ * 사이트 기본 언어는 프론트 `appConfig.siteLocale` 로 온다 — 없거나 지원 언어 밖이면 첫 지원 언어.
  *
  * @returns 기본 로케일 코드
  */
 function getDefaultLocale(): string {
-    const G7Core = (window as any).G7Core;
-    return G7Core?.config?.('app.locale') ?? getSupportedLocales()[0] ?? 'ko';
+    const w = window as any;
+    const supported = getSupportedLocales();
+    const site = w.G7Core?.state?.get?.()?.appConfig?.siteLocale ?? w.G7Config?.appConfig?.siteLocale;
+    if (typeof site === 'string' && site && supported.includes(site)) {
+        return site;
+    }
+    return supported[0] ?? 'ko';
 }
 
 /**

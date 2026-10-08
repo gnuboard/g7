@@ -34,7 +34,8 @@
         "edit_hint": "Shipping country is changed together when you edit your profile.",
         "save_button": "Save",
         "saved": "Shipping country updated.",
-        "save_failed": "Failed to update shipping country."
+        "save_failed": "Failed to update shipping country.",
+        "saved_not_applied": "Your saved shipping country {{saved}} is not available for shipping now, so it is not applied. Shipping country in use: {{applied}}"
     },
     "notification_settings": {
         "title": "Board Notification Settings",

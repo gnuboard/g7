@@ -256,12 +256,52 @@ class ShippingPolicySnapshot
                 'policy' => [
                     'policy_name' => $policy['policy_name'] ?? '',
                     'standalone_shipping_amount' => $policy['standalone_shipping_amount'] ?? 0,
-                    'standalone_shipping_amount_formatted' => $policy['standalone_shipping_amount_formatted'] ?? '',
+                    'standalone_shipping_amount_formatted' => self::viewerFormattedAmount($policy),
                 ],
             ];
         }
 
         return [self::ITEMS => $items];
+    }
+
+    /**
+     * 응답용 신형 스냅샷 — 상품별 배송비 표기를 보는 사람의 언어로 다시 만듭니다.
+     *
+     * `standalone_shipping_amount_formatted` 는 주문을 만든 요청의 언어로 포맷되어 저장된다. 그대로 내보내면
+     * 영어 화면에서 주문한 주문을 한국어로 열 때 이 줄만 「₩2,500」로 남는다(S3-D12). 저장된 스냅샷은 재계산의
+     * 입력이므로 `normalize()` 는 그대로 두고, 응답을 만드는 이 경로에서만 금액 숫자로 다시 포맷한다.
+     *
+     * @param  array|null  $snapshot  원본 스냅샷 (신형 · 구형 · null 모두 허용)
+     * @return array{items: array<int, array>, address: array} 표기를 갱신한 신형 스냅샷
+     */
+    public static function forViewer(?array $snapshot): array
+    {
+        $normalized = self::normalize($snapshot);
+
+        foreach ($normalized[self::ITEMS] as $index => $entry) {
+            if (is_array($entry['policy'] ?? null)) {
+                $normalized[self::ITEMS][$index]['policy']['standalone_shipping_amount_formatted'] = self::viewerFormattedAmount($entry['policy']);
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * 정책 항목의 단독 배송비를 현재 언어로 포맷합니다. 금액 숫자가 없으면 저장된 표기를 그대로 씁니다.
+     *
+     * @param  array  $policy  정책 항목
+     * @return string 표기 문자열
+     */
+    private static function viewerFormattedAmount(array $policy): string
+    {
+        $amount = $policy['standalone_shipping_amount'] ?? null;
+
+        if (! is_numeric($amount)) {
+            return (string) ($policy['standalone_shipping_amount_formatted'] ?? '');
+        }
+
+        return ecommerce_format_price((int) $amount);
     }
 
     /**

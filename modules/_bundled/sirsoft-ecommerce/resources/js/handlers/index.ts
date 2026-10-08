@@ -206,6 +206,7 @@ import {
     saveClaimAmountsHandler,
     openClaimRefundExecuteHandler,
     executeClaimRefundHandler,
+    formatRefundInputTotalHandler,
 } from './claimHandlers';
 
 // 상품 목록 핸들러
@@ -529,6 +530,7 @@ export const handlerMap = {
     saveClaimAmounts: saveClaimAmountsHandler,
     openClaimRefundExecute: openClaimRefundExecuteHandler,
     executeClaimRefund: executeClaimRefundHandler,
+    formatRefundInputTotal: formatRefundInputTotalHandler,
 
     // ===== 상품 목록 =====
     handleProductRowAction: handleProductRowActionHandler,

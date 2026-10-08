@@ -931,7 +931,50 @@ describe('claimApplyHandlers', () => {
             zipcode: '06236',
             address1: '서울 강남구 테헤란로 1',
             address2: '10층',
+            city: '',
+            state: '',
             country_code: 'KR',
+        });
+    });
+
+    /**
+     * 해외 주문의 국내 주소 칸은 빈 문자열로 온다 — `??` 로는 해외 칸으로 넘어가지 않아 [변경] 폼이
+     * 빈 우편번호·주소로 열린다(2026-10-07 S4 실측, 주문 710 → S2-D8).
+     *
+     * @scenario apply_handler=reason_and_exchange
+     *
+     * @effects claim_apply_redelivery_prefills_the_international_address
+     */
+    it('재발송지 — 해외 주문은 빈 국내 칸을 건너뛰고 해외 주소 칸(거리·도시·주·우편번호)으로 채운다', () => {
+        mockDataSources = {
+            order: {
+                data: {
+                    shipping_address: {
+                        recipient_name: 'Jane Doe',
+                        recipient_phone: '+1-212-555-0101',
+                        zipcode: '',
+                        address: '',
+                        address_detail: '',
+                        address_line_1: '350 5th Ave',
+                        address_line_2: null,
+                        intl_city: 'New York',
+                        intl_state: 'NY',
+                        intl_postal_code: '10118',
+                        recipient_country_code: 'US',
+                    },
+                },
+            },
+        };
+
+        expect(orderShippingAddressAsRedelivery(mockG7Core)).toEqual({
+            recipient_name: 'Jane Doe',
+            phone: '+1-212-555-0101',
+            zipcode: '10118',
+            address1: '350 5th Ave',
+            address2: '',
+            city: 'New York',
+            state: 'NY',
+            country_code: 'US',
         });
     });
 

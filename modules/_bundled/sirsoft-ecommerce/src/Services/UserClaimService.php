@@ -360,6 +360,7 @@ class UserClaimService
         return [
             'allowed_charge_methods' => $this->statusValues('claim.allowed_charge_methods', ClaimChargeMethodEnum::values()),
             'charge_payment_methods' => $chargePaymentMethods,
+            'charge_payment_method_labels' => $this->paymentMethodLabels($chargePaymentMethods),
             // 첨부 상한·허용 확장자는 한 출처에서 온다 — 키 이름은 종전 그대로이고
             // `accept` 가 덤으로 붙으므로 기존 화면·핸들러는 무영향이다.
             ...$this->attachmentService->publicLimits(),
@@ -1060,12 +1061,15 @@ class UserClaimService
      * 신청서의 결제 건 목록과 미수납액을 돌려줍니다. (상세 응답의 결제 블록)
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
-     * @return array{payments: Collection, outstanding_amount: float, pending_payment: ?ClaimPayment, payment_entry: ?array, available_payment_methods: array<int, string>} 결제 블록
+     * @return array{payments: Collection, outstanding_amount: float, pending_payment: ?ClaimPayment, payment_entry: ?array, available_payment_methods: array<int, string>, available_payment_method_labels: array<string, string>} 결제 블록
      */
     public function paymentBlock(OrderExchange|OrderReturn $claim): array
     {
         $payments = $this->paymentService->listForClaim($claim);
         $pending = $payments->first(fn (ClaimPayment $payment) => $payment->isPending());
+        $availableMethods = $pending !== null
+            ? $this->paymentService->availablePaymentMethodsFor($this->paymentService->payerUserIdOf($claim))
+            : [];
 
         return [
             'payments' => $payments,
@@ -1076,11 +1080,8 @@ class UserClaimService
             // 부족, 운영자가 그 수단을 내림. 그때 화면이 다른 수단을 고를 수 있어야 사용자가
             // 신청서를 철회하지 않고 빠져나간다(#599 3차 실측 F-1·F-2). 대기 건이 없으면 고를
             // 것도 없으므로 빈 배열이다.
-            'available_payment_methods' => $pending !== null
-                ? $this->paymentService->availablePaymentMethodsFor(
-                    $claim->requested_by === null ? null : (int) $claim->requested_by,
-                )
-                : [],
+            'available_payment_methods' => $availableMethods,
+            'available_payment_method_labels' => $this->paymentMethodLabels($availableMethods),
         ];
     }
 
@@ -1173,5 +1174,27 @@ class UserClaimService
     protected function statusValues(string $key, array $default): array
     {
         return array_values(array_map('strval', (array) $this->settingsService->getSetting($key, $default)));
+    }
+
+    /**
+     * 결제 수단마다 현재 언어의 표시명을 붙입니다.
+     *
+     * 화면은 값만 받으면 이름을 짐작해야 한다 — `point` 가 아니면 모두 「카드·간편결제」로
+     * 그리던 탓에 계좌이체를 고르면서 카드로 낸다고 읽혔다(S1-D14). 이름은 결제수단
+     * 카탈로그가 소유하므로 여기서 붙여 보낸다.
+     *
+     * @param  array<int, string>  $methods  결제 수단 ID 목록
+     * @return array<string, string> 수단 ID → 표시명
+     */
+    protected function paymentMethodLabels(array $methods): array
+    {
+        $resolver = app(PaymentMethodResolver::class);
+        $labels = [];
+
+        foreach ($methods as $method) {
+            $labels[$method] = $resolver->label($method);
+        }
+
+        return $labels;
     }
 }

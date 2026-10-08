@@ -61,6 +61,7 @@ exclusions:
   - { caller: unauthenticated_browser, threat: stale_timestamp, reason: "타임스탬프 신선도는 PG 서명 페이로드 축" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # Replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival
   - replay_response_is_idempotent_ok
@@ -113,6 +114,8 @@ effects:
   - vbank_issue_callback_rejects_missing_approved_amount
   - vbank_issue_callback_rejects_mismatched_approved_amount
   - mobile_vbank_issue_callback_rejects_missing_approved_amount
+  - vbank_issue_due_at_stored_as_utc_from_kst                # 가상계좌 입금 기한(한국 시각)을 UTC 로 환산해 저장
+  - mobile_vbank_issue_due_at_stored_as_utc_from_kst         # 모바일 가상계좌 입금 기한도 동일
   - vbank_notify_returns_fail_on_order_not_found
   - vbank_notify_is_idempotent_on_duplicate_tid
   - mobile_vbank_notify_does_not_write_depositor_name_to_application_log

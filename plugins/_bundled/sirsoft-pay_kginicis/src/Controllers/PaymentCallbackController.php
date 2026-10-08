@@ -443,7 +443,11 @@ class PaymentCallbackController
                 'payment_device' => DeviceDetector::detect($request),
             ], $totPrice);
 
-            $order->payment()->update(['pg_provider' => 'kginicis']);
+            // 에스크로를 켠 상점의 결제는 에스크로 MID 로 승인된다 — [구매결정]·에스크로 배송 등록·환불이 이 표시로 판정한다 (S4-D18)
+            // PC 결제창은 간편결제에도 acceptmethod 의 useescrow 를 그대로 두고 에스크로 MID 로 결제한다 —
+            // 간편결제도 에스크로로 표시해야 이후 조회·취소가 같은 MID 자격증명을 쓴다(S4-D21).
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+            $order->payment()->update(['pg_provider' => 'kginicis', 'is_escrow' => $this->apiService->isEscrowEnabled()]);
             $this->queueReceiptCookie($moid);
 
             return redirect($this->resolveSuccessUrl($moid));
@@ -562,6 +566,7 @@ class PaymentCallbackController
                 ],
             ], $amt);
 
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $order->payment()->update(['pg_provider' => 'kginicis']);
 
             Log::info('KG Inicis: PC vbank deposit confirmed', ['tid' => $tid, 'moid' => $moid, 'amt' => $amt]);
@@ -666,6 +671,7 @@ class PaymentCallbackController
                 'payment_device' => 'mobile',
             ], $amt);
 
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $order->payment()->update(['pg_provider' => 'kginicis']);
 
             Log::info('KG Inicis: mobile vbank deposit confirmed', ['tid' => $tid, 'moid' => $moid, 'amt' => $amt]);
@@ -935,14 +941,18 @@ class PaymentCallbackController
 
         if ($vactDate && strlen($vactDate) === 8) {
             try {
-                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate.$vactTime);
+                // 입금 기한은 한국 시각이다 — 앱 시간대(UTC)로 그대로 읽으면 9시간 늦게 저장된다.
+                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate.$vactTime, 'Asia/Seoul')->setTimezone(config('app.timezone', 'UTC'));
             } catch (\Exception) {
                 $vbankDueAt = null;
             }
         }
 
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $order->payment()->update(array_filter([
             'pg_provider' => 'kginicis',
+            // 에스크로를 켠 상점의 가상계좌는 에스크로 MID 로 발급된다 (S4-D18)
+            'is_escrow' => $this->apiService->isEscrowEnabled(),
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'transaction_id' => $tid ?: null,
             'vbank_code' => $pgResponse['VACT_BankCode'] ?? null,  // KG 이니시스 은행코드 (e.g. 89=케이뱅크)
@@ -962,6 +972,9 @@ class PaymentCallbackController
                 'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::PC_VBANK_ISSUE_RESPONSE_KEYS),
             ],
         ], fn ($v) => $v !== null));
+
+        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+        $this->orderService->onVbankAccountIssued($order);
 
         Log::info('KG Inicis: vbank account issued', [
             'moid' => $order->order_number,

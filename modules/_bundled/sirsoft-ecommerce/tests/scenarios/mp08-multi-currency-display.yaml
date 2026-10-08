@@ -54,6 +54,8 @@ effects:
   - fallback_to_default_formatted_when_missing  # 키 부재 시 *_formatted 폴백(안전망)
   # JPY 포맷 (PHPUnit)
   - jpy_format_zero_decimal_places              # JPY decimal_places=0 → 소수점 없음
+  # 음수 금액 절사 대칭 (PHPUnit)
+  - negative_amount_rounds_symmetric_to_positive # 차액 등 음수 금액은 절댓값에 절사·올림·반올림 후 부호 복원 — 같은 금액이 양수·음수로 1단위 어긋나지 않음
   # X-Currency 헤더 (Playwright)
   - x_currency_header_sent_on_module_requests   # /api/modules/sirsoft-ecommerce/* 요청에 X-Currency 동반
   # 기본화폐 프론트 반영 (Vitest + Playwright)
@@ -62,6 +64,7 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceCurrencyMergeTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CurrencyConversionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CurrencyNegativeAmountRoundingTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/currencySelector.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/listPriceDisplay.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-currency-switch.spec.ts

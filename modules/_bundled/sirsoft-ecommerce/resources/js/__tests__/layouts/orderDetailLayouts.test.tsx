@@ -1644,6 +1644,34 @@ describe('#599 직권·대리 입력 창 — 글자 수 제한 prop', () => {
   });
 });
 
+describe('직권 접수 — 해외 주문 재발송지 (S2-D8)', () => {
+  /**
+   * 해외 주문은 재발송지에 도시·주가 있어야 주소가 완결된다 — 창이 국내형 칸만 두면 운영자가 도시·주를
+   * 고칠 수 없다. 국내 주문에는 칸이 서지 않도록 핸들러가 정한 해외 표식으로 가른다.
+   *
+   * @effects admin_request_modal_seeds_the_international_redelivery_address
+   */
+  it('재발송지 칸 묶음이 해외 표식일 때만 도시·주 입력을 세운다', () => {
+    const nodes: any[] = [];
+    const walk = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (n && typeof n === 'object') {
+        nodes.push(n);
+        Object.values(n).forEach(walk);
+      }
+    };
+    walk(adminClaimRequestModal);
+
+    const block = nodes.find((n) => n.id === 'acr_006_redelivery');
+    const fields = JSON.stringify(block);
+    expect(fields).toContain('"field":"redelivery.city"');
+    expect(fields).toContain('"field":"redelivery.state"');
+
+    const cityInput = nodes.find((n) => (n.actions ?? []).some((a: any) => a.params?.field === 'redelivery.city'));
+    expect(cityInput?.if).toBe('{{_global.adminClaimRequest?.redeliveryInternational === true}}');
+  });
+});
+
 describe('#599 직권 접수 — 청구 미리보기 금액 표기', () => {
   /**
    * 금액 줄은 핸들러가 주문 통화로 만든 `previewFormatted` 를 읽는다 — 응답에 없는 `*_formatted` 키를 읽으면

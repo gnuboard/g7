@@ -116,7 +116,8 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}"
+                                        "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}",
+                                        "aria-label": "$t:common.delete"
                                     },
                                     "children": [
                                         {

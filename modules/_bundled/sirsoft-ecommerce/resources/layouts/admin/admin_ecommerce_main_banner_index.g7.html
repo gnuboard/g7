@@ -24,7 +24,7 @@
           <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.main_banner.description</p>
         </div>
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
-          <button type="button" class="btn btn-icon">
+          <button type="button" class="btn btn-icon" aria-label="$t:common.reset">
             <on type="click">
               <!-- 쿼리를 떨어뜨린 처음 상태로 되돌린다 — 화면 상태가 전부 _local 이라 재진입이 곧 초기화다 -->
               <navigate path="/admin/ecommerce/main-banners" :mergeQuery="false"/>

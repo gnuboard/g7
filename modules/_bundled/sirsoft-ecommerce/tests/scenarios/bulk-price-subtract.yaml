@@ -11,13 +11,14 @@ axes:
   result: [within_floor, clamped_to_zero]
 
 exclusions:
-  - { endpoint: products_bulk_update, method: percent, reason: "하한 적용 지점(applyPriceAdjustment)이 두 엔드포인트 공통 — options 쪽 percent 로 충분" }
   - { endpoint: options_bulk_update, method: subtract, result: clamped_to_zero, reason: "하한 적용 지점이 공통 — products 쪽 clamped 로 충분" }
-  - { method: percent, result: within_floor, reason: "percent 의 하한 미도달 경로는 기존 ProductOptionControllerTest 가 고정" }
+  - { endpoint: options_bulk_update, method: percent, result: within_floor, reason: "비율 계산 지점(applyPriceAdjustment)이 두 엔드포인트 공통 — products 쪽 within_floor 로 충분" }
+  - { endpoint: products_bulk_update, method: percent, result: clamped_to_zero, reason: "하한 적용 지점이 공통 — options 쪽 clamped 로 충분" }
 
 effects:
   - subtract_accepted_and_applied
   - option_selling_price_never_negative
+  - percent_based_on_option_selling_price
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Product/BulkPriceSubtractTest.php

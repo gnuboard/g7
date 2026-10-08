@@ -85,11 +85,12 @@ class OrderPrivacyRetentionRepository implements OrderPrivacyRetentionRepository
     private const REDELIVERY_MASKED_KEYS = ['recipient_name', 'phone', 'zipcode', 'address1'];
 
     /**
-     * 교환 재배송지 스냅샷에서 NULL 로 지우는 키 — 주문 배송지의 상세 주소(`address_detail`)에 대응
+     * 교환 재배송지 스냅샷에서 NULL 로 지우는 키 — 주문 배송지의 상세 주소(`address_detail`)와
+     * 해외 주소의 도시·주(`intl_city`·`intl_state`)에 대응
      *
      * @var array<int, string>
      */
-    private const REDELIVERY_NULL_KEYS = ['address2'];
+    private const REDELIVERY_NULL_KEYS = ['address2', 'city', 'state'];
 
     /**
      * {@inheritDoc}

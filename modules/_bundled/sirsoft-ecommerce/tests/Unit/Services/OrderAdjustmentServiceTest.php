@@ -1445,6 +1445,218 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 주문쿠폰 주문 전체취소 → 환불 상세(옵션별) 행 환불액이 그 행의 실결제액과 같다 (S3-D3, 2026-10-07 실측)
+     *
+     * A(10,000)+B(30,000), 주문쿠폰 3,000 → 행 실결제 9,250 / 27,750. 전체취소 장부(`adjustedItems`)가
+     * 할인 반영 후 금액을 취소액으로 적고, 환불 상세 행은 그 값을 정가로 보고 할인 비율을 **한 번 더**
+     * 빼서 8,556.25 / 25,668.75(합 34,225)로 기록됐다 — 신청서 총액 39,500(배송비 2,500 포함)과 줄 합계가
+     * 2,775원 어긋났다. 부분취소 장부는 정가를 적으므로 같은 행 계산이 맞게 나온다.
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_full_cancel_with_order_coupon_refund_option_rows_match_paid_amount(): void
+    {
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 30000);
+
+        $coupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            minOrderAmount: 0,
+        );
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            couponIssueIds: [$coupon->id],
+        ));
+
+        $cancelItems = $order->options->map(fn ($o) => ['order_option_id' => $o->id, 'cancel_quantity' => $o->quantity])->values()->all();
+        $result = $this->adjustmentService->calculate($order, $this->buildFullCancellation($order));
+        $rows = app(\Modules\Sirsoft\Ecommerce\Services\RefundExecutionService::class)
+            ->buildRefundOptionRows($order, $cancelItems, $result);
+
+        foreach ($order->options as $option) {
+            $row = collect($rows)->firstWhere('order_option_id', $option->id);
+            $this->assertEqualsWithDelta((float) $option->subtotal_paid_amount, (float) $row['refund_amount'], 0.01, "옵션 {$option->id} 환불액");
+        }
+        $this->assertEqualsWithDelta(37000.0, (float) collect($rows)->sum('refund_amount'), 0.01);
+    }
+
+    /**
+     * 같은 주문의 부분취소(행 전량)는 종전에도 맞았다 — 전체취소와 같은 행 금액을 말한다.
+     *
+     * @effects full_cancel_refunds_the_entire_paid_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_partial_cancel_with_order_coupon_refund_option_row_matches_paid_amount(): void
+    {
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 30000);
+
+        $coupon = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            minOrderAmount: 0,
+        );
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            couponIssueIds: [$coupon->id],
+        ));
+
+        $optA = $order->options->firstWhere('product_option_id', $oA->id);
+        $cancelItems = [['order_option_id' => $optA->id, 'cancel_quantity' => 1]];
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation($cancelItems));
+        $rows = app(\Modules\Sirsoft\Ecommerce\Services\RefundExecutionService::class)
+            ->buildRefundOptionRows($order, $cancelItems, $result);
+
+        $this->assertEqualsWithDelta((float) $optA->subtotal_paid_amount, (float) $rows[0]['refund_amount'], 0.01);
+    }
+
+    /**
+     * 앞서 일부 환불한 주문을 다시 취소할 때 「취소 전 실결제금액」은 지금 남은 결제액이다 (S3-D14, 2026-10-07 실측)
+     *
+     * 취소 창 「주문금액 비교」의 취소 전 열은 지금 주문(판매가·배송비·과세)을 그리는데 실결제금액만 처음 결제 총액을
+     * 그렸다. 60,000원 주문에서 27,500원을 이미 환불한 뒤 남은 상품을 모두 취소하면 「실결제 60,000 → 0」 옆에
+     * 「최종 환불 예정액 32,500」이 찍혀 두 숫자가 서로 맞지 않았다(실측: 주문 20261007-0258571183). 같은 값은 취소
+     * 차단 판정(`isCancelBlocked`)의 기준선이기도 하다 — 처음 결제 총액을 보면 이미 돌려준 돈만큼 추가결제 필요를
+     * 놓친다.
+     *
+     * @effects partial_cancel_after_a_prior_refund_compares_against_the_amount_still_paid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_original_snapshot_paid_amount_excludes_prior_refunds(): void
+    {
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 30000);
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+        ));
+        $paid = (float) $order->total_paid_amount;
+
+        // 앞선 부분취소(A) 뒤 상태 — A 행 취소, 주문 합계는 남은 B 기준, 결제 총액은 그대로, 환불 누계 10,000
+        $optA = $order->options->firstWhere('product_option_id', $oA->id);
+        $optA->update(['option_status' => OrderStatusEnum::CANCELLED]);
+        $order->update([
+            'subtotal_amount' => 30000,
+            'total_amount' => $paid - 10000,
+            'total_refunded_amount' => 10000,
+        ]);
+        $order->refresh()->load('options');
+
+        $optB = $order->options->firstWhere('product_option_id', $oB->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optB->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertEqualsWithDelta($paid - 10000, (float) $result->originalSnapshot['total_paid_amount'], 0.01, '취소 전 실결제는 이미 돌려준 돈을 뺀 값이어야 한다');
+        $this->assertFalse($result->isCancelBlocked());
+    }
+
+    /**
+     * 「취소 전 실결제금액」 보조 통화도 지금 남은 결제액을 환산한다 (S3-D14 후속, 2026-10-07 재실측)
+     *
+     * 기준 통화 줄은 「결제 총액 − 환불 누계」로 바뀌었는데 보조 통화 줄은 주문의 `mc_total_paid_amount`(결제 총액 맵)를
+     * 그대로 읽어, 한 칸 안에 「22,500원 · $44.56(60,000원어치)」처럼 두 시점이 섞였다(재실측: 주문 20261007-0258571183
+     * 취소 창).
+     *
+     * @effects partial_cancel_after_a_prior_refund_compares_against_the_amount_still_paid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_original_multi_currency_paid_amount_excludes_prior_refunds(): void
+    {
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 30000);
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+        ));
+        $paid = (float) $order->total_paid_amount;
+        $snapshot = $order->currency_snapshot;
+        $this->assertNotEmpty($snapshot, '통화 스냅샷이 있어야 보조 통화 줄이 선다');
+
+        $order->options->firstWhere('product_option_id', $oA->id)->update(['option_status' => OrderStatusEnum::CANCELLED]);
+        $currency = app(\Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService::class);
+        // 실제 주문처럼 결제 총액의 통화별 맵을 들고 있다 — 환불이 나가도 이 맵은 깎이지 않는다
+        $order->update([
+            'subtotal_amount' => 30000,
+            'total_amount' => $paid - 10000,
+            'total_refunded_amount' => 10000,
+            'mc_total_paid_amount' => $currency->convertToMultiCurrencyWithSnapshot($paid, $snapshot),
+        ]);
+        $order->refresh()->load('options');
+
+        $optB = $order->options->firstWhere('product_option_id', $oB->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optB->id, 'cancel_quantity' => 1],
+        ]));
+
+        $expected = app(\Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService::class)
+            ->convertToMultiCurrencyWithSnapshot($paid - 10000, $snapshot);
+        foreach ($expected as $code => $amount) {
+            $this->assertEqualsWithDelta((float) $amount, (float) ($result->mcOriginalSnapshot['mc_total_paid_amount'][$code] ?? -1), 0.011, $code.' 보조 통화가 결제 총액을 환산한다');
+        }
+    }
+
+    /**
+     * 환불 0원으로 닫힌 상품이 있는 주문의 마지막 상품 취소는 닫힌 상품 값을 다시 돌려주지 않는다 (S3-D18, 2026-10-07 실측)
+     *
+     * 부분 경로는 종결 행을 뺀 기준선으로 계산해 이 문제를 막는다(#599 validate P2 #2). 남은 상품을 **모두** 빼는 취소는
+     * 재계산 없이 「결제액 − 환불 누계」를 돌려주는 전량 제외 경로를 타는데, 0원으로 닫힌 행은 환불 누계를 늘리지 않아
+     * 그 값이 그대로 다시 나갔다. 실측: 주문 20261007-0533380250(A 10,000 + B 30,000 + 배송 2,500) — A 취소 환불을
+     * 0원으로 실행한 뒤 B 취소 창의 최종 환불 예정액 **42,500**(B 몫 32,500 + 닫힌 A 10,000).
+     *
+     * @effects zero_refund_closed_row_is_not_refunded_again
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cancelling_the_last_item_does_not_refund_a_row_closed_with_zero(): void
+    {
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 30000);
+
+        $order = $this->createOrderFromCalculation(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+        ));
+        $paid = (float) $order->total_paid_amount;
+
+        // A 를 환불 0원으로 닫은 뒤 상태 — 행은 취소, 주문 합계는 B 기준, 환불 누계는 그대로 0
+        $order->options->firstWhere('product_option_id', $oA->id)->update(['option_status' => OrderStatusEnum::CANCELLED]);
+        $order->update(['subtotal_amount' => 30000, 'total_amount' => $paid - 10000]);
+        $order->refresh()->load('options');
+
+        $optB = $order->options->firstWhere('product_option_id', $oB->id);
+        $result = $this->adjustmentService->calculate($order, $this->buildCancellation([
+            ['order_option_id' => $optB->id, 'cancel_quantity' => 1],
+        ]));
+
+        $this->assertEqualsWithDelta($paid - 10000, (float) $result->refundAmount + (float) $result->refundPointsAmount, 0.01, '0원으로 닫힌 A 값이 다시 환불된다');
+    }
+
+    /**
      * A-9-5: 주문쿠폰 min 없음 (0) → 항상 유지
      *
      * @effects partial_cancel_keeps_the_order_coupon_while_the_minimum_holds
@@ -9273,6 +9485,31 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         ]));
 
         $this->assertSame(30000.0, (float) $result->refundAmount, '다른 상품 1개의 환불액은 그 상품 단가 그대로여야 한다');
+    }
+
+    /**
+     * 교환 완료 주문의 「취소·환불 전」 상품수량은 교환으로 닫힌 원 행을 세지 않는다 (S3-D16, 2026-10-07 실측)
+     *
+     * 같은 비교 카드의 정가 합계(`listPriceTotal`)는 교환완료로 닫힌 원 행을 빼는데, 상품수량(`item_count`)은
+     * 취소 행만 빼서 원 행과 후속 행을 둘 다 셌다. 실측: 주문 20261007-0346009059(A옵션1·A옵션2·B — A옵션2 를
+     * 옵션1 로 교환 완료) 뒤 반품 환불신청서 RF20261007-0434050542 의 「환불 전 상품수량 4개」 — 살아 있는 상품은 3개.
+     *
+     * @scenario price_delta=lower
+     *
+     * @effects exchanged_source_row_is_not_counted_twice_in_the_comparison_quantity
+     *
+     * @return void 반환값 없음
+     */
+    public function test_comparison_item_count_skips_the_exchanged_source_row(): void
+    {
+        [$order, , , $rowB] = $this->buildCompletedExchangeOrder(aPrice: 20000, difference: -5000);
+
+        $result = $this->adjustmentService->preview($order, $this->buildCancellation([
+            ['order_option_id' => $rowB->id, 'cancel_quantity' => 1],
+        ]));
+
+        // 후속 행 1 + B 2 — 교환완료로 닫힌 원 행 A 는 후속 행이 승계했으므로 세지 않는다
+        $this->assertSame(3, (int) $result->originalSnapshot['item_count']);
     }
 
     /**

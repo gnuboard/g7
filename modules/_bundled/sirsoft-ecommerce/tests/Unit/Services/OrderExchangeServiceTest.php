@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
@@ -49,6 +50,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\ProvidesClaimTracking;
@@ -160,6 +162,37 @@ class OrderExchangeServiceTest extends ModuleTestCase
         }
 
         return $order->fresh(['options', 'shippings', 'payment', 'shippingAddress']);
+    }
+
+    /**
+     * 배송완료된 해외(미국) 단일 상품 주문을 만듭니다.
+     *
+     * 국내 주소 칸은 체크아웃이 해외 주문에 남기는 그대로 빈 문자열이다.
+     *
+     * @return Order 주문
+     */
+    protected function internationalDeliveredOrder(): Order
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->attachPolicyShippings($this->createSingleItemClaimOrder(29000, 1, $policy), $policy);
+
+        OrderAddress::factory()->create([
+            'order_id' => $order->id,
+            'address_type' => 'shipping',
+            'recipient_name' => 'Jane Doe',
+            'recipient_phone' => '+1-212-555-0101',
+            'recipient_country_code' => 'US',
+            'zipcode' => '',
+            'address' => '',
+            'address_detail' => '',
+            'address_line_1' => '350 5th Ave',
+            'address_line_2' => 'Suite 2',
+            'intl_city' => 'New York',
+            'intl_state' => 'NY',
+            'intl_postal_code' => '10118',
+        ]);
+
+        return $this->deliver($order, 'US');
     }
 
     /**
@@ -2874,6 +2907,54 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertNotNull($exchange->redelivered_at);
     }
 
+    /**
+     * 발송중인 교환품을 구매자가 먼저 구매확정해도 발송도착·교환완료 처리가 막히지 않는다.
+     *
+     * 후속 주문옵션은 `shipping` 으로 생겨 구매확정 대상이다. 확정은 받았다는 뜻이므로 도착 처리는
+     * 확정 상태를 배송완료로 되돌리지 않고 배송 행만 도착으로 옮긴다 — 되돌리면 구매확정 → 배송완료
+     * 역전이로 전이 가드가 완료를 통째로 거절해 신청서가 발송중에 갇힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_arrival_keeps_a_successor_the_buyer_confirmed
+     */
+    public function test_redelivery_arrival_and_completion_keep_a_successor_the_buyer_already_confirmed(): void
+    {
+        foreach (['complete', 'arrive'] as $path) {
+            $order = $this->deliveredOrder();
+            $exchange = $this->advanceTo(
+                $this->service->requestExchange($order, $this->payload($order)),
+                ExchangeStatusEnum::REDELIVERING
+            );
+            $item = $exchange->fresh(['exchangeOptions'])->exchangeOptions->first();
+            $successor = OrderOption::findOrFail($item->new_order_option_id);
+            $this->assertSame(OrderStatusEnum::SHIPPING, $successor->option_status);
+
+            app(OrderService::class)->confirmOption($order->fresh(), $successor);
+            $confirmedAt = $successor->fresh()->confirmed_at;
+            $this->assertNotNull($confirmedAt);
+
+            $result = $path === 'complete'
+                ? $this->service->completeExchange($exchange->fresh(['exchangeOptions']), [(int) $item->id], $this->completionOptions($exchange->fresh(['exchangeOptions']), false, false))
+                : $this->service->transition($exchange->fresh(['exchangeOptions']), ExchangeStatusEnum::REDELIVERED, $this->claimTrackingFor(ExchangeStatusEnum::REDELIVERED));
+
+            $this->assertSame(
+                $path === 'complete' ? ExchangeStatusEnum::COMPLETED : ExchangeStatusEnum::REDELIVERED,
+                $result->exchange_status,
+                "[{$path}] 구매확정된 후속 옵션이 처리를 막았습니다."
+            );
+            $this->assertSame(OrderStatusEnum::CONFIRMED, $successor->fresh()->option_status, "[{$path}] 확정된 후속 옵션이 배송완료로 되돌아갔습니다.");
+            $this->assertEquals($confirmedAt, $successor->fresh()->confirmed_at, "[{$path}] 확정 시각이 바뀌었습니다.");
+            $this->assertSame(
+                ShippingStatusEnum::DELIVERED,
+                OrderShipping::where('order_option_id', $successor->id)->firstOrFail()->shipping_status,
+                "[{$path}] 후속 옵션의 배송 행이 도착으로 옮겨지지 않았습니다."
+            );
+        }
+    }
+
     // ================================================================
     // 금액 수정
     // ================================================================
@@ -3964,6 +4045,106 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame('63000', $second->redelivery_address_snapshot['zipcode']);
         $this->assertSame('제주 서귀포시 1', $second->redelivery_address_snapshot['address1']);
         $this->assertTrue($second->redelivery_address_snapshot['changed_by_user']);
+    }
+
+    /**
+     * 재발송지를 null 로 보낸 수정은 원 배송지로 되돌리고 배송비도 그 주소로 다시 계산한다.
+     *
+     * 수정 화면의 [원 배송지로 되돌리기]가 보내는 값이다. 키가 없으면 "손대지 않음"이라
+     * 앞서 바꾼 주소를 지키지만, null 은 "바꾼 주소를 버린다"는 뜻이다 — 둘을 같게 다루면
+     * 화면은 원 배송지를 보여 주는데 신청서에는 바꿔 둔 주소가 남는다(2026-10-06 S2 실측).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_must_stay_in_the_same_country
+     */
+    public function test_update_request_with_a_null_redelivery_address_restores_the_order_address(): void
+    {
+        $order = $this->deliveredOrder();
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+
+        $moved = $this->service->updateRequest($exchange, [
+            'redelivery_address' => ['zipcode' => '63000', 'address1' => '제주 서귀포시 1', 'address2' => '201호', 'changed_by_user' => true],
+        ]);
+        $this->assertSame('63000', $moved->redelivery_address_snapshot['zipcode']);
+        $this->assertTrue($moved->shipping_fee_snapshot['redelivery_changed']);
+
+        $restored = $this->service->updateRequest($moved, ['redelivery_address' => null]);
+        $address = $order->fresh()->shippingAddress;
+
+        $this->assertSame($address->zipcode, $restored->redelivery_address_snapshot['zipcode']);
+        $this->assertSame($address->address, $restored->redelivery_address_snapshot['address1']);
+        $this->assertSame($address->address_detail, $restored->redelivery_address_snapshot['address2'], '바꿔 둔 상세 주소도 함께 버린다.');
+        $this->assertFalse($restored->redelivery_address_snapshot['changed_by_user']);
+        $this->assertFalse($restored->shipping_fee_snapshot['redelivery_changed'], '배송비도 원 배송지 기준으로 다시 계산한다.');
+    }
+
+    /**
+     * 해외 주문의 재발송지는 해외 주소 칸(거리·도시·주·우편번호)을 그대로 옮겨 담는다.
+     *
+     * 주문 배송지의 국내 칸은 해외 주문에서 빈 문자열로 저장된다. 스냅샷에 도시·주 칸이 없으면
+     * 구매자가 아무것도 바꾸지 않아도 운영자가 보는 재발송지가 「350 5th Ave 10118」처럼 도시·주가
+     * 빠진 주소가 된다(2026-10-07 S4 실측, 주문 710 → 인계 S2-D8).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_keeps_the_international_city_and_state
+     */
+    public function test_international_order_redelivery_snapshot_carries_the_city_and_state(): void
+    {
+        $order = $this->internationalDeliveredOrder();
+
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+        $snapshot = $exchange->redelivery_address_snapshot;
+
+        $this->assertSame('10118', $snapshot['zipcode']);
+        $this->assertSame('350 5th Ave', $snapshot['address1']);
+        $this->assertSame('Suite 2', $snapshot['address2']);
+        $this->assertSame('New York', $snapshot['city']);
+        $this->assertSame('NY', $snapshot['state']);
+        $this->assertFalse($snapshot['changed_by_user']);
+        $this->assertFalse($this->service->redeliveryAddressDiffersFromOrder($exchange), '손대지 않은 해외 재발송지는 주문 배송지와 같다.');
+
+        $moved = $this->service->updateRequest($exchange, [
+            'redelivery_address' => ['address1' => '1 Main St', 'city' => 'Boston', 'state' => 'MA', 'zipcode' => '02108'],
+        ]);
+
+        $this->assertSame('Boston', $moved->redelivery_address_snapshot['city']);
+        $this->assertSame('MA', $moved->redelivery_address_snapshot['state']);
+        $this->assertTrue($moved->redelivery_address_snapshot['changed_by_user']);
+        $this->assertTrue($this->service->redeliveryAddressDiffersFromOrder($moved->fresh()));
+    }
+
+    /**
+     * 국내 주문의 재발송지는 도시·주 칸을 비워 두고, 그 칸이 없던 예전 스냅샷은 「다름」으로 판정하지 않는다.
+     *
+     * 도시·주 칸은 이 수정으로 생겼다. 그 전에 저장된 신청서는 두 칸이 아예 없는데, 없는 칸을
+     * 주문 배송지 값과 비교하면 해외 주문의 신청서가 모두 「배송지 다름」 뱃지를 달게 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_keeps_the_international_city_and_state
+     */
+    public function test_domestic_redelivery_leaves_city_and_state_empty_and_older_snapshots_are_not_flagged(): void
+    {
+        $domestic = $this->service->requestExchange($order = $this->deliveredOrder(), $this->payload($order));
+
+        $this->assertNull($domestic->redelivery_address_snapshot['city']);
+        $this->assertNull($domestic->redelivery_address_snapshot['state']);
+
+        $international = $this->internationalDeliveredOrder();
+        $exchange = $this->service->requestExchange($international, $this->payload($international));
+        $older = $exchange->redelivery_address_snapshot;
+        unset($older['city'], $older['state']);
+        $exchange->forceFill(['redelivery_address_snapshot' => $older])->save();
+
+        $this->assertFalse($this->service->redeliveryAddressDiffersFromOrder($exchange->fresh()));
     }
 
     /**

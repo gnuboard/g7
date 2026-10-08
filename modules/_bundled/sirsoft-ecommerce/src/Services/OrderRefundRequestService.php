@@ -33,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ReportsClaimRequestUpdate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 취소·환불 신청 분기 서비스 (S5 · D2)
@@ -430,6 +431,11 @@ class OrderRefundRequestService
             $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment']);
 
+            // 입금이 결제행에 기록된 결제 전 주문은 받은 돈을 헤더에 먼저 올린다(S3-D7). 환불 산정·실행 상한이
+            // 모두 헤더(받은 돈 − 환불 누적)를 읽으므로, 올리지 않으면 받은 돈 몫이 0원으로 계산된다.
+            // 같은 트랜잭션이라 접수가 거절되면 함께 되돌아간다.
+            $this->syncRecordedDepositHeader($lockedOrder);
+
             $resolved = $this->claimQuantityGuard->resolveClaimItems(
                 $lockedOrder,
                 $items,
@@ -502,17 +508,42 @@ class OrderRefundRequestService
      * 0 이거나. ⓑ 를 함께 보지 않으면 0원 주문·전액 쿠폰 주문이 "결제완료" 라는 이유로
      * 0원짜리 환불신청서를 만들고, 그 행은 송금할 것이 없어 영영 `approved` 에 남는다(P11).
      *
+     * ⓐ 는 **결제행에 입금이 기록되지 않은** 결제 전 주문만이다(S3-D7). [입금확인]에서 결제완료 처리를 끄고
+     * 입금을 기록만 한 주문은 결제대기인데도 돈을 받았다 — 주문 상태만 보면 그 돈이 환불신청서 없이 사라진다.
+     * 그런 주문은 ⓑ 로 판정한다(받은 돈은 접수가 헤더에 먼저 올린다 — `syncRecordedDepositHeader()`).
+     *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $adjustment  환불 계산 결과
      * @return bool 되돌릴 돈이 없으면 true
      */
     protected function hasNothingToRefund(Order $order, AdjustmentResult $adjustment): bool
     {
-        if ($order->order_status->isBeforePayment()) {
+        if ($order->order_status->isBeforePayment()
+            && ! $this->refundExecutionService->hasRecordedDepositBeforePayment($order)) {
             return true;
         }
 
         return ((float) $adjustment->refundAmount + (float) $adjustment->refundPointsAmount) <= 0.0;
+    }
+
+    /**
+     * 입금이 결제행에 기록된 결제 전 주문의 헤더에 받은 돈을 올립니다. (S3-D7 — 취소 접수 직전, 잠근 주문)
+     *
+     * 「입금 내역만 기록」은 결제행만 입금완료로 만들고 주문 헤더는 받은 돈 0·받을 돈 그대로 둔다. 환불 산정
+     * (`OrderAdjustmentService`)과 실행 상한(`CancellableAmountCalculator`)은 헤더를 읽으므로, 그대로 취소하면
+     * 받은 돈 몫이 0원으로 계산된다. 운영자가 상태를 올릴 때 헤더를 맞추는 규칙(S2-D4)과 같은 메서드를 쓴다 —
+     * 두 경로가 따로 맞추면 같은 주문의 받은 돈이 경로마다 달라진다. 멱등이다(헤더가 채워지면 맞추지 않는다).
+     *
+     * @param  Order  $order  주문 (잠금·로드 완료)
+     * @return void 반환값 없음
+     */
+    protected function syncRecordedDepositHeader(Order $order): void
+    {
+        if (! $this->refundExecutionService->hasRecordedDepositBeforePayment($order)) {
+            return;
+        }
+
+        app(OrderProcessingService::class)->syncPaidHeaderFromSettledPayment($order);
     }
 
     /**
@@ -716,10 +747,15 @@ class OrderRefundRequestService
         $processedBy = $payload['processed_by'] ?? null;
 
         if ($this->willAutoAdvance($order, $branch, $payload, $refund)) {
-            return $this->autoAdvance($refund, [
+            $advance = fn () => $this->autoAdvance($refund, [
                 'processed_by' => $processedBy,
                 'pg_already_settled' => (bool) ($payload['pg_already_settled'] ?? false),
             ]);
+
+            // 운영자가 [주문취소]를 눌러 시작했으면 그 운영자가 작업자다. 고객 취소의 자동 진행은
+            // 누른 사람이 없다 — 로그인한 고객이 승인·완료 작업자로 남지 않게 시스템으로 돌린다
+            // (S1-D16: 활동 로그 작업자는 `processed_by` 가 아니라 `Auth::id()` 에서 온다).
+            return $processedBy !== null ? $advance() : SystemActor::run($advance);
         }
 
         if (! $this->willAutoApprove($order, $refund)) {
@@ -738,7 +774,10 @@ class OrderRefundRequestService
         // 자동취소도 작업자를 NULL 로 남기고 화면이 그것을 시스템으로 읽는다.
         // 바로 위 `autoAdvance` 는 **관리자가 [주문취소]를 눌러** 시작한 경로라 주체가 있고,
         // 그 책임 추적을 지우면 안 되므로 `$processedBy` 를 그대로 넘긴다.
-        return $this->transition($refund, RefundStatusEnum::APPROVED);
+        //
+        // 인자를 비우는 것만으로는 활동 로그 작업자가 바뀌지 않는다 — 작업자는 `Auth::id()` 다.
+        // 그래서 전이 자체를 시스템으로 돌린다(S1-D16).
+        return SystemActor::run(fn () => $this->transition($refund, RefundStatusEnum::APPROVED));
     }
 
     /**
@@ -1785,8 +1824,13 @@ class OrderRefundRequestService
             );
 
             $updates['refund_method'] = $method;
-            // 운영자가 고른 수단이다 — 실행 시점에 수단을 다시 판정하지 않는다(P-D3).
-            $updates['refund_method_overridden'] = true;
+            // 운영자가 고른 수단이다 — 실행 시점에 수단을 다시 판정하지 않는다(P-D3). 다만 화면은 고치지 않은
+            // 수단도 늘 본문에 싣는다(S3-D26). **실행 때 쓰일 수단과 같은 값**은 고른 것이 아니라 그대로 둔
+            // 것이다 — 그때 박으면 플러그인이 꺼진 동안 계좌로 폴백된 카드 신청서가, 플러그인을 다시 켠 뒤
+            // [환불하기]에서 PG 를 부르지 않고 계좌 환불로 닫힌다(돈이 결제사로 돌아가지 않는다).
+            if ($method !== $this->effectiveRefundMethod($refund, $order)) {
+                $updates['refund_method_overridden'] = true;
+            }
         }
 
         // 실행하며 적어 넣은 환불 계좌 (T2-D6) — 계좌로 송금해야 끝나는 환불인데 신청서에
@@ -1835,8 +1879,74 @@ class OrderRefundRequestService
         }
 
         if (! $this->pgRefundAvailable($order)) {
-            throw OrderClaimException::refundMethodUnavailable();
+            // PG 결제인데 막혔다면 그 주문의 결제 플러그인이 꺼진 것이다(S3-D25) — 일반 거절 문장으로는
+            // 운영자가 이유도, 플러그인을 켜거나 계좌 환불로 바꾸면 된다는 해결책도 알 수 없다.
+            throw $this->pgRefundBlockedByInactivePlugin($order)
+                ? OrderClaimException::pgProviderInactive((string) $order->payment->pg_provider)
+                : OrderClaimException::refundMethodUnavailable();
         }
+    }
+
+    /**
+     * PG 결제 주문인데 그 결제 플러그인이 꺼져 PG 환불을 할 수 없는지 판정합니다. (S3-D25)
+     *
+     * 결제는 PG 를 거쳤는데(`needsPgProvider()`) PG 환불이 안 되면(`pgRefundAvailable()`) 남은 이유는
+     * 그 주문의 결제 플러그인이 응답하지 않는 것이다 — 저장·실행 거절이 이 경우 사유와 해결책을 따로 말한다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 플러그인이 꺼져 PG 환불이 막힌 PG 결제 주문이면 true
+     */
+    public function pgRefundBlockedByInactivePlugin(Order $order): bool
+    {
+        $order->loadMissing('payment');
+
+        return $order->payment !== null
+            && $order->payment->needsPgProvider()
+            && ! $this->pgRefundAvailable($order);
+    }
+
+    /**
+     * 이 신청서를 지금 [환불하기] 하면 쓰일 환불수단을 반환합니다. (실효 수단 — S3-D26)
+     *
+     * 플러그인이 꺼진 동안 계좌로 폴백 접수된 카드 신청서는, 운영자가 수단을 고르지 않았고 지금 PG 로
+     * 환불할 수 있으면 실행 때 PG 로 되돌린다(P-D3). 상세 화면이 저장값(계좌)을 그대로 보이면 실행 창이
+     * 계좌를 요구하고, 그 값이 본문에 실려 운영자가 고른 수단처럼 박혔다. 화면과 실행이 이 판정 하나를 읽는다.
+     *
+     * 끝난 신청서(완료·반려·철회)와 운영자가 고른 수단, 계좌가 아닌 수단은 저장값 그대로다 — 반대 방향
+     * (PG → 계좌)은 바꾸지 않는다. 꺼진 플러그인의 PG 건은 실행 때 사유와 함께 막힌다(P-D6).
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  Order|null  $order  주문 (없으면 신청서의 주문)
+     * @return RefundMethodEnum|null 실효 환불수단
+     */
+    public function effectiveRefundMethod(OrderRefund $refund, ?Order $order = null): ?RefundMethodEnum
+    {
+        $stored = $refund->refund_method;
+
+        if ($stored !== RefundMethodEnum::BANK || $refund->refund_method_overridden) {
+            return $stored;
+        }
+
+        if (in_array($refund->refund_status, [RefundStatusEnum::COMPLETED, RefundStatusEnum::REJECTED, RefundStatusEnum::WITHDRAWN], true)) {
+            return $stored;
+        }
+
+        $order ??= $refund->order;
+
+        if ($order === null) {
+            return $stored;
+        }
+
+        $order->loadMissing('payment');
+
+        // 결제수단이 **원래** PG 로 돌려주는 수단이어야 한다 — 가상계좌처럼 PG 를 거쳤어도 원래 계좌로
+        // 돌려주는 수단을 PG 로 바꾸면 안 된다. `determineRefundMethod()` 와 같은 판정이되, 상세를 열 때마다
+        // 폴백 경고 로그가 쌓이지 않도록 리스너 유무를 직접 본다.
+        if ($order->payment === null || $order->payment->refundMethod() !== RefundMethodEnum::PG) {
+            return $stored;
+        }
+
+        return $this->refundExecutionService->hasPgRefundListener($order) ? RefundMethodEnum::PG : $stored;
     }
 
     /**

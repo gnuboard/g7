@@ -68,6 +68,8 @@ interface AdminClaimRequestState {
     feeEdited: boolean;
     approve: boolean;
     redelivery: Record<string, string>;
+    /** 해외 주문 여부 — 재발송지에 도시·주 칸을 세울지 정한다 (S2-D8) */
+    redeliveryInternational: boolean;
     /** 환불 우선순위 (반품만 — `pg_first`·`points_first`) */
     refundPriority: string;
     /** 환불 계좌 (반품만 — 주문 입력값 프리필, 사람이 송금하는 결제수단에서만 쓰인다) */
@@ -114,10 +116,17 @@ function t(key: string, fallback: string, params?: Record<string, unknown>): str
 /**
  * 응답 오류의 서버 메시지를 꺼냅니다. (없으면 null)
  *
+ * 5xx 는 사유가 없는 것으로 본다 — 운영 환경의 500 본문은 언제나 `Server Error` 같은 프레임워크
+ * 원문이라, 띄우면 운영자가 영문 내부 문구를 읽는다. 부르는 쪽의 번역된 폴백 문구로 넘긴다.
+ *
  * @param error 오류 객체
  * @returns 서버 메시지 또는 null
  */
 function serverMessageOf(error: any): string | null {
+    const status = Number(error?.response?.status ?? error?.status ?? 0);
+
+    if (status >= 500) return null;
+
     const message = error?.response?.data?.message ?? error?.data?.message ?? null;
 
     return typeof message === 'string' && message !== '' ? message : null;
@@ -371,13 +380,17 @@ export async function openAdminClaimRequestHandler(
             shippingFee: '',
             feeEdited: false,
             approve: true,
+            // 해외 주문은 국내 칸이 빈 문자열이라 `||` 로 해외 칸에 넘어간다 — 서버 스냅샷과 같은 규칙.
             redelivery: {
                 recipient_name: address.recipient_name ?? '',
                 phone: address.recipient_phone ?? '',
-                zipcode: address.zipcode ?? '',
-                address1: address.address ?? '',
-                address2: address.address_detail ?? '',
+                zipcode: address.zipcode || address.intl_postal_code || '',
+                address1: address.address || address.address_line_1 || '',
+                address2: address.address_detail || address.address_line_2 || '',
+                city: address.intl_city || '',
+                state: address.intl_state || '',
             },
+            redeliveryInternational: String(address.recipient_country_code ?? 'KR').toUpperCase() !== 'KR',
             refundPriority: 'pg_first',
             // 주문 때 적은 환불 계좌를 미리 채운다 — 종전 취소 창과 같은 출처(`payment.refund_bank_*`).
             refundBank: {

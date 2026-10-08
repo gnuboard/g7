@@ -1524,14 +1524,17 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
         $legacyId = ClaimReason::query()->where('type', 'exchange')->where('code', 's10_ko_only_legacy')->value('id');
         $this->assertNotNull($legacyId);
 
-        // en 운영자가 그 행을 손대지 않고 새 행만 더한다 — 기존 행은 통과, 신규 행은 en 필수.
+        // en 운영자가 그 행을 손대지 않고 새 행만 더한다 — 기존 행은 통과, 신규 행은 사이트 기본 언어(ko) 필수
+        // (필수 언어 = 사이트 기본 언어, 제품 결정 2026-10-08 — 보는 사람의 언어가 아니다).
+        config(['app.site_locale' => 'ko']);
+
         $this->actingAs($this->adminUser)
             ->withHeaders(['Accept-Language' => 'en'])
             ->putJson($this->apiBase, [
                 '_tab' => 'claim',
                 'claim' => ['exchange_reasons' => [
                     $this->reasonRow('s10_ko_only_legacy', ['id' => $legacyId, 'name' => ['ko' => '한국어만']]),
-                    $this->reasonRow('s10_en_new', ['name' => ['en' => 'New in English']]),
+                    $this->reasonRow('s10_ko_only_new', ['name' => ['ko' => '신규인데 한국어만']]),
                 ]],
             ])
             ->assertOk();
@@ -1543,10 +1546,11 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
                 'claim' => ['exchange_reasons' => [
                     $this->reasonRow('s10_ko_only_legacy', ['id' => $legacyId, 'name' => ['ko' => '한국어만']]),
                     $this->reasonRow('s10_ko_only_new', ['name' => ['ko' => '신규인데 한국어만']]),
+                    $this->reasonRow('s10_en_new', ['name' => ['en' => 'New in English']]),
                 ]],
             ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('claim.exchange_reasons.1.name.en');
+            ->assertJsonValidationErrors('claim.exchange_reasons.2.name.ko');
     }
 
     /**
@@ -1642,7 +1646,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
-     * 다른 유형의 사유 id 를 실은 페이로드는 거절한다.
+     * 다른 유형(교환) 사유의 id 를 반품 페이로드에 실으면 거절된다.
      *
      * @scenario reason_type=return
      *

@@ -106,7 +106,13 @@ class OrderOptionResource extends BaseApiResource
             // `getEarnableOptions` 의 `option_status = 적립트리거` 조건에 영원히 걸리지
             // 않으므로 **어떤 설정에서도 적립 대상이 아니다**. 그런데 화면은 「적립예정」을
             // 말한다 — 지켜질 수 없는 예정이다. 세 번째 상태를 화면이 아니라 여기서 판정한다.
-            'is_points_earn_cancelled' => $this->option_status === OrderStatusEnum::CANCELLED
+            // 반품완료·교환완료(원 행)도 같다 — 적립 조건(`option_status = 적립트리거`)에 다시 걸리지 않는데 화면은
+            // 「적립예정」을 말했다(S3-D20). 교환으로 받은 상품의 적립은 후속 행이 가진다.
+            'is_points_earn_cancelled' => in_array($this->option_status, [
+                OrderStatusEnum::CANCELLED,
+                OrderStatusEnum::RETURNED,
+                OrderStatusEnum::EXCHANGED,
+            ], true)
                 && ! (bool) ($this->purchase_earn_transactions_exists ?? false),
             'unit_price' => $this->roundToOrderCurrency($this->unit_price),
             'unit_price_formatted' => $this->formatOrderCurrency($this->unit_price),

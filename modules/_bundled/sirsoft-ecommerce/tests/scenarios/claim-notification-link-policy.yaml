@@ -44,6 +44,7 @@ effects:
   - capability_memoizes_per_request
   - extracted_claim_link_defaults_to_the_customer_screen
   - staff_filed_claim_still_notifies_the_order_owner
+  - staff_requested_alert_only_for_customer_requests  # 운영자 「신청 접수」 알림은 고객이 낸 신청에만 (2026-10-07 실측 — 반품 발 환불에 21명)
   # 주문 축 (클레임과 동형)
   - order_links_follow_the_recipient_not_the_notification_type
   - empty_order_number_is_not_promoted

@@ -59,6 +59,7 @@ exclusions:
   - { caller: unauthenticated_browser, threat: cli_injection, reason: "CLI 인수는 상점 설정·주문 저장값에서 오고 브라우저 입력이 아니다" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # Replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival
   - replay_response_is_idempotent_ok
@@ -94,6 +95,7 @@ effects:
   - forged_vbank_callback_cannot_cancel_a_card_order
   - forged_vbank_callback_cannot_write_an_account_number_to_the_order
   - mobile_vbank_issuance_failure_does_not_mutate_the_order
+  - vbank_issuance_failure_message_follows_locale   # 발급 정보 없고 PG 문구도 없을 때 실패 안내가 화면 언어(한국어 고정 아님)
   - pc_vbank_cli_exception_does_not_mutate_the_order
   - vbank_save_failure_mutates_only_on_pc_server_confirmed_issuance
   - cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
@@ -116,6 +118,8 @@ effects:
   - mobile_vbank_callback_with_mismatched_state_is_rejected
   - mobile_vbank_callback_without_stored_state_cannot_persist_account
   - close_report_ignores_order_when_payment_already_paid
+  - close_report_ignores_issued_vbank_waiting_deposit
+  - kcp_vbank_issue_marks_payment_waiting_deposit
   - close_report_ignores_order_that_is_no_longer_payable
   - close_report_rejects_matching_buyer_contact_without_ownership
   - close_report_rejects_invalid_payment_currency_without_server_error

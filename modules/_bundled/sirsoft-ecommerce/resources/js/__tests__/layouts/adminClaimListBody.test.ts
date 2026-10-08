@@ -236,8 +236,33 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
     const navigate = actions.find((a) => a.handler === 'navigate') as Node;
 
     expect(navigate.params.mergeQuery).toBeUndefined();
-    expect(navigate.params.query).toEqual({ type: '{{$args[0]}}' });
+    expect(navigate.params.query.type).toBe('{{$args[0]}}');
+    // 유형 종속 어휘(상태·귀책·청구·사유·접수 경로·회수 지연·환불 미접수·청구 결제수단)는 따라가지 않는다.
+    ['statuses[]', 'fault_types[]', 'charge_methods[]', 'reason_code', 'request_source', 'collection_overdue', 'pending_refund', 'charge_payment_methods[]'].forEach((key) => {
+      expect(navigate.params.query).not.toHaveProperty(key);
+    });
     expect(navigate.comment).toContain('audit:allow layout-list-context-navigate-merge-query');
+  });
+
+  /**
+   * 다른 탭의 뱃지는 "그 탭으로 가면 몇 건이 보이는가" 다 — 서버는 그 건수를 유형 공통 필터
+   * (`ClaimListRequest::countFilters()`)로 센다. 탭을 누를 때 그 필터를 버리면 「반품 4」를 눌러
+   * 17건을 보게 된다(실측 2026-10-07). 승계 키 집합은 서버의 건수 필터 집합과 같아야 한다.
+   *
+   * @effects subtab_switch_carries_count_filters
+   */
+  it('유형 전환은 뱃지를 센 공통 필터(기간·검색·회원구분·금액·통화)를 그대로 이어 간다', () => {
+    const actions = callbacksOf(byId(shell, 'claim_type_subtabs').actions[0], 'actions') as Node[];
+    const navigate = actions.find((a) => a.handler === 'navigate') as Node;
+    const request = fs.readFileSync(path.join(MODULE_ROOT, 'src/Http/Requests/Admin/ClaimListRequest.php'), 'utf8');
+    const body = request.slice(request.indexOf('function countFilters'));
+    const countKeys = [...body.slice(0, body.indexOf('];')).matchAll(/'([a-z_]+)' =>/g)].map((m) => m[1]);
+
+    expect(countKeys.length).toBeGreaterThan(0);
+    expect(Object.keys(navigate.params.query).filter((k) => k !== 'type').sort()).toEqual([...countKeys].sort());
+    countKeys.forEach((key) => {
+      expect(navigate.params.query[key]).toBe(`{{query.${key} || null}}`);
+    });
   });
 
   /**

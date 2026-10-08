@@ -1420,6 +1420,24 @@ describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 �
   });
 
   /**
+   * 신청서 상태 변경 [일괄 적용] 도 저장 중 스피너를 띄운다 — 같은 화면의 금액·메모·송장·상품 일괄 버튼은
+   * 모두 스피너를 켜는데 이 버튼만 잠기기만 해서, 응답을 기다리는 몇 초 동안 눌렸는지 알 수 없었다
+   * (2026-10-07 실측: dblclick 직후 disabled=true, 스피너 요소 0). 스피너는 핸들러가 켜고 끄는
+   * `_local.isTransitioningClaim` 을 그대로 읽는다.
+   *
+   * @scenario claim_type=return
+   *
+   * @effects claim_detail_transition_apply_shows_spinner
+   */
+  it('신청서 상태 변경 [일괄 적용] 이 처리 중 스피너를 띄운다', () => {
+    const apply = byId(itemsSection as Node, 'cts_003_apply');
+    const spinner = (apply.children ?? []).find((c: Node) => c.name === 'Icon' && c.props?.name === 'spinner') as Node | undefined;
+
+    expect(spinner).toBeDefined();
+    expect(String(spinner?.if ?? '')).toContain('_local.isTransitioningClaim');
+  });
+
+  /**
    * 엔진에 없는 핸들러 이름을 쓰지 않는다.
    *
    * `setLocalState` 는 레이아웃 편집기 스펙의 **별칭**일 뿐 `ActionDispatcher` 의 핸들러가

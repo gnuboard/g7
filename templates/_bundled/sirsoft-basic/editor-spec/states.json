@@ -969,9 +969,9 @@
           "default": true,
           "initialState": {
             "global": {
-              "changeAddressMode": "sample",
+              "changeAddressMode": "manual",
               "selectedAddressId": 1,
-              "editingShippingAddress": "샘플 값"
+              "editingShippingAddress": {"recipient_name":"홍길동","recipient_phone":"010-1234-5678","zipcode":"06236","address":"서울특별시 강남구 테헤란로 152","address_detail":"10층"}
             }
           }
         }
@@ -1200,7 +1200,7 @@
               },
               "qnaSubmitting": false,
               "qnaEditId": 1,
-              "qnaProductImage": "샘플 값",
+              "qnaProductImage": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "qnaProductName": "샘플 제목",
               "qnaCreatedAt": "2026-09-19 11:30:00",
               "qnaModalBoardSettings": "샘플 값",
@@ -1477,6 +1477,101 @@
                 501,
                 502
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "신청 철회 확인 창이 읽는 상태 — 모달은 페이지 _local 을 그대로 쓴다(withdrawClaimNumber·withdrawError). 목록·상세의 [철회] 버튼이 담는 값이라, 편집기에서는 이 표본이 없으면 「{{number}} 신청을 철회하시겠습니까?」 로 자리 표시자가 드러난다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_claim_withdraw"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "withdrawClaimNumber": "RT20260919-0001",
+              "withdrawError": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "첨부 사진 보기 창이 읽는 상태(claimImageViewerUrl·claimImageViewerName) — 신청서 상세의 첨부 썸네일을 누르면 담기는 값이다. 표본이 없으면 그림 없이 빈 창으로 열린다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_claim_image_viewer"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "claimImageViewerUrl": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+              "claimImageViewerName": "evidence-photo.jpg"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "구매 확정 창이 읽는 확정 대상(confirmTarget — 주문 상세의 행 버튼이 담는 상품 한 줄). 표본이 없으면 상품 그림 주소가 비어 깨진 그림이 된다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_confirm_purchase"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "confirmTarget": {
+                "id": 1,
+                "orderId": 1,
+                "product_name": "베이직 오버핏 코튼 티셔츠",
+                "option_name": "블랙 / L",
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                "subtotal_earned_points_amount": 250,
+                "subtotal_earned_points_amount_formatted": "250P"
+              },
+              "isConfirming": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "리뷰 작성 창이 읽는 리뷰 대상(reviewTarget — 주문 상세의 [리뷰 작성] 이 담는 상품 한 줄). 표본이 없으면 상품 그림 주소가 비어 깨진 그림이 된다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_write_review"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "reviewTarget": {
+                "id": 1,
+                "orderId": 1,
+                "product_name": "베이직 오버핏 코튼 티셔츠",
+                "option_name": "블랙 / L",
+                "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+              },
+              "reviewRating": 5,
+              "reviewContent": ""
             }
           }
         }

@@ -92,7 +92,7 @@
       <div data-ref="page_header_section" class="mb-6">
         <div data-ref="page_header" class="page-header-padded">
           <div class="flex-center gap-3">
-            <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors">
+            <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.back">
               <on type="click">
                 <!-- 목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
                 <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">

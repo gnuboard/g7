@@ -487,6 +487,35 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
+     * 반품완료·교환완료(원 행)도 「적립 없음」으로 읽힌다 (S3-D20, 2026-10-07 실측)
+     *
+     * 두 상태도 적립 조건(`option_status = 적립트리거`)에 다시 걸리지 않는다 — 교환으로 받은 상품의 적립은 후속 행이
+     * 가진다. 그런데 화면은 「500P 적립예정」을 말했다(실측: 주문 20261007-0346009059 의 교환완료 원 행 A옵션2 ·
+     * 반품완료 행 A옵션1).
+     *
+     * @scenario stock_deduction=not_deducted, points_earn=earn_cancelled, non_purchase_tx=none
+     *
+     * @effects resource_marks_cancelled_option_as_earn_cancelled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_returned_and_exchanged_options_read_as_earn_cancelled(): void
+    {
+        foreach ([OrderStatusEnum::RETURNED, OrderStatusEnum::EXCHANGED] as $status) {
+            $order = OrderFactory::new()->create(['user_id' => $this->createUser()->id]);
+            OrderOptionFactory::new()->forOrder($order)->create([
+                'subtotal_earned_points_amount' => 500,
+                'option_status' => $status->value,
+            ]);
+
+            $loaded = app(OrderRepositoryInterface::class)->findWithRelations($order->id);
+            $resource = (new OrderOptionResource($loaded->options->first()))->resolve();
+
+            $this->assertTrue($resource['is_points_earn_cancelled'], $status->value.' 행이 「적립예정」으로 남는다');
+        }
+    }
+
+    /**
      * 취소 전에 이미 적립된 옵션은 「적립완료」가 이긴다 (S1-D19 경계)
      *
      * 지연 적립 설정에서는 구매확정 후 적립된 다음 취소가 들어오는 시간차가 실제로

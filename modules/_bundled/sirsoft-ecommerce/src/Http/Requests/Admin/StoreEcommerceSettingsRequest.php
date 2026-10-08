@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
@@ -35,6 +36,8 @@ use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
  */
 class StoreEcommerceSettingsRequest extends FormRequest
 {
+    use ResolvesSiteLocale;
+
     /**
      * 저장 요청이 실을 수 있는 설정 구역(탭) 키 — `_tab` 허용값이자 「저장할 구역이 하나라도 있는가」 판정 기준.
      *
@@ -255,7 +258,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         return [
             '_tab' => ['sometimes', 'string', 'in:'.implode(',', self::SECTIONS)],
@@ -551,7 +554,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
             // shipping.carriers 섹션 (DB 동기화 대상)
             'shipping.carriers' => ['nullable', 'array'],
-            // `id` 는 "기존 행" 판정의 유일한 근거다(이름의 현재 로케일 필수 면제). 실재하지
+            // `id` 는 "기존 행" 판정의 유일한 근거다(이름의 사이트 기본 언어 필수 면제). 실재하지
             // 않는 id 를 통과시키면 면제만 받고 sync 는 신규 create 로 흘러 이름 없는 행이 생긴다.
             'shipping.carriers.*.id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             // 형식 검사는 **신규 행**에만 건다. 이 탭은 저장할 때마다 카탈로그 전체를 되보내므로,
@@ -1244,10 +1247,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 다국어 이름 규칙 — 신규 행은 현재 로케일 필수, 기존 행(`id` 보유)은 길이·형식만.
+     * 다국어 이름 규칙 — 신규 행은 사이트 기본 언어 필수, 기존 행(`id` 보유)은 길이·형식만.
      *
      * 카탈로그(배송사·배송유형·클레임 사유 3종)는 저장할 때마다 전체를 되보낸다. 다른 로케일에서
-     * 만들어 현재 로케일 이름이 빈 기존 행이 한 건이라도 있으면 손대지 않은 행이 섹션 전체를 막는다 —
+     * 만들어 사이트 기본 언어 이름이 빈 기존 행이 한 건이라도 있으면 손대지 않은 행이 섹션 전체를 막는다 —
      * 기존 코드를 형식 검사에서 면제하는 `ClaimReasonCodeFormat` 과 같은 이유로 이름도 기존 행을 면제한다.
      *
      * @param  string  $attribute  현재 검증 중인 속성 경로 (`{section}.{index}.name`)
@@ -1265,7 +1268,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 카탈로그 행이 기존 행(`id` 보유)인지 판정합니다 — after 훅의 현재 로케일 이름 검사 면제 기준.
+     * 카탈로그 행이 기존 행(`id` 보유)인지 판정합니다 — after 훅의 사이트 기본 언어 이름 검사 면제 기준.
      *
      * @param  array<string, mixed>  $row  카탈로그 행
      * @return bool 기존 행이면 true
@@ -1376,7 +1379,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
                 continue;
             }
 
-            $locale = app()->getLocale();
+            $locale = $this->requiredNameLocale();
             $localeName = $name[$locale] ?? '';
             if (! is_string($localeName) || trim($localeName) === '') {
                 $validator->errors()->add(
@@ -1448,7 +1451,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
                 continue;
             }
 
-            $locale = app()->getLocale();
+            $locale = $this->requiredNameLocale();
             $localeName = $name[$locale] ?? '';
             if (! is_string($localeName) || trim($localeName) === '') {
                 $validator->errors()->add(
@@ -1577,7 +1580,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             "{$key}_deleted.*" => ['integer'],
             // `id` 는 아래 이름 규칙의 "기존 행" 판정 근거이자 sync 의 update/create 분기 키다.
             // 실재하지 않는 id(또는 다른 유형의 id)를 통과시키면 이름 면제만 받고 sync 는 else
-            // 분기(create)로 흘러 **현재 로케일 이름이 없는 사유가 새로 생긴다**. 유형 스코프까지
+            // 분기(create)로 흘러 **사이트 기본 언어 이름이 없는 사유가 새로 생긴다**. 유형 스코프까지
             // 건다 — 교환 id 를 반품 페이로드에 실으면 그 역시 create 다.
             "{$key}.*.id" => ['nullable', 'integer', Rule::exists(ClaimReason::class, 'id')->where('type', $type)],
             // 형식은 ClaimReasonCodeFormat 단일 출처다 — 상세 REST 경로와 같은 규칙을 쓴다.
@@ -1585,8 +1588,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 검사를 면제한다. 면제가 없으면 규칙이 좁혀지기 전에 만들어진 코드 한 건 때문에
             // 운영자가 손대지 않은 행이 탭 전체를 영구히 422 로 만든다.
             "{$key}.*.code" => ["required_with:{$key}", 'string', 'max:50', new ClaimReasonCodeFormat($this->existingClaimReasonCodes($type))],
-            // 이름의 현재 로케일 필수는 **신규 행**에만 건다. 이 탭은 카탈로그 전체를 되보내므로,
-            // 다른 로케일에서 만든 기존 행(현재 로케일 이름이 빈 행)이 한 건이라도 있으면 운영자가
+            // 이름의 사이트 기본 언어 필수는 **신규 행**에만 건다. 이 탭은 카탈로그 전체를 되보내므로,
+            // 다른 로케일에서 만든 기존 행(사이트 기본 언어 이름이 빈 행)이 한 건이라도 있으면 운영자가
             // 손대지 않은 그 행 때문에 탭 전체가 422 가 된다 — 코드 형식이 기존 코드를 면제하는
             // 것과 같은 이유다. 기존 행은 길이·형식만 검사한다 (`id` 가 있으면 기존 행이다).
             "{$key}.*.name" => Rule::forEach(fn ($value, string $attribute) => $this->translatableNameRules($attribute, $key)),
@@ -1783,7 +1786,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 클레임 사유명 필수 검증 - 현재 로케일에 이름이 있어야 함 (교환/반품/환불 공통)
+     * 클레임 사유명 필수 검증 - 사이트 기본 언어에 이름이 있어야 함 (교환/반품/환불 공통)
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @param  string  $type  사유 유형 (exchange|return|refund)
@@ -1798,7 +1801,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             return;
         }
 
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         foreach ($reasons as $index => $reason) {
             $name = $reason['name'] ?? [];
@@ -1833,7 +1836,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      */
     public function messages(): array
     {
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         return [
             // basic_info 섹션

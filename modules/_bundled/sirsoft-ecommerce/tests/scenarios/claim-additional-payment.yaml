@@ -76,6 +76,7 @@ effects:
   - claim_payment_on_hold_approval_keeps_the_claim_in_place   # 보류에서 누른 승인은 결제행만 만들고 신청서를 제자리에 둔다 (S3-D7)
   - claim_payment_completion_hook_sees_the_claim_already_paid
   - claim_payment_completion_fires_the_claim_type_specific_hook
+  - claim_payment_completed_notice_fires_once_on_every_path   # 보류→승인 추가결제처럼 paid 를 거치지 않은 결제 확정도 결제 완료 알림 1회 (S1-D8)
   # 결제 어휘 (ClaimEnumsTest) — 어느 유형·청구 방식이 결제 행을 만들고 어느 상태가 환급 대상인가
   - claim_type_payable_is_exchange_and_return_only
   - claim_charge_method_deduct_from_refund_creates_no_payment

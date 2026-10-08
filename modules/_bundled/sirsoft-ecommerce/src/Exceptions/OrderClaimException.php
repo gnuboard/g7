@@ -404,6 +404,20 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * PG 결제 주문인데 그 결제 플러그인이 꺼져 PG 환불을 지정할 수 없을 때 (S3-D25)
+     *
+     * 실행 경로(`RefundExecutionService`)가 같은 사유에 내는 문장과 같다 — 플러그인을 켜거나 환불 수단을
+     * 계좌 환불로 바꾸라는 해결책을 함께 말한다.
+     *
+     * @param  string  $provider  결제 플러그인(제공자) 식별자
+     * @return self 예외 인스턴스
+     */
+    public static function pgProviderInactive(string $provider): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.pg_provider_inactive', ['provider' => $provider]);
+    }
+
+    /**
      * 회수 송장 정보가 불완전할 때 (택배사/송장번호 중 한쪽만 입력)
      *
      * @return self 예외 인스턴스

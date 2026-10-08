@@ -1,6 +1,6 @@
 <!-- 내 정보 수정 폼 본체. 값은 `user` 소스가 `initLocal` 로 채운 폼 상태에서 오고, 검증 오류는
      서버가 돌려준 것을 그대로 칸마다 보여 준다. -->
-<partial description="마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)">
+<partial _e2e_allow="e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)" description="마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)">
   <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
     <blur-until-loaded sources="user"/>
     <responsive on="portable" class="space-y-4"/>
@@ -366,6 +366,8 @@
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.shipping_country_settings.description</p>
         <select name="ecommerce_preferred_shipping_country" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full sm:w-64"/>
+        <!-- 저장된 국가가 지금 배송 불가면 콤보가 빈칸이 되므로, 그 국가가 적용되지 않는다는 것과 지금 적용 중인 국가를 알린다(다른 국가를 고르면 사라짐). -->
+        <p data-if="{{(_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== undefined &amp;&amp; (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) !== null &amp;&amp; !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))}}" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country))?.name, 'sirsoft-ecommerce::settings.countries.' + ((_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country) ?? '') + '.name') || (_local.profileEditForm?.ecommerce_preferred_shipping_country ?? user.data?.ecommerce_preferred_shipping_country)}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}</p>
         <p data-if="{{_local.profileErrors?.ecommerce_preferred_shipping_country}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
       </div>
       <!-- 하단 버튼 그룹 -->

@@ -59,6 +59,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   error?: string;                        // 에러 메시지 (상위 컴포넌트에서 처리)
   searchable?: boolean;                  // 드롭다운 내 검색 input 활성화 (engine-v1.40.0+)
   searchPlaceholder?: string;            // 검색 input placeholder (searchable=true일 때)
+  placeholder?: string;                  // 값이 비었을 때 버튼에 흐리게 보이는 안내 글자(버튼 읽기 이름도 됨)
 
   // HTML Select 표준 Props (모두 지원)
   value?: string | number;              // 선택된 값 (제어 컴포넌트)
@@ -84,7 +85,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 | `disabled` | `boolean` | ❌ | `false` | 비활성화 |
 | `required` | `boolean` | ❌ | `false` | 필수 입력 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
-| `placeholder` | `string` | ❌ | - | 플레이스홀더 (옵션 배열 첫 항목) |
+| `placeholder` | `string` | ❌ | - | 값이 비었을 때(고른 옵션이 없을 때) 버튼에 흐리게 보이는 안내 글자. 화면 낭독기도 이 글자를 버튼 이름으로 읽는다 |
+| `aria-label` | `string` | ❌ | - | 버튼(children 모드는 `<select>`)의 읽기 이름. 바깥 상자에 달리지 않는다 |
 | `searchable` | `boolean` | ❌ | `false` | 드롭다운 내 검색 input 활성화 (label/value 부분일치 필터링, engine-v1.40.0+) |
 | `searchPlaceholder` | `string` | ❌ | `'Search...'` | 검색 input placeholder (searchable=true일 때) |
 

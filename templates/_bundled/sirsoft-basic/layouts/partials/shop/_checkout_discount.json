@@ -446,7 +446,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}"
+                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + checkoutData.data.calculation?.summary?.shipping_discount + $t('sirsoft-ecommerce.currency.krw_suffix'))}}"
                         }
                     ]
                 }

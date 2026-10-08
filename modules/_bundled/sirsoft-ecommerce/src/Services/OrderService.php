@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
@@ -528,6 +529,36 @@ class OrderService
     }
 
     /**
+     * 일괄 상태 변경이 옮긴 상품의 배송 레코드 진행 상태·시각을 맞춥니다. (S3-D5)
+     *
+     * 목록 일괄 경로는 상품 상태를 raw update 로 옮겨 상세 일괄변경(`OrderOptionService`)의 배송 레코드
+     * 동기화를 지나지 않는다 — 배송완료로 올린 주문의 레코드가 `shipped`·`delivered_at=null` 에 남아
+     * 고객 「배송 현황」이 배송중으로 보였다. 대응표는 `OrderOptionService::shippingRecordStateFor()` 한 곳을
+     * 쓰고, 나눠 보낸 상품의 배송 행 전부에 적용하며 발생 시각은 저장소가 행마다 처음 한 번만 남긴다.
+     *
+     * @param  array<int, array{order_option_id: int, order_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
+     * @param  string  $status  목표 상태 값
+     * @return void
+     */
+    private function syncShippingRecordState(array $changes, string $status): void
+    {
+        $target = OrderStatusEnum::tryFrom($status);
+        if ($target === null || $changes === []) {
+            return;
+        }
+
+        $state = app(OrderOptionService::class)->shippingRecordStateFor($target);
+        if ($state === []) {
+            return;
+        }
+
+        $shippingRepository = app(OrderShippingRepositoryInterface::class);
+        foreach (array_unique(array_map('intval', array_column($changes, 'order_option_id'))) as $optionId) {
+            $shippingRepository->updateProgressByOrderOptionId($optionId, $state);
+        }
+    }
+
+    /**
      * 주문상품 상태를 주문 상태에 맞춰 옮기고, 옮긴 전/후 내역을 돌려줍니다.
      *
      * 전/후는 갱신 **전에** 읽어야 하므로 읽기와 쓰기를 이 한 곳에서 순서대로 부른다. 훅은
@@ -662,6 +693,10 @@ class OrderService
                 $shippingUpdatedCount = $this->repository->bulkUpdateShipping($ids, $carrierId, $trackingNumber);
                 $updatedCount = max($updatedCount, $shippingUpdatedCount);
             }
+
+            // 배송중·배송완료로 옮긴 상품의 배송 레코드 진행 상태·시각도 함께 옮긴다(S3-D5) — 위 송장 갱신 뒤에
+            // 둬야 송장과 함께 배송완료로 올릴 때 `shipped` 로 덮이지 않는다.
+            $this->syncShippingRecordState($optionSyncChanges, (string) $normalizedStatus);
         });
 
         $this->fireOptionStatusSynced($optionSyncChanges);

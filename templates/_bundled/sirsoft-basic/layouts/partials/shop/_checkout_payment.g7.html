@@ -3,8 +3,8 @@
      고른 뒤 추가 입력이 필요한 수단(가상계좌·무통장)만 그 아래에 자기 칸을 편다.
      칸 id(checkout_payment_method_section)와 버튼의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다.
      결제 통화에서 고를 수 없는 수단(예: 엔화 결제의 일부 PG 수단)은 서버가 체크아웃 응답 `allowed_payment_methods` 로 알려 주고
-     여기서 그 목록으로 거른다(#639 D17) — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다. -->
-<partial description="결제 방법 선택 섹션 (PC/모바일 반응형) - 환경설정 활성 결제수단을 동적 렌더링">
+     주문서 계산값 `selectablePaymentMethods` 가 그 목록으로 거른다(#639 D17) — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다. -->
+<partial _e2e_allow="e2e:allow S4-D14 — 결제수단 칸·빈 목록 안내의 목록식을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다." description="결제 방법 선택 섹션 (PC/모바일 반응형) - 환경설정 활성 결제수단을 동적 렌더링">
   <div data-ref="checkout_payment_method_section" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
     <!-- 섹션 헤더 -->
@@ -19,13 +19,13 @@
     <!-- 결제 방법 선택 카드 (활성화된 결제수단 동적 렌더링) -->
     <grid data-type="layout" :cols="3" :gap="4" class="mb-4">
       <responsive on="portable" :cols="1" :gap="3" class="mb-3"/>
-      <button data-each="method, methodIdx in {{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos) &amp;&amp; (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(m.id)))}}" type="button" data-testid="checkout-payment-method-{{method.id}}" data-payment-method="{{method.id}}" class="{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}">
+      <button data-each="method, methodIdx in {{_computed.selectablePaymentMethods ?? []}}" type="button" data-testid="checkout-payment-method-{{method.id}}" data-payment-method="{{method.id}}" class="{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}">
         <responsive on="portable" class="{{_computed.selectedPaymentMethod === method.id ? 'p-3 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}"/>
         <on type="click">
-          <!-- 결제수단 전환 시 이전 수단이 소유하던 입력값을 함께 비운다. 확장 슬롯(현금영수증 등)과 환불계좌 블록은 결제수단 조건부로 언마운트되지만 _local 값은 남으므로, 초기화하지 않으면 무통장에서 입력한 값이 카드 주문 payload 에 그대로 실린다. -->
+          <!-- 결제수단 전환 시 이전 수단이 소유하던 입력값을 함께 비운다. 확장 슬롯(현금영수증 등)과 환불계좌 블록은 결제수단 조건부로 언마운트되지만 _local 값은 남으므로, 초기화하지 않으면 무통장에서 입력한 값이 카드 주문 payload 에 그대로 실린다. 확장 칸은 객체라 기본(깊은) 병합으로 {} 를 넣으면 기존 키가 하나도 지워지지 않는다 — 최상위 키를 통째로 바꾸는 shallow 병합으로 비운다. -->
           <sequence>
             <set-state target="_local.paymentMethod" value="{{method.id}}"/>
-            <set-state target="_local.checkoutExtraPayload" :value="{}"/>
+            <set-state target="_local" merge="shallow" :checkoutExtraPayload="{}"/>
             <set-state target="_local.refundBankCode" value=""/>
             <set-state target="_local.refundBankAccount" value=""/>
             <set-state target="_local.refundBankHolder" value=""/>
@@ -56,7 +56,7 @@
     </grid>
     <!-- 고를 결제수단이 하나도 없을 때 안내 — 서버가 주문을 받을 수 없는 수단(입금 계좌가 없는 무통장입금 등)을 걸러
          내므로 목록이 빌 수 있다. 빈 칸만 남기면 결제하기가 왜 잠겼는지 알 수 없다(결제하기 버튼도 이 조건으로 잠긴다). -->
-    <div data-if="{{paymentSettings?.data &amp;&amp; (paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos)).length === 0}}" class="p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+    <div data-if="{{paymentSettings?.data &amp;&amp; (_computed.selectablePaymentMethods ?? []).length === 0}}" class="p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
       <responsive on="portable" class="p-3 mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"/>
       <p class="text-sm text-red-700 dark:text-red-400">$t:shop.checkout.no_payment_methods</p>
     </div>

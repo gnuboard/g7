@@ -20,6 +20,29 @@ const logger = ((window as any).G7Core?.createLogger?.('Ecom:OrderDetail')) ?? {
 };
 
 /**
+ * 실패 응답에서 운영자에게 보일 서버 사유를 꺼냅니다. (없으면 null)
+ *
+ * 5xx 본문(`Server Error`)과 본문 없는 응답·전송 실패의 axios 원문(`Request failed with status code 500`·
+ * `Network Error`)은 사유가 아니다 — 띄우면 운영자가 영문 내부 문구를 읽는다. 부르는 쪽의 번역된 폴백으로
+ * 넘긴다(목록 일괄처리 S1-D12 와 같은 기준). 그래서 `error.message` 는 읽지 않는다.
+ *
+ * @param error 오류 객체 (axios 오류 또는 `{ data: 응답 }` 을 실은 Error)
+ * @param preferDetail true 면 진단 문구(`errors.detail`)를 문장보다 먼저 쓴다
+ * @returns 서버 사유 또는 null
+ */
+function serverReasonOf(error: any, preferDetail = false): string | null {
+    const status = Number(error?.response?.status ?? error?.status ?? 0);
+
+    if (status >= 500) return null;
+
+    const data = error?.response?.data ?? error?.data ?? {};
+    const detail = preferDetail && typeof data?.errors?.detail === 'string' && data.errors.detail !== '' ? data.errors.detail : null;
+    const message = typeof data?.message === 'string' && data.message !== '' ? data.message : null;
+
+    return detail ?? message;
+}
+
+/**
  * 커스텀 핸들러에 전달되는 액션 객체 인터페이스
  */
 interface ActionWithParams<T = Record<string, any>> {
@@ -568,16 +591,13 @@ export async function processOrderDetailBulkChangeHandler(
             });
             G7Core.state.set?.({ manualPaidPreview: null });
         } else {
-            throw new Error(response?.message || '상태 변경에 실패했습니다.');
+            throw Object.assign(new Error('Bulk status change failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[processOrderDetailBulkChange] API 호출 실패:', error);
-        // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다.
-        // 고정 문구로 사유를 가리지 않도록 error.response.data.message 를 먼저 추출한다(confirmDeposit 동일 패턴).
-        const errorData = error?.response?.data || error?.data || {};
-        const serverMessage = errorData?.message || error?.message;
+        // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다. 사유가 아닌 원문은 번역된 폴백으로.
         G7Core.toast?.error?.(
-            serverMessage
+            serverReasonOf(error)
             ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.handler.bulk_change_failed')
             ?? '상태 변경에 실패했습니다.'
         );
@@ -628,11 +648,15 @@ export async function saveAdminMemoHandler(
                 ?? '관리자 메모가 저장되었습니다.'
             );
         } else {
-            throw new Error(response?.message);
+            throw Object.assign(new Error('Admin memo save failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[saveAdminMemo] 저장 실패:', error);
-        G7Core.toast?.error?.(error?.message ?? '메모 저장에 실패했습니다.');
+        G7Core.toast?.error?.(
+            serverReasonOf(error)
+            ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.handler.memo_save_failed')
+            ?? '관리자 메모 저장에 실패했습니다.'
+        );
     }
 }
 
@@ -800,24 +824,31 @@ export async function confirmDepositHandler(
 
         if (response?.success) {
             G7Core.state.setLocal({ isConfirmingDeposit: false, depositConfirmErrors: null });
+            // 안내는 서버가 실제 결과(결제완료 처리 / 입금만 기록 / 결제 이후 단계라 상태 유지)에 맞춰 준
+            // 문장을 그대로 띄운다 — 화면이 고정 문구를 들면 기록만 했거나 상태를 그대로 둔 사실이
+            // 운영자에게 전해지지 않는다(S3-D4). 문장이 없는 응답에서만 모듈 문구로 떨어진다.
+            const serverMessage = typeof response?.message === 'string' && response.message !== ''
+                ? response.message
+                : null;
             G7Core.toast?.success?.(
-                G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_success')
-                ?? '입금이 확인되어 결제완료 처리되었습니다.'
+                serverMessage
+                ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_success')
+                ?? '입금이 확인되어 처리되었습니다.'
             );
             G7Core.modal?.close?.('modal_confirm_deposit');
             G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'order' } });
             G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'order_logs' } });
         } else {
-            throw new Error(response?.message || 'Deposit confirm failed');
+            throw Object.assign(new Error('Deposit confirm failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[confirmDeposit] 실패:', error);
 
-        const errorData = error?.response?.data || error?.data || {};
         // 428(본인인증 필요)은 ApiClient(G7Core.api) 인터셉터가 중앙에서 처리한다 —
         // 본인인증 모달 → verify → confirm-deposit 자동 재실행 후 성공 응답이 위 try 의 response 로
         // 돌아오므로(아래 catch 에 도달하지 않음), 여기서 별도 428 분기는 불필요(이중 모달 방지).
-        const detailMessage = errorData?.errors?.detail || errorData?.message || error?.message || '';
+        // 422 는 금액 불일치 진단(errors.detail)이 문장보다 구체적이라 먼저 띄운다.
+        const detailMessage = serverReasonOf(error, true) ?? '';
         const fallbackMessage = G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_failed')
             ?? '입금 확인에 실패했습니다.';
 

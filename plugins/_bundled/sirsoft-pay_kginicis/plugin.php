@@ -360,6 +360,7 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,

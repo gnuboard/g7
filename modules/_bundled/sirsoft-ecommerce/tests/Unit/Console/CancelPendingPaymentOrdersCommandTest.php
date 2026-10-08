@@ -146,6 +146,8 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         OrderPayment::factory()->create([
             'order_id' => $order->id,
             'payment_method' => PaymentMethodEnum::VBANK,
+            // 입금 전이다 — 팩토리 기본값(입금완료)이면 「입금이 기록된 결제 전 주문」(S3-D7)이 되어 환불신청서로 간다.
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'vbank_due_at' => Carbon::now()->subDay(), // 1일 전 만료
         ]);
 
@@ -181,6 +183,8 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         OrderPayment::factory()->create([
             'order_id' => $order->id,
             'payment_method' => PaymentMethodEnum::DBANK,
+            // 입금 전이다 — 팩토리 기본값(입금완료)이면 「입금이 기록된 결제 전 주문」(S3-D7)이 되어 환불신청서로 간다.
+            'payment_status' => PaymentStatusEnum::READY,
             'deposit_due_at' => Carbon::now()->subDay(), // 1일 전 만료
         ]);
 
@@ -347,6 +351,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
             OrderPayment::factory()->create([
                 'order_id' => $order->id,
                 'payment_method' => PaymentMethodEnum::VBANK,
+                'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
                 'vbank_due_at' => Carbon::now()->subDay(),
             ]);
         }

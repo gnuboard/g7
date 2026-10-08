@@ -391,6 +391,43 @@ describe('상품 단위 일괄 전이 (D25)', () => {
     });
 
     /**
+     * 남은 수량은 **분할 전 상태에 그대로** 남는다 — 심사 단계면 신청 상태지만, 발송중 상품을 1개만
+     * 발송도착으로 옮기면 남은 1개는 발송중이다. 안내가 늘 「신청 상태로 남겼습니다」 라고 하면 표의
+     * 「교환발송중」 과 어긋난다(S1-D10 실측: EX…1431076762 발송중 2개 중 1개 발송도착).
+     *
+     * @scenario claim_type=exchange
+     * @effects claim_item_split_notice_keeps_the_current_state_wording
+     */
+    it('뒷 단계에서 분할해도 남은 수량을 「신청 상태」 로 안내하지 않는다', async () => {
+        mockG7Core.api.patch.mockResolvedValueOnce({
+            success: true,
+            data: {
+                succeeded: [55],
+                skipped: [],
+                split: [{ id: 55, quantity: 1, remainder_id: 92, remainder_quantity: 1 }],
+            },
+        });
+
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: {
+                    ...DETAIL_TARGET,
+                    itemIds: [55],
+                    itemQuantities: { 55: 1 },
+                    status: 'redelivered',
+                    rows: ITEM_ROWS,
+                },
+            },
+            mockContext,
+        );
+
+        const notice = mockG7Core.toast.info.mock.calls.at(-1)?.[0] ?? '';
+        expect(notice).not.toContain('신청 상태');
+        expect(notice).toContain('그대로');
+    });
+
+    /**
      * 네트워크가 끊겼을 때 운영자가 읽는 것은 **번역된 안내**여야 한다.
      *
      * 실측(§9 T4)에서 전이 요청만 끊었더니 토스트에 영문 원문 `Network Error` 가 그대로 떴다.
@@ -1067,6 +1104,10 @@ describe('환불 실행 (D18·D19)', () => {
             refundPointsAmount: 1000,
             // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 #14). 교환 차액 환급이 있으면 더한다.
             refundTotal: 25000,
+            // 창이 그리는 표기 — 숫자에 통화 코드를 붙인 `24000 KRW` 가 아니다(S3-D1).
+            refundAmountFormatted: '24,000원',
+            refundPointsAmountFormatted: '1,000원',
+            refundTotalFormatted: '25,000원',
             exchangeDifferenceTotal: 0,
             exchangeDifferenceFormatted: '',
             refundMethod: 'pg',
@@ -1713,6 +1754,47 @@ describe('상품 칸 상태·방향 고르기 — 공통 송장 미리 채움 (P
             itemCarrierId: '',
             itemTrackingNumber: '',
         });
+    });
+
+    /**
+     * 상태를 고른 **뒤에** 송장 없는 행을 더 고르면 미리 채운 송장을 비운다 — 남겨 두면 그대로
+     * [일괄 적용] 했을 때 송장 없는 상품에 다른 상품의 송장이 붙는다(2026-10-07 실측: 1행 선택 →
+     * 회수중 → 송장 없는 3행 추가 선택 → 칸에 1행 송장이 그대로). 운영자가 손으로 고친 값은 두고,
+     * 자동으로 채운 값만 새 선택 기준으로 다시 정한다.
+     *
+     * @scenario claim_type=return, claim_stage=in_progress
+     * @effects claim_item_selection_change_recomputes_prefilled_waybill
+     */
+    it('상태를 고른 뒤 선택이 바뀌면 자동으로 채운 송장만 새 선택 기준으로 다시 정한다', () => {
+        const rows = [
+            { ...ITEM_ROWS[0], transition_options: [{ value: 'collecting', label: '반품회수중' }], collection_carrier_id: 3, collection_tracking_number: 'CJ-1' },
+            { ...ITEM_ROWS[1], transition_options: [{ value: 'collecting', label: '반품회수중' }], collection_carrier_id: null, collection_tracking_number: null },
+        ];
+
+        // 자동으로 채운 값 그대로 → 섞인 선택에서는 비운다
+        getLocalSpy = vi.spyOn(mockG7Core.state, 'getLocal').mockReturnValue({
+            selectedClaimItems: [55], itemBulkStatus: 'collecting', itemCarrierId: '3', itemTrackingNumber: 'CJ-1',
+        } as any);
+        syncClaimItemSelectionHandler(
+            { handler: 'sirsoft-ecommerce.syncClaimItemSelection', params: { selectedIds: [55, 56], rows } },
+            mockContext,
+        );
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith(expect.objectContaining({
+            itemBulkStatus: 'collecting', itemCarrierId: '', itemTrackingNumber: '',
+        }));
+
+        // 운영자가 고쳐 적은 값 → 그대로 둔다
+        getLocalSpy.mockRestore();
+        getLocalSpy = vi.spyOn(mockG7Core.state, 'getLocal').mockReturnValue({
+            selectedClaimItems: [55], itemBulkStatus: 'collecting', itemCarrierId: '3', itemTrackingNumber: 'NEW-9',
+        } as any);
+        syncClaimItemSelectionHandler(
+            { handler: 'sirsoft-ecommerce.syncClaimItemSelection', params: { selectedIds: [55, 56], rows } },
+            mockContext,
+        );
+        const last = mockG7Core.state.setLocal.mock.calls.at(-1)?.[0] ?? {};
+        expect(last).not.toHaveProperty('itemTrackingNumber');
+        expect(last).not.toHaveProperty('itemCarrierId');
     });
 
     /**

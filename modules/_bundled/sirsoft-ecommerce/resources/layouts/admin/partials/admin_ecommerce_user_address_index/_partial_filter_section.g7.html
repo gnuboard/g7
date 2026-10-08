@@ -102,7 +102,7 @@
           <div data-ref="member_filter_chips" data-if="{{(_local.filter?.memberOptions ?? []).length > 0}}" class="flex-center flex-wrap gap-1">
             <div data-each="member, memberIndex in {{_local.filter?.memberOptions ?? []}}" class="flex-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full">
               <span>{{member.label}}</span>
-              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">
                   <!-- 칩 하나만 뗀다 — 두 칸(uuid·이름표)을 같은 손짓으로 함께 줄여야 어긋나지 않는다 -->
                   <set-state target="_local" filter.memberUuids="{{(_local.filter?.memberUuids ?? []).filter(v => v !== member.value)}}" filter.memberOptions="{{(_local.filter?.memberOptions ?? []).filter(o => o.value !== member.value)}}"/>

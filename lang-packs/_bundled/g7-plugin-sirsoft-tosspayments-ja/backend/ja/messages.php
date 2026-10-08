@@ -27,4 +27,7 @@ return [
         'amount_mismatch' => '決済画面を開いた後に請求額が変更されました。申請書から決済をやり直してください。',
         'amount_mismatch_cancel_reason' => 'クレーム決済承認金額不一致による自動キャンセル',
     ],
+    'settings' => [
+        'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
 ];

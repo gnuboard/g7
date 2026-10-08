@@ -393,12 +393,15 @@ class RefundExecutionService
      * 주문을 「현금 있음」으로 읽는다. 비교는 decimal 문자열 `bccomp`(소수 4자리) — 0.1 + 0.2 같은 부동소수
      * 오차가 「돌려줄 돈 있음」이 되지 않게 한다(`CancelOrderRequest::hasMoneyToReturn` 과 같은 이유).
      *
+     * 결제 전 주문은 받은 돈이 없다 — 단 입금이 결제행에 기록된 주문은 예외다(`hasRecordedDepositBeforePayment`, S3-D7).
+     *
      * @param  Order  $order  주문
      * @return bool 돌려줄 현금이 남아 있으면 true
      */
     public function hasCashToReturn(Order $order): bool
     {
-        if ($order->order_status instanceof OrderStatusEnum && $order->order_status->isBeforePayment()) {
+        if ($order->order_status instanceof OrderStatusEnum && $order->order_status->isBeforePayment()
+            && ! $this->hasRecordedDepositBeforePayment($order)) {
             return false;
         }
 
@@ -415,6 +418,34 @@ class RefundExecutionService
         }
 
         return bccomp($this->decimal($payment->paid_amount_base), $this->decimal($payment->cancelled_amount), 4) > 0;
+    }
+
+    /**
+     * 결제 전 주문인데 결제행에 입금이 기록돼 있는지 판정합니다. (S3-D7 — 받은 돈이 있는 결제 전 취소)
+     *
+     * 무통장 [입금확인]에서 「주문을 결제완료로 처리」를 끄면 결제행만 입금완료(`paid`)가 되고 주문은 결제대기로 남는다
+     * (`OrderProcessingService::recordDepositPayment`). 주문 상태만 보면 「결제 전 = 받은 돈 없음」이 되어, 그 주문을
+     * 취소할 때 환불신청서 없이 취소만 기록되고 받은 돈이 장부에서 사라졌다. 결제행 상태가 「돈을 받았다」를
+     * 말하면 결제 전이라도 돌려줄 돈이 있는 주문으로 본다 — 앞선 부분취소로 일부를 돌려준 결제행(`partial_cancelled`)도 같다.
+     *
+     * 결제행의 `paid_amount_base` 는 주문 생성 때부터 결제예정금액이 들어 있어 금액만으로는 판정할 수 없다 — 상태로 본다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 결제 전이면서 결제행에 입금이 기록돼 있으면 true
+     */
+    public function hasRecordedDepositBeforePayment(Order $order): bool
+    {
+        if (! $order->order_status instanceof OrderStatusEnum || ! $order->order_status->isBeforePayment()) {
+            return false;
+        }
+
+        $order->loadMissing('payment');
+
+        return in_array(
+            $order->payment?->payment_status,
+            [PaymentStatusEnum::PAID, PaymentStatusEnum::PARTIAL_CANCELLED],
+            true,
+        );
     }
 
     /**

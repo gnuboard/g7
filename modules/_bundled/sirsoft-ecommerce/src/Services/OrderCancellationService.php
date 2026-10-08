@@ -227,6 +227,10 @@ class OrderCancellationService
      * 이 메서드를 부르므로 `$guardClaimLock=false` 로 재검사를 끈다 — 여기서 다시 걸면
      * 수정 미리보기가 자기 신청서의 잠금에 막힌다.
      *
+     * 입금이 결제행에 기록된 결제 전 주문은 받은 돈을 헤더에 올린 사본으로 계산한다(S3-D7) — 접수
+     * (`OrderRefundRequestService::request`)가 같은 값을 헤더에 저장한 뒤 산정하므로, 미리보기만 받은 돈을
+     * 빼면 취소 창은 마일리지만 돌려준다고 예고하고 실제로는 받은 돈까지 돌려주는 신청서가 생긴다.
+     *
      * @param  Order  $order  대상 주문
      * @param  array  $cancelItems  취소 대상 [{order_option_id, cancel_quantity}]
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
@@ -248,7 +252,35 @@ class OrderCancellationService
 
         $adjustment = CancellationAdjustment::fromArray($cancelItems);
 
-        return $this->adjustmentService->preview($order, $adjustment, $refundPriority);
+        return $this->adjustmentService->preview($this->withRecordedDepositHeader($order), $adjustment, $refundPriority);
+    }
+
+    /**
+     * 입금이 결제행에 기록된 결제 전 주문이면 받은 돈을 헤더에 올린 **사본**을 돌려줍니다. (S3-D7 — 저장하지 않음)
+     *
+     * 미리보기는 DB 를 바꾸지 않으므로 원본 모델을 고치지 않는다 — 원본에 값을 얹으면 호출부가 뒤이어
+     * `update()` 할 때 얹은 값까지 함께 저장된다. 헤더 값의 정본은 접수가 저장하는 값과 같은
+     * `OrderProcessingService::settledPaymentHeaderUpdates()` 다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return Order 받은 돈이 헤더에 오른 사본 (맞출 것이 없으면 원본)
+     */
+    protected function withRecordedDepositHeader(Order $order): Order
+    {
+        if (! $this->refundExecutionService->hasRecordedDepositBeforePayment($order)) {
+            return $order;
+        }
+
+        $updates = app(OrderProcessingService::class)->settledPaymentHeaderUpdates($order);
+
+        if ($updates === null) {
+            return $order;
+        }
+
+        $view = clone $order;
+        $view->forceFill($updates);
+
+        return $view;
     }
 
     /**

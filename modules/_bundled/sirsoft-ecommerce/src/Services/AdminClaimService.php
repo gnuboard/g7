@@ -1054,6 +1054,10 @@ class AdminClaimService
 
             if ($paid <= 0.0 || (float) $updated->total_charge_amount > $paid) {
                 $this->paymentService->settleChargeDifference($updated);
+            } else {
+                // 받은 뒤 이미 낸 금액 이하로 내렸다 — 환급은 하지 않지만(위 결정), 올릴 때 만든 차액 결제 대기 건은
+                // 더는 받을 돈이 아니다. 남겨 두면 구매자·운영자 화면에 「결제대기」 로 남는다(S1-D13).
+                $this->paymentService->cancelPendingPayments($updated);
             }
         }
 

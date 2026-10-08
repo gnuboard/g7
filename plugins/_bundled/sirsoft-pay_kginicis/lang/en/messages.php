@@ -11,9 +11,13 @@ return [
     ],
     'cash_receipt' => [
         'provider_name' => 'KG Inicis',
+        'cancel_reason' => 'Cash receipt issuance cancelled',
     ],
     'escrow' => [
         'confirm_login_required' => 'Please log in and start the purchase decision again from the order details.',
+        'confirm_page_title' => 'Escrow purchase decision',
+        'confirm_preparing' => 'Preparing the escrow purchase decision window...',
+        'confirm_redirecting' => 'Moving to the escrow purchase decision page...',
         'invoice_required' => 'Please enter the tracking number.',
         'courier_required' => 'Please select a courier.',
         'default_confirmer' => 'Administrator',
@@ -30,6 +34,7 @@ return [
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',
+        'admin_cancel_reason' => 'Cancelled by administrator',
     ],
     'cbt_connectivity' => [
         'checked' => 'Connectivity diagnostic completed.',
@@ -132,5 +137,8 @@ return [
             'tosspay' => 'Toss Pay',
             'ssgpay' => 'SSG Pay',
         ],
+    ],
+    'settings' => [
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
 ];

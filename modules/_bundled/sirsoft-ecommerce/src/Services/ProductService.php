@@ -87,14 +87,14 @@ class ProductService
     }
 
     /**
-     * 상품 서비스에 필요한 의존성을 주입받습니다.
+     * 상품 서비스가 사용하는 저장소·하위 서비스를 주입받습니다.
      *
-     * @param  ProductRepositoryInterface  $repository  상품 리포지토리
-     * @param  ProductImageService  $productImageService  상품 이미지 서비스
-     * @param  SequenceService  $sequenceService  채번 서비스
-     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 리포지토리
-     * @param  ProductLabelRepositoryInterface  $productLabelRepository  상품 라벨 리포지토리
-     * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가 옵션 값 리포지토리
+     * @param  ProductRepositoryInterface  $repository  상품 저장소
+     * @param  ProductImageService  $productImageService  상품 이미지 파일 관리 서비스
+     * @param  SequenceService  $sequenceService  상품 코드 채번 서비스
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 저장소 (옵션 삭제 시 주문 이력 확인용)
+     * @param  ProductLabelRepositoryInterface  $productLabelRepository  상품 라벨 저장소
+     * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 저장소
      * @param  ProductInquiryService  $inquiryService  상품 문의 서비스
      */
     public function __construct(
@@ -1002,7 +1002,7 @@ class ProductService
      * option_values가 배열 형식인지 확인
      *
      * @param  mixed  $optionValues  옵션 값
-     * @return bool 판정 결과
+     * @return bool 옵션 값이 비어 있지 않은 배열 형식이면 true
      */
     protected function isOptionValuesArrayFormat($optionValues): bool
     {
@@ -1059,7 +1059,7 @@ class ProductService
      * 다국어 객체 또는 문자열을 정규화된 키로 변환
      *
      * @param  mixed  $key  키 (문자열 또는 다국어 객체)
-     * @return string 변환한 문자열
+     * @return string 정규화된 옵션 키 (다국어 객체면 ko 값 우선)
      */
     protected function normalizeOptionKey($key): string
     {
@@ -1074,7 +1074,7 @@ class ProductService
      * 다국어 객체 또는 문자열을 정규화된 값으로 변환
      *
      * @param  mixed  $value  값 (문자열 또는 다국어 객체)
-     * @return string 변환한 문자열
+     * @return string 정규화된 옵션 값 (다국어 객체면 ko 값 우선)
      */
     protected function normalizeOptionValue($value): string
     {
@@ -1284,7 +1284,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $images  이미지 데이터 배열
-     * @param  string|null  $thumbnailHash  대표 이미지로 지정할 이미지 해시 (없으면 null)
+     * @param  string|null  $thumbnailHash  대표 이미지로 지정할 이미지 hash (null 이면 기존 대표 유지, 없으면 첫 이미지)
      * @return void 반환값 없음
      */
     protected function syncImages(Product $product, array $images, ?string $thumbnailHash = null): void
@@ -1866,6 +1866,10 @@ class ProductService
         unset($data['id']);
         $data['product_code'] = $this->generateUniqueCode();
 
+        // 가격 — 복사 화면은 이 값을 그대로 등록 요청에 싣는다. DB `decimal:2` 문자열("30000.00")을
+        // 그대로 내리면 소수 0자리 통화(원화)의 등록 규칙 `integer` 에 걸려 고치지 않은 복사 상품이 422 가 된다.
+        $data = $this->roundCopyPricesToBaseCurrency($data);
+
         // 이미지 — id 제거 (원본 이미지 삭제 방지, hash 기반으로 식별)
         if ($copyOptions['images'] ?? true) {
             foreach ($data['images'] as &$image) {
@@ -1963,10 +1967,54 @@ class ProductService
     }
 
     /**
+     * 복사 데이터의 가격 필드를 기본 통화의 소수 자릿수로 맞춥니다.
+     *
+     * 수정 화면이 받는 상품 응답(ProductResource)과 같은 형태 — 0자리 통화는 정수, 그 외는 그 자릿수의 숫자.
+     *
+     * @param  array  $data  getDetailForForm() 결과
+     * @return array 가격 필드를 맞춘 데이터
+     */
+    private function roundCopyPricesToBaseCurrency(array $data): array
+    {
+        $currencyService = app(CurrencyConversionService::class);
+        $decimalPlaces = $currencyService->getDecimalPlaces($currencyService->getDefaultCurrency());
+        $round = static function ($price) use ($decimalPlaces) {
+            if ($price === null || $price === '') {
+                return $price;
+            }
+            $rounded = round((float) $price, $decimalPlaces);
+
+            return $decimalPlaces === 0 ? (int) $rounded : $rounded;
+        };
+
+        foreach (['list_price', 'selling_price'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $round($data[$field]);
+            }
+        }
+        foreach ($data['options'] ?? [] as $i => $option) {
+            foreach (['list_price', 'selling_price'] as $field) {
+                if (array_key_exists($field, $option)) {
+                    $data['options'][$i][$field] = $round($option[$field]);
+                }
+            }
+        }
+        foreach ($data['additional_options'] ?? [] as $i => $option) {
+            foreach ($option['values'] ?? [] as $j => $value) {
+                if (array_key_exists('price_adjustment', $value)) {
+                    $data['additional_options'][$i]['values'][$j]['price_adjustment'] = $round($value['price_adjustment']);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * 파일 크기를 읽기 쉬운 형식으로 변환
      *
      * @param  int|null  $bytes  바이트 크기
-     * @return string 변환한 문자열
+     * @return string 단위(B·KB·MB·GB)가 붙은 파일 크기 문자열
      */
     private function formatFileSize(?int $bytes): string
     {

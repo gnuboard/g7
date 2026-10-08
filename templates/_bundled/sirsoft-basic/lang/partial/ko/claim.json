@@ -39,6 +39,8 @@
     "zipcode": "우편번호",
     "address1": "주소",
     "address2": "상세주소",
+    "city": "도시",
+    "state": "주/도",
     "summary_title": "신청 요약",
     "estimate_loading": "예상 금액을 계산하고 있습니다.",
     "estimate_pending": "상품과 사유를 선택하면 금액이 계산됩니다.",

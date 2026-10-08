@@ -21,6 +21,7 @@ import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.j
 import checkoutPaymentJson from '../../layouts/partials/shop/_checkout_payment.json';
 import checkoutJson from '../../layouts/shop/checkout.json';
 import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { evaluateComputedDefinitions } from '@core/template-engine/helpers/ComputedEvaluator';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -275,8 +276,20 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
 
       // 결제수단 자체는 설정하고
       expect(targets).toContain('_local.paymentMethod');
-      // 이전 수단이 소유하던 상태는 비운다
-      expect(targets).toContain('_local.checkoutExtraPayload');
+      // 이전 수단이 소유하던 상태는 비운다.
+      // 확장 칸은 객체라 기본(깊은) 병합으로 `{}` 를 넣으면 기존 키가 하나도 지워지지 않는다 —
+      // 현금영수증 신청값이 카드 주문 본문에 그대로 실리고, 무통장으로 돌아오면 신청이 켜진 채 보였다.
+      // 최상위 키를 통째로 바꾸는 shallow(또는 replace) 병합으로 비워야 한다.
+      const payloadReset = inner.find(
+        (a: any) =>
+          a?.params?.target === '_local.checkoutExtraPayload' ||
+          (a?.params?.target === '_local' && 'checkoutExtraPayload' in (a?.params ?? {})),
+      );
+      expect(payloadReset, '확장 칸(checkoutExtraPayload)을 비우는 액션이 없다').toBeDefined();
+      expect(['shallow', 'replace']).toContain(payloadReset.params.merge);
+      if (payloadReset.params.target === '_local') {
+        expect(payloadReset.params.checkoutExtraPayload).toEqual({});
+      }
       expect(targets).toContain('_local.refundBankCode');
       expect(targets).toContain('_local.refundBankAccount');
       expect(targets).toContain('_local.refundBankHolder');
@@ -370,8 +383,9 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   // selectedCorePaymentMethod computed 자체를 checkout.json 원문에서 평가한다.
   // body 테스트는 이 값을 주입받아 검증하므로, computed 가 실제로 카탈로그의
   // core_payment_method 를 해석하는지는 여기서 고정한다.
+  // 결제수단 계산값은 앞선 계산값(selectablePaymentMethods → selectedPaymentMethod)을 참조하므로
+  // 엔진의 정의 순서 평가(evaluateComputedDefinitions)로 전체를 돌려 결과를 본다.
   describe('selectedCorePaymentMethod computed (checkout.json 원문 평가)', () => {
-    const coreExpr: string = (checkoutJson as any).computed.selectedCorePaymentMethod;
 
     /** 모듈이 병합 시 보존하는 결제수단 카탈로그 (core_payment_method 포함) */
     const catalogCtx = (selected?: string) => ({
@@ -393,7 +407,8 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
     });
 
     const evalCore = (ctx: Record<string, any>) =>
-      engine.evaluateExpression(coreExpr.slice(2, -2), ctx);
+      evaluateComputedDefinitions((checkoutJson as any).computed, { _global: {}, ...ctx }, engine, { onError: 'undefined' })
+        .selectedCorePaymentMethod;
 
     /** @effects enabled_methods_exposed_with_core_mapping */
     it.each([

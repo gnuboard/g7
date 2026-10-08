@@ -4,9 +4,10 @@
  * 필터가 만든 URL 로 목록이 실제로 다시 그려지는지까지가 이 spec 의 검증 대상이다.
  * 브라우저에서만 드러나는 축 셋을 본다:
  *
- *  ① 유형 서브탭 전환은 **리셋**이다. 병합하면 앞 유형의 `statuses[]` 가 따라오고, 그 값은
- *     새 유형의 어휘에 없어 목록 전체가 422 가 된다. 화면에는 오류가 아니라 직전 목록이
- *     그대로 남으므로 URL 과 응답을 함께 봐야 드러난다.
+ *  ① 유형 서브탭 전환은 유형 종속 필터의 **리셋**이다. 병합하면 앞 유형의 `statuses[]` 가
+ *     따라오고, 그 값은 새 유형의 어휘에 없어 목록 전체가 422 가 된다. 화면에는 오류가 아니라
+ *     직전 목록이 그대로 남으므로 URL 과 응답을 함께 봐야 드러난다. 다만 서브탭 뱃지를 센
+ *     유형 공통 필터(기간·검색·회원구분·금액·통화)는 이어 간다 — 뱃지가 "그 탭으로 가면 몇 건" 이다.
  *  ② 페이지 크기·페이지 이동은 같은 목록 클러스터 안이라 걸어 둔 필터를 **보존**한다.
  *     ①과 ②는 서로 반대 규약이고, 한쪽 규약을 다른 쪽에 적용하면 둘 다 조용히 깨진다.
  *  ③ 일괄 상태 변경 컨트롤은 전이 권한과 유형이 함께 정한다 — 취소 탭에는 아예 없고,
@@ -14,7 +15,7 @@
  *
  * 소유 시나리오: `admin-claim-list-body` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|refund|cancel
- * @effects subtab_switch_resets_type_scoped_filters, list_context_preserved_across_cluster_navigation, bulk_bar_absent_for_cancel
+ * @effects subtab_switch_resets_type_scoped_filters, subtab_switch_carries_count_filters, list_context_preserved_across_cluster_navigation, bulk_bar_absent_for_cancel
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -65,8 +66,8 @@ test.describe('[case:components-form-select-options-nonnative] 관리자 클레�
    * 유형 전환은 병합 예외다 — 앞 유형의 상태 필터가 따라오면 목록 전체가 422 가 된다.
    */
   // @scenario claim_type=return
-  // @effects subtab_switch_resets_type_scoped_filters
-  test('유형 서브탭 전환이 앞 유형의 상태 필터를 떨군다', async ({ page, claimsManageToken }) => {
+  // @effects subtab_switch_resets_type_scoped_filters, subtab_switch_carries_count_filters
+  test('유형 서브탭 전환이 앞 유형의 상태 필터를 떨구고 검색어는 이어 간다', async ({ page, claimsManageToken }) => {
     await authenticatePage(page, claimsManageToken);
     await page.goto(`${LIST_URL}?type=exchange&statuses%5B%5D=redelivering&search_keyword=zzz`);
     await waitForList(page);
@@ -81,8 +82,8 @@ test.describe('[case:components-form-select-options-nonnative] 관리자 클레�
     expect(q.get('type')).toBe('return');
     // 교환 어휘가 따라오면 반품 목록이 422 가 된다.
     expect(q.getAll('statuses[]')).toHaveLength(0);
-    // 유형 전환은 리셋이므로 검색어도 승계하지 않는다.
-    expect(q.get('search_keyword')).toBeNull();
+    // 검색어는 유형 공통 필터라 이어 간다 — 「반품 N」 뱃지가 이 검색어로 센 건수다.
+    expect(q.get('search_keyword')).toBe('zzz');
 
     // 목록이 실제로 다시 그려졌다 — 자리표시가 아니라 본체다.
     await expect(page.locator('#claim_datagrid')).toBeVisible({ timeout: 30_000 });

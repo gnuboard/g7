@@ -50,7 +50,8 @@ class UserEscrowConfirmController extends Controller
     /**
      * 로그인한 본인 주문의 에스크로 구매결정 확인창을 엽니다.
      *
-     * 비로그인이면 401 안내를 준다 — 이 라우트에 `auth` 미들웨어를 걸면 로그인 라우트가 없어 500 이 된다.
+     * 본인 확인은 웹 세션 로그인, 또는 영수증 조회 API 가 토큰 로그인 회원에게 준 한시 서명 주소(uid·만료 서명)로 한다.
+     * 둘 다 없거나 서명이 틀리면 401 안내를 준다 — 이 라우트에 `auth` 미들웨어를 걸면 로그인 라우트가 없어 500 이 된다.
      *
      * @param  Request  $request  현재 요청
      * @param  string  $orderNumber  주문번호
@@ -59,7 +60,10 @@ class UserEscrowConfirmController extends Controller
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — 에스크로 확인 HTML 화면 렌더 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): Response
     {
-        if (! Auth::check()) {
+        // 본인 확인: 웹 세션 로그인, 또는 영수증 조회 API 가 토큰 로그인 회원에게 준 한시 서명 주소(uid) (S4-D19)
+        $userId = Auth::check() ? (int) Auth::id() : $this->signedUserId($request);
+
+        if ($userId === null) {
             return $this->htmlResponse(
                 '<!DOCTYPE html><html lang="'.e(app()->getLocale()).'"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>'
                 .'<body><p>'.e(__('sirsoft-pay_kginicis::messages.escrow.confirm_login_required')).'</p></body></html>',
@@ -67,7 +71,7 @@ class UserEscrowConfirmController extends Controller
             );
         }
 
-        $payment = $this->findEscrowPayment($orderNumber, (int) Auth::id());
+        $payment = $this->findEscrowPayment($orderNumber, $userId);
 
         if (! $payment) {
             abort(404);
@@ -75,13 +79,30 @@ class UserEscrowConfirmController extends Controller
 
         $this->apiService->useEscrowCredentials(true);
 
-        $nonce = $this->nonces->issue((string) $payment->transaction_id, $orderNumber, (int) Auth::id());
+        $nonce = $this->nonces->issue((string) $payment->transaction_id, $orderNumber, $userId);
 
         if ($this->isMobile($request)) {
             return $this->mobileConfirmPage((string) $payment->transaction_id, $nonce);
         }
 
         return $this->pcConfirmPage((string) $payment->transaction_id, $nonce);
+    }
+
+    /**
+     * 한시 서명 주소의 회원 번호를 돌려줍니다 — 서명이 없거나 바뀌었거나 만료됐으면 null.
+     *
+     * @param  Request  $request  현재 요청
+     * @return int|null 서명된 회원 번호
+     */
+    private function signedUserId(Request $request): ?int
+    {
+        $uid = $request->query('uid');
+
+        if (! is_string($uid) || ! ctype_digit($uid) || ! $request->hasValidSignature(absolute: false)) {
+            return null;
+        }
+
+        return (int) $uid;
     }
 
     /**
@@ -215,14 +236,18 @@ class UserEscrowConfirmController extends Controller
         // 보안: PG 로 보내는 결과 수신·닫기 주소 — 요청 Host 가 아니라 사이트 주소.
         $returnUrl = e(SiteUrl::absolute(self::ROUTE_BASE.'/pc/return/'.$nonce));
         $closeUrl = e(SiteUrl::absolute(self::ROUTE_BASE.'/close'));
+        // 문서 언어·제목·안내는 화면 언어를 따른다(한국어 고정이었음)
+        $lang = e(app()->getLocale());
+        $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
+        $preparing = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_preparing'));
 
         $html = <<<HTML
         <!DOCTYPE html>
-        <html lang="ko">
+        <html lang="{$lang}">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
-            <title>에스크로 구매결정</title>
+            <title>{$title}</title>
             <script src="{$jsUrl}" charset="UTF-8"></script>
             <script>window.onload = function() { INIStdPay.pay('escrow_confirm_form'); };</script>
             <style>
@@ -232,7 +257,7 @@ class UserEscrowConfirmController extends Controller
             </style>
         </head>
         <body>
-            <p>에스크로 구매결정 창을 준비 중입니다...</p>
+            <p>{$preparing}</p>
             <form id="escrow_confirm_form" method="post">
                 <input type="hidden" name="version"     value="1.0">
                 <input type="hidden" name="mid"         value="{$mid}">
@@ -264,14 +289,17 @@ class UserEscrowConfirmController extends Controller
         // 보안: PG 로 보내는 결과 수신 주소 — 요청 Host 가 아니라 사이트 주소.
         $nextUrl = e(SiteUrl::absolute(self::ROUTE_BASE.'/mobile/return/'.$nonce));
         $payUrl = self::MOBILE_PAY_URL;
+        $lang = e(app()->getLocale());
+        $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
+        $redirecting = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_redirecting'));
 
         $html = <<<HTML
         <!DOCTYPE html>
-        <html lang="ko">
+        <html lang="{$lang}">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
-            <title>에스크로 구매결정</title>
+            <title>{$title}</title>
             <style>
                 body { font-family: sans-serif; display: flex; align-items: center;
                        justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
@@ -279,7 +307,7 @@ class UserEscrowConfirmController extends Controller
             </style>
         </head>
         <body>
-            <p>에스크로 구매결정 페이지로 이동 중입니다...</p>
+            <p>{$redirecting}</p>
             <form id="mobile_confirm_form" name="mobileweb" method="post"
                   action="{$payUrl}" accept-charset="euc-kr">
                 <input type="hidden" name="P_INI_PAYMENT" value="ESCROWCONFIRM">

@@ -75,7 +75,9 @@ final class ClaimProgressSteps
      * 선교환의 「회수」 줄을 만듭니다. (진행단계 카드의 발송 줄 아래 — 일반 교환·반품은 null)
      *
      * 선교환의 상태 줄에는 회수 단계가 없다. 헌 물건이 어디쯤 왔는지는 상품 행의 회수 진행
-     * (`ClaimItemCollectionState`)을 행 수로 센다 — 「회수중 1/3」. 반송 기한과 지연 여부를 함께 싣는다.
+     * (`ClaimItemCollectionState`)을 **수량**으로 센다 — 「3개 중 2개 도착」. 한 행이 송장마다 갈리면
+     * 행 수가 실제 개수와 어긋나므로(3개 중 2개를 보내면 행 2개) 행마다 교환 수량을 더한다(S1-D15).
+     * 반송 기한과 지연 여부를 함께 싣는다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return array{total: int, pending: int, in_transit: int, collected: int, unreturned: int, state: string, state_label: string, state_variant: string, due_date: string|null, is_overdue: bool, overdue_days: int}|null 회수 줄
@@ -93,7 +95,7 @@ final class ClaimProgressSteps
                 continue;
             }
 
-            $counts[ClaimItemCollectionState::for($item, ExchangeModeEnum::ADVANCE)->value]++;
+            $counts[ClaimItemCollectionState::for($item, ExchangeModeEnum::ADVANCE)->value] += max(1, (int) $item->exchange_quantity);
         }
 
         $total = array_sum($counts);

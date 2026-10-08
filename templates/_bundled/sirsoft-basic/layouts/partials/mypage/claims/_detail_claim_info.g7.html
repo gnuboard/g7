@@ -350,7 +350,7 @@
                   <action handler="sirsoft-ecommerce.setClaimPaymentMethod" value="{{claimPayMethodOption}}"/>
                 </on>
               </input>
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{claimPayMethodOption === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{claimPayMethodOption === 'point' ? $t('claim.apply.payment_method_point') : (claimPayMethodOption === 'card' ? $t('claim.apply.payment_method_card') : (claim.data?.claim?.available_payment_method_labels?.[claimPayMethodOption] ?? claimPayMethodOption))}}</span>
             </label>
           </div>
         </div>

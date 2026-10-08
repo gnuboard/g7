@@ -14,7 +14,7 @@
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
           <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
-            <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.name}}" class="w-full h-full aspect-square object-cover rounded"/>
+            <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.name_localized ?? ''}}" class="w-full h-full aspect-square object-cover rounded"/>
             <icon data-if="{{!row.thumbnail_url}}" name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
           </div>
         </cell>

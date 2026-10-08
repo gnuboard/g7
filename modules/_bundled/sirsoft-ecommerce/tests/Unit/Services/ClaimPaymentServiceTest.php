@@ -249,6 +249,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
 
         $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
         $return->forceFill(['requested_by' => null])->save();
+        // 비회원은 **주문의 주인**으로 정한다 — `requested_by` 가 null 인 것만으로는 운영자 직권 접수와
+        // 구별되지 않는다(S3-D15). 회원 주문에 직권 접수한 건은 회원 수단을 쓴다.
+        $return->order->forceFill(['user_id' => null])->save();
 
         $payment = $this->service->requestPaymentOnApproval($return->fresh(), $this->createAdminUser()->id);
 
@@ -1297,5 +1300,47 @@ class ClaimPaymentServiceTest extends ModuleTestCase
             $exchange->fresh()->exchange_status,
             '결제가 확정됐는데 보류에 남으면 운영자가 손으로 풀어야 한다.',
         );
+    }
+
+    /**
+     * 보류에서 승인해 낸 추가결제도 「결제 완료」 알림(고객·운영자)을 한 번 낸다. 정상 경로도 한 번이다.
+     *
+     * 결제완료 알림은 신청서가 `paid` 로 옮겨질 때 나가는데, 보류에서 승인한 건은 `paid` 를 지나지 않고 곧장
+     * 승인으로 간다 — 그래서 운영자는 고객이 추가금을 낸 사실을 알림으로 받지 못했다(2026-10-07 실측:
+     * EX20261006-1431076762 보류→[승인]→마일리지 결제, exchange_payment_completed_admin 0건). 결제 확정 사실
+     * 훅에서 `paid` 를 거치지 않은 건에만 보내 정상 경로와 겹치지 않게 한다.
+     *
+     * @scenario method=card, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_completed_notice_fires_once_on_every_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_payment_completed_notice_fires_once_on_the_on_hold_and_normal_paths(): void
+    {
+        $fired = 0;
+        HookManager::addAction('sirsoft-ecommerce.claim.exchange.notify_payment_completed', function () use (&$fired) {
+            $fired++;
+        });
+
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true, ['paid_amount' => 6000]);
+
+        // 보류 → 승인 경로
+        $held = $this->requestedExchange(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $this->exchangeService->transition($held, ExchangeStatusEnum::ON_HOLD);
+        $payment = $this->service->requestPaymentOnApproval($held->fresh(), $this->createAdminUser()->id);
+        $this->service->approvePgPayment($payment->fresh(), ['paymentKey' => 'pk_d8a', 'orderId' => $payment->payment_number, 'amount' => 6000]);
+
+        $this->assertSame(ExchangeStatusEnum::APPROVED, $held->fresh()->exchange_status);
+        $this->assertSame(1, $fired, '보류에서 승인해 낸 추가결제도 결제 완료를 한 번 알린다.');
+
+        // 접수 → 승인(결제대기) 정상 경로 — 결제완료 전이가 이미 알리므로 겹치면 안 된다
+        $fired = 0;
+        $normal = $this->requestedExchange(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $payment = $this->service->requestPaymentOnApproval($normal->fresh(), $this->createAdminUser()->id);
+        $this->service->approvePgPayment($payment->fresh(), ['paymentKey' => 'pk_d8b', 'orderId' => $payment->payment_number, 'amount' => 6000]);
+
+        $this->assertSame(1, $fired, '정상 경로에서 결제 완료 알림이 두 번 나가면 안 된다.');
     }
 }

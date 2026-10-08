@@ -926,7 +926,8 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "ml-2 text-gray-400 hover:text-red-500 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400"
+                                                        "className": "ml-2 text-gray-400 hover:text-red-500 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400",
+                                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                                     },
                                                     "children": [
                                                         {
@@ -942,6 +943,31 @@
                                             ]
                                         }
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "분류 조회 권한이 없어 선택지 소스가 403 으로 떨어진 경우 — 폼은 그대로 쓰고 이 칸만 빈 채로 왜 비었는지 말한다",
+                            "id": "category_forbidden_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{categories?.data?.unavailable === true}}",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-exclamation",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.categories"
                                 }
                             ]
                         },
@@ -1061,7 +1087,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "admin-card"
+                                        "className": "admin-card",
+                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [
                                         {
@@ -1108,6 +1135,31 @@
                                         "options": "{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}",
                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                     }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "브랜드 조회 권한이 없어 선택지가 비었을 때의 안내",
+                            "id": "brand_forbidden_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{brands?.data?.unavailable === true}}",
+                            "props": {
+                                "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-exclamation",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.brands"
                                 }
                             ]
                         }

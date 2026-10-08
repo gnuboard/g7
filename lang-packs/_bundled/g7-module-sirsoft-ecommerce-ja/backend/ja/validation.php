@@ -2135,6 +2135,8 @@ return [
         'redelivery_zipcode' => '郵便番号',
         'redelivery_address1' => '住所',
         'redelivery_address2' => '詳細住所',
+        'redelivery_city' => '都市',
+        'redelivery_state' => '州/道',
         'redelivery_country_code' => '配送国',
         'redelivery_changed_by_user' => '配送先変更の有無',
         'full_cancel' => '全体キャンセルの有無',

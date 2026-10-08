@@ -51,6 +51,7 @@ effects:
   - tracking_deliver_advance_redelivery_recalculates_the_due_date
   # R11 · R12
   - successor_shipping_uses_its_rows_redelivery_tracking
+  - successor_shipping_carries_no_shipping_fee   # 재발송 배송 행은 금액을 복제하지 않는다 — 배송비는 원 행에 (S1-D11)
   - carrier_usage_counts_row_level_tracking
   # §3-8 API · 상세 봉투
   - tracking_api_saves_rows_and_reports_the_split
@@ -77,6 +78,7 @@ effects:
   # §3-10 알림 (S10 · S11)
   - tracking_lines_list_every_waybill_and_prefer_the_snapshot
   - tracking_registered_notification_fires_once_per_request
+  - tracking_lines_carry_product_names  # 알림 운송장 줄에 상품명이 실린다 (2026-10-07 실측 — 「· S1C1RTNA02 ·  × 2」)
   - tracking_registered_notification_is_suppressed_by_the_status_notification
   - partial_processing_notification_is_limited_to_review_decisions
   - advance_redelivering_notification_carries_the_due_notice

@@ -40,21 +40,47 @@ function jsonText(node: unknown): string {
     return JSON.stringify(node);
 }
 
+/**
+ * 트리에서 주어진 키에 값을 쓰는 setState 의 그 값(식 문자열)을 모두 모은다.
+ *
+ * 도장 식은 한 줄 그대로가 아니라 「응답 검색어가 지금 검색어와 같을 때만 담는」 비교 식 안에
+ * 들어가 있을 수 있다(이커머스 전수 실측 S5-D7 — 늦게 온 옛 응답이 정답 목록을 덮지 않게).
+ * 그래서 문자열 전체 일치가 아니라 **그 키에 쓰는 값**을 꺼내 무엇을 읽는지 본다.
+ *
+ * @param node 레이아웃 JSON 노드
+ * @param key setState params 키
+ * @param acc 누적
+ * @returns 값 목록
+ */
+function setStateValues(node: unknown, key: string, acc: string[] = []): string[] {
+    if (Array.isArray(node)) {
+        node.forEach((n) => setStateValues(n, key, acc));
+
+        return acc;
+    }
+    if (node && typeof node === 'object') {
+        const n = node as Record<string, any>;
+        if (n.handler === 'setState' && n.params && typeof n.params[key] === 'string') {
+            acc.push(n.params[key]);
+        }
+        Object.values(n).forEach((v) => setStateValues(v, key, acc));
+    }
+
+    return acc;
+}
+
 describe('[case:state-global-autocomplete-stale-response-keyword] 회원 자동완성 — 결과에 찍는 검색어는 응답이 실어 온 값이다 (T2-D1)', () => {
     /**
      * @scenario surface=mileage_manual_transaction
      * @effects member_search_stamps_the_keyword_the_response_carried
      */
     it('마일리지 수동 지급 창이 response.meta.keyword 로 도장한다', () => {
-        const text = jsonText(manualTransactionModal);
+        const stamps = setStateValues(manualTransactionModal, 'mileageManual.memberSearchResultsKeyword');
 
-        expect(text).toContain(
-            `"mileageManual.memberSearchResultsKeyword":"{{response?.meta?.keyword ?? ''}}"`,
-        );
-        // 되돌아가면 red — 이 식이 결함 그 자체였다.
-        expect(text).not.toContain(
-            '"mileageManual.memberSearchResultsKeyword":"{{$event.target.value}}"',
-        );
+        expect(stamps.length).toBeGreaterThan(0);
+        expect(stamps.some((v) => v.includes('response?.meta?.keyword'))).toBe(true);
+        // 되돌아가면 red — 도장을 입력칸에서 읽는 것이 결함 그 자체였다.
+        expect(stamps.some((v) => v.includes('$event.target.value'))).toBe(false);
     });
 
     /**
@@ -62,14 +88,11 @@ describe('[case:state-global-autocomplete-stale-response-keyword] 회원 자동�
      * @effects member_search_stamps_the_keyword_the_response_carried
      */
     it('쿠폰 직접 발급 창도 같은 값으로 도장한다 (쌍둥이)', () => {
-        const text = jsonText(directIssueModal);
+        const stamps = setStateValues(directIssueModal, 'directIssueSearchResultsKeyword');
 
-        expect(text).toContain(
-            `"directIssueSearchResultsKeyword":"{{response?.meta?.keyword ?? ''}}"`,
-        );
-        expect(text).not.toContain(
-            '"directIssueSearchResultsKeyword":"{{$event.target.value}}"',
-        );
+        expect(stamps.length).toBeGreaterThan(0);
+        expect(stamps.some((v) => v.includes('response?.meta?.keyword'))).toBe(true);
+        expect(stamps.some((v) => v.includes('$event.target.value'))).toBe(false);
     });
 
     /**

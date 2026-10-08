@@ -1,0 +1,23 @@
+feature: 나이스페이먼츠 현금영수증 조회
+
+description: |
+  주문 상세(회원·비회원)·신청서 상세의 결제 정보 카드(user_mypage_order_receipt)는 현금영수증을 신청한 결제에만
+  [현금영수증 조회] 버튼을 보이고, 누르면 주문번호로 영수증 조회 API 를 비회원 조회 토큰 헤더와 함께 불러
+  응답의 cash_receipt_url 이 있을 때만 링크로 바꾼다.
+
+  확인 이력 (이커머스 전수 실측 S4 — NP-67):
+    - 브라우저로 잴 주문(나이스 결제완료 + 현금영수증 발급)을 만들 수 없어 계약 테스트를 새로 둔다.
+
+axes:
+  case: [receipt_requested, guest_lookup, receipt_issued]
+
+effects:
+  - button_only_for_requested_receipt
+  - lookup_by_order_number_with_guest_token
+  - link_only_when_url_returned
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/cashReceiptLookup.test.ts
+
+validation:
+  browser_check: 해당 없음 — 나이스 결제완료·현금영수증 발급 주문을 로컬에서 만들 수 없음(입금은 PG 거래 조회로 검증)

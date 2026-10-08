@@ -1,0 +1,24 @@
+feature: 편집기 클레임 첨부 안내 표본
+
+description: |
+  레이아웃 편집기에서 클레임 상세의 첨부 상한 안내가 표본으로 채워지는지
+  
+  편집기에서 「취소/반품/교환 상세」 를 열면 첨부 안내가 「최대 0장 · 1장당 -MB · {{types}}」 로 보였다
+  (이커머스 전수 실측 S5, 2026-10-07). 안내와 업로더는 서버 봉투 `attachment_settings`
+  (`ClaimController` — `ClaimAttachmentService::publicLimits()`)를 읽는데, 편집기 표본 `claim` 응답에
+  그 축이 없었다. 표본은 서버와 같은 꼴(max_images·image_max_size_kb·image_max_size_mb·allowed_extensions·accept)을
+  기본 설정값으로 갖고 있어야 한다.
+
+  수정 이력: 이커머스 전수 실측 S5-D21 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 서버 봉투와 같은 꼴의 첨부 상한이 있다
+  # c02: 허용 확장자가 서버 상수(ClaimAttachmentService::ALLOWED_EXTENSIONS)와 같다
+  # c03: 첨부 안내 문구의 인자가 표본으로 빈 값 없이 계산된다
+
+effects:
+  - claim_attachment_sample_has_settings
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/editorClaimAttachmentSample.test.ts

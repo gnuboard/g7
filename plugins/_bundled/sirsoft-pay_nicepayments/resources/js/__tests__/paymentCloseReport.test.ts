@@ -101,3 +101,35 @@ describe('결제창 닫힘 보고', () => {
         expect(post.mock.calls[1][1].reason).toBe('nicepay-window-closed');
     });
 });
+
+/**
+ * 서버가 주는 닫힘 보고 주소는 사이트 주소 기준 절대 URL 이다(`SiteUrl::absolute`).
+ *
+ * G7Core.api 는 `/api` 를 앞에 붙이는 경로를 받으므로 절대 URL 을 그대로 넘기면 `/plugins/...`(접두 없음)로
+ * 나가 404 가 났고, 결제창을 닫아도 주문이 결제대기로 남았다.
+ */
+describe('사이트 주소 절대 URL 닫힘 보고', () => {
+    const ABS = `${window.location.origin}/plugins/sirsoft-pay_nicepayments/payment/close-report`;
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        vi.restoreAllMocks();
+    });
+
+    it('같은 출처 절대 URL 은 G7Core.api 에 /plugins 경로로 넘긴다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+
+        await reportPaymentWindowClosed({ closeReportUrl: ABS, oid: 'ORD-NICE-ABS-001', price: 15000, payment_method: 'card' });
+
+        expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nicepayments/payment/close-report', expect.objectContaining({ oid: 'ORD-NICE-ABS-001' }));
+    });
+
+    it('G7Core API 가 없으면 같은 출처 절대 URL 을 /api/plugins 경로로 fetch 한다', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+
+        await reportPaymentWindowClosed({ closeReportUrl: ABS, oid: 'ORD-NICE-ABS-002', price: 15000 });
+
+        expect(fetchSpy).toHaveBeenCalledWith('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', expect.objectContaining({ method: 'POST' }));
+    });
+});

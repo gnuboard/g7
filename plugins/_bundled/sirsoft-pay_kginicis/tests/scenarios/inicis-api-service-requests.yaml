@@ -31,6 +31,7 @@ effects:
   - cancel_payment_throws_on_non_00_result_code
   - cancel_payment_throws_on_http_error
   - cancel_payment_hash_data_includes_detail_for_partial_refund
+  - default_pg_messages_follow_locale   # 사유 미지정 취소·CBT 환불·현금영수증 취소·구매거절 확인의 기본 문구가 화면 언어(한국어 고정 아님)
   - refund_cbt_payment_sends_manual_v071_full_refund_request
   - refund_cbt_payment_sends_partial_refund_request
   - use_stored_cbt_credentials_uses_payment_time_live_mid_for_refund

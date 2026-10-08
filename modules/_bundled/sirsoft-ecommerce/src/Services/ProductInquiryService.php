@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
@@ -692,7 +693,7 @@ class ProductInquiryService
 
         $locale = app()->getLocale();
 
-        return $snapshot[$locale] ?? $snapshot[config('app.fallback_locale', 'ko')] ?? array_values($snapshot)[0] ?? '';
+        return LocalizedText::pick($snapshot, $locale);
     }
 
     /**

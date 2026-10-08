@@ -260,10 +260,20 @@
 만들지 않기 위해서입니다 — 서버는 같은 목록으로 결제를 재판정합니다(화면 옵션 ⊆ 게이트 ⊆ 서비스).
 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있어 이 자리가 필요합니다: 마일리지 잔액
 부족, 운영자가 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐입니다.
+라디오 이름은 `card`·`point` 만 자체 문구(「카드·간편결제」·「마일리지」)로 그리고, 그 밖의 수단은 서버가
+함께 싣는 표시명(상세 `available_payment_method_labels` · 신청서 `settings.charge_payment_method_labels`)으로
+그립니다 — 값만 보고 `point` 가 아니면 카드로 부르면 계좌이체를 고르면서 카드로 낸다고 읽습니다.
 빈 값도 **모양**이 계약입니다. 이름표로 값을 꺼내는 자리(`_local.currentSelection?.[그룹명]` 처럼)는 비어도 map(`{}`)이고,
 순서가 있는 목록은 빈 배열(`[]`)입니다. 마크업에서는 `:value="{}"` 와 `:value="[]"` 로 갈리며,
 화면이 읽기만 할 때는 둘 다 똑같이 비어 보이지만 그 값이 서버로 실리거나 레이아웃을 `.json`
 원문으로 설치하면 서버가 대상을 찾지 못해 오류도 로그도 없이 적용되지 않습니다. 이 템플릿에서는 상품 상세(`shop/show`)의 `currentSelection`·`additionalOptions`·`reviewOptionFilters` 가 그 자리입니다 — 반면 `selectedOptionItems` 는 고른 순서가 있는 목록이라 빈 배열입니다.
+주문완료(`shop/order_complete`)의 [이 배송지를 저장하기]는 회원의 주소록(`userAddresses` — 비회원·실패는 빈 목록으로 떨어지고 화면을 막지 않음)과
+주문 배송지를 대조하는 `_computed.shippingAddressAlreadySaved` 가 참이면 숨긴다. 대조 기준은 수령인·연락처(숫자만)·국가와, 국내는
+우편번호·주소·상세주소, 해외는 주소줄·도시·주·우편번호이고 배송지명은 보지 않는다. 저장에 성공하면 주소록을 다시 받아 버튼이 사라지며,
+서버 409(같은 이름 「배송지」가 이미 있음)는 질문형 서버 문구 대신 `shop.order_complete.address_name_exists` 안내로 바꾼다.
+이 분기는 api-call 의 `<error-handling><on-code code="409">` 로 둔다 — `<fail>` 안에 `<conditions>` 를 두면 엔진이 오류 처리기로
+옮길 때 조건 목록을 버려 409·기타 오류 모두 토스트가 뜨지 않는다(실측). 409 외 실패는 `<fail>` 의 오류 토스트가 맡는다.
+
 <!-- @intent END -->
 
 ## 라우트 매핑
@@ -1020,6 +1030,11 @@ slots.content:
 오류는 `_local.profileErrors.{필드}` 로 돌아와 카드 아래에 뜹니다. 저장 성공 뒤에는 모듈 엔드포인트를 다시
 부르지 않고 전역 선호값(`preferredCurrency`·`preferredShippingCountry`)만 맞춥니다 — 저장이 두 요청으로
 갈라지면 한쪽만 실패한 채 저장 완료가 뜨는 상태가 생깁니다.
+
+**저장 국가가 배송 불가로 내려간 경우**: 운영자가 회원이 저장해 둔 배송국가를 배송 가능 목록에서 내리면 헤더·주문서·
+서버는 기본 국가로 계산합니다. 내 정보(`_view.g7.html`)·내 정보 수정(`_edit.g7.html`)의 배송국가 칸은 그때
+「{저장 국가}은(는) 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: {국가}」 를 보입니다
+(`mypage.shipping_country_settings.saved_unavailable`·`applied_now`, 수정 화면은 `saved_label` 접두 — 다른 국가를 고르면 사라짐).
 
 ---
 

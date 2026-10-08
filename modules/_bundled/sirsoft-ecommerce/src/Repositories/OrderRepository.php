@@ -1149,6 +1149,15 @@ class OrderRepository implements OrderRepositoryInterface
                                     ->whereNotNull('deposit_due_at')
                                     ->where('deposit_due_at', '<', now());
                             });
+                        })
+                        // 진행 중인 환불신청서가 있는 주문은 이미 취소가 접수됐다 — 입금이 기록된 결제 전 주문의
+                        // 취소는 환불신청서를 거치고(S3-D7) 운영자가 송금·실행할 때까지 결제대기로 남는다. 다시 집으면
+                        // 수량 잠금에 걸려 실행마다 실패로 기록된다.
+                        ->whereDoesntHave('refunds', function ($query) {
+                            $query->whereNotIn('refund_status', array_map(
+                                fn (RefundStatusEnum $status) => $status->value,
+                                RefundStatusEnum::finalStatuses(),
+                            ));
                         });
                 });
 
