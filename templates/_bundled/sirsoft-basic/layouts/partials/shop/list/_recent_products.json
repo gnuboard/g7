@@ -81,6 +81,8 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
+                                "aria-label": "$t:common.prev",
                                 "className": "{{_isolated.scrollIdx <= 0 ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
                                 "disabled": "{{_isolated.scrollIdx <= 0}}"
                             },
@@ -139,6 +141,8 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
+                                "aria-label": "$t:common.next",
                                 "className": "{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
                                 "disabled": "{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length)}}"
                             },

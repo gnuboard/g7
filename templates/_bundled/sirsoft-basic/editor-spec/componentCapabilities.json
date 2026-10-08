@@ -610,7 +610,8 @@
     ],
     "events": [
       "onChange"
-    ]
+    ],
+    "rawValueEvents": ["onChange"]
   },
   "ExpandableContent": {
     "label": "$t:editor.component.expandable_content",
@@ -697,6 +698,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",

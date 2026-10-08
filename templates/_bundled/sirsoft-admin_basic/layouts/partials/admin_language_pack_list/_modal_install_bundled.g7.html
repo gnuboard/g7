@@ -34,8 +34,14 @@
           <icon name="fas fa-triangle-exclamation" size="sm" class="mt-0.5"/>
           <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'core_locale_missing'}}">$t:admin.language_packs.modals.install_bundled_core_required|locale={{_global.selectedBundledLanguagePack?.locale}}</span>
           <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_not_installed'}}">$t:admin.language_packs.modals.install_blocked_target_not_installed|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
-          <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_inactive'}}">$t:admin.language_packs.modals.install_blocked_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
           <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}">$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
+        </div>
+      </div>
+      <!-- 대상 확장이 설치돼 있으나 꺼져 있으면 막지 않고 알리기만 한다 — 꺼진 채 설치되고, 켜는 것은 그 확장을 켠 뒤 목록에서 한다. -->
+      <div data-if="{{!_global.selectedBundledLanguagePack?.install_blocked_reason &amp;&amp; _global.selectedBundledLanguagePack?.install_notice === 'target_inactive'}}" class="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-info-soft">
+        <div class="flex-start gap-2">
+          <icon name="fas fa-circle-info" size="sm" class="mt-0.5"/>
+          <span>$t:admin.language_packs.modals.install_notice_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
         </div>
       </div>
     </div>
@@ -53,11 +59,13 @@
             <set-state target="global" :isLanguagePackInstalling="true"/>
             <api-call :auth_required="true" target="/api/admin/language-packs/install-from-bundled" method="POST">
               <success>
-                <set-state target="global" :isLanguagePackInstalling="false" :selectedBundledLanguagePack="null"/>
+                <set-state target="global" :isLanguagePackInstalling="false"/>
                 <toast type="success" message="$t:admin.language_packs.messages.install_success"/>
                 <refetch-data-source dataSourceId="language_packs"/>
                 <reload-extensions/>
                 <close-modal/>
+                <!-- 고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다. -->
+                <set-state target="global" :selectedBundledLanguagePack="null"/>
               </success>
               <fail>
                 <set-state target="global" :isLanguagePackInstalling="false"/>

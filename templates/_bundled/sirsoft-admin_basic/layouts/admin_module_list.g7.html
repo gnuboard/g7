@@ -258,7 +258,7 @@
           vendor: p.vendor,
           iconUrl: p.icon_url,
           fallbackIcon: 'cube',
-          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name })),
+          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name || d.identifier })),
           badges: [
             ...(p.status === 'active' ? [{ label: '$t:admin.modules.status.active', tone: 'success' }] : []),
             ...(p.status === 'inactive' ? [{ label: '$t:admin.modules.status.inactive', tone: 'neutral' }] : []),
@@ -272,7 +272,7 @@
           toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true || ['installing', 'uninstalling', 'updating'].includes(p.status) || (p.status !== 'active' &amp;&amp; p.core_compatible === false), label: p.name ?? p.identifier } : null,
           primaryAction: p.status === 'uninstalled'
             ? { label: '$t:admin.modules.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
-            : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.modules.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true || p.is_compatible === false } : null),
+            : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.modules.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),
           actions: [
             { id: 'refresh_layouts', label: '$t:admin.modules.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
             { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' },
@@ -350,7 +350,7 @@
               </case>
               <case when="update">
                 <sequence>
-                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
+                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutStrategy="overwrite" :moduleForceUpdate="false" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
                   <api-call :auth_required="true" target="/api/admin/modules/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                     <success>
                       <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedModuleLayoutsCheckFailed="false"/>

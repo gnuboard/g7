@@ -54,7 +54,7 @@
       <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div data-ref="notif_category_chips" class="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
           <span class="text-label-subtle flex-shrink-0">$t:admin.settings.notification_definitions.category.label</span>
-          <button data-each='cat in [{"value":"","key":"all"},{"value":"general","key":"general"},{"value":"identity","key":"identity"}]' type="button" class="{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors">
+          <button data-each='cat in [{"value":"","key":"all"},{"value":"general","key":"general"},{"value":"identity","key":"identity"}]' type="button" aria-pressed="{{(query.category ?? '') === cat.value}}" class="{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors">
             <on type="click">
               <!-- 분류 전환 — 채널·항목 수 등 나머지 쿼리는 유지하고 페이지만 1로 되돌린다(분류마다 건수가 다르다). -->
               <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
@@ -113,7 +113,7 @@
         <div data-each="def, defIdx in {{notificationDefinitions?.data?.data ?? []}}" class="admin-card mb-3">
           <div class="flex-start gap-3">
             <div class="flex-shrink-0 pt-0.5">
-              <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button type="button" aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{!!(_local.expandedNotifications ?? {})[def.id]}}" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <on type="click">
                   <!-- 카드 펼치기/접기 — 펼친 카드를 id 를 키로 한 객체에 모아 여러 개를 동시에 펼 수 있다. -->
                   <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
@@ -156,7 +156,7 @@
                   <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="{{$localized(def.name) || def.type}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).
                            그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.

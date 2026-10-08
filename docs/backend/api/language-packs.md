@@ -65,7 +65,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | target_version_constraint | null | `null` | 대상 확장 버전 제약 (semver) |
 | target_version_mismatch | boolean | `false` | 대상 버전 불일치 경고 플래그 |
-| name | string | `G7 코어 일본어 언어팩` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
+| name | string | `G7 코어 일본어 언어팩` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체). 매니페스트 이름이 없는 내장(보호) 언어팩은 「대상 이름 + 언어」로 만든 표시 이름(예: `게시판 내장 언어팩 (English)`) |
 | license | string | `MIT` | 라이선스 |
 | description | string | `G7 코어 일본어 언어팩 (번들)` | 언어팩 설명 (다국어) |
 | status | string | `active` | 언어팩 상태 |
@@ -77,6 +77,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | github_changelog_url | null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string | `g7-core-ja` | 대응하는 번들 확장 식별자 (번들 원본 매칭용) |
 | install_blocked_reason | string | `core_locale_missing` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 — `target_inactive`: 대상 확장이 설치돼 있으나 꺼져 있어 꺼진 채 설치됨(그 확장을 켠 뒤 켤 수 있음). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 — `awaiting_host`: 켜 달라는 요청으로 설치됐지만 대상 확장이 꺼져 있어 대기 중(그 확장을 켤 때 함께 켜짐). 없으면 null |
 | files_missing | boolean | `false` | 드리프트 여부 — active 로 기록됐으나 설치본 파일이 부재해 런타임에 조용히 ko 로 폴백하는 상태이면 true |
 | bundled_source_available | boolean | `false` | 번들 소스(`lang-packs/_bundled/{identifier}`)가 실재해 재설치로 복구 가능하면 true. 설치 경로(source_type)와 무관하게 소스 실재 여부로 판정 |
 | target_name | string | `Hello 모듈` | 대상 확장의 표시 이름 (scope+target_identifier 로 해석) |
@@ -436,7 +438,7 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | latest_version | string\|null | `1.0.0` | 감지된 최신 배포 버전 |
 | target_version_constraint | string\|null | `null` | 대상 확장 버전 제약 (semver) |
 | target_version_mismatch | boolean | `false` | 대상 버전 불일치 경고 플래그 |
-| name | string\|null | `일본어 언어팩` | manifest `name` 의 현재 로케일 해석값 |
+| name | string\|null | `일본어 언어팩` | manifest `name` 의 현재 로케일 해석값. 없고 내장(보호) 언어팩이면 「대상 이름 + 언어」 표시 이름 |
 | license | string\|null | `MIT` | 라이선스 |
 | description | string\|null | `코어 일본어 번역` | 언어팩 설명 (다국어) |
 | status | string | `active` | 언어팩 상태 (auto_activate=true 면 active, 아니면 installed) |
@@ -448,6 +450,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 (번들 원본 매칭용) |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 (scope+target_identifier 로 해석) |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 활성화 일시 (사용자 타임존) |
@@ -585,6 +589,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `null` | 활성화 일시 (미활성 시 null) |
@@ -718,6 +724,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 활성화 일시 |
@@ -853,6 +861,8 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 활성화 일시 |
@@ -1270,6 +1280,8 @@ _단건 응답: `data` 객체의 필드 (활성화된 언어팩 = `LanguagePackR
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 활성화 일시 (사용자 타임존) |
@@ -1480,6 +1492,8 @@ _단건 응답: `data` 객체의 필드 (비활성화된 언어팩 = `LanguagePa
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 마지막 활성화 일시 (비활성화 시에도 초기화되지 않음) |
@@ -1607,6 +1621,8 @@ _단건 응답: `data` 객체의 필드 (업데이트된 언어팩 = `LanguagePa
 | github_changelog_url | string\|null | `null` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
 | bundled_identifier | string\|null | `null` | 대응하는 번들 확장 식별자 |
 | install_blocked_reason | string\|null | `null` | 설치가 차단된 사유 (차단 없으면 null) |
+| install_notice | string\|null | `null` | 설치는 되지만 알려 둘 사정 (`target_inactive` — 대상 확장이 꺼져 있어 꺼진 채 설치됨). 없으면 null |
+| deactivated_reason | string\|null | `null` | 켜져 있지 않은 사유 (`awaiting_host` — 대상 확장을 켤 때 함께 켜질 대기 팩). 없으면 null |
 | target_name | string\|null | `null` | 대상 확장의 표시 이름 |
 | installed_at | string\|null | `2026-07-05 10:41:24` | 설치 일시 (사용자 타임존) |
 | activated_at | string\|null | `2026-07-05 10:41:24` | 활성화 일시 (사용자 타임존) |

@@ -459,6 +459,38 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 출처 차단 안내의 확장 종류가 내부 값(`module`)이 아니라 사용 언어로 보인다.
+     *
+     * 실측 2026-10-06(7.1.0 전수 실측 I1): 코드 편집기에서 게시판 모듈 레이아웃을 지우려 하자
+     * 「module(sirsoft-board)이(가) 제공한 레이아웃은 삭제할 수 없습니다.」 처럼 종류가 영어 원값으로 떴다.
+     *
+     * @scenario operation=delete, target=module_owned
+     *
+     * @effects code_editor_blocks_deleting_module_owned_layouts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_source_type_in_blocked_message_is_localized(): void
+    {
+        $this->makeLayout('module_owned', sourceType: LayoutSourceType::Module, sourceIdentifier: 'sirsoft-board');
+        $this->makeLayout('plugin_owned', sourceType: LayoutSourceType::Plugin, sourceIdentifier: 'sirsoft-gdpr');
+
+        $ko = $this->withHeaders($this->headers($this->editorToken) + ['Accept-Language' => 'ko'])
+            ->deleteJson($this->base().'/module_owned?confirm=1')
+            ->assertStatus(422)
+            ->json('message');
+        $this->assertStringContainsString('모듈(sirsoft-board)', (string) $ko);
+        $this->assertStringNotContainsString('module(', (string) $ko);
+
+        $renamed = $this->withHeaders($this->headers($this->editorToken) + ['Accept-Language' => 'ko'])
+            ->patchJson($this->base().'/plugin_owned/rename', ['new_name' => 'plugin_moved', 'expected_lock_version' => 0])
+            ->assertStatus(422)
+            ->json('message');
+        $this->assertStringContainsString('플러그인(sirsoft-gdpr)', (string) $renamed);
+        $this->assertStringNotContainsString('plugin(', (string) $renamed);
+    }
+
+    /**
      * `extends` 로 참조되는 부모 레이아웃은 삭제가 막히고, 응답에 참조하는 레이아웃과 참조 종류가 실린다.
      *
      * @scenario operation=delete, target=layout

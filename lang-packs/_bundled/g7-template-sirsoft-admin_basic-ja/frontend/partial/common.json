@@ -95,5 +95,38 @@
   },
   "refresh": "更新",
   "activate": "有効化",
-  "skip": "スキップ"
+  "skip": "スキップ",
+  "tag_input": {
+    "remove": "{{label}}を削除",
+    "results": "結果 {{count}}件",
+    "filtered": "検索語「{{term}}」: {{results}}",
+    "selected": "{{label}}を選択しました",
+    "deselected": "{{label}}の選択を解除しました",
+    "cleared": "選択した項目をすべてクリアしました",
+    "disabled_option": "{{label}}は選択できません。別の項目を選択してください",
+    "focus_value": "選択した項目 {{label}}、{{index}}/{{total}}",
+    "focus_option": "{{label}}{{state}}、{{index}}/{{total}}",
+    "state_selected": "(選択済み)",
+    "state_disabled": "(使用不可)",
+    "guidance_menu": "上下の矢印キーで項目を移動し、Enterで選択します。Escでリストを閉じます",
+    "guidance_input": "{{label}}の入力欄です。入力してリストを絞り込み、下矢印キーでリストを開きます",
+    "guidance_input_multi": "左矢印キーで選択した項目に移動します",
+    "guidance_value": "左右の矢印キーで選択した項目間を移動し、Backspaceで削除します",
+    "default_label": "選択"
+  },
+  "select_all": "すべて選択",
+  "select_row": "行を選択",
+  "select_item": "{{name}}を選択",
+  "more_actions": "その他の操作",
+  "clear_selection": "選択をクリア",
+  "theme_select": "画面テーマ",
+  "user_menu": "ユーザーメニュー",
+  "file_input": {
+    "clear": "ファイルを削除",
+    "browse": "ファイルを選択",
+    "no_file": "ファイルが選択されていません",
+    "too_large": "ファイルサイズが{{size}}MBを超えています。"
+  },
+  "show_value": "値を表示",
+  "hide_value": "値を隠す"
 }

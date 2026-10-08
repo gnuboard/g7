@@ -495,7 +495,7 @@ interface PostRepositoryInterface
      *
      * 삭제되지 않은(deleted_at IS NULL) 게시글만 카운트합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 게시글 수
      */
     public function countCreatedOnDate(string $date): int;

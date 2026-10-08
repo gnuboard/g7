@@ -147,12 +147,12 @@
               <success>
                 <set-state target="global" :isPluginUninstalling="false"/>
                 <set-state target="global" pluginUninstallBackups="{{response.data?.preserved_backups ?? []}}"/>
-                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null"/>
                 <toast type="success" message="$t:admin.plugins.uninstall_success"/>
                 <refetch-data-source dataSourceId="plugins"/>
                 <refetch-data-source dataSourceId="admin_menu"/>
                 <reload-extensions pluginInfo="{{result}}" action="remove"/>
                 <close-modal if="{{!(response.data?.preserved_backups?.length)}}"/>
+                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null"/>
               </success>
               <fail>
                 <set-state target="global" :isPluginUninstalling="false"/>

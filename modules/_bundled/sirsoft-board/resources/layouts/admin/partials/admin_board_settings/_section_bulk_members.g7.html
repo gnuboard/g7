@@ -86,7 +86,7 @@
         <span>$t:sirsoft-board.admin.settings.bulk_members.hint</span>
       </div>
       <div data-ref="bulk_members_result" data-if="{{!!_global.boardBulkMembers?.result}}" class="mt-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-        <p class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-board.admin.settings.bulk_members.result_summary|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-board.admin.settings.bulk_members.result_summary|count={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}</p>
         <ul class="mt-2 text-sm space-y-1">
           <li data-each="skip in {{(_global.boardBulkMembers?.result?.skipped ?? []).slice(0, 5)}}" class="flex justify-between gap-3 text-gray-600 dark:text-gray-400">
             <span class="truncate">{{(_computed.boardOptions ?? []).find(o => o.value == skip.board_id)?.label ?? skip.board_id}}</span>

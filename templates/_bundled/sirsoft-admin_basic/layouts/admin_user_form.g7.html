@@ -188,13 +188,14 @@
             </div>
             <!-- 역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —
                  역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면
-                 채울 수 없는 칸을 요구하는 셈이 된다. -->
+                 채울 수 없는 칸을 요구하는 셈이 된다. 잠금 판정에서 회원 응답의 `can_assign_roles` 는 수정 모드에서만
+                 읽는다 — 수정 → 등록 SPA 이동 뒤에도 `user` 데이터소스에 직전 회원 응답이 남아 있다. -->
             <div data-ref="field_roles">
               <label class="form-label">
                 <span>$t:admin.users.form.fields.role</span>
                 <span data-if="{{!!route?.id}}" class="text-red-500 ml-1">*</span>
               </label>
-              <tag-input data-type="composite" name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{user?.data?.abilities?.can_assign_roles !== true &amp;&amp; roles?.data?.abilities?.can_assign_roles !== true}}">
+              <tag-input data-type="composite" name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{(!route?.id || user?.data?.abilities?.can_assign_roles !== true) &amp;&amp; roles?.data?.abilities?.can_assign_roles !== true}}">
                 <on type="change">
                   <!-- 역할 선택. 표시값은 저장된 `role_ids` 를 먼저 보고 없으면 조회 응답의 역할 객체에서
                        id 만 뽑아 쓰지만(수정 진입 직후), 저장에 실리는 것은 언제나 이 `role_ids` 다. -->
@@ -220,12 +221,14 @@
             </div>
             <!-- 이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는
                  것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에
-                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다. -->
+                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.
+                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,
+                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다. -->
             <div data-ref="field_email_verified">
               <label class="form-label">$t:admin.users.detail.email_verification</label>
               <div class="flex-center gap-1">
-                <icon data-if="{{user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
-                <span class="text-primary text-sm">{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
+                <icon data-if="{{!!route?.id &amp;&amp; user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
+                <span class="text-primary text-sm">{{route?.id &amp;&amp; user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
               </div>
             </div>
             <div class="grid-2col-responsive" data-ref="field_password_group">
@@ -490,7 +493,9 @@
                 <input type="text" value="{{user?.data?.notifications_summary?.unread ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
               </div>
             </div>
-            <div data-ref="notifications_inbox_link">
+            <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.
+               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다. -->
+            <div data-ref="notifications_inbox_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.member-notifications.read'))}}">
               <button type="button" class="btn btn-secondary">
                 <on type="click">
                   <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->

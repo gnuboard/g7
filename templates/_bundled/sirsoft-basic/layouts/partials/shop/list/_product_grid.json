@@ -108,6 +108,8 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
+                        "aria-label": "$t:common.prev",
                         "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
                         "disabled": "{{(products?.data?.pagination?.current_page ?? 1) <= 1}}"
                     },
@@ -149,6 +151,8 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
+                        "aria-label": "$t:common.next",
                         "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}",
                         "disabled": "{{!(products?.data?.pagination?.has_more_pages ?? false)}}"
                     },

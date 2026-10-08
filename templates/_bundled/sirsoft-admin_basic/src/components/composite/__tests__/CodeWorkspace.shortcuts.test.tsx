@@ -19,7 +19,7 @@ import {
  */
 
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange }: any) => (
+  default: ({ defaultValue: value, onChange }: any) => (
     <textarea data-testid="editor-textarea" value={value ?? ''} onChange={(event) => onChange?.(event.target.value)} />
   ),
   loader: { init: () => Promise.resolve({}), config: vi.fn() },

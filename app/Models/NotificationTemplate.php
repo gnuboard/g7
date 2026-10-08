@@ -43,6 +43,8 @@ class NotificationTemplate extends Model
 
     /**
      * 모델 이벤트 등록 — 템플릿 변경 시 알림 정의 캐시 자동 삭제.
+     *
+     * @return void 반환값 없음
      */
     protected static function booted(): void
     {
@@ -132,6 +134,51 @@ class NotificationTemplate extends Model
     public function hasRecipientConfig(): bool
     {
         return ! empty($this->recipients);
+    }
+
+    /**
+     * 수정 여부 판정용 값 — 수신자 규칙은 같은 뜻의 여러 저장 모양을 한 모양으로 맞춥니다.
+     *
+     * 역할 값은 문자열 하나(`"admin"`)와 한 칸 목록(`["admin"]`)이 같은 규칙이고(발송 해석기가 둘 다 받는다),
+     * 화면이 덧붙인 표시용 이름(`display_names`)과 꺼진 「유발자 제외」·빈 관계는 규칙의 뜻을 바꾸지 않는다.
+     *
+     * @param  string  $field  trackable 컬럼명
+     * @param  mixed  $value  비교할 값
+     * @return mixed 비교용 값
+     */
+    public function comparableTrackableValue(string $field, mixed $value): mixed
+    {
+        if ($field !== 'recipients') {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        return array_map(function ($rule) {
+            if (! is_array($rule)) {
+                return $rule;
+            }
+
+            unset($rule['display_names']);
+            if (empty($rule['exclude_trigger_user'])) {
+                unset($rule['exclude_trigger_user']);
+            }
+            if (($rule['relation'] ?? null) === null || $rule['relation'] === '') {
+                unset($rule['relation']);
+            }
+            if (($rule['type'] ?? null) === 'role' && is_string($rule['value'] ?? null)) {
+                $rule['value'] = [$rule['value']];
+            }
+
+            return $rule;
+        }, $value);
     }
 
     /**

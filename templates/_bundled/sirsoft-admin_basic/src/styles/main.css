@@ -2329,7 +2329,11 @@
     @apply dark:bg-gray-900;
   }
   .page-actions {
-    @apply flex items-center gap-3;
+    @apply flex flex-wrap items-center gap-3;
+  }
+  /* 머리말 버튼은 줄어들지 않고 글자를 한 줄로 둔다 — 자리가 모자라면 .page-actions 가 줄을 바꾼다 */
+  .page-actions > * {
+    @apply shrink-0 whitespace-nowrap;
   }
 
   /* Section Components */

@@ -1,0 +1,26 @@
+feature: 알림 관리 API 실패 응답의 DB 내부 정보 차단 (7.1.0 전수 실측 영역 G)
+
+description: |
+  영역 F 후속에서 확장 관리 실패 응답이 SQL·DB 호스트를 화면에 내보낸 사례가 나와, 같은 모양
+  (`'error' => $e->getMessage()`)이 보이는 알림 정의·발송 이력 컨트롤러가 관측으로 넘어왔다.
+  실측 판정: 이 컨트롤러들은 원문을 서버 로그에만 남기고 응답에는 정해진 실패 문구만 싣는다(노출 없음).
+  그 계약을 예외 주입(DB 예외 — SQL·호스트·DB 이름 포함)으로 잠근다. 회원 알림함·알림 템플릿
+  컨트롤러도 같은 모양이라 함께 잠근다. 운영 모드(app.debug=false) 기준.
+
+axes:
+  surface: [admin_api]
+
+effects:
+  - notification_definition_failure_masks_db_detail
+  - notification_log_failure_masks_db_detail
+  - notification_template_and_inbox_failure_masks_db_detail
+
+test_files:
+  - tests/Feature/Api/Admin/NotificationAdminFailureMaskingTest.php
+
+notes: |
+  e2e_browser=not_applicable — 서버 예외 주입 계약. 브라우저에서 DB 예외를 일으키려면 공유 DB 를 망가뜨려야 해
+  실측은 하지 않는다(영역 G 결과 파일에 판정 근거).
+
+validation:
+  audit_rule: test-scenario-coverage

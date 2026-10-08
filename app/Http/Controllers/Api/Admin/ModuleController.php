@@ -29,6 +29,7 @@ use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\ModuleService;
 use App\Services\TemplateService;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -89,7 +90,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', $responseData);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -112,7 +113,7 @@ class ModuleController extends AdminBaseController
                 'meta' => $collection->with($request)['meta'],
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -135,7 +136,7 @@ class ModuleController extends AdminBaseController
                 'meta' => $collection->with($request)['meta'],
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -167,7 +168,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', $detail);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -188,7 +189,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', $preview);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -214,10 +215,12 @@ class ModuleController extends AdminBaseController
 
             if ($module) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
-                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? []);
+                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? [], $lpAwaitingHost);
 
                 $payload = (new ModuleResource($module))->toArray($request);
                 $payload['language_pack_failures'] = $lpFailures;
+                // 꺼진 채 설치돼 이 확장을 켤 때 함께 켜질 언어팩 — 화면이 안내 토스트로 알린다.
+                $payload['language_packs_awaiting_host'] = $lpAwaitingHost;
 
                 return $this->success('module.install_success', $payload, 201);
             } else {
@@ -229,12 +232,12 @@ class ModuleController extends AdminBaseController
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
-                ?? __('module.install_failed', ['error' => $e->getMessage()]);
+                ?? __('module.install_failed', ['error' => SafeExceptionMessage::for($e)]);
 
             return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('modules.installation_failed', 500, $e->getMessage(), [
-                'error' => $e->getMessage(),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -295,10 +298,10 @@ class ModuleController extends AdminBaseController
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
                 $e->errors(),
-                collect($e->errors())->flatten()->first() ?? __('module.activate_failed', ['error' => $e->getMessage()])
+                collect($e->errors())->flatten()->first() ?? __('module.activate_failed', ['error' => SafeExceptionMessage::for($e)])
             );
         } catch (\Exception $e) {
-            return $this->error('module.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.activate_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -350,10 +353,10 @@ class ModuleController extends AdminBaseController
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
                 $e->errors(),
-                collect($e->errors())->flatten()->first() ?? __('module.deactivate_failed', ['error' => $e->getMessage()])
+                collect($e->errors())->flatten()->first() ?? __('module.deactivate_failed', ['error' => SafeExceptionMessage::for($e)])
             );
         } catch (\Exception $e) {
-            return $this->error('module.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.deactivate_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -373,7 +376,7 @@ class ModuleController extends AdminBaseController
                 'total' => count($dependentTemplates),
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.dependent_templates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.dependent_templates_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -394,7 +397,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.uninstall_info_success', $uninstallInfo);
         } catch (\Exception $e) {
-            return $this->error('module.uninstall_info_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.uninstall_info_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -437,7 +440,7 @@ class ModuleController extends AdminBaseController
 
             return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
-            return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -456,7 +459,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.preview_success', $result);
         } catch (\Throwable $e) {
-            return $this->error('module.preview_failed', 422, null, ['error' => $e->getMessage()]);
+            return $this->error('module.preview_failed', 422, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -482,7 +485,7 @@ class ModuleController extends AdminBaseController
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
-            return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
+            return $this->error('module.install_failed', 500, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -508,7 +511,7 @@ class ModuleController extends AdminBaseController
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
-            return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
+            return $this->error('module.install_failed', 500, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -527,10 +530,10 @@ class ModuleController extends AdminBaseController
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
                 $e->errors(),
-                collect($e->errors())->flatten()->first() ?? __('modules.check_updates_failed', ['error' => $e->getMessage()])
+                collect($e->errors())->flatten()->first() ?? __('modules.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])
             );
         } catch (\Exception $e) {
-            return $this->error('modules.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('modules.check_updates_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -560,10 +563,10 @@ class ModuleController extends AdminBaseController
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
                 $e->errors(),
-                collect($e->errors())->flatten()->first() ?? __('modules.check_modified_layouts_failed', ['error' => $e->getMessage()])
+                collect($e->errors())->flatten()->first() ?? __('modules.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
             );
         } catch (\Exception $e) {
-            return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -646,7 +649,7 @@ class ModuleController extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error('modules.errors.update_failed', 500, $e->getMessage(), [
                 'module' => $moduleName,
-                'error' => $e->getMessage(),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -677,10 +680,10 @@ class ModuleController extends AdminBaseController
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
                 $e->errors(),
-                collect($e->errors())->flatten()->first() ?? __('module.refresh_layouts_failed', ['error' => $e->getMessage()])
+                collect($e->errors())->flatten()->first() ?? __('module.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
             );
         } catch (\Exception $e) {
-            return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -704,7 +707,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', ['changelog' => $changelog]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -712,7 +715,7 @@ class ModuleController extends AdminBaseController
      * 모듈의 라이선스 파일 내용을 반환합니다.
      *
      * @param  string  $identifier  모듈 식별자
-     * @return JsonResponse
+     * @return JsonResponse 라이선스 내용 응답
      */
     public function license(string $identifier): JsonResponse
     {

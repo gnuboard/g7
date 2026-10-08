@@ -19,6 +19,7 @@
             "open_settings": "Open cleanup settings",
             "reference_notice": "Reference status is determined by scanning registered content such as posts, pages, and product descriptions. An image used only by an external extension that has not registered a reference source may appear as \"Unreferenced\", so verify before deleting.",
             "scan_limited_notice": "The reference status filter evaluates the most recent {{count}} uploads. Older images are not shown in this list.",
+            "scan_limited_notice_one": "The reference status filter evaluates only the most recent upload. Older images are not shown in this list.",
             "empty": "No uploaded images.",
             "col": {
                 "thumbnail": "Preview",
@@ -53,7 +54,8 @@
                 "button": "Delete selected",
                 "selected": "{{count}} selected",
                 "confirm_title": "Delete the selected images?",
-                "confirm_message": "The files and records of the {{count}} selected images will both be deleted. This cannot be undone."
+                "confirm_message": "The files and records of the {{count}} selected images will both be deleted. This cannot be undone.",
+                "confirm_message_one": "The files and records of the {{count}} selected image will both be deleted. This cannot be undone."
             }
         }
     },

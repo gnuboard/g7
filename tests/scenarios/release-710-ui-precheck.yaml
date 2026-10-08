@@ -16,8 +16,9 @@ description: |
       (재발 방지는 audit row-stack-boxed-child)
     - justify_between_three_children: 클레임 카드 머리줄에 환불 대기 배지가 붙으면 상태 배지가 가운데로
       떴다 → 배지 둘을 한 묶음으로
-    - count_badge_triple_digit_overflow: 20px 원에 12px `99+`(실제 폭 23.28px)가 넘쳤다 → 100 이상일 때
-      9px
+    - count_badge_triple_digit_overflow: 20px 원에 12px `99+`(실제 폭 23.28px)가 넘쳤다 → 관리자 알림 배지는
+      100 이상일 때 9px. 사용자 머리글(sirsoft-basic 알림·장바구니)은 최소 폭 + 좌우 여백으로 늘어나는
+      방식이며 count-badge-and-board-card-i18n.yaml 이 잠근다(develop-7.1.0 리베이스 PO 결정 2026-10-09)
 
 axes:
   defect:
@@ -42,9 +43,6 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-toolbar-layout.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/row-stack-boxed-child-fixes.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NotificationCenter.badgeDigits.test.tsx
-  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NotificationCenter.badgeDigits.test.tsx
-  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderCartBadge.test.tsx
-  - templates/_bundled/sirsoft-basic/__tests__/layouts/user-base-cart-badge.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/claim-history-card-header.test.ts
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/policy-version-row-stack.test.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-extension-view-mode.spec.ts

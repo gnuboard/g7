@@ -2,7 +2,7 @@ feature: 레이아웃 코드 편집기 HTML(.g7.html) 기본화 (#476)
 
 description: |
   관리자 레이아웃 코드 편집기의 정본을 JSON 에서 HTML(`.g7.html`)로 바꾼다. DB 는 JSON 만 유지하고
-  (PO 결정 C1), 열 때 `?with_markup=1` 로 역변환하며 저장·미리보기는 `format=markup` 으로 HTML 을
+  (결정 C1), 열 때 `?with_markup=1` 로 역변환하며 저장·미리보기는 `format=markup` 으로 HTML 을
   보내 서버가 프로덕션 컴파일한다. JSON 서브탭은 읽기 전용 산출물이고(C2) 타이핑이 멈춘 1초 뒤
   `markup-compile` 이 갱신한다(C7). 컴파일 오류는 422 `errors.compile_error {code,message,line,column}`
   로 돌아와 편집기 마커·오류 패널이 되고 저장을 막는다. lint 경고는 저장을 막지 않는다.
@@ -45,6 +45,8 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/copyMarkupToClipboard.test.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-markup-default.spec.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-markup-readers.spec.ts
+  # 7.1.0 P16·P17 — 경고·보안 오류 줄 이동, 휴대폰 위쪽 정보 접기(브라우저)
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-issue-location-mobile.spec.ts
 
 effects:
   # --- 서버 계약 (LayoutMarkupApiTest)
@@ -63,6 +65,7 @@ effects:
   - extension_preview_rejects_invalid_markup_with_422
   - extension_markup_compile_returns_json_for_valid_fragment
   - extension_markup_compile_rejects_invalid_fragment_with_422
+  - extends_only_layout_saves_without_synthesized_slot # 물려받기만 하는 화면 저장에 빈 content 슬롯을 지어 넣지 않는다
   # --- 편집기 표면
   - code_editor_markup_tab_is_default
   - code_editor_json_tab_is_read_only
@@ -95,6 +98,9 @@ effects:
   # `vs-dark` 하드코딩은 #476 코드 편집기 개편에서 `theme="auto"` 로 바뀌었다(D8) —
   # 명제가 뒤집혔으므로 이름째 교체한다. 라이트 모드에서 검은 편집기가 뜨던 결함의 잠금이다.
   - code_editor_follows_document_theme
+  - code_editor_defaults_theme_to_document_theme # 기본 테마 prop 은 auto(문서 테마)
+  - code_editor_follows_dark_class # 문서 루트의 dark 클래스를 따라 vs-dark 로 해석한다
+  - code_editor_explicit_theme_wins_over_document # 명시한 테마가 문서 테마보다 앞선다
   - code_editor_container_carries_the_layout_classes
   # 검색 결과 줄을 눌렀을 때의 좌표 이동 — 파일 전환과 좌표가 같은 순간에 오고 본문은 뒤에 온다.
   - code_editor_defers_reveal_until_the_target_file_content_arrives
@@ -132,3 +138,9 @@ effects:
   - extension_version_and_preview_picker_modals_are_registered
   - extension_save_calls_the_extension_put_endpoint
   - init_actions_restore_the_selected_layout_from_the_route_query
+  # 7.1.0 잔여 관측 R-07·R-08 — 좌표 모르는 경고는 0:0 대신 좌표 없이, 컴파일 실패 시 직전 경고 마커를 지운다, 두 갈래가 한 버퍼 맵을 쓴다
+  - code_editor_uses_one_buffer_map_for_both_branches
+  - code_editor_compile_failure_clears_stale_warnings
+  - code_editor_panels_hide_unknown_coordinates
+  - code_editor_issue_rows_reveal_source_line
+  - code_editor_mobile_info_collapsed

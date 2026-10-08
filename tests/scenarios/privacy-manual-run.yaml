@@ -67,6 +67,7 @@ effects:
   - run_requires_settings_and_domain_update_permission
   - status_api_masks_targets_without_run_permission
   - run_record_captures_count_and_failure
+  - run_failure_reason_hides_internal_detail_in_production # 운영 모드 실패 사유에 SQL·DB 호스트·서버 경로를 남기지 않는다(#736 H 실측)
   - activity_log_records_queue_and_finish
   - activity_log_orders_queue_before_finish_on_sync_queue
   - queued_hook_failure_does_not_block_dispatch # 접수 훅 구독자 예외가 작업 발행을 막지 않는다

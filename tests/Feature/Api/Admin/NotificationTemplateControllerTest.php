@@ -7,6 +7,7 @@ use App\Models\NotificationTemplate;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\NotificationTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -144,6 +145,64 @@ class NotificationTemplateControllerTest extends TestCase
                 ['type' => 'role', 'value' => [['identifier' => 'super_admin']]],
             ],
         ])->assertStatus(422);
+    }
+
+    /**
+     * 역할·회원 값이 키가 붙은 객체(`{"x":"admin"}`)면 422 입니다 — 문자열만 담겼다고 받아 두면 저장값이 목록이 아닌
+     * 객체가 되고, 편집 창이 그 값을 목록으로 다루다 깨지거나 발송 시점에야 드러납니다(2026-10-06 실측: 200 으로 저장됨).
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_rejects_keyed_recipient_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_rejects_keyed_object_recipient_values(): void
+    {
+        $before = $this->template->fresh()->recipients;
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'role', 'value' => ['x' => 'super_admin']],
+            ],
+        ])->assertStatus(422)->assertJsonValidationErrors(['recipients.0.value']);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'specific_users', 'value' => ['a' => '0190a5c2-0000-7000-8000-000000000001']],
+            ],
+        ])->assertStatus(422)->assertJsonValidationErrors(['recipients.0.value']);
+
+        $this->assertEquals($before, $this->template->fresh()->recipients, '거절된 요청은 저장값을 바꾸지 않아야 한다');
+    }
+
+    /**
+     * 수신자 칸 검증 문구가 내부 키(`recipients.0.relation`) 대신 항목 이름으로 나옵니다.
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_recipient_errors_use_attribute_names
+     *
+     * @return void 반환값 없음
+     */
+    public function test_recipient_validation_messages_use_attribute_names(): void
+    {
+        $this->definition->update(['relations' => ['post_author']]);
+
+        $response = $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'related_user', 'relation' => 'author'],
+                ['type' => 'specific_users', 'value' => [123]],
+            ],
+        ])->assertStatus(422);
+
+        $messages = collect($response->json('errors'))->flatten()->implode(' ');
+        $this->assertStringNotContainsString('recipients.', $messages, "검증 문구에 내부 키가 보이면 안 된다: {$messages}");
+        $this->assertStringContainsString(__('notification.validation.attributes.recipient_relation'), $messages);
+        $this->assertStringContainsString(__('notification.validation.attributes.recipient_value'), $messages);
     }
 
     /**
@@ -575,5 +634,170 @@ class NotificationTemplateControllerTest extends TestCase
         ])->assertStatus(200);
 
         $this->assertStringNotContainsString('display_names', json_encode($this->template->fresh()->recipients));
+    }
+
+    /**
+     * 화면이 받은 수신자(역할 값은 목록으로 맞춰 내려감)를 그대로 저장해도 「수정됨」 이 되지 않는다.
+     *
+     * 저장값이 `value: "admin"` 처럼 문자열 하나인 역할 규칙은 응답에서 `["admin"]` 로 바뀌어 나간다.
+     * 편집 창을 열고 아무것도 바꾸지 않은 채 저장하면 그 모양으로 되돌아오므로, 뜻이 같은데도 수신자 칸이
+     * 수정으로 기록되고 「기본」 이 풀렸다(2026-10-07 실측).
+     *
+     * @scenario editing_axis=role_recipients, layer=user_overrides
+     *
+     * @effects notification_template_unchanged_save_with_scalar_role_keeps_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unchanged_save_with_scalar_role_recipient_keeps_default(): void
+    {
+        $this->template->update(['recipients' => [['type' => 'role', 'value' => 'admin']]]);
+        app()->instance('user_overrides.seeding', true);
+        $this->template->update(['user_overrides' => null, 'is_default' => true]);
+        app()->forgetInstance('user_overrides.seeding');
+        $this->definition->update(['is_default' => true]);
+
+        $recipients = $this->authRequest()
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200)
+            ->json('data.templates.0.recipients');
+        $this->assertSame(['admin'], $recipients[0]['value']);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => ['ko' => '환영합니다', 'en' => 'Welcome'],
+            'body' => ['ko' => '<p>안녕하세요</p>', 'en' => '<p>Hello</p>'],
+            'recipients' => $recipients,
+            'is_active' => true,
+        ])->assertStatus(200);
+
+        $fresh = $this->template->fresh();
+        $this->assertEmpty($fresh->user_overrides ?? [], '받은 수신자를 그대로 저장했는데 수정 표식이 생겼다');
+        $this->assertTrue((bool) $fresh->is_default);
+        $this->assertTrue((bool) $this->definition->fresh()->is_default);
+    }
+
+    /**
+     * 켜기/끄기를 원래 값으로 되돌리면 「수정됨」 표식도 풀린다 — 그 뒤 저장만 해도 「기본」 이 유지된다.
+     *
+     * 종전에는 끄면 `is_active` 표식이 붙고 다시 켜도 남아, 이어서 편집 창을 열고 그대로 저장하면
+     * 템플릿·정의의 「기본」 이 풀리고 [기본값 복원] 이 떴다(2026-10-07 실측).
+     *
+     * @scenario editing_axis=toggle_active, layer=user_overrides
+     *
+     * @effects notification_template_toggle_back_releases_override
+     *
+     * @return void 반환값 없음
+     */
+    public function test_toggle_back_to_declared_value_releases_override(): void
+    {
+        $this->template->update(['is_default' => true]);
+        $this->definition->update(['is_default' => true]);
+
+        $this->authRequest()->patchJson("/api/admin/notification-templates/{$this->template->id}/toggle-active")->assertStatus(200);
+        $this->assertSame(['is_active'], $this->template->fresh()->user_overrides, '끈 것은 운영자 수정이다');
+
+        $this->authRequest()->patchJson("/api/admin/notification-templates/{$this->template->id}/toggle-active")->assertStatus(200);
+        $this->assertEmpty($this->template->fresh()->user_overrides ?? [], '선언값으로 되돌렸는데 표식이 남았다');
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => ['ko' => '환영합니다', 'en' => 'Welcome'],
+            'body' => ['ko' => '<p>안녕하세요</p>', 'en' => '<p>Hello</p>'],
+            'is_active' => true,
+        ])->assertStatus(200);
+
+        $fresh = $this->template->fresh();
+        $this->assertEmpty($fresh->user_overrides ?? []);
+        $this->assertTrue((bool) $fresh->is_default);
+        $this->assertTrue((bool) $this->definition->fresh()->is_default);
+    }
+
+    /**
+     * 고친 문구를 선언 문구로 되돌려 저장하면 템플릿과 소속 정의의 「기본」 이 함께 돌아온다.
+     *
+     * 템플릿 표식은 풀려 템플릿은 「기본」 이 되는데, 정의는 한 번 풀린 「기본」 을 다시 맞추지 않아 카드에서
+     * 「기본」 배지가 사라지고 [초기화] 가 남았다 — 동기화 보정(소속 템플릿이 전부 기본이면 정의도 기본)과
+     * 같은 규칙을 저장 직후에도 적용한다(2026-10-07 실측).
+     *
+     * @scenario editing_axis=revert_to_declared, layer=user_overrides
+     *
+     * @effects notification_template_revert_restores_definition_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reverting_to_declared_text_restores_definition_default(): void
+    {
+        $declared = app(NotificationTemplateService::class)->getDefaultTemplateData('welcome', 'mail');
+        $this->assertNotEmpty($declared, '환영 알림 메일 선언이 있어야 한다');
+
+        app()->instance('user_overrides.seeding', true);
+        $this->template->update([
+            'subject' => $declared['subject'],
+            'body' => $declared['body'],
+            'recipients' => $declared['recipients'],
+            'user_overrides' => null,
+            'is_default' => true,
+        ]);
+        app()->forgetInstance('user_overrides.seeding');
+        $this->definition->update(['is_default' => true]);
+
+        $edited = $declared['subject'];
+        $edited['ko'] = ($edited['ko'] ?? '').' (수정)';
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => $edited,
+            'body' => $declared['body'],
+            'is_active' => true,
+        ])->assertStatus(200);
+        $this->assertFalse((bool) $this->definition->fresh()->is_default, '고쳐 저장하면 정의도 기본이 풀린다');
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => $declared['subject'],
+            'body' => $declared['body'],
+            'is_active' => true,
+        ])->assertStatus(200);
+
+        $fresh = $this->template->fresh();
+        $this->assertEmpty($fresh->user_overrides ?? [], '선언 문구로 되돌렸는데 표식이 남았다');
+        $this->assertTrue((bool) $fresh->is_default);
+        $this->assertTrue((bool) $this->definition->fresh()->is_default, '소속 템플릿이 전부 기본인데 정의의 「기본」 이 돌아오지 않았다');
+    }
+
+    /**
+     * 운영자가 추가한(선언 없는) 정의는 템플릿을 그대로 저장해도 「기본」 으로 바뀌지 않는다 — 삭제 가능 여부가 이 값에 걸려 있다.
+     *
+     * @scenario editing_axis=operator_definition, layer=user_overrides
+     *
+     * @effects notification_template_operator_definition_stays_non_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_operator_definition_is_not_promoted_to_default_on_save(): void
+    {
+        $definition = NotificationDefinition::create([
+            'type' => 'identity.policy.qa_custom',
+            'hook_prefix' => 'core.identity',
+            'extension_type' => 'core',
+            'extension_identifier' => 'admin',
+            'category' => 'identity',
+            'name' => ['ko' => '정책 문구', 'en' => 'Policy text'],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'is_default' => false,
+        ]);
+        $template = NotificationTemplate::create([
+            'definition_id' => $definition->id,
+            'channel' => 'mail',
+            'subject' => ['ko' => '코드', 'en' => 'Code'],
+            'body' => ['ko' => '<p>{code}</p>', 'en' => '<p>{code}</p>'],
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$template->id}", [
+            'subject' => ['ko' => '코드', 'en' => 'Code'],
+            'body' => ['ko' => '<p>{code}</p>', 'en' => '<p>{code}</p>'],
+            'is_active' => true,
+        ])->assertStatus(200);
+
+        $this->assertFalse((bool) $definition->fresh()->is_default, '운영자가 추가한 정의가 「기본」(삭제 불가)으로 바뀌었다');
     }
 }

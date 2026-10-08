@@ -69,7 +69,7 @@
             <div class="lg:col-span-2">
               <div class="relative">
                 <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
                   <on type="click">
                     <!-- 상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_sign_key="{{!_local._show_live_sign_key}}"/>
@@ -88,7 +88,7 @@
             <div class="lg:col-span-2">
               <div class="relative">
                 <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
                   <on type="click">
                     <!-- INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_key="{{!_local._show_live_iniapi_key}}"/>
@@ -107,7 +107,7 @@
             <div class="lg:col-span-2">
               <div class="relative">
                 <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
                   <on type="click">
                     <!-- INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_iv="{{!_local._show_live_iniapi_iv}}"/>
@@ -126,7 +126,7 @@
             <div class="lg:col-span-2">
               <div class="relative">
                 <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
                   <on type="click">
                     <!-- 모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_mobile_hash_key="{{!_local._show_live_mobile_hash_key}}"/>

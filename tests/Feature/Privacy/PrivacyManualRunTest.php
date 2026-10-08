@@ -6,6 +6,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\PrivacyManualRunStatus;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Http\Resources\PrivacyManualRunResource;
 use App\Jobs\RunPrivacyManualActionJob;
 use App\Models\ActivityLog;
 use App\Models\Permission;
@@ -18,6 +19,7 @@ use App\Privacy\ManualRun\DormantStageRunner;
 use App\Privacy\ManualRun\PrivacyManualRunService;
 use App\Privacy\PrivacyRetentionManager;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -56,6 +58,7 @@ class PrivacyManualRunTest extends TestCase
 
         FakeManualRunner::$runs = 0;
         FakeManualRunner::$throw = false;
+        FakeManualRunner::$exception = null;
     }
 
     /**
@@ -324,6 +327,15 @@ class PrivacyManualRunTest extends TestCase
         $this->assertSame(PrivacyManualRunStatus::Failed, PrivacyManualRun::findOrFail($first->json('data.id'))->status);
         $this->assertNotSame($first->json('data.id'), $second->json('data.id'));
 
+        // 버려진 기록의 사유는 닫은 요청의 언어가 아니라 보는 관리자의 언어로 보인다.
+        $staleRun = PrivacyManualRun::findOrFail($first->json('data.id'));
+        app()->setLocale('en');
+        $this->assertSame(
+            trans('privacy.manual_run.stale', ['minutes' => PrivacyManualRunService::STALE_AFTER_MINUTES], 'en'),
+            (new PrivacyManualRunResource($staleRun))->toArray(request())['error'],
+        );
+        app()->setLocale('ko');
+
         // 늦게 도착한 옛 작업은 닫힌 기록을 다시 열지 않는다.
         $this->assertSame('skipped', app(PrivacyManualRunService::class)->execute($first->json('data.id')));
         $this->assertSame(0, FakeManualRunner::$runs);
@@ -359,6 +371,87 @@ class PrivacyManualRunTest extends TestCase
         $this->assertSame(PrivacyManualRunStatus::Completed, $okRun->status);
         $this->assertSame(7, $okRun->processed_count);
         $this->assertSame(2, $okRun->remaining_count);
+    }
+
+    /**
+     * 운영 모드에서 DB·PHP 내부 예외로 실패한 기록은 원문 대신 일반 문구를 남긴다 — 카드·상태 API·활동 로그에
+     * SQL·DB 호스트·서버 경로가 실리지 않는다(#736 H 영역 실측). 큐 작업이 끝내 실패한 경로(`failed()`)도 같다.
+     * 확장이 일부러 던진 사용자용 사유는 {@see test_extension_runner_failures_are_recorded()} 가 그대로 남는지 고정한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario target_kind=extension_runner, toggle=on, actor=runner
+     *
+     * @effects run_failure_reason_hides_internal_detail_in_production
+     */
+    public function test_internal_failure_reason_is_masked_in_production(): void
+    {
+        Config::set('app.debug', false);
+        $this->registerFakeRunner();
+        FakeManualRunner::$enabled = true;
+        FakeManualRunner::$exception = new QueryException(
+            'mysql',
+            'select * from g7_users where status = ?',
+            ['dormant'],
+            new \PDOException('SQLSTATE[HY000] [2002] Connection refused (Host: 10.0.0.9, Port: 3306, Database: g7_live)'),
+        );
+        $admin = $this->createAdmin(['core.settings.update', 'fake-ext.settings.update']);
+        $generic = __('extensions.errors.internal_error');
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/privacy/manual-runs/fake-ext:notice')->assertStatus(202);
+        $run = PrivacyManualRun::findOrFail($response->json('data.id'));
+
+        $this->assertSame(PrivacyManualRunStatus::Failed, $run->status);
+        $this->assertStringNotContainsString('SQLSTATE', (string) $run->error);
+        $this->assertStringNotContainsString('10.0.0.9', (string) $run->error);
+
+        $status = $this->actingAs($admin)->getJson('/api/admin/privacy/manual-runs?targets=fake-ext:notice')->assertOk();
+        $this->assertSame($generic, $status->json('data.targets.fake-ext:notice.run.error'));
+        $this->assertStringNotContainsString('SQLSTATE', (string) $status->getContent());
+        $this->assertStringNotContainsString('10.0.0.9', (string) $status->getContent());
+
+        // 코어가 붙이는 사유는 실행 시점 언어로 굳지 않고 보는 관리자의 언어로 보인다 — 큐 작업은 요청 언어 없이 돈다.
+        $admin->forceFill(['language' => 'en'])->save();
+        $en = $this->actingAs($admin)->withHeader('Accept-Language', 'en')
+            ->getJson('/api/admin/privacy/manual-runs?targets=fake-ext:notice')->assertOk();
+        $this->assertSame(trans('extensions.errors.internal_error', [], 'en'), $en->json('data.targets.fake-ext:notice.run.error'));
+        $admin->forceFill(['language' => 'ko'])->save();
+        app()->setLocale('ko');
+
+        $log = ActivityLog::query()->where('action', 'privacy.manual_run_finished')->latest('id')->firstOrFail();
+        $this->assertStringNotContainsString('SQLSTATE', json_encode($log->properties, JSON_UNESCAPED_UNICODE));
+
+        // 큐 작업이 끝내 실패한 경로 — PHP 경고가 승격된 예외의 원문(서버 경로)도 가린다.
+        FakeManualRunner::$exception = null;
+        Queue::fake();
+        $queued = $this->actingAs($admin)->postJson('/api/admin/privacy/manual-runs/fake-ext:notice')->assertStatus(202);
+        $queuedId = $queued->json('data.id');
+        (new RunPrivacyManualActionJob($queuedId))->failed(new \ErrorException('Undefined index: x in /var/www/g7/app/Privacy/Secret.php:12'));
+        $failedRun = PrivacyManualRun::findOrFail($queuedId);
+        $this->assertStringNotContainsString('/var/www', (string) $failedRun->error);
+        $this->assertSame($generic, (new PrivacyManualRunResource($failedRun))->toArray(request())['error']);
+    }
+
+    /**
+     * 디버그 모드에서는 내부 예외 원문을 그대로 남긴다 — 개발 중 원인 확인을 막지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario target_kind=extension_runner, toggle=on, actor=runner
+     *
+     * @effects run_failure_reason_hides_internal_detail_in_production
+     */
+    public function test_internal_failure_reason_is_kept_in_debug_mode(): void
+    {
+        Config::set('app.debug', true);
+        $this->registerFakeRunner();
+        FakeManualRunner::$enabled = true;
+        FakeManualRunner::$exception = new \ErrorException('Undefined index: x in /var/www/g7/app/Privacy/Secret.php:12');
+        $admin = $this->createAdmin(['core.settings.update', 'fake-ext.settings.update']);
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/privacy/manual-runs/fake-ext:notice')->assertStatus(202);
+
+        $this->assertStringContainsString('/var/www/g7/app/Privacy/Secret.php', (string) PrivacyManualRun::findOrFail($response->json('data.id'))->error);
     }
 
     /**
@@ -548,6 +641,9 @@ class FakeManualRunner implements PrivacyManualRunnerInterface
     /** 자동 실행 토글 */
     public static bool $enabled = false;
 
+    /** 실행 시 던질 예외(지정하면 `$throw` 보다 먼저) */
+    public static ?\Throwable $exception = null;
+
     /**
      * {@inheritDoc}
      */
@@ -610,6 +706,10 @@ class FakeManualRunner implements PrivacyManualRunnerInterface
     public function run(bool $skipWaiting = false): array
     {
         self::$runs++;
+
+        if (self::$exception !== null) {
+            throw self::$exception;
+        }
 
         if (self::$throw) {
             throw new \RuntimeException('시험 실패');

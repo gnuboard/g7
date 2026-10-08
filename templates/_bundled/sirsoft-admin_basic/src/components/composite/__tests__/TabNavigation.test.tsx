@@ -56,6 +56,10 @@ describe('TabNavigation', () => {
   ];
 
   describe('데스크톱 렌더링', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('모든 탭을 Nav 안의 버튼으로 렌더링해야 함', () => {
       render(<TabNavigation tabs={mockTabs} />);
 
@@ -64,6 +68,10 @@ describe('TabNavigation', () => {
       expect(screen.getByText('알림')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('Nav 요소로 렌더링되어야 함', () => {
       const { container } = render(<TabNavigation tabs={mockTabs} />);
 
@@ -71,6 +79,10 @@ describe('TabNavigation', () => {
       expect(nav).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('Select 드롭다운은 렌더링되지 않아야 함', () => {
       const { container } = render(<TabNavigation tabs={mockTabs} />);
 
@@ -81,6 +93,10 @@ describe('TabNavigation', () => {
   });
 
   describe('활성 탭', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('activeTabId가 설정된 탭에 활성화 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
@@ -88,6 +104,10 @@ describe('TabNavigation', () => {
       expect(settingsButton).toHaveClass('tab-btn-default-active');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('activeTabId가 없으면 활성화 스타일이 없어야 함', () => {
       render(<TabNavigation tabs={mockTabs} />);
 
@@ -97,6 +117,10 @@ describe('TabNavigation', () => {
   });
 
   describe('탭 클릭 이벤트', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     */
     it('탭 클릭 시 onTabChange가 호출되어야 함', () => {
       const handleTabChange = vi.fn();
       render(
@@ -113,6 +137,10 @@ describe('TabNavigation', () => {
       expect(handleTabChange).toHaveBeenCalledWith(2);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     */
     it('현재 활성화된 탭 클릭 시 onTabChange가 호출되지 않아야 함', () => {
       const handleTabChange = vi.fn();
       render(
@@ -129,6 +157,10 @@ describe('TabNavigation', () => {
       expect(handleTabChange).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     */
     it('비활성화된 탭 클릭 시 onTabChange가 호출되지 않아야 함', () => {
       const handleTabChange = vi.fn();
       const tabsWithDisabled: Tab[] = [
@@ -152,6 +184,10 @@ describe('TabNavigation', () => {
   });
 
   describe('아이콘', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('아이콘이 있는 탭을 렌더링해야 함', () => {
       const tabsWithIcons: Tab[] = [
         { id: 1, label: '프로필', iconName: IconName.User },
@@ -160,19 +196,27 @@ describe('TabNavigation', () => {
 
       const { container } = render(<TabNavigation tabs={tabsWithIcons} />);
 
-      const icons = container.querySelectorAll('i[role="img"]');
+      const icons = container.querySelectorAll('i[class*="fa-"]');
       expect(icons.length).toBe(2);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('아이콘이 없는 탭은 아이콘을 렌더링하지 않아야 함', () => {
       const { container } = render(<TabNavigation tabs={mockTabs} />);
 
-      const icons = container.querySelectorAll('i[role="img"]');
+      const icons = container.querySelectorAll('i[class*="fa-"]');
       expect(icons.length).toBe(0);
     });
   });
 
   describe('뱃지', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('뱃지가 있는 탭을 렌더링해야 함', () => {
       const tabsWithBadges: Tab[] = [
         { id: 1, label: '알림', badge: 5 },
@@ -185,6 +229,10 @@ describe('TabNavigation', () => {
       expect(screen.getByText('99+')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('뱃지가 0일 때도 렌더링해야 함', () => {
       const tabsWithBadges: Tab[] = [{ id: 1, label: '알림', badge: 0 }];
 
@@ -195,6 +243,10 @@ describe('TabNavigation', () => {
   });
 
   describe('비활성화된 탭', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('비활성화된 탭에 disabled 속성을 적용해야 함', () => {
       const tabsWithDisabled: Tab[] = [
         { id: 1, label: '활성화' },
@@ -207,6 +259,10 @@ describe('TabNavigation', () => {
       expect(disabledButton).toBeDisabled();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('비활성화된 탭에 비활성화 스타일을 적용해야 함', () => {
       const tabsWithDisabled: Tab[] = [
         { id: 1, label: '비활성화', disabled: true },
@@ -220,6 +276,10 @@ describe('TabNavigation', () => {
   });
 
   describe('variant 스타일', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('variant="default"일 때 기본 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="default" />);
 
@@ -227,6 +287,10 @@ describe('TabNavigation', () => {
       expect(activeButton).toHaveClass('tab-btn-default-active');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('variant="pills"일 때 pill 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="pills" />);
 
@@ -234,6 +298,10 @@ describe('TabNavigation', () => {
       expect(activeButton).toHaveClass('tab-btn-pills-active');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('variant="underline"일 때 underline 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="underline" />);
 
@@ -243,6 +311,10 @@ describe('TabNavigation', () => {
   });
 
   describe('스타일 커스터마이징', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('className prop을 적용해야 함', () => {
       const { container } = render(
         <TabNavigation tabs={mockTabs} className="custom-nav" />
@@ -252,6 +324,10 @@ describe('TabNavigation', () => {
       expect(nav).toHaveClass('custom-nav');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('style prop을 적용해야 함', () => {
       const { container } = render(
         <TabNavigation tabs={mockTabs} style={{ marginTop: '20px' }} />
@@ -267,6 +343,10 @@ describe('TabNavigation', () => {
       setMobile();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_mobile_renders_select_dropdown
+     */
     it('Nav 대신 Select 드롭다운만 렌더링해야 함', () => {
       const { container } = render(
         <TabNavigation tabs={mockTabs} activeTabId={1} />
@@ -279,6 +359,10 @@ describe('TabNavigation', () => {
       expect(triggerButton).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_mobile_renders_select_dropdown
+     */
     it('현재 활성 탭의 label을 Select trigger에 표시해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
@@ -286,6 +370,10 @@ describe('TabNavigation', () => {
       expect(screen.getByText('설정')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_mobile_renders_select_dropdown
+     */
     it('뱃지가 있는 탭은 label과 함께 뱃지 수를 병기해야 함', () => {
       const tabsWithBadge: Tab[] = [
         { id: 1, label: '알림', badge: 5 },
@@ -295,6 +383,10 @@ describe('TabNavigation', () => {
       expect(screen.getByText('알림 (5)')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_mobile_renders_select_dropdown
+     */
     it('Select trigger 클릭 후 옵션 선택 시 onTabChange가 호출되어야 함', () => {
       const handleTabChange = vi.fn();
       const { container } = render(
@@ -322,6 +414,10 @@ describe('TabNavigation', () => {
   });
 
   describe('복합 시나리오', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     */
     it('아이콘, 뱃지, 비활성화를 모두 함께 사용할 수 있어야 함', () => {
       const complexTabs: Tab[] = [
         { id: 1, label: '프로필', iconName: IconName.User, badge: 3 },
@@ -339,7 +435,7 @@ describe('TabNavigation', () => {
       const settingsButton = screen.getByText('설정').closest('button');
       expect(settingsButton).toBeDisabled();
 
-      const icons = container.querySelectorAll('i[role="img"]');
+      const icons = container.querySelectorAll('i[class*="fa-"]');
       expect(icons.length).toBe(3);
 
       expect(screen.getByText('99+')).toBeInTheDocument();
@@ -355,6 +451,10 @@ describe('TabNavigation', () => {
    * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode, core_measures_data_editor_item_path_markers_into_cellboxes
    */
   describe('편집 모드 인플레이스 측정 마커(data-editor-item-path)', () => {
+    /**
+     * @scenario unit=item_path_marker
+     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode
+     */
     it('editorAttrs 주입 시 각 탭 버튼에 data-editor-item-path 를 부여한다', () => {
       const { container } = render(
         <TabNavigation
@@ -369,6 +469,10 @@ describe('TabNavigation', () => {
       expect(marked[2].getAttribute('data-editor-item-path')).toBe('2.children.0.props.tabs.2');
     });
 
+    /**
+     * @scenario unit=item_path_marker
+     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode
+     */
     it('editorAttrs 미주입(런타임) 시 마커를 부여하지 않는다', () => {
       const { container } = render(<TabNavigation tabs={mockTabs} />);
       expect(container.querySelectorAll('[data-editor-item-path]').length).toBe(0);
@@ -382,6 +486,10 @@ describe('TabNavigation', () => {
    * 목록 안 이동도 Tab 키로 전 탭을 훑어야 한다.
    */
   describe('접근성 (WAI-ARIA Tabs)', () => {
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('목록은 tablist, 각 항목은 tab 으로 노출된다', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
@@ -389,6 +497,10 @@ describe('TabNavigation', () => {
       expect(screen.getAllByRole('tab')).toHaveLength(3);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('활성 탭만 aria-selected=true 다', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
@@ -398,6 +510,10 @@ describe('TabNavigation', () => {
       expect(tabs[2]).toHaveAttribute('aria-selected', 'false');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('활성 탭만 Tab 키 초점을 받는다 (roving tabindex)', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
@@ -407,12 +523,20 @@ describe('TabNavigation', () => {
       expect(tabs[2]).toHaveAttribute('tabindex', '-1');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('활성 탭이 지정되지 않아도 첫 탭이 초점 진입점이 된다', () => {
       render(<TabNavigation tabs={mockTabs} />);
 
       expect(screen.getAllByRole('tab')[0]).toHaveAttribute('tabindex', '0');
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('좌우 화살표로 이전/다음 탭으로 이동한다', () => {
       const onTabChange = vi.fn();
       render(<TabNavigation tabs={mockTabs} activeTabId={2} onTabChange={onTabChange} />);
@@ -425,6 +549,10 @@ describe('TabNavigation', () => {
       expect(onTabChange).toHaveBeenLastCalledWith(1);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('화살표 이동은 양 끝에서 순환한다', () => {
       const onTabChange = vi.fn();
       render(<TabNavigation tabs={mockTabs} activeTabId={3} onTabChange={onTabChange} />);
@@ -433,6 +561,10 @@ describe('TabNavigation', () => {
       expect(onTabChange).toHaveBeenLastCalledWith(1);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('Home/End 로 첫/마지막 탭으로 이동한다', () => {
       const onTabChange = vi.fn();
       render(<TabNavigation tabs={mockTabs} activeTabId={2} onTabChange={onTabChange} />);
@@ -445,6 +577,10 @@ describe('TabNavigation', () => {
       expect(onTabChange).toHaveBeenLastCalledWith(1);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     */
     it('화살표 이동은 비활성 탭을 건너뛴다', () => {
       const onTabChange = vi.fn();
       const withDisabled: Tab[] = [
@@ -458,6 +594,10 @@ describe('TabNavigation', () => {
       expect(onTabChange).toHaveBeenLastCalledWith(3);
     });
 
+    /**
+     * @scenario component=tab_navigation
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_mobile_renders_select_dropdown
+     */
     it('모바일 전환 시에는 tablist 대신 Select 드롭다운으로 렌더된다', () => {
       mockUseResponsive.mockReturnValueOnce({ width: 500 } as any);
       const { container } = render(<TabNavigation tabs={mockTabs} activeTabId={1} />);

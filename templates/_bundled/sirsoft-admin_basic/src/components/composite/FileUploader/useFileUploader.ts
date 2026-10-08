@@ -243,16 +243,22 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       // 개수 상한 초과분은 조용히 절단하지 않고 안내 (개수 초과 silent 무시 방지)
       if (selectedFiles.length > remainingSlots) {
         const overflow = Array.from(selectedFiles).slice(remainingSlots);
-        const message = t('attachment.upload_limit_exceeded', { max: maxFiles });
+        const message = t('attachment.upload_limit_exceeded', { max: maxFiles, count: maxFiles });
         // 잘린 첫 파일을 대표로 콜백에 전달 (없으면 무시)
         onUploadError?.(message, overflow[0] ?? selectedFiles[0]);
       }
 
       for (const file of filesToAdd) {
-        // 크기 검증
+        // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다(7.1.0 N O-N7).
+        if (file.size === 0) {
+          onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
+          continue;
+        }
+
+        // 크기 검증 — 문구는 번역 키로 만든다(한국어 리터럴이면 다른 언어 화면에 한국어가 섞인다).
         if (file.size > maxSize * 1024 * 1024) {
           onUploadError?.(
-            `[${file.name}] 파일 크기(${formatFileSize(file.size)})가 최대 허용 크기(${maxSize}MB)를 초과합니다.`,
+            t('attachment.file_too_large', { name: file.name, size: formatFileSize(file.size), max: maxSize }),
             file
           );
           continue;

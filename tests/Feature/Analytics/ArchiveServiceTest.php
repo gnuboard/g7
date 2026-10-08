@@ -621,7 +621,7 @@ class ArchiveServiceTest extends TestCase
         $date = '2026-09-17';
         $this->visit($date);
 
-        $lock = Cache::lock('analytics:archive:'.ArchiveRunType::Day->value.':'.$date, 60);
+        $lock = Cache::lock(ArchiveService::lockKey($date), 60);
         $this->assertTrue($lock->get());
 
         try {
@@ -1502,7 +1502,7 @@ class ArchiveServiceTest extends TestCase
     public function test_lock_miss_without_record_skipped_leaves_no_row(): void
     {
         $date = '2026-09-19';
-        $lock = Cache::lock('analytics:archive:day:'.$date, 60);
+        $lock = Cache::lock(ArchiveService::lockKey($date), 60);
         $this->assertTrue($lock->get());
 
         try {

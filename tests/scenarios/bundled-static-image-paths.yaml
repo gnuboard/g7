@@ -17,6 +17,7 @@ effects:
   - root_image_paths_are_extracted
   - bundled_image_paths_exist_in_public
   - missing_thumbnail_falls_back_to_icon
+  - editor_sample_images_do_not_point_to_absent_server_files # 편집기 표본 그림 칸이 실재하지 않는 첨부·storage 경로를 가리키지 않는다
 
 test_files:
   - resources/js/core/template-engine/__tests__/BundledStaticImagePathsExist.test.ts

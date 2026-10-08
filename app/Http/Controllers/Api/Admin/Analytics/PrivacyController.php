@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\IpAddress;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\AnonymizeRequest;
 use App\Http\Requests\Admin\Analytics\SubjectDeleteRequest;
@@ -62,6 +63,9 @@ class PrivacyController extends AdminBaseController
                 // 화면의 표가 그리는 값 — 주소로 찾은 사람의 주소, 그 방문이 본 쪽수와 남긴 활동 수.
                 // 이 경로는 열람 권한 전용이라 주소를 그대로 보여 준다(익명 구간은 애초에 null 이다).
                 'ip' => $visit->ip,
+                // 그 주소가 지금 설정대로 가려진 값인지 — 열 이름만 설정을 따르면 소급을 건너뛴 기존
+                // 행의 원래 주소가 「마스킹됨」 아래 서서 가려진 값으로 읽힌다(7.1.0 실측 O-E8).
+                'ip_masked' => IpAddress::isMaskedBy($visit->ip, $config->ipMaskOctets),
                 'visitor_type' => $visit->visitor_type instanceof \BackedEnum ? $visit->visitor_type->value : $visit->visitor_type,
                 'pageviews_count' => $visit->pageviews_count,
                 'actions_count' => $visit->actions_count,
@@ -159,6 +163,7 @@ class PrivacyController extends AdminBaseController
      */
     private function exportFilename(): string
     {
-        return 'analytics-subject-'.AnalyticsClock::now()->format('Ymd').'.json';
+        // 사이트 표준시 날짜 — `now()` 는 UTC 라 사이트가 UTC 보다 앞선 시간대면 전날로 나온다.
+        return 'analytics-subject-'.str_replace('-', '', AnalyticsClock::today()).'.json';
     }
 }

@@ -1424,6 +1424,63 @@
           }
         }
       ]
+    },
+    {
+      "comment": "본인인증 코드 입력 창(공통 사용자 레이아웃). 인증을 요구한 요청이 `_global.identityChallenge` 에 발급 정보를 담고 연다 — 상태 없이는 「남은 시도: 0회」·남은 시간 없음으로 그려진다. 코드 칸은 비워 [확인] 은 입력 전 잠김(평상 모습).",
+      "scope": {
+        "kind": "modal",
+        "match": "identity-challenge-modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identityChallenge": {
+                "challenge_id": "00000000-0000-4000-8000-0000000000c1",
+                "provider_id": "g7:core.mail",
+                "purpose": "sensitive_action",
+                "policy_key": null,
+                "target": "a***@example.com",
+                "render_hint": "text_code",
+                "expires_at": "2026-01-01T09:15:00+09:00",
+                "remainingSeconds": 540,
+                "attempts": 0,
+                "maxAttempts": 5,
+                "code": "",
+                "error": null,
+                "resendCooldown": 0,
+                "resending": false,
+                "verifying": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "마이페이지 스크랩 「선택 해제」 확인 창. 목록의 체크가 로컬 `scrapSelectedIds` 에 담긴 뒤 연다 — 상태 없이는 「선택한 0개의 스크랩을…」으로 그려진다. id 는 표본 데이터소스 scrap 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "scrap_bulk_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "scrapSelectedIds": [
+                501,
+                502
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

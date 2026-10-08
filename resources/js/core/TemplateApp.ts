@@ -21,7 +21,7 @@ import { DataSourceManager } from './template-engine/DataSourceManager';
 import { initTemplateEngine, renderTemplate, destroyTemplate, getState, updateTemplateData } from './template-engine';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
 import { ErrorDisplay } from './template-engine/ErrorDisplay';
-import { toTemplateEngineError } from './template-engine/TemplateEngineError';
+import { toTemplateEngineError, TemplateEngineError } from './template-engine/TemplateEngineError';
 import { ErrorPageHandler } from './template-engine/ErrorPageHandler';
 import { AuthManager, type AuthType } from './auth/AuthManager';
 import { getApiClient } from './api/ApiClient';
@@ -36,6 +36,7 @@ import {
     installUnloadGuard,
     isDocumentUnloading,
     loadScriptWithRetry,
+    markDocumentLeaving,
 } from './template-engine/networkResilience';
 import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
 import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
@@ -363,6 +364,9 @@ export class TemplateApp {
         if (!savedLocale && config.locale) {
             this.saveLocaleToStorage(config.locale);
         }
+
+        // 서버가 찍은 <html lang> 은 요청 언어 기준이라 사용자가 고른 언어와 다를 수 있다
+        this.syncDocumentLang(finalLocale);
     }
 
     /**
@@ -685,6 +689,9 @@ export class TemplateApp {
                     returnUrl,
                     'session_expired'
                 );
+                // 이동 응답이 오기 전(수백 ms)에 같은 401 로 실패한 데이터소스·액션이 떠날 화면에 오류 토스트를
+                // 그리지 않도록 이탈 가드를 미리 켠다(engine-v1.78.2, O-F1).
+                markDocumentLeaving();
                 window.location.href = loginUrl;
             });
 
@@ -745,6 +752,7 @@ export class TemplateApp {
                 actionDispatcher.setDefaultContext({
                     navigate: (path: string) => this.router?.navigate(path),
                 });
+                this.bindLoginPathResolver(actionDispatcher);
 
                 // setGlobalState 함수 주입
                 actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
@@ -2446,7 +2454,7 @@ export class TemplateApp {
         ErrorDisplay.renderFromError(
             'app',
             templateError,
-            '초기화 실패',
+            ErrorDisplay.text('core.errors.init_failed'),
             this.config.debug,
             {
                 templateId: this.config.templateId,
@@ -2976,14 +2984,28 @@ export class TemplateApp {
         }
 
         // Error를 TemplateEngineError로 변환
-        const templateError = toTemplateEngineError(error);
+        // 레이아웃 403·404 는 개발자용 원문(「Failed to fetch layout: 403 Forbidden」) 대신 사람이 읽는 문구를
+        // 화면 언어로 싣는다 — 서버가 준 사유(필요 권한 등)는 아래 상세 줄에 그대로 남는다(engine-v1.78.5).
+        const layoutStatus = error instanceof LayoutLoaderError ? error.details?.status : undefined;
+        const templateError =
+            layoutStatus === 403 || layoutStatus === 404
+                ? new TemplateEngineError(
+                      'LAYOUT_LOAD_ERROR',
+                      ErrorDisplay.text(layoutStatus === 403 ? 'core.errors.layout_forbidden' : 'core.errors.layout_not_found'),
+                      {
+                          showStack: false,
+                          icon: layoutStatus === 403 ? 'fa-lock' : 'fa-circle-question',
+                          recoverable: true,
+                      }
+                  )
+                : toTemplateEngineError(error);
 
         // ErrorDisplay를 사용하여 렌더링
         // 원본 에러도 전달하여 상세 메시지 추출 가능하도록 함
         ErrorDisplay.renderFromError(
             'app',
             templateError,
-            '페이지 로딩 실패',
+            ErrorDisplay.text('core.errors.page_load_failed'),
             this.config.debug,
             {
                 templateId: this.config.templateId,
@@ -2991,6 +3013,26 @@ export class TemplateApp {
             },
             undefined, // translationEngine
             error // originalError
+        );
+    }
+
+    /**
+     * 시스템 기본 401 처리(`navigate {{auth.loginPath}}`)가 쓸 로그인 주소를 ActionDispatcher 에 알려 줍니다.
+     *
+     * 이 템플릿의 인증 종류(관리자/사용자) 로그인 화면으로, 현재 주소를 복귀 경로로 싣는다. 주입하지 않으면 경로가
+     * 빈 값으로 풀려 이동이 실패하고 그 실패가 「네트워크 실패」 토스트로 보였다(engine-v1.78.2, O-F1).
+     *
+     * @param actionDispatcher 대상 ActionDispatcher
+     * @return void
+     */
+    private bindLoginPathResolver(actionDispatcher: { setLoginPathResolver?: (resolver: () => string) => void }): void {
+        const authType: AuthType = this.config.templateType === 'admin' ? 'admin' : 'user';
+
+        actionDispatcher.setLoginPathResolver?.(() =>
+            AuthManager.getInstance().getLoginRedirectUrl(
+                authType,
+                window.location.pathname + window.location.search
+            )
         );
     }
 
@@ -3250,6 +3292,9 @@ export class TemplateApp {
             // localStorage에 저장
             this.saveLocaleToStorage(locale);
 
+            // 문서 언어(<html lang>)도 맞춘다 — 페이지를 다시 받지 않으므로 서버 값이 그대로 남는다
+            this.syncDocumentLang(locale);
+
             // 로그인한 사용자인 경우 DB에 저장 (실패해도 UI는 변경)
             await this.saveLocaleToDatabase(locale);
 
@@ -3288,6 +3333,7 @@ export class TemplateApp {
                 actionDispatcher.setDefaultContext({
                     navigate: (path: string) => this.router?.navigate(path),
                 });
+                this.bindLoginPathResolver(actionDispatcher);
 
                 actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
 
@@ -3319,6 +3365,21 @@ export class TemplateApp {
             logger.error('Failed to change locale:', error);
             throw error;
         }
+    }
+
+    /**
+     * 문서 언어(`<html lang>`)를 앱 로케일에 맞춥니다.
+     *
+     * 서버 템플릿과 같은 변환(밑줄 → 하이픈)을 쓴다. 화면 읽기 프로그램·번역 제안·하이픈 처리가
+     * 이 값을 기준으로 언어를 판단한다.
+     *
+     * @param locale 앱 로케일 (예: 'ko', 'en', 'zh_CN')
+     */
+    private syncDocumentLang(locale: string): void {
+        if (typeof document === 'undefined' || !document.documentElement || !locale) {
+            return;
+        }
+        document.documentElement.lang = locale.replace(/_/g, '-');
     }
 
     /**

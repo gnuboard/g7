@@ -105,6 +105,23 @@ class NoExternalUrls implements ValidationRule
     private const WEB_SCHEMES = ['http://', 'https://'];
 
     /**
+     * 위반 메시지 → 그 위반을 낸 값(처음 하나). 소스 위치를 찾는 데 쓴다(7.1.0 P16).
+     *
+     * @var array<string, string>
+     */
+    private array $offending = [];
+
+    /**
+     * 위반 메시지별로 그 위반을 낸 값을 돌려줍니다 — 마크업 소스에서 위치를 찾는 단서.
+     *
+     * @return array<string, string> 메시지 → 값
+     */
+    public function offendingValues(): array
+    {
+        return $this->offending;
+    }
+
+    /**
      * 이번 검증에서 이미 보고한 (경로|값) — 부분 순회와 전체 순회가 같은 값을 두 번 보고하지 않게 한다.
      *
      * @var array<string, true>
@@ -497,7 +514,9 @@ class NoExternalUrls implements ValidationRule
         // 동등하게 처리하므로, `/\/evil.com` · `/{tab}/evil.com` 도 실제로는 외부
         // origin 이 된다. 접두 검사 전에 동일하게 정규화한다(SafeLayoutExpressions 와 동형).
         if (str_starts_with(SafeLayoutExpressions::normalizeForOriginCheck($lowerValue), '//')) {
-            $fail(__('validation.external_url.detected_in_props', ['url' => $value]));
+            $message = __('validation.external_url.detected_in_props', ['url' => $value]);
+            $this->offending[$message] ??= $value;
+            $fail($message);
 
             return true;
         }
@@ -519,7 +538,7 @@ class NoExternalUrls implements ValidationRule
      * 스킴별 에러 메시지 출력
      *
      * @param  string  $scheme  일치한 스킴 접두
-     * @param  string  $url  원본 값 (스킴별 메시지 키가 값을 싣지 않아 현재 미사용)
+     * @param  string  $url  원본 값 — 메시지에는 싣지 않고 소스 위치 단서로 기록한다
      * @param  string  $path  오류 경로 (같은 이유로 현재 미사용)
      * @param  Closure  $fail  검증 실패 콜백
      * @return void 반환값 없음
@@ -536,10 +555,10 @@ class NoExternalUrls implements ValidationRule
             default => 'validation.external_url.dangerous_scheme_detected',
         };
 
-        if ($messageKey === 'validation.external_url.dangerous_scheme_detected') {
-            $fail(__($messageKey, ['scheme' => $scheme]));
-        } else {
-            $fail(__($messageKey));
-        }
+        $message = $messageKey === 'validation.external_url.dangerous_scheme_detected'
+            ? __($messageKey, ['scheme' => $scheme])
+            : __($messageKey);
+        $this->offending[$message] ??= $url;
+        $fail($message);
     }
 }

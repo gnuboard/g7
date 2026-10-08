@@ -283,10 +283,13 @@ class LoginThrottleTest extends TestCase
         $response->assertStatus(429);
         $this->assertNotSame('Too Many Attempts.', $response->json('message'));
         $this->assertStringNotContainsString(':seconds', (string) $response->json('message'));
+        // 영어 문구는 `초 단수|복수` 꼴이라 남은 초로 고른 문장과 비교한다 (2026-10-08 결정: 1이면 단수).
+        $seconds = (int) $response->headers->get('Retry-After');
         $this->assertSame(
-            __('auth.too_many_attempts', ['seconds' => (int) $response->headers->get('Retry-After')]),
+            trans_choice('auth.too_many_attempts', $seconds, ['seconds' => $seconds]),
             $response->json('message')
         );
+        $this->assertStringNotContainsString('|', (string) $response->json('message'));
         // 재시도 시점 안내는 그대로 유지되어야 한다.
         $this->assertNotNull($response->headers->get('Retry-After'));
     }

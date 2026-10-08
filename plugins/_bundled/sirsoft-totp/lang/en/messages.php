@@ -11,6 +11,7 @@ return [
         'disabled' => 'The authenticator app has been unenrolled.',
         'backup_codes_regenerated' => 'New backup codes have been issued. The previous codes no longer work.',
         'admin_reset' => 'The member\'s authenticator app enrollment has been removed.',
+        'admin_reset_none' => 'This member has no authenticator app enrolled, so there was nothing to remove.',
     ],
 
     'errors' => [

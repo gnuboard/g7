@@ -693,6 +693,43 @@ class ReportControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 최근 봇 요청이 행마다 겹치지 않는 식별자를 싣는지 확인합니다.
+     *
+     * 화면 표는 행 식별자로 줄을 가른다. 같은 초에 두 봇이 들어오면 시각은 겹치므로, 시각을
+     * 식별자로 쓰면 쪽을 넘겨도 앞 쪽 줄이 남아 한 쪽에 12줄이 보였다(7.1.0 실측 E-D3).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects bot_recent_hits_carry_a_unique_row_id
+     */
+    public function test_recent_bot_hits_carry_a_unique_row_id(): void
+    {
+        $moment = Carbon::now('UTC')->startOfSecond();
+
+        foreach (['Googlebot', 'bingbot', 'Yeti'] as $bot) {
+            AnalyticsBotHit::factory()->create([
+                'bot_name' => $bot,
+                'url' => '/same-second',
+                'cache_status' => 'none',
+                'occurred_at' => $moment,
+            ]);
+        }
+
+        $hits = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/bots?preset=today')
+            ->assertOk()
+            ->json('data.recent_hits');
+
+        $ids = array_column($hits, 'id');
+
+        $this->assertCount(3, $ids, '행마다 식별자가 있어야 한다');
+        $this->assertCount(3, array_unique($ids), '같은 초에 들어온 요청도 식별자는 겹치지 않는다');
+        $this->assertCount(1, array_unique(array_column($hits, 'occurred_at')), '시각은 겹친다 — 식별자로 쓸 수 없다');
+    }
+
+    /**
      * 봇 화면의 기간 합계가 쪽과 무관하게 기간 전체를 세는지 확인합니다.
      *
      * 목록은 쪽으로 잘려 오므로 그 행을 더한 KPI 는 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의
@@ -874,5 +911,53 @@ class ReportControllerTest extends AnalyticsApiTestCase
             ->assertOk();
 
         $this->assertSame(['게시글', 'recipes'], array_column($response->json('data.data'), 'label_display'));
+    }
+
+    /**
+     * 봇 「최근 요청」이 고른 기간 안의 요청만 싣는지 확인합니다.
+     *
+     * 화면의 다른 숫자(봇 요청·봇 종류·봇별 집계)는 모두 고른 기간을 따르는데 최근 요청만 늘 최신
+     * 50건이라, 어제 하루를 골라도 오늘 아침 요청이 목록에 섞였다(7.1.0 실측 O-E10).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects bot_recent_hits_follow_the_selected_period
+     */
+    public function test_recent_bot_hits_follow_the_selected_period(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 03:00:00', 'UTC'));
+
+        try {
+            AnalyticsBotHit::factory()->create([
+                'bot_name' => 'Googlebot',
+                'url' => '/today',
+                'cache_status' => 'none',
+                'occurred_at' => Carbon::parse('2026-10-05 21:15:00', 'UTC'), // 서울 10-06 06:15
+            ]);
+            AnalyticsBotHit::factory()->create([
+                'bot_name' => 'bingbot',
+                'url' => '/yesterday',
+                'cache_status' => 'none',
+                'occurred_at' => Carbon::parse('2026-10-05 05:00:00', 'UTC'), // 서울 10-05 14:00
+            ]);
+
+            $admin = $this->readAdmin();
+            $urls = fn (string $query): array => array_column(
+                $this->actingAs($admin)
+                    ->getJson('/api/admin/analytics/bots?'.$query)
+                    ->assertOk()
+                    ->json('data.recent_hits'),
+                'url',
+            );
+
+            $this->assertSame(['/yesterday'], $urls('from=2026-10-05&to=2026-10-05'), '어제 하루를 고르면 어제 요청만');
+            $this->assertSame(['/today'], $urls('preset=today'), '오늘을 고르면 오늘 요청만(서울 자정 경계)');
+            $this->assertSame(['/today', '/yesterday'], $urls('from=2026-10-05&to=2026-10-06'), '이틀이면 둘 다 최신순');
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }

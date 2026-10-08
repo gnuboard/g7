@@ -1,0 +1,43 @@
+feature: 대시보드 「오늘」 배지로 연 주문 목록은 배지와 같은 사이트 하루로 거른다 (7.1.0 전수 실측 · 결정 2026-10-08)
+
+description: |
+  배지 숫자는 사이트 표준시의 하루로 센다(ecommerce-day-boundary). 목록의 날짜 필터는 보는 사람의 하루가 원칙이라,
+  관리자 계정 시간대가 사이트와 다르면 배지 「결제완료 1건」을 눌러 연 목록이 0건이 됐다.
+  결정: 배지로 연 목록만 배지와 같은 사이트 하루로 거른다.
+
+  - 배지 링크 7개는 `date_basis=site` 를 함께 싣는다.
+  - 주문 목록 API 는 `date_basis=site` 일 때만 시작·종료일을 사이트 표준시의 하루로 풀고, 없으면 종전대로 보는 사람의 하루다.
+    정해진 값 밖은 422.
+  - 목록 화면은 그 인자를 필터 상태(dateBasis)로 들고 있다가, 사용자가 날짜 종류·시작일·종료일을 바꾸거나 빠른 기간 버튼·
+    프리셋·초기화를 누르면 떼어 보는 사람의 하루로 돌아간다. 날짜와 무관한 조건(상태 등)만 바꿔 검색하면 그대로 둔다.
+  - 인자가 걸린 동안 날짜 필터 줄에 「사이트 표준시 기준」 안내를 보인다.
+
+axes:
+  entry: [dashboard_badge, list_date_filter, list_date_change, list_non_date_change]
+  basis: [site, viewer, invalid]
+
+exclusions:
+  - { entry: list_date_filter, basis: site, reason: "목록에서 직접 고른 날짜는 보는 사람 하루 — site 는 배지 진입에서만 생긴다" }
+  - { entry: list_date_filter, basis: invalid, reason: "목록 화면은 기준 인자를 만들지 않는다 — 거절은 배지 진입(직접 URL)에서 본다" }
+  - { entry: dashboard_badge, basis: viewer, reason: "배지 링크는 항상 site 를 싣는다" }
+  - { entry: list_date_change, basis: site, reason: "날짜를 바꾸면 site 를 뗀다 — viewer 로만 간다" }
+  - { entry: list_date_change, basis: invalid, reason: "화면 상태 전이 — 서버 거절과 무관" }
+  - { entry: list_non_date_change, basis: viewer, reason: "날짜와 무관한 조건만 바꾸면 site 를 유지한다" }
+  - { entry: list_non_date_change, basis: invalid, reason: "화면 상태 전이 — 서버 거절과 무관" }
+
+effects:
+  - order_list_site_basis_filters_by_site_day
+  - order_list_default_basis_stays_viewer_day
+  - order_list_rejects_unknown_date_basis
+  - dashboard_badge_links_carry_site_basis
+  - order_list_forwards_date_basis_to_api
+  - order_list_date_change_drops_site_basis
+  - order_list_non_date_search_keeps_site_basis
+  - order_list_shows_site_basis_notice
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderListSiteDayBasisTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListSiteDayBasis.test.ts
+  # 브라우저 E2E — 계정 시간대 UTC · 사이트 하루 경계 안/밖 주문(시드 커맨드 playwright:seed-site-day-orders)으로
+  # 배지 → 목록 건수 일치·안내·날짜 변경 시 기준 해제를 ko·en 으로 밟는다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-dashboard-badge-site-day.spec.ts

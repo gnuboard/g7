@@ -5,13 +5,15 @@
  * 시작일·종료일 **날짜 문자열(YYYY-MM-DD)** 로 계산해 돌려준다.
  *
  * `setDateRange` 를 재사용하지 않는 이유: 그 핸들러는 시·분·초가 붙은 datetime-local 문자열을
- * 돌려주는데, 통계 API 의 `from`·`to` 는 날짜만 받아 그 값을 422 로 거절한다. 사이트 표준시
- * 해석은 서버 몫이므로 여기서는 브라우저의 로컬 날짜를 그대로 쓴다 — 서버의 프리셋 계산
- * (`PeriodRequest::resolvedRange`)과 같은 규칙이라 화면에 표시한 달력 값과 서버가 실제로
- * 조회한 구간이 어긋나지 않는다.
+ * 돌려주는데, 통계 API 의 `from`·`to` 는 날짜만 받아 그 값을 422 로 거절한다. 「오늘」은 **사이트 표준시**의
+ * 날짜다 — 서버의 프리셋 계산(`PeriodRequest::resolvedRange`, AnalyticsClock)이 사이트 표준시로 오늘을 정하므로
+ * 같은 기준이어야 화면에 표시한 달력 값과 서버가 실제로 조회한 구간이 어긋나지 않는다(브라우저 시간대로 만들면
+ * 둘의 날짜가 다른 시간에 하루 밀린다).
  *
  * 상태 반영은 레이아웃의 `<init>` 이 `resultTo` 로 처리한다(`_local.periodComputed`) — 아래 핸들러 주석의 예시.
  */
+
+import { calendarDateIn, formatCalendarDate, resolveSiteTimezone } from '../utils/timezoneDate';
 
 /**
  * 기간 프리셋 — 서버 `PeriodRequest` 의 허용값과 같다.
@@ -55,19 +57,6 @@ export interface SetAnalyticsPeriodResult {
 }
 
 /**
- * 날짜를 YYYY-MM-DD 로 포맷한다 (로컬 날짜 기준 — toISOString 은 UTC 로 바뀌어 하루가 밀린다).
- *
- * @param date Date 객체
- * @returns YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
  * 프리셋 값이 허용 목록에 있는지 판정한다.
  *
  * @param value 검사할 값
@@ -82,13 +71,16 @@ export function isAnalyticsPeriodPreset(value: unknown): value is AnalyticsPerio
  *
  * @param preset 기간 프리셋
  * @param now 기준 시각 (테스트 주입용, 기본 현재)
+ * @param timeZone 「오늘」을 정할 시간대 (기본 사이트 표준시, 알 수 없으면 브라우저 시간대)
  * @returns 시작일·종료일 (YYYY-MM-DD)
  */
 export function resolveAnalyticsPeriod(
   preset: AnalyticsPeriodPreset,
   now: Date = new Date(),
+  timeZone: string | undefined = resolveSiteTimezone(),
 ): { from: string; to: string } {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // 사이트 표준시의 달력 날짜를 UTC 자정 Date 로 들고 setUTC* 로 계산한다 — 브라우저 시간대가 끼어들지 않는다.
+  const today = calendarDateIn(now, timeZone);
   const start = new Date(today);
   let end = new Date(today);
 
@@ -97,42 +89,42 @@ export function resolveAnalyticsPeriod(
       break;
 
     case 'yesterday':
-      start.setDate(start.getDate() - 1);
+      start.setUTCDate(start.getUTCDate() - 1);
       end = new Date(start);
       break;
 
     case '7d':
       // 오늘을 포함한 7일
-      start.setDate(start.getDate() - 6);
+      start.setUTCDate(start.getUTCDate() - 6);
       break;
 
     case '30d':
-      start.setDate(start.getDate() - 29);
+      start.setUTCDate(start.getUTCDate() - 29);
       break;
 
     case '90d':
-      start.setDate(start.getDate() - 89);
+      start.setUTCDate(start.getUTCDate() - 89);
       break;
 
     case 'this_month':
-      start.setDate(1);
+      start.setUTCDate(1);
       break;
 
     case 'last_month': {
       // 지난달 1일 ~ 지난달 말일. setMonth(-1) 은 31일에서 넘치면 이번 달로 되돌아오므로
       // 먼저 1일로 옮긴 뒤 달을 뺀다.
-      start.setDate(1);
-      start.setMonth(start.getMonth() - 1);
-      end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+      start.setUTCDate(1);
+      start.setUTCMonth(start.getUTCMonth() - 1);
+      end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
       break;
     }
 
     case 'this_year':
-      start.setMonth(0, 1);
+      start.setUTCMonth(0, 1);
       break;
   }
 
-  return { from: formatDate(start), to: formatDate(end) };
+  return { from: formatCalendarDate(start), to: formatCalendarDate(end) };
 }
 
 /**

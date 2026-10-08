@@ -142,7 +142,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-600 dark:text-gray-400"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix"
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix|count={{_global.mileageExtend?.days ?? 30}}"
                                 }
                             ]
                         },

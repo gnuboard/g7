@@ -47,8 +47,8 @@
 | read | query | string | 아니오 | `all`, `read`, `unread` | 읽음 상태 필터 |
 | user_id | query | integer | 아니오 | min 1 | 회원 ID 로 한정 |
 | user_uuid | query | string(uuid) | 아니오 | uuid | 회원 uuid 로 한정. 없는 uuid 면 **빈 결과**(전체로 되돌아가지 않음) |
-| created_from | query | date | 아니오 | `Y-m-d` | 수신일 시작 |
-| created_to | query | date | 아니오 | `Y-m-d`, `created_from` 이상 | 수신일 끝 |
+| created_from | query | date | 아니오 | `Y-m-d` | 수신일 시작 (보는 사람의 시간대 하루로 해석) |
+| created_to | query | date | 아니오 | `Y-m-d`, `created_from` 이상 | 수신일 끝 (그날 끝까지, 보는 사람의 시간대 하루로 해석) |
 | sort_by | query | string | 아니오 | `created_at`, `read_at` | 정렬 기준 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 |
 

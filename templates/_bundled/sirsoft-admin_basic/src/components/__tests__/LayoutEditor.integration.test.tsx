@@ -13,7 +13,7 @@ import { Alert } from '../composite/Alert';
 
 // Monaco Editor mock
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange, onMount }: any) => {
+  default: ({ defaultValue: value, onChange, onMount }: any) => {
     React.useEffect(() => {
       if (onMount) {
         const mockEditor = {
@@ -155,6 +155,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('전체 플로우 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_file_select_edit_save_flow_works
+     */
     it('파일 선택 → 편집 → 저장 시나리오가 정상 작동한다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -185,6 +190,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       });
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_version_restore_flow_works
+     */
     it('버전 선택 → 복원 시나리오가 정상 작동한다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -211,6 +221,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       });
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_file_select_edit_save_flow_works, layout_editor_version_restore_flow_works
+     */
     it('파일 변경 → 버전 복원 → 저장 복합 시나리오가 정상 작동한다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -257,6 +272,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('컴포넌트 간 상호작용 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_file_select_swaps_editor_content
+     */
     it('파일 선택 시 에디터 내용이 변경된다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -276,6 +296,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       }
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_history_restore_requires_version_selection
+     */
     it('버전 선택 없이 복원 버튼은 비활성화된다', () => {
       render(<IntegratedLayoutEditor />);
 
@@ -283,6 +308,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(restoreButton).toBeDisabled();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_history_restore_requires_version_selection
+     */
     it('버전 선택 시 복원 버튼이 활성화된다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -298,6 +328,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('접근성 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('전체 레이아웃이 적절한 ARIA 속성을 가진다', () => {
       render(<IntegratedLayoutEditor />);
 
@@ -308,6 +343,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(fileList).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('LayoutEditorHeader가 적절한 button 역할을 가진다', () => {
       render(
         <LayoutEditorHeader
@@ -328,6 +368,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(previewButton).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('LayoutFileList가 listbox 역할과 option을 가진다', () => {
       const files: LayoutFileItem[] = [
         { id: 1, name: 'file1.json', updated_at: '2024-01-01T10:00:00Z' },
@@ -344,6 +389,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(options[0]).toHaveAttribute('aria-selected', 'true');
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('LayoutHistoryPanel이 region 역할을 가진다', () => {
       const versions: VersionItem[] = [
         { id: 1, version: 'v1.0.0', created_at: '2024-01-01T10:00:00Z', changes_summary: { added: 5, removed: 2 } },
@@ -355,6 +405,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(panel).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_composites_expose_aria_roles
+     */
     it('Alert 컴포넌트가 alert 역할을 가진다', () => {
       render(
         <Alert
@@ -372,6 +427,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('키보드 네비게이션 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_file_list_selects_with_enter_key
+     */
     it('Enter 키로 파일을 선택할 수 있다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -392,6 +452,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('UI 상태 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_highlights_selected_items
+     */
     it('파일 선택 시 선택된 항목이 하이라이트된다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -404,6 +469,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       });
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_highlights_selected_items
+     */
     it('버전 선택 시 선택된 항목이 하이라이트된다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -416,6 +486,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       });
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_save_alert_auto_dismisses
+     */
     it('저장 후 알림이 표시되고 자동으로 사라진다', async () => {
       const user = userEvent.setup();
       render(<IntegratedLayoutEditor />);
@@ -439,6 +514,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
   });
 
   describe('엣지 케이스 테스트', () => {
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('빈 파일 목록을 처리할 수 있다', () => {
       render(
         <LayoutFileList
@@ -450,6 +530,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(screen.getByText('파일이 없습니다.')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('빈 버전 목록을 처리할 수 있다', () => {
       render(
         <LayoutHistoryPanel
@@ -462,6 +547,11 @@ describe('레이아웃 에디터 통합 테스트', () => {
       expect(screen.getByText('버전이 없습니다.')).toBeInTheDocument();
     });
 
+    /**
+     * @scenario data_scale=typical
+     *
+     * @effects layout_editor_tolerates_empty_or_malformed_data
+     */
     it('잘못된 날짜 형식을 처리할 수 있다', () => {
       const files: LayoutFileItem[] = [
         { id: 1, name: 'file1.json', updated_at: 'invalid-date' },

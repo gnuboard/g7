@@ -20,7 +20,7 @@ class PruneRunHistoryCommand extends Command
     public function handle(RateRunRepositoryInterface $runs): int
     {
         $count = $runs->prune((int) plugin_setting('sirsoft-koreaexim', 'history_retention_days', 365));
-        $this->info(__('sirsoft-koreaexim::messages.pruned', ['count' => $count]));
+        $this->info(trans_choice('sirsoft-koreaexim::messages.pruned', $count));
 
         return self::SUCCESS;
     }

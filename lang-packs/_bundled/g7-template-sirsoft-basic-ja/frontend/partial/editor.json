@@ -1022,6 +1022,8 @@
     "gdpr_cookie_banner_visible": "クッキーバナー表示",
     "identity_challenge_inicis": "本人認証モーダル (イニシス)",
     "modal_filled": "ウィンドウの内容を表示",
+    "replies_expanded": "返信を展開",
+    "validation_failed": "検証失敗",
     "screen_filled": "画面の状態を表示",
     "two_factor_challenge": "2段階認証の入力",
     "comment_editing": "コメント編集中"

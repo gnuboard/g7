@@ -242,6 +242,36 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     }
 
     /**
+     * 폴더의 마지막 파일을 지우거나 다른 곳으로 옮기면 빈 폴더를 남기지 않는다 — `custom/` 자체는 남긴다.
+     *
+     * 목록은 파일만 보여 주므로 빈 폴더는 화면에서 보이지 않은 채 디스크에 쌓였다(2026-10-06 실측 O-I1-13).
+     *
+     * @scenario operation=delete, target=custom_asset
+     *
+     * @effects custom_asset_removal_prunes_emptied_folders
+     *
+     * @return void 반환값 없음
+     */
+    public function test_마지막_파일을_지우거나_옮기면_빈_폴더를_남기지_않는다(): void
+    {
+        $folder = $this->customDir.DIRECTORY_SEPARATOR.'__t123-dir';
+
+        $this->putJson($this->url('/custom-assets/content'), ['path' => '__t123-dir/a.css', 'content' => 'a{}'], $this->headers($this->managerToken))->assertStatus(200);
+        $this->putJson($this->url('/custom-assets/content'), ['path' => '__t123-dir/b.css', 'content' => 'b{}'], $this->headers($this->managerToken))->assertStatus(200);
+
+        $this->deleteJson($this->url('/custom-assets?path='.urlencode('__t123-dir/a.css')), [], $this->headers($this->managerToken))->assertStatus(200);
+        $this->assertDirectoryExists($folder, '파일이 남은 폴더는 지우지 않는다');
+
+        $this->postJson($this->url('/custom-assets/rename'), ['from' => '__t123-dir/b.css', 'to' => '__t123-moved.css'], $this->headers($this->managerToken))->assertStatus(200);
+        $this->assertDirectoryDoesNotExist($folder, '마지막 파일을 옮겼는데 빈 폴더가 남았다');
+        $this->assertDirectoryExists($this->customDir, 'custom/ 자체는 남긴다');
+
+        $this->putJson($this->url('/custom-assets/content'), ['path' => '__t123-dir/c.css', 'content' => 'c{}'], $this->headers($this->managerToken))->assertStatus(200);
+        $this->deleteJson($this->url('/custom-assets?path='.urlencode('__t123-dir/c.css')), [], $this->headers($this->managerToken))->assertStatus(200);
+        $this->assertDirectoryDoesNotExist($folder, '마지막 파일을 지웠는데 빈 폴더가 남았다');
+    }
+
+    /**
      * 이름변경은 파일을 새 경로로 옮기고 원본을 남기지 않으며, 활동 로그에 번역된 설명으로 기록된다.
      *
      * @scenario operation=rename, target=custom_asset

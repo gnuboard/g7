@@ -23,9 +23,9 @@
 import { test, expect, issueToken, authenticatePage, type Page } from '../../fixtures/auth';
 
 const PERMISSIONS = [
-  'sirsoft-ecommerce.order.read',
+  'sirsoft-ecommerce.orders.read',
   'sirsoft-ecommerce.promotion-coupon.read',
-  'sirsoft-ecommerce.product.read',
+  'sirsoft-ecommerce.products.read',
 ];
 
 /** 주문 목록 레이아웃(state)에만 있는 `_local` 키 — 다른 목록에 남아 있으면 유출이다. */

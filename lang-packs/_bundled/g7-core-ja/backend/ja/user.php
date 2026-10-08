@@ -46,6 +46,7 @@ return [
     'language' => [
         'ko' => '韓国語',
         'en' => 'English',
+        'ja' => '日本語',
     ],
     'not_found' => 'ユーザーが見つかりません。',
     'withdrawn_user' => '退会したユーザー',
@@ -203,6 +204,7 @@ return [
     'withdraw_failed_unknown' => '不明なエラーにより退会処理に失敗しました。',
     'bulk_status_out_of_scope' => '管理範囲外の会員は変更できません。',
     'bulk_roles_updated' => ':count名のロールを変更しました。(除外 :skipped名)',
+    'bulk_roles_updated_with_unchanged' => ':count名のロールを変更しました。(除外 :skipped名、反映済みのため変更なし :unchanged名)',
     'bulk_roles_failed' => '会員のロール一括変更に失敗しました。',
     'bulk_roles_ceiling' => '自分が付与できない権限を含むロールが含まれているため、処理しませんでした。',
 ];

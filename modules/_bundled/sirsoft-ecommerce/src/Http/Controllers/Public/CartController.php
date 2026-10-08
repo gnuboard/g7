@@ -162,7 +162,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
@@ -231,7 +231,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
@@ -284,7 +284,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음/타상품옵션 — 사유별 404/403/422 매핑
@@ -324,7 +324,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 없는 항목(404)/타인 항목(403) 삭제 시도 — generic 500 이 아닌 사유별 4xx
@@ -365,7 +365,7 @@ class CartController extends PublicBaseController
                 'messages.cart.deleted_multiple',
                 ['deleted_count' => $deletedCount],
                 200,
-                ['deleted_count' => $deletedCount],
+                ['deleted_count' => $deletedCount, 'count' => $deletedCount],
             );
         } catch (Exception $e) {
             Log::error('cart.destroy_multiple failed', ['error' => $e->getMessage()]);
@@ -399,7 +399,7 @@ class CartController extends PublicBaseController
                 'messages.cart.deleted_all',
                 ['deleted_count' => $deletedCount],
                 200,
-                ['deleted_count' => $deletedCount],
+                ['deleted_count' => $deletedCount, 'count' => $deletedCount],
             );
         } catch (Exception $e) {
             Log::error('cart.destroy_all failed', ['error' => $e->getMessage()]);

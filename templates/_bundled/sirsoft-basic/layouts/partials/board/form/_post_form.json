@@ -659,7 +659,7 @@
                     "props": {
                         "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
                     },
-                    "text": "$t:board.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
+                    "text": "$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
                 },
                 {
                     "type": "composite",

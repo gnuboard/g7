@@ -1538,6 +1538,9 @@
     "version_restore_confirm": "버전 되돌리기 확인",
     "version_preview": "버전 미리보기",
     "modal_filled": "창 내용 채움",
+    "uninstall_done": "제거 완료",
+    "read_normal": "일반 게시글",
+    "attachments_replies_open": "첨부·답글 펼침",
     "screen_filled": "화면 상태 채움"
   },
   "cell_border": {

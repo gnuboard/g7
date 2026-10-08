@@ -77,6 +77,52 @@ export function __resetReplaceParamsRegexCacheForTests(): void {
   replaceParamRegexMisses = 0;
 }
 
+/** 로케일별 Intl.PluralRules 캐시 — 번역마다 새로 만들지 않는다 */
+const pluralRulesCache = new Map<string, Intl.PluralRules | null>();
+
+/**
+ * 해석된 번역 인자에서 복수형 선택용 수(`count`)를 꺼냅니다.
+ *
+ * 숫자 표기(`1`·`-2`·`1.5`)만 수로 본다. 빈 값·천 단위 구분 기호가 든 값(`1,000`)·글자는 수가 아니라서
+ * 복수형 선택을 하지 않는다(기본 키 = other 꼴이 그대로 나온다).
+ *
+ * @param params 해석된 번역 인자
+ * @return 수, 수가 아니면 undefined
+ * @since engine-v1.78.7
+ */
+function pluralCount(params: TranslationParams): number | undefined {
+  if (!Object.prototype.hasOwnProperty.call(params, 'count')) return undefined;
+  const raw = params.count;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined;
+  const text = String(raw).trim();
+  return /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : undefined;
+}
+
+/**
+ * 로케일의 복수 범주(CLDR: zero·one·two·few·many·other)를 구합니다.
+ *
+ * 로케일을 모르거나 Intl.PluralRules 가 없으면 other(기본 키)로 본다.
+ *
+ * @param locale 사전 로케일
+ * @param count 수
+ * @return 복수 범주
+ * @since engine-v1.78.7
+ */
+function pluralCategory(locale: string, count: number): string {
+  let rules = pluralRulesCache.get(locale);
+  if (rules === undefined) {
+    try {
+      rules = typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function'
+        ? new Intl.PluralRules(locale)
+        : null;
+    } catch {
+      rules = null;
+    }
+    pluralRulesCache.set(locale, rules);
+  }
+  return rules ? rules.select(count) : 'other';
+}
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
@@ -395,30 +441,37 @@ export class TranslationEngine {
     paramsStr?: string,
     dataContext?: any
   ): string {
-    // 번역 텍스트 조회 (폴백 포함)
-    const text = this.getTranslation(key, context);
-
     // 파라미터 문자열의 trailing 비파라미터 텍스트 정리
     const cleanedParamsStr = paramsStr ? this.cleanParamsStr(paramsStr) : paramsStr;
 
     // 파라미터 치환
     if (cleanedParamsStr) {
       const params = this.parseParams(cleanedParamsStr, dataContext);
+      // 복수형 선택은 해석된 `count` 값으로 한다(engine-v1.78.7).
+      const text = this.getTranslation(key, context, pluralCount(params));
       return this.replaceParams(text, params);
     }
 
-    return text;
+    // 번역 텍스트 조회 (폴백 포함)
+    return this.getTranslation(key, context);
   }
 
   /**
    * 번역 텍스트 조회 (폴백 규칙 적용)
    *
+   * `count` 가 수이면 사전마다 그 사전 로케일의 복수 범주로 `키_{범주}` 를 먼저 찾고, 없으면 기본 키를
+   * 쓴다. 기본 키가 other 꼴이라 `_other` 는 찾지 않는다. 현재 로케일 사전에 기본 키가 있으면 폴백 사전의
+   * 변형으로 넘어가지 않는다(문구는 언제나 한 로케일에서 나온다).
+   *
    * @param key 번역 키
    * @param context 번역 컨텍스트
+   * @param count 복수형 선택에 쓸 수 (없으면 복수형 선택 안 함)
+   * @since engine-v1.78.7 count 복수형 선택
    */
   private getTranslation(
     key: string,
-    context: TranslationContext
+    context: TranslationContext,
+    count?: number
   ): string {
     const { templateId, locale } = context;
 
@@ -426,7 +479,7 @@ export class TranslationEngine {
     const currentKey = `${templateId}:${locale}`;
     const current = this.translations.get(currentKey);
     if (current) {
-      const value = this.getNestedValue(current, key);
+      const value = this.lookupWithPlural(current, key, locale, count);
       // 빈 문자열도 유효한 번역 값이므로 !== null 체크
       if (value !== null) return value;
     }
@@ -436,13 +489,40 @@ export class TranslationEngine {
       const fallbackKey = `${templateId}:${this.options.fallbackLocale}`;
       const fallback = this.translations.get(fallbackKey);
       if (fallback) {
-        const value = this.getNestedValue(fallback, key);
+        const value = this.lookupWithPlural(fallback, key, this.options.fallbackLocale, count);
         if (value !== null) return value;
       }
     }
 
     // 3. 키 자체 반환 (번역 없음)
     return key;
+  }
+
+  /**
+   * 한 사전에서 복수형 변형을 먼저, 없으면 기본 키를 찾습니다.
+   *
+   * 변형은 기본 키가 있을 때만 쓴다 — `키_one` 만 있고 `키` 가 없는 사전은 그 키를 갖지 않은 것으로 보고
+   * 다음 사전(폴백)으로 넘긴다. 이렇게 해야 「현재 로케일에 없음 → 폴백」 판정이 종전과 같다.
+   *
+   * @param dict 번역 사전
+   * @param key 기본 키
+   * @param locale 이 사전의 로케일 (복수 범주 계산용)
+   * @param count 복수형 선택에 쓸 수
+   * @return 찾은 문구, 없으면 null
+   * @since engine-v1.78.7
+   */
+  private lookupWithPlural(
+    dict: TranslationDictionary,
+    key: string,
+    locale: string,
+    count?: number
+  ): string | null {
+    const base = this.getNestedValue(dict, key);
+    if (base === null || count === undefined) return base;
+    const category = pluralCategory(locale, count);
+    if (category === 'other') return base;
+    const variant = this.getNestedValue(dict, `${key}_${category}`);
+    return variant !== null ? variant : base;
   }
 
   /**

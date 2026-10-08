@@ -37,6 +37,13 @@ Authorization: Bearer {YOUR_TOKEN}
 응답 메시지의 언어는 ① 로그인 사용자의 `users.language` → ② `Accept-Language` 헤더 →
 ③ 시스템 기본값(`config('app.locale')`) 순으로 결정됩니다. 지원 언어는 `config('app.supported_locales')` 를 따릅니다.
 
+개수가 들어가는 메시지(일괄 처리 결과·상한 안내 등)는 영어에서 개수가 1이면 단수, 0·2 이상이면 복수 문장으로
+나옵니다(예: `1 notification deleted.` / `2 notifications deleted.`). 한국어·일본어는 개수와 상관없이 같은 문장입니다.
+통합 검색(`GET /api/search`)의 `message` 도 같습니다 — 결과가 1 건이면 `1 result found.`, 그 밖에는 `1,234 results found.` 처럼
+천 단위 구분 기호를 단 수와 복수 문장입니다. 검증 오류 문구도 개수·글자 수·용량·자릿수 제한 값으로 고릅니다
+(예: `The tags field must have at least 1 item.` / `… at least 2 items.`, 설정값인 첨부 개수 상한 포함).
+메시지 문구는 표시용이므로 클라이언트 로직은 `message` 대신 `data` 의 값(예: `deleted_count`)을 읽으세요.
+
 ### 응답 봉투
 
 성공·실패 모두 동일한 최상위 구조를 씁니다. 실제 페이로드는 항상 `data` 안에 들어갑니다.

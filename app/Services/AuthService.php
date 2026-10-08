@@ -343,6 +343,24 @@ class AuthService
     }
 
     /**
+     * 연기 요청이 검증 단계에서 거절됐을 때 응답 상위 안내에 쓸 언어 키를 고릅니다.
+     *
+     * 식별자는 유효한데 연기할 수 없는 단계(변경해야 로그인·관리자가 정해 준 비밀번호)면 「연기 불가」,
+     * 그 밖(없음·만료·경로 불일치)은 「단계가 만료되었거나 올바르지 않음」이다.
+     *
+     * @param  ValidationException  $e  postponePasswordChange 가 던진 검증 예외
+     * @return string 언어 키
+     */
+    public function postponeFailureMessageKey(ValidationException $e): string
+    {
+        $messages = $e->errors()['challenge_id'] ?? [];
+
+        return in_array(__('auth.password_change_postpone_not_allowed'), $messages, true)
+            ? 'auth.password_change_postpone_not_allowed'
+            : 'auth.password_change_invalid_challenge';
+    }
+
+    /**
      * 변경 단계 식별자를 확인하고 회원을 돌려줍니다 (상태·잠금·관리자 경로 검사 포함).
      *
      * @param  string  $challengeId  변경 단계 식별자

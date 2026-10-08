@@ -113,3 +113,33 @@ describe('setAnalyticsPeriodHandler', () => {
     expect(isAnalyticsPeriodPreset(undefined)).toBe(false);
   });
 });
+
+/**
+ * 사이트 표준시 기준 — 통계 서버는 프리셋을 사이트 표준시의 오늘로 푼다(AnalyticsClock). 첫 응답 전 달력 두 칸·
+ * CSV 이름도 같은 날짜여야 한다. 기준 순간 UTC 2026-10-08 05:00 = 한국(이 PC) 10-08, 호놀룰루 10-07.
+ */
+describe('setAnalyticsPeriodHandler — 사이트 표준시', () => {
+  const originalG7Core = (window as any).G7Core;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 8, 5, 0, 0)));
+    (window as any).G7Core = {
+      AuthManager: { getInstance: () => ({ getUser: () => ({ timezone: 'Asia/Seoul' }) }) },
+      state: { get: () => ({ settings: { general: { timezone: 'Pacific/Honolulu' } } }) },
+    };
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    (window as any).G7Core = originalG7Core;
+  });
+
+  // @scenario screen=component, state=normal, viewport=1440, locale=ko
+  // @effects period_presets_use_site_timezone
+  it('보는 사람·브라우저가 아니라 사이트 표준시의 오늘로 계산한다', () => {
+    expect(setAnalyticsPeriodHandler({ params: { preset: 'today' } })).toEqual({ preset: 'today', from: '2026-10-07', to: '2026-10-07' });
+    expect(setAnalyticsPeriodHandler({ params: { preset: 'yesterday' } })).toEqual({ preset: 'yesterday', from: '2026-10-06', to: '2026-10-06' });
+    expect(setAnalyticsPeriodHandler({ params: { preset: 'last_month' } })).toEqual({ preset: 'last_month', from: '2026-09-01', to: '2026-09-30' });
+  });
+});

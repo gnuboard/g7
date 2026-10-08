@@ -75,7 +75,8 @@ class ApiSurfaceContractTest extends TestCase
     }
 
     /**
-     * 공개 라우트 두 개는 요청 수 제한을 달고, 수집 라우트는 로그인 토큰을 선택적으로 읽는다.
+     * 공개 라우트 세 개(수집·동의 확인·요약)는 요청 수 제한을 달고, 수집·동의 확인 라우트는 로그인 토큰을
+     * 선택적으로 읽는다. 동의 확인(`analytics/consent`)은 #703 에서 트래커가 동의를 다시 묻게 하며 더해졌다.
      *
      * 공개 수집은 인증이 없어 누구나 부를 수 있다 — 제한이 빠지면 원장이 그대로 부푼다.
      *
@@ -88,14 +89,14 @@ class ApiSurfaceContractTest extends TestCase
     public function test_public_routes_keep_their_guards(): void
     {
         $public = array_filter($this->analyticsRoutes(), fn (array $pair): bool => str_starts_with((string) $pair[1]->getName(), 'api.public.analytics.'));
-        $this->assertCount(2, $public, '공개 통계 라우트는 수집·요약 두 개다');
+        $this->assertCount(3, $public, '공개 통계 라우트는 수집·동의 확인·요약 세 개다');
 
         foreach ($public as [$key, $route]) {
             $middleware = implode(' ', array_map('strval', $route->gatherMiddleware()));
             $this->assertMatchesRegularExpression('/throttle:\d+,\d+/', $middleware, "{$key}: 요청 수 제한이 없다");
 
-            if ($route->getName() === 'api.public.analytics.collect') {
-                $this->assertStringContainsString('optional.sanctum', $middleware, '수집은 로그인 토큰을 선택적으로 읽어 회원 방문을 가려야 한다');
+            if (in_array($route->getName(), ['api.public.analytics.collect', 'api.public.analytics.consent'], true)) {
+                $this->assertStringContainsString('optional.sanctum', $middleware, "{$key}: 로그인 토큰을 선택적으로 읽어 회원(동의 주체)을 가려야 한다");
             }
         }
     }

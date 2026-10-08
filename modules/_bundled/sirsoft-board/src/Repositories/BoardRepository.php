@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Enums\UserStatus;
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Models\Attachment;
 use App\Models\User;
 use Carbon\Carbon;
@@ -492,7 +493,8 @@ class BoardRepository implements BoardRepositoryInterface
 
         // 기간별 날짜 필터 계산
         $dateFilter = match ($period) {
-            'today' => now()->startOfDay(),
+            // 인기글은 기간별 공용 캐시라 보는 사람마다 경계를 달리할 수 없다 — 사이트 표준시 자정(7.1.0 O-CF3)
+            'today' => Carbon::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay()->utc(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),
             'year' => now()->subYear(),

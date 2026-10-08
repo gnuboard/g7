@@ -4,11 +4,14 @@ namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
+use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ModuleResource extends BaseApiResource
 {
+    use ExposesUpdateCoreCompatibility;
+
     /**
      * 모듈 목록용 리소스를 배열로 변환합니다 (간소화된 정보).
      *
@@ -49,6 +52,8 @@ class ModuleResource extends BaseApiResource
             'core_compatible' => CoreVersionChecker::isCompatible(
                 is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
             ),
+            // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
+            ...$this->updateCoreCompatibilityFields(),
             // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
@@ -58,7 +63,7 @@ class ModuleResource extends BaseApiResource
     /**
      * deactivated_reason 을 항상 string|null 로 직렬화합니다.
      *
-     * @return string|null
+     * @return string|null 비활성화 사유 문자열 (없으면 null)
      */
     protected function getDeactivatedReasonValue(): ?string
     {
@@ -74,7 +79,7 @@ class ModuleResource extends BaseApiResource
     /**
      * 리소스별 권한 매핑을 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 능력 키 → 권한 식별자 맵
      */
     protected function abilityMap(): array
     {

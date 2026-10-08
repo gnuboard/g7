@@ -257,14 +257,14 @@
         "_description": "프론트엔드에 노출할 설정 필드 정의. 각 카테고리별로 노출할 필드와 타입 캐스팅, 민감 정보 여부를 정의합니다.",
         "general": {
             "expose": true,
-            "_comment": "site_url, admin_email, language, timezone는 프론트엔드에서 미참조하므로 expose: false",
+            "_comment": "site_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
             "fields": {
                 "site_name": { "type": "string", "sensitive": false },
                 "site_url": { "type": "string", "sensitive": false, "expose": false },
                 "site_description": { "type": "string", "sensitive": false },
                 "admin_email": { "type": "string", "sensitive": false, "expose": false },
                 "language": { "type": "string", "sensitive": false, "expose": false },
-                "timezone": { "type": "string", "sensitive": false, "expose": false },
+                "timezone": { "type": "string", "sensitive": false },
                 "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
                 "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" },
                 "asset_url_mode": { "type": "string", "sensitive": false }

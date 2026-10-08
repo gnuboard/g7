@@ -55,6 +55,7 @@ effects:
   - translation_params_resolve_bound_expressions
   - translation_literal_or_absent_params_accepted
   - translation_placeholders_replaced_in_both_formats
+  - translation_count_selects_plural_variant
   - t_function_call_translates_key
   - t_function_missing_key_renders_empty
   - localized_function_follows_locale_fallback_chain

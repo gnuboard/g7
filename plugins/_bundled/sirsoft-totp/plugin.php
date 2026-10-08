@@ -11,6 +11,7 @@ use Plugins\Sirsoft\Totp\Listeners\CleanTotpCredentialOnUserWithdraw;
 use Plugins\Sirsoft\Totp\Listeners\ExtendLoginPurposeChannels;
 use Plugins\Sirsoft\Totp\Listeners\RegisterTotpProviderListener;
 use Plugins\Sirsoft\Totp\Listeners\TotpAdminResetActivityLogListener;
+use Plugins\Sirsoft\Totp\Listeners\UserTotpEnrollmentInfoListener;
 
 /**
  * 인증 앱(TOTP) 2단계 인증 플러그인.
@@ -105,6 +106,7 @@ class Plugin extends AbstractPlugin
      *  - ExtendLoginPurposeChannels: login purpose 의 allowed_channels 에 app 추가
      *  - CleanTotpCredentialOnUserWithdraw / ...OnUserDelete: 자격증명 파기
      *  - TotpAdminResetActivityLogListener: 관리자 강제 해제를 활동 로그에 기록
+     *  - UserTotpEnrollmentInfoListener: 관리자 회원 상세 응답에 인증 앱 등록 여부(해제 권한자에게만)
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -116,6 +118,7 @@ class Plugin extends AbstractPlugin
             CleanTotpCredentialOnUserWithdraw::class,
             CleanTotpCredentialOnUserDelete::class,
             TotpAdminResetActivityLogListener::class,
+            UserTotpEnrollmentInfoListener::class,
         ];
     }
 

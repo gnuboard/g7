@@ -1726,6 +1726,12 @@ class LayoutService
     {
         unset($node['comment'], $node['_comment']);
 
+        // 화면 조각(partial)의 `meta.description` 은 마크업 `<partial description="…">` 이 컴파일된 개발자용 설명이다
+        // (런타임 렌더러 미사용). 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이므로 조각 표식이 있는 meta 만 지운다.
+        if (isset($node['meta']) && is_array($node['meta']) && ($node['meta']['is_partial'] ?? false) === true) {
+            unset($node['meta']['description']);
+        }
+
         foreach ($node as $key => $value) {
             if (is_array($value)) {
                 $node[$key] = $this->stripDeveloperComments($value);

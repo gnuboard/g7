@@ -257,7 +257,7 @@
           vendor: p.vendor,
           iconUrl: p.icon_url,
           fallbackIcon: 'puzzle-piece',
-          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name })),
+          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name || d.identifier })),
           badges: [
             ...(p.status === 'active' ? [{ label: '$t:admin.plugins.status.active', tone: 'success' }] : []),
             ...(p.status === 'inactive' ? [{ label: '$t:admin.plugins.status.inactive', tone: 'neutral' }] : []),
@@ -271,7 +271,7 @@
           toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true || ['installing', 'uninstalling', 'updating'].includes(p.status) || (p.status !== 'active' &amp;&amp; p.core_compatible === false), label: p.name ?? p.identifier } : null,
           primaryAction: p.status === 'uninstalled'
             ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
-            : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true || p.is_compatible === false } : null),
+            : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),
           actions: [
             { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_activate !== true },
             { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
@@ -350,7 +350,7 @@
               </case>
               <case when="update">
                 <sequence>
-                  <set-state target="global" selectedPlugin="{{$args[0]}}" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
+                  <set-state target="global" selectedPlugin="{{$args[0]}}" pluginLayoutStrategy="overwrite" :pluginForceUpdate="false" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
                   <api-call :auth_required="true" target="/api/admin/plugins/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                     <success>
                       <set-state target="global" hasModifiedPluginLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedPluginLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedPluginLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedPluginLayoutsCheckFailed="false"/>

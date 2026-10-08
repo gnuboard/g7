@@ -27,10 +27,10 @@
             <api-call :auth_required="true" target="/api/admin/modules/refresh-layouts" method="POST">
               <success>
                 <set-state target="global" :isModuleRefreshingLayouts="false"/>
-                <set-state target="global" :selectedModule="null"/>
                 <toast type="success" message="$t:admin.modules.refresh_layouts_success"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <close-modal/>
+                <set-state target="global" :selectedModule="null"/>
               </success>
               <fail>
                 <set-state target="global" :isModuleRefreshingLayouts="false"/>

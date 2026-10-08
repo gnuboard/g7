@@ -46,21 +46,21 @@
             <option value="shipped_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.shipping_date</option>
           </options>
           <on type="change">
-            <set-state target="_local" filter.dateType="{{$event.target.value}}"/>
+            <set-state target="_local" filter.dateType="{{$event.target.value}}" filter.dateBasis=""/>
           </on>
         </select>
         <div class="flex-center gap-2">
           <!-- F-012 -->
           <input data-ref="f_012_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.start_date" class="input w-36">
             <on type="change">
-              <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
+              <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
             </on>
           </input>
           <span class="text-secondary">~</span>
           <!-- F-013 -->
           <input data-ref="f_013_end_date" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.end_date" class="input w-36">
             <on type="change">
-              <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
+              <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
             </on>
           </input>
         </div>
@@ -69,7 +69,7 @@
           <button data-ref="f_014_quick_today" type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.today
           </button>
@@ -77,7 +77,7 @@
           <button data-ref="f_015_quick_week" type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.week
           </button>
@@ -85,7 +85,7 @@
           <button data-ref="f_016_quick_month" type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.1_month
           </button>
@@ -93,7 +93,7 @@
           <button data-ref="f_017_quick_3months" type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.3_months
           </button>
@@ -101,7 +101,7 @@
           <button data-ref="f_018_quick_6months" type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.6_months
           </button>
@@ -109,11 +109,14 @@
           <button data-ref="f_019_quick_1year" type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
-              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
             </on>
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.1_year
           </button>
         </div>
+        <!-- 대시보드 「오늘」 배지로 연 목록(date_basis=site)은 배지와 같은 사이트 표준시의 하루로 걸러져 있다. 목록의 시각은 보는 사람의
+          시간대로 그려지므로, 계정 시간대가 사이트와 다르면 행 날짜가 고른 날짜와 달라 보인다 — 그 까닭과 되돌리는 법을 알린다 -->
+        <p data-ref="date_site_basis_notice" data-if="{{query.date_basis === 'site'}}" class="text-xs text-tertiary">$t:sirsoft-ecommerce.admin.order.filter.site_day_notice|timezone={{_global.settings?.general?.timezone ?? ''}}</p>
       </div>
       <!-- F-020 ~ F-030 주문상태 필터 -->
       <div data-ref="orderStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
@@ -810,6 +813,7 @@
               <field name="startDate" value="{{preset.conditions?.startDate || ''}}"/>
               <field name="endDate" value="{{preset.conditions?.endDate || ''}}"/>
               <field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/>
+              <field name="dateBasis" value=""/>
               <field name="orderStatus" value="{{preset.conditions?.orderStatus || []}}"/>
               <field name="deliveryMethods" value="{{preset.conditions?.deliveryMethods || []}}"/>
               <field name="paymentMethods" value="{{preset.conditions?.paymentMethods || []}}"/>
@@ -981,6 +985,7 @@
                   <field name="startDate" value=""/>
                   <field name="endDate" value=""/>
                   <field name="dateQuick" value=""/>
+                  <field name="dateBasis" value=""/>
                   <field name="orderStatus" :value="[]"/>
                   <field name="deliveryMethods" :value="[]"/>
                   <field name="paymentMethods" :value="[]"/>

@@ -47,16 +47,33 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "취소는 고른 항목까지 비워 보기 패널이 아니라 「고른 것 없음」 안내로 돌아간다 — 고치던 것이 왼쪽 목록에서도 풀린다.",
+                                    "comment": "편집 취소 — 판 상태를 먼저 「고른 것 없음」으로 되돌린 뒤 주소를 그 상태에 맞춘다. 상태와 주소가 함께 풀려야\n                 새로고침이 취소한 편집 폼을 되살리지 않는다.",
                                     "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "panelMode": "view",
-                                        "selectedMenuId": null,
-                                        "selectedMenu": null,
-                                        "formErrors": null
-                                    }
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "취소는 고른 항목까지 비워 보기 패널이 아니라 「고른 것 없음」 안내로 돌아간다 — 고치던 것이 왼쪽 목록에서도 풀린다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "view",
+                                                "selectedMenuId": null,
+                                                "selectedMenu": null,
+                                                "formErrors": null
+                                            }
+                                        },
+                                        {
+                                            "comment": "고른 메뉴가 풀렸으니 주소의 menu·mode 도 지운다 — 남겨 두면 새로고침이 편집 폼을 다시 연다. 왼쪽 목록 조건은 그대로 둔다.",
+                                            "handler": "replaceUrl",
+                                            "params": {
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "menu": "",
+                                                    "mode": ""
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             ],
                             "props": {
@@ -256,6 +273,17 @@
                                             "selectedMenuId": "{{result.data.id}}",
                                             "selectedMenu": "{{result.data}}",
                                             "formErrors": null
+                                        }
+                                    },
+                                    {
+                                        "comment": "판이 보기 모드로 넘어갔으니 주소도 mode=view 로 맞춘다(슬러그를 바꿨거나 새로 만든 메뉴도 그 메뉴를 가리키게). 남은 mode=edit 는 새로고침 때 저장한 메뉴의 편집 폼을 다시 연다.",
+                                        "handler": "replaceUrl",
+                                        "params": {
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "menu": "{{result.data.slug}}",
+                                                "mode": "view"
+                                            }
                                         }
                                     }
                                 ]

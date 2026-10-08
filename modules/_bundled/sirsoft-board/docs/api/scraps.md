@@ -92,7 +92,7 @@
 | board_id | query | integer | 아니오 | — | 게시판 한정 |
 | user_id | query | integer | 아니오 | — | 회원 한정 (ID) |
 | user_uuid | query | string(uuid) | 아니오 | uuid | 회원 한정 (uuid). 없는 uuid 면 빈 결과 |
-| scrapped_at_from / _to | query | date | 아니오 | `Y-m-d` | 스크랩일 범위 |
+| scrapped_at_from / _to | query | date | 아니오 | `Y-m-d` | 스크랩일 범위 (보는 사람의 시간대 하루로 해석) |
 | filters[0][field] | query | string | 아니오 | `all`, `post_title`, `post_content`, `board_name`, `member`, `author_name` | 검색 대상 |
 | filters[0][value] | query | string | 아니오 | max 255 | 검색어 |
 | filters[0][operator] | query | string | 아니오 | `like` | 연산자 |

@@ -74,9 +74,41 @@ final class LayoutMarkupCompiler
             throw $this->locateError($roots, $error, $context);
         }
 
-        $warnings = $this->locateWarnings($roots, $this->linter->lint($json, $rootKind, $context, $path));
+        $warnings = $this->linter->lint($json, $rootKind, $context, $path);
 
-        return new CompileResult($json, $warnings);
+        // lint 는 산출 JSON 을 보므로 소스 좌표를 모른다. 위치 없는 경고가 있을 때만 노드·액션에 소스 위치 표식을
+        // 붙여 한 번 더 컴파일하고 그 결과로 lint 를 다시 돈다 — 경고가 그 노드·액션의 줄·칸을 싣는다(7.1.0 P16).
+        // 표식 JSON 은 lint 에만 쓰고 버린다(반환 JSON 은 위의 표식 없는 산출).
+        if ($this->hasUnlocatedWarning($warnings)) {
+            $this->document->markSourcePositions(true);
+
+            try {
+                $marked = $this->document->compile($roots, $path);
+            } finally {
+                $this->document->markSourcePositions(false);
+            }
+
+            $warnings = $this->linter->lint($marked, $rootKind, $context, $path);
+        }
+
+        return new CompileResult($json, $this->locateWarnings($roots, $warnings));
+    }
+
+    /**
+     * 위치(줄)가 없는 경고가 하나라도 있는지 봅니다.
+     *
+     * @param  array<int, LintWarning>  $warnings  lint 경고 목록
+     * @return bool 위치 없는 경고가 있으면 true
+     */
+    private function hasUnlocatedWarning(array $warnings): bool
+    {
+        foreach ($warnings as $warning) {
+            if ($warning->getLine() === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

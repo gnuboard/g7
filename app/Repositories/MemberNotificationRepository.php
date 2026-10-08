@@ -46,7 +46,8 @@ class MemberNotificationRepository implements MemberNotificationRepositoryInterf
             $query->whereNotNull('notifications.read_at');
         }
 
-        $this->applyDateRangeFilter(
+        // 목록은 받은 시각을 보는 사람의 시간대로 그린다 — 같은 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
             $query,
             'notifications.created_at',
             $filters['created_from'] ?? null,

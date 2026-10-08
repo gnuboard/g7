@@ -29,6 +29,9 @@ trait CompilesMarkupContent
      */
     private ?CompileError $markupCompileError = null;
 
+    /** 컴파일한 마크업 원문 — 보안 위반의 소스 위치를 찾는 데 쓴다(7.1.0 P16) */
+    private ?string $markupSource = null;
+
     /**
      * lint 경고 (컴파일 성공 시).
      *
@@ -42,14 +45,14 @@ trait CompilesMarkupContent
      * 다섯째 원소(선택)는 편집 중인 행의 저장본이다. 주면 그 안에 이미 있던 미등록 템플릿 컴포넌트를 그 개수까지
      * 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게, #712). 새 파일 만들기는 저장본이 없으므로 주지 않는다.
      *
-     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string, 4?: array<string, mixed>|null}
+     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string, 4?: array<string, mixed>|null} 컴파일 문맥 튜플
      */
     abstract protected function markupCompileTarget(): array;
 
     /**
      * `format=markup` 이면 `content` 마크업을 프로덕션 컴파일해 JSON 배열로 `merge` 합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function compileMarkupContentIfRequested(): void
     {
@@ -80,6 +83,7 @@ trait CompilesMarkupContent
             return;
         }
 
+        $this->markupSource = $markup;
         $this->merge(['content' => $result->json]);
         $this->markupLintWarnings = $result->warnings;
     }
@@ -87,7 +91,7 @@ trait CompilesMarkupContent
     /**
      * 컴파일이 낸 lint 경고를 API 페이로드로 돌려줍니다 (컨트롤러가 `data.markup_warnings` 에 싣는다).
      *
-     * @return array<int, array{code: string, message: string, line: int, column: int}>
+     * @return array<int, array{code: string, message: string, line: int, column: int}> lint 경고 페이로드 목록
      */
     public function markupWarnings(): array
     {
@@ -98,16 +102,37 @@ trait CompilesMarkupContent
      * 검증 실패 — 원인이 마크업 컴파일 오류면 422 응답에 `compile_error` 를 덧붙입니다.
      *
      * @param  Validator  $validator  실패한 검증기
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws HttpResponseException 컴파일 오류인 경우
      */
     protected function failedValidation(Validator $validator): void
     {
         if ($this->markupCompileError === null) {
-            parent::failedValidation($validator);
+            // 컴파일은 됐는데 저장 게이트(보안 규칙)가 막았으면, 위반 값이 적힌 소스 자리를 compile_error 로 싣는다 —
+            // 편집기 오류 패널·마커가 그 줄을 가리킨다(7.1.0 P16). 보안 위반이 아니면 종전 그대로.
+            $content = $this->input('content');
+            $described = $this->markupSource !== null && is_array($content)
+                ? app(LayoutMarkupService::class)->describeContentViolation($this->markupSource, $content)
+                : null;
 
-            return;
+            if ($described === null) {
+                parent::failedValidation($validator);
+
+                return;
+            }
+
+            $response = ResponseHelper::error(
+                $this->markupCompileFailedMessageKey(),
+                422,
+                [...$validator->errors()->toArray(), 'compile_error' => $described],
+                ['detail' => $described['message']],
+            );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+            $response->setData($payload);
+
+            throw new HttpResponseException($response);
         }
 
         $service = app(LayoutMarkupService::class);

@@ -36,7 +36,8 @@ trait BuildsAuthFailureResponses
                 'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
                 'permanent' => $e->isPermanent(),
             ],
-            ['minutes' => $e->remainingMinutes]
+            // `count` 로 「1 minute」/「2 minutes」 를 고른다(영구 잠금은 null — 고르지 않음).
+            ['minutes' => $e->remainingMinutes, 'count' => $e->remainingMinutes]
         );
     }
 

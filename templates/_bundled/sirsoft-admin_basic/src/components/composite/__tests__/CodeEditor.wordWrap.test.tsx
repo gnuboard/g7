@@ -17,7 +17,7 @@ let lastOptions: Record<string, unknown> = {};
 let loaderInit: () => Promise<unknown> = () => Promise.resolve({});
 
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange, theme, options }: any) => {
+  default: ({ defaultValue: value, onChange, theme, options }: any) => {
     lastOptions = options ?? {};
 
     return (

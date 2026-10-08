@@ -76,6 +76,21 @@ final class DocumentCompiler
     }
 
     /**
+     * 소스 위치 표식을 켜거나 끕니다 (7.1.0 P16).
+     *
+     * 켜면 노드·액션 배열마다 `LayoutLinter::SOURCE_POSITION_KEY => [줄, 칸]` 을 싣는다. 위치 없는 lint 경고의
+     * 자리를 찾는 재컴파일에서만 켠다 — 저장·반환 JSON 에는 싣지 않는다.
+     *
+     * @param  bool  $on  켤지 여부
+     * @return void 반환값 없음
+     */
+    public function markSourcePositions(bool $on): void
+    {
+        $this->nodes->markSourcePositions($on);
+        $this->actions->markSourcePositions($on);
+    }
+
+    /**
      * 문서 루트 요소를 JSON 레이아웃으로 컴파일합니다.
      *
      * @param  array<int, MarkupElement>  $roots  트리 빌더가 만든 루트 요소들
@@ -97,6 +112,19 @@ final class DocumentCompiler
         }
 
         $root = $roots[0];
+
+        // 봉투(`<layout>`·`<extension>`·`<override>`) 바로 안의 글자는 담길 노드가 없어 산출에서 조용히
+        // 사라진다 — 문서 최상위 글자와 같은 이유로 거부한다(트리 빌더는 혼재 판정을 하위 컴파일러에
+        // 넘기는데, 봉투 컴파일러는 본문 글자를 읽지 않아 판정 자리가 비어 있었다).
+        // `<partial>` 은 루트가 곧 노드라 노드 컴파일러가 판정한다.
+        if (in_array($root->name, ['layout', 'extension', 'override'], true)
+            && $root->text !== null && trim($root->text) !== '') {
+            $found = trim($root->text);
+
+            throw $this->error($root, LayoutMarkupErrorCode::TextOutsideElement, $path, [
+                'found' => mb_strlen($found, 'UTF-8') > 20 ? mb_substr($found, 0, 20, 'UTF-8').'…' : $found,
+            ]);
+        }
 
         $document = match ($root->name) {
             'layout' => $this->compileLayout($root, $path),
@@ -145,7 +173,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $root  `<layout>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 알 수 없는 속성인 경우
      */
@@ -170,7 +198,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  직속 자식
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -379,7 +407,7 @@ final class DocumentCompiler
      * @param  string  $tag  태그명 (오류 메시지용)
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -407,7 +435,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  자식 요소
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -488,7 +516,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $child  `<init-*>` 요소
      * @param  array<string, mixed>  $source  data_sources 항목 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -509,7 +537,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<computed>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이름이 없거나 중복인 경우
      */
@@ -530,7 +558,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<init-*>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -595,7 +623,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<action name>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이름이 없거나 중복이거나 표기 규칙을 벗어난 경우
      */
@@ -839,7 +867,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  `<slot name>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이름이 없거나 중복인 경우
      */
@@ -1094,7 +1122,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $root  `<extension>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 알 수 없는 속성인 경우
      */
@@ -1495,7 +1523,7 @@ final class DocumentCompiler
      * @param  MarkupElement  $element  섹션 요소
      * @param  array<string, mixed>  $doc  문서
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 온 섹션인 경우
      */
@@ -1521,7 +1549,7 @@ final class DocumentCompiler
      * @param  array<string, mixed>  $source  data_sources 항목
      * @param  string  $key  data_sources 키
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 채워진 키인 경우
      */

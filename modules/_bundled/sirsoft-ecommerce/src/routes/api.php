@@ -752,7 +752,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
     // 대시보드 API (관리자 대시보드 이커머스 영역)
-    // GET /api/modules/sirsoft-ecommerce/admin/dashboard/overview         - 오늘 주문 상태별 판매 수량
+    // GET /api/modules/sirsoft-ecommerce/admin/dashboard/overview         - 오늘 상태 배지별 주문 수
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/sales-graph      - 7일 판매 추세 + 합계 + 변화율
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/recent-reviews   - 최신 리뷰
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries - 미답변 문의

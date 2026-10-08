@@ -559,7 +559,8 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
             'seo.sitemap_hreflang_enabled' => ['nullable', 'boolean'],
             'seo.sitemap_schedule' => ['nullable', 'string', Rule::in(['hourly', 'daily', 'weekly'])],
-            'seo.sitemap_schedule_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}$/'],
+            // 형식뿐 아니라 실제 있는 시각만 — `99:99` 가 저장되면 스케줄러의 `->at()` 가 잘못된 크론 식을 만든다.
+            'seo.sitemap_schedule_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'seo.generator_enabled' => ['nullable', 'boolean'],
             'seo.generator_content' => ['nullable', 'string', 'max:200'],
 

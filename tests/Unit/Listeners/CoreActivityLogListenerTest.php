@@ -529,7 +529,7 @@ class CoreActivityLogListenerTest extends TestCase
             ->withArgs(function (string $action, array $context) {
                 return $action === 'auth.login'
                     && $context['log_type'] === ActivityLogType::Admin
-                    && $context['description_key'] === 'activity_log.description.auth_login'
+                    && $context['description_key'] === 'activity_log.description.auth_admin_login'
                     && $context['user_id'] === 1
                     && isset($context['loggable']);
             });
@@ -557,12 +557,60 @@ class CoreActivityLogListenerTest extends TestCase
             ->withArgs(function (string $action, array $context) {
                 return $action === 'auth.logout'
                     && $context['log_type'] === ActivityLogType::Admin
-                    && $context['description_key'] === 'activity_log.description.auth_logout'
+                    && $context['description_key'] === 'activity_log.description.auth_admin_logout'
                     && $context['user_id'] === 2
                     && isset($context['loggable']);
             });
 
         $this->listener->handleAuthLogout($user);
+    }
+
+    /**
+     * 같은 로그인·로그아웃 훅이라도 설명은 들어온 경로를 따른다 — 사용자 로그인에 「관리자 로그인」이 찍히지 않는다
+     * (7.1.0 실측 O-B3). 관리자 로그인은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
+     *
+     * @scenario request_area=user
+     *
+     * @effects login_logout_description_follows_auth_route
+     *
+     * @return void 없음
+     */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
+    public function test_login_and_logout_descriptions_follow_the_auth_route(): void
+    {
+        $user = $this->createUserMock(5);
+        $seen = [];
+
+        $this->logChannel->shouldReceive('info')
+            ->times(5)
+            ->withArgs(function (string $action, array $context) use (&$seen) {
+                $seen[] = [$action, $context['description_key']];
+
+                return true;
+            });
+
+        foreach (['/api/auth/login', '/api/auth/admin/login', '/api/auth/admin/login/password-change'] as $path) {
+            $this->app->instance('request', Request::create($path, 'POST'));
+            $this->listener->handleAuthAfterLogin($user, []);
+        }
+        foreach (['/api/auth/logout', '/api/admin/auth/logout'] as $path) {
+            $this->app->instance('request', Request::create($path, 'POST'));
+            $this->listener->handleAuthLogout($user);
+        }
+
+        $this->assertSame([
+            ['auth.login', 'activity_log.description.auth_login'],
+            ['auth.login', 'activity_log.description.auth_admin_login'],
+            ['auth.login', 'activity_log.description.auth_admin_login'],
+            ['auth.logout', 'activity_log.description.auth_logout'],
+            ['auth.logout', 'activity_log.description.auth_admin_logout'],
+        ], $seen);
+
+        $this->assertSame('로그인', __('activity_log.description.auth_login', [], 'ko'));
+        $this->assertSame('관리자 로그인', __('activity_log.description.auth_admin_login', [], 'ko'));
+        $this->assertSame('Login', __('activity_log.description.auth_login', [], 'en'));
+        $this->assertSame('Admin logout', __('activity_log.description.auth_admin_logout', [], 'en'));
     }
 
     /**

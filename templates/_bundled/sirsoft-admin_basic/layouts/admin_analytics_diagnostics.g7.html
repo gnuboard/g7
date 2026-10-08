@@ -363,9 +363,15 @@
                 <span class="text-label">{{row.period_start | datetime | default('-')}} ~ {{row.period_end | datetime | default('-')}}</span>
               </cell>
             </column>
-            <column field="status" header="$t:admin.analytics.diagnostics.run_columns.status" width="100px">
+            <column field="status" header="$t:admin.analytics.diagnostics.run_columns.status" width="200px">
               <cell>
-                <badge data-type="composite" color="{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}" text="{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}" size="sm"/>
+                <!-- 건너뛴 행은 그 이유(다른 집계가 같은 기간을 돌리는 중·이미 확정·보존 기간 밖)를 배지 아래 그대로 보인다 —
+                     배지만 있으면 운영자는 왜 안 돌았는지 알 수 없다(7.1.0 실측 O-E5). 서버가 보는 사람의 언어로 바꿔 싣는다.
+                     실패 행의 error 는 예외 원문이라 조회 권한 화면에 그리지 않는다. -->
+                <div class="flex flex-col items-start gap-1">
+                  <badge data-type="composite" color="{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}" text="{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}" size="sm"/>
+                  <span data-if="{{row.status === 'skipped' &amp;&amp; !!row.error}}" class="text-hint whitespace-normal">{{row.error}}</span>
+                </div>
               </cell>
             </column>
             <column field="progress_percent" header="$t:admin.analytics.diagnostics.run_columns.progress" width="160px">
@@ -465,7 +471,12 @@
             </column>
             <column field="ip" header="{{(analytics_diagnostics?.data?.collection?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.diagnostics.failure_columns.ip_masked') : $t('admin.analytics.diagnostics.failure_columns.ip')}}" width="150px">
               <cell>
-                <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                <div class="flex-center flex-wrap gap-1">
+                  <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                  <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
+                </div>
               </cell>
             </column>
           </data-grid>

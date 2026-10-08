@@ -104,7 +104,7 @@ class ImageUploadAdminController extends AdminBaseController
         return ResponseHelper::success(
             'messages.uploads.bulk_deleted',
             $result,
-            messageParams: ['deleted' => $result['deleted']],
+            messageParams: ['deleted' => $result['deleted'], 'count' => $result['deleted']],
             domain: 'sirsoft-ckeditor5',
         );
     }

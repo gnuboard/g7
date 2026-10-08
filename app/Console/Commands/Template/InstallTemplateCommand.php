@@ -100,7 +100,7 @@ class InstallTemplateCommand extends Command
                 $this->info('✅ '.__('templates.commands.install.success', ['template' => $identifier]));
                 $this->info('   - '.__('templates.commands.install.type', ['type' => __('templates.types.'.$template->type)]));
                 $this->info('   - '.__('templates.commands.install.version', ['version' => $template->version]));
-                $this->info('   - '.__('templates.commands.install.layouts_created', ['count' => $template->layouts()->count()]));
+                $this->info('   - '.trans_choice('templates.commands.install.layouts_created', $template->layouts()->count()));
                 $this->renderLayoutIncludeWarnings($this->templateManager->takeLastLayoutWarnings());
 
                 Log::info(__('templates.commands.install.success', ['template' => $identifier]));

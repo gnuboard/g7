@@ -130,6 +130,52 @@ class UserBulkRolesTest extends TestCase
     }
 
     /**
+     * 이미 그 역할을 가진 회원(추가)·가지지 않은 회원(제거)은 「변경 없음」 으로 따로 센다 —
+     * 변경·제외 어디에도 안 잡히면 4명을 골랐는데 「2명 변경, 1명 제외」 만 보여 한 명이 사라진다.
+     *
+     * @scenario mode=add, target=normal, role=within_ceiling
+     *
+     * @effects unchanged_reported
+     *
+     * @return void 반환값 없음
+     */
+    public function test_already_in_target_state_is_reported_as_unchanged(): void
+    {
+        $actor = $this->operator();
+        $role = $this->withinCeilingRole();
+        $other = $this->withinCeilingRole();
+        $holder = User::factory()->create();
+        $holder->roles()->sync([$role->id => ['assigned_at' => now()], $other->id => ['assigned_at' => now()]]);
+        $fresh = User::factory()->create();
+        $fresh->roles()->sync([$other->id => ['assigned_at' => now()]]);
+
+        $this->bulk($actor, [$holder, $fresh], [$role->id], 'add')
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 1)
+            ->assertJsonPath('data.skipped_count', 0)
+            ->assertJsonPath('data.unchanged_count', 1)
+            ->assertJsonPath('data.unchanged.0.uuid', $holder->uuid)
+            ->assertJsonPath('data.unchanged.0.reason', 'already_assigned')
+            ->assertJsonPath('message', __('user.bulk_roles_updated_with_unchanged', ['count' => 1, 'skipped' => 0, 'unchanged' => 1]));
+
+        // 제거: 이제 둘 다 role 을 가진다 — 한 명에게서 먼저 빼 두고 다시 둘에게 빼면 그 한 명은 「가지지 않음」.
+        $holder->roles()->detach($role->id);
+        $this->bulk($actor, [$holder, $fresh], [$role->id], 'remove')
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 1)
+            ->assertJsonPath('data.unchanged_count', 1)
+            ->assertJsonPath('data.unchanged.0.uuid', $holder->uuid)
+            ->assertJsonPath('data.unchanged.0.reason', 'not_assigned');
+
+        // 모두 바뀌면 변경 없음은 0 이고 문구는 종전 그대로다.
+        $this->bulk($actor, [$holder], [$role->id], 'add')
+            ->assertOk()
+            ->assertJsonPath('data.unchanged_count', 0)
+            ->assertJsonPath('data.unchanged', [])
+            ->assertJsonPath('message', __('user.bulk_roles_updated', ['count' => 1, 'skipped' => 0]));
+    }
+
+    /**
      * 비-최고관리자 액터가 최고관리자를 섞으면 그 회원은 grade 사유로 빠지고 나머지는 처리된다.
      *
      * @scenario mode=add, target=super_admin, role=within_ceiling

@@ -483,4 +483,35 @@ return [
         'original_post_author' => '원글 작성자',
         'board_managers' => '게시판 관리자',
     ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'name' => '수신자 이름',
+            'app_name' => '사이트명',
+            'board_name' => '게시판 이름',
+            'post_title' => '게시글 제목',
+            'comment_author' => '댓글 작성자',
+            'comment_content' => '댓글 내용 (200자)',
+            'post_url' => '게시글 URL',
+            'site_url' => '사이트 URL',
+            'action_type' => '처리 유형 (블라인드/삭제/복원)',
+            'target_type' => '처리 대상 (게시글/댓글)',
+            'post_author' => '게시글 작성자',
+            'reason_type' => '신고 사유',
+            'report_url' => '신고 관리 페이지 URL',
+        ],
+        'by_type' => [
+            'reply_comment' => [
+                'comment_author' => '답글 작성자',
+                'comment_content' => '답글 내용 (200자)',
+            ],
+            'new_post_admin' => [
+                'name' => '수신자 이름 (관리자)',
+            ],
+            'report_received_admin' => [
+                'post_title' => '신고 대상 게시글 제목',
+                'target_type' => '신고 대상 유형 (게시글/댓글)',
+            ],
+        ],
+    ],
 ];

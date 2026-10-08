@@ -362,8 +362,10 @@ class MemberNotificationControllerTest extends TestCase
         $old = $this->seedNotification($this->memberA, ['subject' => '옛날'], null, now()->subDays(10));
         $recent = $this->seedNotification($this->memberA, ['subject' => '최근']);
 
+        // 날짜 칸은 보는 사람(운영자)의 시간대 하루로 해석된다 — 운영자 시간대(없으면 기본 시간대)의 오늘로 보낸다.
+        $viewerNow = now($this->admin->timezone ?: config('app.default_user_timezone'));
         $response = $this->actingAs($this->admin)->getJson(
-            $this->apiBase.'?created_from='.now()->subDay()->format('Y-m-d').'&created_to='.now()->format('Y-m-d')
+            $this->apiBase.'?created_from='.$viewerNow->copy()->subDay()->format('Y-m-d').'&created_to='.$viewerNow->format('Y-m-d')
         );
 
         $response->assertStatus(200);

@@ -8,16 +8,19 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-between items-start mb-6"
+                "className": "flex justify-between items-start gap-3 mb-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
+                    "props": {
+                        "className": "min-w-0"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -43,7 +46,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap"
                     },
                     "children": [
                         {

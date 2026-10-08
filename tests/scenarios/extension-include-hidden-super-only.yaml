@@ -1,0 +1,19 @@
+feature: 확장 목록의 숨김 항목 포함(include_hidden)은 최고관리자에게만 적용된다
+
+description: |
+  모듈·플러그인·템플릿 목록 API 의 `include_hidden` 은 최고관리자 전용이다. 7.1.0 에서 체크 값이 주소에 실리면서
+  최고관리자가 공유한 주소로 들어온 다른 관리자에게도 숨김 확장이 내려가고, 그 관리자에게는 끌 체크박스가
+  보이지 않았다(#736 F 영역 실측). 목록 요청(FormRequest)이 검증 전에 최고관리자가 아니면 값을 거짓으로 고정한다.
+
+axes:
+  viewer: [super_admin, admin_not_super, guest]
+
+effects:
+  - include_hidden_ignored_for_non_super
+  - include_hidden_kept_for_super
+
+notes:
+  - 확장 종류(모듈·플러그인·템플릿)는 축이 아니라 데이터 제공자로 세 요청 클래스를 모두 돈다.
+
+test_files:
+  - tests/Unit/Requests/ExtensionIndexIncludeHiddenSuperOnlyTest.php

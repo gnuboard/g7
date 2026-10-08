@@ -144,7 +144,7 @@
             <span>$t:sirsoft-board.admin.form.fields.max_file_count.label</span>
           </label>
           <input data-ref="max_file_count_input" type="number" name="max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_file_count_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_file_count.hint|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}</p>
+          <p data-ref="max_file_count_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}</p>
           <span data-if="{{_local.errors?.max_file_count}}" class="form-error-xs mt-1">{{_local.errors?.max_file_count?.[0] ?? ''}}</span>
         </div>
         <div data-ref="max_file_size_field" class="">

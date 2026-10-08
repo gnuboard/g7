@@ -397,6 +397,8 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "{{_local.openedInquiryId === item.id ? '$t:common.collapse' : '$t:common.expand'}}",
+                                                                "aria-expanded": "{{_local.openedInquiryId === item.id}}",
                                                                 "type": "button",
                                                                 "className": "inline-flex items-center justify-center w-6 h-6 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                                                             },

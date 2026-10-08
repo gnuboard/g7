@@ -131,11 +131,11 @@
             </input>
           </div>
           <div data-ref="date_presets" class="flex gap-1">
-            <!-- 오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다 -->
+            <!-- 오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다. 날짜는 계정 시간대(회원 → 사이트 기본)의 달력 날짜다 — 서버가 그 시간대의 하루로 자르므로 브라우저 시간대로 만들면 하루 어긋난다 -->
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date().toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.today
@@ -144,7 +144,7 @@
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.week
@@ -153,7 +153,7 @@
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.month
@@ -162,7 +162,7 @@
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.3months
@@ -171,7 +171,7 @@
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.6months
@@ -180,7 +180,7 @@
             <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
-                  <query created_from="{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                  <query created_from="{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
                 </navigate>
               </on>
               $t:admin.schedules.filters.preset.year
@@ -278,7 +278,7 @@
           <icon name="search" class="text-base"/>
           <span>$t:common.search</span>
         </button>
-        <button data-ref="refresh_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
+        <button data-ref="refresh_button" type="button" aria-label="$t:common.refresh" title="$t:common.refresh" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
           <on type="click">
             <refetch-data-source dataSourceId="schedules"/>
           </on>
@@ -364,7 +364,7 @@
             </navigate>
           </on>
         </select>
-        <select name="per_page" class="w-20" value="{{query.per_page ?? '20'}}">
+        <select name="per_page" class="w-24" value="{{query.per_page ?? '20'}}">
           <options>
             <option value="10">$t:admin.schedules.per_page.10</option>
             <option value="20">$t:admin.schedules.per_page.20</option>
@@ -406,14 +406,14 @@
       </column>
       <column field="next_run_at" header="$t:admin.schedules.columns.next_run" :sortable="false">
         <cell>
-          <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="text-label">{{row.next_run_at}}</span>
+          <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="text-label">{{row.next_run_at | datetime}}</span>
           <span data-if="{{!row.is_active}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </cell>
       </column>
       <column field="last_run_at" header="$t:admin.schedules.columns.last_run" :sortable="false">
         <cell>
           <div data-if="{{row.last_run_at}}">
-            <span class="text-label">{{row.last_run_at}}</span>
+            <span class="text-label">{{row.last_run_at | datetime}}</span>
             <span data-if="{{row.last_duration}}" class="block text-tertiary mt-0.5">$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}</span>
           </div>
           <span data-if="{{!row.last_run_at}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
@@ -429,7 +429,7 @@
       </column>
       <column field="is_active" header="$t:admin.schedules.columns.status" :sortable="false">
         <cell>
-          <toggle data-type="composite" checked="{{row.is_active}}" size="sm">
+          <toggle data-type="composite" checked="{{row.is_active}}" size="sm" ariaLabel="{{row.name}}">
             <on type="change">
               <!-- 줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다). -->
               <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
@@ -475,11 +475,13 @@
           (그 창이 그 둘만 쓴다). -->
         <switch>
           <case when="run">
-            <set-state target="global" selectedSchedule="{{$args[1]}}"/>
+            <!-- 지난 실행 결과를 비우고 연다 — 결과가 남으면 실행 버튼이 감춰진 채 열린다(Esc·X 로 닫으면 닫기 단추의 초기화를 거치지 않는다). -->
+            <set-state target="global" selectedSchedule="{{$args[1]}}" :runResult="null"/>
             <open-modal target="schedule_run_modal"/>
           </case>
           <case when="history">
-            <set-state target="global" selectedSchedule="{{$args[1]}}"/>
+            <!-- 앞서 연 작업의 이력·쪽 번호가 남아 새 작업의 창에 잠깐이라도 보이지 않게 비우고 1쪽부터 연다(Esc 로 닫으면 닫기 단추의 초기화를 거치지 않는다). -->
+            <set-state target="global" selectedSchedule="{{$args[1]}}" :scheduleHistory="null" :historyPage="1"/>
             <open-modal target="schedule_history_modal"/>
           </case>
           <case when="edit">

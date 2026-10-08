@@ -9,7 +9,7 @@ const mockModel = { getLineMaxColumn: (_line: number) => 40 };
 
 // Monaco Editor mock
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange, onMount, theme, language }: any) => {
+  default: ({ defaultValue: value, onChange, onMount, theme, language }: any) => {
     // onMount 호출을 시뮬레이션
     React.useEffect(() => {
       if (onMount) {

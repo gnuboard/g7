@@ -372,7 +372,7 @@
                             "props": {
                                 "data-testid": "reaction-type-delete-wrap-m-{{row.code}}",
                                 "className": "inline-block",
-                                "title": "{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + $t('sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix') : ''}}"
+                                "title": "{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}"
                             },
                             "children": [
                                 {

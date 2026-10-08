@@ -36,7 +36,9 @@
     "image": {
       "size_exceeded": "Each photo must be {{size}}KB or smaller.",
       "limit_exceeded": "You can attach up to {{max}} photos.",
-      "upload_partial_failed": "{{failed}} of {{total}} photos could not be uploaded. Please attach them again on the request form.",
+      "limit_exceeded_one": "You can attach up to {{max}} photo.",
+      "upload_partial_failed": "{{failed}} of {{total}} photos could not be uploaded. Please attach any missing photos again on the request form.",
+      "upload_partial_failed_one": "{{failed}} of {{total}} photo could not be uploaded. Please attach it again on the request form.",
       "remove_failed": "The attachment could not be removed."
     },
     "withdraw": {

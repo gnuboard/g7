@@ -208,6 +208,41 @@ class PasswordExpiryLoginTest extends TestCase
     }
 
     /**
+     * 연기할 수 없는 단계(변경해야 로그인·관리자가 정해 준 비밀번호)에서 연기를 부르면 상위 안내도 「연기 불가」다.
+     * 식별자는 유효한데 「단계가 만료되었거나 올바르지 않습니다」로 답하면 사용자는 처음부터 다시 로그인하려 든다(7.1.0 실측 O-3).
+     * 식별자 자체가 무효면 종전대로 「만료되었거나 올바르지 않음」이다.
+     *
+     * @scenario guard=user|admin, reason=expired|admin_assigned, action=force
+     *
+     * @effects postpone_refusal_message_matches_reason
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function postpone_refusal_reports_postpone_not_allowed_not_invalid_challenge(): void
+    {
+        $this->enableExpiry();
+
+        foreach ([false, true] as $admin) {
+            $prefix = $admin ? '/api/auth/admin' : '/api/auth';
+
+            $expired = $this->expiredUser($admin);
+            $challengeId = $this->login($expired, $admin)->assertOk()->json('data.challenge_id');
+            $this->postJson($prefix.'/login/password-change/postpone', ['challenge_id' => $challengeId])
+                ->assertStatus(422)
+                ->assertJsonPath('message', __('auth.password_change_postpone_not_allowed'))
+                ->assertJsonPath('errors.challenge_id.0', __('auth.password_change_postpone_not_allowed'));
+
+            // 거절된 연기는 식별자를 쓰지 않는다 — 같은 식별자로 변경을 마칠 수 있다.
+            $this->complete($challengeId, 'Passw0rd!new', $admin)->assertOk();
+
+            $this->postJson($prefix.'/login/password-change/postpone', ['challenge_id' => '00000000-0000-4000-8000-000000000000'])
+                ->assertStatus(422)
+                ->assertJsonPath('message', __('auth.password_change_invalid_challenge'));
+        }
+    }
+
+    /**
      * 2단계 인증이 켜져 있으면 코드 확인이 먼저고 변경 단계가 그 뒤다(A4).
      *
      * @scenario guard=user|admin, reason=expired, two_factor=on

@@ -104,8 +104,8 @@
         iconUrl: p.icon_url,
         fallbackIcon: 'palette',
         dependencies: [
-          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name ?? d.identifier ?? d }))),
-          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name ?? d.identifier ?? d })))
+          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),
+          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))
         ],
         badges: [
           ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),
@@ -116,14 +116,14 @@
         ],
         toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
         secondaryAction: p.update_available &amp;&amp; p.status !== 'uninstalled'
-          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true || p.is_compatible === false }
+          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', disabled: p.abilities?.can_edit_layouts === false } : null),
         primaryAction: p.status === 'uninstalled'
           ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts === false } : null),
         actions: [
           { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },
-          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true || p.is_compatible === false },
+          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
           { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
           { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' },
           { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
@@ -168,7 +168,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                   <success>
                     <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
@@ -225,7 +225,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/check-modified-layouts" method="GET">
                   <success>
                     <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>

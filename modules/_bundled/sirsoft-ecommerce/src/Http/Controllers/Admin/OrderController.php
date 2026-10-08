@@ -448,12 +448,13 @@ class OrderController extends AdminBaseController
         } catch (OrderClaimException $e) {
             // 신청 자격·사유·수량 잠금 위반 — 취소 도메인 거절과 같은 422 계약. 사유는 키+치환
             // 파라미터로 다시 만든다 — 예외 메시지는 이미 번역된 문장이라 `__()` 에 넣으면 키로
-            // 재번역을 시도해 파라미터 없이 원문이 그대로 남는다.
+            // 재번역을 시도해 파라미터 없이 원문이 그대로 남는다. 영어 사유는 `단수|복수` 꼴(수량 잠금 등)이라
+            // 치환값의 `count` 로 한 문장을 고른다(`__()` 로 부르면 두 문장이 `|` 로 이어져 나온다).
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.orders.cancel_failed',
                 422,
-                ['detail' => __($e->getMessageKey(), $e->getMessageParams())]
+                ['detail' => trans_count($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (OrderCancellationException $e) {
             // 취소 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 422.

@@ -734,7 +734,7 @@ return [
         // Status transition rules (block reverse / non-sequential transitions)
         'status_transition' => [
             'invalid' => 'Cannot change status from :from to :to.',
-            'bulk_invalid' => ':count item(s) cannot be changed to :to. (current: :from)',
+            'bulk_invalid' => ':count item cannot be changed to :to. (current: :from)|:count items cannot be changed to :to. (current: :from)',
         ],
         // Bulk processing related
         'bulk_update' => [
@@ -760,6 +760,9 @@ return [
         'end_date' => [
             'date' => 'End date must be a valid date.',
             'after_or_equal' => 'End date must be after or equal to start date.',
+        ],
+        'date_basis' => [
+            'in' => 'The date basis must be site (the site time zone).',
         ],
         // Option status
         'option_status' => [
@@ -985,7 +988,7 @@ return [
 
     // Cart validation messages
     'cart' => [
-        'quantity_limit_exceeded' => 'You can add up to :limit item(s) per product to the cart. (requested: :attempted)',
+        'quantity_limit_exceeded' => 'You can add up to :limit item per product to the cart. (requested: :attempted)|You can add up to :limit items per product to the cart. (requested: :attempted)',
         'ids_required' => 'Please select items to delete.',
         'ids_array' => 'Item IDs must be an array.',
         'ids_min' => 'Please select at least one item.',
@@ -2081,7 +2084,7 @@ return [
         ],
         'image_ids' => [
             'array' => 'The attached image list must be an array.',
-            'max' => 'You can specify up to :max images at once.',
+            'max' => 'You can specify up to :max image at once.|You can specify up to :max images at once.',
             'integer' => 'The attached image ID must be a number.',
         ],
         'refund_bank' => [

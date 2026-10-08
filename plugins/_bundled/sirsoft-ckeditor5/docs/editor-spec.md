@@ -99,4 +99,8 @@ php artisan plugin:update sirsoft-ckeditor5 --force
 그 ID 를 넣는 것으로 시작합니다. 팔레트·컨트롤은 템플릿의 일이므로 넣지 않습니다.
 파일을 만든 뒤 update 커맨드로 활성 디렉토리에 반영해야 편집기가 읽습니다 —
 `_bundled` 폴백이 없습니다.
+
+업로드 목록은 `download_url` 을 썸네일 `src` 로 쓰므로, 표본의 이 칸에는 서버 경로가 아니라 인라인 그림
+(`data:image/svg+xml,…`)을 둡니다. 실재하지 않는 `/api/plugins/sirsoft-ckeditor5/images/…` 를 적으면 편집기에서
+깨진 그림으로 보입니다(7.1.0 실측, 코어 가드 `BundledStaticImagePathsExist`).
 <!-- @intent END -->

@@ -66,6 +66,10 @@
                    복사해 넘기는 것은 창이 부모 폼을 직접 읽으면 창이 처음 붙은 시점의 사본을 보기 때문이다. row_index 가
                    null 이면 추가다. -->
               <sequence>
+                <!-- 규칙을 고치러 들어가면 지난 저장의 규칙 오류(422)는 더는 맞지 않는다 — 규칙 몫만 지운다.
+                     `_computed.errorsWithoutIpRules`(admin_settings) 는 저장 오류에서 security.ip_restriction_rules* 만 뺀 값이고
+                     남는 오류가 없으면 null 이라 상단 오류 상자도 닫힌다. 표·카드의 사용 토글·삭제도 같은 값으로 갈아 끼운다. -->
+                <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
                 <set-state target="global">
                   <field name="ip_restriction_rule_form_modal">
                     <field name="form">
@@ -104,10 +108,10 @@
                 <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{{(rule.ips ?? []).join(', ')}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{rule.memo ?? ''}}</td>
                 <td class="px-3 py-2">
-                  <toggle data-type="composite" checked="{{rule.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}">
+                  <toggle data-type="composite" ariaLabel="$t:admin.settings.security.ip_restriction.col_enabled" checked="{{rule.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}">
                     <on type="change">
                       <!-- 사용 여부만 뒤집는다(표 판) — 지우지 않고 잠시 끄는 자리다. 좁은 화면 카드 판에 같은 배선이 있다. -->
-                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true"/>
+                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
                     </on>
                   </toggle>
                 </td>
@@ -117,6 +121,7 @@
                       <!-- 편집 창 열기(표 판) — 추가와 같은 창을 쓰되 row_index 에 행 번호를 넣고 그 행 값으로 채운다.
                            규칙 목록 사본을 함께 넘기는 이유는 추가 버튼과 같다. -->
                       <sequence>
+                        <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
                         <set-state target="global">
                           <field name="ip_restriction_rule_form_modal">
                             <field name="form">
@@ -138,7 +143,7 @@
                   <button data-ref="ip_rule_delete_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     <on type="click">
                       <!-- 규칙 삭제(표 판) — 확인 창 없이 폼에서만 뺀다. 저장 전이라 하단 「취소」로 되돌릴 수 있다. -->
-                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true"/>
+                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
                     </on>
                     <span>$t:common.delete</span>
                   </button>
@@ -156,7 +161,7 @@
               <toggle data-type="composite" label="$t:admin.settings.security.ip_restriction.col_enabled" checked="{{rule.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}">
                 <on type="change">
                   <!-- 사용 여부만 뒤집는다(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
-                  <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true"/>
+                  <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
                 </on>
               </toggle>
               <div class="flex-center gap-2">
@@ -164,6 +169,7 @@
                   <on type="click">
                     <!-- 편집 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                     <sequence>
+                      <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
                       <set-state target="global">
                         <field name="ip_restriction_rule_form_modal">
                           <field name="form">
@@ -185,7 +191,7 @@
                 <button data-ref="ip_rule_delete_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="click">
                     <!-- 규칙 삭제(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
-                    <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true"/>
+                    <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
                   </on>
                   <span>$t:common.delete</span>
                 </button>

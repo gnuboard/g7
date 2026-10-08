@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Http\Resources\LayoutResource;
+use App\Rules\LayoutContentGate;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\CompileResult;
 use App\Support\LayoutMarkup\ComponentManifest;
@@ -102,7 +103,7 @@ class LayoutMarkupService
      *
      * @param  array<string, mixed>  $json  레이아웃 JSON (DB `content`)
      * @param  string  $templateId  붙어 있는 템플릿 식별자
-     * @return array{markup: string, escapes: array<int, string>}
+     * @return array{markup: string, escapes: array<int, string>} 마크업과 이스케이프된 표현식 목록
      */
     public function toMarkup(array $json, string $templateId): array
     {
@@ -208,7 +209,7 @@ class LayoutMarkupService
      * 컴파일 오류를 API 페이로드로 옮깁니다.
      *
      * @param  CompileError  $error  컴파일 오류
-     * @return array{code: string, message: string, line: int, column: int}
+     * @return array{code: string, message: string, line: int, column: int} 오류 코드·메시지·줄·칸
      */
     public function describeError(CompileError $error): array
     {
@@ -224,7 +225,7 @@ class LayoutMarkupService
      * lint 경고 목록을 API 페이로드로 옮깁니다.
      *
      * @param  array<int, LintWarning>  $warnings  lint 경고
-     * @return array<int, array{code: string, message: string, line: int, column: int}>
+     * @return array<int, array{code: string, message: string, line: int, column: int}> 경고별 코드·메시지·줄·칸 목록
      */
     public function describeWarnings(array $warnings): array
     {
@@ -234,6 +235,65 @@ class LayoutMarkupService
             'line' => $warning->getLine(),
             'column' => $warning->getColumn(),
         ], $warnings));
+    }
+
+    /**
+     * 컴파일 산출 JSON 의 보안 위반을 마크업 편집기 오류 모양(`compile_error`)으로 옮깁니다 (7.1.0 P16).
+     *
+     * 보안 규칙은 산출 JSON 을 검사하므로 소스 줄을 모른다. 규칙이 기록한 위반 값(주소·표현식)이 소스에 처음
+     * 적힌 자리를 줄·칸으로 싣는다 — 값이 없거나 소스에서 찾지 못하면 0(문서 전체). 첫 위반 하나를 돌려준다.
+     *
+     * @param  string  $markup  `.g7.html` 소스
+     * @param  array<string, mixed>  $json  컴파일 산출 JSON
+     * @return array{code: string, message: string, line: int, column: int}|null 위반이 없으면 null
+     */
+    public function describeContentViolation(string $markup, array $json): ?array
+    {
+        $first = LayoutContentGate::violationDetails($json)[0] ?? null;
+
+        if ($first === null) {
+            return null;
+        }
+
+        [$line, $column] = is_string($first['value']) ? self::locateText($markup, $first['value']) : [0, 0];
+
+        return [
+            'code' => 'unsafe_content',
+            'message' => $first['message'],
+            'line' => $line,
+            'column' => $column,
+        ];
+    }
+
+    /**
+     * 소스에서 값이 처음 적힌 자리(줄·칸, 1-base)를 찾습니다. 속성값의 HTML 이스케이프 꼴도 찾는다.
+     *
+     * @param  string  $source  소스
+     * @param  string  $needle  찾을 값
+     * @return array{0: int, 1: int} 줄·칸 (찾지 못하면 [0, 0])
+     */
+    private static function locateText(string $source, string $needle): array
+    {
+        $needle = trim($needle);
+
+        if ($needle === '') {
+            return [0, 0];
+        }
+
+        foreach (array_unique([$needle, htmlspecialchars($needle, ENT_QUOTES | ENT_HTML5, 'UTF-8', false), htmlspecialchars($needle, ENT_NOQUOTES, 'UTF-8', false)]) as $candidate) {
+            $offset = strpos($source, $candidate);
+
+            if ($offset === false) {
+                continue;
+            }
+
+            $before = substr($source, 0, $offset);
+            $lineStart = strrpos($before, "\n");
+
+            return [substr_count($before, "\n") + 1, mb_strlen($lineStart === false ? $before : substr($before, $lineStart + 1)) + 1];
+        }
+
+        return [0, 0];
     }
 
     /**

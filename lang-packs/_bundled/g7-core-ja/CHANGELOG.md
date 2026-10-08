@@ -8,6 +8,16 @@
 
 ### Added
 
+- 확장 업데이트 결과의 레이아웃 처리 요약이 쓰는 「수+단위」 문구(`extensions.layout_sync.counted.*`)의 일본어 번역을 추가했습니다 — 영어 요약이 수마다 단수·복수를 고르려고 새로 둔 키라 코어 원본 키 집합에 맞춘 것이며, 일본어 요약 문장은 그대로입니다.
+- 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`notification.variables.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 코어 알림의 변수 설명이 한국어로 보였습니다.
+- 화면 편집기 [동작] 탭에서 값을 그대로 넘기는 부품의 칸 위에 바뀐 값을 `{{$args[0]}}` 로 읽는다는 안내의 일본어 문구를 추가했습니다.
+- 국가 이름 파일(`countries.php`)을 추가했습니다 — 지원 국가 48개의 일본어 이름(「韓国」「アメリカ」「日本」 등). 없으면 일본어 화면의 회원 국가 이름이 한국어로 보입니다.
+- 레이아웃 편집기 확인·입력 창의 기본 단추(`layout_editor.dialog.confirm`·`cancel` 「OK」·「キャンセル」), [동작] 탭의 디바운스 혼재 경고(`layout_editor.action.mixed_debounce_warning`), 코드 편집기 검사 경고(`exceptions.layout_markup_lint.mixed_debounce_flushed`)의 일본어 번역을 추가했습니다.
+- 알림 발송 이력의 「건너뜀」 사유에 들어가는 수신자 규칙 이름(`notification.recipient_rules.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 사유의 규칙 이름이 한국어로 나옵니다.
+- 레이아웃 저장 검사가 조건·순서·결과 처리 안쪽 액션의 `debounce` 가 적용되지 않는다고 알리는 경고(`exceptions.nested_action_debounce_ignored`)의 일본어 번역을 추가했습니다.
+- 알림 템플릿 수신자 칸 검증 안내의 항목 이름(`notification.validation.attributes.*` — 受信者ルール·受信者の値·関連ユーザーの関係 등)의 일본어 번역을 추가했습니다.
+- 확장 설치·활성화·업데이트가 서버 내부 오류로 실패했을 때의 일반 안내(`extensions.errors.internal_error`)와, 이름 없는 내장 언어팩의 표시 이름(`language_packs.built_in_name`·`language_packs.core_target`)의 일본어 번역을 추가했습니다.
+- 회원 역할 일괄 변경 결과에 「반영済みのため変更なし」 수를 함께 알리는 문구(`user.bulk_roles_updated_with_unchanged`)의 일본어 번역을 추가했습니다.
 - 본인인증 메일 링크로 확인한 결과를 처음 화면이 받아 갈 때의 안내·오류 문구와 입력 항목 이름의 일본어 번역을 추가했습니다.
 - 비밀번호 정책(작성 규칙·재사용 금지·만료·로그인 변경 단계) 문구의 일본어 번역을 추가했습니다 — 검증 메시지(`validation.password_policy.*`·보안 설정 항목명·`validation.auth.password_change.*`), 회원 문구(`user.password_expiry_*`·`user.password_change_*`), 로그인 안내(`auth.password_change_*`), 활동 로그(`password_change`·`password_change_postpone`·`password_expiry_logout`), 직권 실행 단계 이름, 기능이 꺼져 있어 직권 실행을 거절할 때의 안내(`exceptions.privacy_manual_run_disabled`), 알림 정의 2종(비밀번호 만료 사전 안내·비밀번호 만료)의 메일·사이트 알림 문구입니다. `user.validation.password_min` 은 설정한 길이를 보여 주도록 `:min` 으로 바꿨습니다.
 - 회원 등록·수정의 역할 변경 활동 로그(`activity_log.action.roles_update`「ロール変更」·`activity_log.description.user_roles_update`)와 활동 로그 보관 기간 설정의 검증 문구·항목명(`validation.settings.activity_log_retention_days_min`·`validation.attributes.activity_log_retention_days`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 역할 변경 로그와 보관 기간 저장 오류가 한국어로 나옵니다.
@@ -117,25 +127,22 @@
 - 7.0 에서 만든 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록할 때 남기는 경고(`exceptions.layout.include_skipped`), 레이아웃 편집기가 저장본에 이미 있던 목록 밖 컴포넌트를 알리는 경고(`exceptions.layout_markup_lint.template_component_kept`), 플러그인 레이아웃 마크업 컴파일 실패(`plugins.errors.layout_validation_markup_error`), 템플릿 레이아웃 검증 실패 요약(`templates.errors.layout_validation_validation_failed`)의 일본어 문구를 추가했습니다.
 - 입력 오류가 두 개 이상일 때 오류 안내 끝에 붙는 나머지 오류 수 문구(`validation.summary_more_error`, `validation.summary_more_errors`)의 일본어 번역을 추가했습니다. 일본어 화면의 오류 안내가 「(and 1 more error)」 대신 「(他 1 件のエラー)」로 끝납니다.
 - 관리자 회원 알림함 목록 조회의 검증 오류 문구에 쓰는 항목 이름(`member_notification.list_attributes.*` 11개) 일본어 번역을 추가했습니다. 없으면 일본어 로케일의 안내 문구에 내부 키가 그대로 나옵니다.
+- 공통 오류 화면 문구(`core.errors.page_load_failed`·`init_failed`·`reload`·`layout_forbidden`·`layout_not_found`) 일본어를 추가했습니다.
+- 레이아웃 편집기 번들을 받지 못했을 때의 오류 화면 문구 3건(`core.errors.layout_editor_load_failed`·`layout_editor_bundle_failed`·`layout_editor_init_failed`)과 회원 언어 이름 `user.language.ja`(「日本語」)의 일본어를 추가했습니다.
+- 사용자 API 의 내 정보 권한 2종(`core.profile.read` 「マイ情報閲覧」·`core.profile.update` 「マイ情報編集」)과 그 묶음 이름(`core.profile`)의 일본어 번역을 권한 시드에 추가했습니다. 없으면 일본어 관리자 화면의 역할 편집에서 이 권한 이름이 한국어로 보입니다.
+- 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
+- 관리자 2단계 인증 전용 「로그인 인증번호 안내」 메일 번역과, 정책별 문구 추가·삭제·검증 안내, 채널을 쓸 수 없어 보내지 않은 사유 문구의 일본어 번역을 추가했습니다.
 
 ### Changed
 
-- 모듈, 플러그인, 템플릿 업데이트 때의 덮어쓰기 경고 문구를 레이아웃과 확장 조각을 함께 가리키는 표현으로 바꿨습니다.
+- 템플릿 업데이트 때의 덮어쓰기 경고 문구를 레이아웃과 확장 조각을 함께 가리키는 표현으로 바꿨습니다.
 
-- 독립 레이아웃 전역 상태 호스트 누락 경고(`layout_markup_lint.standalone_missing_global_host`)와 편집기 빌드 파일 누락 안내(`templates.messages.editor_assets_missing`)를 한국어 원문 변경에 맞춰 다시 번역했습니다.
-- 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
-
-- 방문자 통계의 「보존 기간」 일본어 용어를 「保持期間」으로 통일했습니다 — 기록이 많이 쌓였을 때의 경고
-  (`analytics.alerts.ledger_limit_message`)·조치 링크(`ledger_limit_action`, 「保持設定を開く」)와 재집계
-  건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
-  「保持期間」과 다른 말로 보였습니다.
+- 편집기 빌드 파일 누락 안내(`templates.messages.editor_assets_missing`)를 한국어 원문 변경에 맞춰 다시 번역했습니다.
 - 계정 잠김 안내(`auth.account_locked`·`auth.account_locked_permanently`)와 무기한 잠금 활동 로그 문구(`activity_log.description.auth_account_locked_permanently`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다 — 코어가 재설정 완료 시 잠금을 풀도록 바뀌었습니다.
 
-- 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
 - 알림 템플릿의 역할 수신자 값이 잘못된 형태로 저장되려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
 - 화면 편집기 [화면 동작] 탭의 「검색어를 입력하면」 항목 이름의 일본어 번역을 추가했습니다.
-- 본인인증 메일 문구의 일본어 번역을 알림 번역(`seed/notifications.json`)으로 옮겼습니다(코어 7.1.0 의 본인인증 메일 통합). 관리자 2단계 인증
-  전용 「로그인 인증번호 안내」 번역과, 정책별 문구 추가·삭제·검증 안내, 채널을 쓸 수 없어 보내지 않은 사유 문구 번역을 더했습니다.
+- 본인인증 메일 문구의 일본어 번역을 알림 번역(`seed/notifications.json`)으로 옮겼습니다(코어 7.1.0 의 본인인증 메일 통합).
 
 ### Removed
 
@@ -150,6 +157,9 @@
 - 모듈 비활성화 경고(`modules.deactivate_warning`)의 일본어 문구가 의존하는 것이 템플릿뿐인 것처럼 「アクティブなテンプレート」라고 하던 것을 「有効化された拡張」로 바로잡았습니다(코어 원문과 같은 수정).
 - 모듈·플러그인 레이아웃 검증 실패 요약(`modules.errors.layout_validation_validation_failed`, `plugins.errors.layout_validation_validation_failed`) 끝의 `: :error` 를 ko 원문에 맞춰 뺐습니다. 호출부가 더 이상 오류 문구를 넘기지 않아 일본어 화면에 `:error` 가 글자 그대로 보였습니다.
 - 레이아웃 편집기 커스텀 자산 창의 바이너리 파일 안내 문구(`layout_editor.custom_assets.binary_hint`)의 치환 자리를 `:extension` 에서 `{extension}` 으로 바꿨습니다(코어 원문과 같은 수정). 화면 번역기는 `{이름}` 만 바꿔 넣어, 「このフォーマット(:extension)」처럼 자리 이름이 글자 그대로 보였습니다.
+- 활동 로그의 로그인·로그아웃 설명을 관리자 경로와 나눴습니다 — 관리자 로그인·로그아웃은 「管理者ログイン」·「管理者ログアウト」(`activity_log.description.auth_admin_login`·`auth_admin_logout`), 일반 회원과 이전 기록은 「ログイン」·「ログアウト」(`auth_login`·`auth_logout`)입니다. 종전에는 일반 회원의 로그인도 「管理者ログイン」으로 보였습니다.
+- 레이아웃 동시 저장 충돌 안내(`exceptions.concurrent_modification`)에서 내부 표기(`:resource`)를 빼고 버전 번호만 보이도록 바꿨습니다.
+- 사이트맵 생성 시각 검증 안내(`validation.settings.sitemap_schedule_time_invalid`)가 허용 범위(00:00〜23:59)를 함께 알리도록 고쳤습니다.
 
 ## [1.0.10] - 2026-09-09
 

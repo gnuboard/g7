@@ -102,7 +102,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "text": "{{template.name}}"
+                                            "text": "{{template.name || template.identifier}}"
                                         },
                                         {
                                             "type": "basic",

@@ -129,6 +129,23 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
     expect(missing).toEqual([]);
   });
 
+  // @scenario screen=overview, state=normal, viewport=1440, locale=en
+  // @effects site_timezone_notice_names_the_account_timezone
+  it('시간대 안내는 비교 대상을 「계정 시간대」로 말한다 — 컴퓨터 시간대가 아니다', () => {
+    // 서버는 보는 사람의 **계정 시간대**(users.timezone)와 사이트 표준시를 비교한다. 안내가 「내 컴퓨터
+    // 시간대와 다릅니다」라고 하면, 컴퓨터는 서울인데 계정만 뉴욕인 사람에게 사실과 다른 말을 한다
+    // (7.1.0 실측 E-D8). 모든 로케일(ko·en·ja)에서 「컴퓨터/端末」 대신 계정을 가리킨다.
+    const locales = localeNames();
+    expect(locales).toContain('ja');
+    const wrong: string[] = [];
+    for (const locale of locales) {
+      const text = String(langValue(loadLocale(locale, 'admin'), 'admin.analytics.alerts.site_timezone') ?? '');
+      expect(text, `${locale} 문구가 있어야 한다`).not.toBe('');
+      if (/컴퓨터|computer|端末/i.test(text) || !/계정|account|アカウント/i.test(text)) wrong.push(`${locale}: ${text}`);
+    }
+    expect(wrong).toEqual([]);
+  });
+
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
   // @effects deferred_translation_needs_leading_text
   it('미룬 번역 토큰이 값의 전부인 자리가 없다 — prop 자리도 포함', () => {

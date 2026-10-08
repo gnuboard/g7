@@ -81,7 +81,6 @@
     },
     "computed": {
         "csvUrl": "{{''}}",
-        "canReadUsers": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}",
         "periodFrom": "{{query.from || analytics_visitors?.data?.from || _local.periodComputed?.from || ''}}",
         "periodTo": "{{query.to || query.from || analytics_visitors?.data?.to || _local.periodComputed?.to || ''}}"
     },
@@ -463,7 +462,7 @@
                                                             "text": "#{{row.user_id}}"
                                                         },
                                                         {
-                                                            "comment": "「회원 정보 보기」의 목적지(/admin/users/{uuid})는 core.users.read 를 요구한다.\n                  가드 없이 그리면 개인정보 권한만 가진 담당자가 눌러 「권한 없음」 새 창을 받는다 —\n                  막다른 안내다(#682 S3 라운드 5). 나머지 안내 버튼 네 자리는 목적지 권한을 먼저 본다.",
+                                                            "comment": "「회원 정보 보기」의 목적지(/admin/users/{uuid})는 core.users.read 를 요구한다.\n                  가드 없이 그리면 개인정보 권한만 가진 담당자가 눌러 「권한 없음」 새 창을 받는다 —\n                  막다른 안내다(#682 S3 라운드 5). 나머지 안내 버튼 네 자리는 목적지 권한을 먼저 본다.\n                  표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4).",
                                                             "type": "composite",
                                                             "name": "ActionMenu",
                                                             "if": "{{!!row.user}}",
@@ -502,7 +501,7 @@
                                                                         "id": "view_member",
                                                                         "label": "$t:admin.analytics.visitors.action.view_member",
                                                                         "iconName": "user",
-                                                                        "if": "{{_computed.canReadUsers}}"
+                                                                        "if": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}"
                                                                     },
                                                                     {
                                                                         "id": "search_by_member",

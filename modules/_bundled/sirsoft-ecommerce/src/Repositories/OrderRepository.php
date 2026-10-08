@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
@@ -12,6 +13,7 @@ use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Repositories\Concerns\SortsByRelatedColumn;
 use App\Support\Query\PaginationLimits;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -258,10 +260,8 @@ class OrderRepository implements OrderRepositoryInterface
     {
         // 관계는 지연 조인의 outer 에서만 로드한다 (inner 에 붙으면 관계 쿼리가 두 번 실행되고,
         // inner 는 키 컬럼만 조회하므로 eager load 가 성립하지도 않는다).
-        $query = $this->model->newQuery();
-
-        // 권한 스코프 필터링
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read');
+        // 권한 스코프 필터링 — 건수만 세는 경로(countWithListFilters)와 같은 출발 쿼리
+        $query = $this->newScopedListQuery();
 
         // 목록 필터는 단일 출처(applyListFilters)에서 적용한다 — 엑셀 내려받기
         // (`getForExport`)가 같은 메서드를 부르므로, 축이 늘어도 두 경로가 함께 따라온다.
@@ -541,6 +541,9 @@ class OrderRepository implements OrderRepositoryInterface
      * 날짜 조건은 전부 범위 조건으로 준다 — whereDate/whereYear/whereMonth 는 컬럼에
      * 함수를 씌워 ordered_at 인덱스를 쓸 수 없게 만든다.
      *
+     * 「오늘」·「이번 달」은 사이트 표준시로 정한다 — 이 통계는 키 하나짜리 전역 캐시라 보는 사람마다
+     * 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 주문이 전날·지난달로 묶인다(7.1.0 QE-O1).
+     *
      * @return array 주문 통계
      */
     private function computeStatistics(): array
@@ -558,21 +561,31 @@ class OrderRepository implements OrderRepositoryInterface
             ->pluck('count', 'order_status')
             ->toArray();
 
+        $siteTimezone = TimezoneHelper::getSiteTimezone() ?: 'UTC';
+        $siteNow = CarbonImmutable::now($siteTimezone);
+        $siteToday = $siteNow->toDateString();
+
         // 오늘 주문 수
         $todayCountQuery = $this->model->newQuery();
-        $this->applyDayFilter($todayCountQuery, 'ordered_at', today());
+        $this->applyDateRangeFilterInTimezone($todayCountQuery, 'ordered_at', $siteToday, $siteToday, $siteTimezone);
         $todayCount = $todayCountQuery->count();
 
         // 오늘 매출액
         $todayRevenueQuery = $this->model->newQuery()
             ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value]);
-        $this->applyDayFilter($todayRevenueQuery, 'ordered_at', today());
+        $this->applyDateRangeFilterInTimezone($todayRevenueQuery, 'ordered_at', $siteToday, $siteToday, $siteTimezone);
         $todayRevenue = $todayRevenueQuery->sum('total_paid_amount');
 
         // 이번 달 매출액
         $monthlyRevenueQuery = $this->model->newQuery()
             ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value]);
-        $this->applyMonthFilter($monthlyRevenueQuery, 'ordered_at', (int) now()->year, (int) now()->month);
+        $this->applyDateRangeFilterInTimezone(
+            $monthlyRevenueQuery,
+            'ordered_at',
+            $siteNow->startOfMonth()->toDateString(),
+            $siteNow->endOfMonth()->toDateString(),
+            $siteTimezone
+        );
         $monthlyRevenue = $monthlyRevenueQuery->sum('total_paid_amount');
 
         return [
@@ -614,6 +627,35 @@ class OrderRepository implements OrderRepositoryInterface
             // 부분취소는 별도 주문 상태가 아니라 잔여 옵션 기준 진행 상태로 집계된다(partial_cancelled 제거).
             // 일부 취소된 주문은 자신의 진행 단계(결제완료/준비중/배송중 등) 카운터에 그대로 잡힌다.
         ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countWithListFilters(array $filters): int
+    {
+        // 목록(`getListWithFilters`)과 같은 권한 범위·필터 단일 출처 — 축을 복제하면 배지 숫자와 목록 건수가 다시 갈린다.
+        $query = $this->newScopedListQuery();
+        $this->applyListFilters($query, $filters);
+
+        return $query->count();
+    }
+
+    /**
+     * 관리자 주문 목록의 출발 쿼리 — 주문 조회 권한 범위(`orders.read` 의 본인·역할 범위)를 건 새 쿼리를 돌려줍니다.
+     *
+     * 목록(`getListWithFilters`)과 그 건수만 세는 경로(`countWithListFilters`, 대시보드 「오늘」 배지)가 같은 범위로
+     * 출발해야 범위가 좁혀진 관리자에게도 배지 숫자 = 배지로 연 목록 건수다. 판정식은 코어 단일 출처
+     * `PermissionHelper::applyPermissionScope()`(현재 인증 사용자 기준, 전체 권한이면 조건 없음)다.
+     *
+     * @return Builder 권한 범위를 건 주문 쿼리
+     */
+    private function newScopedListQuery(): Builder
+    {
+        $query = $this->model->newQuery();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read');
+
+        return $query;
     }
 
     /**
@@ -797,7 +839,7 @@ class OrderRepository implements OrderRepositoryInterface
             $sub->whereIn($table.'.fault_type', $faults);
         }
 
-        $this->applyDateRangeFilter($sub, $table.'.created_at', $from, $to);
+        $this->applyViewerDateRangeFilter($sub, $table.'.created_at', $from, $to);
 
         if ($activeOnly) {
             $activeColumn = $type === 'cancel' ? 'cancel_status' : $statusColumn;
@@ -935,13 +977,26 @@ class OrderRepository implements OrderRepositoryInterface
             $dateField = $filters['date_type']; // ordered_at, paid_at, etc.
 
             // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 같은 결과를 내는
-            // 범위 조건으로 준다 (종료일은 그날 끝까지 포함).
-            $this->applyDateRangeFilter(
-                $query,
-                $dateField,
-                $filters['start_date'] ?? null,
-                $filters['end_date'] ?? null
-            );
+            // 범위 조건으로 준다 (종료일은 그날 끝까지 포함). 목록이 주문일 등을 보는 사람의
+            // 시간대로 그리므로 그 하루로 자른다(UTC 하루로 자르면 한국 시간 새벽 주문이 빠진다).
+            // 대시보드 「오늘」 배지 링크(date_basis=site)만 예외다 — 배지가 센 하루(사이트 표준시)와 같은 범위로 열어야
+            // 계정 시간대가 사이트와 다른 관리자에게도 배지 숫자의 주문이 목록에 그대로 나온다.
+            if (($filters['date_basis'] ?? null) === 'site') {
+                $this->applyDateRangeFilterInTimezone(
+                    $query,
+                    $dateField,
+                    $filters['start_date'] ?? null,
+                    $filters['end_date'] ?? null,
+                    TimezoneHelper::getSiteTimezone() ?: 'UTC'
+                );
+            } else {
+                $this->applyViewerDateRangeFilter(
+                    $query,
+                    $dateField,
+                    $filters['start_date'] ?? null,
+                    $filters['end_date'] ?? null
+                );
+            }
         }
 
         // 주문상태 필터 (다중 선택 가능)

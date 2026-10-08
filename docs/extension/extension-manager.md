@@ -375,6 +375,8 @@ GET /api/admin/plugins?include_hidden=1
 GET /api/admin/templates?include_hidden=1
 ```
 
+API 의 `include_hidden` 은 최고관리자(`is_super`)에게만 적용됩니다. 다른 관리자가 이 값을 보내면(최고관리자가 공유한 주소로 들어온 경우 등) 요청 단계(`RestrictsHiddenExtensionsToSuperAdmin`)에서 거짓으로 바뀌어 숨김 확장이 빠진 목록을 받습니다.
+
 ### manifest 설정
 
 ```json

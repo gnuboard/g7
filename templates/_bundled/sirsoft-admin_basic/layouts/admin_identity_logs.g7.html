@@ -143,7 +143,10 @@
       <div data-ref="data_table_section" class="mt-6">
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <div class="flex-center gap-3">
-            <span class="text-label">$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}</span>
+            <!-- 총 건수를 끝까지 센 경우 -->
+            <span data-if="{{identityLogs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}</span>
+            <!-- 총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
+            <span data-if="{{identityLogs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.identity.logs.total_at_least|count={{identityLogs?.data?.pagination?.total || 0}}</span>
           </div>
           <div class="flex-center gap-3">
             <select name="sortBy" class="w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">

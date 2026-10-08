@@ -258,7 +258,12 @@
             </column>
             <column field="ip" header="{{(analytics_subjects?.data?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.privacy_requests.columns.ip_masked') : $t('admin.analytics.privacy_requests.columns.ip')}}" width="140px">
               <cell>
-                <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                <div class="flex-center flex-wrap gap-1">
+                  <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                  <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
+                </div>
               </cell>
             </column>
             <column field="pageviews_count" header="$t:admin.analytics.common.pageviews" width="90px" align="right">

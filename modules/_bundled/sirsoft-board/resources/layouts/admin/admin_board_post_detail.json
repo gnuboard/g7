@@ -115,7 +115,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=false` 라 목록에서 달고 온 query 도 함께 털린다",
+                                        "comment": "같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=true` 라 목록에서 달고 온 query(돌아갈 목록의 페이지·검색 조건)를 그대로 유지한다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -126,6 +126,9 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh",
                                     "className": "btn-icon"
                                 },
                                 "children": [

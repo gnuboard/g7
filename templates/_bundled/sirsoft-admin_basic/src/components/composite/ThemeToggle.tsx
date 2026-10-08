@@ -6,6 +6,13 @@ import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string): string => {
+  const translated = (window as any).G7Core?.t?.(key);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+
 /**
  * 테마 모드 타입
  */
@@ -168,7 +175,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       <Button
         onClick={() => setShowMenu(!showMenu)}
         className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-        aria-label="Toggle theme"
+        aria-label={tOr('common.theme_select', '화면 테마')}
+        aria-expanded={showMenu}
       >
         <Icon
           name={getCurrentIcon()}
@@ -183,6 +191,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 자동 모드 */}
             <Button
               onClick={() => handleThemeChange('auto')}
+              aria-pressed={currentMode === 'auto'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'auto' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -204,6 +213,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 라이트 모드 */}
             <Button
               onClick={() => handleThemeChange('light')}
+              aria-pressed={currentMode === 'light'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'light' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -225,6 +235,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 다크 모드 */}
             <Button
               onClick={() => handleThemeChange('dark')}
+              aria-pressed={currentMode === 'dark'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'dark' ? 'bg-gray-50 dark:bg-gray-700' : ''}

@@ -71,11 +71,11 @@
               <success>
                 <set-state target="global" :isTemplateUninstalling="false"/>
                 <set-state target="global" templateUninstallBackups="{{response.data?.preserved_backups ?? []}}"/>
-                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedTemplate="null" :deleteTemplateData="false"/>
                 <toast type="success" message="$t:admin.templates.uninstall_success"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
                 <close-modal if="{{!(response.data?.preserved_backups?.length)}}"/>
+                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedTemplate="null" :deleteTemplateData="false"/>
               </success>
               <fail>
                 <set-state target="global" :isTemplateUninstalling="false"/>

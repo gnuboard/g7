@@ -165,7 +165,7 @@ return [
         'minutes' => ':nm',
         'minutes_seconds' => ':mm :ss',
         'hours' => ':nh',
-        'pages_one' => ':n page(s)',
+        'pages_one' => ':n page|:n pages',
         'pages_range' => ':from–:to pages',
         'pages_over' => ':from+ pages',
     ],

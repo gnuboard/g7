@@ -59,6 +59,7 @@
         "delete_avatar": "삭제",
         "avatar_upload": "이미지 변경",
         "avatar_delete": "삭제",
+        "avatar_preview": "새 프로필 이미지 미리보기",
         "avatar_hint": "JPG, PNG, GIF, WebP (최대 2MB)",
         "avatar_uploaded": "프로필 이미지가 업로드되었습니다.",
         "avatar_updated": "프로필 이미지가 변경되었습니다.",

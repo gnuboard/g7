@@ -899,6 +899,57 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
+     * `count` 인자가 1 이면 영어 사전의 `_one` 변형을 고른다 — 브라우저 번역 엔진과 같은 복수형 규칙.
+     *
+     * 봇 화면이 「1 posts」로 그려지면 사람 화면(「1 post」)과 달라진다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_count_selects_plural_variant
+     *
+     * @return void 없음
+     */
+    public function test_translation_count_one_selects_one_variant_in_english(): void
+    {
+        app()->setLocale('en');
+        $this->evaluator->setTranslations([
+            'board' => ['post_count' => '{{count}} posts', 'post_count_one' => '{{count}} post'],
+        ]);
+
+        $this->assertSame('1 post', $this->evaluator->evaluate('$t:board.post_count|count=1', []));
+        $this->assertSame('2 posts', $this->evaluator->evaluate('$t:board.post_count|count=2', []));
+        $this->assertSame('0 posts', $this->evaluator->evaluate('$t:board.post_count|count=0', []));
+        $this->assertSame(
+            '1 post',
+            $this->evaluator->evaluate('$t:board.post_count|count={{board.posts_count}}', ['board' => ['posts_count' => 1]]),
+        );
+    }
+
+    /**
+     * 복수 범주가 other 뿐인 로케일(ko)·count 인자가 없거나 수가 아닐 때는 기본 키를 쓴다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_count_selects_plural_variant
+     *
+     * @return void 없음
+     */
+    public function test_translation_without_plural_category_uses_base_key(): void
+    {
+        app()->setLocale('ko');
+        $this->evaluator->setTranslations([
+            'board' => ['post_count' => '{{count}}개', 'post_count_one' => '쓰이면 안 되는 값', 'post_count_other' => '쓰이면 안 되는 값'],
+        ]);
+
+        $this->assertSame('1개', $this->evaluator->evaluate('$t:board.post_count|count=1', []));
+
+        app()->setLocale('en');
+        $this->assertSame('1,000개', $this->evaluator->evaluate('$t:board.post_count|count=1,000', []));
+        $this->assertSame('{{count}}개', $this->evaluator->evaluate('$t:board.post_count', []));
+        $this->assertSame('5개', $this->evaluator->evaluate('$t:board.post_count|count=5', []));
+    }
+
+    /**
      * 텍스트 중간의 $t:defer: 토큰도 해석되며 raw 문자열이 남지 않습니다.
      *
      * @scenario entry_point=evaluate, expression_form=plain_text

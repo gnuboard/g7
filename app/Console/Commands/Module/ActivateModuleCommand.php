@@ -97,7 +97,7 @@ class ActivateModuleCommand extends Command
 
             if ($result['success']) {
                 $this->info('✅ '.__('modules.commands.activate.success', ['module' => $identifier]));
-                $this->info('   - '.__('modules.commands.activate.layouts_registered', ['count' => $result['layouts_registered']]));
+                $this->info('   - '.trans_choice('modules.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                 Log::info(__('modules.commands.activate.success', ['module' => $identifier]));
 

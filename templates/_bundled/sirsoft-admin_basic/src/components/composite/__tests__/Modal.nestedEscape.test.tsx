@@ -67,6 +67,31 @@ describe('[case:components-misc-nested-modal-escape-closes-all] admin_basic Moda
     expect(onOuter).not.toHaveBeenCalled();
   });
 
+  describe('[case:components-misc-stacked-modal-duplicate-title-id] 겹친 창 제목 id', () => {
+    /**
+     * 겹친 창이 같은 제목 id(`modal-title`)를 써서 위 창의 접근 가능한 이름이 아래 창 제목으로 읽혔다
+     * (#736 F 영역 실측: 라이선스 창이 「플러그인 정보」로, 수동 설치 창이 「manifest 미리보기」로 읽힘).
+     *
+     * @scenario stack=two_open, top_escape=enabled
+     * @effects stacked_dialogs_label_with_own_title
+     */
+    it('겹친 창은 각자 자기 제목으로 이름이 붙는다(제목 id 가 겹치지 않는다)', () => {
+      render(<Pair onOuter={vi.fn()} onInner={vi.fn()} />);
+
+      const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
+      expect(dialogs).toHaveLength(2);
+      const ids = dialogs.map((d) => d.getAttribute('aria-labelledby'));
+      expect(new Set(ids).size).toBe(2);
+      const names = dialogs.map((d) => {
+        const id = d.getAttribute('aria-labelledby') ?? '';
+        const label = document.getElementById(id);
+        expect(d.contains(label)).toBe(true);
+        return label?.textContent;
+      });
+      expect(names).toEqual(['바깥 창', '안쪽 창']);
+    });
+  });
+
   /**
    * @scenario stack=two_open, top_escape=enabled
    * @effects lower_rerender_keeps_order

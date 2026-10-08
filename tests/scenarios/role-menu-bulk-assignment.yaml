@@ -15,6 +15,8 @@ description: |
     - W3 액터가 관리할 수 없는 메뉴(비활성 확장 등)의 기존 할당은 건드리지 않는다
     - W4 역할→메뉴 저장에는 core.menus.update 가 필요하다
     - W6 메뉴마다 core.menu.after_sync_roles 를 발화해 user_overrides·활동 로그가 단건 경로와 같게 남는다
+    - W7 사이드바(GET /api/admin/menus/active)는 관리자 영역 접근만으로 받고 내 역할에 지정된 메뉴로만 좁힌다 — 메뉴 관리 목록·상세는 core.menus.read 유지
+    - W8 역할 0개 메뉴는 core.menus.update 를 전체 범위로 가진 관리자의 관리 목록에만 나온다(복구 경로)
 
 axes:
   entry: [role_form_create, role_form_update, menu_bulk_add, menu_bulk_remove]
@@ -46,6 +48,14 @@ effects:
   - bulk_mode_resets_on_page_entry
   - bulk_panel_replaces_detail
   - bulk_apply_requires_menus_and_roles
+  - sidebar_without_menu_read_permission
+  - sidebar_limited_to_own_roles
+  - menu_management_still_requires_menus_read
+  - roleless_menu_visible_to_full_scope_manager
+  - roleless_menu_hidden_from_limited_manager
+  - menu_form_url_mode_follows_panel
+  - role_delete_confirm_shows_name
+  - english_result_message_follows_menu_count
 
 test_files:
   - tests/Feature/Api/Admin/RoleMenuAssignmentTest.php
@@ -58,3 +68,5 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-form-menus.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-list-bulk-roles.test.tsx
   - tests/Playwright/specs/admin/role-menu-bulk-assignment.spec.ts
+  - tests/Feature/Api/Admin/MenuAccessVisibilityTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-menu-followups.test.ts

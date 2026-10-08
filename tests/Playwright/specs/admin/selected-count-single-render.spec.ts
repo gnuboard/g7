@@ -1,5 +1,5 @@
 /**
- * 선택 건수는 화면에 한 번만 뜬다 (PO 제보 2026-09-15, 1:1 문의 게시글 관리).
+ * 선택 건수는 화면에 한 번만 뜬다 (제보 2026-09-15, 1:1 문의 게시글 관리).
  *
  * 왜 E2E 여야 하는가: 중복의 두 원천이 **서로 다른 층**에 있다. 하나는 레이아웃이 적은
  * 일괄 바의 「N개 선택됨」이고, 다른 하나는 `DataGrid` 컴포넌트가 `selectable` + 선택 행이
@@ -17,18 +17,16 @@
  */
 import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth';
 
-/** 대표 화면 — 게시판 관리자 목록. PO 가 중복을 제보한 그 화면 부류다. */
+/** 대표 화면 — 게시판 관리자 목록. 중복이 제보된 그 화면 부류다. */
 const LIST_URL = '/admin/board/free';
 
 test.describe('관리자 목록 선택 건수 (#524)', () => {
   // @scenario surface=admin_list_selection
   // @effects selected_count_renders_once_after_selecting_a_row
   test('행을 하나 고르면 「N개 선택됨」이 한 번만 뜬다', async ({ page }) => {
-    const token = issueToken(
-      'sirsoft-board.posts.read',
-      'sirsoft-board.posts.write',
-      'sirsoft-board.posts.delete',
-    );
+    // admin 역할(함께 부여)이 게시판 권한을 모두 가진다. 예전 인자(`sirsoft-board.posts.*`)는 게시판 이름이
+    // 빠진 없는 권한이라 발급 커맨드가 가짜 행을 만들던 것이다 — 이제는 발급 때 거절된다(7.1.0 O-D2).
+    const token = issueToken();
     await authenticatePage(page, token);
     await page.goto(LIST_URL);
 

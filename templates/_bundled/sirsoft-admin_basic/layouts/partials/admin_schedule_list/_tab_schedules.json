@@ -556,7 +556,7 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다",
+                                            "comment": "오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다. 날짜는 계정 시간대(회원 → 사이트 기본)의 달력 날짜다 — 서버가 그 시간대의 하루로 자르므로 브라우저 시간대로 만들면 하루 어긋난다",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -569,8 +569,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date().toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -595,8 +595,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -621,8 +621,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -647,8 +647,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -673,8 +673,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -699,8 +699,8 @@
                                                         "replace": true,
                                                         "transition_overlay_target": "schedules_data_grid__body",
                                                         "query": {
-                                                            "created_from": "{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
-                                                            "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                                                            "created_from": "{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                            "created_to": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
                                                             "page": 1
                                                         }
                                                     }
@@ -1069,6 +1069,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
+                                "aria-label": "$t:common.refresh",
+                                "title": "$t:common.refresh",
                                 "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
                             },
                             "children": [
@@ -1369,7 +1372,7 @@
                             ],
                             "props": {
                                 "name": "per_page",
-                                "className": "w-20",
+                                "className": "w-24",
                                 "value": "{{query.per_page ?? '20'}}",
                                 "options": [
                                     {
@@ -1436,10 +1439,12 @@
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "지난 실행 결과를 비우고 연다 — 결과가 남으면 실행 버튼이 감춰진 채 열린다(Esc·X 로 닫으면 닫기 단추의 초기화를 거치지 않는다).",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "selectedSchedule": "{{$args[1]}}"
+                                        "selectedSchedule": "{{$args[1]}}",
+                                        "runResult": null
                                     }
                                 },
                                 {
@@ -1452,10 +1457,13 @@
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "앞서 연 작업의 이력·쪽 번호가 남아 새 작업의 창에 잠깐이라도 보이지 않게 비우고 1쪽부터 연다(Esc 로 닫으면 닫기 단추의 초기화를 거치지 않는다).",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "selectedSchedule": "{{$args[1]}}"
+                                        "selectedSchedule": "{{$args[1]}}",
+                                        "scheduleHistory": null,
+                                        "historyPage": 1
                                     }
                                 },
                                 {
@@ -1678,7 +1686,7 @@
                                 "props": {
                                     "className": "text-label"
                                 },
-                                "text": "{{row.next_run_at}}"
+                                "text": "{{row.next_run_at | datetime}}"
                             },
                             {
                                 "type": "basic",
@@ -1707,7 +1715,7 @@
                                         "props": {
                                             "className": "text-label"
                                         },
-                                        "text": "{{row.last_run_at}}"
+                                        "text": "{{row.last_run_at | datetime}}"
                                     },
                                     {
                                         "type": "basic",
@@ -1824,7 +1832,8 @@
                                 ],
                                 "props": {
                                     "checked": "{{row.is_active}}",
-                                    "size": "sm"
+                                    "size": "sm",
+                                    "ariaLabel": "{{row.name}}"
                                 }
                             }
                         ]

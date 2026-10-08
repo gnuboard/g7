@@ -19,7 +19,7 @@ import { CodeWorkspace } from '../CodeWorkspace';
 // Monaco 대역 — 값과 모델 키만 드러내면 버퍼 계약을 재는 데 충분하다. 글자 크기는 모바일 분기를
 // 재기 위해, DiffEditor 는 충돌 바의 [차이 보기] 가 양쪽 본문을 제대로 넘기는지를 재기 위해 드러낸다.
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange, path, options }: any) => (
+  default: ({ defaultValue: value, onChange, path, options }: any) => (
     <textarea
       data-testid="editor-textarea"
       data-model-path={path ?? ''}
@@ -384,6 +384,41 @@ describe('CodeWorkspace — 탭', () => {
     expect(screen.queryByTestId('close-dialog')).toBeNull();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
     expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * «저장하고 닫기» 가 실패하면 그 사실을 창에 알리고 다시 고를 수 있게 버튼을 푼다.
+   *
+   * 실측 2026-10-06(7.1.0 전수 실측 I1): 문법 오류가 있는 파일에서 «저장하고 닫기» → `PUT` 422 → 창은 남았지만
+   * 「저장하는 중… 저장이 끝나면 탭이 닫힙니다」 문구 그대로였고 «저장하지 않고 닫기»·«저장하고 닫기» 가
+   * disabled 로 굳어 [취소] 만 누를 수 있었다. 저장이 끝났는데(isLoading true→false) 여전히 dirty 면 실패다.
+   *
+   * @effects code_workspace_close_dialog_reports_save_failure
+   */
+  it('«저장하고 닫기» 가 실패하면 창에 실패를 알리고 버튼을 다시 연다', () => {
+    const onSave = vi.fn();
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} onSave={onSave} />,
+    );
+
+    type('broken');
+    fireEvent.click(screen.getByLabelText('admin.templates.layout_edit.tabs.close'));
+    fireEvent.click(screen.getByTestId('close-save'));
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    // 저장 요청이 나가고(로딩) — 서버가 거절해 로딩이 끝났는데 본문은 그대로 dirty.
+    rerender(<CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} onSave={onSave} isLoading />);
+    rerender(<CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={1} onSave={onSave} isLoading={false} />);
+
+    const dialog = screen.getByTestId('close-dialog');
+    expect(dialog).toHaveTextContent('admin.templates.layout_edit.draft.close_failed');
+    expect(screen.getByTestId('close-save')).not.toBeDisabled();
+    expect(screen.getByTestId('close-discard')).not.toBeDisabled();
+    expect(screen.getAllByRole('tab')).toHaveLength(1);
+
+    // 다시 «저장하고 닫기» 를 누르면 한 번 더 저장을 부른다.
+    fireEvent.click(screen.getByTestId('close-save'));
+    expect(onSave).toHaveBeenCalledTimes(2);
   });
 
   /**

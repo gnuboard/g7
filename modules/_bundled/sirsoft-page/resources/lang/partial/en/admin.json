@@ -63,9 +63,11 @@
       "restore_success": "Version has been restored.",
       "bulk_publish_title": "Bulk Publish",
       "bulk_publish_confirm": "Change {{count}} pages to published status.",
+      "bulk_publish_confirm_one": "Change {{count}} page to published status.",
       "bulk_publish_success": "Selected pages have been published.",
       "bulk_unpublish_title": "Bulk Unpublish",
       "bulk_unpublish_confirm": "Change {{count}} pages to unpublished status.",
+      "bulk_unpublish_confirm_one": "Change {{count}} page to unpublished status.",
       "bulk_unpublish_success": "Selected pages have been unpublished."
     },
     "errors": {

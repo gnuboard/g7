@@ -58,6 +58,7 @@ effects:
   - log_masks_action_url
   - general_notification_not_masked
   - store_creates_operator_policy_definition
+  - list_row_operator_definition_deletable
   - store_rejects_invalid_policy
   - destroy_only_operator_definitions
   - index_category_filter

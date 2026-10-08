@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../ModuleTestCase.php';
 
-use Carbon\CarbonImmutable;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardStat;
@@ -25,6 +24,11 @@ class BoardDashboardServiceTest extends ModuleTestCase
 
     private Board $board;
 
+    /**
+     * 전역 집계 표와 원본 글·댓글·신고를 비우고 서비스와 시험용 게시판을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +52,11 @@ class BoardDashboardServiceTest extends ModuleTestCase
 
     /**
      * 게시글을 생성합니다 (생성일 지정 가능).
+     *
+     * @param  string  $title  제목
+     * @param  string|null  $createdAt  생성 시각(UTC 저장값, null 이면 지금)
+     * @param  bool  $trashed  만든 뒤 삭제 상태로 둘지 여부
+     * @return Post 생성된 게시글
      */
     private function makePost(string $title, ?string $createdAt = null, bool $trashed = false): Post
     {
@@ -69,7 +78,12 @@ class BoardDashboardServiceTest extends ModuleTestCase
     }
 
     /**
-     * 댓글을 생성합니다.
+     * 댓글을 생성합니다 (생성일 지정 가능).
+     *
+     * @param  int  $postId  게시글 ID
+     * @param  string|null  $createdAt  생성 시각(UTC 저장값, null 이면 지금)
+     * @param  bool  $trashed  만든 뒤 삭제 상태로 둘지 여부
+     * @return Comment 생성된 댓글
      */
     private function makeComment(int $postId, ?string $createdAt = null, bool $trashed = false): Comment
     {
@@ -90,10 +104,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         return $comment;
     }
 
+    /**
+     * 「오늘」 카드가 board_stats 의 사이트 하루 행을 읽는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects today_posts_badge_reflects_overview_api, today_comments_badge_reflects_overview_api
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_overview_reads_today_row_from_board_stats(): void
     {
-        $today = CarbonImmutable::today()->toDateString();
+        $today = $this->service->siteToday()->toDateString();
         BoardStat::create(['date' => $today, 'post_count' => 3, 'comment_count' => 8]);
 
         $overview = $this->service->getOverview();
@@ -102,6 +125,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame(8, $overview['today_comments']);
     }
 
+    /**
+     * 오늘 행이 없으면 「오늘」 카드가 0 을 돌려주는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects today_posts_badge_reflects_overview_api
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_overview_returns_zero_when_today_row_missing(): void
     {
@@ -111,10 +143,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame(0, $overview['today_comments']);
     }
 
+    /**
+     * 추이 그래프가 최근 7일 막대와 합계를 돌려주는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api, total_posts_displays_sum_of_7_days, total_comments_displays_sum_of_7_days
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_post_graph_returns_current_7_day_bars_and_totals(): void
     {
-        $today = CarbonImmutable::today();
+        $today = $this->service->siteToday();
         for ($i = 0; $i < 7; $i++) {
             BoardStat::create([
                 'date' => $today->subDays($i)->toDateString(),
@@ -133,10 +174,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame($today->toDateString(), $graph['days'][6]['date']);
     }
 
+    /**
+     * 직전 7일 대비 증감율을 계산하는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_previous_week, user_role=admin_with_dashboard_permission
+     *
+     * @effects posts_change_rate_emerald_when_positive
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_post_graph_change_rate_is_calculated_vs_previous_7_days(): void
     {
-        $today = CarbonImmutable::today();
+        $today = $this->service->siteToday();
         // 이번 7일: 게시글 합 14
         for ($i = 0; $i < 7; $i++) {
             BoardStat::create(['date' => $today->subDays($i)->toDateString(), 'post_count' => 2, 'comment_count' => 0]);
@@ -152,10 +202,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame(100.0, $graph['posts_change']);
     }
 
+    /**
+     * 직전 7일 자료가 없으면 증감율이 null 인지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=no_previous_week, user_role=admin_with_dashboard_permission
+     *
+     * @effects posts_change_rate_dash_when_previous_week_empty
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_post_graph_change_rate_is_null_when_no_previous_data(): void
     {
-        $today = CarbonImmutable::today();
+        $today = $this->service->siteToday();
         for ($i = 0; $i < 7; $i++) {
             BoardStat::create(['date' => $today->subDays($i)->toDateString(), 'post_count' => 2, 'comment_count' => 3]);
         }
@@ -166,6 +225,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertNull($graph['comments_change']);
     }
 
+    /**
+     * 집계 행이 없으면 마지막 집계 캡션이 비는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects post_graph_updated_at_caption_hidden_when_no_aggregated_rows
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_post_graph_updated_at_display_is_empty_when_no_rows(): void
     {
@@ -177,6 +245,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame('', $graph['updated_at_display']);
     }
 
+    /**
+     * 마지막 집계 캡션이 게시판 날짜 표시 규칙을 따르는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects post_graph_updated_at_caption_uses_board_date_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_post_graph_updated_at_display_uses_board_date_format(): void
     {
@@ -184,7 +261,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
         //   - 24시간 이상 차이: 올해는 'MM-DD', 작년 이전은 'YY-MM-DD'
         // 캡션이 게시판 날짜 표시 규칙과 일관되어야 한다는 회귀 가드.
         // (게시글 created_at 표시와 동일 컨벤션 — 시각 검증 피드백)
-        $today = CarbonImmutable::today();
+        $today = $this->service->siteToday();
         // 어제 자정에 마지막 스케줄러가 돈 상황을 시뮬레이션
         $yesterdayBoundary = $today->subDay()->setTime(0, 0, 0);
         $row = BoardStat::create([
@@ -192,7 +269,8 @@ class BoardDashboardServiceTest extends ModuleTestCase
             'post_count' => 1,
             'comment_count' => 0,
         ]);
-        $row->forceFill(['updated_at' => $yesterdayBoundary->toDateTimeString()])->saveQuietly();
+        // updated_at 은 UTC 저장 시각 — 사이트 하루의 자정을 UTC 로 바꿔 적어야 「24시간 전」이 된다.
+        $row->forceFill(['updated_at' => $yesterdayBoundary->utc()->toDateTimeString()])->saveQuietly();
 
         $graph = $this->service->getPostGraph(7);
 
@@ -206,10 +284,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 최신글이 삭제 글을 빼고 최신순으로 나오는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects latest_posts_card_renders_recent_posts_api_items
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_recent_posts_returns_non_deleted_posts_ordered_by_latest(): void
     {
-        $this->makePost('오래된 글', CarbonImmutable::today()->subDays(2)->toDateTimeString());
+        $this->makePost('오래된 글', $this->service->siteToday()->subDays(2)->toDateTimeString());
         $this->makePost('삭제된 글', null, trashed: true);
         $latest = $this->makePost('최신 글');
 
@@ -219,6 +306,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame($latest->id, $posts->first()->id);
     }
 
+    /**
+     * 최신글에서 답글을 빼고 원글만 나오는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects latest_posts_card_excludes_replies_shows_only_root_posts
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_recent_posts_excludes_replies(): void
     {
@@ -235,6 +331,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame($parent->id, $posts->first()->id);
     }
 
+    /**
+     * 미처리 신고 목록과 총 건수를 돌려주는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_reports, user_role=admin_with_dashboard_permission
+     *
+     * @effects pending_reports_card_renders_pending_reports_api_items, pending_reports_count_badge_shows_total
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_get_pending_reports_returns_items_and_total(): void
     {
@@ -249,10 +354,19 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertCount(2, $result['items']);
     }
 
+    /**
+     * 집계가 최근 7일만 갱신하고 그 이전 행은 보존하는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_aggregate_recent_days_upserts_only_recent_7_days_preserving_older(): void
     {
-        $today = CarbonImmutable::today();
+        $today = $this->service->siteToday();
 
         // 8일 전 기존 행 (보존되어야 함)
         $eightDaysAgo = $today->subDays(8)->toDateString();
@@ -278,6 +392,15 @@ class BoardDashboardServiceTest extends ModuleTestCase
         $this->assertSame(8, BoardStat::count());
     }
 
+    /**
+     * 집계를 다시 돌려도 행이 늘지 않는지 확인합니다.
+     *
+     * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
+     *
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_aggregate_recent_days_is_idempotent_on_rerun(): void
     {

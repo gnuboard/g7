@@ -58,7 +58,7 @@ export const test = base.extend<BoardAuthFixtures>({
     );
   },
   replyPolicyToken: async ({}, use) => {
-    // 게시판 스코프 권한은 slug 가 식별자에 박히므로 전용 게시판 slug 로 발급.
+    // 게시판 스코프 권한은 slug 가 식별자에 박혀 게시판을 만든 뒤에야 생긴다 — admin 역할이 그 권한을 받는다.
     // core.profile.read: 게시판 생성 필수값(board_manager_ids)에 넣을 본인 uuid 조회용.
     await use(
       issueToken(
@@ -69,9 +69,8 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.delete',
         'sirsoft-board.settings.read',
         'sirsoft-board.settings.update',
-        'sirsoft-board.e2e-reply-policy.admin.posts.read',
-        'sirsoft-board.e2e-reply-policy.admin.posts.write',
-        'sirsoft-board.e2e-reply-policy.admin.manage',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
       ),
     );
   },
@@ -89,7 +88,7 @@ export const test = base.extend<BoardAuthFixtures>({
     );
   },
   attachmentDownloadToken: async ({}, use) => {
-    // 다운로드는 scope 권한(sirsoft-board.{slug}.attachments.download). 임의 식별자라 즉시 발급.
+    // 다운로드는 scope 권한(sirsoft-board.{slug}.attachments.download). notice 게시판이 있어야 발급된다(없으면 발급 커맨드가 거절).
     await use(
       issueToken(
         'sirsoft-board.boards.read',
@@ -106,10 +105,8 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.create',
         'sirsoft-board.boards.update',
         'sirsoft-board.boards.delete',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.read',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
-        'sirsoft-board.e2e-content-thumbnail.admin.manage',
-        'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
       ),
     );
   },
@@ -121,10 +118,8 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.read',
         'sirsoft-board.boards.create',
         'sirsoft-board.boards.delete',
-        'sirsoft-board.e2e-reply-attachment.admin.posts.read',
-        'sirsoft-board.e2e-reply-attachment.admin.posts.write',
-        'sirsoft-board.e2e-reply-attachment.admin.manage',
-        'sirsoft-board.e2e-reply-attachment.admin.attachments.upload',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
       ),
     );
   },

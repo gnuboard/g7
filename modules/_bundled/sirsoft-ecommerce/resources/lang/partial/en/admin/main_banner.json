@@ -8,6 +8,7 @@
   "preview": {
     "title": "Customer Preview",
     "info": "Total {{count}} banners · Auto-rotate every {{interval}} seconds",
+    "info_one": "Total {{count}} banner · Auto-rotate every {{interval}} seconds",
     "carousel_placeholder": "Carousel component development required"
   },
   "list": {

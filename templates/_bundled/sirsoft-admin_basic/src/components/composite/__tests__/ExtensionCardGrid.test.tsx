@@ -606,3 +606,37 @@ describe('ExtensionCardGrid — 상태 표시', () => {
     expect(within(deps).getByText('Daum 우편번호')).toBeTruthy();
   });
 });
+
+describe('ExtensionCardGrid — 켜기 스위치의 접근 가능한 이름 (O-Q2-1)', () => {
+  // 업데이트·레이아웃 편집 단추가 스위치 바로 앞에 서면, 이름 없는 스위치가 곁 글자를 찾아 그 단추 글자를
+  // 이름으로 집었다 — 화면 읽기에서 모듈·플러그인 카드 스위치가 「업데이트」, 템플릿 카드는 「레이아웃 편집」.
+  // @scenario control=extension_card_switch
+  // @effects extension_card_switch_named_by_extension
+  it('업데이트 단추가 있는 카드의 스위치는 확장 이름으로 읽힌다', () => {
+    setContainerWidth(1072);
+    render(
+      <ExtensionCardGrid
+        items={[baseItem({ primaryAction: { label: '업데이트', variant: 'solid' }, toggle: { checked: true, label: 'CKEditor 5' } })]}
+        onToggle={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('switch', { name: 'CKEditor 5' })).toBeTruthy();
+    expect(screen.queryAllByRole('switch', { name: '업데이트' })).toHaveLength(0);
+  });
+
+  // @scenario control=extension_card_switch
+  // @effects extension_card_switch_named_by_extension
+  it('레이아웃 편집 단추가 있는 템플릿 카드의 스위치도 확장 이름으로 읽힌다(목록 보기 포함)', () => {
+    setContainerWidth(1072);
+    render(
+      <ExtensionCardGrid
+        viewMode="list"
+        items={[baseItem({ name: '관리자 기본', secondaryAction: { label: '레이아웃 편집' }, toggle: { checked: true } })]}
+        onToggle={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('switch', { name: '관리자 기본' })).toBeTruthy();
+  });
+});

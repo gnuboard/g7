@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Contracts\Foundation\Application;
+
 /**
  * 다국어 라벨 해석 헬퍼.
  *
@@ -9,17 +11,17 @@
  *
  * @since 7.0.0-beta.4
  */
-
 if (! function_exists('localized_label')) {
     /**
      * 다국어 라벨을 활성 locale 기준으로 해석합니다.
      *
      * 우선순위: nameKey __() > value[locale] > fallbackKey __() > value[fallback_locale] > value 첫 키
      *
-     * @param  array<string, string>|null  $value        ['ko' => ..., 'en' => ...] 형태 (settings JSON)
-     * @param  string|null                 $nameKey      lang key 직접 선언 (registry payload)
-     * @param  string|null                 $fallbackKey  $value 의 활성 locale 키 부재 시 __() 호출 키
-     * @param  string|null                 $locale       명시 locale (기본: app()->getLocale())
+     * @param  array<string, string>|null  $value  ['ko' => ..., 'en' => ...] 형태 (settings JSON)
+     * @param  string|null  $nameKey  lang key 직접 선언 (registry payload)
+     * @param  string|null  $fallbackKey  $value 의 활성 locale 키 부재 시 __() 호출 키
+     * @param  string|null  $locale  명시 locale (기본: app()->getLocale())
+     * @return string 해석된 라벨 (어디에도 없으면 빈 문자열)
      */
     function localized_label(
         ?array $value = null,
@@ -31,8 +33,8 @@ if (! function_exists('localized_label')) {
         // 명시 인자 → app locale → fallback_locale → 'ko'
         $hasLaravelApp = function (): bool {
             try {
-                return function_exists('app') && app() instanceof \Illuminate\Contracts\Foundation\Application;
-            } catch (\Throwable) {
+                return function_exists('app') && app() instanceof Application;
+            } catch (Throwable) {
                 return false;
             }
         };
@@ -41,13 +43,13 @@ if (! function_exists('localized_label')) {
             if ($hasLaravelApp()) {
                 try {
                     $locale = app()->getLocale();
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // 무시
                 }
                 if ($locale === null) {
                     try {
                         $locale = config('app.fallback_locale', 'ko');
-                    } catch (\Throwable) {
+                    } catch (Throwable) {
                         $locale = 'ko';
                     }
                 }
@@ -64,7 +66,7 @@ if (! function_exists('localized_label')) {
                 $translated = __($key, [], $locale);
 
                 return is_string($translated) ? $translated : null;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return null;
             }
         };
@@ -96,7 +98,7 @@ if (! function_exists('localized_label')) {
             if ($hasLaravelApp()) {
                 try {
                     $fallback = config('app.fallback_locale', 'ko');
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // 'ko' 유지
                 }
             }
@@ -130,9 +132,9 @@ if (! function_exists('localize_catalog_field')) {
      * );
      * ```
      *
-     * @param  array<string, string>  $field    ['ko' => '...', 'en' => '...'] 다국어 JSON
-     * @param  string                  $langKey  완전한 lang key (네임스페이스 prefix 포함)
-     * @return array<string, string>            보강된 다국어 JSON
+     * @param  array<string, string>  $field  ['ko' => '...', 'en' => '...'] 다국어 JSON
+     * @param  string  $langKey  완전한 lang key (네임스페이스 prefix 포함)
+     * @return array<string, string> 보강된 다국어 JSON
      *
      * @since 7.0.0-beta.4
      */
@@ -153,7 +155,7 @@ if (! function_exists('localize_catalog_field')) {
                 if (is_string($translated) && $translated !== $langKey) {
                     $field[$locale] = $translated;
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Laravel app 미초기화 환경 — skip
             }
         }
@@ -167,8 +169,9 @@ if (! function_exists('localized_payload')) {
      * Registry payload 단축 helper — entry 의 {field} (다국어 JSON) 와 {field}_key (lang key) 를 자동 처리.
      *
      * @param  array<string, mixed>  $entry  ['name' => [...], 'name_key' => '...']
-     * @param  string                $field  처리할 필드명 (기본: 'name')
-     * @param  string|null           $locale
+     * @param  string  $field  처리할 필드명 (기본: 'name')
+     * @param  string|null  $locale  명시 locale (기본: app()->getLocale())
+     * @return string 해석된 라벨
      */
     function localized_payload(array $entry, string $field = 'name', ?string $locale = null): string
     {
@@ -180,5 +183,33 @@ if (! function_exists('localized_payload')) {
             nameKey: is_string($nameKey) ? $nameKey : null,
             locale: $locale,
         );
+    }
+}
+
+if (! function_exists('trans_count')) {
+    /**
+     * 치환값의 수(`count`)로 단·복수 문구를 골라 번역합니다.
+     *
+     * 사전 값이 `단수|복수`(Laravel `trans_choice` 형)이면 `count` 가 1 일 때 단수, 0·2 이상·소수일 때
+     * 복수를 고른다(영어 기준 — 프런트 번역 엔진이 `count` 로 CLDR 범주를 고르는 것과 같은 결과. 음수 -1 만
+     * 서버는 복수·프런트는 단수로 다르다). 복수 구분 기호가 없는 값(한국어 등)은 `__()` 와 같은 결과를 돌려준다.
+     * `count` 가 없거나 숫자가 아니면(예: `number_format()` 의 `1,000`) `__()` 를 그대로 부르므로 `단수|복수`
+     * 값은 두 문장이 이어져 나온다 — 수는 서식 없이 넘긴다. 메시지 키와 치환값을 함께 넘기는 공용 응답·예외·
+     * 활동 로그가 쓴다.
+     *
+     * @param  string  $key  다국어 키
+     * @param  array<string, mixed>  $replace  치환값 (`count` 가 숫자이면 단·복수 선택에 쓴다)
+     * @param  string|null  $locale  로케일 (기본: 현재 로케일)
+     * @return string 번역 문구
+     */
+    function trans_count(string $key, array $replace = [], ?string $locale = null): string
+    {
+        $count = $replace['count'] ?? null;
+
+        if (is_int($count) || is_float($count) || (is_string($count) && is_numeric($count))) {
+            return trans_choice($key, $count + 0, $replace, $locale);
+        }
+
+        return __($key, $replace, $locale);
     }
 }

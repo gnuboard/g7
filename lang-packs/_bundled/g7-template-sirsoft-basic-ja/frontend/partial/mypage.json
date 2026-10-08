@@ -59,6 +59,7 @@
     "delete_avatar": "削除",
     "avatar_upload": "画像変更",
     "avatar_delete": "削除",
+    "avatar_preview": "新しいプロフィール画像のプレビュー",
     "avatar_hint": "JPG, PNG, GIF, WebP（最大2MB）",
     "avatar_uploaded": "プロフィール画像がアップロードされました。",
     "avatar_updated": "プロフィール画像が変更されました。",

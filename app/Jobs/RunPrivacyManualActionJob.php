@@ -81,6 +81,10 @@ class RunPrivacyManualActionJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        app(PrivacyManualRunService::class)->failFromJob($this->runId, $exception->getMessage());
+        // 기록의 실패 사유는 관리자 화면에 그대로 보인다 — 운영 모드에서는 내부 예외 원문을 일반 문구로 바꾼다.
+        app(PrivacyManualRunService::class)->failFromJob(
+            $this->runId,
+            PrivacyManualRunService::failureReason($exception, ['run_id' => $this->runId]),
+        );
     }
 }

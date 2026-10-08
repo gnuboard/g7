@@ -1,0 +1,21 @@
+feature: 확장 설치·활성화·업데이트 실패 응답은 운영 모드에서 DB·PHP 내부 정보를 싣지 않는다
+
+description: |
+  모듈·플러그인·템플릿 Service 가 예외 원문을 「…에 실패했습니다: :error」 로 감싸 검증 오류(422)로 던지기 때문에
+  운영 모드(APP_DEBUG=false)에서도 DB 예외의 SQL·DB 호스트·포트·DB 이름이 관리자 토스트에 그대로 보였다
+  (#736 F 영역 실측 O-F7). 운영 모드에서는 DB 예외·PHP 런타임 오류의 원문을 일반 문구로 바꾸고 원문은 서버 로그에
+  남긴다. 디버그 모드와 확장이 일부러 던진 사용자용 사유는 종전대로 보인다.
+
+axes:
+  case: [production_masks_db_exception, debug_keeps_raw_detail, domain_reason_kept]
+
+effects:
+  - extension_failure_hides_internal_detail
+
+notes:
+  - 작업(설치·활성화·비활성화·제거)과 확장 종류(모듈·플러그인·템플릿·언어팩)는 축이 아니라 한 시험 안에서 모두 돈다.
+  - 판정 규칙 자체는 tests/Unit/Support/SafeExceptionMessageTest.php 가 예외 종류별로 고정한다.
+
+test_files:
+  - tests/Feature/Api/Admin/ExtensionFailureInternalDetailMaskingTest.php
+  - tests/Unit/Support/SafeExceptionMessageTest.php

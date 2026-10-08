@@ -99,7 +99,7 @@
               <set-state target="local" filter.createdBy="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다. -->
               <set-state target="local" filter.createdBy="" :actorSearchResults="[]"/>

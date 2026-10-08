@@ -772,7 +772,7 @@
                             "props": {
                                 "className": "text-sm text-yellow-700 dark:text-yellow-400"
                             },
-                            "text": "$t:auth.password_change.reason_remind|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}"
+                            "text": "$t:auth.password_change.reason_remind|count={{_global.passwordChange?.postpone_days ?? 0}}|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}"
                         },
                         {
                             "type": "basic",

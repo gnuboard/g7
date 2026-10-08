@@ -114,6 +114,10 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 전체 회원을 돌려주므로, 다른 회원 검색 칸과 같이 검색어 없는 조회를 보내지 않도록 두 칸의 호출에 `if="{{String($event.target.value ?? '').trim() !== ''}}"` 가 걸려 있습니다 — 태그
 입력은 검색칸을 지울 때 빈 문자열로 `onInputChange` 를 부르기 때문입니다(#703). 두 칸의 결과는
 `managerSearchResults`·`stepSearchResults` 로 나눠 담습니다.
+
+신고·반응·스크랩 관리 목록의 빠른 기간 버튼은 날짜 식에서 「오늘」을 **계정 시간대**(`current_user?.data?.timezone`
+→ 없으면 `_global.settings?.general?.timezone`)로 만들고, 그 달력 날짜에서 UTC 셈으로 날·달을 빼 브라우저 시간대가
+끼지 않게 합니다 — 서버가 날짜 칸을 보는 사람의 시간대 하루로 자르기 때문입니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

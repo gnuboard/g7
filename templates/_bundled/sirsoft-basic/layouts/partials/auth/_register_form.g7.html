@@ -100,12 +100,13 @@
     </div>
     <!-- 확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음). -->
     <div data-ref="register_extension_fields"/>
-    <!-- 약관 동의 -->
+    <!-- 약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면
+         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6). -->
     <div class="space-y-2 pt-2">
       <div>
         <div class="flex items-center gap-2">
-          <checkbox name="agree_terms" value="1" :required="true" disabled="{{_local?.isRegistering}}"/>
-          <label class="text-sm text-gray-700 dark:text-gray-300">
+          <checkbox name="agree_terms" value="1" aria-label="$t:auth.agree_terms_label" :required="true" disabled="{{_local?.isRegistering}}"/>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
             <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
               <on type="click">
                 <!-- 약관 전문 보기 — 모달을 열기 전에 본문을 받아 온다(가입 화면 진입 때는 부르지 않는 데이터소스라 여기서 처음 채워진다). -->
@@ -117,14 +118,14 @@
               $t:auth.terms
             </button>
             <span> $t:auth.agree_required</span>
-          </label>
+          </div>
         </div>
         <span data-if="{{_local.errors?.agree_terms}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_terms?.[0] ?? ''}}</span>
       </div>
       <div data-ref="register_privacy_agreement">
         <div class="flex items-center gap-2">
-          <checkbox name="agree_privacy" value="1" :required="true" disabled="{{_local?.isRegistering}}"/>
-          <label class="text-sm text-gray-700 dark:text-gray-300">
+          <checkbox name="agree_privacy" value="1" aria-label="$t:auth.agree_privacy_label" :required="true" disabled="{{_local?.isRegistering}}"/>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
             <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
               <on type="click">
                 <!-- 방침 전문 보기 — 약관 쪽과 같은 흐름이고 받아오는 문서만 다르다. -->
@@ -136,7 +137,7 @@
               $t:auth.privacy
             </button>
             <span> $t:auth.agree_required</span>
-          </label>
+          </div>
         </div>
         <span data-if="{{_local.errors?.agree_privacy}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_privacy?.[0] ?? ''}}</span>
       </div>

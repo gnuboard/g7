@@ -459,7 +459,7 @@ AuthManager.getInstance().updateConfig(
 ): void
 ```
 
-`AuthConfig` 의 갱신 가능 필드: `loginPath`, `defaultPath`, `loginEndpoint`, `logoutEndpoint`, `refreshEndpoint`, `userEndpoint`, `unauthorizedRedirect`.
+`AuthConfig` 의 갱신 가능 필드: `loginPath`, `defaultPath`, `loginEndpoint`, `logoutEndpoint`, `refreshEndpoint`, `userEndpoint`, `unauthorizedRedirect`, `guestOnlyPaths`(engine-v1.78.1).
 
 ### 호출 위치 — 템플릿 부트스트랩만
 
@@ -487,6 +487,17 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 ```typescript
 const locale = window.G7Core?.locale || 'ko';
 AuthManager.getInstance().updateConfig('user', { loginPath: `/${locale}/login` });
+```
+
+### 코드 예시 3 — 로그인 전용 화면 경로 (`guestOnlyPaths`)
+
+로그인 이동 주소(`getLoginRedirectUrl`)는 로그인 전용 화면(로그인·가입·비밀번호 찾기·재설정)을 복귀 경로(`?redirect=`)로 싣지 않는다 — 실으면 로그인을 마친 뒤 다시 로그인 폼에 떨어진다. 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣는다. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이고 `loginPath` 는 항상 포함된다. 이 화면들의 경로를 바꾼 템플릿은 `loginPath` 와 함께 갱신한다.
+
+```typescript
+AuthManager.getInstance().updateConfig('user', {
+  loginPath: '/account/signin',
+  guestOnlyPaths: ['/account/signin', '/account/join', '/account/forgot', '/account/reset'],
+});
 ```
 
 ### 호출 금지 — 모듈/플러그인

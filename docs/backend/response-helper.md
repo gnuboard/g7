@@ -95,6 +95,15 @@ return ResponseHelper::success('plugins.settings.updated', $settings);
 return ResponseHelper::success($data, 'messages.success');  // 인수 순서 틀림
 ```
 
+### 개수에 따른 단수·복수 메시지
+
+`$messageParams` 에 숫자 `count` 가 있으면 메시지를 그 수로 고른다(`trans_count()` — 사전 값이 `단수|복수` 꼴일 때 1 이면 단수, 그 밖은 복수). 수 자리표시자 이름이 다르면(`:limit` 등) 같은 수를 `count` 로도 넘긴다. 사전 작성법은 [module-i18n.md 「수에 따른 단수·복수 (백엔드)」](../extension/module-i18n.md#수에-따른-단수복수-백엔드).
+
+```php
+// en: ':count item deleted.|:count items deleted.'  →  「1 item deleted.」 / 「3 items deleted.」
+return ResponseHelper::success('messages.items.bulk_deleted', $result, 200, ['count' => $deleted]);
+```
+
 ---
 
 ## 데이터 소스용 API ⭐

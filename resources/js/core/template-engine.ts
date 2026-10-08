@@ -434,7 +434,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
       logger.error(`편집기 번들 로드 실패 (${src})`, error);
 
-      throw new Error('편집기를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+      throw new Error(ErrorDisplay.text('core.errors.layout_editor_bundle_failed'));
     }
 
     const chrome = (window as any).G7Core?.__LayoutEditorChrome;
@@ -443,7 +443,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null;
       logger.error(`편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출 (${src})`);
 
-      throw new Error('편집기를 불러왔으나 초기화하지 못했습니다. 페이지를 새로고침해 주세요.');
+      throw new Error(ErrorDisplay.text('core.errors.layout_editor_init_failed'));
     }
 
     return chrome;
@@ -522,11 +522,12 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
           logger.error('레이아웃 편집기 번들 로드 실패', loadError);
           // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
           ErrorDisplay.render(options.containerId, {
-            title: '레이아웃 편집기 로드 실패',
+            // 문구는 화면 언어를 따른다(ErrorDisplay 내장 문구) — 편집기 화면이 뜨지 않은 상태라 번역 파일에 기대지 않는다.
+            title: ErrorDisplay.text('core.errors.layout_editor_load_failed'),
             message:
               loadError instanceof Error
                 ? loadError.message
-                : '편집기 번들을 불러오지 못했습니다.',
+                : ErrorDisplay.text('core.errors.layout_editor_bundle_failed'),
             icon: 'fas fa-triangle-exclamation',
             showStack: false,
             showReloadButton: true,

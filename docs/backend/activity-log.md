@@ -505,6 +505,16 @@ public function handleEntityAfterDelete(Model $entity): void
 }
 ```
 
+### 개수가 들어가는 문구: `count` 함께 저장
+
+영어 값이 `단수|복수`(예: `'(:count item)|(:count items)'`)인 문구는 화면 번역이 `description_params.count`
+로 단·복수를 고릅니다. 수 자리표시자가 `:count` 가 아니어도(`:attempts`·`:days` 등) 같은 수를 `count` 로 함께
+저장합니다. `count` 없이 저장된 옛 행은 처음 나오는 수 치환값으로 고릅니다.
+
+```php
+'description_params' => ['attempts' => $attempts, 'minutes' => $minutes, 'count' => $attempts],
+```
+
 ### properties vs changes vs description_params 역할 구분
 
 | 컬럼 | 용도 | 저장 내용 |

@@ -32,8 +32,8 @@
 | target_type | query | string | 아니오 | — | 신고 대상 타입 필터 (`post`/`comment`). 단일 문자열 또는 배열로 여러 타입을 전달할 수 있습니다. |
 | target_status | query | string | 아니오 | — | 신고 대상 콘텐츠의 현재 상태 필터 (게시글/댓글의 status 기준). 단일 문자열 또는 배열로 전달하며 `all`은 무시됩니다. |
 | board_id | query | integer | 아니오 | — | board 식별자 |
-| reported_at_from | query | string | 아니오 | — | 신고 접수 기간 시작일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 00:00:00 이후 건만 조회합니다. |
-| reported_at_to | query | string | 아니오 | — | 신고 접수 기간 종료일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 23:59:59 이전 건만 조회합니다. |
+| reported_at_from | query | string | 아니오 | — | 신고 접수 기간 시작일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 00:00:00 이후 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
+| reported_at_to | query | string | 아니오 | — | 신고 접수 기간 종료일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 23:59:59 이전 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
 | sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | — | 페이지당 항목 수 |

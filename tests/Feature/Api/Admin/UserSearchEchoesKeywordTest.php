@@ -139,6 +139,31 @@ class UserSearchEchoesKeywordTest extends TestCase
     }
 
     /**
+     * 키워드의 LIKE 와일드카드(`%`·`_`)는 글자 그대로 찾는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lookup=literal_wildcards
+     *
+     * @effects user_search_keyword_wildcards_are_literal
+     */
+    public function test_like_wildcards_in_keyword_match_literally(): void
+    {
+        $percent = User::factory()->create(['name' => 'qa-pct%1', 'nickname' => null, 'email' => 'qa-pct-literal@example.test']);
+        User::factory()->create(['name' => 'qa-pct91', 'nickname' => null, 'email' => 'qa-pct-wild@example.test']);
+        $under = User::factory()->create(['name' => 'qa-wild_a', 'nickname' => null, 'email' => 'qa-under-literal@example.test']);
+        User::factory()->create(['name' => 'qa-wildXa', 'nickname' => null, 'email' => 'qa-under-wild@example.test']);
+
+        // 회원 목록 검색(core 55)과 같이 자동완성 검색도 `%`·`_` 를 글자 그대로 찾는다 — 그대로 두면 `%` 한 글자가
+        // 범위 안 전체 회원을 돌려준다(#736 영역 C 실측: keyword=% → 167명 전부).
+        $pct = $this->withToken($this->token)->getJson('/api/admin/users/search?keyword='.urlencode('pct%1'))->assertOk();
+        $this->assertSame([$percent->uuid], collect($pct->json('data'))->pluck('uuid')->all());
+
+        $us = $this->withToken($this->token)->getJson('/api/admin/users/search?keyword='.urlencode('wild_a'))->assertOk();
+        $this->assertSame([$under->uuid], collect($us->json('data'))->pluck('uuid')->all());
+    }
+
+    /**
      * uuid 로 찾은 응답은 키워드가 없으므로 `null` 을 싣는지 검증합니다.
      *
      * 화면은 그 경우 키워드 비교를 하지 않는다 — 빈 문자열로 내려보내면 「검색어가 비었을 때」와

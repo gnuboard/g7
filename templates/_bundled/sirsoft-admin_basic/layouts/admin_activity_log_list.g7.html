@@ -64,7 +64,7 @@
           <h1 class="page-title">$t:admin.activity_log.page_title</h1>
           <p class="text-label-subtle mt-1">$t:admin.activity_log.page_description</p>
         </div>
-        <button data-ref="refresh_button" class="btn-icon">
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
           <on type="click">
             <!-- 새로고침 겸 조건 초기화 — `mergeQuery=false` 라 걸어 둔 필터가 전부 떨어진다. -->
             <navigate path="/admin/activity-logs" :mergeQuery="true">

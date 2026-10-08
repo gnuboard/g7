@@ -350,3 +350,41 @@ describe('stateScopeKey — scope 를 기억용 키로 접는다', () => {
     );
   });
 });
+
+/**
+ * 7.1.0 실측(영역 I2): 창 scope 는 창 id 만 보아, 같은 id 를 쓰는 다른 확장의 창 상태가 함께 매칭됐다(회원 목록 삭제 창에
+ * 「창 내용 채움」×3·「삭제 확인」×2). 창을 연 화면(호스트 레이아웃)의 주인 확장이 낸 묶음을 우선하고, 주인이 낸 묶음이
+ * 없을 때만 다른 출처 묶음을 쓴다.
+ */
+describe('matchStateItems — 창 상태는 호스트 레이아웃 주인의 묶음을 우선한다', () => {
+  const groups = [
+    { __source: { kind: 'module', id: 'sirsoft-board' }, scope: { kind: 'modal', match: 'privacy_run_modal' }, items: [{ id: 'modal_filled', label: 'board' }] },
+    { __source: { kind: 'plugin', id: 'sirsoft-gdpr' }, scope: { kind: 'modal', match: 'privacy_run_modal' }, items: [{ id: 'modal_filled', label: 'gdpr' }] },
+    { __source: { kind: 'template', id: 'sirsoft-admin_basic' }, scope: { kind: 'modal', match: 'privacy_run_modal' }, items: [{ id: 'modal_filled', label: 'core' }] },
+    { __source: { kind: 'module', id: 'sirsoft-ecommerce' }, scope: { kind: 'modal', match: 'only_in_ecommerce_spec' }, items: [{ id: 'x', label: 'ecom' }] },
+  ] as unknown as EditorStateGroupSpec[];
+  const scope = { kind: 'modal' as const, match: 'privacy_run_modal' };
+
+  /** @effects modal_states_prefer_host_owner_extension */
+  it('확장 레이아웃(`sirsoft-gdpr.plugin_settings`)의 창 → 그 확장 묶음만', () => {
+    expect(matchStateItems(groups, scope, 'sirsoft-gdpr.plugin_settings').map((i) => i.label)).toEqual(['gdpr']);
+    expect(matchStateItems(groups, scope, 'sirsoft-board.admin_board_settings').map((i) => i.label)).toEqual(['board']);
+  });
+
+  /** @effects modal_states_prefer_template_for_template_layout */
+  it('템플릿 레이아웃(`admin_settings`)의 창 → 템플릿 묶음만', () => {
+    expect(matchStateItems(groups, scope, 'admin_settings').map((i) => i.label)).toEqual(['core']);
+  });
+
+  /** @effects modal_states_fall_back_when_owner_has_none */
+  it('주인이 낸 묶음이 없으면 다른 출처 묶음을 쓴다(디그레이드)', () => {
+    const s = { kind: 'modal' as const, match: 'only_in_ecommerce_spec' };
+    expect(matchStateItems(groups, s, 'shop/cart').map((i) => i.label)).toEqual(['ecom']);
+  });
+
+  /** @effects modal_states_unchanged_without_host */
+  it('호스트를 모르거나 route 범위면 종전처럼 전부 concat', () => {
+    expect(matchStateItems(groups, scope).map((i) => i.label)).toEqual(['board', 'gdpr', 'core']);
+    expect(matchStateItems(groups, scope, null).map((i) => i.label)).toEqual(['board', 'gdpr', 'core']);
+  });
+});

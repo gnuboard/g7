@@ -1,5 +1,6 @@
 // e2e:allow basic Textarea 디폴트 시맨틱(.textarea) 머지 — 외형만 변경, 동작 무변. 다음 사이클에 다른 composite 와 함께 E2E spec 일괄 작성 예정.
 import React, { useRef, useCallback, useState, useEffect } from 'react';
+import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -25,6 +26,8 @@ export const Textarea: React.FC<TextareaProps> = ({
   const isComposingRef = useRef(false);
   // textarea 요소 참조
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // 곁 라벨을 이름으로 잇는다(7.1.0 J D-J7)
+  useAdjacentLabel(textareaRef as React.RefObject<HTMLElement | null>);
 
   // 내부 로컬 값 (IME 조합 중에도 화면에 표시됨)
   const [localValue, setLocalValue] = useState<string>(

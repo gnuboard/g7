@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
@@ -119,6 +119,9 @@ export const Modal: React.FC<ModalProps> = ({
     : closeOnBackdropClick;
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  // 제목 id 는 창마다 달라야 한다 — 고정 `modal-title` 이면 겹친 창의 이름이 문서에서 먼저 나온
+  // 아래 창 제목으로 읽혔다(#736 F 실측, 관리자 템플릿과 같은 구현).
+  const titleId = `modal-title-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(#736 S2 — 열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
   // 순서는 열린 시점으로 정하므로 onClose·closeOnEscape 는 ref 로 읽어 다시 그려져도 순서가 바뀌지 않게 한다.
@@ -137,6 +140,9 @@ export const Modal: React.FC<ModalProps> = ({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || openModalStack[openModalStack.length - 1] !== token) return;
+      // 창 안에서 펼친 팝업(선택 목록 등)이 있으면 이 Esc 는 팝업 몫이다 — 팝업이 자기 리스너로 닫는다(7.1.0 J D-J3,
+      // admin_basic 대칭). 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
+      if (modalRef.current?.querySelector('[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])')) return;
       if (closeOnEscapeRef.current) {
         onCloseRef.current();
       }
@@ -231,14 +237,14 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-labelledby={title ? titleId : undefined}
       >
         {/* Header */}
         {(title || icon || showCloseButton) && (
           <Div className="flex items-center justify-between p-4">
             {(title || icon) && (
               <Div
-                id="modal-title"
+                id={titleId}
                 className="flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-white"
               >
                 {icon && <Icon name={icon} size="md" className={iconClassName} />}

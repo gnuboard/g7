@@ -43,6 +43,11 @@ class LayoutMarkupApiTest extends TestCase
 
     private string $readerToken;
 
+    /**
+     * 편집·읽기 권한 관리자 토큰과 프로브 레이아웃·레이아웃 확장을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -87,6 +92,8 @@ class LayoutMarkupApiTest extends TestCase
      * 편집기가 화면을 여는 지점 — `action` 축(유휴 변환·저장·미리보기) 어디에도 속하지 않아 조합 마킹이 없다.
      *
      * @effects with_markup_returns_decompiled_markup_and_lint_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_show_with_markup_returns_markup_fields_for_layout_and_extension(): void
     {
@@ -112,9 +119,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 마크업 형식으로 저장하면 컴파일된 JSON 이 DB 에 실리고 lock_version 이 오르는지 검증합니다.
+     *
      * @scenario branch=layout, input=valid_edit, action=save
      *
      * @effects markup_save_compiles_to_json_and_bumps_lock_version
+     *
+     * @return void 반환값 없음
      */
     public function test_saving_markup_compiles_to_json_and_bumps_lock_version(): void
     {
@@ -151,6 +162,8 @@ class LayoutMarkupApiTest extends TestCase
      * @scenario branch=layout, input=valid_edit, action=idle_compile
      *
      * @effects with_markup_preserves_empty_map_vs_empty_list
+     *
+     * @return void 반환값 없음
      */
     public function test_show_with_markup_keeps_empty_map_distinct_from_empty_list(): void
     {
@@ -176,6 +189,95 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 다른 화면을 물려받아 제목·초기값만 바꾸는 화면(슬롯·컴포넌트 없음)을 저장할 수 있다.
+     *
+     * 저장 요청의 정리 단계가 «슬롯이 하나도 없는 extends 문서» 에 빈 `content` 슬롯을 지어 넣어, 부모가
+     * `content` 슬롯을 정의하지 않으면 「슬롯 "content"은 부모 레이아웃에 정의되지 않았습니다.」 로 막혔다
+     * (실측 2026-10-06, 7.1.0 전수 실측 I1: `admin_language_packs` → `admin_language_pack_list` 상속, 제목만
+     * 바꿔 저장 422). 부모가 그 슬롯을 정의했다면 빈 슬롯이 부모 본문을 비워 버리는 더 나쁜 결과가 된다.
+     *
+     * @scenario branch=layout, input=valid_edit, action=save
+     *
+     * @effects extends_only_layout_saves_without_synthesized_slot
+     *
+     * @return void 반환값 없음
+     */
+    public function test_saving_extends_only_layout_does_not_synthesize_a_content_slot(): void
+    {
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'admin_probe_parent',
+            'content' => [
+                'layout_name' => 'admin_probe_parent',
+                'version' => '1.0.0',
+                'components' => [['id' => 'parent_root', 'type' => 'basic', 'name' => 'Div', 'props' => ['className' => 'p-4']]],
+            ],
+        ]);
+        $child = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'admin_probe_child',
+            'extends' => 'admin_probe_parent',
+            'content' => [
+                'layout_name' => 'admin_probe_child',
+                'version' => '1.0.0',
+                'extends' => 'admin_probe_parent',
+                'meta' => ['title' => '옛 제목'],
+                'initLocal' => ['scopeContext' => 'all'],
+            ],
+        ]);
+
+        $markup = <<<'HTML'
+        <layout name="admin_probe_child" version="1.0.0" extends="admin_probe_parent">
+          <meta title="새 제목"/>
+          <init-local>
+            <field name="scopeContext" value="all"/>
+          </init-local>
+        </layout>
+        HTML;
+
+        $this->putJson('/api/admin/templates/sirsoft-admin_basic/layouts/admin_probe_child', [
+            'format' => 'markup',
+            'content' => $markup,
+            'expected_lock_version' => (int) $child->lock_version,
+        ], $this->headers($this->editorToken))->assertOk();
+
+        $stored = $child->fresh()->content;
+        $this->assertSame('새 제목', $stored['meta']['title'] ?? null);
+        $this->assertArrayNotHasKey('slots', $stored, '물려받기만 하는 화면에 빈 슬롯을 지어 넣지 않는다');
+        $this->assertSame('all', $stored['initLocal']['scopeContext'] ?? null);
+    }
+
+    /**
+     * 편집기 JSON 탭이 처음 여는 `data.content` 도 저장된 `{}` 를 `{}` 로 보여 준다.
+     *
+     * JSON 탭은 타이핑 전에는 이 필드를, 타이핑 뒤에는 컴파일 결과를 같은 자리에 보여 준다. 이 필드만
+     * 배열 캐스트를 거쳐 `{}` 를 `[]` 로 찍으면, 파일을 열자마자 JSON 탭에 틀린 값이 보이고 한 글자를
+     * 치는 순간 `{}` 로 바뀐다(실측 2026-10-06, 7.1.0 전수 실측 I1: `admin_role_list` 의
+     * `params.query` 가 DB 는 `{}` 인데 JSON 탭에는 `"query": []` 2곳).
+     *
+     * @scenario branch=layout, input=valid_edit, action=idle_compile
+     *
+     * @effects with_markup_preserves_empty_map_vs_empty_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_content_field_keeps_empty_map_distinct_from_empty_list(): void
+    {
+        DB::table('template_layouts')
+            ->where('id', $this->layout->id)
+            ->update(['content' => '{"layout_name":"admin_probe","initLocal":{},"components":[{"type":"basic","name":"Div","id":"probe_root","props":{"emptyMap":{},"emptyList":[]}}]}']);
+
+        $content = (string) $this->getJson(
+            '/api/admin/templates/sirsoft-admin_basic/layouts/admin_probe?with_markup=1',
+            $this->headers($this->editorToken)
+        )->assertOk()->json('data.content');
+
+        $this->assertStringContainsString('"emptyMap": {}', $content, '빈 map 은 JSON 탭에서도 `{}` 여야 한다');
+        $this->assertStringContainsString('"emptyList": []', $content, '빈 list 는 `[]` 로 남아야 한다');
+        $this->assertStringContainsString('"initLocal": {}', $content);
+    }
+
+    /**
      * `<global-headers>` 항목 주석이 저장 왕복에서 살아남고 목록 순서·형태가 유지되는지.
      *
      * 저장 검증(`UpdateLayoutContentRequest`)에서 `globalHeaders` 는 하위 키를 명시한 유일한 배열
@@ -189,6 +291,8 @@ class LayoutMarkupApiTest extends TestCase
      * @scenario branch=layout, input=valid_edit, action=save
      *
      * @effects markup_save_preserves_global_header_comments_and_order
+     *
+     * @return void 반환값 없음
      */
     public function test_saving_markup_preserves_global_header_comments_and_entry_order(): void
     {
@@ -222,9 +326,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 깨진 마크업 저장은 좌표가 달린 422 compile_error 를 돌려주고 행을 바꾸지 않는지 검증합니다.
+     *
      * @scenario branch=layout, input=compile_error, action=save
      *
      * @effects markup_compile_error_returns_422_with_position
+     *
+     * @return void 반환값 없음
      */
     public function test_saving_invalid_markup_returns_422_with_compile_error_and_leaves_row_untouched(): void
     {
@@ -256,9 +364,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 미리보기가 마크업 형식을 받아 토큰을 발급하는지 검증합니다.
+     *
      * @scenario branch=layout, input=valid_edit, action=preview
      *
      * @effects markup_preview_accepts_format_markup
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_accepts_markup(): void
     {
@@ -277,6 +389,8 @@ class LayoutMarkupApiTest extends TestCase
      * @scenario branch=layout, input=compile_error, action=preview
      *
      * @effects layout_preview_rejects_invalid_markup_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_rejects_invalid_markup_with_422(): void
     {
@@ -291,9 +405,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장도 마크업으로 저장하면 컴파일된 JSON 이 저장되는지 검증합니다.
+     *
      * @scenario branch=extension, input=valid_edit, action=save
      *
      * @effects extension_markup_save_persists_compiled_json
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_markup_save_persists_compiled_json(): void
     {
@@ -308,9 +426,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장의 컴파일 오류도 레이아웃 갈래와 같은 422 형태로 응답하고 저장하지 않는지 검증합니다.
+     *
      * @scenario branch=extension, input=compile_error, action=save
      *
      * @effects extension_markup_save_is_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_markup_compile_error_is_symmetric_with_the_layout_branch(): void
     {
@@ -326,9 +448,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장 미리보기가 마크업 형식을 받아 토큰을 발급하는지 검증합니다.
+     *
      * @scenario branch=extension, input=valid_edit, action=preview
      *
      * @effects extension_preview_accepts_format_markup
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_preview_accepts_markup(): void
     {
@@ -341,9 +467,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장 미리보기는 깨진 마크업에 422 를 돌려주고 토큰을 만들지 않는지 검증합니다.
+     *
      * @scenario branch=extension, input=compile_error, action=preview
      *
      * @effects extension_preview_rejects_invalid_markup_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_preview_rejects_invalid_markup_with_422(): void
     {
@@ -358,9 +488,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 마크업 변환 엔드포인트는 읽기 권한만으로 동작하지만 저장은 403 으로 막히는지 검증합니다.
+     *
      * @scenario branch=layout, input=valid_edit, action=idle_compile
      *
      * @effects markup_compile_endpoint_returns_json_or_422_and_needs_only_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_compile_endpoint_works_with_read_permission_but_saving_does_not(): void
     {
@@ -386,6 +520,8 @@ class LayoutMarkupApiTest extends TestCase
      * @scenario branch=layout, input=compile_error, action=idle_compile
      *
      * @effects layout_markup_compile_rejects_invalid_markup_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_compile_endpoint_rejects_invalid_layout_markup(): void
     {
@@ -400,9 +536,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장 마크업 변환이 올바른 조각을 JSON 으로 돌려주는지 검증합니다.
+     *
      * @scenario branch=extension, input=valid_edit, action=idle_compile
      *
      * @effects extension_markup_compile_returns_json_for_valid_fragment
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_markup_compile_returns_json_for_valid_fragment(): void
     {
@@ -415,9 +555,13 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
+     * 레이아웃 확장 마크업 변환이 깨진 조각에 좌표가 달린 422 를 돌려주는지 검증합니다.
+     *
      * @scenario branch=extension, input=compile_error, action=idle_compile
      *
      * @effects extension_markup_compile_rejects_invalid_fragment_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_markup_compile_rejects_invalid_fragment(): void
     {
@@ -431,13 +575,22 @@ class LayoutMarkupApiTest extends TestCase
     }
 
     /**
-     * @return array<string, string>
+     * Bearer 인증 헤더를 만듭니다.
+     *
+     * @param  string  $token  API 토큰
+     * @return array<string, string> 요청 헤더
      */
     private function headers(string $token): array
     {
         return ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
     }
 
+    /**
+     * 지정 권한을 가진 역할을 붙인 관리자 사용자를 생성합니다.
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 사용자
+     */
     private function createAdminUser(array $permissions): User
     {
         $user = User::factory()->create();

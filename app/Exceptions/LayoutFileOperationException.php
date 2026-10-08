@@ -32,6 +32,6 @@ class LayoutFileOperationException extends RuntimeException
         public readonly int $status = 422,
         ?Throwable $previous = null,
     ) {
-        parent::__construct(__($errorKey, $params), 0, $previous);
+        parent::__construct(trans_count($errorKey, $params), 0, $previous);
     }
 }

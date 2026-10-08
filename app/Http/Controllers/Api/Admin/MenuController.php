@@ -12,6 +12,7 @@ use App\Http\Requests\Menu\UpdateMenuRequest;
 use App\Http\Resources\MenuCollection;
 use App\Http\Resources\MenuResource;
 use App\Models\Menu;
+use App\Models\User;
 use App\Services\MenuService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -83,23 +84,26 @@ class MenuController extends AdminBaseController
     }
 
     /**
-     * 활성화된 메뉴들을 네비게이션용으로 반환합니다.
+     * 사이드바용으로 현재 사용자의 역할에 지정된 활성 메뉴를 반환합니다.
+     *
+     * 메뉴 관리 권한(core.menus.read) 없이 관리자 영역 접근만으로 부른다 — 「접근 가능 메뉴」로
+     * 메뉴를 지정받은 역할의 사이드바가 그 권한 유무에 따라 비지 않게 하기 위해서다.
      *
      * @return JsonResponse 네비게이션용 메뉴 데이터를 포함한 JSON 응답
      */
     public function active(): JsonResponse
     {
         try {
-            // 현재 사용자 정보 가져오기
+            // 이 엔드포인트는 메뉴 관리 권한을 요구하지 않으므로(관리자 영역 접근만) 응답을
+            // 반드시 내 역할에 지정된 메뉴로 좁힌다. 인증 사용자가 없을 때 전체 메뉴를 내주던
+            // 대체 경로는 두지 않는다 — 인증 미들웨어 밖에서 불려도 빈 목록이다.
             $user = Auth::user();
 
-            if ($user) {
-                // 사용자가 접근 가능한 메뉴만 조회
-                $navigationMenus = $this->menuService->getAccessibleNavigationMenus($user);
-            } else {
-                // 사용자 정보가 없으면 모든 활성화된 메뉴 조회 (fallback)
-                $navigationMenus = $this->menuService->getNavigationMenus();
+            if (! $user instanceof User) {
+                return $this->success('menu.fetch_success', []);
             }
+
+            $navigationMenus = $this->menuService->getAccessibleNavigationMenus($user);
 
             $collection = new MenuCollection($navigationMenus);
 

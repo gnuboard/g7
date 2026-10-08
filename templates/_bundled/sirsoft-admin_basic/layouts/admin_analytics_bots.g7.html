@@ -205,12 +205,15 @@
           <empty-state data-type="composite" data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
         </div>
         <div data-ref="recent_hits_card" class="admin-card">
-          <h2 class="section-heading mb-3">$t:admin.analytics.bots.recent_title</h2>
+          <h2 class="section-heading">$t:admin.analytics.bots.recent_title</h2>
+          <!-- 최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는
+               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10). -->
+          <p class="text-hint mb-3">$t:admin.analytics.bots.recent_hint</p>
           <div class="overflow-x-auto">
             <!-- 최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면
               카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서
               10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③). -->
-            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="occurred_at" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
               <column field="bot_name" header="$t:admin.analytics.bots.columns.bot" width="160px">
                 <cell>
                   <span class="text-heading">{{row.bot_name ?? '-'}}</span>

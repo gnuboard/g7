@@ -34,7 +34,7 @@ return [
     'contains' => ':attribute 필드에 필수 값이 누락되었습니다.',
     'current_password' => '비밀번호가 올바르지 않습니다.',
     'date' => ':attribute 필드는 유효한 날짜여야 합니다.',
-    'date_equals' => ':attribute 필드는 :date와 같은 날짜여야 합니다.',
+    'date_equals' => ':attribute 필드는 :date 날짜와 같아야 합니다.',
     'date_format' => ':attribute 필드는 :format 형식과 일치해야 합니다.',
     'decimal' => ':attribute 필드는 :decimal 자릿수의 소수점이어야 합니다.',
     'declined' => ':attribute 필드를 거부해야 합니다.',
@@ -92,7 +92,7 @@ return [
     'max' => [
         'array' => ':attribute 필드는 :max개를 초과하면 안 됩니다.',
         'file' => ':attribute 필드는 :max KB를 초과하면 안 됩니다.',
-        'numeric' => ':attribute 필드는 :max를 초과하면 안 됩니다.',
+        'numeric' => ':attribute 필드는 :max 이하여야 합니다.',
         'string' => ':attribute 필드는 :max자를 초과하면 안 됩니다.',
     ],
     'max_digits' => ':attribute 필드는 :max 자릿수를 초과하면 안 됩니다.',
@@ -431,7 +431,7 @@ return [
                 'iteration_count' => [
                     'integer' => '스켈레톤 반복 횟수는 정수여야 합니다.',
                     'min' => '스켈레톤 반복 횟수는 최소 :min이어야 합니다.',
-                    'max' => '스켈레톤 반복 횟수는 최대 :max를 초과할 수 없습니다.',
+                    'max' => '스켈레톤 반복 횟수는 최대 :max 이하여야 합니다.',
                 ],
             ],
             'wait_for' => [
@@ -922,10 +922,10 @@ return [
         'allowed_extensions_invalid_type' => '허용 확장자는 문자열 또는 배열이어야 합니다.',
         'image_max_width_integer' => '이미지 최대 너비는 정수여야 합니다.',
         'image_max_width_min' => '이미지 최대 너비는 100px 이상이어야 합니다.',
-        'image_max_width_max' => '이미지 최대 너비는 10000px를 초과할 수 없습니다.',
+        'image_max_width_max' => '이미지 최대 너비는 10000px 이하여야 합니다.',
         'image_max_height_integer' => '이미지 최대 높이는 정수여야 합니다.',
         'image_max_height_min' => '이미지 최대 높이는 100px 이상이어야 합니다.',
-        'image_max_height_max' => '이미지 최대 높이는 10000px를 초과할 수 없습니다.',
+        'image_max_height_max' => '이미지 최대 높이는 10000px 이하여야 합니다.',
         'image_quality_integer' => '이미지 품질은 정수여야 합니다.',
         'image_quality_min' => '이미지 품질은 1 이상이어야 합니다.',
         'image_quality_max' => '이미지 품질은 100을 초과할 수 없습니다.',
@@ -978,7 +978,7 @@ return [
         'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',
         'sitemap_hreflang_enabled_boolean' => 'Sitemap 다국어 대체 링크(hreflang) 설정은 true 또는 false 값이어야 합니다.',
         'sitemap_schedule_invalid' => '유효한 Sitemap 생성 주기를 선택해주세요.',
-        'sitemap_schedule_time_invalid' => 'Sitemap 생성 시각은 HH:mm 형식이어야 합니다.',
+        'sitemap_schedule_time_invalid' => 'Sitemap 생성 시각은 00:00~23:59 사이의 HH:mm 형식이어야 합니다.',
 
         // 보안 설정
         'force_https_required' => 'HTTPS 강제 적용 설정을 선택해주세요.',

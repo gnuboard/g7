@@ -288,6 +288,15 @@
                                     }
                                 },
                                 {
+                                    "comment": "옛 이름 탭을 거둔다 — 남기면 「없는 파일」 탭이 새 이름 탭과 나란히 남는다. 저장하지 않은 편집이 있는\n                   탭은 두어 편집분을 말없이 버리지 않는다(그 탭은 「새 이름으로 저장」 으로 살릴 수 있다).",
+                                    "handler": "setState",
+                                    "if": "{{!(_global.dirtyFileKeys ?? []).includes('layout:' + _global.fileFormTarget)}}",
+                                    "params": {
+                                        "target": "global",
+                                        "retiredFileKey": "layout:{{_global.fileFormTarget}}"
+                                    }
+                                },
+                                {
                                     "handler": "refetchDataSource",
                                     "params": {
                                         "dataSourceId": "layout_files"

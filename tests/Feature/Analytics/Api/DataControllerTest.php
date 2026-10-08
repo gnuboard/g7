@@ -53,6 +53,34 @@ class DataControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 표 목록의 원장 두 줄이 위의 정확한 계수와 같은 행 수를 보이는지 확인합니다.
+     *
+     * 표별 행 수는 DB 통계(TABLE_ROWS) 어림값이다. 같은 카드 위쪽은 「방문 19행」인데 표의 방문 기록 줄은
+     * 「11」로 보여 어느 쪽이 맞는지 알 수 없었다(7.1.0 실측 E-D7). 이미 정확히 센 두 표는 그 값을 쓴다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=data, role=read
+     *
+     * @effects storage_table_rows_use_the_exact_ledger_counts
+     */
+    public function test_ledger_table_rows_match_the_exact_counts(): void
+    {
+        $this->visit();
+        $this->visit();
+        $this->visit();
+
+        $response = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/data');
+
+        $response->assertOk();
+        $rows = collect($response->json('data.tables'))->keyBy('table');
+
+        $this->assertSame($response->json('data.exact.analytics_visits'), $rows['analytics_visits']['rows']);
+        $this->assertSame($response->json('data.exact.analytics_actions'), $rows['analytics_actions']['rows']);
+        $this->assertSame(3, $rows['analytics_visits']['rows']);
+    }
+
+    /**
      * 한계를 넘으면 현황이 그 사실을 표시하는지 확인합니다.
      *
      * @return void 없음

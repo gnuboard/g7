@@ -9,7 +9,7 @@ description: |
   환율 플러그인 창과 같은 방식으로 코어 창의 수신자·본문 블록을 이식한다.
 
 axes:
-  case: [specific_users_to_role, to_related_user, exclude_trigger_user_carry, other_rows_untouched, none_declared, named, undeclared, role, multiple, rich, none]
+  case: [specific_users_to_role, to_related_user, exclude_trigger_user_carry, other_rows_untouched, none_declared, named, undeclared, role, multiple, rich, none, picked_role, picked_user, role_chip_remove, user_chip_remove, chips_above_open_dropdown]
 
 effects:
   - gdpr_recipient_rule_type_switch_clears_previous_value
@@ -24,6 +24,13 @@ effects:
   - gdpr_rich_editor_writes_to_active_language_body
   - gdpr_core_editor_hidden_when_channel_owns_editor
   - gdpr_click_url_only_for_database_channel
+  # 7.1.0 전수 실측 영역 G 후속 — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함(게시판·코어 사본과 같은 결함)
+  - gdpr_recipient_picked_role_keeps_search_result_name
+  - gdpr_recipient_picked_user_keeps_search_result_name
+  # 7.1.0 칩 줄 통일 — 코어·이커머스와 같은 고른 역할·회원 칩, 열린 드롭다운에 가리지 않게 드롭다운 위에 둔다
+  - gdpr_role_chip_removes_value_and_name_together
+  - gdpr_user_chip_removes_value_and_name_together
+  - gdpr_chips_stay_visible_while_dropdown_open
 
 test_files:
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdprNotificationTemplateCoreContract.test.ts

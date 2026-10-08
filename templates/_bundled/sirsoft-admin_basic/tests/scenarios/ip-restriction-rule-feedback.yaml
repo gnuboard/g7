@@ -1,0 +1,19 @@
+feature: 환경설정 > 보안 > IP 접근 제한 규칙 — 스위치 이름과 지난 저장 오류 정리 (7.1.0 실측 O-B6·O-B7)
+
+description: |
+  - 규칙 표의 「사용」 스위치는 라벨이 열 머리글에만 있어 이름이 없었다 → `ariaLabel`(「사용」). 좁은 화면 카드 판은 보이는 라벨을 그대로 단다.
+  - 잘못된 IP 로 저장해 422 가 나면 규칙 표 아래 오류가 뜨는데, 규칙을 고치거나(창 열기·사용 토글·삭제) 창을
+    다시 열어도 다음 저장 전까지 남았다. 규칙을 고치는 자리마다 저장 오류에서 규칙 몫(security.ip_restriction_rules*)만 지운다
+    (`_computed.errorsWithoutIpRules` — 남는 오류가 없으면 null).
+  - 규칙 창 안의 빈 칸 안내(패턴·허용 IP)는 그 칸을 고치면 지운다. 창을 다시 열 때 비우는 것은 종전과 같다.
+
+axes:
+  surface: [rules_table, rule_modal]
+
+effects:
+  - rules_table_switch_named
+  - stale_rule_errors_cleared_on_rule_change
+  - rule_modal_error_cleared_on_input
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-ip-restriction-rules.test.tsx

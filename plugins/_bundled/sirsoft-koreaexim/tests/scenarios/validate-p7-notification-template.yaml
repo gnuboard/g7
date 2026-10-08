@@ -6,7 +6,7 @@ description: |
   채널 본문 편집기 선언(template_editor)을 무시하고 늘 위지윅을 띄움. 코어 창의 수신자·본문 블록을 이식한다.
 
 axes:
-  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, none_declared, role, none, rich]
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, none_declared, role, none, rich, picked_role, picked_user, role_chip_remove, user_chip_remove, chips_above_open_dropdown]
 
 effects:
   - recipient_rule_type_switch_clears_previous_value
@@ -20,6 +20,13 @@ effects:
   - koreaexim_role_rule_is_multi_select
   - koreaexim_core_editor_hidden_when_channel_owns_editor
   - koreaexim_body_editor_follows_channel_declaration
+  # 7.1.0 전수 실측 영역 G 후속 — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함(게시판·코어 사본과 같은 결함)
+  - koreaexim_recipient_picked_role_keeps_search_result_name
+  - koreaexim_recipient_picked_user_keeps_search_result_name
+  # 7.1.0 칩 줄 통일 — 코어·이커머스와 같은 고른 역할·회원 칩, 열린 드롭다운에 가리지 않게 드롭다운 위에 둔다
+  - koreaexim_role_chip_removes_value_and_name_together
+  - koreaexim_user_chip_removes_value_and_name_together
+  - koreaexim_chips_stay_visible_while_dropdown_open
 
 test_files:
   - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/koreaeximNotificationTemplateCoreContract.test.ts

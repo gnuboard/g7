@@ -14,6 +14,7 @@
   "create": "作成",
   "search": "検索",
   "search_placeholder": "検索キーワードを入力してください...",
+  "no_results": "検索結果がありません",
   "back": "戻る",
   "next": "次へ",
   "prev": "前へ",
@@ -62,5 +63,14 @@
   "last_page": "最後のページ",
   "page_n": "ページ {{n}}",
   "currency_unit": "ウォン",
-  "select_all": "すべて選択"
+  "select_all": "すべて選択",
+  "file_input": {
+    "clear": "ファイルを削除",
+    "browse": "ファイルを選択",
+    "no_file": "ファイルが選択されていません",
+    "too_large": "ファイルサイズが{{size}}MBを超えています。"
+  },
+  "theme_select": "画面テーマ",
+  "expand": "展開",
+  "collapse": "折りたたむ"
 }

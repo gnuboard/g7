@@ -159,7 +159,13 @@
                 "email": "admin@example.com"
               }
             }
-          ]
+          ],
+          "pagination": {
+            "total": 3,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20
+          }
         }
       },
       "gdprPolicyVersionSnapshot": {
@@ -1214,6 +1220,103 @@
                     "body": "<h1>홍길동님, 개인정보 이용내역을 안내합니다.</h1><p>최근 1년간 수집·이용한 개인정보 항목은 아래와 같습니다.</p>"
                   }
                 }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "GDPR 설정 연간 통지 「지금 발송」 확인 창. 카드의 버튼이 `_global.privacyRun` 에 대상 키·이름을 담고 건수를 받아 온 뒤 연다 — 상태 없이는 제목이 「{{target}} — 직권 실행」 원문으로 그려진다. 값은 표본 privacyManualRuns 의 것.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_run_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyRun": {
+                  "key": "sirsoft-gdpr:annual_notice",
+                  "label": "개인정보 연간 통지 발송",
+                  "supportsSkip": false,
+                  "skipWaiting": false,
+                  "preview": {
+                    "count": 5,
+                    "enabled": true
+                  },
+                  "loading": false,
+                  "submitting": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "GDPR 설정 연간 통지 「대상 보기」 창. 카드의 버튼이 `_global.privacyTargets` 에 창 제목을 담고 연다 — 상태 없이는 제목이 빈 칸이다.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_targets_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyTargets": {
+                  "currentPage": 1,
+                  "hasMore": false,
+                  "isLoadingMore": false,
+                  "title": "$t:sirsoft-gdpr.annual_notice.targets.title"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "마이페이지 개인정보 탭 「동의」 확인 창. 항목의 [동의] 버튼이 `_global.grantTarget*` 에 동의 항목을 담고 연다 — 상태 없이는 대상 이름이 빈 칸이고 [동의] 가 잠긴다.",
+        "scope": {
+          "kind": "modal",
+          "match": "grant_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "grantTargetKey": "analytics",
+                "grantTargetLabel": "분석 쿠키",
+                "grantTargetDescription": "방문자가 사이트를 어떻게 이용하는지 익명으로 측정해 더 나은 서비스를 만드는 데 사용됩니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "마이페이지 개인정보 탭 「철회」 확인 창. 항목의 [철회] 버튼이 `_global.revokeTarget*` 에 동의 항목과 마지막 동의일을 담고 연다 — 상태 없이는 대상 이름·동의일이 빈 칸이고 [철회] 가 잠긴다.",
+        "scope": {
+          "kind": "modal",
+          "match": "revoke_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "revokeTargetKey": "marketing",
+                "revokeTargetLabel": "마케팅 쿠키",
+                "revokeTargetDescription": "관심사에 맞는 광고를 보여주거나, 광고가 얼마나 효과적이었는지 측정하는 데 사용됩니다.",
+                "revokeTargetDate": "2026-03-02 14:20"
               }
             }
           }

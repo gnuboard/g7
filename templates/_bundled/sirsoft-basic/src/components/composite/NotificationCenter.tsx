@@ -300,9 +300,9 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         aria-label={titleText}
       >
         <Icon name={IconName.Bell} className="w-5 h-5" />
+        {/* 고정 w-5 원에 「99+」(약 23px)가 들어가면 양옆으로 넘친다 — 최소 폭 + 좌우 여백으로 늘어나게 둔다 */}
         {displayCount > 0 && (
-          // 20px 원 안에 12px `99+` 는 넘친다(실측 23.28px) — 세 자리 표시일 때만 9px 로 줄인다
-          <Span className={`absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-500 dark:bg-red-600 rounded-full`}>
+          <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}

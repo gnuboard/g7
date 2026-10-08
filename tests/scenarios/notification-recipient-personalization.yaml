@@ -49,6 +49,22 @@ effects:
   - after_send_receives_the_personalized_payload
   - zero_recipients_are_logged_as_skipped
   - empty_guest_email_is_logged_with_its_own_reason
+  # 건너뜀 사유는 규칙을 사람 말로 적는다 — 관계 이름·유발자 제외·역할 이름(7.1.0 실측 O-G7)
+  - zero_recipient_reason_names_rules_in_words
+  - zero_recipient_reason_names_role_by_display_name
+  # 발송 파이프라인 기본 경로 (NotificationDispatchIntegrationTest) — 수신 규칙별 실제 발송·데이터 추출
+  - trigger_user_sends_to_event_user
+  - role_sends_to_all_role_users
+  - specific_users_sends_to_designated_users
+  - role_excludes_trigger_user
+  - multiple_rules_combine_and_deduplicate
+  - sends_without_extract_data_filter
+  - inactive_definition_does_not_send
+  - legacy_notifiable_fallback_when_no_recipients
+  - core_welcome_extract_data
+  - core_reset_password_extract_data
+  - core_password_changed_extract_data
+  - core_unknown_type_returns_default
   # 수신자 해석 (NotificationRecipientResolverTest)
   # 링크 승격은 수신자마다 권한을 묻는다 — 재료를 함께 싣지 않으면 쿼리가 사람 수만큼 는다.
   - role_recipients_arrive_with_their_permissions_loaded

@@ -25,7 +25,9 @@ class ChannelUpdateRequest extends FormRequest
     private array $blockedChannelKeys = [];
 
     /**
-     * @param MarketingConsentService $consentService 마케팅 동의 서비스
+     * 동의 존재 확인에 쓸 서비스를 주입받습니다.
+     *
+     * @param  MarketingConsentService  $consentService  마케팅 동의 서비스
      */
     public function __construct(private MarketingConsentService $consentService)
     {
@@ -35,7 +37,7 @@ class ChannelUpdateRequest extends FormRequest
     /**
      * 권한 확인 (미들웨어에서 관리자 인증 처리)
      *
-     * @return bool
+     * @return bool 항상 true (권한은 라우트 미들웨어가 판정)
      */
     public function authorize(): bool
     {
@@ -45,25 +47,25 @@ class ChannelUpdateRequest extends FormRequest
     /**
      * 검증 규칙 정의
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 필드별 검증 규칙
      */
     public function rules(): array
     {
         return [
-            'channels'              => ['required', 'array', 'max:10'],
-            'channels.*.key'        => ['required', 'string', 'regex:/^[a-z0-9_]+$/'],
-            'channels.*.label'      => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 50)],
-            'channels.*.page_slug'  => ['nullable', 'string', 'max:100'],
-            'channels.*.enabled'    => ['required', 'boolean'],
-            'channels.*.is_system'  => ['required', 'boolean'],
+            'channels' => ['required', 'array', 'max:10'],
+            'channels.*.key' => ['required', 'string', 'regex:/^[a-z0-9_]+$/'],
+            'channels.*.label' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 50)],
+            'channels.*.page_slug' => ['nullable', 'string', 'max:100'],
+            'channels.*.enabled' => ['required', 'boolean'],
+            'channels.*.is_system' => ['required', 'boolean'],
         ];
     }
 
     /**
      * 커스텀 검증 — key 중복, is_system 보호, 동의 존재 시 삭제 거부
      *
-     * @param Validator $validator
-     * @return void
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -74,6 +76,7 @@ class ChannelUpdateRequest extends FormRequest
             $keys = array_column($channels, 'key');
             if (count($keys) !== count(array_unique($keys))) {
                 $validator->errors()->add('channels', __('sirsoft-marketing::messages.channel_key_duplicate'));
+
                 return;
             }
 
@@ -124,8 +127,8 @@ class ChannelUpdateRequest extends FormRequest
                     $this->blockedChannelKeys[] = $key;
                     $validator->errors()->add(
                         'channels',
-                        __('sirsoft-marketing::messages.channel_has_consents', [
-                            'key'   => $key,
+                        trans_count('sirsoft-marketing::messages.channel_has_consents', [
+                            'key' => $key,
                             'count' => $consentCount,
                         ])
                     );
@@ -142,7 +145,7 @@ class ChannelUpdateRequest extends FormRequest
      * 실패 문맥은 `error.errors` 뿐이라 구조화 값도 `errors` 안에 둔다.
      *
      * @param  ValidatorContract  $validator  실패한 검증기
-     * @return void
+     * @return void 반환값 없음 (항상 예외를 던진다)
      *
      * @throws ValidationException 항상
      */

@@ -168,7 +168,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
             $query->where("{$table}.is_default", (bool) $filters['is_default']);
         }
 
-        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyViewerDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
         $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
 
         $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';

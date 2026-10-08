@@ -582,6 +582,10 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ### 주의사항
 
+**debounce 는 이벤트에 바로 묶인 진입점 액션에서만 적용된다.** `<conditions>` 의 `<when>`·`<switch>` 의 `<case>`·`<sequence>`·`onSuccess`/`onError` 처럼 다른 액션 안쪽에 놓인 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없고, 그 자리의 `debounce` 는 무시된 채 이벤트마다 바로 실행된다. 분기마다 늦추고 싶으면 감싸는 진입점에 단다(`<conditions :debounce="600">`·`<sequence :debounce="300">`). 안쪽에 적으면 컴파일 lint 가 `nested_action_debounce_ignored` 경고를 낸다.
+
+**한 부품·한 이벤트에 debounce 액션과 바로 실행하는 액션을 섞지 않는다.** 엔진은 바로 실행하는 액션을 돌리기 전에 대기 중인 debounce 를 모두 즉시 실행한다(저장 직전 최신 입력을 반영하려는 동작). 그래서 섞어 두면 debounce 액션도 입력할 때마다 실행된다. 기다리게 하려면 그 이벤트의 액션을 모두 debounce 로 맞춘다. 섞으면 컴파일 lint 가 `mixed_debounce_flushed` 경고를, 화면 편집기 [동작] 탭이 그 칸에 경고를 보인다(동작은 바뀌지 않는다).
+
 ```text
 debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니다
 ✅ 정상 접근 가능: $event.target.value, $event.target.checked

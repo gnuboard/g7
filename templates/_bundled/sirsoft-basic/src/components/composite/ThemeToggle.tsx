@@ -169,7 +169,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       <Button
         onClick={() => setShowMenu(!showMenu)}
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
-        aria-label="Toggle theme"
+        aria-label={(() => {
+          // 언어와 무관하게 「Toggle theme」 이던 이름을 번역한다(7.1.0 J D-J5, admin_basic 대칭)
+          const translated = (window as any).G7Core?.t?.('common.theme_select');
+          return typeof translated === 'string' && translated !== 'common.theme_select' ? translated : '화면 테마';
+        })()}
+        aria-expanded={showMenu}
       >
         <Icon
           name={getCurrentIcon()}

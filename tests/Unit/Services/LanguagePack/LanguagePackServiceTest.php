@@ -29,14 +29,14 @@ class LanguagePackServiceTest extends TestCase
 
     private LanguagePackRegistry $registry;
 
-    /**
-     * 테스트 픽스처 초기화.
-     *
-     * @return void
-     */
     /** 실번들 케이스가 삭제하는 실 설치본의 백업 경로 (테스트 종료 시 복원). */
     private ?string $protectedRealInstallDir = null;
 
+    /**
+     * 서비스·레지스트리를 준비하고, 실번들 케이스가 지울 실 설치본을 백업한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,25 +47,71 @@ class LanguagePackServiceTest extends TestCase
         // 개발 환경에 이미 설치된 실 설치본이 있으면 백업해 두고 tearDown 에서 복원한다
         // (미보호 시 실환경 팩이 files_missing 드리프트에 빠진다 — 2026-08-24 실측).
         $realDir = base_path('lang-packs/g7-core-ja');
+        $backup = base_path('lang-packs/.test-backup-g7-core-ja');
+
+        // 앞 테스트의 복원이 실패해 백업만 남아 있으면(실 설치본 없음) 먼저 되돌린다. 백업 자리를 지우지 않는다 —
+        // 지우면 그 백업이 유일한 실 설치본일 수 있다(2026-10-08 Windows 에서 이동 실패로 g7-core-ja 설치본 소실 실측).
+        if (File::isDirectory($backup) && ! File::isDirectory($realDir)) {
+            $this->moveDirectoryReliably($backup, $realDir);
+        }
+        if (File::isDirectory($backup)) {
+            $this->markTestSkipped('실 설치본 백업 자리(lang-packs/.test-backup-g7-core-ja)가 비어 있지 않아 실 설치본 보호를 위해 건너뜁니다.');
+        }
+
         if (File::isDirectory($realDir)) {
-            $backup = base_path('lang-packs/.test-backup-g7-core-ja');
-            File::deleteDirectory($backup);
-            File::moveDirectory($realDir, $backup);
+            // 이동이 실패하면 백업 없이 진행하게 되고, 실번들 케이스·tearDown 이 실 설치본을 지운다 — 건너뛴다.
+            if (! $this->moveDirectoryReliably($realDir, $backup)) {
+                $this->markTestSkipped('실 설치본(lang-packs/g7-core-ja) 백업 이동에 실패해 실 설치본 보호를 위해 건너뜁니다.');
+            }
             $this->protectedRealInstallDir = $backup;
         }
         $this->registry = $this->app->make(LanguagePackRegistry::class);
     }
 
+    /**
+     * 백업해 둔 실 설치본을 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        if ($this->protectedRealInstallDir !== null) {
+        // 백업이 실제로 있을 때만 실 설치본 자리를 비우고 되돌린다 — 백업이 없으면 지우지 않는다.
+        if ($this->protectedRealInstallDir !== null && File::isDirectory($this->protectedRealInstallDir)) {
             $realDir = base_path('lang-packs/g7-core-ja');
             File::deleteDirectory($realDir);
-            File::moveDirectory($this->protectedRealInstallDir, $realDir);
+            // 실패하면 백업은 그 자리에 남고, 다음 setUp 이 먼저 되돌린다.
+            $this->moveDirectoryReliably($this->protectedRealInstallDir, $realDir);
             $this->protectedRealInstallDir = null;
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * 디렉터리를 옮기고, 실제로 옮겨졌는지 확인한다 (Windows 에서 일시적 이름 바꾸기 실패에 대비해 몇 번 다시 시도).
+     *
+     * `File::moveDirectory()` 의 반환값만으로는 판단하지 않는다 — 원본이 사라지고 대상이 생긴 상태를 성공으로 본다.
+     *
+     * @param  string  $from  원본 디렉터리 절대 경로
+     * @param  string  $to  대상 디렉터리 절대 경로
+     * @return bool 옮겨졌으면 true
+     */
+    private function moveDirectoryReliably(string $from, string $to): bool
+    {
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            if (File::isDirectory($to) && ! File::isDirectory($from)) {
+                return true;
+            }
+            if (! File::isDirectory($to)) {
+                File::moveDirectory($from, $to);
+            }
+            if (File::isDirectory($to) && ! File::isDirectory($from)) {
+                return true;
+            }
+            usleep(200_000);
+        }
+
+        return false;
     }
 
     /**
@@ -94,6 +140,15 @@ class LanguagePackServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * 비활성 팩을 켜면 active 로 올라가고 활성 시각이 기록된다.
+     *
+     * @scenario case=activate_inactive
+     *
+     * @effects activate_promotes_pack_to_active
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_promotes_inactive_to_active(): void
     {
         $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Inactive->value);
@@ -104,6 +159,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertNotNull($result->activated_at);
     }
 
+    /**
+     * 같은 언어 자리에 켜진 팩이 있을 때 강제로 켜면 기존 팩은 inactive 로 내려간다.
+     *
+     * @scenario case=activate_slot_force
+     *
+     * @effects slot_switch_demotes_previous_active
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_demotes_existing_active_in_same_slot(): void
     {
         $existing = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -117,6 +181,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame(LanguagePackStatus::Active->value, $candidate->fresh()->status);
     }
 
+    /**
+     * 이미 켜진 팩을 다시 켜도 상태·활성 시각이 바뀌지 않는다.
+     *
+     * @scenario case=activate_already_active
+     *
+     * @effects activate_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_activate_is_idempotent_for_already_active_pack(): void
     {
         $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -128,6 +201,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertEquals($originalActivatedAt, $result->activated_at);
     }
 
+    /**
+     * 켜진 팩을 끄면 같은 언어 자리의 다음 후보가 active 로 올라간다.
+     *
+     * @scenario case=deactivate_with_successor
+     *
+     * @effects deactivate_promotes_slot_successor
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_promotes_slot_successor(): void
     {
         $active = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -139,6 +221,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame(LanguagePackStatus::Active->value, $other->fresh()->status);
     }
 
+    /**
+     * 보호 팩은 직접 끌 수 없다.
+     *
+     * @scenario case=deactivate_protected
+     *
+     * @effects protected_pack_cannot_be_deactivated_or_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_deactivate_protected_pack_throws(): void
     {
         $pack = LanguagePack::query()->create([
@@ -160,6 +251,15 @@ class LanguagePackServiceTest extends TestCase
         $this->service->deactivate($pack);
     }
 
+    /**
+     * 제거하면 DB 행이 사라진다.
+     *
+     * @scenario case=uninstall_plain
+     *
+     * @effects uninstall_removes_record
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_removes_db_record(): void
     {
         $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Inactive->value);
@@ -170,6 +270,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertNull(LanguagePack::query()->find($id));
     }
 
+    /**
+     * 보호 팩은 제거할 수 없다.
+     *
+     * @scenario case=uninstall_protected
+     *
+     * @effects protected_pack_cannot_be_deactivated_or_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_protected_pack_throws(): void
     {
         $pack = LanguagePack::query()->create([
@@ -191,6 +300,15 @@ class LanguagePackServiceTest extends TestCase
         $this->service->uninstall($pack, false);
     }
 
+    /**
+     * 목록 조회는 페이지네이터를 돌려준다.
+     *
+     * @scenario case=list_paginated
+     *
+     * @effects list_and_find_return_packs
+     *
+     * @return void 반환값 없음
+     */
     public function test_list_returns_paginator(): void
     {
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -209,6 +327,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame(1, $inactiveOnly->total());
     }
 
+    /**
+     * 단건 조회는 팩 또는 null 을 돌려준다.
+     *
+     * @scenario case=find_by_id
+     *
+     * @effects list_and_find_return_packs
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_returns_pack_or_null(): void
     {
         $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -217,6 +344,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertNull($this->service->find(999999));
     }
 
+    /**
+     * 코어 범위 팩은 설치 차단 사유가 없다.
+     *
+     * @scenario case=blocked_reason_core
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_returns_null_for_core(): void
     {
         $reason = $this->service->resolveInstallBlockedReason([
@@ -227,6 +363,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertNull($reason);
     }
 
+    /**
+     * 코어 같은 언어 팩이 꺼져 있으면 core_locale_missing 으로 막는다.
+     *
+     * @scenario case=blocked_reason_core_locale_missing
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_core_locale_missing(): void
     {
         $reason = $this->service->resolveInstallBlockedReason([
@@ -238,6 +383,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame('core_locale_missing', $reason);
     }
 
+    /**
+     * 대상 확장이 설치되지 않았으면 target_not_installed 로 막는다.
+     *
+     * @scenario case=blocked_reason_target_not_installed
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_target_not_installed(): void
     {
         // 코어 ja 활성화 → 코어 의존성 통과시키고 target 검증으로 진입.
@@ -253,6 +407,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame('target_not_installed', $reason);
     }
 
+    /**
+     * 대상이 설치돼 있으나 꺼진 것은 설치 차단 사유가 아니다 — 꺼진 채 설치되고 안내 사유(target_inactive)만 남는다 (Q-G6).
+     *
+     * @scenario case=blocked_reason_target_inactive_notice
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_target_inactive(): void
     {
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -268,15 +431,25 @@ class LanguagePackServiceTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $reason = $this->service->resolveInstallBlockedReason([
+        $manifest = [
             'scope' => LanguagePackScope::Module->value,
             'target_identifier' => 'gnuboard7-hello_module',
             'locale' => 'ja',
-        ]);
+        ];
 
-        $this->assertSame('target_inactive', $reason);
+        $this->assertNull($this->service->resolveInstallBlockedReason($manifest));
+        $this->assertSame('target_inactive', $this->service->resolveInstallNotice($manifest));
     }
 
+    /**
+     * 대상 확장 버전이 제약보다 낮으면 target_version_too_old 로 막는다.
+     *
+     * @scenario case=blocked_reason_target_version_too_old
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_target_version_too_old(): void
     {
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -302,6 +475,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame('target_version_too_old', $reason);
     }
 
+    /**
+     * 조건이 모두 맞으면 설치 차단 사유가 없다.
+     *
+     * @scenario case=blocked_reason_all_satisfied
+     *
+     * @effects install_blocked_reason_resolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_install_blocked_reason_returns_null_when_all_satisfied(): void
     {
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -327,6 +509,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertNull($reason);
     }
 
+    /**
+     * GitHub 출처가 아닌 팩은 업데이트 확인에서 건너뛴다.
+     *
+     * @scenario case=check_updates_non_github
+     *
+     * @effects update_check_targets_github_sources_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_updates_skips_non_github_packs(): void
     {
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -336,6 +527,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame(['checked' => 0, 'updates' => 0, 'details' => []], $result);
     }
 
+    /**
+     * GitHub 출처가 없는 팩은 업데이트를 실행하지 못한다.
+     *
+     * @scenario case=perform_update_without_source
+     *
+     * @effects update_check_targets_github_sources_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_perform_update_throws_when_no_github_source(): void
     {
         $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
@@ -351,7 +551,11 @@ class LanguagePackServiceTest extends TestCase
      * checkUpdates() 의 점검 대상이 되어야 함 (count > 0). 실제 GitHub 호출은 발생하지만
      * 네트워크 결과와 무관하게 `checked` 가 증가하면 SSoT 해석이 정상 동작한 것.
      *
-     * @return void
+     * @scenario case=check_updates_manifest_github_url
+     *
+     * @effects update_check_targets_github_sources_only
+     *
+     * @return void 반환값 없음
      */
     public function test_check_updates_includes_packs_with_manifest_github_url(): void
     {
@@ -378,7 +582,11 @@ class LanguagePackServiceTest extends TestCase
      * 매니페스트 github_url 이 비어있고 source_url 도 GitHub 가 아니면서
      * 번들도 없으면 checkUpdates 점검 대상에서 제외되는지 확인 (회귀 가드).
      *
-     * @return void
+     * @scenario case=check_updates_blank_github_url
+     *
+     * @effects update_check_targets_github_sources_only
+     *
+     * @return void 반환값 없음
      */
     public function test_check_updates_excludes_packs_with_blank_manifest_github_url(): void
     {
@@ -395,6 +603,15 @@ class LanguagePackServiceTest extends TestCase
         $this->assertSame(0, $result['checked']);
     }
 
+    /**
+     * 캐시 갱신은 계층별 상태 맵을 돌려준다.
+     *
+     * @scenario case=refresh_cache
+     *
+     * @effects refresh_cache_reports_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_refresh_cache_returns_status_map(): void
     {
         $result = $this->service->refreshCache();
@@ -411,7 +628,11 @@ class LanguagePackServiceTest extends TestCase
      * 본 테스트는 빌드 산출 디렉토리(`lang-packs/_bundled/g7-core-ja/`)가 존재할 때만 의미가 있으며,
      * 빌드 미완료 시 자동 스킵하여 CI 가 깨지지 않도록 한다.
      *
-     * @return void
+     * @scenario case=install_real_bundled_core
+     *
+     * @effects bundled_core_install_activates
+     *
+     * @return void 반환값 없음
      */
     public function test_install_g7_core_ja_from_bundled_promotes_to_active(): void
     {
@@ -457,6 +678,12 @@ class LanguagePackServiceTest extends TestCase
      * 차단되는 인스톨러 hang/실패가 발생했음.
      *
      * fix: `finalizeInstall` 가 `findActiveForSlot` 호출 시 `$existing?->id` 를 excludeId 로 전달.
+     *
+     * @scenario case=reinstall_real_bundled_core
+     *
+     * @effects bundled_core_install_activates
+     *
+     * @return void 반환값 없음
      */
     public function test_reinstall_active_pack_keeps_active_status(): void
     {
@@ -492,6 +719,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects activated_hook_fires_exactly_once_on_auto_activate
+     *
+     * @return void 반환값 없음
      */
     public function test_activated_hook_fires_exactly_once_on_auto_activate(): void
     {
@@ -525,6 +754,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects auto_activate_skipped_when_slot_occupied
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_activate_skipped_when_slot_occupied(): void
     {
@@ -564,6 +795,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects auto_activate_goes_through_activate_and_enforces_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_install_with_auto_activate_goes_through_activate_and_runs_dependency_checks(): void
     {
@@ -651,6 +884,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects reinstalling_an_active_pack_does_not_demote_it
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_install_does_not_demote_self_on_reinstall_of_active_pack(): void
     {
@@ -698,6 +933,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects cli_installation_is_unaffected_by_the_http_activation_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_cli_install_auto_activates_without_an_http_permission_context(): void
     {
@@ -737,6 +974,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects update_of_an_active_pack_keeps_it_active
+     *
+     * @return void 반환값 없음
      */
     public function test_perform_update_of_active_pack_keeps_it_active(): void
     {
@@ -770,6 +1009,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=finalize_install_activation, actor_permission=cli_system
      *
      * @effects update_of_an_inactive_pack_does_not_promote_it
+     *
+     * @return void 반환값 없음
      */
     public function test_perform_update_of_inactive_pack_does_not_promote_it(): void
     {
@@ -806,6 +1047,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=install_from_url, actor_permission=cli_system
      *
      * @effects successful_install_leaves_no_temp_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_url_success_leaves_no_temp_directory(): void
     {
@@ -868,6 +1111,15 @@ class LanguagePackServiceTest extends TestCase
         ];
     }
 
+    /**
+     * 강제 없이 낮은 버전으로 설치하면 막는다.
+     *
+     * @scenario case=downgrade_without_force
+     *
+     * @effects downgrade_guard_respects_force
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_blocks_downgrade_without_force(): void
     {
         $identifier = 'dgblock-core-ja';
@@ -913,6 +1165,15 @@ class LanguagePackServiceTest extends TestCase
         }
     }
 
+    /**
+     * 강제로 낮은 버전 설치를 허용한다.
+     *
+     * @scenario case=downgrade_with_force
+     *
+     * @effects downgrade_guard_respects_force
+     *
+     * @return void 반환값 없음
+     */
     public function test_install_allows_downgrade_with_force(): void
     {
         $identifier = 'dgforce-core-ja';
@@ -977,6 +1238,15 @@ class LanguagePackServiceTest extends TestCase
         return $path;
     }
 
+    /**
+     * 미설치 번들은 가상 행으로 돌려준다.
+     *
+     * @scenario case=uninstalled_bundled_virtual
+     *
+     * @effects uninstalled_bundled_packs_listed
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_uninstalled_bundled_packs_returns_virtual_records(): void
     {
         $identifier = 'test-virtual-acme-zz-'.uniqid();
@@ -1008,6 +1278,15 @@ class LanguagePackServiceTest extends TestCase
         }
     }
 
+    /**
+     * 이미 설치된 언어 자리의 번들은 미설치 목록에서 뺀다.
+     *
+     * @scenario case=uninstalled_bundled_slot_taken
+     *
+     * @effects uninstalled_bundled_packs_listed
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_uninstalled_bundled_packs_excludes_already_installed_slot(): void
     {
         $identifier = 'test-installed-acme-zz-'.uniqid();
@@ -1048,6 +1327,15 @@ class LanguagePackServiceTest extends TestCase
         }
     }
 
+    /**
+     * 목록은 DB 행과 미설치 번들을 함께 돌려준다.
+     *
+     * @scenario case=list_merges_uninstalled
+     *
+     * @effects uninstalled_bundled_packs_listed
+     *
+     * @return void 반환값 없음
+     */
     public function test_list_merges_db_records_and_uninstalled_bundled(): void
     {
         $this->makePack('sirsoft', 'fr', LanguagePackStatus::Active->value);
@@ -1084,6 +1372,15 @@ class LanguagePackServiceTest extends TestCase
         }
     }
 
+    /**
+     * uninstalled 필터는 DB 행을 빼고 미설치 번들만 돌려준다.
+     *
+     * @scenario case=list_filter_uninstalled
+     *
+     * @effects uninstalled_bundled_packs_listed
+     *
+     * @return void 반환값 없음
+     */
     public function test_list_filters_uninstalled_status_excludes_db_records(): void
     {
         $this->makePack('sirsoft', 'fr', LanguagePackStatus::Active->value);
@@ -1123,6 +1420,8 @@ class LanguagePackServiceTest extends TestCase
      * @scenario vector=update_failure_after_install_transaction, actor_permission=cli_system
      *
      * @effects failed_update_restores_previous_active_status
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_update_restores_previous_active_status(): void
     {

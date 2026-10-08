@@ -746,6 +746,136 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
+    // ⑫ 진입점이 아닌 액션의 debounce (2026-10-06 실측 D-I1-8)
+    // ---------------------------------------------------------------------
+
+    /**
+     * `<when>` 안 액션에 단 debounce 는 엔진이 적용하지 않는다 — 매 입력 즉시 실행된다.
+     *
+     * 코드 편집기 내용 검색이 글자마다 요청 25건을 보낸 원인이었다(D-I1-8). 엔진은 이벤트에 바로 묶인
+     * 진입점 액션의 debounce 만 적용하므로 감싸는 `<conditions :debounce>` 에 달아야 한다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects nested_action_debounce_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_debounce_on_action_inside_conditions_warns(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Input',
+            'actions' => [[
+                'type' => 'change',
+                'handler' => 'conditions',
+                'conditions' => [[
+                    'if' => '{{true}}',
+                    'then' => [['handler' => 'refetchDataSource', 'debounce' => 600, 'params' => ['dataSourceId' => 'search']]],
+                ]],
+            ]],
+        ]]];
+
+        $this->assertHasLint(LayoutMarkupLintCode::NestedActionDebounceIgnored, $json);
+    }
+
+    /**
+     * 진입점(`<conditions :debounce>`)에 단 debounce 는 정상이다 — 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects nested_action_debounce_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_debounce_on_entry_action_does_not_warn(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Input',
+            'actions' => [[
+                'type' => 'change',
+                'handler' => 'conditions',
+                'debounce' => 600,
+                'conditions' => [[
+                    'if' => '{{true}}',
+                    'then' => [['handler' => 'refetchDataSource', 'params' => ['dataSourceId' => 'search']]],
+                ]],
+            ]],
+        ]]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::NestedActionDebounceIgnored, $json);
+    }
+
+    // ---------------------------------------------------------------------
+    // ⑬ 같은 이벤트에 디바운스·비디바운스 동작 혼재 (7.1.0 P13)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 같은 부품·같은 이벤트에 디바운스 동작과 바로 실행하는 동작이 섞이면 경고한다.
+     *
+     * 엔진은 바로 실행하는 동작을 돌리기 전에 대기 중인 디바운스를 모두 즉시 실행한다(최신 상태 보장) —
+     * 그래서 디바운스 동작도 매 입력 실행된다. 동작은 그대로 두고 작성자에게 알린다. `type: change` 와
+     * `event: onChange` 는 런타임에서 같은 prop 이라 한 묶음으로 본다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects mixed_debounce_on_same_event_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mixed_debounce_and_immediate_actions_on_same_event_warn(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Input',
+            'actions' => [
+                ['type' => 'change', 'handler' => 'refetchDataSource', 'debounce' => 300, 'params' => ['dataSourceId' => 'search']],
+                ['event' => 'onChange', 'handler' => 'setState', 'params' => ['target' => 'local', 'q' => '{{$event.target.value}}']],
+            ],
+        ]]];
+
+        $this->assertHasLint(LayoutMarkupLintCode::MixedDebounceFlushed, $json);
+
+        $warning = collect((new LayoutLinter)->lint($json, 'layout', new CompileContext))
+            ->first(fn (LintWarning $w) => $w->getCode() === LayoutMarkupLintCode::MixedDebounceFlushed);
+        $this->assertSame('onChange', $warning->getParams()['event']);
+        $this->assertSame('Input', $warning->getParams()['name']);
+    }
+
+    /**
+     * 다른 이벤트에 나뉘었거나 모두 디바운스면 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects mixed_debounce_on_same_event_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_debounce_split_across_events_or_all_debounced_does_not_warn(): void
+    {
+        $split = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Input',
+            'actions' => [
+                ['type' => 'change', 'handler' => 'refetchDataSource', 'debounce' => 300, 'params' => ['dataSourceId' => 'search']],
+                ['type' => 'keydown', 'key' => 'Enter', 'handler' => 'refetchDataSource', 'params' => ['dataSourceId' => 'search']],
+            ],
+        ]]];
+        $allDebounced = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Input',
+            'actions' => [
+                ['type' => 'change', 'handler' => 'refetchDataSource', 'debounce' => 300, 'params' => ['dataSourceId' => 'a']],
+                ['type' => 'change', 'handler' => 'setState', 'debounce' => ['delay' => 300], 'params' => ['target' => 'local', 'q' => '1']],
+            ],
+        ]]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::MixedDebounceFlushed, $split);
+        $this->assertNoLint(LayoutMarkupLintCode::MixedDebounceFlushed, $allDebounced);
+    }
+
+    // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------
 

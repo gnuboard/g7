@@ -299,7 +299,12 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "({{myPosts?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit)"
+                            "text": "({{myPosts?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myPosts?.data?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": ")"
                         }
                     ]
                 },

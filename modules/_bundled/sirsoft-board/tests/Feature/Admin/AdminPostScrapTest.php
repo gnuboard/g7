@@ -227,9 +227,11 @@ class AdminPostScrapTest extends BoardTestCase
 
         DB::table('board_post_scraps')->where('id', $old)->update(['created_at' => now()->subDays(10)]);
 
+        // 날짜 칸은 보는 사람(운영자)의 시간대 하루로 해석된다 — 운영자 시간대의 오늘로 보낸다.
+        $viewerNow = now($this->admin->timezone ?: config('app.default_user_timezone'));
         $response = $this->actingAs($this->admin)->getJson($this->indexUrl([
-            'scrapped_at_from' => now()->subDays(1)->format('Y-m-d'),
-            'scrapped_at_to' => now()->format('Y-m-d'),
+            'scrapped_at_from' => $viewerNow->copy()->subDays(1)->format('Y-m-d'),
+            'scrapped_at_to' => $viewerNow->format('Y-m-d'),
         ]));
 
         $response->assertStatus(200);

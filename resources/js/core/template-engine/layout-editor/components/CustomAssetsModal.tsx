@@ -36,6 +36,7 @@ import {
   highlightMatch,
   type PathTreeNode,
 } from '../shared/treeSearch';
+import { useEditorDialog } from './EditorDialog';
 
 /** 열린 파일을 클라이언트에서 훑을 때의 상한 — 서버 검색(`CustomAssetService::search`)과 같은 값. */
 const MAX_LOCAL_MATCHES_PER_FILE = 20;
@@ -424,6 +425,8 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
   );
 
   const assets = useCustomAssets({ type: target.type, identifier: target.identifier });
+  // 확인·입력 대화상자 — 브라우저 기본 confirm/prompt 대신 편집기 모달 위에 띄운다(engine-v1.78.7).
+  const dialog = useEditorDialog(t);
   const { reload } = assets;
 
   const [selected, setSelected] = useState<CustomAssetFile | null>(null);
@@ -461,13 +464,19 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
   }, [reload]);
 
   /** 미저장이 있으면 되묻는다 — 없으면 그냥 진행한다. */
-  const confirmDiscard = useCallback((): boolean => {
-    if (dirtyPaths.length === 0 || typeof window === 'undefined') {
+  const confirmDiscard = useCallback(async (): Promise<boolean> => {
+    if (dirtyPaths.length === 0) {
       return true;
     }
 
-    return window.confirm(t('layout_editor.custom_assets.discard_confirm', { count: dirtyPaths.length }));
-  }, [dirtyPaths.length, t]);
+    return dialog.confirm({
+      title: t('layout_editor.chrome.dirty_guard.title'),
+      message: t('layout_editor.custom_assets.discard_confirm', { count: dirtyPaths.length }),
+      confirmLabel: t('layout_editor.chrome.dirty_guard.discard'),
+      cancelLabel: t('layout_editor.chrome.dirty_guard.stay'),
+      danger: true,
+    });
+  }, [dirtyPaths.length, dialog, t]);
 
   /**
    * 대상(확장)을 바꿉니다 — 미저장 편집이 있으면 확인을 받는다(D3).
@@ -476,12 +485,12 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
    * B 확장에 저장하면 경로만 맞으면 서버는 200 으로 받아들인다), **버릴지 말지는 사용자가 정한다**.
    */
   const changeTarget = useCallback(
-    (nextKey: string) => {
+    async (nextKey: string) => {
       if (nextKey === targetKey) {
         return;
       }
 
-      if (!confirmDiscard()) {
+      if (!(await confirmDiscard())) {
         return;
       }
 
@@ -568,9 +577,14 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
   const handleDelete = useCallback(async () => {
     if (!selected) return;
 
-    // 되돌릴 수 없는 조작이라 확인을 받는다. 편집기 코어 위젯이므로 모달 스택을
-    // 더 쌓지 않고 브라우저 확인을 쓴다(나가기·템플릿 전환과 같은 방식).
-    if (typeof window !== 'undefined' && !window.confirm(t('layout_editor.custom_assets.delete_confirm'))) {
+    // 되돌릴 수 없는 조작이라 확인을 받는다 — 편집기 대화상자(위험 확인, 처음 초점 [취소]).
+    const proceed = await dialog.confirm({
+      title: selected.path,
+      message: t('layout_editor.custom_assets.delete_confirm'),
+      confirmLabel: t('layout_editor.custom_assets.delete'),
+      danger: true,
+    });
+    if (!proceed) {
       return;
     }
 
@@ -587,13 +601,18 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
       });
       setSelected(null);
     }
-  }, [assets, selected, t]);
+  }, [assets, selected, dialog, t]);
 
   /** 이름변경(= 이동) — 확장자를 바꾸는 이름은 서버가 막는다(서빙 규약이 함께 바뀐다). */
   const handleRename = useCallback(async () => {
-    if (!selected || typeof window === 'undefined') return;
+    if (!selected) return;
 
-    const next = window.prompt(t('layout_editor.custom_assets.rename_prompt'), selected.path);
+    const next = await dialog.prompt({
+      title: t('layout_editor.custom_assets.rename'),
+      message: t('layout_editor.custom_assets.rename_prompt'),
+      defaultValue: selected.path,
+      confirmLabel: t('layout_editor.custom_assets.rename'),
+    });
 
     if (!next || next.trim() === '' || next.trim() === selected.path) {
       return;
@@ -620,7 +639,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
       return moved;
     });
     setSelected({ ...selected, path: next.trim(), name: next.trim().split('/').pop() ?? next.trim() });
-  }, [assets, selected, t]);
+  }, [assets, selected, dialog, t]);
 
   const handleUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -640,8 +659,8 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     [assets],
   );
 
-  const handleClose = useCallback(() => {
-    if (!confirmDiscard()) {
+  const handleClose = useCallback(async () => {
+    if (!(await confirmDiscard())) {
       return;
     }
 
@@ -697,7 +716,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
 
       if (event.key === 'Escape') {
         event.preventDefault();
-        handleClose();
+        void handleClose();
       }
     };
 

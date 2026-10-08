@@ -31,7 +31,7 @@
         </input>
         <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500"/>
         <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500"/>
-        <span class="text-primary text-sm">{{dep.name ?? dep.identifier}} ({{dep.identifier}})</span>
+        <span class="text-primary text-sm">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
         <span class="text-tertiary font-mono">{{dep.required_version}}</span>
         <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
         <span data-if="{{!dep.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.templates.modals.dependency_not_installed</span>
@@ -53,7 +53,7 @@
         </input>
         <span class="text-primary text-sm">{{lp.locale_native_name}} ({{lp.locale}})</span>
         <span class="text-tertiary font-mono">v{{lp.version}}</span>
-        <span data-if="{{lp.depends_on_extension}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.templates.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}</span>
+        <span data-if="{{(lp.depends_on_extension ?? lp.target_identifier) &amp;&amp; (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.templates.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}</span>
       </div>
     </div>
     <div class="modal-footer-buttons">
@@ -72,13 +72,17 @@
             <api-call :auth_required="true" target="/api/admin/templates/install" method="POST">
               <success>
                 <set-state target="global" :isTemplateInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
-                <set-state target="global" :selectedTemplate="null"/>
                 <toast type="success" message="$t:admin.templates.install_success"/>
+                <!-- 함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures). -->
+                <toast if="{{(response.data?.language_pack_failures ?? []).length !== 0}}" type="warning" message="$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f =&gt; f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"/>
+                <!-- 이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host). -->
+                <toast if="{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}" type="info" message="$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"/>
                 <!-- 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다. -->
                 <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
                 <close-modal/>
+                <set-state target="global" :selectedTemplate="null"/>
               </success>
               <fail>
                 <set-state target="global" :isTemplateInstalling="false"/>

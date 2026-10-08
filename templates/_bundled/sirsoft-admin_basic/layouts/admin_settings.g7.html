@@ -287,6 +287,7 @@
   </init-local>
   <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <computed name="errorsWithoutIpRules">{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) =&gt; !k.startsWith('security.ip_restriction_rules')); return rest.length &gt; 0 ? Object.fromEntries(rest) : null; })()}}</computed>
   <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
   <permissions>
     <permission>core.settings.read</permission>
@@ -327,11 +328,18 @@
         <field name="searchType" value="{{query.search_type || 'all'}}"/>
       </field>
     </set-state>
+    <!-- 주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두
+         거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다). -->
+    <set-state if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}" target="global" activeSettingsTab="general"/>
+    <!-- audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙). -->
+    <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
+      <query tab="general"/>
+    </navigate>
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.settings.page_title">
-        <button data-ref="refresh_button" type="button" class="btn-icon">
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
           <on type="click">
             <refetch-data-source dataSourceId="settings"/>
           </on>

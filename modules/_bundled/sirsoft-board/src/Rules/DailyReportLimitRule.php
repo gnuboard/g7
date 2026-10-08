@@ -14,6 +14,13 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
  */
 class DailyReportLimitRule implements ValidationRule
 {
+    /**
+     * DailyReportLimitRule 생성자
+     *
+     * @param  ReportRepositoryInterface  $reportRepository  신고 리포지토리
+     * @param  int  $userId  신고하는 회원 ID
+     * @param  int  $limit  하루 신고 가능 횟수 (0 이하이면 제한 없음)
+     */
     public function __construct(
         private ReportRepositoryInterface $reportRepository,
         private int $userId,
@@ -26,6 +33,7 @@ class DailyReportLimitRule implements ValidationRule
      * @param  string  $attribute  검증 대상 필드명
      * @param  mixed  $value  검증 대상 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -36,7 +44,7 @@ class DailyReportLimitRule implements ValidationRule
         $todayCount = $this->reportRepository->countTodayReportsByUser($this->userId);
 
         if ($todayCount >= $this->limit) {
-            $fail(__('sirsoft-board::validation.report.daily_limit_exceeded', [
+            $fail(trans_choice('sirsoft-board::validation.report.daily_limit_exceeded', $this->limit, [
                 'limit' => $this->limit,
             ]));
         }

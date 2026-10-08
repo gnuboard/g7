@@ -42,7 +42,7 @@ describe('StatusBadge', () => {
     it('기본적으로 아이콘을 표시해야 함', () => {
       const { container } = render(<StatusBadge status="success" />);
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).toBeInTheDocument();
     });
 
@@ -55,7 +55,7 @@ describe('StatusBadge', () => {
     it('showIcon=false일 때 아이콘을 숨겨야 함', () => {
       const { container } = render(<StatusBadge status="success" showIcon={false} />);
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).not.toBeInTheDocument();
     });
   });
@@ -101,7 +101,7 @@ describe('StatusBadge', () => {
         <StatusBadge status="success" iconName={IconName.Star} />
       );
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).toBeInTheDocument();
     });
   });
@@ -182,7 +182,7 @@ describe('StatusBadge', () => {
       expect(badge).toHaveClass('bg-yellow-50');
       expect(badge).toHaveStyle({ marginTop: '10px' });
 
-      const icon = container.querySelector('i[role="img"]');
+      const icon = container.querySelector('i[class*="fa-"]');
       expect(icon).toBeInTheDocument();
     });
   });

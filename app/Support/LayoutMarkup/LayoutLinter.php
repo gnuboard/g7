@@ -11,7 +11,7 @@ use App\Enums\LayoutMarkupLintCode;
  * 문제가 될 수 있다" 를 알린다. 강검증(`LayoutValidator`)이 "틀렸으니 못 만든다" 라면, lint 은
  * "만들 수는 있으나 권하지 않는다" 다. 그래서 예외가 아니라 `LintWarning` 목록을 모아 돌려준다.
  *
- * 다섯 가지를 본다:
+ * 아래 열세 가지를 본다:
  *  ① **미등록 핸들러** — 액션 handler 가 코어 49종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
  *  ② **플러그인 완전 레이아웃** — 플러그인은 layout_extensions·설정 화면만 두는 관례이나 완전
  *     레이아웃을 정의함(gdpr_consent_log·plugin_settings 예외, D15).
@@ -27,12 +27,25 @@ use App\Enums\LayoutMarkupLintCode;
  *     선언하지 않았는데 마크업이 그 자리를 씀(S23 축 B — 부모 이름 무관).
  *  ⑨ **종류 불일치** — `data-type` 이 대상 템플릿 선언과 다름.
  *  ⑩ **설치되지 않은 확장 컴포넌트** — `식별자.이름` 이 설치된 어느 확장에도 없음(막지 않는다).
+ *  ⑪ **저장본에 있던 목록 밖 템플릿 컴포넌트** — 편집기 전용, 막지 않는다(#712).
+ *  ⑫ **안쪽 액션의 debounce** — 진입점이 아닌 액션의 debounce 는 엔진이 적용하지 않는다.
+ *  ⑬ **debounce 혼재** — 같은 부품·같은 이벤트에 debounce 동작과 바로 실행하는 동작이 섞임.
  *
- * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 특정하기 어렵다 — 경고는 문서 전체(라인 0)로
- * 낸다. 지어낸 좌표로 작성자를 엉뚱한 자리로 보내지 않는다.
+ * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 모른다. 위치 없는 경고가 나오면
+ * `LayoutMarkupCompiler` 가 노드·액션에 소스 위치 표식({@see SOURCE_POSITION_KEY})을 붙여 한 번 더
+ * 컴파일하고 그 결과로 lint 를 다시 돌린다 — 경고는 그 표식의 줄·칸을 싣고, 표식이 없는 자리는
+ * 문서 전체(라인 0)로 낸다. 지어낸 좌표로 작성자를 엉뚱한 자리로 보내지 않는다(7.1.0 P16).
  */
 final class LayoutLinter
 {
+    /**
+     * 위치를 찾는 재컴파일에서 노드·액션 배열에 붙는 소스 위치 표식 키 — 값은 `[줄, 칸]`.
+     *
+     * 산출 JSON 을 검사하는 lint 는 소스 좌표를 모른다. 위치 없는 경고가 나왔을 때만 `LayoutMarkupCompiler` 가
+     * 표식을 켜고 한 번 더 컴파일해 그 결과로 lint 를 다시 돈다. 표식 JSON 은 lint 에만 쓰고 버린다(7.1.0 P16).
+     */
+    public const SOURCE_POSITION_KEY = '__g7_source_position';
+
     /**
      * 독립 레이아웃에서 호스트를 요구하는 핸들러 → 그 핸들러가 쓰는 `_global` 상태 키.
      *
@@ -105,8 +118,144 @@ final class LayoutLinter
         $this->lintComponentTypeMismatch($json, $path, $warnings);
         $this->lintMissingExtensionComponents($json, $path, $warnings);
         $this->lintKeptTemplateComponents($json, $context, $path, $warnings);
+        $this->lintNestedActionDebounce($json, $path, $warnings);
+        $this->lintMixedDebounce($json, $path, $warnings);
 
         return $warnings;
+    }
+
+    /**
+     * ⑫ 다른 액션 안쪽에 놓인 액션의 `debounce` 를 경고합니다 — 엔진은 진입점 액션의 debounce 만 적용한다.
+     *
+     * 같은 핸들러는 한 번만 낸다(좌표 없는 경고라 반복해도 고칠 자리가 늘지 않는다).
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintNestedActionDebounce(array $json, ?string $path, array &$warnings): void
+    {
+        $seen = [];
+        $this->walkForNestedDebounce($json, false, $path, $warnings, $seen);
+    }
+
+    /**
+     * ⑬ 같은 부품·같은 이벤트에 디바운스 동작과 바로 실행하는 동작이 섞인 자리를 경고합니다.
+     *
+     * 엔진은 이벤트 prop 별로 진입점 액션을 묶고, 바로 실행하는 액션을 돌리기 전에 대기 중인 디바운스를 모두
+     * 즉시 실행한다. 그래서 섞어 두면 디바운스 동작도 매 입력 실행된다. 묶는 기준은 런타임과 같다 —
+     * `event` 가 있으면 그것(DOM 이름은 `onClick` 꼴로), 없으면 `type`, 둘 다 없으면 click.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintMixedDebounce(array $json, ?string $path, array &$warnings): void
+    {
+        $this->walkForMixedDebounce($json, $path, $warnings);
+    }
+
+    /**
+     * 부품 노드(`name` + 최상위 `actions` 배열)를 찾아 이벤트별 디바운스 혼재를 검사합니다.
+     *
+     * @param  mixed  $value  순회 대상
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function walkForMixedDebounce(mixed $value, ?string $path, array &$warnings): void
+    {
+        if (! is_array($value)) {
+            return;
+        }
+
+        if (isset($value['name']) && is_string($value['name']) && isset($value['actions']) && is_array($value['actions']) && array_is_list($value['actions'])) {
+            $groups = [];
+
+            foreach ($value['actions'] as $action) {
+                if (! is_array($action) || ! isset($action['handler'])) {
+                    continue;
+                }
+
+                $event = self::runtimeEventProp($action);
+                $kind = ! empty($action['debounce']) ? 'debounced' : 'immediate';
+                $groups[$event][$kind] = true;
+            }
+
+            foreach ($groups as $event => $kinds) {
+                if (isset($kinds['debounced'], $kinds['immediate'])) {
+                    $warnings[] = new LintWarning(LayoutMarkupLintCode::MixedDebounceFlushed, self::line($value), self::column($value), [
+                        'name' => $value['name'],
+                        'event' => $event,
+                    ], $path);
+                }
+            }
+        }
+
+        foreach ($value as $child) {
+            $this->walkForMixedDebounce($child, $path, $warnings);
+        }
+    }
+
+    /**
+     * 액션이 런타임에서 묶이는 이벤트 prop 이름을 구합니다 (ActionDispatcher::bindActionsToProps 와 같은 규칙).
+     *
+     * @param  array<string, mixed>  $action  진입점 액션
+     * @return string prop 이름 (예: onChange)
+     */
+    private static function runtimeEventProp(array $action): string
+    {
+        // ActionDispatcher.ts DOM_EVENT_PROP_MAP 와 같은 표
+        $map = [
+            'click' => 'onClick', 'change' => 'onChange', 'input' => 'onInput', 'submit' => 'onSubmit',
+            'focus' => 'onFocus', 'blur' => 'onBlur', 'keydown' => 'onKeyDown', 'keyup' => 'onKeyUp',
+            'keypress' => 'onKeyPress', 'mousedown' => 'onMouseDown', 'mouseup' => 'onMouseUp',
+            'mouseenter' => 'onMouseEnter', 'mouseleave' => 'onMouseLeave', 'scroll' => 'onScroll',
+            'dragstart' => 'onDragStart', 'drag' => 'onDrag', 'dragend' => 'onDragEnd', 'dragenter' => 'onDragEnter',
+            'dragover' => 'onDragOver', 'dragleave' => 'onDragLeave', 'drop' => 'onDrop',
+        ];
+
+        if (isset($action['event']) && is_string($action['event']) && $action['event'] !== '') {
+            return $map[$action['event']] ?? $action['event'];
+        }
+
+        if (isset($action['type']) && is_string($action['type']) && $action['type'] !== '') {
+            return $map[$action['type']] ?? 'on'.ucfirst($action['type']);
+        }
+
+        return 'onClick';
+    }
+
+    /**
+     * 액션 안쪽 여부를 들고 심층 순회하며 안쪽 액션의 debounce 를 찾습니다.
+     *
+     * @param  mixed  $value  순회 대상
+     * @param  bool  $insideAction  상위에 액션이 있는지
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @param  array<string, bool>  $seen  이미 낸 핸들러 (참조)
+     * @return void 반환값 없음
+     */
+    private function walkForNestedDebounce(mixed $value, bool $insideAction, ?string $path, array &$warnings, array &$seen): void
+    {
+        if (! is_array($value)) {
+            return;
+        }
+
+        $isAction = isset($value['handler']) && is_string($value['handler']);
+
+        if ($isAction && $insideAction && array_key_exists('debounce', $value) && ! isset($seen[$value['handler']])) {
+            $seen[$value['handler']] = true;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::NestedActionDebounceIgnored, self::line($value), self::column($value), [
+                'handler' => $value['handler'],
+            ], $path);
+        }
+
+        foreach ($value as $child) {
+            $this->walkForNestedDebounce($child, $insideAction || $isAction, $path, $warnings, $seen);
+        }
     }
 
     /**
@@ -118,7 +267,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintComponentTypeMismatch(array $json, ?string $path, array &$warnings): void
     {
@@ -143,7 +292,7 @@ final class LayoutLinter
             }
 
             $seen[$name.'|'.$type] = true;
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::ComponentTypeMismatch, 0, 0, [
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ComponentTypeMismatch, self::line($node), self::column($node), [
                 'component' => $name,
                 'written' => $type,
                 'declared' => $definition->type,
@@ -161,7 +310,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintMisplacedActionParams(array $json, ?string $path, array &$warnings): void
     {
@@ -187,7 +336,7 @@ final class LayoutLinter
                 }
 
                 $seen[$signature] = true;
-                $warnings[] = new LintWarning(LayoutMarkupLintCode::ActionParamMisplacedKey, 0, 0, [
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::ActionParamMisplacedKey, self::line($action), self::column($action), [
                     'handler' => $handler,
                     'key' => $key,
                 ], $path);
@@ -224,7 +373,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintUnsupportedHoistProps(array $json, ?string $path, array &$warnings): void
     {
@@ -255,7 +404,7 @@ final class LayoutLinter
                 }
 
                 $seen[$name.'.'.$prop] = true;
-                $warnings[] = new LintWarning(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, 0, 0, [
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, self::line($node), self::column($node), [
                     'tag' => (string) EmbeddingCompiler::tagForProp($prop, $name),
                     'prop' => $prop,
                     'component' => $name,
@@ -276,7 +425,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintMissingExtensionComponents(array $json, ?string $path, array &$warnings): void
     {
@@ -295,7 +444,7 @@ final class LayoutLinter
             }
 
             $seen[$name] = true;
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::ExtensionComponentNotInstalled, 0, 0, [
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ExtensionComponentNotInstalled, self::line($node), self::column($node), [
                 'name' => $name,
                 'extension' => strstr($name, '.', true),
             ], $path);
@@ -331,7 +480,7 @@ final class LayoutLinter
             }
 
             $seen[$name] = true;
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::TemplateComponentKept, 0, 0, ['name' => $name], $path);
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::TemplateComponentKept, self::line($node), self::column($node), ['name' => $name], $path);
         }
     }
 
@@ -345,13 +494,13 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintSwitchValuePlacement(array $json, ?string $path, array &$warnings): void
     {
         foreach ($this->collectActions($json) as $action) {
             if (($action['handler'] ?? null) === 'switch' && array_key_exists('value', $action)) {
-                $warnings[] = new LintWarning(LayoutMarkupLintCode::SwitchValueNotConsumed, 0, 0, [], $path);
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::SwitchValueNotConsumed, self::line($action), self::column($action), [], $path);
             }
         }
     }
@@ -375,7 +524,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, array<string, mixed>>  $actions  액션 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function walkForActions(mixed $value, array &$actions): void
     {
@@ -399,19 +548,21 @@ final class LayoutLinter
      * @param  CompileContext  $context  문맥 (템플릿 등록 핸들러)
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintUnregisteredHandlers(array $json, CompileContext $context, ?string $path, array &$warnings): void
     {
         $seen = [];
 
-        foreach ($this->collectHandlers($json) as $handler) {
+        foreach ($this->collectActions($json) as $action) {
+            $handler = $action['handler'];
+
             if ($this->isKnownHandler($handler, $context) || isset($seen[$handler])) {
                 continue;
             }
 
             $seen[$handler] = true;
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::UnregisteredHandler, 0, 0, ['handler' => $handler], $path);
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::UnregisteredHandler, self::line($action), self::column($action), ['handler' => $handler], $path);
         }
     }
 
@@ -448,7 +599,7 @@ final class LayoutLinter
      * @param  CompileContext  $context  문맥 (nesting 규칙)
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintNesting(array $json, CompileContext $context, ?string $path, array &$warnings): void
     {
@@ -492,7 +643,7 @@ final class LayoutLinter
                     }
 
                     $seen[$key] = true;
-                    $warnings[] = new LintWarning(LayoutMarkupLintCode::NestingViolation, 0, 0, [
+                    $warnings[] = new LintWarning(LayoutMarkupLintCode::NestingViolation, self::line($child), self::column($child), [
                         'parent' => (string) $parentName,
                         'child' => $childName,
                     ], $path);
@@ -507,7 +658,7 @@ final class LayoutLinter
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintResponsiveMix(array $json, ?string $path, array &$warnings): void
     {
@@ -518,7 +669,8 @@ final class LayoutLinter
         $hasSplit = isset($breakpoints['mobile']) || isset($breakpoints['tablet']);
 
         if ($hasPortable && $hasSplit) {
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::ResponsiveBreakpointMix, 0, 0, [], $path);
+            $splitNode = $this->firstNodeWithBreakpoint($json, ['mobile', 'tablet']);
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ResponsiveBreakpointMix, self::line($splitNode), self::column($splitNode), [], $path);
         }
     }
 
@@ -529,7 +681,7 @@ final class LayoutLinter
      * @param  string  $rootKind  문서 봉투
      * @param  string|null  $path  소스 파일 경로
      * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function lintStandaloneGlobalHost(array $json, string $rootKind, ?string $path, array &$warnings): void
     {
@@ -550,7 +702,8 @@ final class LayoutLinter
                 continue;
             }
 
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::StandaloneMissingGlobalHost, 0, 0, [
+            $firstAction = $this->firstActionOf($json, $handler);
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::StandaloneMissingGlobalHost, self::line($firstAction), self::column($firstAction), [
                 'handler' => $handler,
                 'state' => '_global.'.self::GLOBAL_HOST_STATE[$handler][0],
             ], $path);
@@ -585,6 +738,75 @@ final class LayoutLinter
     }
 
     // ---------------------------------------------------------------------
+    // 소스 위치 (7.1.0 P16)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 노드·액션 배열에 실린 소스 위치 표식의 줄을 읽습니다 (표식이 없으면 0 = 문서 전체).
+     *
+     * 표식은 `LayoutMarkupCompiler` 가 위치 없는 경고를 만났을 때만 켜는 재컴파일에서 붙는다
+     * ({@see SOURCE_POSITION_KEY}). 저장·반환되는 JSON 에는 없다.
+     *
+     * @param  array<string, mixed>|null  $node  노드 또는 액션
+     * @return int 줄 (1-base, 없으면 0)
+     */
+    private static function line(?array $node): int
+    {
+        $position = $node[self::SOURCE_POSITION_KEY] ?? null;
+
+        return is_array($position) && isset($position[0]) ? (int) $position[0] : 0;
+    }
+
+    /**
+     * 노드·액션 배열에 실린 소스 위치 표식의 칸을 읽습니다 (표식이 없으면 0).
+     *
+     * @param  array<string, mixed>|null  $node  노드 또는 액션
+     * @return int 칸 (1-base, 없으면 0)
+     */
+    private static function column(?array $node): int
+    {
+        $position = $node[self::SOURCE_POSITION_KEY] ?? null;
+
+        return is_array($position) && isset($position[1]) ? (int) $position[1] : 0;
+    }
+
+    /**
+     * 주어진 핸들러를 부르는 첫 액션을 찾습니다 (문서 순서).
+     *
+     * @param  array<string, mixed>  $json  JSON
+     * @param  string  $handler  핸들러명
+     * @return array<string, mixed>|null 액션, 없으면 null
+     */
+    private function firstActionOf(array $json, string $handler): ?array
+    {
+        foreach ($this->collectActions($json) as $action) {
+            if ($action['handler'] === $handler) {
+                return $action;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 주어진 반응형 구간 키를 가진 첫 노드를 찾습니다 (문서 순서).
+     *
+     * @param  array<string, mixed>  $json  JSON
+     * @param  array<int, string>  $breakpoints  구간 키
+     * @return array<string, mixed>|null 노드, 없으면 null
+     */
+    private function firstNodeWithBreakpoint(array $json, array $breakpoints): ?array
+    {
+        foreach ($this->collectNodes($json) as $node) {
+            if (isset($node['responsive']) && is_array($node['responsive']) && array_intersect($breakpoints, array_map('strval', array_keys($node['responsive']))) !== []) {
+                return $node;
+            }
+        }
+
+        return null;
+    }
+
+    // ---------------------------------------------------------------------
     // 수집 헬퍼
     // ---------------------------------------------------------------------
 
@@ -610,7 +832,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, string>  $handlers  handler 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function walkForHandlers(mixed $value, array &$handlers): void
     {
@@ -646,7 +868,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<int, array<string, mixed>>  $nodes  노드 목록 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function walkForNodes(mixed $value, array &$nodes): void
     {
@@ -668,7 +890,7 @@ final class LayoutLinter
      *
      * @param  mixed  $value  순회 대상
      * @param  array<string, bool>  $breakpoints  breakpoint 키 집합 (참조)
-     * @return void
+     * @return void 반환값 없음
      */
     private function collectResponsiveBreakpoints(mixed $value, array &$breakpoints): void
     {

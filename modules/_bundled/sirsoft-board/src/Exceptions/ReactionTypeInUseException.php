@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * 사용 중인 반응 유형 삭제 시도 예외
  *
- * 반응 이력이 남아 있는 유형은 삭제할 수 없고 비활성화만 가능합니다 (PO 결정 R5).
+ * 반응 이력이 남아 있는 유형은 삭제할 수 없고 비활성화만 가능합니다 (결정 R5).
  * DB 도 board_reactions.reaction_type_id FK 가 restrictOnDelete 라 마지막 방어선을 갖지만,
  * 운영자에게는 "몇 건이 걸려 있는지"를 알려야 하므로 서비스가 미리 세어 이 예외로 막습니다.
  *
@@ -26,7 +26,7 @@ class ReactionTypeInUseException extends Exception
         private string $name,
         private int $count,
     ) {
-        parent::__construct(__('sirsoft-board::messages.reaction_type.in_use', [
+        parent::__construct(trans_count('sirsoft-board::messages.reaction_type.in_use', [
             'name' => $name,
             'count' => $count,
         ]));

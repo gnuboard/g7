@@ -133,6 +133,7 @@
 | Scout `->keys()->all()` + 무제한 `whereIn` | 키워드 술어를 페이지 쿼리에 직접 밀어넣기 (`DatabaseFulltextEngine::whereFulltext`) |
 | FULLTEXT 원문 키워드를 raw 로 바인딩 | 코어 sanitizer 경유 — `+` `-` `*` `"` 입력이 파싱 오류로 500 이 된다 |
 | `whereDate` / `whereYear`+`whereMonth` | `FiltersByDateRange` 의 범위 조건 (컬럼에 함수를 씌우면 인덱스를 못 쓴다) |
+| 화면에서 고른 날짜를 UTC 하루로 자르기 (`applyDateRangeFilter()`, `'Y-m-d 00:00:00'` 문자열 연결) | `applyViewerDateRangeFilter()` — 목록이 날짜를 보는 사람의 시간대로 그리므로 같은 하루로 자른다. 집계 경계가 사이트 자정에 잠긴 원장(방문자 통계)은 `applyDateRangeFilterInTimezone()` 에 사이트 표준시 |
 | 총 건수를 모르는데 `last_page` 를 1 로 채움 | `null` 로 내보내 화면이 마지막 페이지 점프만 감추게 한다 |
 | 상한값을 저장소·화면에 리터럴로 재기입 | `PaginationLimits` 단일 해석 + 확장은 `core.pagination.filter_*` 필터 훅으로만 조정 |
 | 결과 크기가 데이터 증가에 비례하는데 상한 없는 `->get()` / `->pluck()` | 목록은 페이지네이션, 순회는 `chunkById`/`lazyById`, 몇 건이면 `limit` — 운영자 등록 수에 묶인 설정성 테이블만 예외이며 그 근거를 코드에 남긴다 |

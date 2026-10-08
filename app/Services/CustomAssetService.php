@@ -250,7 +250,7 @@ class CustomAssetService
      * @param  string  $extensionType  확장 타입
      * @param  string  $identifier  확장 식별자
      * @param  string  $relative  `custom/` 기준 상대 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CustomAssetOperationException 파일 부재·삭제 실패 시
      */
@@ -262,6 +262,7 @@ class CustomAssetService
             throw new CustomAssetOperationException('custom_assets.errors.delete_failed', ['path' => $relative]);
         }
 
+        $this->pruneEmptyFolders($extensionType, $identifier, dirname($absolute));
         $this->invalidate($extensionType, $identifier, 'delete', $relative);
     }
 
@@ -313,6 +314,7 @@ class CustomAssetService
             throw new CustomAssetOperationException('custom_assets.errors.write_failed', ['path' => $to]);
         }
 
+        $this->pruneEmptyFolders($extensionType, $identifier, dirname($source));
         $this->invalidate($extensionType, $identifier, 'rename', $to);
 
         return [
@@ -440,7 +442,7 @@ class CustomAssetService
      * @param  string  $identifier  확장 식별자
      * @param  string  $operation  수행한 작업 (로그용)
      * @param  string  $relative  대상 상대 경로 (로그용)
-     * @return void
+     * @return void 반환값 없음
      */
     private function invalidate(string $extensionType, string $identifier, string $operation, string $relative): void
     {
@@ -542,10 +544,46 @@ class CustomAssetService
     }
 
     /**
+     * 파일을 지우거나 옮겨 비게 된 폴더를 `custom/` 바로 아래까지 거슬러 올라가며 지웁니다.
+     *
+     * 목록은 파일만 보여 주므로 빈 폴더는 화면에 보이지 않은 채 디스크에 남는다(2026-10-06 실측). `custom/` 자체와
+     * 그 바깥은 건드리지 않고, 무엇이든 들어 있는 폴더(숨김 파일 포함)에서 멈춘다. 지우지 못해도 파일 작업은 이미
+     * 끝났으므로 예외를 내지 않는다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $directory  비었을 수 있는 폴더 절대 경로
+     * @return void 반환값 없음
+     */
+    private function pruneEmptyFolders(string $extensionType, string $identifier, string $directory): void
+    {
+        $root = CustomAssets::directory($extensionType, $identifier);
+        if ($root === null) {
+            return;
+        }
+
+        $root = rtrim(str_replace('\\', '/', $root), '/');
+        $current = rtrim(str_replace('\\', '/', $directory), '/');
+
+        while ($current !== $root && str_starts_with($current, $root.'/') && is_dir($current)) {
+            $entries = @scandir($current);
+            if ($entries === false || array_diff($entries, ['.', '..']) !== []) {
+                return;
+            }
+
+            if (! @rmdir($current)) {
+                return;
+            }
+
+            $current = rtrim(str_replace('\\', '/', dirname($current)), '/');
+        }
+    }
+
+    /**
      * 디렉토리를 보장합니다.
      *
      * @param  string  $directory  절대 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CustomAssetOperationException 생성 실패 시
      */

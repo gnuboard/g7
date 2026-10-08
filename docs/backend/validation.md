@@ -747,6 +747,15 @@ $fail(__('validation.layout.component_must_be_array', ['index' => $index]));
 // 결과: "components[0]는 배열이어야 합니다."
 ```
 
+**4. 수가 들어가는 검증 문구 (영어 단·복수)**:
+
+수 규칙(`min`·`max`·`size`·`gt`·`gte`·`lt`·`lte`·`digits`·`min_digits`·`max_digits`·`decimal`)의 영어 표준 문구는
+`단수|복수` 로 적혀 있고, 코어가 규칙값으로 한 문장을 고릅니다 — `min:1` 이면 `The tags field must have at least 1 item.`,
+`min:2` 면 `… at least 2 items.` 입니다. 범위 규칙(`between`·`digits_between`)은 고르지 않습니다(늘 복수).
+`messages()` 에 이 규칙의 커스텀 문구를 줄 때도 `단수|복수` 값은 같은 방식으로 골라지지만, 표준 키를 `__()` 로 미리
+번역해 넘기면 두 문장이 이어져 나옵니다 — `trans_choice('validation.min.array', 1, ['attribute' => …, 'min' => 1])` 처럼
+규칙값으로 고릅니다. 규칙 상세는 [module-i18n.md 「수에 따른 단수·복수 (백엔드)」](../extension/module-i18n.md#수에-따른-단수복수-백엔드).
+
 ---
 
 ## 다국어 필드 검증 규칙

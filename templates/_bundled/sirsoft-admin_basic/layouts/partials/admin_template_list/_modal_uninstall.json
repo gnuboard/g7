@@ -399,15 +399,6 @@
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "if": "{{!(response.data?.preserved_backups?.length)}}",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedTemplate": null,
-                                                "deleteTemplateData": false
-                                            }
-                                        },
-                                        {
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
@@ -426,6 +417,15 @@
                                         {
                                             "handler": "closeModal",
                                             "if": "{{!(response.data?.preserved_backups?.length)}}"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{!(response.data?.preserved_backups?.length)}}",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null,
+                                                "deleteTemplateData": false
+                                            }
                                         }
                                     ],
                                     "onError": [

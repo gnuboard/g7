@@ -203,4 +203,28 @@ describe('메뉴 관리 — 일괄 역할·행 역할 배지 (#708)', () => {
     expect(texts).toContain('admin.menus.info.no_roles');
     expect(texts).not.toContain('admin.menus.info.all_roles');
   });
+
+  // @scenario count_form=numeric
+  // @effects dictionary_has_singular_variant
+  it('영문 개수 문구는 1개일 때 단수형(_one)을 쓴다 (2026-10-06 실측 「1 menus selected」 → 7.1.0 R-A: menu(s) 대신 번역 엔진 복수형 선택)', () => {
+    const en = read('../../lang/partial/en/admin.json');
+    const bulk = (en.admin ?? en).menus.bulk;
+
+    for (const key of ['selected_count', 'confirm_add', 'confirm_remove', 'confirm_auto_parent', 'confirm_auto_child']) {
+      // 기본 키 = 복수형(2 이상), 키_one = 단수형 — 번역 엔진이 count 로 고른다(engine-v1.78.7).
+      expect(bulk[key], key).not.toMatch(/\(s\)/);
+      expect(bulk[key], key).toMatch(/\{\{count\}\} (parent )?(menus|submenus)/);
+      expect(bulk[`${key}_one`], `${key}_one`).toMatch(/\{\{count\}\} (parent )?(menu|submenu)\b/);
+    }
+  });
+
+  // @scenario entry=menu_bulk_remove, actor=super_admin, menu_shape=top_level
+  // @effects update_menu_keeps_admin_role
+  it('일본어 언어팩의 역할 화면 문구는 「ロール」 로 통일한다 (보호 역할 안내만 「役割」 이던 것)', () => {
+    const ja = read('../../../../../lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/admin.json');
+    const roles = JSON.stringify((ja.admin ?? ja).roles);
+
+    expect(roles).not.toContain('役割');
+    expect((ja.admin ?? ja).roles.protected_roles_hint).toContain('ロール');
+  });
 });

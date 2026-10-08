@@ -281,6 +281,9 @@ final class NodeCompiler
     /** `data-type` 생략 시 종류 */
     public const DEFAULT_COMPONENT_TYPE = 'basic';
 
+    /** 소스 위치 표식 켜짐 여부 — {@see markSourcePositions()} */
+    private bool $markSource = false;
+
     /**
      * 노드 컴파일러를 만듭니다.
      *
@@ -307,6 +310,41 @@ final class NodeCompiler
      * @throws CompileError 문법·표기 규칙을 위반한 경우
      */
     public function compile(MarkupElement $element, ?string $path = null): array
+    {
+        $node = $this->compileNode($element, $path);
+
+        if ($this->markSource && ! array_is_list($node)) {
+            $node[LayoutLinter::SOURCE_POSITION_KEY] = [$element->line, $element->column];
+        }
+
+        return $node;
+    }
+
+    /**
+     * 소스 위치 표식을 켜거나 끕니다 (7.1.0 P16).
+     *
+     * 켜면 노드 배열마다 `LayoutLinter::SOURCE_POSITION_KEY => [줄, 칸]` 을 싣는다. 위치 없는 lint 경고의
+     * 자리를 찾는 재컴파일에서만 켠다 — 저장·반환 JSON 에는 싣지 않는다.
+     *
+     * @param  bool  $on  켤지 여부
+     * @return void 반환값 없음
+     */
+    public function markSourcePositions(bool $on): void
+    {
+        $this->markSource = $on;
+        $this->actions->markSourcePositions($on);
+    }
+
+    /**
+     * 요소 하나를 JSON 노드로 컴파일합니다 (표식 없는 본체 — {@see compile()}).
+     *
+     * @param  MarkupElement  $element  트리 빌더가 만든 요소
+     * @param  string|null  $path  소스 파일 경로 (오류 메시지용)
+     * @return array<string, mixed> JSON 노드
+     *
+     * @throws CompileError 문법·표기 규칙을 위반한 경우
+     */
+    private function compileNode(MarkupElement $element, ?string $path = null): array
     {
         // 베이스 레이아웃의 슬롯 자리표시 — `<slot name="content"/>` → `{type: slot, name: content}`.
         // 자식 레이아웃이 채우는 `<slot name>` 섹션은 문서 층(S4)이 직속에서 먼저 가로챈다.
@@ -816,7 +854,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  array<string, mixed>  $props  props (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 위반한 경우
      */
@@ -901,7 +939,7 @@ final class NodeCompiler
      * @param  int  $line  오류 좌표 라인
      * @param  int  $column  오류 좌표 컬럼
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 같은 자리를 두 표기가 다투는 경우
      */
@@ -936,7 +974,7 @@ final class NodeCompiler
      * @param  bool  $typed  `:` 타입 리터럴 표기 여부
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 지시 속성의 값 표기가 규칙을 벗어난 경우
      */
@@ -991,7 +1029,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  array<string, mixed>  $props  props (참조)
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 구조 태그 표기가 규칙을 벗어난 경우
      */
@@ -1445,7 +1483,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 표준 불리언 속성에 리터럴 값을 표기한 경우
      */
@@ -1469,7 +1507,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 외래 관용구인 경우
      */
@@ -1500,7 +1538,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 노드 키 이름을 속성으로 쓴 경우
      */
@@ -1521,7 +1559,7 @@ final class NodeCompiler
      *
      * @param  MarkupAttribute  $attribute  속성
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 지원하지 않는 속성인 경우
      */
@@ -1588,7 +1626,7 @@ final class NodeCompiler
      * @param  array<string, mixed>  $node  노드
      * @param  string  $key  노드 키
      * @param  string|null  $path  소스 파일 경로
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 지정된 키인 경우
      */

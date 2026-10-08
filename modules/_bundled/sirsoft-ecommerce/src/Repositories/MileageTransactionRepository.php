@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Models\User;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositor
  */
 class MileageTransactionRepository implements MileageTransactionRepositoryInterface
 {
+    use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
 
     /**
@@ -246,13 +248,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
         // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
         // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        if (! empty($filters['start_date'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
-        }
-
-        if (! empty($filters['end_date'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['end_date'])->endOfDay());
-        }
+        // 목록이 일시를 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['start_date'] ?? null, $filters['end_date'] ?? null);
 
         // 검색: search_field 별 대상 컬럼/관계 분기 (member/member_id/email/order)
         if (! empty($filters['search_keyword'])) {

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
+use App\Enums\ExtensionStatus;
+use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
@@ -21,6 +23,7 @@ use App\Services\LanguagePack\LanguagePackManifestValidator;
 use App\Services\LanguagePack\LanguagePackPhpArrayValidator;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Support\OutboundUrlValidator;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -635,6 +638,7 @@ class LanguagePackService
 
             $virtual = $this->repository->buildVirtualFromManifest($manifest, basename($dir));
             $virtual->setAttribute('install_blocked_reason', $this->resolveInstallBlockedReason($manifest));
+            $virtual->setAttribute('install_notice', $this->resolveInstallNotice($manifest));
             $packs->push($virtual);
         }
 
@@ -981,7 +985,10 @@ class LanguagePackService
 
         $this->assertSecurityRules($packageRoot, $manifest);
         $this->assertDependencies($manifest);
-        $this->assertTargetExtensionExists($manifest);
+        // 설치는 대상 확장이 **설치돼 있으면** 꺼져 있어도 허용한다(켜는 것은 activate() 가 여전히 대상 활성을 요구).
+        // 확장 설치 창은 설치 직후 비활성인 그 확장 자신의 언어팩을 함께 고르므로, 여기서 거절하면 늘 실패했다.
+        $this->assertTargetExtensionExists($manifest, allowInactiveTarget: true);
+        $targetInactive = $this->isTargetExtensionInactive($manifest);
 
         $identifier = $manifest['identifier'];
         $existing = $this->repository->findByIdentifier($identifier);
@@ -1006,7 +1013,12 @@ class LanguagePackService
         // 이전엔 재설치 시 자기가 active 였더라도 $shouldActivate 가 false 가 되어
         // status 가 active → installed 로 강등 → 의존하는 확장 언어팩이 'core_locale_missing'
         // 으로 차단되는 회귀가 발생.
+        // 켜 달라는 요청이지만 대상 확장이 꺼져 있으면 지금은 켜지 않고 「대상 켜짐 대기」로 표시해 둔다 —
+        // 대상 확장을 켤 때(LanguagePackBundledRegistrar::activateAwaitingForExtension) 함께 켜진다.
+        $awaitingHost = $autoActivate && $targetInactive;
+
         $shouldActivate = $autoActivate
+            && ! $targetInactive
             && ! $this->repository->findActiveForSlot(
                 $manifest['scope'],
                 $manifest['target_identifier'] ?? null,
@@ -1014,7 +1026,7 @@ class LanguagePackService
                 $existing?->id
             );
 
-        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy) {
+        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost) {
             $data = $this->buildPackData($manifest, $sourceType, $sourceUrl, $installedBy);
 
             // 설치 트랜잭션은 항상 installed 로만 기록한다. 활성화는 아래에서 activate() 를
@@ -1029,6 +1041,8 @@ class LanguagePackService
             //  우회하는 경로를 닫는다. 정상 운영자는 auto_activate 로 활성 상태를 유지하며,
             //  그 플래그는 RequiresActivationPermission 이 지킨다.)
             $data['status'] = LanguagePackStatus::Installed->value;
+            // 대기 표시는 이번 설치 요청의 뜻을 따른다 — 켜 달라고 하지 않은 재설치는 이전 대기 표시도 지운다.
+            $data['deactivated_reason'] = $awaitingHost ? LanguagePackDeactivationReason::AwaitingHost->value : null;
 
             return $existing
                 ? $this->repository->update($existing, $data)
@@ -1097,6 +1111,7 @@ class LanguagePackService
 
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Active->value,
+                'deactivated_reason' => null,
                 'activated_at' => now(),
             ]);
         });
@@ -1133,7 +1148,7 @@ class LanguagePackService
                 $this->activate($pack);
                 $succeeded[] = $pack->id;
             } catch (Throwable $e) {
-                $failed[] = ['id' => $id, 'reason' => $e->getMessage()];
+                $failed[] = ['id' => $id, 'reason' => SafeExceptionMessage::for($e)];
             }
         }
 
@@ -1452,16 +1467,19 @@ class LanguagePackService
     /**
      * 대상 확장 존재 + 활성 여부를 확인합니다.
      *
-     * 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에도 언어팩이 들러붙지 않게 차단합니다.
+     * 활성화(activate)는 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에 언어팩이 켜지지 않게 차단합니다.
+     * 설치는 `$allowInactiveTarget=true` 로 불러 설치돼 있으나 꺼진 대상을 허용합니다(꺼진 채 설치, 켜기는 대상 활성 후).
+     * 미설치 대상·버전 미달은 설치에서도 차단합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @param  bool  $allowInactiveTarget  설치돼 있으나 꺼진 대상을 허용할지 여부 (설치 경로 전용)
      * @return void 반환값 없음
      *
-     * @throws RuntimeException 대상 확장 미설치/비활성 시
+     * @throws RuntimeException 대상 확장 미설치/비활성(허용하지 않을 때)/버전 미달 시
      */
-    private function assertTargetExtensionExists(array $manifest): void
+    private function assertTargetExtensionExists(array $manifest, bool $allowInactiveTarget = false): void
     {
-        $reason = $this->resolveTargetExtensionBlockedReason($manifest);
+        $reason = $this->resolveTargetExtensionBlockedReason($manifest, $allowInactiveTarget);
         if ($reason === 'target_not_installed') {
             throw new LanguagePackOperationException('language_packs.errors.target_not_installed', [
                 'scope' => $manifest['scope'],
@@ -1487,8 +1505,9 @@ class LanguagePackService
     /**
      * 설치 차단 사유를 단일 키워드로 반환합니다 (UI 표시 + 차단 검증의 SSoT).
      *
-     * 우선순위: 코어 locale 미활성 → 대상 미설치 → 대상 비활성 → 대상 버전 미달.
-     * 어느 것도 해당하지 않으면 null 을 반환합니다.
+     * 우선순위: 코어 locale 미활성 → 대상 미설치 → 대상 버전 미달.
+     * 대상이 설치돼 있으나 꺼져 있는 것은 설치 차단 사유가 아닙니다 — 꺼진 채 설치되고, 켜는 것은 대상을 켠 뒤에
+     * 합니다(안내는 `resolveInstallNotice()`). 어느 것도 해당하지 않으면 null 을 반환합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
      * @return string|null 차단 사유 키 또는 null
@@ -1496,7 +1515,40 @@ class LanguagePackService
     public function resolveInstallBlockedReason(array $manifest): ?string
     {
         return $this->resolveCoreLocaleBlockedReason($manifest)
-            ?? $this->resolveTargetExtensionBlockedReason($manifest);
+            ?? $this->resolveTargetExtensionBlockedReason($manifest, true);
+    }
+
+    /**
+     * 설치는 되지만 알려 둘 사정을 단일 키워드로 반환합니다 (UI 안내용, 설치를 막지 않음).
+     *
+     * 현재는 대상 확장이 설치돼 있으나 꺼진 경우 `target_inactive` — 설치는 꺼진 채 되고, 그 확장을 켠 뒤에 켤 수 있습니다.
+     *
+     * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return string|null 안내 사유 키 또는 null
+     */
+    public function resolveInstallNotice(array $manifest): ?string
+    {
+        return $this->isTargetExtensionInactive($manifest) ? 'target_inactive' : null;
+    }
+
+    /**
+     * 대상 확장이 설치돼 있으나 꺼져 있는지 판정합니다 (코어 범위·대상 없음·미설치는 false).
+     *
+     * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return bool 설치돼 있고 비활성이면 true
+     */
+    private function isTargetExtensionInactive(array $manifest): bool
+    {
+        $scope = $manifest['scope'] ?? null;
+        $target = $manifest['target_identifier'] ?? null;
+
+        if ($scope === LanguagePackScope::Core->value || ! $target) {
+            return false;
+        }
+
+        $row = $this->repository->findHostExtensionRow($scope, $target);
+
+        return $row !== null && ($row->status ?? null) !== ExtensionStatus::Active->value;
     }
 
     /**
@@ -1529,9 +1581,10 @@ class LanguagePackService
      * 대상 확장 존재/활성/버전 차단 사유를 반환합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @param  bool  $allowInactiveTarget  true 면 설치돼 있으나 꺼진 대상을 차단하지 않고 버전 검사로 넘어간다 (설치 경로)
      * @return string|null 'target_not_installed' / 'target_inactive' / 'target_version_too_old' 또는 null
      */
-    private function resolveTargetExtensionBlockedReason(array $manifest): ?string
+    private function resolveTargetExtensionBlockedReason(array $manifest, bool $allowInactiveTarget = false): ?string
     {
         $scope = $manifest['scope'] ?? null;
         $target = $manifest['target_identifier'] ?? null;
@@ -1545,7 +1598,7 @@ class LanguagePackService
             return 'target_not_installed';
         }
 
-        if (($row->status ?? null) !== 'active') {
+        if (($row->status ?? null) !== ExtensionStatus::Active->value && ! $allowInactiveTarget) {
             return 'target_inactive';
         }
 
@@ -2074,7 +2127,7 @@ class LanguagePackService
             try {
                 $this->validator->validate($manifest, $packageRoot);
             } catch (Throwable $e) {
-                $validationErrors[] = $e->getMessage();
+                $validationErrors[] = SafeExceptionMessage::for($e);
             }
 
             $existing = $this->repository->findByIdentifier($manifest['identifier'] ?? '');

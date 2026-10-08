@@ -6,6 +6,7 @@ use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\CodeLabelTranslator;
 use App\Analytics\GeoLabelTranslator;
+use App\Analytics\IpAddress;
 use App\Analytics\LanguageLabelTranslator;
 use App\Analytics\UrlNormalizer;
 use App\Contracts\Analytics\GoalRegistryInterface;
@@ -184,7 +185,7 @@ class VisitorController extends AdminBaseController
 
         // 화면용 가공을 한 번만 하고 카드도 같은 값을 쓴다 — 카드에 원본을 넘기면 목록의 시각은
         // 사이트 표준시인데 카드만 UTC 로 남아, 같은 화면 안에서 두 기준이 공존한다.
-        $screenVisits = $this->visitsForScreen($profile['visits'] ?? []);
+        $screenVisits = $this->visitsForScreen($profile['visits'] ?? [], $config->ipMaskOctets);
 
         return $this->success('analytics.visitors.fetch_success', array_merge($profile, [
             // 타임라인이 읽힐 이름을 덧붙인다. 저장 이름(`name`)은 정보주체 내보내기 파일이 그대로 싣는
@@ -223,10 +224,13 @@ class VisitorController extends AdminBaseController
     {
         $rows = function () use ($profile): iterable {
             foreach ($profile['visits'] as $visit) {
+                // 시각 열은 화면·파일 이름과 같은 사이트 표준시로 싣는다. UTC 원값을 그대로 쓰면 파일 이름의
+                // 기간(사이트 날짜)과 행의 날짜가 다른 하루를 가리킨다 — 서울 사이트의 10-06 아침 방문이
+                // 「…_2026-10-06.csv」 안에 `2026-10-05T21:…` 로 찍혔다(7.1.0 실측 O-E4).
                 $base = [
                     $visit['visit_id'],
-                    $visit['first_action_at'],
-                    $visit['last_action_at'],
+                    self::siteTime($visit['first_action_at'] ?? null),
+                    self::siteTime($visit['last_action_at'] ?? null),
                     $visit['visitor_type'],
                     $visit['country_code'],
                     $visit['device_type'],
@@ -248,7 +252,7 @@ class VisitorController extends AdminBaseController
 
                 foreach ($visit['actions'] as $action) {
                     yield array_merge($base, [
-                        $action['occurred_at'],
+                        self::siteTime($action['occurred_at'] ?? null),
                         $action['action_type'],
                         $action['name'],
                         $action['time_spent_seconds'],
@@ -278,11 +282,12 @@ class VisitorController extends AdminBaseController
      * 타임라인 액션에 화면용 이름을 덧붙입니다.
      *
      * @param  array<int, array<string, mixed>>  $visits  내보내기 모양의 방문 목록
+     * @param  int  $maskOctets  현재 IP 마스킹 옥텟 수 (방문마다 주소가 가려진 값인지 판정)
      * @return array<int, array<string, mixed>> 화면용 이름이 붙은 방문 목록
      */
-    private function visitsForScreen(array $visits): array
+    private function visitsForScreen(array $visits, int $maskOctets = 0): array
     {
-        return array_map(function (array $visit): array {
+        return array_map(function (array $visit) use ($maskOctets): array {
             $visit['actions'] = array_map(static function (array $action): array {
                 $name = $action['name'] ?? null;
                 $action['name_display'] = is_string($name) ? UrlNormalizer::forDisplay($name) : $name;
@@ -306,6 +311,8 @@ class VisitorController extends AdminBaseController
 
             $visit['first_action_at'] = self::siteTime($visit['first_action_at'] ?? null);
             $visit['last_action_at'] = self::siteTime($visit['last_action_at'] ?? null);
+            // 그 방문의 주소가 지금 설정대로 가려진 값인지 — 설정 전 기록은 원래 주소다(7.1.0 실측 O-E8).
+            $visit['ip_masked'] = IpAddress::isMaskedBy(is_string($visit['ip'] ?? null) ? $visit['ip'] : null, $maskOctets);
             // 저장 값(`desktop`·`search`)은 내보내기 파일이 그대로 싣는다 — 화면만 읽을 이름을 덧붙인다.
             $visit['device_type_label'] = CodeLabelTranslator::label('analytics.device_type', $visit['device_type'] ?? null);
             $visit['referrer_type_label'] = CodeLabelTranslator::label('analytics.referrer_type', $visit['referrer_type'] ?? null);
@@ -322,8 +329,9 @@ class VisitorController extends AdminBaseController
      *
      * 방문자 통계의 집계 경계는 사이트 자정에 잠겨 있으므로 화면의 시각도 사이트 기준이어야
      * 합니다 — 보는 사람 기준으로 보이면 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를
-     * 가리킵니다(#682 S3 라운드 6, 설계 결정). 내보내기 파일·CSV 는 오프셋이 붙은 ISO8601 이
-     * 정본이라 `DataSubjectService` 쪽은 그대로 두고 **화면 경로에서만** 바꿉니다.
+     * 가리킵니다(#682 S3 라운드 6, 설계 결정). 정보주체 JSON 내보내기는 오프셋이 붙은 ISO8601 이
+     * 정본이라 `DataSubjectService` 쪽은 그대로 두고 화면과 CSV 경로에서 바꿉니다 — CSV 는 파일 이름의
+     * 기간이 사이트 날짜이므로 행의 시각도 같은 기준이어야 합니다(7.1.0 실측 O-E4).
      *
      * @param  mixed  $value  ISO8601 문자열 또는 null
      * @return string|null Y-m-d H:i:s 형식 (값이 없으면 null)

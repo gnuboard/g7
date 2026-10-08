@@ -172,7 +172,8 @@ class PostScrapRepository implements PostScrapRepositoryInterface
             $query->where("{$table}.board_id", (int) $filters['board_id']);
         }
 
-        $this->applyDateRangeFilter(
+        // 목록은 스크랩일을 보는 사람의 시간대로 그린다 — 같은 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
             $query,
             "{$table}.created_at",
             $filters['scrapped_at_from'] ?? null,

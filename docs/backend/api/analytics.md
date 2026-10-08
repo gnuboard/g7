@@ -484,7 +484,7 @@ CSV 는 제공하지 않습니다(내려받기는 사이트 목록 리포트가 
 | pagination | object | 쪽 정보 |
 | totals | object | 기간 전체 합계 — `hits`(봇 요청 수)·`labels`(봇 종류 수). `data[]` 는 쪽으로 잘려 있어 그 행을 더하면 이 쪽의 합일 뿐이므로, 「봇 요청」·「봇 종류」 같은 기간 숫자는 이 값을 읽는다. 쪽·검색어와 무관하다 |
 | freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) — 봇 화면 요청 하나는 집계를 한 번만 일으킨다 |
-| recent_hits[] | array | 최근 봇 요청 50건 — `bot_name`·`url`·`ip`·`cache_status`·`occurred_at`. 집계는 「어느 봇이 얼마나」까지만 답하므로, 어떤 주소를 언제 긁어 갔는지를 함께 보여 운영자가 차단 여부를 판단할 수 있게 한다 |
+| recent_hits[] | array | **고른 기간 안의** 최근 봇 요청 50건(최신순, 사이트 표준시 하루 경계) — `id`(행 식별자)·`bot_name`·`url`·`ip`·`cache_status`·`occurred_at`. 화면의 다른 숫자와 같은 기간을 따른다. 집계는 「어느 봇이 얼마나」까지만 답하므로, 어떤 주소를 언제 긁어 갔는지를 함께 보여 운영자가 차단 여부를 판단할 수 있게 한다 |
 
 `format=csv` 로 받을 때는 집계 표만 나갑니다 — 내려받기는 원장 목록을 싣지 않습니다.
 <!-- @generated:end:api.admin.analytics.bots -->
@@ -584,7 +584,7 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| data[] | array | 실패 기록 (사유·메시지·주소·요청 IP·브라우저 문자열·발생 시각). 페이로드 발췌는 목록에 싣지 않습니다 — 행이 커져 목록 조회가 느려집니다. 요청 IP 는 `core.analytics.privacy` 권한이 있을 때만 채워지고 없으면 `null` 입니다(현재 접속자와 같은 경계) |
+| data[] | array | 실패 기록 (사유·메시지·주소·요청 IP·브라우저 문자열·발생 시각). 페이로드 발췌는 목록에 싣지 않습니다 — 행이 커져 목록 조회가 느려집니다. 요청 IP 는 `core.analytics.privacy` 권한이 있을 때만 채워지고 없으면 `null` 입니다(현재 접속자와 같은 경계). 행마다 `ip_masked`(그 주소가 지금 마스킹 설정대로 가려진 값인가 — `true`·`false`, 마스킹이 꺼졌거나 주소가 없으면 `null`)가 붙습니다. 설정을 켜며 소급을 건너뛴 기존 행은 `false` 입니다 |
 | pagination | object | 쪽 정보 |
 <!-- @generated:end:api.admin.analytics.collect-failures -->
 
@@ -615,7 +615,8 @@ _없음._
 | processed_visits / processed_actions / chunks | integer | 처리량 |
 | progress_percent | integer | 진행률. 화면이 이 값을 2초마다 물어본다 |
 | started_at / finished_at | string\|null | 시작·종료 시각 |
-| error | string\|null | 실패·건너뜀 사유. **단건 조회에만** 실립니다(목록은 행을 가볍게 둡니다) |
+| error | string\|null | 실패·건너뜀 사유. 실패 사유(예외 원문)는 **단건 조회에만** 실립니다(목록은 행을 가볍게 둡니다). 건너뜀 사유는 목록에도 실리고, 보는 사람의 언어로 바뀌어 나옵니다 |
+| skip_reason | string\|null | 건너뛴 이유 코드 — `locked`(같은 기간을 다른 집계가 돌리는 중) · `finalized`(이미 확정된 날) · `beyond_retention`(원장 보존 기간 밖). 건너뜀이 아니면 `null` |
 
 > 단건 조회는 없는 ID 에 **404** 를 돌려줍니다.
 <!-- @generated:end:api.admin.analytics.archive-runs.index -->
@@ -742,7 +743,7 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| tables[] | array | 표별 행 수·데이터·인덱스 크기 (데이터베이스가 들고 있는 어림값) |
+| tables[] | array | 표별 행 수·데이터·인덱스 크기 (데이터베이스가 들고 있는 어림값. 방문·액션 두 표의 행 수만은 `exact` 와 같은 정확한 값) |
 | tables[].table / label | string | 표 이름과 화면 이름(요청 로케일). 확장이 `core.analytics.storage_tables` 로 더한 표는 이름이 없어 `label` 이 표 이름과 같다 |
 | exact | object | 방문·액션 두 표의 정확한 행 수 — 운영자가 지울지 말지를 정하는 값이라 정확히 센다 |
 | over_limit | boolean | 경고 한계를 넘었는지 |
@@ -810,7 +811,7 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| visits[] | array | 찾은 방문 — `visit_id`·`visitor_key`·`visit_date`·`first_action_at`·`last_action_at`·`ip`·`visitor_type`·`pageviews_count`·`actions_count`(화면의 표가 그리는 값). 내보내기는 각 방문의 액션 타임라인과 전환을 함께 담는다 |
+| visits[] | array | 찾은 방문 — `visit_id`·`visitor_key`·`visit_date`·`first_action_at`·`last_action_at`·`ip`·`ip_masked`(그 주소가 지금 마스킹 설정대로 가려진 값인가, 마스킹이 꺼졌으면 `null`)·`visitor_type`·`pageviews_count`·`actions_count`(화면의 표가 그리는 값). 내보내기는 각 방문의 액션 타임라인과 전환을 함께 담는다 |
 | notice | string\|null | 찾기의 한계 안내 (익명 모드 구간은 최근 이틀치만 주소로 찾을 수 있다) |
 | export_filename | string | 내보내기 파일명 `analytics-subject-{yyyymmdd}.json`(사이트 기준 날짜). 내보내기를 토큰 동반 blob 으로 받는 화면이 저장 이름으로 쓴다 — 검색값을 파일명에 넣지 않기 위해서다 |
 | deleted | object | (삭제 시) `{visits, actions, conversions, extensions}` — `extensions` 는 확장이 같은 트랜잭션에서 지운 건수 `{식별자: 건수}` |
@@ -903,14 +904,14 @@ _없음._
 | visits[] 부수정보 | mixed | 원장이 아는 그 방문의 값 전부 — `source`(`beacon`·`server`)·`visitor_type`·`ip`·`country_code`·`region_code`·`city`·`browser_name`·`browser_version`·`os_name`·`os_version`·`device_type`·`screen_resolution`·`browser_language`·`locale`·`is_returning`·`is_bounce`·`referrer_type`·`referrer_name`·`referrer_keyword`·`campaign_name`·`campaign_source`·`campaign_medium`·`pageviews`·`total_time_seconds`. 정보주체 내보내기 파일도 같은 값을 싣는다. **화면용**으로 `device_type_label`·`referrer_type_label`·`country_name`·`browser_language_label`·`locale_label`(요청 로케일 이름 — 번역이 없으면 코드)이 붙는다. 내보내기 파일·CSV 는 코드만 싣는다 |
 | visits[].conversions[] | array | 그 방문의 전환 — `occurred_at`·`goal_key`·`label`(전환 속성: 주문번호 등)·`revenue`·`currency`·`custom_dimensions` 에 **화면용** `goal_label`(선언된 목표 이름, 요청 로케일 — 전환 탭과 같은 이름. 등록부에 없는 목표는 `goal_key` 그대로)이 붙는다. 내보내기 파일은 `goal_label` 을 싣지 않는다 |
 | exported_at | string | 조회 시각 (사이트 표준시 `Y-m-d H:i:s`) |
-| ip_mask_octets | integer | 화면의 주소가 몇 칸 가려진 값인지 — 마스킹된 주소를 원래 주소로 읽지 않게 한다 |
+| ip_mask_octets | integer | 화면의 주소가 몇 칸 가려진 값인지 — 마스킹된 주소를 원래 주소로 읽지 않게 한다. 방문마다 `ip_masked` 가 붙어, 설정을 켜며 소급을 건너뛴 기존 방문(`false` — 원래 주소)을 가린다 |
 | mode | string | 지금 수집 모드 |
 | mode_notice | string\|null | 익명 모드에서는 방문자 키가 날마다 바뀌어 같은 사람의 방문이 하루 안에서만 묶인다는 안내 |
 
 **CSV 내려받기** — `?format=csv` 는 액션 하나가 한 줄이고 방문 정보는 줄마다 되풀이됩니다
 (`visit_id, first_action_at, last_action_at, visitor_type, country_code, device_type, browser,
 os, referrer_type, referrer_name, referrer_url, pageviews, total_time_seconds, action_occurred_at,
-action_type, action_name, time_spent_seconds`). 정보주체가 열람을 요구했을 때 건네줄 파일이
+action_type, action_name, time_spent_seconds`). 시각 열(`first_action_at`·`last_action_at`·`action_occurred_at`)은 화면과 같은 **사이트 표준시** `Y-m-d H:i:s` 입니다 — 파일 이름의 기간도 사이트 날짜입니다. 정보주체가 열람을 요구했을 때 건네줄 파일이
 이 모양입니다. 액션이 없는 방문도 한 줄로 남습니다 — 방문했다는 사실 자체가 기록이기
 때문입니다. 파일명은 `analytics-visitor-{visitorKey}-{from}_{to}.csv`(기간을 주지 않았으면 `analytics-visitor-{visitorKey}.csv`)이고 — 같은 사람을 두 기간으로 받으면 앞 파일을 덮지 않게 — 내려받기도 목록과 같은
 `core.analytics.privacy` 권한을 요구합니다.

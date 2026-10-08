@@ -87,6 +87,10 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 문자열이 아니라 언어별 맵(`{ "ko": …, "en": … }`)으로 담습니다. 문자열로 담으면 오류 없이
 미리보기에서 빈 칸으로 그려집니다(7.1.0 실측: 버전 미리보기 창의 제목·내용). 코어 가드
 `stateModalSeedCarriesRenderedFields` 가 이 모양을 잡습니다.
+
+첨부 이미지의 미리보기 주소(`preview_url`·`thumbnail`)는 서버에 실제로 있는 파일이 아니므로 표본에 서버 경로를
+적지 않고 인라인 그림(`data:image/svg+xml,…`)을 씁니다. 서버 경로를 적으면 편집기에서 깨진 그림으로 보입니다
+(7.1.0 실측). 코어 가드 `BundledStaticImagePathsExist` 가 잡습니다.
 <!-- @intent END -->
 
 ## 수정 시 동반 의무

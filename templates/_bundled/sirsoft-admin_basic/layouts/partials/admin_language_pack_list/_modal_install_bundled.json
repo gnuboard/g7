@@ -203,14 +203,42 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_inactive'}}",
-                                    "text": "$t:admin.language_packs.modals.install_blocked_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}",
+                                    "text": "$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "대상 확장이 설치돼 있으나 꺼져 있으면 막지 않고 알리기만 한다 — 꺼진 채 설치되고, 켜는 것은 그 확장을 켠 뒤 목록에서 한다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.selectedBundledLanguagePack?.install_blocked_reason && _global.selectedBundledLanguagePack?.install_notice === 'target_inactive'}}",
+                    "props": {
+                        "className": "rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-info-soft"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fas fa-circle-info",
+                                        "size": "sm",
+                                        "className": "mt-0.5"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}",
-                                    "text": "$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                    "text": "$t:admin.language_packs.modals.install_notice_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
                                 }
                             ]
                         }
@@ -279,8 +307,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "isLanguagePackInstalling": false,
-                                                "selectedBundledLanguagePack": null
+                                                "isLanguagePackInstalling": false
                                             }
                                         },
                                         {
@@ -301,6 +328,14 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "comment": "고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedBundledLanguagePack": null
+                                            }
                                         }
                                     ],
                                     "onError": [

@@ -24,10 +24,12 @@ use RuntimeException;
 class ExtensionInstallPreviewBuilder
 {
     /**
-     * @param  ModuleService  $moduleService
-     * @param  PluginService  $pluginService
-     * @param  TemplateService  $templateService
-     * @param  LanguagePackService  $languagePackService
+     * 프리뷰가 쓰는 확장·언어팩 서비스를 주입받습니다.
+     *
+     * @param  ModuleService  $moduleService  모듈 서비스
+     * @param  PluginService  $pluginService  플러그인 서비스
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  LanguagePackService  $languagePackService  언어팩 서비스
      */
     public function __construct(
         private readonly ModuleService $moduleService,
@@ -80,9 +82,9 @@ class ExtensionInstallPreviewBuilder
     /**
      * 스코프별 Service 에 위임하여 대상 확장 메타데이터를 조회합니다.
      *
-     * @param  LanguagePackScope  $scope
-     * @param  string  $identifier
-     * @return array<string, mixed>|null
+     * @param  LanguagePackScope  $scope  대상 스코프
+     * @param  string  $identifier  대상 확장 식별자
+     * @return array<string, mixed>|null 확장 메타데이터 (없으면 null)
      */
     private function resolveExtensionInfo(LanguagePackScope $scope, string $identifier): ?array
     {
@@ -102,7 +104,7 @@ class ExtensionInstallPreviewBuilder
      * `available` 필드를 추가합니다.
      *
      * @param  array<int, array<string, mixed>>  $enriched  enriched 의존성 목록
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> cascade 선택용 의존성 메타 목록
      */
     private function buildDependencies(array $enriched): array
     {
@@ -140,7 +142,7 @@ class ExtensionInstallPreviewBuilder
      * @param  LanguagePackScope  $scope  본 확장 스코프
      * @param  string  $identifier  본 확장 식별자
      * @param  array<int, array<string, mixed>>  $dependencies  의존성 메타
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 함께 설치할 언어팩 후보 목록
      */
     private function buildLanguagePacks(LanguagePackScope $scope, string $identifier, array $dependencies): array
     {
@@ -152,8 +154,10 @@ class ExtensionInstallPreviewBuilder
         $allUninstalled = $this->languagePackService->getUninstalledBundledPacks([]);
 
         $depIndex = [];
+        $metIndex = [];
         foreach ($dependencies as $dep) {
             $depIndex[$dep['identifier']] = $dep['type'];
+            $metIndex[$dep['identifier']] = (bool) ($dep['is_met'] ?? false);
         }
 
         $result = [];
@@ -170,7 +174,9 @@ class ExtensionInstallPreviewBuilder
                 continue;
             }
 
-            $dependsOn = $matchesSelf ? null : $packTarget;
+            // 화면은 depends_on_extension 이 있는 언어팩을 「그 의존 확장을 함께 설치하도록 골랐을 때」만 켠다.
+            // 이미 설치·활성화되어 충족된 의존 확장은 고를 수 없는 항목이라, 묶어 두면 그 언어팩을 영영 고를 수 없다.
+            $dependsOn = ($matchesSelf || ($metIndex[$packTarget] ?? false)) ? null : $packTarget;
 
             // 확인 창은 목록을 거치지 않고 이 응답만으로 그린다 — 언어팩 줄의 아이콘도 함께 낸다.
             // 판정(자기 선언 → 코어 → 대상 확장 → 없음)은 LanguagePackService 한 곳에 둔다.
@@ -183,6 +189,8 @@ class ExtensionInstallPreviewBuilder
                 'locale_name' => $pack->locale_name,
                 'version' => $pack->version,
                 'depends_on_extension' => $dependsOn,
+                // 어느 확장의 언어팩인지 — 창이 「종속: …」 배지로 보인다(충족된 의존 확장의 언어팩도 구분되게).
+                'target_identifier' => $packTarget,
                 'available' => true,
                 'default_selected' => true,
                 'icon_url' => $pack->icon_url,

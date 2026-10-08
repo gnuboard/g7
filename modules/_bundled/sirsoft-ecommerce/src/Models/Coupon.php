@@ -309,7 +309,7 @@ class Coupon extends Model implements FulltextSearchable
     public function getValidPeriodFormattedAttribute(): string
     {
         if ($this->valid_type === 'days_from_issue') {
-            return __('sirsoft-ecommerce::messages.coupons.valid_days_format', [
+            return trans_choice('sirsoft-ecommerce::messages.coupons.valid_days_format', (int) $this->valid_days, [
                 'days' => $this->valid_days,
             ]);
         }
@@ -482,7 +482,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * FULLTEXT 검색 대상 컬럼 목록을 반환합니다.
      *
-     * @return array<string>
+     * @return array<string> 검색 대상 컬럼 이름 목록
      */
     public function searchableColumns(): array
     {
@@ -492,7 +492,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 컬럼별 검색 가중치를 반환합니다.
      *
-     * @return array<string, float>
+     * @return array<string, float> 컬럼별 검색 가중치
      */
     public function searchableWeights(): array
     {
@@ -521,7 +521,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 검색 인덱스용 배열을 반환합니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 검색 인덱스에 넣을 값
      */
     public function toSearchableArray(): array
     {

@@ -209,7 +209,7 @@
                     "props": {
                         "className": "block text-xs text-gray-500 dark:text-gray-400"
                     },
-                    "text": "$t:shop.max_purchase_qty_notice|qty={{product.data?.max_purchase_qty}}"
+                    "text": "$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}"
                 }
             ]
         },
@@ -281,6 +281,8 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
+                                                "aria-label": "$t:common.delete",
                                                 "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                                             },
                                             "children": [

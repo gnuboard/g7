@@ -204,6 +204,7 @@ effects:
   # 를 둔 것은 주입이 채우는 자리가 그 셋이기 때문이다 — 셋 중 `named_actions` 만 맵이라, 재귀가
   # 리스트만 훑는 구현이었다면 그 자리에서만 red 가 난다.
   - injected_comments_never_reach_the_public_serving_response
+  - partial_developer_descriptions_never_reach_the_public_serving_response # 조각 meta.description(개발자 설명)은 공개 응답에서 제거, 최상단 meta.description(SEO)은 보존
   # S21.3 — 같은 명제의 **두 번째 경로**. 위 표본은 템플릿 레이아웃 본문에서만 확인하는데, 확장
   # 주입 조각은 병합이 끝난 뒤(`applyExtensions`) 얹히고 주석 제거는 그 병합 안에서 일어난다.
   # 즉 순서상 확장 조각의 주석은 제거를 지나쳐 응답에 실렸다. 이 누출은 주입 단락이 만든 것이
@@ -990,6 +991,9 @@ effects:
   - extension_preview_rejects_invalid_markup_with_422
   - extension_markup_compile_returns_json_for_valid_fragment
   - extension_markup_compile_rejects_invalid_fragment_with_422
+  # 물려받기만 하는(슬롯·컴포넌트 없는) extends 문서 저장에 빈 `content` 슬롯을 지어 넣지 않는다 —
+  # 부모에 그 슬롯이 없으면 422 로 막혔고, 있으면 부모 본문을 비웠다(7.1.0 전수 실측 I1, 2026-10-06).
+  - extends_only_layout_saves_without_synthesized_slot
   # 저장 왕복이 **본문을 바꾸지 않는다** — 아무것도 고치지 않고 저장만 해도 사라지던 것들.
   # 주석은 `validated()` 가 규칙 없는 키를 떨궈서, 빈 map 은 Eloquent 캐스트가 `{}`/`[]` 를
   # 뭉개서 사라졌다. 둘 다 응답 200 이라 화면으로는 보이지 않던 형태다.
@@ -1037,6 +1041,13 @@ effects:
   - markup_partial_inside_json_host_stays_strict
   - nested_json_partial_missing_reference_is_tolerated
   - module_fragment_is_registered_on_fresh_template_activation
+  # 조건(when) 안 액션의 debounce 는 엔진이 무시한다 — 린터가 경고한다(7.1.0 잔여 관측 R-05)
+  - nested_action_debounce_is_warned
+  - mixed_debounce_on_same_event_is_warned
+  # 7.1.0 P16 — 검사 경고·보안 위반 소스 줄 위치(LayoutMarkupIssueLocationTest, 조합 축은 layout-markup-issue-location.yaml)
+  - lint_warning_carries_source_line
+  - security_violation_carries_source_line
+  - returned_json_has_no_position_markers
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1208,6 +1219,7 @@ test_files:
   # 수백 건 건드리면서도 E2E spec 을 동반하지 않는 근거가 이 자리다 — 걸 단언이 없는 것이 아니라
   # 브라우저가 보는 값이 주입 전후로 같음을 여기서 잠근 것이다.
   - tests/Feature/Api/Public/LayoutServingTest.php
+  - tests/Feature/Api/Public/LayoutServingPartialDescriptionTest.php
   # S21.3(67차) — 같은 명제의 **두 번째 소비자**. 화면 렌더 경로는 공개 서빙 하나가 아니라
   # 미리보기 서빙(무인증 토큰)도 있고, 그쪽은 분기가 둘이라 진입점 한 자리에서 제거한다.
   # 한 소비자에서 초록이 나면 나머지가 보이지 않는다 — 그래서 소비자마다 표본을 둔다.
@@ -1234,6 +1246,9 @@ test_files:
   - tests/Unit/Services/LayoutMarkupServiceTest.php
   - tests/Feature/LayoutMarkup/LayoutCheckInstalledCommandTest.php
   - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php
+  # 7.1.0 P16 — 검사 경고·보안 위반의 소스 줄 위치. 클래스명이 게이트 필터 `LayoutMarkup` 에 걸려
+  # 게이트에서 돈다. 조합 축(lint 경고 / 보안 위반)은 `layout-markup-issue-location.yaml` 이 소유한다.
+  - tests/Feature/Api/Admin/LayoutMarkupIssueLocationTest.php
   - tests/Feature/LayoutMarkup/LayoutCompileSelfCheckTest.php
   # #712 — 네임스페이스 `Tests\Feature\LayoutMarkup` 이라 게이트에서 돌지만 `legacy-json-extension-compat.yaml`
   # 에만 등재돼 있었다(#712 리베이스 뒤 종료 게이트에서 `test_every_gate_resident_test_is_declared_in_manifest` 가 red).

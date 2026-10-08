@@ -48,6 +48,9 @@ return [
         'identifier_not_found' => '言語パックが見つかりません(:identifier)。',
         'unsupported_source' => 'サポートされていないソース(:source) — bundled、github、urlのいずれかを使用してください。',
     ],
+    // マニフェストに名前がない内蔵(拡張・コア同梱)言語パックの表示名
+    'built_in_name' => ':target 内蔵言語パック (:language)',
+    'core_target' => 'コア',
     'validation' => [
         'file_required' => '言語パックZIPファイルをアップロードしてください。',
         'file_invalid' => 'アップロードされたファイルが有効ではありません。',

@@ -20,7 +20,7 @@
 | `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:126` |
 | `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:129` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |
-| `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:79` |
+| `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:78` |
 | `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
 | `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:130` |
 | `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1156` |
@@ -86,7 +86,7 @@
 | `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:147` |
 | `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:265` |
 | `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:341` |
-| `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:122` |
+| `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:121` |
 | `sirsoft-board.post.update_validation_rules` | filter | — | `src/Http/Requests/UpdatePostRequest.php:79` |
 | `sirsoft-board.reaction.after_react` | action | — | `src/Services/ReactionService.php:396` 외 1곳 |
 | `sirsoft-board.reaction.before_react` | action | — | `src/Services/ReactionService.php:353` |
@@ -112,7 +112,7 @@
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1469` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1460` |
 | `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1362` |
-| `sirsoft-board.user_post.store_validation_rules` | filter | — | `src/Http/Requests/User/StorePostRequest.php:167` |
+| `sirsoft-board.user_post.store_validation_rules` | filter | — | `src/Http/Requests/User/StorePostRequest.php:166` |
 | `sirsoft-board.user_post.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdatePostRequest.php:116` |
 <!-- @generated:hooks-published END -->
 

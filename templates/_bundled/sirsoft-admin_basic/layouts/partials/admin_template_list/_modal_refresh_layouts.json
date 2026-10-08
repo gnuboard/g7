@@ -126,13 +126,6 @@
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedTemplate": null
-                                            }
-                                        },
-                                        {
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
@@ -147,6 +140,13 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null
+                                            }
                                         }
                                     ],
                                     "onError": [

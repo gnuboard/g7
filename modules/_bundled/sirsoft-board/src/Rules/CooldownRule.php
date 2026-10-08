@@ -34,7 +34,7 @@ class CooldownRule implements ValidationRule
      * @param  string  $attribute  검증할 속성명
      * @param  mixed  $value  검증할 값
      * @param  Closure  $fail  실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -68,6 +68,9 @@ class CooldownRule implements ValidationRule
     /**
      * 초를 사람이 읽기 쉬운 시간 형식으로 변환합니다.
      *
+     * 단위 하나짜리 문구는 그 수로 단·복수를 고른다(영어 「1 minute」/「2 minutes」). 두 단위를 함께 쓰는
+     * 문구는 영어 값이 단위마다 고른 「수+단위」(`:hours_text` 등)를 받고, 한국어 등은 종전 숫자 자리표시자를 쓴다.
+     *
      * @param  int  $seconds  초 단위 시간
      * @return string 변환된 시간 문자열
      */
@@ -82,12 +85,12 @@ class CooldownRule implements ValidationRule
                 return __('sirsoft-board::validation.cooldown_duration.hours_minutes', [
                     'hours' => $hours,
                     'minutes' => $minutes,
+                    'hours_text' => $this->unitText('hours', $hours),
+                    'minutes_text' => $this->unitText('minutes', $minutes),
                 ]);
             }
 
-            return __('sirsoft-board::validation.cooldown_duration.hours', [
-                'hours' => $hours,
-            ]);
+            return $this->unitText('hours', $hours);
         }
 
         if ($seconds >= 60) {
@@ -98,16 +101,26 @@ class CooldownRule implements ValidationRule
                 return __('sirsoft-board::validation.cooldown_duration.minutes_seconds', [
                     'minutes' => $minutes,
                     'seconds' => $remainingSeconds,
+                    'minutes_text' => $this->unitText('minutes', $minutes),
+                    'seconds_text' => $this->unitText('seconds', $remainingSeconds),
                 ]);
             }
 
-            return __('sirsoft-board::validation.cooldown_duration.minutes', [
-                'minutes' => $minutes,
-            ]);
+            return $this->unitText('minutes', $minutes);
         }
 
-        return __('sirsoft-board::validation.cooldown_duration.seconds', [
-            'seconds' => $seconds,
-        ]);
+        return $this->unitText('seconds', $seconds);
+    }
+
+    /**
+     * 단위 하나의 「수+단위」 문구를 수로 단·복수를 골라 만듭니다.
+     *
+     * @param  string  $unit  단위 키 (hours·minutes·seconds — 자리표시자 이름과 같다)
+     * @param  int  $value  수
+     * @return string 「수+단위」 문구
+     */
+    private function unitText(string $unit, int $value): string
+    {
+        return trans_choice("sirsoft-board::validation.cooldown_duration.{$unit}", $value, [$unit => $value]);
     }
 }

@@ -126,7 +126,7 @@
 | user_uuid | query | string | 아니오 | uuid | 회원 필터(uuid). 없는 회원이면 **빈 결과** |
 | reaction_type_id | query | integer | 아니오 | 존재하는 유형 | 유형 필터 |
 | target_type | query | string | 아니오 | `post`, `comment` | 대상 구분 |
-| reacted_at_from / _to | query | string | 아니오 | `Y-m-d`, to ≥ from | 반응일 범위 |
+| reacted_at_from / _to | query | string | 아니오 | `Y-m-d`, to ≥ from | 반응일 범위 (보는 사람의 시간대 하루로 해석) |
 | sort_order | query | string | 아니오 | `asc`, `desc`(기본) | 정렬 |
 
 > 관리자 검색은 삭제된 대상도 **포함**합니다 — 정리할 대상을 찾는 화면이기 때문입니다.

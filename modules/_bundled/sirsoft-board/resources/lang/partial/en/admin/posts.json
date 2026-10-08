@@ -50,6 +50,7 @@
     "password_incorrect": "Incorrect password.",
     "comment_added": "Comment has been posted.",
     "show_replies": "Show {{count}} reply posts",
+    "show_replies_one": "Show {{count}} reply post",
     "hide_replies": "Hide reply posts",
     "reply_blocked_blinded_post": "Cannot write a reply post to a blinded post.",
     "reply_blocked_deleted_post": "Cannot write a reply post to a deleted post.",
@@ -61,6 +62,7 @@
     "reply_secret_content": "This is a private post",
     "reply_view_detail": "View Details",
     "load_more_comments": "Load {{count}} more comments",
+    "load_more_comments_one": "Load {{count}} more comment",
     "status_blinded": "Blinded",
     "status_deleted": "Deleted",
     "status_published": "Published",
@@ -177,6 +179,7 @@
     "no_content_preview": "Preview will appear when you enter content",
     "attachments": "Attachments",
     "attachments_desc": "Max {{maxFiles}} files, {{maxSize}}MB each",
+    "attachments_desc_one": "Max {{maxFiles}} file, {{maxSize}}MB",
     "attached_files": "Attached Files",
     "confirm_remove_attachment_title": "Delete Attachment",
     "confirm_remove_attachment_message": "The file will be deleted immediately. This action cannot be undone regardless of saving the post.",
@@ -298,19 +301,23 @@
     "restore": "Restore",
     "modal": {
       "delete_title": "Delete the selected posts?",
-      "delete_confirm": "Delete {{count}} selected post(s)?",
+      "delete_confirm": "Delete {{count}} selected posts?",
+      "delete_confirm_one": "Delete {{count}} selected post?",
       "replies_notice": "Posts with replies may be skipped depending on the reply deletion policy.",
       "blind_title": "Blind the selected posts?",
-      "blind_confirm": "Blind {{count}} selected post(s)?",
+      "blind_confirm": "Blind {{count}} selected posts?",
+      "blind_confirm_one": "Blind {{count}} selected post?",
       "restore_title": "Restore the selected posts?",
-      "restore_confirm": "Restore {{count}} selected post(s)?",
+      "restore_confirm": "Restore {{count}} selected posts?",
+      "restore_confirm_one": "Restore {{count}} selected post?",
       "reason_label": "Reason (optional)",
       "reason_placeholder": "Enter a reason",
       "processing": "Processing..."
     },
     "skipped": {
       "title": "Skipped posts",
-      "description": "The following {{count}} post(s) were not processed."
+      "description": "The following {{count}} posts were not processed.",
+      "description_one": "The following {{count}} post was not processed."
     }
   }
 }

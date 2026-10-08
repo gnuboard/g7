@@ -8,6 +8,13 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string): string => {
+  const translated = (window as any).G7Core?.t?.(key);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+
 /** 로그아웃 후 이동 기본 경로 — `redirectPath` 가 동일 출처가 아니면 이 경로로 간다 */
 const DEFAULT_REDIRECT_PATH = '/admin/login';
 
@@ -187,6 +194,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={() => setShowProfileMenu(!showProfileMenu)}
+        aria-label={dropdownOnly ? tOr('common.user_menu', '사용자 메뉴') : undefined}
+        aria-haspopup="true"
+        aria-expanded={showProfileMenu}
         className={dropdownOnly
           ? "w-full h-full opacity-0 cursor-pointer"
           : "flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors w-full"}

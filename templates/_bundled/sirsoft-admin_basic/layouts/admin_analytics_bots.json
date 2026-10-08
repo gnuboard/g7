@@ -549,9 +549,18 @@
                                         "type": "basic",
                                         "name": "H2",
                                         "props": {
-                                            "className": "section-heading mb-3"
+                                            "className": "section-heading"
                                         },
                                         "text": "$t:admin.analytics.bots.recent_title"
+                                    },
+                                    {
+                                        "comment": "최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는\n               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10).",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-hint mb-3"
+                                        },
+                                        "text": "$t:admin.analytics.bots.recent_hint"
                                     },
                                     {
                                         "type": "basic",
@@ -569,7 +578,7 @@
                                                     "data": "{{analytics_bots?.data?.recent_hits ?? []}}",
                                                     "pagination": true,
                                                     "pageSize": 10,
-                                                    "idField": "occurred_at",
+                                                    "idField": "id",
                                                     "selectable": false,
                                                     "sortable": false,
                                                     "emptyMessage": "$t:admin.analytics.common.empty_title",

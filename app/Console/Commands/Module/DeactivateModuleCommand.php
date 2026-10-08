@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Module;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Extension\ModuleManager;
 use Illuminate\Console\Command;
@@ -22,6 +23,9 @@ class DeactivateModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -32,6 +36,8 @@ class DeactivateModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -58,7 +64,8 @@ class DeactivateModuleCommand extends Command
 
             // 모듈 비활성화
             $force = $this->option('force');
-            $result = $this->moduleManager->deactivateModule($identifier, $force);
+            // 운영자가 직접 실행한 비활성화다 — 시스템 자동 비활성화와 구분되도록 사유를 명시한다.
+            $result = $this->moduleManager->deactivateModule($identifier, $force, DeactivationReason::Manual->value);
 
             // 경고 응답인 경우 (의존 템플릿 존재)
             if (isset($result['warning']) && $result['warning'] === true) {
@@ -76,7 +83,7 @@ class DeactivateModuleCommand extends Command
 
             if ($result['success']) {
                 $this->info('✅ '.__('modules.commands.deactivate.success', ['module' => $identifier]));
-                $this->info('   - '.__('modules.commands.deactivate.layouts_deleted', ['count' => $result['layouts_deleted']]));
+                $this->info('   - '.trans_choice('modules.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
                 $this->warn('⚠️  '.__('modules.commands.deactivate.warning'));
                 Log::info(__('modules.commands.deactivate.success', ['module' => $identifier]));
 

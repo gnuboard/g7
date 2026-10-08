@@ -141,7 +141,7 @@
       <div data-ref="main_header" class="main_header">
         <responsive on="portable" class="hidden"/>
         <div data-ref="header_left" class="header_left">
-          <button data-ref="menu_toggle_btn" type="button" class="menu_toggle_btn">
+          <button data-ref="menu_toggle_btn" type="button" class="menu_toggle_btn" aria-label="{{_global.sidebarCollapsed ? '$t:common.expand_sidebar' : '$t:common.collapse_sidebar'}}" aria-expanded="{{!_global.sidebarCollapsed}}">
             <on type="click">
               <action handler="toggleSidebar"/>
             </on>
@@ -267,7 +267,7 @@
       <div data-ref="mobile_header" class="hidden">
         <responsive on="portable" class="mobile_header_portable"/>
         <div data-ref="mobile_header_left" class="mobile_header_left">
-          <button data-ref="mobile_menu_toggle" class="flex-center btn-icon">
+          <button data-ref="mobile_menu_toggle" type="button" class="flex-center btn-icon" aria-label="{{_global.sidebarOpen ? '$t:common.collapse_sidebar' : '$t:common.expand_sidebar'}}" aria-expanded="{{!!_global.sidebarOpen}}">
             <on type="click">
               <!-- 모바일 헤더의 햄버거 — 사이드바를 연다/닫는다. 데스크톱 토글(`toggleSidebar` 핸들러)은
                    접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다. -->

@@ -45,6 +45,13 @@ export interface AuthConfig {
   passwordChangeEndpoint: string;
   /** 로그인 비밀번호 변경 단계 연기 엔드포인트 */
   passwordChangePostponeEndpoint: string;
+  /**
+   * 로그인 전용 화면 경로(로그인·가입·비밀번호 찾기·재설정 등) — 로그인 이동 시 복귀 경로로 싣지 않는다.
+   * `loginPath` 는 이 목록과 무관하게 항상 로그인 전용 화면으로 취급한다.
+   *
+   * @since engine-v1.78.1
+   */
+  guestOnlyPaths?: string[];
 }
 
 /**
@@ -203,6 +210,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/admin/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/admin/login/password-change',
     passwordChangePostponeEndpoint: '/auth/admin/login/password-change/postpone',
+    guestOnlyPaths: ['/admin/login', '/admin/forgot-password', '/admin/reset-password'],
   },
   user: {
     type: 'user',
@@ -216,6 +224,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/login/password-change',
     passwordChangePostponeEndpoint: '/auth/login/password-change/postpone',
+    guestOnlyPaths: ['/login', '/register', '/forgot-password', '/reset-password'],
   },
 };
 
@@ -934,12 +943,76 @@ export class AuthManager {
       return '/login';
     }
 
-    const encodedReturnUrl = encodeURIComponent(returnUrl);
-    let url = `${config.loginPath}?redirect=${encodedReturnUrl}`;
-    if (reason) {
-      url += `&reason=${encodeURIComponent(reason)}`;
+    // 로그인 전용 화면(로그인·가입·비밀번호 찾기·재설정)은 복귀 경로로 싣지 않는다 — 세션이 끊긴 채
+    // 로그인 화면을 열면 데이터소스 401 이 로그인 이동을 일으키는데, 그 화면 자신을 실으면 로그인을
+    // 마친 뒤 다시 로그인 폼에 떨어진다. 로그인 화면이 이미 복귀 경로를 갖고 있으면 그것을 이어 싣는다.
+    const effectiveReturnUrl = this.resolveReturnUrl(config, returnUrl);
+
+    const params: string[] = [];
+    if (effectiveReturnUrl) {
+      params.push(`redirect=${encodeURIComponent(effectiveReturnUrl)}`);
     }
-    return url;
+    if (reason) {
+      params.push(`reason=${encodeURIComponent(reason)}`);
+    }
+    return params.length > 0 ? `${config.loginPath}?${params.join('&')}` : config.loginPath;
+  }
+
+  /**
+   * 로그인 이동에 실을 복귀 경로를 정합니다.
+   *
+   * @param config - 인증 설정
+   * @param returnUrl - 현재 경로(pathname + search)
+   * @returns 실을 복귀 경로, 싣지 않으면 null
+   */
+  private resolveReturnUrl(config: AuthConfig, returnUrl: string): string | null {
+    if (!returnUrl) {
+      return null;
+    }
+
+    const queryIndex = returnUrl.search(/[?#]/);
+    const path = queryIndex === -1 ? returnUrl : returnUrl.slice(0, queryIndex);
+    if (!this.isGuestOnlyPath(config, path)) {
+      return returnUrl;
+    }
+
+    // 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣는다.
+    if (this.normalizePath(path) === this.normalizePath(config.loginPath) && queryIndex !== -1) {
+      const search = returnUrl.slice(queryIndex).split('#')[0];
+      const inner = new URLSearchParams(search.startsWith('?') ? search.slice(1) : '').get('redirect');
+      if (inner) {
+        const innerPath = inner.split(/[?#]/)[0];
+        if (!this.isGuestOnlyPath(config, innerPath)) {
+          return inner;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 로그인 전용 화면 경로인지 판정합니다(로그인 경로 + 설정의 guestOnlyPaths, 끝 슬래시 무시).
+   *
+   * @param config - 인증 설정
+   * @param path - 판정할 경로(쿼리 제외)
+   * @returns 로그인 전용 화면이면 true
+   */
+  private isGuestOnlyPath(config: AuthConfig, path: string): boolean {
+    const target = this.normalizePath(path);
+    const candidates = [config.loginPath, ...(config.guestOnlyPaths ?? [])];
+    return candidates.some((candidate) => this.normalizePath(candidate) === target);
+  }
+
+  /**
+   * 경로 비교용 정규화 — 끝 슬래시를 떼고 소문자로 맞춘다(루트 `/` 는 유지).
+   *
+   * @param path - 경로
+   * @returns 정규화한 경로
+   */
+  private normalizePath(path: string): string {
+    const trimmed = path.length > 1 ? path.replace(/\/+$/, '') : path;
+    return (trimmed || '/').toLowerCase();
   }
 
   /**

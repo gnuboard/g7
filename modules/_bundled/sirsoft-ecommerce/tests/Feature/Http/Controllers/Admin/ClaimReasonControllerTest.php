@@ -28,6 +28,11 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     protected string $apiBase = '/api/modules/sirsoft-ecommerce/admin/claim-reasons';
 
+    /**
+     * 설정 읽기·수정 권한을 가진 관리자와 읽기 전용 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +51,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
      * 테스트용 클레임 사유를 생성합니다.
      *
      * @param  array  $overrides  오버라이드할 속성
+     * @return ClaimReason 생성된 사유
      */
     protected function createReason(array $overrides = []): ClaimReason
     {
@@ -64,6 +70,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
      * 요청 데이터를 생성합니다.
      *
      * @param  array  $overrides  오버라이드할 속성
+     * @return array<string, mixed> 사유 생성·수정 요청 본문
      */
     protected function makeReasonData(array $overrides = []): array
     {
@@ -80,6 +87,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Index ====================
 
+    /**
+     * 유형별 사유 목록이 화면에 필요한 필드를 모두 담아 돌아온다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function index_returns_claim_reasons_list(): void
     {
@@ -118,6 +134,12 @@ class ClaimReasonControllerTest extends ModuleTestCase
      * 그 장치를 지키는 단언이 어디에도 없었다 — 무타입 호출 케이스가 403 하나여서 저장소까지
      * 가지도 않았다. `??=` 가 사라지거나 `filter_list_query` 훅이 그 키를 떨어뜨리면 관리자
      * 사유 목록이 통째로 500 이 되는데 red 가 나지 않는다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function index_without_type_falls_back_to_the_refund_catalog(): void
@@ -139,6 +161,12 @@ class ClaimReasonControllerTest extends ModuleTestCase
      * `/active` 도 같은 보상 기본값을 갖는다.
      *
      * 형제 엔드포인트가 같은 저장소 계약을 타므로 한쪽만 지키면 나머지가 우회로가 된다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function active_without_type_falls_back_to_the_refund_catalog(): void
@@ -162,6 +190,12 @@ class ClaimReasonControllerTest extends ModuleTestCase
      * 종전에는 상세 경로만 이중·말미 언더스코어를 허용했다. 그렇게 만든 코드가 접수되면
      * 설정 탭이 영구히 422 가 되는데, 그 탭은 카탈로그 전체를 되보내므로 운영자가 손대지
      * 않은 행이 원인이 된다 — 약한 쪽이 우회로가 되는 전형이다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_creates_and_validates
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function store_rejects_a_code_that_the_settings_tab_would_reject(): void
@@ -182,6 +216,12 @@ class ClaimReasonControllerTest extends ModuleTestCase
      *
      * 형식만 통일하고 면제를 두지 않으면, 규칙이 좁혀지기 전에 만들어진 사유는 이름·귀책조차
      * 고칠 수 없다 — 사용 중이면 코드 변경도 잠겨 있어(codeLockedInUse) 손댈 방법이 없어진다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_updates_reason
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_exempts_the_already_stored_code_from_the_format_rule(): void
@@ -204,6 +244,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors('code');
     }
 
+    /**
+     * 읽기 권한이 없는 관리자는 사유 목록을 볼 수 없다(403).
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_requires_permission
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function index_requires_read_permission(): void
     {
@@ -217,6 +266,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Store ====================
 
+    /**
+     * 새 사유를 만들면 201 과 함께 저장된다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_creates_and_validates
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function store_creates_new_claim_reason(): void
     {
@@ -240,6 +298,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 생성 경로에서 확장이 도메인 예외로 거절하면 500 이 아니라 400 과 전용 사유 문구로 안내한다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_creates_and_validates
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function store_returns_400_when_the_create_path_rejects_with_a_domain_reason(): void
     {
@@ -256,9 +323,18 @@ class ClaimReasonControllerTest extends ModuleTestCase
         $this->actingAs($this->adminUser)
             ->postJson($this->apiBase, $this->makeReasonData())
             ->assertStatus(400)
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 3]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 3]));
     }
 
+    /**
+     * 필수 항목이 빠지면 422 로 각 필드 오류를 돌려준다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_creates_and_validates
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function store_validates_required_fields(): void
     {
@@ -269,6 +345,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['type', 'code', 'name', 'fault_type']);
     }
 
+    /**
+     * 같은 유형 안에서 코드가 겹치면 422 다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_creates_and_validates
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function store_validates_unique_code_per_type(): void
     {
@@ -283,6 +368,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['code']);
     }
 
+    /**
+     * 수정 권한이 없으면 사유를 만들 수 없다(403).
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_requires_permission
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function store_requires_update_permission(): void
     {
@@ -294,6 +388,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         $response->assertForbidden();
     }
 
+    /**
+     * 교환·반품·환불 신청서가 쓰는 사유는 지울 수 없고, 사용 건수를 담은 전용 문구로 안내한다.
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects claim_reason_api_deletes_only_unused
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function destroy_is_blocked_while_an_exchange_or_return_still_uses_the_reason(): void
     {
@@ -324,7 +427,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
                 ->deleteJson("{$this->apiBase}/{$reason->id}")
                 ->assertStatus(400) // 기존 `inUse` 계약 (취소 사유가 쓰이던 상태코드를 그대로 승계)
                 // 전용 키로 안내하는지 + 건수가 치환되는지 (원문 노출·키 교체 차단)
-                ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]))
+                ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]))
                 // 안내가 취소 전용 서술로 되돌아가는 것을 막는다. 판정 모집단은 교환·반품·환불
                 // 전수인데 안내만 취소를 지목하면, 운영자는 안내받은 건수를 취소 이력에서 찾다가
                 // 0건을 보게 된다. 위 키 단언은 기대값도 같은 파일에서 읽으므로 이 되돌림을
@@ -349,6 +452,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 아무 신청서도 쓰지 않는 교환 사유는 지워진다.
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects claim_reason_api_deletes_only_unused
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function destroy_removes_a_reason_that_nothing_uses(): void
     {
@@ -363,6 +475,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Show ====================
 
+    /**
+     * 사유 하나를 조회한다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function show_returns_single_reason(): void
     {
@@ -376,6 +497,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->assertJsonPath('data.id', $reason->id);
     }
 
+    /**
+     * 없는 사유를 조회하면 404 다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function show_returns_404_for_nonexistent(): void
     {
@@ -387,6 +517,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Update ====================
 
+    /**
+     * 사유의 귀책 등을 고치면 저장된다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_updates_reason
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function update_modifies_claim_reason(): void
     {
@@ -411,9 +550,13 @@ class ClaimReasonControllerTest extends ModuleTestCase
     }
 
     /**
+     * 사용 중인 사유의 코드는 상세 수정 경로에서도 바꿀 수 없고 전용 문구로 안내한다.
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_code_change_blocked_while_in_use
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_is_blocked_from_changing_the_code_of_a_reason_in_use(): void
@@ -433,7 +576,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
             // 상태코드만 보면 컨트롤러가 전용 키를 버리고 generic `operation_failed` 를 돌려줘도
             // 초록이다 — 설정 탭·삭제 경로와 같은 거절이 이 경로에서만 이유 없이 보이던 결함(11차 B1)
             // 을 상태코드 단언은 잡지 못했다. 전용 키의 **도달**을 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', [
             'id' => $reason->id,
@@ -442,9 +585,13 @@ class ClaimReasonControllerTest extends ModuleTestCase
     }
 
     /**
+     * 사용 중인 사유는 코드를 그대로 두고 유형만 옮기는 것도 막는다.
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_type_change_blocked_while_in_use
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_is_blocked_from_changing_the_type_of_a_reason_in_use(): void
@@ -463,7 +610,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
                 'code' => 'locked_type_exchange',
             ]))
             ->assertStatus(400)
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_type_locked_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_type_locked_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', [
             'id' => $reason->id,
@@ -472,9 +619,13 @@ class ClaimReasonControllerTest extends ModuleTestCase
     }
 
     /**
+     * 사용 중이어도 코드·유형 밖의 항목(이름·귀책·노출·정렬)은 고칠 수 있다.
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_remains_editable_except_code_and_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_still_allows_editing_everything_except_code_and_type(): void
@@ -512,9 +663,13 @@ class ClaimReasonControllerTest extends ModuleTestCase
     }
 
     /**
+     * 아무도 쓰지 않는 사유는 유형을 옮길 수 있다.
+     *
      * @scenario reason_type=return
      *
      * @effects settings_claim_reason_remains_editable_except_code_and_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_allows_changing_type_when_the_reason_is_not_used(): void
@@ -535,6 +690,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 수정 권한이 없으면 사유를 고칠 수 없다(403).
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_requires_permission
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function update_requires_update_permission(): void
     {
@@ -549,6 +713,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Destroy ====================
 
+    /**
+     * 쓰이지 않는 환불 사유는 지워진다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_deletes_only_unused
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function destroy_deletes_unused_reason(): void
     {
@@ -564,6 +737,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 수정 권한이 없으면 사유를 지울 수 없다(403).
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_requires_permission
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function destroy_requires_update_permission(): void
     {
@@ -577,6 +759,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Toggle Status ====================
 
+    /**
+     * 사용 여부를 바꾸면 활성 사유가 비활성이 된다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_toggles_status
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function toggle_status_changes_is_active(): void
     {
@@ -591,6 +782,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
         $this->assertFalse($reason->is_active);
     }
 
+    /**
+     * 없는 사유의 사용 여부를 바꾸면 400 과 「사유 없음」 전용 문구로 안내한다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_toggles_status
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function toggle_status_of_a_missing_reason_returns_400_with_the_not_found_key(): void
     {
@@ -602,6 +802,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_not_found'));
     }
 
+    /**
+     * 수정 권한이 없으면 사용 여부를 바꿀 수 없다(403).
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_requires_permission
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function toggle_status_requires_update_permission(): void
     {
@@ -615,6 +824,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== Active ====================
 
+    /**
+     * 활성 목록에는 비활성 사유가 빠진다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_api_lists_catalog_by_type
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function active_returns_only_active_reasons(): void
     {
@@ -633,6 +851,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
 
     // ==================== User Selectable ====================
 
+    /**
+     * 회원용 목록에는 회원이 고를 수 있는 활성 사유만 나온다.
+     *
+     * @scenario reason_type=refund
+     *
+     * @effects claim_reason_user_list_shows_selectable_only
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function user_selectable_returns_active_user_selectable_reasons(): void
     {

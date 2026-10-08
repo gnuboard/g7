@@ -470,11 +470,15 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                     isRequired ? 'cursor-default' : 'cursor-pointer'
                   }`}
                 >
+                  {/* 체크박스에 열 이름을 달고 직접 켜고 끈다 — 종전에는 readOnly·pointer-events 없음이라 이름 없는
+                      체크박스로만 읽히고 키보드(Space)로는 조작할 수 없었다(7.1.0 J D-J13). 행 클릭과 겹치지 않게 전파를 막는다. */}
                   <Checkbox
                     checked={isVisible}
                     disabled={isRequired}
-                    readOnly
-                    className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 pointer-events-none"
+                    aria-label={typeof col.header === 'string' ? col.header : undefined}
+                    onChange={() => !isRequired && handleColumnToggle(col.field)}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600"
                   />
                   <Span className="text-sm text-gray-700 dark:text-gray-300">
                     {col.header}

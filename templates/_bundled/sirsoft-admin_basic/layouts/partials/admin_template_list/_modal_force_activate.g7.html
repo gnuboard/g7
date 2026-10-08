@@ -53,11 +53,11 @@
             <set-state target="global" :isForceActivating="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/activate" method="POST">
               <success>
-                <set-state target="global" :isForceActivating="false" :activateWarningData="null" :selectedTemplate="null"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
                 <toast type="success" message="$t:admin.templates.activate_success"/>
                 <close-modal/>
+                <set-state target="global" :isForceActivating="false" :activateWarningData="null" :selectedTemplate="null"/>
                 <!-- 템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).
                      강제 활성은 새로 고침을 하지 않으므로 창이 닫힐 때도 새로 고치지 않는다. -->
                 <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" :reactivateLanguagePacksRefreshAfter="false"/>

@@ -1,0 +1,17 @@
+feature: 단·복수 영어 문구를 수로 고르지 않고 부르는 호출부 정적 스캔
+
+description: |
+  영어 값이 `단수|복수`(Laravel 복수형)인 키를 `__()`·`trans()`·`Lang::get()`·`@lang()` 로 직접 부르면 수를
+  고르지 않아 두 문장이 `|` 로 이어진 채 나온다(7.1.0 에서 실제로 두 번 생김 — 옛 주문 취소 경로·캐시 응답).
+  코어·번들 확장 en 사전에서 `|` 값 키를 모아 코어·번들 확장 코드의 리터럴 직접 호출이 0 인지 확인한다.
+  변수·조합 키는 정적 스캔이 못 보므로 그 경로는 `trans_count()` 와 호출부 시험으로 지킨다.
+
+axes:
+  surface: [source_scan]
+
+effects:
+  - plural_keys_never_translated_without_count
+  - scanner_detects_direct_translation_calls
+
+test_files:
+  - tests/Unit/Lang/PluralKeyDirectTranslationScanTest.php

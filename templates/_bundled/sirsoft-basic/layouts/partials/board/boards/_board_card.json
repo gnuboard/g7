@@ -67,7 +67,7 @@
                     "props": {
                         "className": "px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded"
                     },
-                    "text": "{{board.posts_count ?? 0}}개"
+                    "text": "$t:board.post_count|count={{board.posts_count ?? 0}}"
                 }
             ]
         },

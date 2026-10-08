@@ -373,7 +373,7 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 ## 8. 액션
 
-top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce`(진입점만 — 다른 액션 안쪽의 debounce 는 적용되지 않고 lint `nested_action_debounce_ignored` 경고) `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
 
 > `:stopPropagation="true"` 는 engine-v1.68.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
 >

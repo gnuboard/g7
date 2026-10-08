@@ -136,7 +136,7 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
   // @scenario case=coupon_header_no_client_sort
   // @effects header_sort_targets_clicked_column
   test('쿠폰 목록: 서버 페이지네이션 화면의 헤더 클릭이 현재 페이지만 정렬하지 않는다 (#492 D-18)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     await gotoAdmin(page, '/admin/ecommerce/promotion-coupons?per_page=10&page=1');
@@ -169,7 +169,7 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
   // @scenario case=coupon_sort_select_valid_period
   // @effects screen_sort_options_all_succeed
   test('쿠폰 목록: 정렬 셀렉트의 유효기간 옵션이 422 없이 목록을 반환한다 (#492 D-19)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     for (const order of ['asc', 'desc'] as const) {
@@ -249,7 +249,7 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
   // @scenario case=coupon_back_keeps_filter_controls
   // @effects list_filter_controls_restored_on_back
   test('쿠폰 목록: 상세 진입 후 뒤로가기로 복귀해도 필터 컨트롤이 URL 과 일치한다 (#492 D-20)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     // 정렬·페이지를 함께 실어 라우트 진입 시드와 initLocal 동기화가 겹치는 조건을 만든다.

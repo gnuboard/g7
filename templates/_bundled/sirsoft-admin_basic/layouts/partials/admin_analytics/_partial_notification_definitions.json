@@ -255,6 +255,7 @@
                                     ],
                                     "props": {
                                         "checked": "{{def.is_active === true}}",
+                                        "ariaLabel": "{{$localized(def.name)}}",
                                         "size": "sm",
                                         "disabled": "{{_computed.isReadOnly || !_computed.canManageDefinitions}}"
                                     }

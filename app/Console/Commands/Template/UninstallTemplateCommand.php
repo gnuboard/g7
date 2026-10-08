@@ -65,7 +65,7 @@ class UninstallTemplateCommand extends Command
             // 삭제 확인 프롬프트 (--force 면 묻지 않는다 — 모듈·플러그인 제거 명령과 같은 옵션, #138 실측 ⑤)
             if (! $this->option('force')) {
                 $this->warn(__('templates.commands.uninstall.confirm_prompt', ['template' => $identifier]));
-                $this->warn(__('templates.commands.uninstall.confirm_details.layouts', ['count' => $template->layouts()->count()]));
+                $this->warn(trans_choice('templates.commands.uninstall.confirm_details.layouts', $template->layouts()->count()));
                 $this->warn(__('templates.commands.uninstall.confirm_details.versions'));
                 if ($this->option('delete-data')) {
                     $this->warn(__('templates.commands.uninstall.delete_data_notice'));
@@ -100,7 +100,7 @@ class UninstallTemplateCommand extends Command
             if ($result) {
                 // 성공 메시지
                 $this->info('✅ '.__('templates.commands.uninstall.success', ['template' => $identifier]));
-                $this->info('   - '.__('templates.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+                $this->info('   - '.trans_choice('templates.commands.uninstall.layouts_deleted', $layoutsCount));
 
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
                 // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.

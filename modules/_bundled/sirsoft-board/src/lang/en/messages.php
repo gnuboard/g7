@@ -18,7 +18,7 @@ return [
         'update_success' => 'Board has been updated.',
         'delete_success' => 'Board has been deleted.',
         'copy_success' => 'Board has been copied.',
-        'bulk_members_success' => 'Updated member lists of :count board(s). (:skipped skipped)',
+        'bulk_members_success' => 'Updated member lists of :count board. (:skipped skipped)|Updated member lists of :count boards. (:skipped skipped)',
         'bulk_members_failed' => 'Failed to assign board managers/staff in bulk.',
         'config_retrieved' => 'Board configuration retrieved.',
         'types_retrieved' => 'Board types retrieved.',
@@ -145,21 +145,21 @@ return [
         'retrieved' => 'Reactions retrieved successfully.',
         'retrieve_failed' => 'Failed to retrieve reactions.',
         'removed' => 'The reaction has been removed.',
-        'bulk_removed' => ':count reaction(s) have been removed.',
+        'bulk_removed' => ':count reaction has been removed.|:count reactions have been removed.',
         'not_found' => 'Reaction not found.',
         'delete_failed' => 'Failed to remove the reaction.',
         'admin' => [
             'retrieved' => 'Reactions retrieved successfully.',
             'retrieve_failed' => 'Failed to retrieve reactions.',
             'removed' => 'The reaction has been deleted.',
-            'bulk_removed' => ':count reaction(s) have been deleted.',
+            'bulk_removed' => ':count reaction has been deleted.|:count reactions have been deleted.',
             'bulk_delete_failed' => 'Failed to delete reactions in bulk.',
             'permission_denied' => 'You do not have permission to manage reactions.',
         ],
     ],
 
     'reaction_type' => [
-        'in_use' => 'This type has :count reaction(s) and cannot be deleted (:name). You can only deactivate it.',
+        'in_use' => 'This type has :count reaction and cannot be deleted (:name). You can only deactivate it.|This type has :count reactions and cannot be deleted (:name). You can only deactivate it.',
         'code_taken' => 'This code is already in use.',
         'icon_upload_success' => 'The icon has been uploaded.',
         'icon_upload_failed' => 'Failed to upload the icon.',
@@ -272,9 +272,9 @@ return [
     // Exception messages
     'errors' => [
         'table_creation_failed' => 'Failed to create board table (:table): :error',
-        'category_in_use' => 'Category :category is in use by :count post(s).',
+        'category_in_use' => 'Category :category is in use by :count post.|Category :category is in use by :count posts.',
         'board_not_found' => 'Board not found.',
-        'attachment_limit_exceeded' => 'You can attach up to :limit file(s). (requested: :attempted)',
+        'attachment_limit_exceeded' => 'You can attach up to :limit file. (requested: :attempted)|You can attach up to :limit files. (requested: :attempted)',
         'post_not_found' => 'Post not found.',
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
@@ -301,8 +301,8 @@ return [
         'status_updated' => 'Report status has been updated.',
         'status_update_failed' => 'Failed to update report status.',
         'bulk_status_updated' => 'Selected reports status has been updated.',
-        'bulk_status_updated_with_count' => 'Changed :count report(s) to :status.',
-        'manual_blind_restored_notice' => ':count manually blinded content(s) were also restored.',
+        'bulk_status_updated_with_count' => 'Changed :count report to :status.|Changed :count reports to :status.',
+        'manual_blind_restored_notice' => ':count manually blinded item was also restored.|:count manually blinded items were also restored.',
         'bulk_status_update_failed' => 'Failed to update bulk status.',
         'bulk_status_change_blocked' => 'Some reports cannot be changed to the selected status.',
         'delete_failed' => 'Failed to delete report.',
@@ -348,12 +348,12 @@ return [
         'not_found' => 'Scrap not found.',
         'scrap_disabled' => 'Scrap is disabled for this board.',
         'post_not_found' => 'Post not found.',
-        'bulk_removed' => ':count scrap(s) removed.',
+        'bulk_removed' => ':count scrap removed.|:count scraps removed.',
         'admin' => [
             'retrieved' => 'Scrap list retrieved.',
             'retrieve_failed' => 'Failed to retrieve scrap list.',
             'removed' => 'Scrap deleted.',
-            'bulk_removed' => ':count scrap(s) deleted.',
+            'bulk_removed' => ':count scrap deleted.|:count scraps deleted.',
             'bulk_delete_failed' => 'Failed to delete scraps in bulk.',
             'permission_denied' => 'You do not have permission to manage scraps.',
         ],
@@ -361,9 +361,9 @@ return [
 
     // Post bulk action messages
     'posts_bulk' => [
-        'delete_success' => ':count post(s) deleted. (:skipped skipped)',
-        'blind_success' => ':count post(s) blinded. (:skipped skipped)',
-        'restore_success' => ':count post(s) restored. (:skipped skipped)',
+        'delete_success' => ':count post deleted. (:skipped skipped)|:count posts deleted. (:skipped skipped)',
+        'blind_success' => ':count post blinded. (:skipped skipped)|:count posts blinded. (:skipped skipped)',
+        'restore_success' => ':count post restored. (:skipped skipped)|:count posts restored. (:skipped skipped)',
         'action_failed' => 'Failed to process posts in bulk.',
         // Reasons for skipped items — shown per post in the bulk result dialog
         'skip_reasons' => [
@@ -383,7 +383,7 @@ return [
         'updated' => 'Board type has been updated.',
         'deleted' => 'Board type has been deleted.',
         'not_found' => 'Board type not found.',
-        'delete_in_use' => 'Cannot delete board type in use by :count board(s).',
+        'delete_in_use' => 'Cannot delete board type in use by :count board.|Cannot delete board type in use by :count boards.',
         'delete_is_default' => 'Cannot delete the default board type.',
     ],
 
@@ -406,7 +406,7 @@ return [
         'save_success' => 'Settings saved successfully.',
         'save_failed' => 'Failed to save settings.',
         'save_error' => 'An error occurred while saving settings.',
-        'bulk_apply_success' => 'Settings applied to :count boards.',
+        'bulk_apply_success' => 'Settings applied to :count board.|Settings applied to :count boards.',
         'bulk_apply_aborted' => 'An error occurred during bulk apply. All changes have been rolled back.',
         'bulk_apply_failed' => 'Failed to bulk apply settings.',
         'clear_cache_success' => 'Settings cache cleared successfully.',
@@ -438,11 +438,11 @@ return [
         // Display convention for FormatsBoardDate — shared across post/comment lists, dashboard captions.
         'relative_time' => [
             'just_now' => 'just now',
-            'minutes_ago' => ':count minutes ago',
-            'hours_ago' => ':count hours ago',
-            'days_ago' => ':count days ago',
-            'months_ago' => ':count months ago',
-            'years_ago' => ':count years ago',
+            'minutes_ago' => ':count minute ago|:count minutes ago',
+            'hours_ago' => ':count hour ago|:count hours ago',
+            'days_ago' => ':count day ago|:count days ago',
+            'months_ago' => ':count month ago|:count months ago',
+            'years_ago' => ':count year ago|:count years ago',
         ],
     ],
     'inquiry' => [
@@ -481,5 +481,36 @@ return [
         'parent_comment_author' => 'Parent comment author',
         'original_post_author' => 'Original post author',
         'board_managers' => 'Board managers',
+    ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'name' => 'Recipient name',
+            'app_name' => 'Site name',
+            'board_name' => 'Board name',
+            'post_title' => 'Post title',
+            'comment_author' => 'Comment author',
+            'comment_content' => 'Comment content (200 characters)',
+            'post_url' => 'Post URL',
+            'site_url' => 'Site URL',
+            'action_type' => 'Action type (blind/delete/restore)',
+            'target_type' => 'Action target (post/comment)',
+            'post_author' => 'Post author',
+            'reason_type' => 'Report reason',
+            'report_url' => 'Report management page URL',
+        ],
+        'by_type' => [
+            'reply_comment' => [
+                'comment_author' => 'Reply author',
+                'comment_content' => 'Reply content (200 characters)',
+            ],
+            'new_post_admin' => [
+                'name' => 'Recipient name (administrator)',
+            ],
+            'report_received_admin' => [
+                'post_title' => 'Title of the reported post',
+                'target_type' => 'Reported item type (post/comment)',
+            ],
+        ],
     ],
 ];

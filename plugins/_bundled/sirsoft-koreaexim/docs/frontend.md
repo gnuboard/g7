@@ -39,6 +39,10 @@ plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력
 내려 준다), 본문 편집기는 채널 선언(`template_editor`: rich·plain·none)을 따릅니다. none 채널이면 코어 제목·본문·
 미리보기·저장을 숨기고 채널 소유 확장이 슬롯으로 대신합니다. 코어 창이 바뀌면 이 창도 함께 고칩니다.
 
+수신자 카드의 삭제 단추는 아이콘만 있으므로 코어 창과 같은 번역 키(`admin.settings.notification_definitions.recipients.remove_rule`,
+`index` 에 몇 번째 규칙인지)를 `aria-label` 로 실어 화면 읽기 프로그램이 「N번째 규칙 삭제」로 읽게 합니다. 아이콘은
+꾸밈으로 숨겨지므로(공통 `Icon` 컴포넌트) 이 이름이 없으면 이름 없는 단추가 됩니다 — 사본 네 벌이 같은 키를 씁니다.
+
 이력 기간 필터는 종료일이 시작일보다 앞서는 기간을 세 겹으로 막습니다. ① 두 날짜 칸이 서로의 선택 범위를 묶습니다(시작일 `max="{{query.date_to}}"`, 종료일 `min="{{query.date_from}}"`). ② 그래도 직접 입력이나 공유 주소로 뒤집힌 기간이 들어오면 데이터소스 `koreaeximRuns` 의 `if` 가 조회를 건너뜁니다 — 서버(`IndexRateRunRequest` 의 `after_or_equal:date_from`)가 422 로 거절할 요청을 보내지 않기 위해서입니다. ③ 조회를 건너뛰면 데이터소스에 직전 결과가 남으므로 그리드 `data` 도 같은 조건에서 `[]` 로 비우고, 필터 아래에 `date_range_invalid` 안내(`role="alert"`)를 띄워 빈 목록이 「기록 없음」으로 읽히지 않게 합니다. 세 곳의 조건식(`query.date_from && query.date_to && query.date_to < query.date_from`)은 같아야 하며, 하나만 고치면 조회는 막혔는데 옛 행이 보이거나 안내 없이 목록이 비는 식으로 어긋납니다.
 
 서버 쪽 `IndexRateRunRequest::attributes()` 는 검증 오류 문구의 필드 이름을 `lang/{locale}/validation.php` 의 `attributes` 에서 읽어(시작일·종료일 등) 파라미터 원문(`date to`·`date from`)이 문구에 드러나지 않게 합니다. 이력 조회 파라미터를 추가하면 이 목록과 언어 파일에 함께 넣습니다.

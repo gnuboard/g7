@@ -344,13 +344,15 @@ class ReportController extends AdminBaseController
 
         $payload = $response->getData(true);
 
+        [$from, $to] = $request->resolvedRange();
+
         // 「어느 봇이 얼마나」 옆에 「무엇을 언제」를 붙인다 — 집계만으로는 어떤 주소를
-        // 긁어 갔는지 알 수 없어 운영자가 차단 여부를 판단할 근거가 없다.
-        $payload['data']['recent_hits'] = $this->reports->recentBotHits();
+        // 긁어 갔는지 알 수 없어 운영자가 차단 여부를 판단할 근거가 없다. 같은 화면의 다른
+        // 숫자처럼 고른 기간 안에서 고른다(7.1.0 실측 O-E10).
+        $payload['data']['recent_hits'] = $this->reports->recentBotHits($from, $to);
 
         // 「봇 요청」·「봇 종류」 KPI 는 기간 전체를 말해야 한다 — 쪽으로 잘린 목록을 더하면
         // 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의 합만 보인다(#682 S3 라운드 14).
-        [$from, $to] = $request->resolvedRange();
         $payload['data']['totals'] = $this->reports->totals(StatsDimension::BotName->value, $from, $to);
 
         return $response->setData($payload);

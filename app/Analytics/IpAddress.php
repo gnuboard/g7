@@ -53,6 +53,33 @@ class IpAddress
     }
 
     /**
+     * 저장된 주소가 지금 마스킹 설정대로 가려진 값인지 판정합니다.
+     *
+     * 원장에는 행마다 「가렸는가」가 남지 않는다. 설정을 켜면서 소급 적용을 건너뛰면 그 전 기록은 원래
+     * 주소 그대로라, 화면이 설정만 보고 「마스킹됨」이라 적으면 원래 주소를 가려진 값으로 읽게 된다
+     * (7.1.0 실측 O-E8). 값을 지금 설정으로 다시 가려 봐서 그대로면 그 값은 설정이 남기는 것 이상을
+     * 드러내지 않는다 — 그것을 「가려진 값」으로 본다.
+     *
+     * @param  string|null  $ip  저장된 IP 문자열
+     * @param  int  $octets  현재 마스킹 옥텟 수
+     * @return bool|null 가려졌으면 true, 원래 주소면 false, 판정할 수 없으면(주소 없음·마스킹 꺼짐) null
+     */
+    public static function isMaskedBy(?string $ip, int $octets): ?bool
+    {
+        if ($ip === null || $ip === '' || $octets <= 0) {
+            return null;
+        }
+
+        $binary = self::toBinary($ip);
+
+        if ($binary === null) {
+            return null;
+        }
+
+        return self::mask($ip, $octets) === self::fromBinary($binary);
+    }
+
+    /**
      * IP 가 CIDR 대역 안에 있는지 판정합니다.
      *
      * 대역 표기가 아니면(`/` 없음) 주소가 정확히 같은지만 봅니다.

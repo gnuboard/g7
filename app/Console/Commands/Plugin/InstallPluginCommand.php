@@ -38,6 +38,9 @@ class InstallPluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 관리자
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -48,6 +51,8 @@ class InstallPluginCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -117,8 +122,8 @@ class InstallPluginCommand extends Command
                 $this->info('✅ '.__('plugins.commands.install.success', ['plugin' => $identifier]));
                 $this->info('   - '.__('plugins.commands.install.vendor', ['vendor' => $plugin->vendor]));
                 $this->info('   - '.__('plugins.commands.install.version', ['version' => $plugin->version]));
-                $this->info('   - '.__('plugins.commands.install.roles_created', ['count' => $rolesCount]));
-                $this->info('   - '.__('plugins.commands.install.permissions_created', ['count' => $permissionsCount]));
+                $this->info('   - '.trans_choice('plugins.commands.install.roles_created', $rolesCount));
+                $this->info('   - '.trans_choice('plugins.commands.install.permissions_created', $permissionsCount));
 
                 Log::info(__('plugins.commands.install.success', ['plugin' => $identifier]));
 

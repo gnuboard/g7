@@ -30,6 +30,11 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
 {
     private DocumentCompiler $compiler;
 
+    /**
+     * 번들 admin_basic 컴포넌트 표로 문서 컴파일러를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,12 +49,17 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 계층별 fixture `.g7.html` 이 짝 `.json` 과 키 순서까지 같게 컴파일되는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects document_root_selects_layout_partial_extension_or_override,
      *          top_level_sections_emit_as_json_keys,
      *          state_init_tree_emits_as_init_objects,
      *          document_json_key_order_is_deterministic
+     *
+     * @param  string  $fixture  fixture 파일 이름(확장자 제외)
+     * @return void 반환값 없음
      */
     #[DataProvider('fixtureProvider')]
     public function test_layer_fixture_compiles_to_expected_json(string $fixture): void
@@ -64,7 +74,9 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 계층별 fixture 이름 목록을 제공합니다.
+     *
+     * @return array<string, array{0: string}> 데이터셋 이름별 fixture 이름
      */
     public static function fixtureProvider(): array
     {
@@ -84,9 +96,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * `<layout>` 루트가 layout_name 을 내는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects document_root_selects_layout_partial_extension_or_override
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_root_produces_layout_name(): void
     {
@@ -94,9 +110,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<partial>` 루트가 루트 노드를 내고 meta.is_partial 을 표시하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects document_root_selects_layout_partial_extension_or_override
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_root_marks_is_partial(): void
     {
@@ -107,9 +127,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 빈 문서를 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects empty_or_multiple_or_unknown_document_root_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_document_is_rejected(): void
     {
@@ -120,9 +144,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 문서 루트가 둘 이상이면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects empty_or_multiple_or_unknown_document_root_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_document_roots_are_rejected(): void
     {
@@ -133,9 +161,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 알 수 없는 문서 루트를 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects empty_or_multiple_or_unknown_document_root_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_document_root_is_rejected(): void
     {
@@ -145,14 +177,71 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
         );
     }
 
+    /**
+     * 봉투(`<layout>`·`<extension>`·`<override>`) 바로 안의 글자는 담길 노드가 없어 조용히 사라진다 —
+     * 문서 최상위 글자와 같이 거부한다.
+     *
+     * 실측 2026-10-06(7.1.0 전수 실측 I1): 코드 편집기에서 `<layout …>\n  Z1Z2<div></div>\n</layout>` 을
+     * 컴파일하면 오류·경고 없이 통과하고 저장본에서 「Z1Z2」 만 빠졌다. 지워진 파일의 초안을
+     * 「새 이름으로 저장」 했을 때 편집분이 사라진 것도 같은 경로였다.
+     *
+     * @scenario compile_unit=document,source_health=invalid
+     *
+     * @effects text_outside_any_element_is_rejected
+     *
+     * @param  string  $source  봉투 바로 안에 글자가 든 `.g7.html` 소스
+     * @return void 반환값 없음
+     */
+    #[DataProvider('envelopeTextProvider')]
+    public function test_text_directly_inside_document_envelope_is_rejected(string $source): void
+    {
+        $error = $this->compileError($source);
+
+        $this->assertSame(LayoutMarkupErrorCode::TextOutsideElement, $error->getErrorCode());
+        $this->assertStringContainsString('Z1Z2', $error->getMessage());
+    }
+
+    /**
+     * 봉투 바로 안에 글자가 든 소스 목록을 제공합니다.
+     *
+     * @return array<string, array{0: string}> 데이터셋 이름별 `.g7.html` 입력
+     */
+    public static function envelopeTextProvider(): array
+    {
+        return [
+            'layout' => ["<layout name=\"a\">\n  Z1Z2<div class=\"x\"/>\n</layout>"],
+            'layout 글자만' => ['<layout name="a">Z1Z2</layout>'],
+            'extension' => ["<extension extension-point=\"p\">\n  Z1Z2<div class=\"x\"/>\n</extension>"],
+            'override' => ["<override name=\"a\" version=\"1.0.0\">\n  Z1Z2\n</override>"],
+        ];
+    }
+
+    /**
+     * 봉투 안의 인덴트·줄바꿈 공백은 오류가 아니다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects text_outside_any_element_is_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_whitespace_inside_document_envelope_is_accepted(): void
+    {
+        $this->assertSame('a', $this->compile("<layout name=\"a\">\n  <div class=\"x\"/>\n\n</layout>")['layout_name']);
+    }
+
     // ---------------------------------------------------------------------
     // 섹션 표기 규칙
     // ---------------------------------------------------------------------
 
     /**
+     * 싱글턴 섹션 `<meta>` 가 중복되면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects duplicate_singleton_section_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_meta_section_is_rejected(): void
     {
@@ -163,9 +252,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 같은 이름의 `<computed>` 가 중복되면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects duplicate_singleton_section_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_computed_name_is_rejected(): void
     {
@@ -176,9 +269,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<layout>` 의 알 수 없는 속성을 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects unknown_root_attribute_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_layout_attribute_is_rejected(): void
     {
@@ -198,6 +295,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects seo_structured_children_use_structured_value_grammar
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_child_reads_attribute_field_map(): void
     {
@@ -214,6 +313,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects seo_structured_children_use_structured_value_grammar
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_child_reads_field_tree(): void
     {
@@ -234,6 +335,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects seo_structured_children_use_structured_value_grammar
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_child_reads_item_list_and_json_body(): void
     {
@@ -253,9 +356,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * `<init-local>` 의 `<field>` 트리가 평범한 객체로 방출되는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects state_init_tree_emits_as_init_objects
+     *
+     * @return void 반환값 없음
      */
     public function test_init_local_field_tree_emits_plain_object(): void
     {
@@ -265,9 +372,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 키와 merge 가 달린 초기화 블록이 `_merge` 키를 방출하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects state_init_tree_emits_as_init_objects
+     *
+     * @return void 반환값 없음
      */
     public function test_keyed_init_block_with_merge_emits_merge_key(): void
     {
@@ -280,9 +391,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 키 없는 `<from-source>` 를 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects state_source_without_key_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_from_source_without_key_is_rejected(): void
     {
@@ -293,9 +408,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 한 초기화 블록에 `<field>` 와 `<from-source>` 를 섞으면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects state_field_and_source_mixed_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_field_and_source_mixed_is_rejected(): void
     {
@@ -310,9 +429,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * fragment 에 target-layout 과 extension-point 를 함께 적으면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects fragment_target_conflict_or_missing_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_with_both_targets_is_rejected(): void
     {
@@ -323,9 +446,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 대상이 없는 fragment 를 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects fragment_target_conflict_or_missing_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_without_target_is_rejected(): void
     {
@@ -336,9 +463,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<inject>` 에 `<props>` 와 컴포넌트를 함께 두면 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects fragment_inject_props_and_components_are_exclusive
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_with_props_and_components_is_rejected(): void
     {
@@ -359,6 +490,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects injection_props_accept_datagrid_column_tree
+     *
+     * @return void 반환값 없음
      */
     public function test_injection_props_accept_column_tree(): void
     {
@@ -390,6 +523,9 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects column_tree_is_rejected_outside_injection_props
+     *
+     * @param  string  $source  컬럼 트리가 허용 자리 밖에 있는 `.g7.html` 소스
+     * @return void 반환값 없음
      */
     #[DataProvider('columnTreeRejectionProvider')]
     public function test_column_tree_outside_the_columns_container_is_rejected(string $source): void
@@ -401,7 +537,9 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 컬럼 트리가 허용 자리 밖에 있는 소스 목록을 제공합니다.
+     *
+     * @return array<string, array{0: string}> 데이터셋 이름별 `.g7.html` 입력
      */
     public static function columnTreeRejectionProvider(): array
     {
@@ -425,6 +563,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects fragment_init_actions_emit_for_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_target_layout_accepts_init_actions(): void
     {
@@ -443,6 +583,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects fragment_init_actions_emit_for_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_extension_point_accepts_init_actions(): void
     {
@@ -458,9 +600,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 평면 권한 목록이 문자열 배열로 방출되는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects permissions_flat_emits_string_array
+     *
+     * @return void 반환값 없음
      */
     public function test_permissions_flat_emits_string_array(): void
     {
@@ -477,6 +623,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects permissions_conditional_emits_or_and_object
+     *
+     * @return void 반환값 없음
      */
     public function test_permissions_any_of_emits_or_object(): void
     {
@@ -488,9 +636,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 조건형 권한 `<all-of>` 가 `{"and": [...]}` 로 방출되는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects permissions_conditional_emits_or_and_object
+     *
+     * @return void 반환값 없음
      */
     public function test_permissions_all_of_emits_and_object(): void
     {
@@ -507,6 +659,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects permissions_mixed_form_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_permissions_mixed_flat_and_conditional_is_rejected(): void
     {
@@ -523,9 +677,13 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 루트 노드가 둘인 `<partial>` 을 거부하는지 검증합니다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects partial_root_must_be_a_single_node
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_with_two_root_nodes_is_rejected(): void
     {
@@ -548,6 +706,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects section_comments_round_trip_without_escape
+     *
+     * @return void 반환값 없음
      */
     public function test_leading_comment_becomes_document_comment(): void
     {
@@ -562,6 +722,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects section_comments_round_trip_without_escape
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_root_comment_stays_on_the_node(): void
     {
@@ -578,6 +740,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects section_comments_round_trip_without_escape
+     *
+     * @return void 반환값 없음
      */
     public function test_global_header_match_keeps_its_comment(): void
     {
@@ -595,6 +759,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects section_comments_round_trip_without_escape
+     *
+     * @return void 반환값 없음
      */
     public function test_error_handling_and_named_action_keep_their_comments(): void
     {
@@ -619,6 +785,8 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects section_comments_round_trip_without_escape
+     *
+     * @return void 반환값 없음
      */
     public function test_error_handling_comment_is_not_treated_as_a_status_code(): void
     {

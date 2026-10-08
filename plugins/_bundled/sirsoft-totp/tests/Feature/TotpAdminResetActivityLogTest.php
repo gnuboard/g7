@@ -217,6 +217,37 @@ class TotpAdminResetActivityLogTest extends PluginTestCase
     }
 
     /**
+     * 관리자 화면(확장 관리자 API)의 강제 해제는 「관리자」 유형 로그다 — 코어 관리자 API 와 같은 분류
+     * (7.1.0 실측 O-B2: 종전에는 경로가 `api/admin/*` 가 아니라 「사용자」로 남았다).
+     *
+     * @effects admin_screen_reset_is_logged_as_admin_type
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_admin_screen_reset_is_logged_as_the_admin_type(): void
+    {
+        $this->subscribeListener();
+
+        $operator = $this->createCredentialOperatorUser();
+        $target = User::factory()->create();
+        TotpCredential::create([
+            'user_id' => $target->id,
+            'secret' => 'JBSWY3DPEHPK3PXP',
+            'confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($operator)
+            ->deleteJson('/api/plugins/sirsoft-totp/admin/credentials/'.$target->uuid)
+            ->assertOk();
+
+        $log = DB::table('activity_logs')->where('action', 'credential.admin_reset')->latest('id')->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame('admin', $log->log_type);
+    }
+
+    /**
      * 등록된 인증 앱이 없어 해제할 것이 없으면 기록하지 않는지 확인합니다.
      *
      * @effects admin_reset_hook_with_a_non_user_payload_logs_nothing
@@ -232,6 +263,33 @@ class TotpAdminResetActivityLogTest extends PluginTestCase
 
         $this->artisan('totp:reset', ['email' => $target->email])->assertExitCode(0);
 
+        $this->assertDatabaseMissing('activity_logs', ['action' => 'credential.admin_reset']);
+    }
+
+    /**
+     * 등록한 인증 앱이 없는 회원을 관리자 화면에서 해제하면 「해제했습니다」 가 아니라 해제할 것이 없다고 알리는지
+     * 확인합니다 — 카드는 미등록 회원에게 해제 단추를 숨기지만, 먼저 해제된 뒤 다시 누르거나 API 를 직접 부를 때 이 응답이 상태를 알린다.
+     *
+     * @effects admin_reset_without_credential_says_nothing_to_remove
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_admin_screen_reset_without_a_credential_says_there_was_nothing(): void
+    {
+        $this->subscribeListener();
+        app()->setLocale('ko');
+
+        $operator = $this->createCredentialOperatorUser();
+        $target = User::factory()->create();
+
+        $response = $this->actingAs($operator)
+            ->deleteJson('/api/plugins/sirsoft-totp/admin/credentials/'.$target->uuid)
+            ->assertOk()
+            ->assertJsonPath('data.removed', false);
+
+        $this->assertSame(__('sirsoft-totp::messages.enrollment.admin_reset_none'), $response->json('message'));
+        $this->assertNotSame(__('sirsoft-totp::messages.enrollment.admin_reset'), $response->json('message'));
         $this->assertDatabaseMissing('activity_logs', ['action' => 'credential.admin_reset']);
     }
 }

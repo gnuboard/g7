@@ -4,10 +4,11 @@ namespace App\Services\LanguagePack;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
+use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
-use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
 use App\Models\LanguagePack;
+use App\Services\LanguagePackService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -48,7 +49,7 @@ class LanguagePackBundledRegistrar
      * @param  string  $vendor  확장 벤더 (manifest.vendor 또는 identifier 첫 segment)
      * @param  string  $version  확장 버전
      * @param  string  $langDirectoryRelative  확장 lang 디렉토리 상대 경로 (base_path 기준)
-     * @return void
+     * @return void 반환값 없음
      */
     public function syncFromExtension(
         string $scope,
@@ -105,7 +106,7 @@ class LanguagePackBundledRegistrar
      *
      * @param  string  $scope  스코프
      * @param  string  $targetIdentifier  대상 확장 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     public function cleanupForExtension(string $scope, string $targetIdentifier): void
     {
@@ -149,7 +150,7 @@ class LanguagePackBundledRegistrar
 
         $deactivated = [];
         $packs = $this->repository->getPacksForTarget($scope, $targetIdentifier);
-        $service = app(\App\Services\LanguagePackService::class);
+        $service = app(LanguagePackService::class);
 
         foreach ($packs as $pack) {
             if ($pack->status !== LanguagePackStatus::Active->value) {
@@ -177,12 +178,59 @@ class LanguagePackBundledRegistrar
     }
 
     /**
+     * 호스트 확장 활성화 시, 켜 달라는 요청으로 설치됐지만 그때 호스트가 꺼져 있어 꺼진 채 남은 언어팩을 함께 켭니다.
+     *
+     * 대상은 `status=installed` 이면서 `deactivated_reason=awaiting_host` 인 팩뿐이다 — 켜 달라고 하지 않고 설치한 팩
+     * (installed, 사유 없음)·사용자가 끈 팩(inactive)·호스트를 끌 때 함께 꺼진 팩(inactive, 「언어팩 다시 켜기」 창이
+     * 묻는다)은 건드리지 않는다. 같은 언어 자리를 이미 다른 팩이 쓰고 있으면 밀어내지 않고(force 없이 activate) 건너뛴다.
+     * 실패는 호스트 활성화를 막지 않도록 기록만 하고, 대기 표시는 남겨 다음 활성화 때 다시 시도한다.
+     *
+     * @param  string  $scope  스코프 (module/plugin/template)
+     * @param  string  $targetIdentifier  대상 확장 식별자
+     * @return array<int, int> 켠 LanguagePack ID 배열
+     */
+    public function activateAwaitingForExtension(string $scope, string $targetIdentifier): array
+    {
+        if (! LanguagePackScope::isValid($scope) || $scope === LanguagePackScope::Core->value || $targetIdentifier === '') {
+            return [];
+        }
+
+        $activated = [];
+        $packs = $this->repository->getPacksForTarget($scope, $targetIdentifier)
+            ->filter(fn (LanguagePack $pack) => $pack->status === LanguagePackStatus::Installed->value
+                && $pack->deactivated_reason === LanguagePackDeactivationReason::AwaitingHost->value);
+
+        if ($packs->isEmpty()) {
+            return [];
+        }
+
+        $service = app(LanguagePackService::class);
+
+        foreach ($packs as $pack) {
+            try {
+                $service->activate($pack);
+                $activated[] = $pack->id;
+            } catch (Throwable $e) {
+                Log::warning('language-pack awaiting-host activate 실패', [
+                    'pack_id' => $pack->id,
+                    'identifier' => $pack->identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->registry->invalidate();
+
+        return $activated;
+    }
+
+    /**
      * 비활성화된 팩 ID 목록을 cache 에 보관합니다 (재활성화 모달용).
      *
      * @param  string  $scope  스코프
      * @param  string  $targetIdentifier  대상 확장 식별자
      * @param  array<int, int>  $packIds  팩 ID 배열
-     * @return void
+     * @return void 반환값 없음
      */
     public function stashDeactivatedForReactivation(string $scope, string $targetIdentifier, array $packIds): void
     {
@@ -287,7 +335,7 @@ class LanguagePackBundledRegistrar
      * @param  string  $version  버전
      * @param  string  $locale  로케일
      * @param  string  $langDirectoryRelative  lang 디렉토리 상대 경로
-     * @return void
+     * @return void 반환값 없음
      */
     private function createBundledRecord(
         string $scope,

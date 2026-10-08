@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\ValidationPluralMessages;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,20 @@ class TranslationServiceProvider extends ServiceProvider
         $this->loadModuleTranslations();
         $this->loadPluginTranslations();
         $this->translateValidationSummaryTail();
+        $this->chooseValidationMessagesByRuleValue();
+    }
+
+    /**
+     * 검증 문구의 `단수|복수` 를 규칙값으로 고르는 치환기를 등록합니다.
+     *
+     * 영어 표준 검증 문구(`validation.min.array` 등)는 `단수|복수` 로 적혀 있고, Laravel 검증기는 수로 고르지 않는다 —
+     * 이 치환기가 `min:1` 이면 「at least 1 item」, `min:2` 면 「at least 2 items」 처럼 규칙값으로 고른다.
+     *
+     * @return void 반환값 없음
+     */
+    private function chooseValidationMessagesByRuleValue(): void
+    {
+        ValidationPluralMessages::register($this->app['validator']);
     }
 
     /**

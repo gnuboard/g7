@@ -231,7 +231,8 @@ class AppServiceProvider extends ServiceProvider
                         'auth.too_many_attempts',
                         429,
                         null,
-                        ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
+                        // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                        ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
                     )->withHeaders($headers);
                 });
         });

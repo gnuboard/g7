@@ -23,9 +23,11 @@ interface BotHitRepositoryInterface
      * 최근 봇 요청을 조회합니다.
      *
      * @param  int  $limit  최대 건수
-     * @return Collection<int, AnalyticsBotHit> 봇 요청 목록
+     * @param  string|null  $from  시작일 (Y-m-d, 사이트 표준시 — null 이면 제한 없음)
+     * @param  string|null  $to  종료일 (Y-m-d, 사이트 표준시 — null 이면 제한 없음)
+     * @return Collection<int, AnalyticsBotHit> 봇 요청 목록 (최신순)
      */
-    public function recent(int $limit = 50): Collection;
+    public function recent(int $limit = 50, ?string $from = null, ?string $to = null): Collection;
 
     /**
      * 보존기간이 지난 봇 요청을 나눠서 삭제합니다.

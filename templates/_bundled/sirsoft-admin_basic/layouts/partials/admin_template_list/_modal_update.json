@@ -776,17 +776,6 @@
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedTemplate": null,
-                                                "templateLayoutStrategy": "overwrite",
-                                                "hasModifiedTemplateLayouts": false,
-                                                "modifiedTemplateLayoutsCount": 0,
-                                                "modifiedTemplateLayouts": []
-                                            }
-                                        },
-                                        {
                                             "comment": "서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다",
                                             "handler": "toast",
                                             "params": {
@@ -802,6 +791,17 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null,
+                                                "templateLayoutStrategy": "overwrite",
+                                                "hasModifiedTemplateLayouts": false,
+                                                "modifiedTemplateLayoutsCount": 0,
+                                                "modifiedTemplateLayouts": []
+                                            }
                                         }
                                     ],
                                     "onError": [

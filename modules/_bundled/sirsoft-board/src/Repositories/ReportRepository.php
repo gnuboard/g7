@@ -80,13 +80,13 @@ class ReportRepository implements ReportRepositoryInterface
             $query->byBoard($filters['board_id']);
         }
 
-        // 날짜 필터 (개별 처리)
-        if (! empty($filters['reported_at_from'])) {
-            $query->where('created_at', '>=', $filters['reported_at_from'].' 00:00:00');
-        }
-        if (! empty($filters['reported_at_to'])) {
-            $query->where('created_at', '<=', $filters['reported_at_to'].' 23:59:59');
-        }
+        // 날짜 필터 (개별 처리) — 목록은 접수일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'created_at',
+            $filters['reported_at_from'] ?? null,
+            $filters['reported_at_to'] ?? null
+        );
 
         // 지연 조인: inner 는 id 만 훑고, 관계 로딩은 해당 페이지에만 적용된다
         return $this->paginateWithDeferredJoin(
@@ -219,8 +219,14 @@ class ReportRepository implements ReportRepositoryInterface
             $query->byBoard($filters['board_id']);
         }
 
+        // 목록과 같은 하루로 자른다 — 종료일을 'Y-m-d' 그대로 비교하면 그날 하루가 통째로 빠진다.
         if (! empty($filters['reported_at_from']) && ! empty($filters['reported_at_to'])) {
-            $query->byDateRange($filters['reported_at_from'], $filters['reported_at_to']);
+            $this->applyViewerDateRangeFilter(
+                $query,
+                'created_at',
+                $filters['reported_at_from'],
+                $filters['reported_at_to']
+            );
         }
 
         // 상태별 통계
@@ -307,13 +313,13 @@ class ReportRepository implements ReportRepositoryInterface
             $query->where('board_id', $filters['board_id']);
         }
 
-        // 날짜 필터
-        if (! empty($filters['reported_at_from'])) {
-            $query->where('last_reported_at', '>=', $filters['reported_at_from'].' 00:00:00');
-        }
-        if (! empty($filters['reported_at_to'])) {
-            $query->where('last_reported_at', '<=', $filters['reported_at_to'].' 23:59:59');
-        }
+        // 날짜 필터 — 목록은 마지막 신고일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'last_reported_at',
+            $filters['reported_at_from'] ?? null,
+            $filters['reported_at_to'] ?? null
+        );
 
         // 검색
         $this->applySearchConditions($query, $filters, ['post_title']);
@@ -462,7 +468,10 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
-     * 사용자의 오늘(자정 기준) 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
+     * 사용자의 오늘 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
+     *
+     * 「오늘」은 신고하는 사람 자신의 하루다(보는 사람 시간대 — 7.1.0 O-CF3 · 원칙 「화면은 유저 시간대,
+     * 기록은 UTC」). UTC 자정으로 자르면 한국 시간 새벽 0~9시 신고가 전날 한도에 섞인다.
      *
      * @param  int  $userId  사용자 ID
      * @return int 오늘 신고 건수
@@ -471,7 +480,7 @@ class ReportRepository implements ReportRepositoryInterface
     {
         // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
         $query = ReportLog::where('reporter_id', $userId);
-        $this->applyDayFilter($query, 'created_at', today());
+        $this->applyViewerTodayFilter($query, 'created_at');
 
         return $query->count();
     }

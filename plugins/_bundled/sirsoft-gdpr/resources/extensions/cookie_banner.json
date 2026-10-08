@@ -330,7 +330,7 @@
                                                                     "handler": "toast",
                                                                     "params": {
                                                                         "type": "success",
-                                                                        "message": "$t:sirsoft-gdpr.mypage.privacy.renew_all_success|renewed={{response?.data?.renewed ?? 0}}"
+                                                                        "message": "$t:sirsoft-gdpr.mypage.privacy.renew_all_success|count={{response?.data?.renewed ?? 0}}|renewed={{response?.data?.renewed ?? 0}}"
                                                                     }
                                                                 }
                                                             ],

@@ -1,0 +1,40 @@
+feature: 레이아웃 편집기 표본·상태 충실도 가드 (창을 연 화면 값·상태 라벨·목록 개수·콘텐츠 언어)
+
+description: |
+  편집기는 목록 행 클릭·버튼 클릭을 하지 않으므로, 창을 연 화면이 담는 값(번역 인자·창 제목)을 상태 표본이
+  대신 담아야 한다. 담지 않으면 오류 없이 자리표시 원문(`{{target}}`)·0건·빈 제목이 그려진다. 같은 이유로
+  상태 라벨은 `$t:` 키여야 하고 그 화면을 그리는 템플릿 사전(ko·en·ja)에 있어야 하며, 목록 표본은 화면이 읽는
+  `data.pagination` 모양을, 권한 플래그를 읽는 화면의 표본은 그 `abilities.can_*` 를 명시해야 하고, 게시판 설명 표본은 평문이어야 한다. 미리보기의 `$locale` 은 표본 값이 아니라
+  콘텐츠 언어이고, 로더는 상태 묶음마다 출처를 남겨 창 편집이 창을 연 화면 주인의 묶음을 고르게 한다.
+  속성 편집 창의 접근 가능한 이름에는 제목과 같은 요소 이름이 들어간다(자리표시 원문 금지).
+
+  축 source 는 검사 대상이다. fixture 는 추출·병합 규칙 단위, bundled 는 번들 전체 대조다.
+
+axes:
+  source: [fixture, bundled]
+
+effects:
+  - translation_param_opener_keys_are_extracted
+  - modal_translation_params_are_seeded
+  - known_gap_list_only_shrinks
+  - modal_title_expression_is_seeded
+  - default_state_does_not_seed_completed_branch
+  - state_label_is_translation_key
+  - state_label_resolves_in_owning_template_all_locales
+  - sample_pagination_has_layout_shape
+  - sample_abilities_declare_layout_keys
+  - sample_board_description_has_no_markup
+  - preview_locale_follows_content_language
+  - preview_locale_keeps_seed_without_content_language
+  - state_groups_carry_source
+  - property_modal_aria_label_has_component_name
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateModalSeedsOpenerValues.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateLabelPerTemplate.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/samplePaginationMatchesLayout.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/sampleAbilitiesMatchLayout.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/sampleBoardDescriptionIsPlainText.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/sample-data/previewDollarGlobals.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorSpecLoader.stateSource.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/propertyModalAriaLabel.test.ts

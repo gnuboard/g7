@@ -69,6 +69,8 @@ _`getSettingsSchema()` 선언이 없습니다._
   별도 등록이 없고, 토글이 꺼져 있어도 저장된 기간·방식으로 `process(force: true)` 를 한 번 큐에서 돌립니다.
   권한은 두 축 모두 `sirsoft-board.settings.update` + `sirsoft-board.boards.update`(전체 범위). 확인 창은
   `_modal_privacy_run`, 상태 줄은 코어 상태 API(`privacyManualRuns`). 계약은 코어 가이드 「관리자 직권 실행」 절.
+  확인 창의 실행 버튼은 `lockRepeatClick` 으로 첫 클릭 즉시 잠급니다 — 빠른 두 번째 클릭이 빈 실행을 한 번 더 접수해
+  카드 결과를 「0건 처리」로 덮지 않도록(코어 확인 창과 같은 규칙).
 <!-- @intent END -->
 
 ## 권한

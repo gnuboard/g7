@@ -1,0 +1,17 @@
+feature: 확장 내장 언어팩이 꺼져도 확장 이름·설명의 그 언어 값은 남는다
+
+description: |
+  모듈·플러그인·템플릿을 끄면 그 확장에 내장된 언어팩(ko·en, `bundled_with_extension`)도 함께 꺼지고, 언어팩
+  비활성화 훅이 확장 행 name/description 에서 그 언어 키를 지웠다. 내장 언어는 확장 매니페스트 자신의 언어라
+  다시 켜도 채울 seed 가 없어, 끄고 켠 확장의 이름·설명이 `[]` 로 남았다(Q-G2 Hello 실측 — Hello 모듈 강제 끄기
+  → 다시 켜기 뒤 DB name `[]`, 플러그인 설치 창의 의존 확장 이름이 식별자로 보임). 내장 언어팩 비활성화는 확장
+  행의 다국어 값을 지우지 않는다. 추가 언어팩(ja 등)은 종전처럼 지운다.
+
+axes:
+  pack_origin: [built_in, additional]
+
+effects:
+  - host_own_locale_kept_on_built_in_pack_deactivation
+
+test_files:
+  - tests/Unit/Listeners/LanguagePack/BuiltInPackDeactivationKeepsHostNameTest.php

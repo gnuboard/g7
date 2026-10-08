@@ -16,6 +16,7 @@ use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
+use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
@@ -46,6 +47,7 @@ use Illuminate\Support\Facades\Log;
 class TemplateManager implements TemplateManagerInterface
 {
     use ResolvesExtensionIcons;
+    use ResolvesUpdateCoreCompatibility;
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\CollectsFragmentSources;
@@ -146,7 +148,7 @@ class TemplateManager implements TemplateManagerInterface
      * 재바인딩할 수 있음)에 의존하면 누수된 바인딩 때문에 forget/remember 가
      * `g7:plugin.*` 네임스페이스로 빗나가므로, 항상 CoreCacheDriver 를 직접 생성한다.
      *
-     * @return CacheInterface
+     * @return CacheInterface 코어 캐시 드라이버
      */
     private function cache(): CacheInterface
     {
@@ -857,8 +859,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  제거할 템플릿명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
-     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
      *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — 제거 동작은 바꾸지 않고
      *                            after_uninstall 훅 인자로만 전달한다(활동 로그 기록용)
@@ -1130,6 +1131,12 @@ class TemplateManager implements TemplateManagerInterface
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
                     'update_source' => $record->update_source ?? null,
+                    // 업데이트 대상 버전의 코어 호환 — 업데이트 창의 경고·강제 업데이트 체크가 읽는다(업데이트가 있을 때만).
+                    ...($updateAvailable ? $this->buildUpdateCompatibilityFields($this->resolveUpdateTargetRequiredCoreVersion(
+                        $record->update_source ?? null,
+                        $this->findBundledTemplateManifest($identifier),
+                        $template['g7_version'] ?? null
+                    )) : []),
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
                     'hidden' => (bool) ($template['hidden'] ?? false),
@@ -2792,7 +2799,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  bool  $force
+     * @param  bool  $force  이미 활성 디렉터리에 있어도 덮어쓸지 여부
      * @return void 반환값 없음
      *
      * @throws \RuntimeException 소스를 찾을 수 없을 때
@@ -2899,7 +2906,7 @@ class TemplateManager implements TemplateManagerInterface
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
+     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
      */
     public function checkTemplateUpdate(string $identifier): array
     {
@@ -2946,7 +2953,7 @@ class TemplateManager implements TemplateManagerInterface
         // 2. _bundled에서 업데이트 확인
         if (isset($this->bundledTemplates[$identifier])) {
             $bundledVersion = $this->bundledTemplates[$identifier]['version'] ?? null;
-            $bundledRequired = $this->bundledTemplates[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+            $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $this->bundledTemplates[$identifier], $activeRequiredCoreVersion);
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                 return $this->buildTemplateUpdateResponse(
                     true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
@@ -2956,7 +2963,7 @@ class TemplateManager implements TemplateManagerInterface
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
-                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+                $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $bundledMeta[$identifier], $activeRequiredCoreVersion);
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                     return $this->buildTemplateUpdateResponse(
                         true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
@@ -2978,7 +2985,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string|null  $latestVersion  최신 버전
      * @param  string|null  $currentVersion  현재 설치된 버전
      * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약
-     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string} 업데이트 확인 응답(코어 호환 필드 포함)
      */
     protected function buildTemplateUpdateResponse(
         bool $updateAvailable,
@@ -2992,16 +2999,14 @@ class TemplateManager implements TemplateManagerInterface
             'update_source' => $updateSource,
             'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
-            'required_core_version' => $requiredCoreVersion,
-            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
-            'current_core_version' => CoreVersionChecker::getCoreVersion(),
+            ...$this->buildUpdateCompatibilityFields($requiredCoreVersion),
         ];
     }
 
     /**
      * 모든 설치된 템플릿의 업데이트를 확인합니다.
      *
-     * @return array{updated_count: int, details: array}
+     * @return array{updated_count: int, details: array} 갱신 건수와 템플릿별 결과
      */
     public function checkAllTemplatesForUpdates(): array
     {
@@ -3120,7 +3125,7 @@ class TemplateManager implements TemplateManagerInterface
      * 사용자가 관리자 UI에서 레이아웃을 수정한 적이 있는지 감지합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array} 수정한 레이아웃 존재 여부·개수·목록
      */
     public function hasModifiedLayouts(string $identifier): array
     {
@@ -3162,7 +3167,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  string|null  $sourceOverride  소스 강제 지정 ('bundled' | 'github'). null 이면 자동 감지
      * @param  string|null  $zipPath  사용자가 업로드한 ZIP 경로 (sourceOverride 가 'zip' 일 때 필수)
-     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
+     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string} 업데이트 결과(성공 여부·이전/이후 버전·메시지)
      *
      * @throws \RuntimeException 업데이트 실패 시
      * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
@@ -3560,5 +3565,22 @@ class TemplateManager implements TemplateManagerInterface
         $meta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
 
         return $meta[$identifier]['version'] ?? null;
+    }
+
+    /**
+     * 같은 식별자의 _bundled template 매니페스트를 반환합니다 (업데이트 대상 코어 호환 판정용).
+     *
+     * @param  string  $identifier  template 식별자
+     * @return array<string, mixed>|null _bundled 매니페스트 또는 null
+     */
+    private function findBundledTemplateManifest(string $identifier): ?array
+    {
+        if (isset($this->bundledTemplates[$identifier])) {
+            return $this->bundledTemplates[$identifier];
+        }
+
+        $meta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
+
+        return $meta[$identifier] ?? null;
     }
 }

@@ -123,6 +123,7 @@
     "conditional": "Under {{threshold}}: {{fee}} / {{threshold}}+: Free",
     "api": "External API (Real-time calculation)",
     "per_quantity": "{{fee}} per {{unit}} items",
+    "per_quantity_one": "{{fee}} per {{unit}} item",
     "per_weight": "{{fee}} per {{unit}}kg",
     "per_volume": "{{fee}} per {{unit}}L",
     "per_volume_weight": "{{fee}} per {{unit}}kg",
@@ -144,7 +145,8 @@
       "confirm": "Copy",
       "policy_name": "Policy Name:",
       "country_count": "Country Settings:",
-      "country_count_value": "{{count}} countries"
+      "country_count_value": "{{count}} countries",
+      "country_count_value_one": "{{count}} country"
     },
     "delete": {
       "title": "Delete Shipping Policy",
@@ -156,6 +158,7 @@
     "bulk_delete": {
       "title": "Bulk Delete Shipping Policies",
       "message": "Are you sure you want to delete {{count}} shipping policies?",
+      "message_one": "Are you sure you want to delete {{count}} shipping policy?",
       "warning": "Deleted policies cannot be recovered.",
       "product_warning": "Products using these policies will have their shipping policy unset.",
       "confirm": "Delete"
@@ -163,6 +166,7 @@
     "bulk_toggle": {
       "title": "Change Status",
       "message": "Change the status of {{count}} shipping policies?",
+      "message_one": "Change the status of {{count}} shipping policy?",
       "confirm": "Change"
     },
     "set_default": {
@@ -331,6 +335,7 @@
     "apply_confirm": "Existing settings will be overwritten. Continue?",
     "delete_confirm": "Delete this template?",
     "bulk_delete_confirm": "Delete {{count}} selected templates?",
+    "bulk_delete_confirm_one": "Delete {{count}} selected template?",
     "no_templates": "No templates found.",
     "items_count": "items",
     "apply": "Apply"

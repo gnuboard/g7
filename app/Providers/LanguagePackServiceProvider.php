@@ -354,6 +354,20 @@ class LanguagePackServiceProvider extends ServiceProvider
         HookManager::addAction('core.templates.after_deactivate', function ($identifier) use ($registrar) {
             $registrar->deactivateForExtension('template', (string) $identifier);
         });
+
+        // 호스트 확장 활성화 시, 꺼진 채 설치돼 「대상 켜짐 대기」인 언어팩을 함께 켠다 (설치 창에서 함께 고른 언어팩 등).
+        // 호스트를 끌 때 함께 꺼진 팩(inactive)은 여기서 켜지 않는다 — 「언어팩 다시 켜기」 창이 따로 묻는다.
+        HookManager::addAction('core.modules.after_activate', function ($identifier) use ($registrar) {
+            $registrar->activateAwaitingForExtension('module', (string) $identifier);
+        });
+        HookManager::addAction('core.plugins.after_activate', function ($identifier) use ($registrar) {
+            $registrar->activateAwaitingForExtension('plugin', (string) $identifier);
+        });
+        // 템플릿 after_activate 는 식별자 대신 정보 배열 1개를 넘긴다(TemplateManager::activateTemplate 계약).
+        HookManager::addAction('core.templates.after_activate', function ($info) use ($registrar) {
+            $identifier = is_array($info) ? (string) ($info['identifier'] ?? '') : (string) $info;
+            $registrar->activateAwaitingForExtension('template', $identifier);
+        });
     }
 
     /**

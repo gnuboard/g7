@@ -115,17 +115,23 @@ class VisitRepository implements VisitRepositoryInterface
     /**
      * 지정한 날짜의 순방문자 수를 원장에서 직접 셉니다.
      *
+     * 일 집계와 같은 정의로 셉니다 — 방문자 유형별 순방문자를 구해 더합니다. 하루 안에
+     * 게스트로 왔다가 로그인한 사람은 일 집계에서 게스트·회원 행에 하나씩 잡히므로, 여기서만
+     * 유형을 가로질러 하나로 세면 같은 날의 「오늘」과 「최대」·자정 뒤의 「어제」가 어긋납니다.
+     *
      * @param  string  $date  사이트 표준시 기준 일자 (Y-m-d)
      * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
-     * @return int 순방문자 수
+     * @return int 순방문자 수 (유형별 순방문자의 합)
      */
     public function uniqueVisitorsOnDate(string $date, array $visitorTypes = []): int
     {
-        return AnalyticsVisit::query()
+        return (int) AnalyticsVisit::query()
             ->where('visit_date', $date)
             ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
-            ->distinct()
-            ->count('visitor_key');
+            ->selectRaw('visitor_type, COUNT(DISTINCT visitor_key) as visitors')
+            ->groupBy('visitor_type')
+            ->get()
+            ->sum('visitors');
     }
 
     /**

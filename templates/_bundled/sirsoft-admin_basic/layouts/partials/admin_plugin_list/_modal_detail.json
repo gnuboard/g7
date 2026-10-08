@@ -264,10 +264,10 @@
                                                         },
                                                         {
                                                             "type": "basic",
-                                                            "name": "P",
+                                                            "name": "Button",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "라이선스 이름을 누르면 전문을 그때 받아 별도 창으로 띄운다 — 전문은 길어 상세 응답에 싣지 않는다. 받은 글은 확장 공용 자리에 담기므로 모듈·템플릿 상세도 같은 창을 쓴다.",
+                                                                    "comment": "라이선스 이름을 누르면 전문을 그때 받아 별도 창으로 띄운다 — 전문은 길어 상세 응답에 싣지 않는다. 받은 글은 확장 공용 자리에 담기므로 모듈·템플릿 상세도 같은 창을 쓴다. 버튼이어야 키보드로도 열린다(#736 F 실측).",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -303,7 +303,8 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "flex-center text-primary gap-1 font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                                                "type": "button",
+                                                                "className": "flex-center text-left text-primary gap-1 font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -311,7 +312,8 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "file-lines",
-                                                                        "className": "text-base text-gray-500"
+                                                                        "className": "text-base text-gray-500",
+                                                                        "aria-hidden": "true"
                                                                     }
                                                                 },
                                                                 {
@@ -479,7 +481,7 @@
                                                                     "props": {
                                                                         "className": "text-heading"
                                                                     },
-                                                                    "text": "{{dep.name}} ({{dep.identifier}})"
+                                                                    "text": "{{dep.name || dep.identifier}} ({{dep.identifier}})"
                                                                 },
                                                                 {
                                                                     "type": "basic",

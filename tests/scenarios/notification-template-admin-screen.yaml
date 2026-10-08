@@ -26,12 +26,16 @@ axes:
     - template_editor
     - role_recipients
     - related_user_relation
+    - toggle_active
+    - revert_to_declared
+    - operator_definition
   layer:
     - channel_meta
     - request_validation
     - resource_payload
     - modal_layout
     - live_screen
+    - user_overrides
 
 exclusions:
   - { editing_axis: template_editor, layer: live_screen, reason: "편집기 종류의 라이브 축은 앞선 실측(T-D3)이 채널 메타 응답으로 이미 쟀다 — 같은 값을 화면에서 한 번 더 세지 않는다" }
@@ -49,6 +53,8 @@ effects:
   - notification_template_accepts_multiple_roles
   - notification_template_still_accepts_a_scalar_role
   - notification_template_rejects_a_malformed_role_value
+  - notification_template_rejects_keyed_recipient_values
+  - notification_template_recipient_errors_use_attribute_names
   - notification_template_resource_normalizes_role_values
   # 관련 사용자 관계
   - notification_template_accepts_a_declared_relation
@@ -70,6 +76,11 @@ effects:
   - notification_template_unchanged_save_keeps_default
   - notification_template_real_change_marks_locale_and_clears_default
   - notification_template_recipient_display_names_not_persisted
+  # 뜻이 같은 저장 모양·선언값으로 되돌린 칸은 「수정됨」 이 아니다 — 정의의 「기본」 도 함께 맞춘다(7.1.0 실측)
+  - notification_template_unchanged_save_with_scalar_role_keeps_default
+  - notification_template_toggle_back_releases_override
+  - notification_template_revert_restores_definition_default
+  - notification_template_operator_definition_stays_non_default
   # 채널 활성 판정 (회귀 보호)
   - core_channel_enabled_when_flag_true
   - core_channel_disabled_when_flag_false

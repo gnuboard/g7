@@ -42,7 +42,7 @@
             <div data-each="rcpt, rcptIdx in {{_global.gdpr_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
-                <button type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <on type="click">
                     <!-- 이 규칙 한 줄을 뺀다 — 자리(index)로 걸러 **새 배열을 만들어** 갈아 끼운다. -->
                     <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
@@ -80,8 +80,22 @@
                 </div>
                 <div data-if="{{rcpt.type === 'role'}}" class="row-stack">
                   <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
+                  <!-- 고른 역할 칩 — 하나씩 뺄 수 있다. 값과 표시 이름은 같은 자리(인덱스)에서 함께 뺀다. 드롭다운 위에 둔다 — 펼친 목록은 트리거 아래로 떠서 그 아래를 덮고, 여러 개를 고르는 칸은 고른 뒤에도 목록이 열려 있어 칩이 아래에 있으면 방금 고른 칩과 빼기 단추가 가려졌다(7.1.0 실측). -->
+                  <div data-ref="gdpr_rcpt_role_chips_{{rcptIdx}}" data-if="{{(rcpt.value ?? []).length > 0}}" class="flex flex-wrap gap-1.5">
+                    <div data-each="rid, ridIdx in {{rcpt.value ?? []}}" class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                      <span>{{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}</span>
+                      <button type="button" class="inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200" aria-label="$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}">
+                        <on type="click">
+                          <!-- 이 역할 하나를 규칙 줄에서 뺀다 — 값과 표시 이름을 같은 자리(ridIdx)로 함께 걸러야 두 배열의 순서 짝이
+                               어긋나지 않는다. 하나만 빼면 남은 칩에 다른 역할의 이름이 붙는다. -->
+                          <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: (r.value ?? []).filter((_, k) => k !== ridIdx), display_names: (r.display_names ?? []).filter((_, k) => k !== ridIdx)} : r)}}"/>
+                        </on>
+                        <icon name="xmark" class="text-xs"/>
+                      </button>
+                    </div>
+                  </div>
                   <!-- 역할은 여러 개를 고를 수 있다. 서버가 `value` 를 언제나 배열로 실어 주므로(문자열로 저장된 기존 규칙도 읽을 때 배열이 된다) 화면은 사용자 칸과 같은 모양을 쓴다 — 화면에서 문자열/배열을 가르면 그 판정이 두 벌이 되고, 한쪽만 고쳐졌을 때 값이 조용히 덮인다. 선택값이 비어 있을 때 `.map` 을 그냥 돌리지 않고 길이를 먼저 본다 — 실측에서 빈 선택값이 라벨이 배열인 유령 항목 하나를 만들었고, 운영자가 검색어 첫 글자를 치는 순간 드롭다운이 통째로 사라졌다. 라벨을 문자열로 좁히는 것은 그 두 번째 방어선이다. -->
-                  <searchable-dropdown data-type="composite" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.role_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.roles_selected_count" class="w-full">
+                  <searchable-dropdown data-type="composite" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.role_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
                     <on event="onSearch">
                       <!-- 역할 검색 — 300ms 로 묶어 타이핑마다 다녀오지 않는다.
                            결과는 **선택기와 분리된 자리**(`roleSearchResults`)에 담고, 화면에서 고른 값과
@@ -98,14 +112,30 @@
                       </api-call>
                     </on>
                     <on event="onChange">
-                      <!-- 고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다. -->
-                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                      <!-- 고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다.
+                           표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
+                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0 영역 G). -->
+                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
                     </on>
                   </searchable-dropdown>
                 </div>
                 <div data-if="{{rcpt.type === 'specific_users'}}" class="row-stack">
                   <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
-                  <searchable-dropdown data-type="composite" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count" class="w-full">
+                  <!-- 고른 회원 칩 — 하나씩 뺄 수 있다. 드롭다운 위에 둔다 — 펼친 목록은 트리거 아래로 떠서 그 아래를 덮고, 여러 개를 고르는 칸은 고른 뒤에도 목록이 열려 있어 칩이 아래에 있으면 방금 고른 칩과 빼기 단추가 가려졌다(7.1.0 실측). -->
+                  <div data-ref="gdpr_rcpt_user_chips_{{rcptIdx}}" data-if="{{(rcpt.value ?? []).length > 0}}" class="flex flex-wrap gap-1.5">
+                    <div data-each="uid, uidIdx in {{rcpt.value ?? []}}" class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                      <span>{{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}</span>
+                      <button type="button" class="inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200" aria-label="$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}">
+                        <on type="click">
+                          <!-- 이 회원 한 명을 규칙 줄에서 뺀다 — 검색어로 걸러져 목록에 안 보이는 회원도 여기서 풀 수 있다.
+                               값과 표시 이름은 같은 자리(uidIdx)로 함께 걸러 순서 짝을 지킨다. -->
+                          <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: (r.value ?? []).filter((_, k) => k !== uidIdx), display_names: (r.display_names ?? []).filter((_, k) => k !== uidIdx)} : r)}}"/>
+                        </on>
+                        <icon name="xmark" class="text-xs"/>
+                      </button>
+                    </div>
+                  </div>
+                  <searchable-dropdown data-type="composite" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
                     <on event="onSearch">
                       <!-- 회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)
                            이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다. -->
@@ -120,8 +150,10 @@
                       </api-call>
                     </on>
                     <on event="onChange">
-                      <!-- 고른 회원 목록(배열)을 이 규칙 줄에 담는다. -->
-                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                      <!-- 고른 회원 목록(배열)을 이 규칙 줄에 담는다.
+                           표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
+                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0 영역 G). -->
+                      <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
                     </on>
                   </searchable-dropdown>
                 </div>

@@ -35,7 +35,7 @@
                   <refetch-data-source dataSourceId="gdprMeConsents"/>
                   <refetch-data-source dataSourceId="gdprMyConsents"/>
                   <action handler="refreshConsent"/>
-                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.renew_all_success|renewed={{response?.data?.renewed ?? 0}}"/>
+                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.renew_all_success|count={{response?.data?.renewed ?? 0}}|renewed={{response?.data?.renewed ?? 0}}"/>
                 </success>
                 <fail>
                   <set-state target="local" :isRenewingAll="false"/>

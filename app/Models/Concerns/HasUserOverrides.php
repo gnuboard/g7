@@ -75,7 +75,10 @@ trait HasUserOverrides
 
                 // 표기만 다른 저장(공백·빈 문자열/null·[]/null·숫자 문자열)은 수정이 아니다 — 저장만 해도
                 // "수정됨" 이 되면 새 버전 교정이 영영 막힌다(#727 §5.11).
-                if (UserOverrideValueComparator::same($model->getOriginal($field), $model->getAttribute($field))) {
+                if (UserOverrideValueComparator::same(
+                    $model->comparableTrackableValue($field, $model->getOriginal($field)),
+                    $model->comparableTrackableValue($field, $model->getAttribute($field)),
+                )) {
                     continue;
                 }
 
@@ -127,6 +130,21 @@ trait HasUserOverrides
     public function getTranslatableTrackableFields(): array
     {
         return property_exists($this, 'translatableTrackableFields') ? $this->translatableTrackableFields : [];
+    }
+
+    /**
+     * 수정 여부를 가릴 때 쓸 값 — 같은 뜻을 여러 모양으로 저장하는 칸은 모델이 한 모양으로 맞춰 돌려준다.
+     *
+     * 기본은 값 그대로다. 예: 알림 템플릿 수신자 규칙은 역할 값을 문자열 하나(`"admin"`)로도, 목록(`["admin"]`)으로도
+     * 저장하는데, 화면은 목록으로 받아 그대로 돌려보낸다 — 맞추지 않으면 저장만 해도 수정으로 기록된다.
+     *
+     * @param  string  $field  trackable 컬럼명
+     * @param  mixed  $value  비교할 값
+     * @return mixed 비교용 값
+     */
+    public function comparableTrackableValue(string $field, mixed $value): mixed
+    {
+        return $value;
     }
 
     /**
@@ -203,7 +221,10 @@ trait HasUserOverrides
                 }
             }
 
-            if (! UserOverrideValueComparator::same($this->{$field}, $incoming) && ! in_array($field, $current, true)) {
+            if (! UserOverrideValueComparator::same(
+                $this->comparableTrackableValue($field, $this->{$field}),
+                $this->comparableTrackableValue($field, $incoming),
+            ) && ! in_array($field, $current, true)) {
                 $current[] = $field;
             }
         }
@@ -295,7 +316,10 @@ trait HasUserOverrides
 
             // legacy 컬럼명 보존 (전체 컬럼 갱신 SKIP) — 값이 같아졌으면 표식만 푼다
             if ($isTrackable && in_array($field, $userOverrides, true)) {
-                if (UserOverrideValueComparator::same($this->getAttribute($field), $value)) {
+                if (UserOverrideValueComparator::same(
+                    $this->comparableTrackableValue($field, $this->getAttribute($field)),
+                    $this->comparableTrackableValue($field, $value),
+                )) {
                     $remaining = array_values(array_diff($remaining, [$field]));
                 }
 

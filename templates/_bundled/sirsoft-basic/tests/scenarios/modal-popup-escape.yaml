@@ -1,0 +1,17 @@
+feature: sirsoft-basic Modal — 창 안에서 펼친 선택 목록과 Esc
+
+description: |
+  창과 창 안의 선택 목록이 각자 document keydown 리스너로 Esc 를 받아, 목록을 펼친 채 Esc 를 한 번 누르면 목록과
+  창이 함께 닫혔다(7.1.0 영역 J D-J3, 관측 O-G6 — 알림 템플릿 편집 창·스케줄 추가 창 실측). 창 안에 펼친 팝업
+  (aria-haspopup + aria-expanded="true")이 있으면 그 Esc 는 팝업 몫으로 두고 창은 닫지 않는다. admin_basic·sirsoft-basic 대칭.
+
+axes:
+  popup: [select_open, disclosure_expanded, outside_modal]
+
+effects:
+  - escape_closes_popup_before_modal
+  - escape_ignores_non_popup_expanded
+  - escape_ignores_popup_outside_modal
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/Modal.popupEscape.test.tsx

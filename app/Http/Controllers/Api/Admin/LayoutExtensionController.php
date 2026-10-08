@@ -17,6 +17,7 @@ use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
 use App\Services\TemplateService;
 use App\Support\LayoutMarkup\CompileError;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -161,12 +162,18 @@ class LayoutExtensionController extends AdminBaseController
         // 컴파일 산출 JSON 도 저장 경로와 같은 보안 게이트를 거친다 (KVE-2026-2350)
         $violations = LayoutContentGate::violations($result->json);
         if ($violations !== []) {
-            return $this->error(
+            // 편집기 오류 패널·마커가 줄을 가리키도록 위반 값이 적힌 소스 자리를 `compile_error` 로 싣는다(7.1.0 P16).
+            $described = $service->describeContentViolation($request->validated('markup'), $result->json);
+            $response = $this->error(
                 'validation.layout_extension.content.markup_compile_failed',
                 422,
-                ['content' => $violations],
+                ['content' => $violations, 'compile_error' => $described],
                 ['detail' => $violations[0]],
             );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+
+            return $response->setData($payload);
         }
 
         return $this->success('common.success', [
@@ -180,7 +187,7 @@ class LayoutExtensionController extends AdminBaseController
      *
      * @param  LayoutExtension  $extension  확장 행
      * @param  string  $templateName  템플릿 identifier
-     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}
+     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null} 역변환 마크업·이스케이프 목록·lint 경고·되컴파일 오류
      */
     private function buildMarkupPayload(LayoutExtension $extension, string $templateName): array
     {
@@ -282,7 +289,7 @@ class LayoutExtensionController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 
@@ -372,7 +379,7 @@ class LayoutExtensionController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 
@@ -424,7 +431,7 @@ class LayoutExtensionController extends AdminBaseController
                 'markup_warnings' => $request->markupWarnings(),
             ]);
         } catch (\Exception $e) {
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
     }
 

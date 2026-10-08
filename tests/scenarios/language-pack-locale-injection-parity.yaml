@@ -27,6 +27,8 @@ effects:
   - seeder_filter_injects_active_pack_locales
   - seeder_filter_injects_ja_for_real_seeder_payload
   - reset_default_data_includes_lang_pack_locales
+  - reset_default_data_channel_extension_copy_keeps_lang_pack_locales
+  - seeder_filter_passthrough_without_active_pack
   - identity_reset_default_preserves_lang_pack_locales
   - upgrade_resync_restores_wiped_pack_locales
   - upgrade_resync_restores_wiped_identity_locales

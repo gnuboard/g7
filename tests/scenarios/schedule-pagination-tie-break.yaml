@@ -1,0 +1,17 @@
+feature: 스케줄 목록 쪽 이동 — 정렬 값이 같은 행의 순서 고정
+
+description: |
+  예약 작업 관리의 쪽 이동을 살린 뒤(7.1.0), 등록 시각이 같은 스케줄이 한 쪽(20건)을 넘으면 2쪽이 1쪽의
+  행을 다시 보여 주고 일부 행은 어느 쪽에도 나오지 않았다(7.1.0 영역 J D-J1 — 25건 중 2쪽이 21~25 를
+  다시 보이고 01~05 는 나오지 않음). 확장 설치가 스케줄 여러 개를 같은 초에 등록하므로 실제 사이트에서
+  흔히 생긴다. `ScheduleRepository::getPaginatedSchedules()` 가 요청한 정렬 칸 다음에 `id` 를 같은 방향으로
+  덧붙여 순서를 고정한다.
+
+axes:
+  case: [same_moment_pages, order_clause_tiebreak]
+
+effects:
+  - schedule_pages_cover_every_row_once
+
+test_files:
+  - tests/Feature/Repositories/SchedulePaginationTieBreakTest.php

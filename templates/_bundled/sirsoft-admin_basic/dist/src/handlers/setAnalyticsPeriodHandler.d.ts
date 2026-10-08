@@ -5,10 +5,10 @@
  * 시작일·종료일 **날짜 문자열(YYYY-MM-DD)** 로 계산해 돌려준다.
  *
  * `setDateRange` 를 재사용하지 않는 이유: 그 핸들러는 시·분·초가 붙은 datetime-local 문자열을
- * 돌려주는데, 통계 API 의 `from`·`to` 는 날짜만 받아 그 값을 422 로 거절한다. 사이트 표준시
- * 해석은 서버 몫이므로 여기서는 브라우저의 로컬 날짜를 그대로 쓴다 — 서버의 프리셋 계산
- * (`PeriodRequest::resolvedRange`)과 같은 규칙이라 화면에 표시한 달력 값과 서버가 실제로
- * 조회한 구간이 어긋나지 않는다.
+ * 돌려주는데, 통계 API 의 `from`·`to` 는 날짜만 받아 그 값을 422 로 거절한다. 「오늘」은 **사이트 표준시**의
+ * 날짜다 — 서버의 프리셋 계산(`PeriodRequest::resolvedRange`, AnalyticsClock)이 사이트 표준시로 오늘을 정하므로
+ * 같은 기준이어야 화면에 표시한 달력 값과 서버가 실제로 조회한 구간이 어긋나지 않는다(브라우저 시간대로 만들면
+ * 둘의 날짜가 다른 시간에 하루 밀린다).
  *
  * 상태 반영은 레이아웃의 `<init>` 이 `resultTo` 로 처리한다(`_local.periodComputed`) — 아래 핸들러 주석의 예시.
  */
@@ -44,9 +44,10 @@ export declare function isAnalyticsPeriodPreset(value: unknown): value is Analyt
  *
  * @param preset 기간 프리셋
  * @param now 기준 시각 (테스트 주입용, 기본 현재)
+ * @param timeZone 「오늘」을 정할 시간대 (기본 사이트 표준시, 알 수 없으면 브라우저 시간대)
  * @returns 시작일·종료일 (YYYY-MM-DD)
  */
-export declare function resolveAnalyticsPeriod(preset: AnalyticsPeriodPreset, now?: Date): {
+export declare function resolveAnalyticsPeriod(preset: AnalyticsPeriodPreset, now?: Date, timeZone?: string | undefined): {
     from: string;
     to: string;
 };

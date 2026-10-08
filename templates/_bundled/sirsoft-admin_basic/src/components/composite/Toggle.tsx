@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import type { EditorAttrs } from '../../types';
 
 /**
@@ -16,6 +17,11 @@ export interface ToggleProps {
   disabled?: boolean;
   /** 라벨 텍스트 */
   label?: string;
+  /**
+   * 보이는 라벨 없이 스위치에만 붙일 접근 가능한 이름(aria-label).
+   * 표의 열 머리글·옆 문구처럼 라벨이 스위치 밖에 있을 때 쓴다. 없으면 `label` → 곁 제목(aria-labelledby) → `name` 순으로 쓴다.
+   */
+  ariaLabel?: string;
   /** 설명 텍스트 */
   description?: string;
   /** 토글 크기 */
@@ -53,6 +59,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   onChange,
   disabled = false,
   label,
+  ariaLabel,
   description,
   size = 'md',
   className = '',
@@ -62,6 +69,25 @@ export const Toggle: React.FC<ToggleProps> = ({
 }) => {
   // 내부 상태로 관리
   const [checked, setChecked] = useState(() => checkedProp ?? valueProp ?? false);
+
+  // 이름: ariaLabel → 옆 라벨(label) → 행 제목(곁 라벨, aria-labelledby) → 마지막 수단으로 name.
+  // 종전에는 곁 제목을 보지 않고 곧장 name(「security.force_https」 같은 필드 키)을 이름으로 달았다(7.1.0 J D-J7, O-G2).
+  const switchRef = useRef<HTMLDivElement>(null);
+  const [useNameFallback, setUseNameFallback] = useState(false);
+  useEffect(() => {
+    if (ariaLabel || label) return;
+    const el = switchRef.current;
+    if (!el) return;
+    // name 은 곁 제목을 못 찾았을 때의 임시 이름이다. 그대로 두면 「이미 이름 있음」으로 보여 늦게 그려진 제목을
+    // 다시 찾지 않으므로, 찾는 동안만 떼었다가 못 찾으면 되돌린다(다시 찾는 횟수는 linkAdjacentLabel 이 제한한다).
+    const fallbackName = useNameFallback ? el.getAttribute('aria-label') : null;
+    if (fallbackName !== null) el.removeAttribute('aria-label');
+    // 라벨 탐색은 이 부품의 바깥 상자(toggle-container)에서 시작한다 — 스위치는 한 겹 안쪽이다
+    linkAdjacentLabel(el, false, el.parentElement ?? null, true);
+    const linked = !!el.getAttribute('aria-labelledby');
+    if (!linked && fallbackName !== null) el.setAttribute('aria-label', fallbackName);
+    setUseNameFallback(!linked);
+  });
 
   // prop 변경 시 내부 상태 동기화
   useEffect(() => {
@@ -136,10 +162,11 @@ export const Toggle: React.FC<ToggleProps> = ({
         className={`toggle-switch-wrapper ${
           disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
         }`}
+        ref={switchRef}
         role="switch"
         aria-checked={checked}
         aria-disabled={disabled || undefined}
-        aria-label={label ?? name}
+        aria-label={ariaLabel ?? label ?? (useNameFallback ? name : undefined)}
         tabIndex={disabled ? -1 : 0}
         onKeyDown={handleToggleKeyDown}
         onClick={(e) => {
@@ -157,6 +184,9 @@ export const Toggle: React.FC<ToggleProps> = ({
           disabled={disabled}
           className="sr-only peer"
           tabIndex={-1}
+          // 스위치 역할은 바깥 래퍼(role=switch)가 맡는다 — 안쪽 체크박스가 접근성 트리에 남으면
+          // 이름 없는 「체크박스」 가 스위치마다 하나씩 더 읽혔다(7.1.0 J D-J7).
+          aria-hidden="true"
         />
         <div className={`toggle-switch-track ${currentSize.track} ${currentSize.thumb}`} />
       </div>

@@ -48,6 +48,10 @@ class UserControllerListFilterTest extends TestCase
 
         $this->marker = '@lf'.Str::lower(Str::random(10)).'.test';
         $this->admin = $this->createOperator(['core.users.read'], 'lf-admin');
+
+        // 날짜 칸은 보는 사람의 시간대 하루로 해석된다 — 아래 경계 테스트들은 저장값(UTC)으로 경계를 적으므로
+        // 운영자 시간대를 UTC 로 둔다. 시간대 해석 자체는 test_date_ranges_follow_viewer_timezone_day 가 잠근다.
+        $this->admin->forceFill(['timezone' => 'UTC'])->saveQuietly();
     }
 
     // ==========================================
@@ -778,6 +782,43 @@ class UserControllerListFilterTest extends TestCase
         $this->member(['status' => 'dormant', 'dormant_at' => '2026-07-01 00:00:00']);
 
         $this->assertListed([$lastSecond], ['dormant_start' => '2026-06-01', 'dormant_end' => '2026-06-30']);
+    }
+
+    /**
+     * 날짜 칸(가입일·최근 로그인·휴면 전환일·상태 변경일)은 목록이 날짜를 그리는 것과 같은 하루 — 보는 사람의
+     * 시간대 — 로 해석한다. 저장값은 UTC 라, UTC 하루로 자르면 한국 시간 새벽에 가입한 회원이 목록에는
+     * 「2026-03-10」 으로 보이는데 2026-03-10 으로 거르면 빠지고, 빠른 기간 「오늘」 이 오늘 아침 가입자를 놓친다
+     * (#736 영역 C 실측).
+     *
+     * @scenario filter_axis=created_at, outcome=narrows
+     *
+     * @effects admin_user_list_filter_axes_narrow_results
+     *
+     * @return void 반환값 없음
+     */
+    public function test_date_ranges_follow_viewer_timezone_day(): void
+    {
+        $this->admin->forceFill(['timezone' => 'Asia/Seoul'])->saveQuietly();
+
+        // 2026-03-09 15:30 UTC = 2026-03-10 00:30 KST(그날 안), 2026-03-10 15:30 UTC = 2026-03-11 00:30 KST(다음날)
+        $early = $this->member([
+            'created_at' => '2026-03-09 15:30:00',
+            'last_login_at' => '2026-03-09 15:30:00',
+            'dormant_at' => '2026-03-09 15:30:00',
+            'blocked_at' => '2026-03-09 15:30:00',
+        ]);
+        $this->member([
+            'created_at' => '2026-03-10 15:30:00',
+            'last_login_at' => '2026-03-10 15:30:00',
+            'dormant_at' => '2026-03-10 15:30:00',
+            'blocked_at' => '2026-03-10 15:30:00',
+        ]);
+
+        $day = '2026-03-10';
+        $this->assertListed([$early], ['start_date' => $day, 'end_date' => $day]);
+        $this->assertListed([$early], ['last_login_start' => $day, 'last_login_end' => $day]);
+        $this->assertListed([$early], ['dormant_start' => $day, 'dormant_end' => $day]);
+        $this->assertListed([$early], ['status_changed_type' => 'blocked', 'status_changed_start' => $day, 'status_changed_end' => $day]);
     }
 
     /**

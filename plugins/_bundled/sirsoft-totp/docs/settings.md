@@ -39,9 +39,14 @@ otpauth URI 에 구워진 값). 계정 표기 쪽은 설정이 아니라
 의 반환값이 되어 **코어 로그인 판정**을 직접 바꿉니다. 기본 `true` 는 미등록 관리자가
 콜드스타트로 잠기는 경우를 구조적으로 배제하기 위한 값입니다. `false` 로 두면 코어
 `AuthService::resolveTwoFactorProvider()` 가 메일 폴백을 건너뛰고, 미등록 사용자에게는
-쓸 수단이 하나도 없어 경고 로그와 함께 2단계 인증 없이 로그인됩니다(코어는 계정을 영구히
-잠그는 대신 통과시킵니다). 즉 이 값을 끄는 것이 곧 "미등록자 로그인 차단"은 아니며,
-차단 여부는 코어 정책이 정합니다.
+쓸 수단이 하나도 없으므로 **운영자의 결정으로 보고** `TwoFactorEnrollmentRequiredException`
+으로 로그인을 막습니다(경고 로그 동반). 구제는 관리자 강제 해제가 아니라 — 해제할 등록이
+없으므로 — 폴백을 다시 켜거나, 이미 로그인한 세션에서 등록을 마치는 것입니다. 폴백이
+켜져 있는데도 쓸 수단이 없는 경우(메일 설정이 깨진 경우 등)만 운영자의 결정이 아니라서
+경고 로그와 함께 2단계 인증 없이 통과시킵니다.
+
+이 값과 `issuer` 는 「플러그인 관리 → 설정」 화면 아래쪽 「사이트 설정」 카드에서 고칩니다
+(`PUT /api/admin/plugins/sirsoft-totp/settings`, `core.plugins.update` 권한).
 
 **설정을 읽는 방법이 정해져 있습니다.** `RegisterTotpProviderListener::register()` 와
 `TotpEnrollmentController::resolveIssuer()` 는 `PluginSettingsService::get('sirsoft-totp')`
@@ -105,7 +110,7 @@ _등록하는 메뉴가 없습니다._
 목록에서 남의 등록을 해제하는 화면이 아니라, 관리자가 자기 계정에 인증 앱을 등록하는
 자리입니다. 회원 강제 해제는 권한을 가진 관리자가 API 로 수행합니다.
 
-이 화면은 전용 메뉴가 아니라 코어 「플러그인 관리 → 설정」으로 들어갑니다(PO 확정
+이 화면은 전용 메뉴가 아니라 코어 「플러그인 관리 → 설정」으로 들어갑니다(설계 확정
 2026-09-18). `getAdminMenus()` 가 빈 배열인 이유이며, 선언에서 빠진 메뉴는 `activate()` 의
 `cleanupStaleMenus(currentSlugs: [])` 가 회수합니다 — 이전 판본이 심은
 `sirsoft-totp-security` 행이 실제로 그렇게 남아 죽은 경로를 가리켰습니다.

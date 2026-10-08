@@ -395,6 +395,7 @@ class ExpressionEvaluator
         if (! empty($this->translations)) {
             $translated = Arr::get($this->translations, $key);
             if ($translated !== null && is_string($translated)) {
+                $translated = $this->pluralVariant($key, $translated, $params);
                 // 파라미터 치환: :param 또는 {{param}} → value
                 // 템플릿 번역은 {{param}} 형식, Laravel 번역은 :param 형식
                 foreach ($params as $paramKey => $paramValue) {
@@ -418,6 +419,70 @@ class ExpressionEvaluator
         }
 
         return $translated;
+    }
+
+    /**
+     * `count` 인자의 수로 복수형 변형(`키_one` 등)을 고릅니다 — 브라우저 번역 엔진(engine-v1.78.7)과 같은 규칙.
+     *
+     * 현재 로케일의 CLDR 복수 범주(zero·one·two·few·many·other)를 구해 `키_{범주}` 가 사전에 있으면 그 문구를,
+     * 없거나 범주가 other 면 기본 키 문구를 쓴다. `count` 는 숫자 표기(`1`·`-2`·`1.5`)일 때만 수로 본다.
+     *
+     * @param  string  $key  기본 번역 키
+     * @param  string  $base  기본 키 문구
+     * @param  array<string, string>  $params  해석된 번역 인자
+     * @return string 고른 문구
+     */
+    private function pluralVariant(string $key, string $base, array $params): string
+    {
+        $raw = isset($params['count']) ? trim((string) $params['count']) : '';
+
+        if ($raw === '' || preg_match('/^-?\d+(\.\d+)?$/', $raw) !== 1) {
+            return $base;
+        }
+
+        $category = self::pluralCategory(app()->getLocale(), $raw + 0);
+
+        if ($category === 'other') {
+            return $base;
+        }
+
+        $variant = Arr::get($this->translations, $key.'_'.$category);
+
+        return is_string($variant) ? $variant : $base;
+    }
+
+    /**
+     * 로케일의 CLDR 복수 범주를 구합니다.
+     *
+     * intl 확장이 있으면 ICU 복수 규칙(`Intl.PluralRules` 와 같은 데이터)으로 구하고, 없으면 범주가 other 뿐인
+     * 언어(ko·ja·zh 등)는 other, 그 밖은 1 이면 one 으로 근사한다.
+     *
+     * @param  string  $locale  로케일
+     * @param  int|float  $count  수
+     * @return string 복수 범주
+     */
+    private static function pluralCategory(string $locale, int|float $count): string
+    {
+        if (class_exists(\MessageFormatter::class)) {
+            $category = \MessageFormatter::formatMessage(
+                $locale,
+                '{n, plural, zero{zero} one{one} two{two} few{few} many{many} other{other}}',
+                ['n' => $count],
+            );
+
+            if (is_string($category) && $category !== '') {
+                return $category;
+            }
+        }
+
+        $language = strtolower(explode('-', str_replace('_', '-', $locale))[0]);
+
+        if (in_array($language, ['ko', 'ja', 'zh', 'th', 'vi', 'id', 'ms', 'lo', 'my', 'km'], true)) {
+            return 'other';
+        }
+
+        // CLDR one 은 정수부 절대값 1(소수 없음) — Intl.PluralRules('en').select(-1) 도 one 이다.
+        return abs($count) == 1 && is_int($count) ? 'one' : 'other';
     }
 
     /**

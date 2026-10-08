@@ -133,6 +133,11 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 못해 빈칸이 되므로, 날짜 칸에 담을 때는 반드시 이 인자를 씁니다(회원관리 목록 필터). 인자를 생략하면
 종전대로 날짜·시각 형식이라 기존 호출처(활동 로그 필터 등)는 그대로입니다.
 
+「오늘」은 **계정 시간대**(로그인한 회원의 시간대 → 없으면 사이트 기본 시간대 `settings.general.timezone`)의
+날짜입니다. 서버가 목록 날짜 필터를 같은 시간대의 하루로 해석하므로, 브라우저 시간대로 만들면 둘의 날짜가 다른
+시간에 하루 어긋납니다(`src/utils/timezoneDate.ts`). 레이아웃 식으로 날짜를 만들 때도 같은 기준을 씁니다 —
+`toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })`.
+
 ```html
 <on type="click">
   <action handler="setDateRange" preset="today"/>
@@ -188,7 +193,8 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 방문자 통계 화면의 기간 바 프리셋(`today`/`yesterday`/`7d`/`30d`/`90d`/`this_month`/`last_month`/`this_year`)을
 시작일·종료일 **날짜 문자열(`YYYY-MM-DD`)** 로 계산해 반환합니다. `setDateRange` 는 시각까지 붙인 값을 주어
 통계 API 가 422 로 거절하므로 재사용하지 않고 따로 둡니다. 계산 규칙은 서버(`PeriodRequest::resolvedRange`)와
-같아 달력에 보이는 값과 서버가 실제로 조회한 구간이 어긋나지 않습니다. 모르는 프리셋은 `7d` 로 떨어집니다.
+같아 달력에 보이는 값과 서버가 실제로 조회한 구간이 어긋나지 않습니다. 「오늘」은 서버(`AnalyticsClock`)와 같은
+**사이트 기본 시간대**의 날짜입니다(보는 사람·브라우저 시간대가 아님). 모르는 프리셋은 `7d` 로 떨어집니다.
 
 통계 화면은 처음 열릴 때(`<init>`) 주소의 프리셋으로 한 번 부르고, 결과를 `resultTo` 로 `_local.periodComputed` 에
 담아 첫 응답 전의 달력 두 칸과 CSV 저장 이름을 채웁니다. 프리셋 버튼은 이 핸들러를 부르지 않고 주소(`preset`)만

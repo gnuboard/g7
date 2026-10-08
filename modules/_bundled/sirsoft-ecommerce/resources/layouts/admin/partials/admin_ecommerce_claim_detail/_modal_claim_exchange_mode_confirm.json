@@ -27,7 +27,7 @@
                     "props": {
                         "className": "text-label"
                     },
-                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_advance|days={{_global.claimExchangeModeContext?.dueDays ?? ''}}"
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_advance|count={{_global.claimExchangeModeContext?.dueDays ?? ''}}|days={{_global.claimExchangeModeContext?.dueDays ?? ''}}"
                 },
                 {
                     "id": "cem_002_standard_message",

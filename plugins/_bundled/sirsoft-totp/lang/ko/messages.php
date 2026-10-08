@@ -11,6 +11,7 @@ return [
         'disabled' => '인증 앱 등록을 해제했습니다.',
         'backup_codes_regenerated' => '백업 코드를 새로 만들었습니다. 이전 코드는 더 이상 쓸 수 없습니다.',
         'admin_reset' => '이 회원의 인증 앱 등록을 해제했습니다.',
+        'admin_reset_none' => '이 회원은 등록한 인증 앱이 없어 해제할 것이 없습니다.',
     ],
 
     'errors' => [

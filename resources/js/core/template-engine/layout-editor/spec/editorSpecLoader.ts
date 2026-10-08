@@ -264,13 +264,19 @@ function mergePalette(dst: EditorSpec, src: EditorSpec): void {
   dst.componentPalette = target;
 }
 
-/** states 병합 — groups concat  */
-function mergeStates(dst: EditorSpec, src: EditorSpec): void {
+/**
+ * states 병합 — groups concat. 묶음마다 출처(`__source`)를 붙인다 — 같은 창 id 를 여러 확장이 따로 쓰므로,
+ * 창 편집 때 창을 연 화면의 주인 확장 묶음을 고르려면 묶음이 어디서 왔는지 알아야 한다(engine-v1.78.3).
+ */
+function mergeStates(dst: EditorSpec, src: EditorSpec, source?: RecipeSource): void {
   if (!src.states) return;
   const target = dst.states ?? {};
+  const incoming = (src.states.groups ?? []).map((group) =>
+    source && group && typeof group === 'object' ? { ...group, __source: { ...source } } : group,
+  );
   const groups: EditorStateGroupSpec[] = [
     ...(target.groups ?? []),
-    ...(src.states.groups ?? []),
+    ...incoming,
   ];
   target.groups = groups;
   dst.states = target;
@@ -331,7 +337,7 @@ function mergeInto(dst: EditorSpec, src: EditorSpec, source?: RecipeSource): voi
   for (const block of RECORD_BLOCKS) mergeRecordBlock(dst, src, block, source);
   mergeNesting(dst, src);
   mergePalette(dst, src);
-  mergeStates(dst, src);
+  mergeStates(dst, src, source);
   mergeStateLabels(dst, src);
   mergeActionChipCandidates(dst, src);
   mergeSampleData(dst, src);

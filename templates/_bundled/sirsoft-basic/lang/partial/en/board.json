@@ -12,6 +12,7 @@
   "created_at": "Date",
   "views": "Views",
   "views_count": "{{count}} views",
+  "views_count_one": "{{count}} view",
   "write": "Write",
   "search_placeholder": "Search by title, content, author...",
   "board_not_found": "Board not found",
@@ -51,6 +52,7 @@
     "empty": "No boards registered."
   },
   "post_count": "{{count}} posts",
+  "post_count_one": "{{count}} post",
   "list": "List",
   "post": {
     "author": "Author",
@@ -90,6 +92,7 @@
   "comment": {
     "title": "Comments",
     "count": "{{count}} comments",
+    "count_one": "{{count}} comment",
     "write_placeholder": "Write a comment",
     "submit": "Submit",
     "reply": "Reply",
@@ -179,6 +182,7 @@
     "content_placeholder": "Enter content...",
     "attachments": "Attachments",
     "attachments_desc": "Max {{maxFiles}} files, {{maxSize}}MB each",
+    "attachments_desc_one": "Max {{maxFiles}} file, {{maxSize}}MB",
     "secret_post": "Secret Post",
     "secret_post_always": "This board always creates secret posts",
     "secret_description": "Only the author and administrators can view",

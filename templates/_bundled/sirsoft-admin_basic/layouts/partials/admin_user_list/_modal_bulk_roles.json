@@ -1,5 +1,5 @@
 {
-    "comment": "회원 목록에서 고른 회원들에게 역할을 한꺼번에 더하거나 빼는 창(모드 값 하나로 추가/제거를 겸한다).\n  서버가 최고관리자·권한 범위 밖·마지막 관리자(본인)를 걸러 내고 그 사유를 돌려주므로, 제외된 회원이 있으면 창을 닫지 않고\n  결과(변경 수·제외 수·사유 최대 5행)를 보여 준다. 내가 부여할 수 없는 역할이 섞이면 요청 전체가 거부(403)되고 창 안에 문구가 남는다.",
+    "comment": "회원 목록에서 고른 회원들에게 역할을 한꺼번에 더하거나 빼는 창(모드 값 하나로 추가/제거를 겸한다).\n  서버가 최고관리자·권한 범위 밖·마지막 관리자(본인)를 걸러 내고 그 사유를 돌려주므로, 제외된 회원이 있으면 창을 닫지 않고\n  결과(변경 수·제외 수·사유 최대 5행)를 보여 준다. 이미 원하는 상태라 바뀌지 않은 회원(unchanged)도 따로 세어 같은 카드에 보인다 —\n  그렇지 않으면 고른 수와 「N명 변경, M명 제외」 의 합이 어긋난다. 내가 부여할 수 없는 역할이 섞이면 요청 전체가 거부(403)되고\n  창 안에 문구가 남는다.",
     "meta": {
         "is_partial": true,
         "description": "회원 역할 일괄 변경 모달",
@@ -105,6 +105,32 @@
                     ]
                 },
                 {
+                    "comment": "제거에만 생기는 건너뜀(역할이 하나도 남지 않게 되는 회원·마지막 관리자인 나)을 적용 전에 알린다",
+                    "id": "bulk_roles_remove_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.users.bulk_roles.remove_hint"
+                        }
+                    ]
+                },
+                {
                     "id": "bulk_roles_error",
                     "type": "basic",
                     "name": "Div",
@@ -176,6 +202,64 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "comment": "이미 원하는 상태라 바뀌지 않은 회원 — 변경도 제외도 아니므로 따로 센다",
+                            "id": "bulk_roles_unchanged",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.userBulkRoleResult?.unchanged_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "mt-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:admin.users.bulk_roles.result_unchanged|unchanged={{_global.userBulkRoleResult?.unchanged_count ?? 0}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-sm space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{(_global.userBulkRoleResult?.unchanged ?? []).slice(0, 5)}}",
+                                                "item_var": "same"
+                                            },
+                                            "props": {
+                                                "className": "flex justify-between gap-3 text-gray-600 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "truncate"
+                                                    },
+                                                    "text": "{{(users?.data?.data ?? []).find(u => u.uuid === same.uuid)?.name ?? same.uuid}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "flex-shrink-0"
+                                                    },
+                                                    "text": "{{same.reason === 'not_assigned' ? $t:admin.users.bulk_roles.reason_not_assigned : $t:admin.users.bulk_roles.reason_already_assigned}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }
@@ -217,7 +301,7 @@
                     "if": "{{!_global.userBulkRoleResult}}",
                     "actions": [
                         {
-                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외된 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
+                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외되거나 이미 반영되어 바뀌지 않은 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -262,7 +346,7 @@
                                             },
                                             {
                                                 "handler": "closeModal",
-                                                "if": "{{(response.data?.skipped_count ?? 0) === 0}}"
+                                                "if": "{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}"
                                             },
                                             {
                                                 "handler": "refetchDataSource",

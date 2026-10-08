@@ -205,6 +205,14 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+**업데이트가 있는 행에만 실리는 필드** — 실측 시점에 업데이트가 없으면 위 생성 표에 나타나지 않아 여기 따로 둔다(7.1.0).
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
+| required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
+| current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+
 **설명** 설치/미설치 템플릿을 모두 포함해 목록을 조회합니다(TemplateService::getPaginatedTemplates). `search`(이름·식별자·설명·벤더 OR 검색), `filters`(AND 조건), `status`, `type`, `include_hidden` 필터와 페이지네이션을 지원하며, 응답에는 현재 사용자의 install/activate/uninstall 수행 가능 여부(`abilities`)가 함께 담깁니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -545,6 +553,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계에서 설치 실패한 동반 번들 언어팩 목록 (각 항목: identifier, reason). best-effort 이므로 실패해도 설치 자체는 성공 |
+| language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
@@ -599,7 +608,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 
 <!-- @generated:end -->
 
-**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). `core.templates.install` 권한이 필요합니다.
+**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). 설치 직후 템플릿은 비활성이라 그 템플릿 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 로 반환되고, 템플릿을 켤 때 함께 켜집니다. `core.templates.install` 권한이 필요합니다.
 
 
 ### POST /api/admin/templates/install-from-file
@@ -95449,7 +95458,8 @@ _단건 응답: `data` 객체의 필드._
 | language_packs[].locale_native_name | string | `日本語` | 로케일 자국어 표기 |
 | language_packs[].locale_name | string | `일본어` | 로케일 이름 |
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
-| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 템플릿용이면 null) |
+| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 템플릿용이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
+| language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
 | language_packs[].available | boolean | `true` | 설치 후보 선택 가능 여부 |
 | language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
 
@@ -95978,7 +95988,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
-| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지(`compile_error` 없음) |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지와 함께, 첫 위반 값이 소스에 처음 적힌 자리를 `compile_error {code: "unsafe_content", message, line, column}`(최상위·`errors.compile_error` 양쪽, 자리를 못 찾으면 줄·칸 0)로 싣는다 |
 
 <!-- @generated:end -->
 
@@ -96941,7 +96951,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우도 여기다(`errors.content`). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우도 여기다(`errors.content` — `format=markup` 이면 위반 값이 적힌 소스 자리를 `compile_error {code: "unsafe_content", …}` 로 함께 싣는다). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
@@ -97006,7 +97016,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿 또는 해당 이름의 레이아웃이 없는 경우 |
-| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지(`compile_error` 없음) |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지와 함께, 첫 위반 값이 소스에 처음 적힌 자리를 `compile_error {code: "unsafe_content", message, line, column}`(최상위·`errors.compile_error` 양쪽, 자리를 못 찾으면 줄·칸 0)로 싣는다 |
 
 <!-- @generated:end -->
 

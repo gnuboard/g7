@@ -21,6 +21,7 @@ effects:
   - launcher_sends_policy_key_from_428          # 428 의 정책 키를 challenge 요청 본문에 싣고, 없으면 싣지 않는다
   - challenge_resend_keeps_policy_key           # 인증 창 재전송도 전역 인증 상태의 정책 키를 싣는다
   - guest_password_flows_declare_identity_target  # 비밀번호 찾기·재설정 API 호출은 인증 대상 이메일을 선언한다
+  - guest_password_flows_carry_challenge_modal  # _admin_base 를 상속하지 않는 비밀번호 재설정 화면도 본인인증 창을 스스로 선언한다(7.1.0 실측 D-1)
   - resend_replaces_claim_secret                # 재전송 성공 시 새 건의 비밀값으로 갈아 끼운다
   - launcher_claims_link_verification_with_secret  # 링크 방식은 비밀값으로 결과를 물어 토큰을 받으면 이어 간다(인증번호 방식은 묻지 않음)
 
@@ -28,6 +29,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.policyKey.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/identity-challenge-target-and-policy.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.linkClaim.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-reset-password-identity-modal.test.ts
 
 validation:
   note: |

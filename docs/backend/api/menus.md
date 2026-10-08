@@ -186,7 +186,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 메뉴 관리 화면(`partials/admin_menu_list/*`)의 목록 표시 기준 엔드포인트. `is_active` 또는 `filters` 가 있으면 필터링된 관리용 메뉴를, 없으면 최상위 메뉴 전체를 반환한다. `filters` 는 `field`(name/slug/url/all)·`value`·`operator`(like/eq/starts_with/ends_with) 조합의 배열이며 최대 10개까지 허용된다. `name` 은 다국어 JSON 객체로 내려오고, 각 항목에 `children`/`creator`/`roles` 관계와 `abilities`(현재 사용자의 수정/삭제 가능 여부)가 포함된다. 단, **하위 항목(`children[]`)에는 `roles` 키 자체가 없다** — 상위 메뉴마다 하위 전체의 역할 피벗까지 싣지 않기 위해서다. 빈 배열이 아니라 키를 생략하는 이유는, 빈 배열이 "역할 제한이 없다" 는 사실이 아닌 단언이 되어 그 값을 그대로 수정 요청에 실어 보내면 해당 메뉴의 역할 제한이 통째로 해제되기 때문이다. 하위 메뉴의 역할이 필요하면 `GET /api/admin/menus/{menu}` 로 단건 조회한다 (단건 응답은 항상 `roles` 를 포함한다). 대신 상위·하위 모든 행에는 부여된 역할 ID 만 담은 `role_ids` 가 실린다 — 메뉴 관리 목록이 행마다 역할 배지를 그리는 값이고, 역할 이름은 `GET /api/admin/roles/active` 에서 찾는다. 역할 객체가 아니라 ID 만 싣는 것은 위의 페이로드 정리를 유지하기 위해서다(조회 쿼리는 한 번 늘어난다). 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+관리자 메뉴 관리 화면(`partials/admin_menu_list/*`)의 목록 표시 기준 엔드포인트. `is_active` 또는 `filters` 가 있으면 필터링된 관리용 메뉴를, 없으면 최상위 메뉴 전체를 반환한다. `filters` 는 `field`(name/slug/url/all)·`value`·`operator`(like/eq/starts_with/ends_with) 조합의 배열이며 최대 10개까지 허용된다. `name` 은 다국어 JSON 객체로 내려오고, 각 항목에 `children`/`creator`/`roles` 관계와 `abilities`(현재 사용자의 수정/삭제 가능 여부)가 포함된다. 단, **하위 항목(`children[]`)에는 `roles` 키 자체가 없다** — 상위 메뉴마다 하위 전체의 역할 피벗까지 싣지 않기 위해서다. 빈 배열이 아니라 키를 생략하는 이유는, 빈 배열이 "역할 제한이 없다" 는 사실이 아닌 단언이 되어 그 값을 그대로 수정 요청에 실어 보내면 해당 메뉴의 역할 제한이 통째로 해제되기 때문이다. 하위 메뉴의 역할이 필요하면 `GET /api/admin/menus/{menu}` 로 단건 조회한다 (단건 응답은 항상 `roles` 를 포함한다). 대신 상위·하위 모든 행에는 부여된 역할 ID 만 담은 `role_ids` 가 실린다 — 메뉴 관리 목록이 행마다 역할 배지를 그리는 값이고, 역할 이름은 `GET /api/admin/roles/active` 에서 찾는다. 역할 객체가 아니라 ID 만 싣는 것은 위의 페이로드 정리를 유지하기 위해서다(조회 쿼리는 한 번 늘어난다). 목록은 보는 사람의 역할이 붙은 메뉴로 걸러지되, 메뉴 수정 권한(`core.menus.update`)을 **전체 범위**로 가진 관리자에게는 역할이 0개인 메뉴(상위·하위)도 함께 나온다(`role_ids: []`) — 화면의 「역할 없음」·「지정된 역할 없음 — 관리자만 복구 가능」 표시와 편집 저장(관리자 역할 재부착)으로 복구하는 경로다. 범위 제한·읽기 전용 운영자에게는 나오지 않는다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
 
 
 ### POST /api/admin/menus
@@ -339,7 +339,7 @@ HTTP/1.1 201
 <!-- @generated:start:api.admin.menus.active -->
 - **라우트명**: `api.admin.menus.active`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\MenuController@active`
-- **인증/권한**: `auth:sanctum` + `permission:core.menus.read`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -448,14 +448,14 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 관리자 영역에 들어올 수 없는 회원인 경우(`admin` 미들웨어 — 메뉴 관리 권한은 요구하지 않음) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명**
 
-관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.g7.html` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할 기준으로 접근 가능한 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다. 사용자 정보가 없을 때는 모든 활성 메뉴를 fallback 으로 반환한다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.g7.html` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할에 지정된 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다(다른 역할에만 지정된 메뉴·역할이 0개인 메뉴는 나오지 않는다). 「내가 접근 가능한 메뉴」 조회이므로 메뉴 관리 권한(`core.menus.read`)을 요구하지 않는다 — 역할 폼 「접근 가능 메뉴」로 메뉴를 지정받은 역할이 그 권한 없이도 사이드바를 받는다. 메뉴 관리 화면이 쓰는 목록·상세·계층 엔드포인트는 종전대로 `core.menus.read` 를 요구한다. 인증 사용자가 없으면 빈 배열이다. 인증 계약: `auth:sanctum` + 관리자 영역 접근(`admin` 미들웨어).
 
 
 ### GET /api/admin/menus/extension/{type}/{identifier}

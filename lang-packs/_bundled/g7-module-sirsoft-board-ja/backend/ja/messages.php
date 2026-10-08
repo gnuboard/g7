@@ -402,4 +402,35 @@ return [
         'original_post_author' => '元投稿の投稿者',
         'board_managers' => '掲示板管理者',
     ],
+    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
+    'notification_variables' => [
+        'common' => [
+            'name' => '受信者名',
+            'app_name' => 'サイト名',
+            'board_name' => '掲示板名',
+            'post_title' => '投稿タイトル',
+            'comment_author' => 'コメント投稿者',
+            'comment_content' => 'コメント内容（200文字）',
+            'post_url' => '投稿URL',
+            'site_url' => 'サイトURL',
+            'action_type' => '処理種別（ブラインド/削除/復元）',
+            'target_type' => '処理対象（投稿/コメント）',
+            'post_author' => '投稿者',
+            'reason_type' => '通報理由',
+            'report_url' => '通報管理ページURL',
+        ],
+        'by_type' => [
+            'reply_comment' => [
+                'comment_author' => '返信投稿者',
+                'comment_content' => '返信内容（200文字）',
+            ],
+            'new_post_admin' => [
+                'name' => '受信者名（管理者）',
+            ],
+            'report_received_admin' => [
+                'post_title' => '通報対象の投稿タイトル',
+                'target_type' => '通報対象の種別（投稿/コメント）',
+            ],
+        ],
+    ],
 ];

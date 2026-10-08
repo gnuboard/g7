@@ -90,8 +90,9 @@ class PublicSearchController extends PublicBaseController
             ? 'search.results_found'
             : 'search.results_found_at_least';
 
+        // 단·복수는 서식 없는 수로 고르고, 화면에는 천 단위 구분 기호를 단 수를 보인다.
         return $this->success(
-            __($messageKey, ['count' => number_format($response['total'])]),
+            trans_choice($messageKey, (int) $response['total'], ['count' => number_format($response['total'])]),
             $response
         );
     }

@@ -160,7 +160,7 @@ class GdprConsentController extends AuthBaseController
             'sirsoft-gdpr::messages.consent.renew_all_success',
             ['renewed' => $renewed],
             200,
-            ['renewed' => $renewed],
+            ['renewed' => $renewed, 'count' => $renewed],
         );
     }
 }

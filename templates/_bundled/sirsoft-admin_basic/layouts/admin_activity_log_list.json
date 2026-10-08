@@ -156,7 +156,10 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn-icon"
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh"
                                 },
                                 "children": [
                                     {

@@ -487,6 +487,8 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
+                                "aria-label": "$t:common.delete",
                                 "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
                             },
                             "children": [

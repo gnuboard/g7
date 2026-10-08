@@ -1288,6 +1288,19 @@
                   "scope": "sample",
                   "version": 3
                 },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
+                },
                 "validation": {
                   "already_installed": "샘플 값",
                   "errors": ["샘플 값"],
@@ -2966,7 +2979,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(historyPage, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(historyPage, selectedSchedule, scheduleHistory) — 앞의 둘은 목록 행의 클릭이 담고, 이력은 창의 데이터소스가 initGlobal 로 scheduleHistory({data, pagination})에 넘긴다. 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "schedule_history_modal"
@@ -2987,7 +3000,40 @@
                 "timeout": 60,
                 "type_label": "샘플 제목"
               },
-              "historyPage": 1
+              "historyPage": 1,
+              "scheduleHistory": {
+                "data": [
+                  {
+                    "id": 2,
+                    "status": "failed",
+                    "trigger_type": "manual",
+                    "started_at": "2026-05-29 03:00:00",
+                    "duration_formatted": "0.4초",
+                    "memory_usage_formatted": "12 MB",
+                    "triggered_by": { "name": "관리자" },
+                    "output": "샘플 실행 출력입니다.",
+                    "error_output": "샘플 오류 출력입니다."
+                  },
+                  {
+                    "id": 1,
+                    "status": "success",
+                    "trigger_type": "scheduled",
+                    "started_at": "2026-05-28 03:00:00",
+                    "duration_formatted": "1.2초",
+                    "memory_usage_formatted": "18 MB",
+                    "triggered_by": null,
+                    "output": "샘플 실행 출력입니다.",
+                    "error_output": null
+                  }
+                ],
+                "pagination": {
+                  "current_page": 1,
+                  "last_page": 1,
+                  "per_page": 10,
+                  "total": 2,
+                  "has_more_pages": false
+                }
+              }
             }
           }
         }
@@ -3514,11 +3560,7 @@
                 "status": "inactive",
                 "icon_url": "/api/extensions/template/sirsoft-basic/icon"
               },
-              "templateUninstallBackups": [
-                {
-                  "archive": "sirsoft-basic_20260920_103000.zip"
-                }
-              ],
+              "templateUninstallBackups": [],
               "deleteTemplateData": true,
               "templateUninstallInfo": {
                 "extension_directory": {
@@ -3526,6 +3568,30 @@
                   "size_formatted": "13.7 MB"
                 }
               },
+              "isTemplateUninstalling": false
+            }
+          }
+        },
+        {
+          "id": "uninstall_done",
+          "label": "$t:editor.state.uninstall_done",
+          "comment": "제거를 마친 뒤 — 보존한 운영자 파일 사본 안내만 남는 모습. 기본(제거 확인) 상태에 사본을 담으면 창이 늘 이 모습으로 열려 안내·삭제 선택·단추를 고칠 수 없다.",
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "uninstalled",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
+              },
+              "templateUninstallBackups": [
+                {
+                  "directory": "custom",
+                  "archive": "sirsoft-basic_20260920_103000.zip"
+                }
+              ],
+              "deleteTemplateData": true,
               "isTemplateUninstalling": false
             }
           }
@@ -3581,8 +3647,11 @@
               "templateLayoutStrategy": "keep",
               "modifiedTemplateLayouts": [
                 {
+                  "id": 1,
                   "name": "home",
-                  "updated_at": "2026-09-30 14:20:00"
+                  "updated_at": "2026-09-30 14:20:00",
+                  "size_diff": 512,
+                  "kind": "layout"
                 }
               ],
               "isTemplateUpdating": false
@@ -4025,6 +4094,235 @@
             }
           },
           "default": true
+        }
+      ]
+    },
+    {
+      "comment": "방문자 통계 리포트 행의 「추이」 창. 행의 추이 아이콘이 `_global.analyticsRowTrend` 에 리포트·저장 라벨을 담고 연다 — 창 제목(「{label} 추이」)과 차트 게이트가 그 값과 데이터소스 `analytics_row_trend` 의 report·label 일치를 본다. 상태 없이는 제목에 `{{label}}` 원문과 오류 카드가 그려진다.",
+      "scope": {
+        "kind": "modal",
+        "match": "analytics_row_trend_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "analyticsRowTrend": {
+                "report": "page_url",
+                "label": "example.com/board/notice",
+                "label_display": "/board/notice"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "방문자 통계 설정의 「소급 익명화」 확인 창. 저장 직전 화면이 `_global.analyticsRetro` 에 바뀔 건수(visits·actions)를 담고 연다 — 상태 없이는 「방문 0건·액션 0건」으로 그려진다.",
+      "scope": {
+        "kind": "modal",
+        "match": "analytics_retro_anonymize_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "analyticsRetro": {
+                "visits": 12840,
+                "actions": 45210,
+                "hash": "editor-sample",
+                "maskOctets": 1
+              },
+              "analyticsRetroConfirm": false,
+              "analyticsRetroRunning": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "메뉴 관리의 역할 일괄 적용 확인 창. 일괄 패널이 고른 메뉴(`menuBulkSelectedIds`)·역할(`menuBulkRoleIds`)·동작(`menuBulkAction`)을 담고 연다 — 상태 없이는 「메뉴 0개에 역할 「{{roles}}」…」로 그려진다. 메뉴·역할 id 는 표본 데이터소스(menus·roles)의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_roles_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "menuBulkAction": "add",
+              "menuBulkSelectedIds": [
+                2,
+                3
+              ],
+              "menuBulkRoleIds": [
+                2
+              ],
+              "menuBulkError": null,
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "회원 목록의 역할 일괄 추가/제거 창. 목록의 선택 행(`selectedIds_admin_users`)과 고른 동작(`userBulkRoleMode`)을 읽는다 — 상태 없이는 「선택한 회원 0명에게」로 그려진다. 적용 결과(`userBulkRoleResult`)는 비워 두어 입력 모습으로 연다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_roles_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                "00000000-0000-4000-8000-000000000003",
+                "00000000-0000-4000-8000-000000000004",
+                "00000000-0000-4000-8000-000000000005"
+              ],
+              "userBulkRoleMode": "add",
+              "userBulkRoleIds": [
+                2
+              ],
+              "userBulkRoleResult": null,
+              "userBulkRoleError": null,
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "본인인증 코드 입력 창(공통 레이아웃·비밀번호 재설정). 인증을 요구한 요청이 `_global.identityChallenge` 에 발급 정보를 담고 연다 — 상태 없이는 「남은 시도: 0회」·남은 시간 없음으로 그려진다. 코드 칸은 비워 [확인] 은 입력 전 잠김(평상 모습).",
+      "scope": {
+        "kind": "modal",
+        "match": "identity-challenge-modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identityChallenge": {
+                "challenge_id": "00000000-0000-4000-8000-0000000000c1",
+                "provider_id": "g7:core.mail",
+                "purpose": "sensitive_action",
+                "policy_key": null,
+                "target": "a***@example.com",
+                "render_hint": "text_code",
+                "expires_at": "2026-01-01T09:15:00+09:00",
+                "remainingSeconds": 540,
+                "attempts": 0,
+                "maxAttempts": 5,
+                "code": "",
+                "error": null,
+                "resendCooldown": 0,
+                "resending": false,
+                "verifying": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "보안 탭 비밀번호 만료 「지금 실행」 확인 창. 단계 카드의 버튼이 `_global.passwordExpiryRun` 에 단계·대상 수를 담고 미리보기 건수를 받아 온 뒤 연다 — 상태 없이는 건수 줄 없이 [실행] 이 잠긴 채 그려진다. 값은 표본 passwordExpiryPreview·passwordExpiryManualRuns 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "password_expiry_run_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "passwordExpiryRun": {
+                "key": "password_expiry:notice",
+                "stage": "notice",
+                "label": "비밀번호 만료 사전 안내",
+                "total": 12,
+                "batchSize": 1000,
+                "preview": {
+                  "count": 12,
+                  "enabled": true
+                },
+                "loading": false,
+                "submitting": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "개인정보 탭 「지금 실행」 확인 창. 카드의 버튼이 `_global.privacyRun` 에 대상 키·이름을 담고 건수를 받아 온 뒤 연다 — 상태 없이는 제목이 「{{target}} — 직권 실행」 원문으로, 건수 줄 없이 그려진다. 값은 표본 privacyManualRuns 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "privacy_run_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "privacyRun": {
+                "key": "retention:user-withdrawn",
+                "label": "탈퇴 회원 잔여 개인정보",
+                "supportsSkip": false,
+                "skipWaiting": false,
+                "preview": {
+                  "count": 3,
+                  "mode": "anonymize",
+                  "enabled": true
+                },
+                "loading": false,
+                "submitting": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "개인정보 탭 「대상 보기」 창. 카드의 버튼이 `_global.privacyTargets` 에 조회 경로와 창 제목(`title`)을 담고 연다 — 목록은 표본 데이터소스 privacyTargets 로 채워지지만 제목은 이 상태 없이는 빈 칸이다.",
+      "scope": {
+        "kind": "modal",
+        "match": "privacy_targets_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "privacyTargets": {
+                "path": "retention-targets/user-withdrawn",
+                "currentPage": 1,
+                "hasMore": false,
+                "isLoadingMore": false,
+                "title": "$t:admin.settings.privacy.targets.title.withdrawn"
+              }
+            }
+          }
         }
       ]
     }

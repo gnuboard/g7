@@ -20,7 +20,7 @@ class SendAnnualNotices extends Command
      */
     public function handle(GdprAnnualNoticeService $notices): int
     {
-        $this->info(__('sirsoft-gdpr::messages.annual_notice.queued_count', ['count' => $notices->run()]));
+        $this->info(trans_choice('sirsoft-gdpr::messages.annual_notice.queued_count', $notices->run()));
 
         return self::SUCCESS;
     }

@@ -4,6 +4,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\TemplateLayout;
+use App\Services\LayoutMarkupService;
 use App\Support\LayoutDescription;
 use Illuminate\Http\Request;
 
@@ -78,6 +80,18 @@ class LayoutResource extends BaseApiResource
     {
         $content = $this->getValue('content', []);
         $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+
+        // 편집기 JSON 탭이 처음 여는 본문 — 배열 캐스트를 거친 `$content` 는 `{}` 와 `[]` 를 같게 만들어
+        // 저장된 `{}` 가 `[]` 로 보인다(한 글자 치면 컴파일 결과로 `{}` 로 바뀌어 탭이 스스로 어긋난다).
+        // 행 원본 문자열을 빈 map 을 보존해 다시 인코딩한다 — 컴파일 응답과 같은 인코더라 표기도 같다.
+        if ($this->resource instanceof TemplateLayout) {
+            $raw = $this->resource->getRawOriginal('content');
+
+            if (is_string($raw) && $raw !== '') {
+                $service = app(LayoutMarkupService::class);
+                $contentJson = $service->encodeJson($service->decodeStoredContent($raw));
+            }
+        }
         $name = $this->getValue('name');
 
         return [

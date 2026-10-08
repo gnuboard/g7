@@ -21,7 +21,7 @@ return [
     'privacy_manual_run_disabled' => '이 기능이 꺼져 있어 지금 실행할 수 없습니다. 설정에서 기능을 켜고 저장한 뒤 다시 실행하세요.',
 
     // 낙관적 잠금 — 동시 저장 충돌
-    'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (리소스: :resource, 현재 버전: :current, 보낸 버전: :expected)',
+    'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (현재 버전: :current, 보낸 버전: :expected)',
 
     // 레이아웃 관련 예외
     'layout' => [
@@ -207,6 +207,8 @@ return [
         'component_type_mismatch' => ':component 의 종류를 :written 으로 적었지만 :template 템플릿은 :declared 로 선언합니다 — data-type 을 확인하세요(생략하면 basic).',
         'extension_component_not_installed' => '설치된 확장 어디에도 없는 컴포넌트입니다: :name — :extension 확장이 삭제됐거나 이름이 틀렸을 수 있습니다. 저장은 되지만 그 확장이 없으면 화면에 그려지지 않습니다.',
         'template_component_kept' => '이 템플릿의 컴포넌트 목록에 없는 컴포넌트입니다: :name — 저장본에 이미 있던 것이라 저장은 되지만, 이 템플릿에서는 화면에 그려지지 않을 수 있습니다.',
+        'nested_action_debounce_ignored' => ':handler 액션에 단 debounce 는 적용되지 않습니다 — 조건·순서·결과 처리 안쪽 액션은 이벤트마다 바로 실행됩니다. 감싸는 바깥 액션(<conditions :debounce>·<sequence :debounce>)에 다세요.',
+        'mixed_debounce_flushed' => ':name 의 :event 에 debounce 를 단 액션과 바로 실행하는 액션이 함께 있습니다 — 바로 실행하는 액션이 돌 때마다 대기 중인 debounce 액션도 즉시 실행되어 매 입력 실행됩니다. 기다리게 하려면 이 이벤트의 액션을 모두 debounce 로 맞추세요.',
     ],
 
     // 설정 관련 예외

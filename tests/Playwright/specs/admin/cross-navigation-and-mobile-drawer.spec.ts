@@ -63,7 +63,7 @@ test('@smoke #450 - 관리자 게시물 조회 화면에 "유저 화면 보기" 
 // @scenario link=admin_product_to_user_detail, permitted=na
 // @effects new_tab_navigation, product_detail_routes_by_code
 test('@smoke #450 - 관리자 상품 수정 화면에 "유저 화면 보기" 새 탭 링크가 마운트된다', async ({ page }) => {
-  const token = issueToken('sirsoft-ecommerce.product.read', 'sirsoft-ecommerce.product.update');
+  const token = issueToken('sirsoft-ecommerce.products.read', 'sirsoft-ecommerce.products.update');
   await authenticatePage(page, token);
 
   // 임의 상품 편집 경로 진입 (상품 미존재 시 링크 미노출 → 데이터 의존 스킵)

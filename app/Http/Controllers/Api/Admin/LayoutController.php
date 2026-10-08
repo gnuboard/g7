@@ -23,6 +23,7 @@ use App\Services\LayoutPreviewService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\LayoutMarkup\CompileError;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -163,7 +164,7 @@ class LayoutController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
 
         $resource = (new LayoutResource($layout))
@@ -225,7 +226,7 @@ class LayoutController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
 
         $resource = (new LayoutResource($renamed))
@@ -271,7 +272,7 @@ class LayoutController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
         }
 
         return $this->success('layouts.messages.deleted', ['name' => $name, 'deleted' => true]);
@@ -421,12 +422,18 @@ class LayoutController extends AdminBaseController
         // 그대로 미리보기·저장에 쓰므로, 저장에서 막힐 값을 여기서 먼저 알린다.
         $violations = LayoutContentGate::violations($result->json);
         if ($violations !== []) {
-            return $this->error(
+            // 편집기 오류 패널·마커가 줄을 가리키도록 위반 값이 적힌 소스 자리를 `compile_error` 로 싣는다(7.1.0 P16).
+            $described = $service->describeContentViolation($markup, $result->json);
+            $response = $this->error(
                 'validation.layout.content.markup_compile_failed',
                 422,
-                ['content' => $violations],
+                ['content' => $violations, 'compile_error' => $described],
                 ['detail' => $violations[0]],
             );
+            $payload = $response->getData(true);
+            $payload['compile_error'] = $described;
+
+            return $response->setData($payload);
         }
 
         return $this->success('common.success', [
@@ -446,7 +453,7 @@ class LayoutController extends AdminBaseController
      * @param  string|null  $sourceKind  행 source_type
      * @param  string|null  $identifier  행 source_identifier
      * @param  string  $label  표시용 파일명
-     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}
+     * @return array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null} 역변환 마크업·이스케이프 목록·lint 경고·되컴파일 오류
      */
     private function buildMarkupPayload(array $json, string $templateName, ?string $sourceKind, ?string $identifier, string $label): array
     {
@@ -522,7 +529,7 @@ class LayoutController extends AdminBaseController
             return $this->error(
                 'common.failed',
                 500,
-                ['error' => $e->getMessage()]
+                ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]
             );
         }
     }
@@ -660,7 +667,7 @@ class LayoutController extends AdminBaseController
             return $this->error(
                 'common.failed',
                 500,
-                ['error' => $e->getMessage()]
+                ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]
             );
         }
     }

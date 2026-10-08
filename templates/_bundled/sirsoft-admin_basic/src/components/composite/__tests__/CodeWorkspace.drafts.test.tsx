@@ -17,7 +17,7 @@ import { useFileDrafts } from '../../../hooks/useFileDrafts';
 vi.mock('@monaco-editor/react', () => ({
   // `options.readOnly` 를 실제 textarea 로 흘린다 — 잠금 여부를 목이 삼키면 «없는 파일은
   // 저장할 수 없다» 계약을 테스트가 검증하지 못한다.
-  default: ({ value, onChange, options }: any) => (
+  default: ({ defaultValue: value, onChange, options }: any) => (
     <textarea
       data-testid="editor-textarea"
       value={value ?? ''}
@@ -132,6 +132,53 @@ describe('CodeWorkspace — 초안 복원', () => {
 
     expect((screen.getByTestId('editor-textarea') as HTMLTextAreaElement).value).toBe('yesterday');
     expect(screen.queryByTestId('draft-restore-banner')).not.toBeInTheDocument();
+  });
+
+  /**
+   * 지금 열려 있지 않은 파일의 초안도 복원한 그대로 남는다.
+   *
+   * 실측 2026-10-06(7.1.0 전수 실측 I1): 배너 「저장하지 않은 편집 2건 — probe_a · _admin_base」 에서
+   * [복원] 을 누른 뒤 probe_a 탭을 열자 서버 본문(73자)만 보이고 복원한 초안(46,215자)이 사라졌다.
+   * 열려 있지 않은 파일은 서버 본문을 모르니 기준선을 초안 자신으로 잡아 「바뀐 것 없음」 이 됐고,
+   * 본문이 도착하자 「깨끗한 버퍼는 최신본을 받는다」 규칙이 초안을 덮어썼다.
+   *
+   * @effects code_workspace_restores_drafts_of_unopened_files
+   */
+  it('[복원] 한 다른 파일의 초안은 그 파일을 열어 본문이 와도 덮이지 않는다', () => {
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:b': { value: 'draft-b', savedAt: Date.now() - 60000, baseRevision: 5 } }),
+    );
+
+    const { rerender } = render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={3} draftNamespace={NAMESPACE} />,
+    );
+
+    fireEvent.click(screen.getByTestId('draft-restore'));
+
+    // b 로 옮긴다 — 처음에는 아직 a 의 본문을 들고 있고, 이어서 b 의 서버 본문이 도착한다.
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:b"
+        serverKey="layout:a"
+        serverValue={SERVER_A}
+        serverRevision={3}
+        draftNamespace={NAMESPACE}
+      />,
+    );
+    rerender(
+      <CodeWorkspace
+        fileKey="layout:b"
+        serverKey="layout:b"
+        serverValue="<layout name=&quot;b&quot;/>"
+        serverRevision={5}
+        draftNamespace={NAMESPACE}
+      />,
+    );
+
+    expect((screen.getByTestId('editor-textarea') as HTMLTextAreaElement).value).toBe('draft-b');
+    // 서버 본문과 다르므로 저장하지 않은 파일로 보인다.
+    expect(screen.getByRole('tab', { name: /저장되지 않음|unsaved|editor\.unsaved/i })).toBeInTheDocument();
   });
 
   /** @effects code_workspace_discards_drafts_on_demand */
@@ -427,6 +474,49 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
     // 내 것이 들어가면서 남의 것이 함께 남아야 한다.
     expect(storedDrafts()['layout:a'].value).toBe('mine');
     expect(storedDrafts()['layout:other'].value).toBe('from-other-tab');
+  });
+
+  /**
+   * 다른 탭이 지운 초안을 이 탭의 병합이 되살리지 않는다.
+   *
+   * 실측 2026-10-06(7.1.0 전수 실측 I1): 탭2 에서 `_admin_base` 를 고치다 [저장하지 않고 닫기] 로
+   * 버려 저장소에서 지워졌는데, 그 사이 탭1 이 병합하며 받아 둔 사본을 다음 쓰기(새로고침 직전)에
+   * 도로 적어 「저장하지 않은 편집 2건 — probe_a · _admin_base」 로 다시 떴다. 병합으로 받은 남의
+   * 초안 사본은 이 탭의 것이 아니므로 다시 적을 권한이 없다.
+   *
+   * @effects code_workspace_does_not_resurrect_drafts_removed_by_other_tab
+   */
+  it('다른 탭이 지운 초안을 다음 병합에서 되살리지 않는다', () => {
+    render(
+      <CodeWorkspace fileKey="layout:a" serverValue={SERVER_A} serverRevision={3} draftNamespace={NAMESPACE} />,
+    );
+
+    // 다른 탭이 b 를 적는다.
+    window.localStorage.setItem(
+      `${NAMESPACE}.drafts`,
+      JSON.stringify({ 'layout:b': { value: 'from-other-tab', savedAt: Date.now(), baseRevision: 1 } }),
+    );
+
+    // 이 탭이 a 를 적는다 — 병합하며 b 를 함께 본다.
+    fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'mine-1' } });
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(storedDrafts()['layout:b']).toBeDefined();
+
+    // 다른 탭이 b 를 버린다(저장하지 않고 닫기·저장 성공).
+    const stored = storedDrafts();
+    delete (stored as Record<string, unknown>)['layout:b'];
+    window.localStorage.setItem(`${NAMESPACE}.drafts`, JSON.stringify(stored));
+
+    // 이 탭이 다시 적는다.
+    fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'mine-2' } });
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(storedDrafts()['layout:a'].value).toBe('mine-2');
+    expect(storedDrafts()['layout:b']).toBeUndefined();
   });
 
   /** @effects code_workspace_delete_beats_merge */

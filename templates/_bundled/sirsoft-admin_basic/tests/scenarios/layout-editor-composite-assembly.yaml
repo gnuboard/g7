@@ -1,0 +1,50 @@
+feature: 레이아웃 편집기 조립 컴포넌트의 통합 흐름과 대량 데이터 성능
+
+description: |
+  레이아웃 편집기를 이루는 조립 컴포넌트(LayoutEditorHeader · LayoutFileList · CodeEditor ·
+  LayoutHistoryPanel · VersionList · Alert · ThreeColumnLayout)를 한 화면처럼 엮어, 파일 선택 → 편집 →
+  저장과 판본 선택 → 복원 흐름, 역할(ARIA)·키보드 선택·선택 강조·저장 알림, 빈 목록·잘못된 날짜 같은
+  가장자리 입력을 잰다. 같은 컴포넌트에 큰 입력(1~10MB JSON, 파일·판본 100~500개)을 넣어 렌더·선택·
+  재렌더가 파국적으로 느려지지 않는지(O(n²)·메모이제이션 누락 회귀)도 함께 잠근다.
+
+  두 테스트 파일은 매니페스트 도입 전부터 있던 회귀 가드다. 7.1.0 전수 실측 I1 에서 CodeEditor 가
+  제어 값을 라이브러리에 넘기지 않게 바뀌어(`defaultValue` 로 첫 값만 전달) Monaco 대역을 고치면서
+  소유 매니페스트를 세웠다.
+
+axes:
+  data_scale: [typical, large]
+
+axis_notes:
+  data_scale: >-
+    typical = 파일 3개·판본 3개 수준의 실제 사용 흐름(LayoutEditor.integration.test.tsx),
+    large = 대용량 JSON·대량 목록(LayoutEditor.performance.test.tsx). 같은 컴포넌트라도 깨지는
+    방식이 달라(흐름 단절 vs 렌더 지연) 축으로 가른다.
+
+effects:
+  # --- data_scale=typical
+  - layout_editor_file_select_edit_save_flow_works       # 파일 선택 → 편집 → 저장 흐름이 끝까지 이어진다
+  - layout_editor_version_restore_flow_works             # 판본 선택 → 복원이 편집기 본문과 알림에 반영된다
+  - layout_editor_file_select_swaps_editor_content       # 파일을 고르면 편집기 본문이 그 파일로 바뀐다
+  - layout_history_restore_requires_version_selection    # 판본을 고르기 전에는 복원 버튼이 비활성이다
+  - layout_editor_composites_expose_aria_roles           # region·listbox·option·button·alert 역할과 이름
+  - layout_file_list_selects_with_enter_key              # 파일 목록은 Enter 로 고를 수 있다
+  - layout_editor_highlights_selected_items              # 고른 파일·판본이 강조된다
+  - layout_editor_save_alert_auto_dismisses              # 저장 알림이 뜬 뒤 스스로 사라진다
+  - layout_editor_tolerates_empty_or_malformed_data      # 빈 목록·잘못된 날짜에도 안내를 그리며 깨지지 않는다
+  # --- data_scale=large
+  - code_editor_renders_large_json_within_budget         # 1·5·10MB JSON 렌더 시간 상한
+  - code_editor_emits_change_on_large_json               # 대용량 본문에서도 입력이 onChange 로 올라간다
+  - layout_file_list_renders_many_files_within_budget    # 파일 100·500개 렌더·선택 시간 상한
+  - version_list_renders_many_versions_within_budget     # 판본 100·500개 렌더·선택 시간 상한
+  - layout_editor_composites_rerender_within_budget      # 잦은 재렌더(선택 변경 10회) 시간 상한
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/__tests__/LayoutEditor.integration.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/__tests__/LayoutEditor.performance.test.tsx
+
+notes: |
+  e2e_browser=not_applicable — 조립 컴포넌트 단위 계약이다. 실제 편집 화면(코드 편집기)의 브라우저
+  흐름은 code-editor-multi-buffer.yaml · code-editor-shortcuts.yaml 의 Playwright spec 이 잰다.
+
+validation:
+  audit_rule: test-scenario-coverage

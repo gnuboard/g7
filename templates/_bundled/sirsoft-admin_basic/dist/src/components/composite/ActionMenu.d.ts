@@ -18,6 +18,8 @@ export interface ActionMenuItem {
 export interface ActionMenuProps {
     items: ActionMenuItem[];
     triggerLabel?: string;
+    /** 글자 없는 트리거의 접근 가능한 이름. 비우면 「더보기」(common.more_actions) */
+    triggerAriaLabel?: string;
     triggerIconName?: IconName;
     position?: 'left' | 'right';
     className?: string;

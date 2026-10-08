@@ -216,8 +216,8 @@ describe('알림 템플릿 편집 창 — 다중 선택 트리거 문구', () =>
     const labels = dropdowns.map((d) => d.props?.selectedCountLabel);
 
     expect(labels).toEqual([
-      '$t:admin.settings.notification_definitions.recipients.roles_selected_count',
-      '$t:admin.settings.notification_definitions.recipients.users_selected_count',
+      '$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}',
+      '$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}',
     ]);
   });
 });

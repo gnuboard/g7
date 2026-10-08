@@ -37,6 +37,11 @@ class LayoutControllerEditorSaveTest extends TestCase
 
     private string $token;
 
+    /**
+     * 편집·읽기 권한 관리자 토큰과 대상 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,12 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->template = Template::factory()->create();
     }
 
+    /**
+     * 지정 권한을 붙인 관리자 역할을 가진 회원을 생성합니다.
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 관리자 회원
+     */
     private function createAdminUser(array $permissions = []): User
     {
         $user = User::factory()->create();
@@ -83,6 +94,11 @@ class LayoutControllerEditorSaveTest extends TestCase
         return $user;
     }
 
+    /**
+     * 관리자 토큰을 실은 JSON 요청 헤더를 설정합니다.
+     *
+     * @return $this 헤더가 설정된 테스트 케이스
+     */
     private function authRequest()
     {
         return $this->withHeaders([
@@ -91,6 +107,12 @@ class LayoutControllerEditorSaveTest extends TestCase
         ]);
     }
 
+    /**
+     * 지정 잠금 버전을 가진 편집 대상 레이아웃을 생성합니다.
+     *
+     * @param  int  $lockVersion  초기 lock_version
+     * @return TemplateLayout 생성된 레이아웃
+     */
     private function makeLayout(int $lockVersion = 0): TemplateLayout
     {
         return TemplateLayout::factory()->create([
@@ -107,6 +129,12 @@ class LayoutControllerEditorSaveTest extends TestCase
         ]);
     }
 
+    /**
+     * 기대 잠금 버전을 실은 기본 저장 요청 본문을 만듭니다.
+     *
+     * @param  int  $expectedLockVersion  보낼 expected_lock_version
+     * @return array<string, mixed> 저장 요청 본문
+     */
     private function defaultUpdatePayload(int $expectedLockVersion): array
     {
         return [
@@ -128,6 +156,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         ];
     }
 
+    /**
+     * 기대 버전이 맞으면 200 을 돌려주고 lock_version 이 1 오르는지 검증합니다.
+     *
+     * @effects golden_path_match_returns_200_and_increments_lock_version
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_returns_200_and_increments_lock_version_when_expected_matches(): void
     {
@@ -151,6 +186,10 @@ class LayoutControllerEditorSaveTest extends TestCase
      * 검증이므로 미언급 키를 거부하지 않고, content.components 는 'array' 규칙으로 통째
      * 보존된다(validated() drop 은 meta/seo 등 nested 명시 키에만 해당 — node 내부 아님).
      * 저장 → DB 재로드 시 responsive/if 가 그대로 보존됨을 가드한다(백엔드 코드 변경 없음).
+     *
+     * @effects save_persists_responsive_and_if_on_reload
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_preserves_node_responsive_and_if_overrides_on_save_and_reload(): void
@@ -196,6 +235,14 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertSame('bg-white dark:bg-slate-800', $node['props']['className']);
     }
 
+    /**
+     * 기대 버전이 낡았으면 409 와 현재·보낸 버전을 돌려주고, 안내 문구에 내부 자원 표기를 싣지 않는지 검증합니다.
+     *
+     * @effects stale_expected_returns_409_with_current_and_your_version
+     * @effects conflict_message_hides_internal_resource_key
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_returns_409_when_expected_version_is_stale(): void
     {
@@ -210,11 +257,21 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertEquals('concurrent_modification', $response->json('errors.error'));
         $this->assertEquals(5, $response->json('errors.current_version'));
         $this->assertEquals(3, $response->json('errors.your_version'));
+        // 화면에 뜨는 안내 문구에 내부 자원 표기(`template_layouts:{id}`)를 싣지 않는다 — 기계용 값은 errors.resource 에 그대로 둔다(2026-10-06 실측 O-I1-2).
+        $this->assertStringNotContainsString('template_layouts', (string) $response->json('message'));
+        $this->assertSame("template_layouts:{$layout->id}", $response->json('errors.resource'));
 
         $layout->refresh();
         $this->assertEquals(5, $layout->lock_version, 'lock_version 은 충돌 시 증가하지 않아야 한다');
     }
 
+    /**
+     * 기대 버전을 보내지 않으면 422 유효성 오류가 나는지 검증합니다.
+     *
+     * @effects missing_expected_returns_422_validation_error
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_returns_422_when_expected_lock_version_is_missing(): void
     {
@@ -232,6 +289,13 @@ class LayoutControllerEditorSaveTest extends TestCase
             ->assertJsonValidationErrors(['expected_lock_version']);
     }
 
+    /**
+     * 같은 버전을 읽은 두 클라이언트 중 먼저 저장한 쪽만 성공하는지 검증합니다.
+     *
+     * @effects concurrent_two_clients_only_first_succeeds
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function concurrent_save_only_first_client_succeeds(): void
     {
@@ -264,6 +328,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertEquals('edit_by_A', $layout->content['components'][0]['id']);
     }
 
+    /**
+     * 레이아웃 조회 응답에 lock_version 이 실리는지 검증합니다.
+     *
+     * @effects lock_version_exposed_in_layout_resource
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_exposes_lock_version_in_layout_resource(): void
     {
@@ -281,6 +352,13 @@ class LayoutControllerEditorSaveTest extends TestCase
     // Phase 3 S5a-2 결함 I — 편집기 응답 메타 노드 마스킹 백엔드 2차 가드
     // ─────────────────────────────────────────────────────────────────────
 
+    /**
+     * 저장 본문에 섞인 기반·확장·조각 출처 노드를 백엔드 2차 가드가 걷어 내는지 검증합니다.
+     *
+     * @effects save_payload_backend_2nd_guard_strips_inherited_nodes_when_client_skipped
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_strips_base_and_extension_and_partial_nodes_from_payload(): void
     {
@@ -342,6 +420,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertArrayNotHasKey('_fromBase', $components[0]);
     }
 
+    /**
+     * 라우트 노드 자식 안쪽의 물려받은 노드도 재귀로 걷어 내는지 검증합니다.
+     *
+     * @effects save_payload_backend_2nd_guard_strips_inherited_nodes_when_client_skipped
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_strips_inherited_nodes_recursively_inside_route_children(): void
     {
@@ -400,6 +485,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertArrayNotHasKey('_fromBase', $children[0]);
     }
 
+    /**
+     * 물려받는 자식 레이아웃 저장 시 응답의 편집기 원본 컨테이너를 기준으로 저장하는지 검증합니다.
+     *
+     * @effects save_uses_editor_original_as_ssot_when_present
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_uses_editor_original_container_when_present_for_extends_child(): void
     {
@@ -491,6 +583,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertArrayNotHasKey('__editor', $childLayout->content);
     }
 
+    /**
+     * 본문에 잘못 실린 응답 전용 lock_version 메타를 저장하지 않는지 검증합니다.
+     *
+     * @effects save_payload_drops_response_only_lock_version_meta_from_content
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_drops_response_only_lock_version_meta_from_content(): void
     {
@@ -529,6 +628,13 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertEquals(1, $layout->lock_version);
     }
 
+    /**
+     * 레이아웃 확장 저장도 같은 409·버전 증가 규칙을 따르는지 검증합니다.
+     *
+     * @effects layout_extension_update_shares_same_409_semantics
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function layout_extension_update_shares_same_concurrency_guard(): void
     {

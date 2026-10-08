@@ -138,7 +138,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스 | label, error | - |
+| `Select` | 선택 박스. `searchable` 이면 펼침 목록 위에 검색칸이 생기고, 검색칸 안내·화면 읽기 이름·「결과 없음」 문구는 `searchPlaceholder` 가 없으면 화면 언어(`common.search_placeholder`·`common.search`·`common.no_results`)를 따른다 | label, error, options, searchable, searchPlaceholder | - |
 | `Option` | Select 내부 옵션 | value, disabled | - |
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |

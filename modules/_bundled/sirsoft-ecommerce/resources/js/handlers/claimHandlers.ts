@@ -1358,7 +1358,7 @@ function reportClaimItemSplits(data: any): void {
         t(
             'sirsoft-ecommerce.admin.claim.detail.items.bulk_split_notice',
             `${kept}개를 처리하고 ${remaining}개는 신청 상태로 남겼습니다.`,
-            { kept, remaining },
+            { kept, remaining, count: kept },
         ),
     );
 }

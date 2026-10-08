@@ -1538,6 +1538,9 @@
     "version_restore_confirm": "Version restore confirmation",
     "version_preview": "Version preview",
     "modal_filled": "Modal content filled",
+    "uninstall_done": "Uninstall finished",
+    "read_normal": "Normal post",
+    "attachments_replies_open": "Attachments & replies expanded",
     "screen_filled": "Screen state filled"
   },
   "cell_border": {

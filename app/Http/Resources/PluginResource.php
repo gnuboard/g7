@@ -3,10 +3,13 @@
 namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
+use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Illuminate\Http\Request;
 
 class PluginResource extends BaseApiResource
 {
+    use ExposesUpdateCoreCompatibility;
+
     /**
      * 플러그인 리소스를 배열로 변환합니다.
      *
@@ -55,6 +58,8 @@ class PluginResource extends BaseApiResource
             'core_compatible' => CoreVersionChecker::isCompatible(
                 is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
             ),
+            // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
+            ...$this->updateCoreCompatibilityFields(),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -64,7 +69,7 @@ class PluginResource extends BaseApiResource
     /**
      * 리소스별 권한 매핑을 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 능력 키 → 권한 식별자 맵
      */
     protected function abilityMap(): array
     {
@@ -164,7 +169,7 @@ class PluginResource extends BaseApiResource
     /**
      * 설치/제거 작업 시 의존성 정보를 포함합니다.
      *
-     * @return $this
+     * @return $this 의존성 정보를 덧붙인 리소스
      */
     public function withDependencies(): self
     {
@@ -180,7 +185,7 @@ class PluginResource extends BaseApiResource
      * Eloquent enum cast 가 적용되어 있어도 배열 합성 모델은 raw value 를 줄 수 있어
      * 두 경우 모두 처리합니다.
      *
-     * @return string|null
+     * @return string|null 비활성화 사유 문자열 (없으면 null)
      */
     protected function getDeactivatedReasonValue(): ?string
     {

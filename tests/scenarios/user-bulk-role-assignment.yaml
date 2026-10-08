@@ -12,6 +12,8 @@ description: |
     - 자기 잠금: 마지막 admin 인 액터가 자신에게서 admin 을 빼는 것은 skipped(last_admin)
     - 추가 시 assigned_by 에 액터를 남기고, 바뀐 회원마다 권한 캐시를 비운다
     - 활동 로그는 회원마다 user.bulk_roles 로 남는다
+    - 이미 원하는 상태인 회원은 unchanged(already_assigned/not_assigned)로 돌려주고, 하나라도 있으면 결과 창을 닫지 않는다
+    - 제거 창은 적용 전에 「역할이 하나도 남지 않는 회원·마지막 관리자(본인)는 건너뜀」 을 안내한다
 
 axes:
   mode: [add, remove]
@@ -37,6 +39,8 @@ effects:
   - bulk_role_keyboard_enter_selects_role
   # 적용 직후 창 머리의 「선택한 회원 0명에게…」 가 비치지 않는다(결과 화면은 안내를 숨기고, 제외 0명이면 재요청 전에 닫는다)
   - bulk_role_result_hides_zero_count_desc
+  # 이미 원하는 상태라 바뀌지 않은 회원(추가: 이미 가짐·제거: 가지지 않음)을 unchanged 로 따로 세어 결과 창·문구에 보인다 — 고른 수 = 변경 + 제외 + 변경 없음
+  - unchanged_reported
 
 test_files:
   - tests/Feature/Api/Admin/UserBulkRolesTest.php

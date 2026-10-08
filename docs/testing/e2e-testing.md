@@ -172,12 +172,27 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
 | 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
 | 인증 앱(TOTP) 자격증명·현재 코드 | 플러그인 | `plugins/_bundled/sirsoft-totp/src/Console/Commands/PlaywrightSeedTotp.php` | `php artisan playwright:seed-totp --enroll=<email> \| --code=<secret>` (§4.2) |
-| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 코어 커맨드의 `--permissions=` 임의 식별자 | 동일 (Permission::firstOrCreate 자동 생성) |
+| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 그 모듈이 정의한 권한(설치 때 생성)·게시판별 권한(게시판 생성 때 생성) | 코어 커맨드의 `--permissions=` — **DB 에 있는 식별자만** 받는다(없으면 발급 거절 — 아래 「없는 권한 식별자」) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드를 코어에 두면 의존 역전.
+
+### 없는 권한 식별자는 발급 때 거절된다
+
+`playwright:issue-token` 은 `--permissions` 의 식별자가 하나라도 DB 에 없으면 **아무것도 만들지 않고 실패 코드(1)로
+끝나며**, 없는 식별자를 오류 줄에 나열한다. 계정·테스트 역할·토큰·권한 행 모두 생기지 않는다. 예전에는 없는 식별자를
+받으면 이름·설명이 식별자 그대로인 권한 행을 만들었는데, 그 행은 실제 라우트가 검사하는 권한이 아니어서 spec 은
+「권한을 받았다」고 믿지만 실제로는 함께 붙은 `admin` 역할 덕에 통과하는 거짓 녹색이 됐고, 관리자 권한 트리에도 식별자가
+그대로 보였다.
+
+- 식별자는 그 권한을 정의한 코어 설정·확장(`getPermissions()`)에 있는 이름을 쓴다(예: `core.settings.read`,
+  `sirsoft-ecommerce.products.read`). 확장 권한은 그 확장이 설치돼 있어야 발급된다.
+- 게시판별 권한(`sirsoft-board.{slug}.admin.posts.read` 등)은 **그 게시판이 만들어질 때** 생긴다. spec 안에서 게시판을
+  만든다면 발급 시점에는 아직 없으므로, 그 식별자를 넘기지 말고 함께 붙는 `admin` 역할(게시판 생성 때 그 게시판의 관리자
+  권한을 받는다)에 맡기거나, 게시판을 만든 뒤 토큰을 따로 받는다.
+- 잘못된 범위 접미사(`:self`·`:role` 외)는 종전처럼 예외로 거절된다.
 
 ### 발급분 회수 (`playwright:cleanup`)
 
@@ -193,7 +208,10 @@ $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup --keep-hours=2 # �
 
 회수 대상은 `playwright_test_` 로 시작하는 역할과, 그 역할 외에 `admin` 밖에 갖지 않은 계정
 (+ 그 계정의 토큰)뿐이다. 사람이 쓰는 계정에 테스트 역할이 섞여 있으면 그 계정은 건너뛴다.
-권한(`permissions`) 행은 발급 때 `firstOrCreate` 로 공용을 재사용하므로 건드리지 않는다.
+권한(`permissions`) 행은 발급 커맨드가 만들지 않는 공용 행이므로 원칙적으로 남긴다. 다만 예전 발급 커맨드가 DB 에
+없던 식별자로 만들어 둔 행 — 이름·설명(ko·en)이 식별자 그대로, 코어 소유, 부모·자식 없음, 코어 정의(`config('core.permissions')`)
+밖, 회수하는 테스트 역할 말고는 붙은 역할 없음, `--keep-hours` 밖 — 은 함께 회수한다(`--dry-run` 이 권한 수까지 센다).
+사람이 읽는 이름을 가진 권한·사람 역할이 쓰는 권한은 남는다.
 가드는 발급 커맨드와 같다 (CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1`).
 ### 4.2 로그인 2단계 인증 픽스처
 

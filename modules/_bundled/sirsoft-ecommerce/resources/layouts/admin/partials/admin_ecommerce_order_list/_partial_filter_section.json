@@ -109,7 +109,8 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "_local",
-                                        "filter.dateType": "{{$event.target.value}}"
+                                        "filter.dateType": "{{$event.target.value}}",
+                                        "filter.dateBasis": ""
                                     }
                                 }
                             ],
@@ -152,7 +153,8 @@
                                             "params": {
                                                 "target": "_local",
                                                 "filter.startDate": "{{$event.target.value}}",
-                                                "filter.dateQuick": ""
+                                                "filter.dateQuick": "",
+                                                "filter.dateBasis": ""
                                             }
                                         }
                                     ],
@@ -184,7 +186,8 @@
                                             "params": {
                                                 "target": "_local",
                                                 "filter.endDate": "{{$event.target.value}}",
-                                                "filter.dateQuick": ""
+                                                "filter.dateQuick": "",
+                                                "filter.dateBasis": ""
                                             }
                                         }
                                     ],
@@ -227,7 +230,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -261,7 +265,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -295,7 +300,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -329,7 +335,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -363,7 +370,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -397,7 +405,8 @@
                                                         "target": "_local",
                                                         "filter.dateQuick": "{{$prev.preset}}",
                                                         "filter.startDate": "{{$prev.startDate}}",
-                                                        "filter.endDate": "{{$prev.endDate}}"
+                                                        "filter.endDate": "{{$prev.endDate}}",
+                                                        "filter.dateBasis": ""
                                                     }
                                                 }
                                             ]
@@ -410,6 +419,17 @@
                                     "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.1_year"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "대시보드 「오늘」 배지로 연 목록(date_basis=site)은 배지와 같은 사이트 표준시의 하루로 걸러져 있다. 목록의 시각은 보는 사람의\n          시간대로 그려지므로, 계정 시간대가 사이트와 다르면 행 날짜가 고른 날짜와 달라 보인다 — 그 까닭과 되돌리는 법을 알린다",
+                            "id": "date_site_basis_notice",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{query.date_basis === 'site'}}",
+                            "props": {
+                                "className": "text-xs text-tertiary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.filter.site_day_notice|timezone={{_global.settings?.general?.timezone ?? ''}}"
                         }
                     ]
                 },
@@ -3216,6 +3236,7 @@
                                             "startDate": "{{preset.conditions?.startDate || ''}}",
                                             "endDate": "{{preset.conditions?.endDate || ''}}",
                                             "dateQuick": "{{preset.conditions?.dateQuick || ''}}",
+                                            "dateBasis": "",
                                             "orderStatus": "{{preset.conditions?.orderStatus || []}}",
                                             "deliveryMethods": "{{preset.conditions?.deliveryMethods || []}}",
                                             "paymentMethods": "{{preset.conditions?.paymentMethods || []}}",
@@ -3803,6 +3824,7 @@
                                                             "startDate": "",
                                                             "endDate": "",
                                                             "dateQuick": "",
+                                                            "dateBasis": "",
                                                             "orderStatus": [],
                                                             "deliveryMethods": [],
                                                             "paymentMethods": [],

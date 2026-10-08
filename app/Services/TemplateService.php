@@ -21,6 +21,7 @@ use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -445,7 +446,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.installation_failed', ['error' => $e->getMessage()])],
+                'identifier' => [__('templates.errors.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -493,7 +494,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.uninstallation_failed', ['error' => $e->getMessage()])],
+                'identifier' => [__('templates.errors.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -563,7 +564,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.deactivation_failed', ['error' => $e->getMessage()])],
+                'identifier' => [__('templates.errors.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -653,7 +654,7 @@ class TemplateService
             ];
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.activation_failed', ['error' => $e->getMessage()])],
+                'identifier' => [__('templates.errors.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -2007,7 +2008,7 @@ class TemplateService
             $icon = app(ExtensionIconResolver::class)
                 ->inspectRootForApi($result['sourcePath'], $manifest['icon'] ?? null);
         } catch (\Throwable $e) {
-            $errors[] = $e->getMessage();
+            $errors[] = SafeExceptionMessage::for($e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2071,7 +2072,7 @@ class TemplateService
             // ZipInstallHelper 등 설치 원본 처리의 raw RuntimeException(깨진 zip·manifest
             // 누락 같은 사용자 입력 오류)을 도메인 예외로 승격한다 — 컨트롤러의 좁혀진
             // catch 가 인프라 예외와 구분해 종전 422 계약을 유지하고, 사유는 :error 로 보존.
-            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2130,7 +2131,7 @@ class TemplateService
         } catch (\RuntimeException $e) {
             // GithubHelper·ZipInstallHelper 의 raw RuntimeException(잘못된 URL·다운로드
             // 실패·manifest 오류)을 도메인 예외로 승격한다 — 종전 422 계약 유지, 사유 보존.
-            throw new TemplateOperationException('templates.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new TemplateOperationException('templates.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -2280,7 +2281,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => $e->getMessage()])],
+                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -2377,7 +2378,7 @@ class TemplateService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'templates' => [__('templates.check_updates_failed', ['error' => $e->getMessage()])],
+                'templates' => [__('templates.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -2414,7 +2415,7 @@ class TemplateService
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
-            $rawError = $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage();
+            $rawError = SafeExceptionMessage::for(SafeExceptionMessage::isInternal($e) ? $e : ($e->getPrevious() ?? $e));
 
             throw ValidationException::withMessages([
                 'template_name' => [__('templates.errors.update_failed', ['template' => $templateName, 'error' => $rawError])],
@@ -2438,7 +2439,7 @@ class TemplateService
             return $this->templateManager->hasModifiedLayouts($templateName);
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'template_name' => [__('templates.check_modified_layouts_failed', ['error' => $e->getMessage()])],
+                'template_name' => [__('templates.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }

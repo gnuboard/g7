@@ -236,7 +236,7 @@
         <div data-ref="sitemap_last_updated_block" class="space-y-2">
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
-            <input type="text" :disabled="true" value="{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
             <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
               <on type="click">

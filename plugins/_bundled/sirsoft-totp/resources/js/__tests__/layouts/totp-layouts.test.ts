@@ -160,6 +160,66 @@ describe('plugin_settings 등록 화면', () => {
     });
 });
 
+describe('plugin_settings 운영 설정 카드 (발급자 표기·메일 폴백)', () => {
+    // 2026-10-06 실측: 설정 화면에 입력 칸이 하나도 없어 CHANGELOG 가 약속한
+    // 「사이트 이름을 설정할 수 있습니다」「플러그인 설정에서 끌 수 있으며」를 화면으로 할 수 없었다.
+    // 백엔드(설정 스키마·PUT /api/admin/plugins/{id}/settings)는 이미 있었고 화면만 빠져 있었다.
+
+    it('저장된 플러그인 설정을 읽는 데이터 소스가 있다', () => {
+        const sources = (totpSecurityLayout as any).data_sources ?? [];
+        const settings = sources.find((s: any) => s.endpoint === '/api/admin/plugins/sirsoft-totp/settings');
+
+        expect(settings, '플러그인 설정 데이터 소스가 없습니다').toBeDefined();
+        expect(settings.method ?? 'GET').toBe('GET');
+    });
+
+    it('발급자 표기 입력칸과 메일 폴백 토글이 있다', () => {
+        const card = findByRef(totpSecurityLayout, 'totp_settings_card');
+        const serialized = flatten(card);
+
+        expect(card, '운영 설정 카드가 없습니다').not.toBeNull();
+        expect(serialized).toContain('issuer');
+        expect(serialized).toContain('allow_mail_fallback');
+        // 상한은 서버 스키마(max 64)와 같아야 한다 — 화면이 더 받으면 저장에서야 422 로 드러난다.
+        expect(serialized).toContain('64');
+    });
+
+    it('저장 버튼이 플러그인 설정 API 를 PUT 으로 부른다', () => {
+        const save = findByRef(totpSecurityLayout, 'totp_settings_save');
+        const serialized = flatten(save);
+
+        expect(save, '저장 버튼이 없습니다').not.toBeNull();
+        expect(serialized).toContain('/api/admin/plugins/sirsoft-totp/settings');
+        expect(serialized).toContain('PUT');
+    });
+
+    it('폴백 토글은 보이는 라벨 없이 접근 가능한 이름을 갖는다', () => {
+        // 라벨 문구가 옆 <span> 에만 있어 스위치(role=switch)의 이름이 비어 있었다(7.1.0 실측 O-B6).
+        // 템플릿 Toggle 에 없는 prop(autoBinding)은 넘기지 않는다 — name 이 없어 자동 바인딩 대상도 아니다.
+        const toggle = findByRef(totpSecurityLayout, 'totp_settings_fallback_toggle');
+
+        expect(toggle?.name).toBe('Toggle');
+        expect(toggle?.props?.ariaLabel).toBe('$t:sirsoft-totp.admin.settings.fallback_label');
+        expect(toggle?.props?.label).toBeUndefined();
+        expect(toggle?.props).not.toHaveProperty('autoBinding');
+    });
+
+    it('저장 오류 줄은 반복 행마다 다른 data-ref 를 쓴다', () => {
+        const errors = findByRef(totpSecurityLayout, 'totp_settings_errors');
+        const item = (errors?.children ?? [])[0];
+
+        expect(String(item?.iteration?.index_var ?? '')).not.toBe('');
+        expect(String(item?.props?.['data-ref'] ?? item?.id ?? '')).toContain('{{');
+    });
+
+    it('폴백을 끄면 미등록자 로그인이 막힌다는 경고가 붙는다', () => {
+        const warning = findByRef(totpSecurityLayout, 'totp_settings_fallback_off_warning');
+
+        expect(warning).not.toBeNull();
+        expect(flatten(warning)).toContain('allow_mail_fallback');
+    });
+});
+
 describe('회원 상세 인증 앱 카드 (layout_extension)', () => {
     it('회원 상세 레이아웃의 확장 슬롯을 대상으로 한다', () => {
         const serialized = flatten(adminUserCardExtension);
@@ -213,5 +273,48 @@ describe('회원 상세 인증 앱 카드 (layout_extension)', () => {
 
         expect(serialized).toContain('/api/plugins/sirsoft-totp/admin/credentials/');
         expect(serialized).toContain('DELETE');
+    });
+
+    // @scenario viewer=reset_permitted_admin, enrollment=confirmed
+    // @effects member_card_shows_enrollment_and_hides_reset_when_not_enrolled
+    it('등록 여부를 보이고 등록된 회원에게만 [강제 해제] 를 낸다 (7.1.0 관측 R-26)', () => {
+        // 미등록 회원에게도 같은 해제 단추가 보이던 것을 막는다 — 조건은 서버가 해제 권한자에게만 싣는
+        // `totp_enrollment.enrolled` 하나다(화면 쪽 권한 판정 없음).
+        const reset = findByRef(adminUserCardExtension, 'admin_user_totp_reset');
+        expect(reset?.if).toBe('{{user?.data?.totp_enrollment?.enrolled === true}}');
+
+        const hint = findByRef(adminUserCardExtension, 'admin_user_totp_hint');
+        expect(hint?.if).toBe('{{user?.data?.totp_enrollment?.enrolled === true}}');
+
+        const enrolled = findByRef(adminUserCardExtension, 'admin_user_totp_status_enrolled');
+        const notEnrolled = findByRef(adminUserCardExtension, 'admin_user_totp_status_not_enrolled');
+        expect(enrolled?.if).toBe('{{user?.data?.totp_enrollment?.enrolled === true}}');
+        expect(notEnrolled?.if).toBe('{{user?.data?.totp_enrollment?.enrolled === false}}');
+        expect(flatten(enrolled)).toContain('$t:sirsoft-totp.admin.user_card.enrolled');
+        expect(flatten(notEnrolled)).toContain('$t:sirsoft-totp.admin.user_card.not_enrolled');
+
+        const notice = findByRef(adminUserCardExtension, 'admin_user_totp_not_enrolled_notice');
+        expect(notice?.if).toBe('{{user?.data?.totp_enrollment?.enrolled === false}}');
+    });
+
+    // @scenario viewer=admin_without_reset_permission, enrollment=confirmed
+    // @effects member_card_explains_missing_status_without_permission
+    it('등록 여부가 실리지 않으면(해제 권한 없음) 그 사실을 알리고 단추를 내지 않는다', () => {
+        const status = findByRef(adminUserCardExtension, 'admin_user_totp_status');
+        const unavailable = findByRef(adminUserCardExtension, 'admin_user_totp_status_unavailable');
+
+        expect(status?.if).toBe('{{!!user?.data?.totp_enrollment}}');
+        expect(unavailable?.if).toBe('{{!user?.data?.totp_enrollment}}');
+        expect(flatten(unavailable)).toContain('$t:sirsoft-totp.admin.user_card.status_unavailable');
+    });
+
+    // @scenario viewer=reset_permitted_admin, enrollment=confirmed
+    // @effects member_card_refreshes_after_reset
+    it('해제가 끝나면 회원 상세를 다시 받아 카드가 「미등록」으로 바뀐다', () => {
+        const reset = findByRef(adminUserCardExtension, 'admin_user_totp_reset');
+        const serialized = flatten(reset);
+
+        expect(serialized).toContain('refetchDataSource');
+        expect(serialized).toContain('"dataSourceId":"user"');
     });
 });

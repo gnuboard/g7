@@ -20,8 +20,8 @@
             <div class="flex-1">
               <p class="text-sm font-semibold text-warning-soft mb-2">$t:sirsoft-ecommerce.admin.category.delete_modal.cannot_delete_title</p>
               <ul class="list-disc list-inside space-y-1 text-warning-soft">
-                <li data-if="{{(_global.selectedCategory?.children_count ?? 0) > 0}}">{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete').replace('{count}', _global.selectedCategory?.children_count ?? 0)}}</li>
-                <li data-if="{{(_global.selectedCategory?.products_count ?? 0) > 0}}">{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete').replace('{count}', _global.selectedCategory?.products_count ?? 0)}}</li>
+                <li data-if="{{(_global.selectedCategory?.children_count ?? 0) > 0}}">$t:sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete|count={{_global.selectedCategory?.children_count ?? 0}}</li>
+                <li data-if="{{(_global.selectedCategory?.products_count ?? 0) > 0}}">$t:sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete|count={{_global.selectedCategory?.products_count ?? 0}}</li>
               </ul>
             </div>
           </div>

@@ -567,8 +567,10 @@
                                                                                     }
                                                                                 ],
                                                                                 "props": {
+                                                                                    "aria-label": "$t:common.edit",
+                                                                                    "title": "$t:common.edit",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 rounded transition-colors"
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
                                                                                 },
                                                                                 "children": [
                                                                                     {
@@ -609,8 +611,10 @@
                                                                                     }
                                                                                 ],
                                                                                 "props": {
+                                                                                    "aria-label": "$t:common.delete",
+                                                                                    "title": "$t:common.delete",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 rounded transition-colors"
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
                                                                                 },
                                                                                 "children": [
                                                                                     {

@@ -425,7 +425,9 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "aria-label": "{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
+                                                                    "aria-pressed": "{{!!_local._show_live_sign_key}}"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -527,7 +529,9 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "aria-label": "{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
+                                                                    "aria-pressed": "{{!!_local._show_live_iniapi_key}}"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -629,7 +633,9 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "aria-label": "{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}",
+                                                                    "aria-pressed": "{{!!_local._show_live_iniapi_iv}}"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -731,7 +737,9 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "aria-label": "{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
+                                                                    "aria-pressed": "{{!!_local._show_live_mobile_hash_key}}"
                                                                 },
                                                                 "children": [
                                                                     {

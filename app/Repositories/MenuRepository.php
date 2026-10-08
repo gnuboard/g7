@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 
 class MenuRepository implements MenuRepositoryInterface
@@ -85,15 +86,15 @@ class MenuRepository implements MenuRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'core.menus.read');
 
-        // 사용자 역할 기반 접근 제어
+        // 사용자 역할 기반 접근 제어 (역할 0개 메뉴는 복구할 수 있는 관리자에게만 함께 보인다)
         if ($user) {
-            $query->accessibleBy($user);
+            $this->applyManagementAccess($query, $user);
         }
 
         return $query->with(['creator', 'roles', 'children' => function ($query) use ($extensionFilter, $user) {
             $query->where($extensionFilter);
             if ($user) {
-                $query->accessibleBy($user);
+                $this->applyManagementAccess($query, $user);
             }
             // 하위 메뉴의 역할은 목록에서 로드하지 않는다 — 화면이 쓰는 것은 하위 메뉴의
             // 개수와 표시 정보뿐이고, 역할 배지는 선택한(상위) 메뉴에만 나온다. 로드하면
@@ -468,9 +469,9 @@ class MenuRepository implements MenuRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'core.menus.read');
 
-        // 사용자 역할 기반 접근 제어
+        // 사용자 역할 기반 접근 제어 (역할 0개 메뉴는 복구할 수 있는 관리자에게만 함께 보인다)
         if ($user) {
-            $query->accessibleBy($user);
+            $this->applyManagementAccess($query, $user);
         }
 
         // 활성화 상태 필터
@@ -517,7 +518,7 @@ class MenuRepository implements MenuRepositoryInterface
 
             // 자식 메뉴에도 사용자 역할 기반 접근 제어 적용
             if ($user) {
-                $childQuery->accessibleBy($user);
+                $this->applyManagementAccess($childQuery, $user);
             }
 
             // 자식 메뉴에도 활성화 상태 필터 적용
@@ -532,6 +533,36 @@ class MenuRepository implements MenuRepositoryInterface
             // Resource 는 로드되지 않은 하위 메뉴의 `roles` 키를 생략한다 — 위 메서드와 동일.
             $childQuery->orderBy('order');
         }])->get();
+    }
+
+    /**
+     * 메뉴 관리 목록의 역할 기반 접근 제어를 적용합니다.
+     *
+     * 기본은 「내 역할이 붙은 메뉴」(`accessibleBy`)다. 다만 역할이 하나도 없는 메뉴는 그 조건으로는
+     * 누구의 목록에도 오지 않아 「지정된 역할 없음 — 관리자만 복구 가능」 표시와 복구 경로가 닫힌다.
+     * 그래서 메뉴 수정 권한을 **전체 범위**로 가진 액터(관리자 역할·최고관리자 포함)에게는 역할 0개
+     * 메뉴를 함께 보인다. 범위 제한(본인·소유 역할) 운영자와 읽기 전용 운영자는 종전대로다.
+     * 사이드바(`getAccessibleNavigationMenus`)에는 적용하지 않는다 — 역할 0개 메뉴는 사이드바에 나오지 않는다.
+     *
+     * @param  Builder|Relation  $query  메뉴 쿼리 빌더 (하위 메뉴 eager load 의 관계 쿼리 포함)
+     * @param  User  $user  목록을 보는 액터
+     * @return void 반환값 없음
+     */
+    private function applyManagementAccess(Builder|Relation $query, User $user): void
+    {
+        $canRecoverRoleless = PermissionHelper::check('core.menus.update', $user)
+            && PermissionHelper::getEffectiveScope('core.menus.update', $user) === null;
+
+        if (! $canRecoverRoleless) {
+            $query->accessibleBy($user);
+
+            return;
+        }
+
+        $query->where(function (Builder $access) use ($user) {
+            $access->where(fn (Builder $mine) => $mine->accessibleBy($user))
+                ->orWhereDoesntHave('roles');
+        });
     }
 
     /**

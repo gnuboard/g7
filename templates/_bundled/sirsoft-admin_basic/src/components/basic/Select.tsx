@@ -1,11 +1,30 @@
 // e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe.
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
+
+/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 J D-J11) */
+const selectSearchPlaceholder = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.search_placeholder');
+  return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
+};
+
+/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 J D-J11 후속) */
+const selectSearchLabel = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.search');
+  return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
+};
+
+/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4 동류) */
+const selectNoResults = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.no_results');
+  return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
+};
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
@@ -79,6 +98,7 @@ export const Select: React.FC<SelectProps> = ({
   disabled,
   searchable = false,
   searchPlaceholder,
+  placeholder,
   editorAttrs,
   ...props
 }) => {
@@ -294,6 +314,10 @@ export const Select: React.FC<SelectProps> = ({
   // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
   const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
 
+  // 곁 라벨을 이름으로 잇는다 — 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
+  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 J D-J7).
+  useAdjacentLabel(buttonRef as React.RefObject<HTMLElement | null>, true, true);
+
   // 폭은 **바깥 상자**가 쥔다. 커스텀 드롭다운의 버튼은 `w-full` 로 부모를 채우는데,
   // 부모(`relative`)에 폭이 없으면 글자 길이만큼 줄어 호출처가 준 `w-44` 가 무의미해진다
   // (2026-09-16 실측: 「전체」 선택 상자가 80px 로 눌렸다). 호출처의 폭 토큰만 골라
@@ -314,7 +338,13 @@ export const Select: React.FC<SelectProps> = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <Span className="truncate">{selectedLabel || '\u00A0'}</Span>
+        {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
+            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
+        {selectedLabel ? (
+          <Span className="truncate">{selectedLabel}</Span>
+        ) : (
+          <Span className="truncate text-gray-400 dark:text-gray-500">{placeholder || '\u00A0'}</Span>
+        )}
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -346,17 +376,17 @@ export const Select: React.FC<SelectProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                placeholder={searchPlaceholder ?? 'Search...'}
+                placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
                 className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
-                aria-label={searchPlaceholder ?? 'Search'}
+                aria-label={searchPlaceholder ?? selectSearchLabel()}
               />
             </Div>
           )}
           <Div className="py-2 max-h-60 overflow-auto" style={{ scrollbarGutter: 'stable' }}>
             {visibleOptions && visibleOptions.length === 0 && (
               <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                {searchTerm ? 'No results' : ''}
+                {searchTerm ? selectNoResults() : ''}
               </Div>
             )}
             {(visibleOptions ?? []).map((option) => {

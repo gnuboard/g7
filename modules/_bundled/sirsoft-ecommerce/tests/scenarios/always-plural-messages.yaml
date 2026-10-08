@@ -1,0 +1,21 @@
+feature: 쇼핑몰 서버 영어 문구 중 늘 복수로 적혀 있던 것의 단·복수
+
+description: |
+  쇼핑몰이 내는 영어 문구 중 수 뒤 명사를 늘 복수로 적은 것(일괄 처리 결과 「1 products have been updated.」,
+  사용 중이라 지울 수 없음 「(Used 1 times)」, 활동 로그 「(1 items)」, 마일리지 「1 points」, 이미지 상한
+  「1 images」, 쿠폰 유효기간 「1 days」, 개인정보 통지 「1 years」 등)을 `단수|복수` + `trans_choice`/`trans_count`
+  로 1 이면 단수로 고른다. 예외는 메시지를 만들 때 고르고 응답용 치환값에 `count` 를 싣는다. 한국어는 그대로.
+
+axes:
+  surface: [dictionary, exception, activity_log, display_label, response_message]
+
+effects:
+  - english_message_singular_for_one_plural_otherwise
+  - korean_message_unchanged
+  - exception_message_follows_number
+  - activity_log_description_follows_stored_number
+  - display_label_follows_number
+  - response_message_follows_count
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/AlwaysPluralMessagesTest.php

@@ -184,4 +184,15 @@ return [
         'success' => 'Authentication verified successfully. The ID and password are correct.',
         'failed' => 'Authentication check failed. See the detailed reason.',
     ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'name' => 'Recipient (administrator) name',
+            'app_name' => 'Site name',
+            'result_code' => 'Result code (9070 SMS / 7436 AlimTalk)',
+            'channel_label' => 'Sending channel (SMS/AlimTalk)',
+            'settings_url' => 'Messaging settings URL',
+            'site_url' => 'Site URL',
+        ],
+    ],
 ];

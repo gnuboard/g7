@@ -432,7 +432,10 @@ class CoreActivityLogListener implements HookListenerInterface
     // ═══════════════════════════════════════════
 
     /**
-     * 관리자 로그인 후 로그 기록
+     * 로그인 후 로그 기록 (사용자·관리자 로그인 공통 훅)
+     *
+     * 같은 훅이 사용자 로그인(`/api/auth/login…`)과 관리자 로그인(`/api/auth/admin/login…`)에서 모두 발화한다.
+     * 설명은 들어온 경로로 고른다 — 사용자 로그인에도 「관리자 로그인」이 찍히던 문제(7.1.0 실측 O-B3).
      *
      * @param  User  $user  로그인한 사용자
      * @param  array  $loginData  로그인 데이터
@@ -442,13 +445,15 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $this->logActivity('auth.login', [
             'loggable' => $user,
-            'description_key' => 'activity_log.description.auth_login',
+            'description_key' => $this->isAdminAuthRequest()
+                ? 'activity_log.description.auth_admin_login'
+                : 'activity_log.description.auth_login',
             'user_id' => $user->id,
         ]);
     }
 
     /**
-     * 로그아웃 로그 기록
+     * 로그아웃 로그 기록 (사용자·관리자 로그아웃 공통 훅)
      *
      * @param  User  $user  로그아웃한 사용자
      * @return void 반환값 없음
@@ -457,9 +462,26 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $this->logActivity('auth.logout', [
             'loggable' => $user,
-            'description_key' => 'activity_log.description.auth_logout',
+            'description_key' => $this->isAdminAuthRequest()
+                ? 'activity_log.description.auth_admin_logout'
+                : 'activity_log.description.auth_logout',
             'user_id' => $user->id,
         ]);
+    }
+
+    /**
+     * 지금 요청이 관리자 인증 경로인지 판정합니다.
+     *
+     * 관리자 로그인·2단계 인증·로그인 비밀번호 변경은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
+     * 요청이 없으면(CLI) 관리자가 아니다.
+     *
+     * @return bool 관리자 인증 경로이면 true
+     */
+    private function isAdminAuthRequest(): bool
+    {
+        $request = request();
+
+        return $request !== null && ($request->is('api/auth/admin/*') || $request->is('api/admin/*'));
     }
 
     /**
@@ -661,6 +683,8 @@ class CoreActivityLogListener implements HookListenerInterface
             'description_params' => [
                 'attempts' => $context['attempts'] ?? null,
                 'minutes' => $context['lockout_minutes'] ?? null,
+                // 영어 문구 「1 attempt / N attempts」 를 화면 번역이 이 수로 고른다.
+                'count' => $context['attempts'] ?? null,
             ],
             'user_id' => $user->id,
             'ip_address' => $context['ip_address'] ?? null,
@@ -1764,7 +1788,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 본인인증 challenge 만료 로그 기록.
      *
-     * @param  IdentityVerificationLog  $log
+     * @param  IdentityVerificationLog  $log  만료된 본인인증 로그
      * @return void 반환값 없음
      */
     public function handleIdentityExpired($log): void

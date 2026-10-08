@@ -79,6 +79,12 @@ final class ActionCompiler
     /** 구조값 컴파일러 — `<field name>` 파라미터 안의 `<field>`/`<item>` 트리 (D42 G6) */
     private readonly StructuredValueCompiler $values;
 
+    /** 소스 위치 표식 켜짐 여부 — {@see markSourcePositions()} */
+    private bool $markSource = false;
+
+    /**
+     * 핸들러 표(ActionHandlerManifest)와 구조값 컴파일러를 준비합니다.
+     */
     public function __construct()
     {
         $this->manifest = new ActionHandlerManifest;
@@ -91,6 +97,7 @@ final class ActionCompiler
      * @param  MarkupElement  $on  `<on>` 요소
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError `<on>` 표기가 규칙을 벗어난 경우
      */
@@ -170,6 +177,11 @@ final class ActionCompiler
         $action = $this->compileAction($element, true, $path);
 
         foreach (array_keys($action) as $key) {
+            // 위치를 찾는 재컴파일의 소스 위치 표식은 작성자가 쓴 키가 아니다(7.1.0 P16)
+            if ($key === LayoutLinter::SOURCE_POSITION_KEY) {
+                continue;
+            }
+
             if (! $this->manifest->isInitRootKey($key)) {
                 throw $this->error($element, LayoutMarkupErrorCode::InitActionKeyForbidden, $path, ['key' => (string) $key]);
             }
@@ -222,6 +234,7 @@ final class ActionCompiler
      * @param  string  $eventName  구독할 이벤트 이름
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -240,6 +253,7 @@ final class ActionCompiler
      * @param  string  $phase  `onMount` 또는 `onUnmount`
      * @param  array<string, mixed>  $node  노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -311,16 +325,51 @@ final class ActionCompiler
     }
 
     /**
-     * 액션 요소(핸들러 또는 제어 태그) 하나를 액션 객체로 컴파일합니다.
+     * 소스 위치 표식을 켜거나 끕니다 (7.1.0 P16).
+     *
+     * 켜면 액션 배열마다 `LayoutLinter::SOURCE_POSITION_KEY => [줄, 칸]` 을 싣는다. 위치 없는 lint 경고의
+     * 자리를 찾는 재컴파일에서만 켠다 — 저장·반환 JSON 에는 싣지 않는다.
+     *
+     * @param  bool  $on  켤지 여부
+     * @return void 반환값 없음
+     */
+    public function markSourcePositions(bool $on): void
+    {
+        $this->markSource = $on;
+    }
+
+    /**
+     * 액션 요소 하나를 컴파일하고, 표식이 켜졌으면 소스 위치를 싣습니다.
      *
      * @param  MarkupElement  $element  액션 요소
-     * @param  bool  $entry  이벤트 진입점(confirm 허용)인지
+     * @param  bool  $entry  진입점 여부
      * @param  string|null  $path  소스 파일 경로
      * @return array<string, mixed> 액션 객체
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
     private function compileAction(MarkupElement $element, bool $entry, ?string $path): array
+    {
+        $action = $this->compileActionBody($element, $entry, $path);
+
+        if ($this->markSource && ! array_is_list($action)) {
+            $action[LayoutLinter::SOURCE_POSITION_KEY] = [$element->line, $element->column];
+        }
+
+        return $action;
+    }
+
+    /**
+     * 액션 요소 하나를 컴파일합니다 (표식 없는 본체 — {@see compileAction()}).
+     *
+     * @param  MarkupElement  $element  액션 요소
+     * @param  bool  $entry  진입점 여부
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 액션 객체
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
+    private function compileActionBody(MarkupElement $element, bool $entry, ?string $path): array
     {
         if (isset(self::CONTROL_TAGS[$element->name])) {
             return $this->compileControl($element, $entry, $path);
@@ -401,6 +450,16 @@ final class ActionCompiler
         return $this->order($action);
     }
 
+    /**
+     * `<action handler="이름">` 일반 표기를 액션 객체로 컴파일합니다(확장·동적 핸들러용).
+     *
+     * @param  MarkupElement  $element  `<action>` 요소
+     * @param  bool  $entry  진입점(이벤트에 바로 묶이는 액션) 여부
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 액션 객체
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
     private function compileGenericHandler(MarkupElement $element, bool $entry, ?string $path): array
     {
         $handlerAttr = $element->attribute('handler');
@@ -624,6 +683,7 @@ final class ActionCompiler
      * @param  array<string, mixed>  $action  액션 (참조)
      * @param  array<string, mixed>  $params  params (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -809,6 +869,7 @@ final class ActionCompiler
      * @param  array<string, mixed>  $action  액션 (참조)
      * @param  array<string, mixed>  $params  params (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
@@ -862,6 +923,7 @@ final class ActionCompiler
      * @param  bool  $entry  이벤트 진입점(confirm 허용)인지
      * @param  array<string, mixed>  $action  액션 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 중복·confirm 오배치·혼합 조건식인 경우
      */
@@ -901,6 +963,7 @@ final class ActionCompiler
      * @param  array<string, mixed>  $action  액션
      * @param  string  $key  키명
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 지정된 키인 경우
      */
@@ -918,6 +981,7 @@ final class ActionCompiler
      * @param  array<string, mixed>  $params  params
      * @param  string  $key  키명
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 지정된 키인 경우 (속성과 태그가 같은 자리를 다툼)
      */

@@ -8,6 +8,7 @@
 
 ### Added
 
+- 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기에 쓰이는 알림톡 템플릿·SMS 본문·반려 사유 창 이름(`template.form.editor_label`·`template.sms.editor_label`·`template.rejection.editor_label`)의 일본어 번역을 추가했습니다.
 
 ### Changed

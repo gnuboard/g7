@@ -29,6 +29,12 @@ export interface MenuItemData {
   hasChildren?: boolean;
   /** 부여된 역할 이름 — undefined 면 배지 줄을 그리지 않는다, 빈 배열이면 「역할 없음」 */
   roleNames?: string[];
+  /**
+   * 부여된 역할 수(role_ids 길이). 이름표(활성 역할 목록) 밖 역할 — 비활성 역할이나 역할 관리 권한이
+   * 없어 이름을 받지 못한 역할 — 도 접근을 주므로, 이름을 몰라도 「외 n개」·title 의 개수에는 센다.
+   * 주지 않으면 roleNames 길이를 쓴다.
+   */
+  roleCount?: number;
 }
 
 export interface SortableMenuItemProps {
@@ -103,6 +109,12 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
   };
 
   const paddingLeft = level * 24 + 12;
+
+  // 역할 배지 개수 — 배지로 보이는 이름 뒤에 남은 수(이름 있는 나머지 + 이름표 밖 역할)를 「외 n개」 로 접는다.
+  const knownRoleCount = item.roleNames?.length ?? 0;
+  const totalRoleCount = Math.max(item.roleCount ?? knownRoleCount, knownRoleCount);
+  const unnamedRoleCount = totalRoleCount - knownRoleCount;
+  const hiddenRoleCount = totalRoleCount - Math.min(knownRoleCount, MAX_ROLE_BADGES);
 
   // 기본 레이아웃 클래스 (변경 불가)
   const baseClassName = 'flex items-center gap-2 cursor-pointer transition-colors';
@@ -196,7 +208,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
           <Div
             className="flex flex-wrap items-center gap-1 mt-1"
             data-testid="menu-item-roles"
-            title={`${t('admin.menus.list_roles_label')}: ${item.roleNames.join(', ') || t('admin.menus.list_roles_none')}`}
+            title={`${t('admin.menus.list_roles_label')}: ${item.roleNames.join(', ') || t('admin.menus.list_roles_none')}${unnamedRoleCount > 0 ? ` ${t('admin.menus.list_roles_more', { count: unnamedRoleCount })}` : ''}`}
           >
             {item.roleNames.length === 0 ? (
               <Span className="px-1.5 py-0.5 text-[11px] leading-none rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
@@ -212,9 +224,9 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
                     {roleName}
                   </Span>
                 ))}
-                {item.roleNames.length > MAX_ROLE_BADGES && (
+                {hiddenRoleCount > 0 && (
                   <Span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
-                    {t('admin.menus.list_roles_more', { count: item.roleNames.length - MAX_ROLE_BADGES })}
+                    {t('admin.menus.list_roles_more', { count: hiddenRoleCount })}
                   </Span>
                 )}
               </>

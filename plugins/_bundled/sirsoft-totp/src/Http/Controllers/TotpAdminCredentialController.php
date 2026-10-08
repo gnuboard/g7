@@ -50,7 +50,14 @@ class TotpAdminCredentialController extends AdminBaseController
 
         $removed = $this->enrollmentService->adminReset($target, $this->getCurrentUser()?->id, request()->ip());
 
-        return ResponseHelper::success('sirsoft-totp::messages.enrollment.admin_reset', [
+        // 등록한 인증 앱이 없었으면 「해제했습니다」 라고 하지 않는다 — 카드는 미등록 회원에게 해제 단추를 숨기지만,
+        // 화면을 연 사이 다른 운영자가 먼저 해제했거나 API 를 직접 부르면 여기로 온다(같은 요청을 두 번 눌러도
+        // 오류가 아니라 「해제할 것이 없음」).
+        $messageKey = $removed
+            ? 'sirsoft-totp::messages.enrollment.admin_reset'
+            : 'sirsoft-totp::messages.enrollment.admin_reset_none';
+
+        return ResponseHelper::success($messageKey, [
             'user_id' => $target->id,
             'removed' => $removed,
         ]);
