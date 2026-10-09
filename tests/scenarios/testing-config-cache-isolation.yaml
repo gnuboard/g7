@@ -1,0 +1,18 @@
+feature: 테스트 프로세스의 config 캐시 경로 격리
+
+description: |
+  테스트 부트스트랩은 시작 때 운영 config 캐시(bootstrap/cache/config.php)를 지우지만, 테스트가 도는 사이 같은
+  클론에서 확장 반영(plugin/module/template update — config 캐시를 다시 굽는다)을 하면 그 뒤 테스트 앱이 캐시된 개발
+  config 로 부팅했다. 캐시된 config 는 .env.testing 을 무시하므로 테스트가 개발 DB 에 붙고(2026-10-08 00:50 실측),
+  확장 저장소 디스크가 storage/app 을 가리켜 GDPR 설정 테스트가 개발 사이트 설정 파일을 덮었다(O-M1F-A).
+  라우트 캐시처럼 config 캐시 경로도 테스트 전용 위치(storage/framework/testing/config.php)로 돌린다.
+
+axes:
+  producer: [extension_update_during_run]
+
+effects:
+  - test_app_never_reads_site_config_cache
+  - extension_storage_stays_under_testing_root
+
+test_files:
+  - tests/Unit/Testing/ConfigCachePathIsolationTest.php

@@ -262,3 +262,37 @@ describe('내 신고 — 검색 0건 안내', () => {
         expect(json.includes('$t:board.no_search_results')).toBe(true);
     });
 });
+
+/** 레이아웃 트리에서 조건에 맞는 노드를 모두 모은다. */
+function collectReportNodes(node: any, pred: (n: any) => boolean, out: any[] = []): any[] {
+    if (!node || typeof node !== 'object') return out;
+    if (Array.isArray(node)) {
+        node.forEach((child) => collectReportNodes(child, pred, out));
+        return out;
+    }
+    if (pred(node)) out.push(node);
+    for (const value of Object.values(node)) collectReportNodes(value, pred, out);
+    return out;
+}
+
+describe('내 신고 — K2 실측(2026-10-06) 후속', () => {
+    // @scenario case=subtab_lists_reports_with_status_badges
+    // @effects mypage_reports_search_input_shrinks_on_narrow_screen
+    it('검색 입력칸이 줄어들 수 있어 좁은 화면(390px)에서 검색 줄이 칸 밖으로 밀리지 않는다', () => {
+        // 입력칸의 고유 최소 폭 때문에 「검색」·「초기화」가 화면 밖(오른쪽 449px)으로 밀리고 페이지가 가로로 스크롤됐다.
+        const inputs = collectReportNodes(myReports, (n) => n?.name === 'Input'
+            && n?.props?.placeholder === '$t:mypage.board_activities.search_placeholder');
+
+        expect(inputs.length).toBe(1);
+        expect(inputs[0].props.className).toContain('min-w-0');
+    });
+
+    // @scenario case=subtab_cancel_only_when_pending
+    // @effects mypage_reports_cancel_confirm_shows_pointer
+    it('신고 취소 창의 「신고 취소」 버튼이 형제 「취소」 처럼 손가락 커서를 쓴다', () => {
+        const confirm = collectReportNodes(cancelModal, (n) => n?.props?.['data-testid'] === 'report-cancel-confirm');
+
+        expect(confirm.length).toBe(1);
+        expect(confirm[0].props.className).toContain('cursor-pointer');
+    });
+});

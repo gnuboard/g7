@@ -22,6 +22,7 @@ use App\Support\PermissionEscalationGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +36,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -46,6 +48,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class BoardService
 {
     use ClearsTemplateCaches;
+    use FormatsBoardDate;
     use ResolvesSortSpec;
 
     /**
@@ -322,14 +325,17 @@ class BoardService
         // 비밀글은 제목 공개 정책(2026-02-04)에 따라 제목을 포함한다(본문 미포함 — 사용자 무관 데이터).
         // 게시판별 열람 권한은 캐시에 담지 않고 응답 시점에 호출자 기준으로 적용해,
         // 고권한 사용자의 결과가 캐시를 오염시켜 저권한 사용자에게 새는 것을 막는다.
+        // 게시판 이름은 언어별 값이라 캐시를 언어마다 나눈다 — 키에 언어가 없으면 먼저 채운 언어의 이름이
+        // 다른 언어 화면에 그대로 나갔다(2026-10-07 실측: 한국어 화면에 영어 게시판 이름·「10 minutes ago」).
+        $locale = app()->getLocale();
         $posts = $this->cache->remember(
-            "recent_posts_{$limit}",
+            "recent_posts_{$limit}_{$locale}",
             fn () => $this->getRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        return $this->filterItemsByBoardReadPermission($posts, 'board_slug');
+        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
     }
 
     /**
@@ -349,14 +355,16 @@ class BoardService
         // 열람 권한은 응답 시점에 호출자 기준으로 적용한다(캐시 오염 회피).
         // 키의 v2 는 작성자 이메일을 담던 이전 캐시를 업데이트 직후부터 다시 읽지 않기 위한 것이다 —
         // 모듈 업데이트는 이 캐시를 비우지 않으므로 키를 그대로 두면 TTL 동안 옛 값이 응답된다.
+        // 게시판 이름·작성자 상태 문구가 언어별 값이라 언어마다 나눈다(최근 게시글과 같은 이유).
+        $locale = app()->getLocale();
         $posts = $this->cache->remember(
-            "popular_posts_v2_{$period}_{$limit}",
+            "popular_posts_v2_{$period}_{$limit}_{$locale}",
             fn () => $this->getPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        return $this->filterItemsByBoardReadPermission($posts, 'board_slug');
+        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
     }
 
     /**
@@ -371,14 +379,46 @@ class BoardService
 
         // 캐시는 활성 게시판 전체로 채우고, 게시판별 열람 권한은 응답 시점에
         // 호출자 기준으로 적용한다(캐시 오염 회피 — 저권한 사용자에게 고권한 결과가 새지 않도록).
+        // 게시판 이름·설명이 언어별 값이라 언어마다 나눈다.
+        $locale = app()->getLocale();
         $boards = $this->cache->remember(
-            "popular_boards_{$limit}",
+            "popular_boards_{$limit}_{$locale}",
             fn () => $this->getPopularBoards($limit),
             $ttl,
             tags: ['board-list']
         );
 
         return $this->filterItemsByBoardReadPermission($boards, 'slug');
+    }
+
+    /**
+     * 캐시에서 꺼낸 게시글 목록의 날짜 표기와 New 배지를 지금 기준으로 다시 계산합니다.
+     *
+     * 목록은 모든 방문자가 공유하는 캐시라, 채운 시점의 「n분 전」·New·시간대가 그대로 굳어
+     * 몇 시간 뒤에도 「방금」으로 보이거나 표시 기간이 지난 글에 New 가 남았다(2026-10-07 실측).
+     * 저장소가 함께 담아 둔 원본 작성 시각(`_created_at`)으로 다시 계산하고 그 원본은 응답에서 뺀다.
+     *
+     * @param  array<int, array<string, mixed>>  $items  캐시에서 꺼낸 게시글 배열
+     * @return array<int, array<string, mixed>> 날짜 표기·New 를 다시 계산한 배열
+     */
+    private function refreshCachedPostTimes(array $items): array
+    {
+        $format = g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard');
+        $newHours = g7_module_settings('sirsoft-board', 'basic_defaults.new_display_hours', 24);
+
+        return array_map(function (array $item) use ($format, $newHours) {
+            $raw = $item['_created_at'] ?? null;
+            unset($item['_created_at']);
+
+            if ($raw) {
+                $createdAt = Carbon::parse($raw);
+                $item['created_at'] = $this->formatCreatedAt($createdAt);
+                $item['created_at_formatted'] = $this->formatCreatedAtFormat($createdAt, $format);
+                $item['is_new'] = $createdAt->diffInHours(now()) < $newHours;
+            }
+
+            return $item;
+        }, $items);
     }
 
     /**
@@ -523,7 +563,8 @@ class BoardService
         if ($boardStepIds !== null) {
             $syncData['board_step_ids'] = $boardStepIds;
         }
-        $this->syncBoardRoleUsers($board, $syncData);
+        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다(K4F-2)
+        $this->syncBoardRoleUsers($board, $syncData, isNewBoard: true);
 
         return $board;
     }
@@ -919,6 +960,50 @@ class BoardService
     }
 
     /**
+     * 현재 액터가 새로 만들 게시판에 관리자·스텝을 지정할 수 있는지 미리 판정합니다 (생성·복사 폼용).
+     *
+     * 새 게시판의 관리자 역할은 그 게시판 권한 전부를 담는다. 담당자 지정은 그 권한을 액터가 모두
+     * 가져야 통과하므로(syncBoardRoleUsers → PermissionEscalationGuard), 생성 직후 액터가 권한을 갖는
+     * 길은 「권한마다 붙는 역할(기본 ACL·복사 원본 ACL)에 액터의 역할이 있다」뿐이다. 이를 만족하지
+     * 않는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있으므로(syncBoardRoleUsers 의
+     * 생성자 본인 예외), 폼은 이 판정이 거짓이어도 본인을 관리자로 채우고(복사는 원본 명단 대신, 스텝은
+     * 비움) `_meta.can_assign_board_members=false` 로 다른 담당자를 지정할 수 없음만 알린다 — 화면은 이
+     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측 O-K4-3, K4F-2).
+     *
+     * @param  array<string, mixed>  $permissionRoles  권한 키 => 역할 식별자 목록 (설정 기본값 또는 복사 원본 ACL, 프론트 형식 `{roles:[…]}` 도 받음)
+     * @return bool 지정할 수 있으면 true
+     */
+    public function canAssignBoardMembersOnNewBoard(array $permissionRoles): bool
+    {
+        $actor = Auth::user();
+        if (! $actor instanceof User) {
+            return false;
+        }
+        if ($actor->isSuperAdmin()) {
+            return true;
+        }
+
+        $actorRoles = $actor->roles()->pluck('identifier')->all();
+        if ($actorRoles === []) {
+            return false;
+        }
+
+        foreach (array_keys(config('sirsoft-board.board_permission_definitions', [])) as $key) {
+            $roles = $permissionRoles[$key] ?? $permissionRoles[str_replace('.', '_', $key)] ?? [];
+            if (is_array($roles) && array_key_exists('roles', $roles)) {
+                $roles = $roles['roles'] ?? [];
+            }
+            $roles = is_array($roles) ? $roles : [$roles];
+
+            if (array_intersect($actorRoles, $roles) === []) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * 게시판 관리자/스텝 역할에 사용자를 동기화합니다.
      *
      * 게시판 관리자·스텝 역할에 회원을 넣고 빼는 것은 그 역할이 가진 게시판 권한(admin.manage·
@@ -928,18 +1013,29 @@ class BoardService
      * 게시판 권한 저장(KVE-2026-2367)의 두 번째 우회로였다. 명단이 바뀌지 않으면 검사하지 않는다
      * — 게시판 수정 화면은 저장할 때마다 현재 명단을 그대로 다시 보낸다.
      *
+     * 예외 하나: 같은 요청에서 **새로 만든 게시판**의 관리자 명단이 생성자 본인 한 명뿐이면 상한을 보지 않는다.
+     * 새로 만드는 게시판의 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니고, 이것이 없으면 기본 ACL
+     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측 K4F-2, 결정
+     * 2026-10-08). 다른 회원을 함께 넣거나 스텝을 지정하면 종전대로 상한을 받는다.
+     *
      * @param  Board  $board  대상 게시판
      * @param  array  $data  요청 데이터 (board_manager_ids, board_step_ids 포함)
+     * @param  bool  $isNewBoard  같은 요청에서 방금 만든 게시판인지 (createBoard 경로만 true)
      * @return void 반환값 없음
      *
      * @throws PermissionEscalationException 명단 변경이 액터의 권한 부여 상한을 넘을 때
      */
-    private function syncBoardRoleUsers(Board $board, array $data): void
+    private function syncBoardRoleUsers(Board $board, array $data, bool $isNewBoard = false): void
     {
         $roleMap = [
             'board_manager_ids' => "sirsoft-board.{$board->slug}.manager",
             'board_step_ids' => "sirsoft-board.{$board->slug}.step",
         ];
+        // 새 게시판은 스텝을 먼저 판정한다 — 관리자(본인)를 먼저 넣으면 그 관리자 역할 덕에 같은 요청의 스텝 지정이
+        // 상한을 통과해, 「본인 한 명만 관리자」 예외가 다른 회원 지정으로 번진다
+        if ($isNewBoard) {
+            $roleMap = array_reverse($roleMap, true);
+        }
 
         foreach ($roleMap as $dataKey => $roleIdentifier) {
             if (! array_key_exists($dataKey, $data)) {
@@ -972,7 +1068,17 @@ class BoardService
                 $actor->flushPermissionCaches();
                 $actor->unsetRelation('roles');
             }
-            app(PermissionEscalationGuard::class)->assertRoleAssignmentWithinActorCeiling([$role->id]);
+
+            // 새 게시판의 관리자를 생성자 본인 한 명으로만 두는 경우는 상승이 아니다 — 상한을 보지 않는다
+            $isCreatorSelfManager = $isNewBoard
+                && $dataKey === 'board_manager_ids'
+                && $actor instanceof User
+                && $currentIds === []
+                && $targetIds === [(int) $actor->id];
+
+            if (! $isCreatorSelfManager) {
+                app(PermissionEscalationGuard::class)->assertRoleAssignmentWithinActorCeiling([$role->id]);
+            }
 
             $role->users()->sync($userIds);
         }
@@ -1478,17 +1584,23 @@ class BoardService
      * 적용한 **새 전체 명단**을 게시판 폼 저장과 같은 `syncBoardRoleUsers()` 로 넘긴다 — 역할 멤버십과
      * 권한 상한 판정이 단건 저장과 같아진다. 정적 경로라 미들웨어의 범위 검사가 빠지므로 범위 밖
      * 게시판은 건너뛰고(skipped: scope), 관리자가 0명이 되는 게시판도 건너뛴다(skipped: last_manager —
-     * 게시판 폼의 「관리자 최소 1명」 규칙과 같다). 전체를 한 트랜잭션으로 묶어 한 곳이라도 실패하면
-     * 모두 되돌린다.
+     * 게시판 폼의 「관리자 최소 1명」 규칙과 같다). 「모든 게시판」(applyAll) 이면 액터가 그 게시판 역할을 줄 수
+     * 없는 게시판(권한 부여 상한 위반)도 그 게시판만 건너뛴다(skipped: not_grantable) — 하나 때문에 요청 전체를
+     * 403 으로 거절하지 않는다(7.1.0 실측 O-K3T-7, 결정 2026-10-08). 게시판 역할 행이 없는(데이터 손상) 게시판은
+     * skipped: role_missing 으로 건너뛴다(결정 2026-10-09). 건너뛴 게시판의 명단은 그대로이므로 권한
+     * 상승은 여전히 막힌다. 운영자가 직접 고른 게시판은 고른 대로 처리하거나 거절해야 하므로 종전처럼 403 이다.
+     * 전체를 한 트랜잭션으로 묶어 그 밖의 실패는 모두 되돌린다. 바꿀 것이 없는 게시판(「제거」 인데 그 회원이 없거나
+     * 「추가」 인데 이미 있는 게시판)은 unchanged_count 로 따로 센다 — 변경·제외·변화 없음의 합이 대상 게시판 수다
+     * (7.1.0 실측 G1a 관측, 결정 2026-10-08).
      *
      * @param  bool  $applyAll  전체 게시판 대상 여부
      * @param  array<int, int>  $boardIds  대상 게시판 ID (applyAll=false 일 때)
      * @param  array<int, string>  $userUuids  더하거나 뺄 회원 UUID
      * @param  string  $memberType  'manager' | 'step'
      * @param  string  $mode  'add' | 'remove'
-     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{board_id: int, reason: string}>} 처리 결과
+     * @return array{updated_count: int, skipped_count: int, unchanged_count: int, skipped: array<int, array{board_id: int, reason: string, board_name: string}>} 처리 결과
      *
-     * @throws PermissionEscalationException 액터가 부여할 수 없는 게시판 역할을 바꾸려 할 때 (전체 롤백)
+     * @throws PermissionEscalationException 고른 게시판 중 액터가 부여할 수 없는 게시판 역할을 바꾸려 할 때 (전체 롤백)
      */
     public function bulkUpdateBoardMembers(bool $applyAll, array $boardIds, array $userUuids, string $memberType, string $mode): array
     {
@@ -1505,35 +1617,65 @@ class BoardService
         $permittedIds = array_map(static fn (Board $b): int => (int) $b->id, $permitted);
         foreach ($boards as $board) {
             if (! in_array((int) $board->id, $permittedIds, true)) {
-                $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'scope'];
+                // 이름을 함께 싣는다 — 범위 밖 게시판은 화면의 게시판 선택지에 없어 번호만 보이게 된다
+                $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'scope', 'board_name' => $board->getLocalizedName()];
             }
         }
 
         $dataKey = $memberType === 'manager' ? 'board_manager_ids' : 'board_step_ids';
         $userUuids = array_values(array_unique($userUuids));
 
-        $updatedBoards = DB::transaction(function () use ($permitted, $memberType, $mode, $dataKey, $userUuids, &$skipped) {
+        $unchangedCount = 0;
+        $updatedBoards = DB::transaction(function () use ($applyAll, $permitted, $memberType, $mode, $dataKey, $userUuids, &$skipped, &$unchangedCount) {
             $updated = [];
             foreach ($permitted as $board) {
                 $role = $this->roleRepository->findByIdentifier("sirsoft-board.{$board->slug}.{$memberType}");
-                $current = $role ? $role->users()->pluck('users.uuid')->all() : [];
+
+                // 역할 행이 없으면(데이터 손상) 명단을 바꿀 수 없다 — 「변경」 으로 세지 않고, 운영자가 서버 로그를 보지 않아도
+                // 알 수 있게 제외 사유 role_missing 으로 결과에 싣는다(7.1.0 실측, 결정 2026-10-09)
+                if (! $role) {
+                    Log::warning('게시판 역할을 찾을 수 없어 일괄 지정에서 건너뜁니다.', [
+                        'board_slug' => $board->slug,
+                        'member_type' => $memberType,
+                    ]);
+                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'role_missing', 'board_name' => $board->getLocalizedName()];
+
+                    continue;
+                }
+
+                $current = $role->users()->pluck('users.uuid')->all();
 
                 $next = $mode === 'add'
                     ? array_values(array_unique(array_merge($current, $userUuids)))
                     : array_values(array_diff($current, $userUuids));
 
                 if ($memberType === 'manager' && $next === []) {
-                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'last_manager'];
+                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'last_manager', 'board_name' => $board->getLocalizedName()];
 
                     continue;
                 }
 
                 if (array_diff($next, $current) === [] && array_diff($current, $next) === []) {
+                    // 바꿀 것이 없다 — 「변화 없음」 으로 센다
+                    $unchangedCount++;
+
                     continue;
                 }
 
-                $this->syncBoardRoleUsers($board, [$dataKey => $next]);
-                $updated[] = $board;
+                if (! $applyAll) {
+                    $this->syncBoardRoleUsers($board, [$dataKey => $next]);
+                    $updated[] = $board;
+
+                    continue;
+                }
+
+                // 「모든 게시판」 — 상한 판정은 명단을 바꾸기 전에 끝나지만, 저장점으로 감싸 그 게시판의 변경만 확실히 되돌린다
+                try {
+                    DB::transaction(fn () => $this->syncBoardRoleUsers($board, [$dataKey => $next]));
+                    $updated[] = $board;
+                } catch (PermissionEscalationException $e) {
+                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'not_grantable', 'board_name' => $board->getLocalizedName()];
+                }
             }
 
             return $updated;
@@ -1547,6 +1689,7 @@ class BoardService
         $result = [
             'updated_count' => count($updatedBoards),
             'skipped_count' => count($skipped),
+            'unchanged_count' => $unchangedCount,
             'skipped' => $skipped,
         ];
 

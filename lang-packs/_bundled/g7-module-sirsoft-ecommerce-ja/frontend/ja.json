@@ -51,9 +51,6 @@
     "personal_payment_detail": {
       "$partial": "partial/admin/personal_payment_detail.json"
     },
-    "mileage_deposit_settings": {
-      "$partial": "partial/admin/mileage_deposit_settings.json"
-    },
     "product_notice_template": {
       "$partial": "partial/admin/product_notice_template.json"
     },

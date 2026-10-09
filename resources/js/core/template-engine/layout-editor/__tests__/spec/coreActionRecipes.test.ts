@@ -105,6 +105,34 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
 
   /**
    * @scenario catalog_aspect=param_widget
+   * @effects editor_core_catalog_lists_every_core_handler, navigate_refetch_data_sources_survives_editor_roundtrip
+   */
+  it('navigate(replace) 의 refetch_data_sources 는 편집기 폼 왕복 뒤에도 남는다 (engine-v1.79.0)', () => {
+    // 본인인증 탭 목록 조작은 navigate replace + refetch_data_sources 로 목록만 다시 받는다(engine-v1.79.0).
+    // 레시피 build 틀에 이 키가 없으면 편집기 폼으로 그 navigate 를 고쳐 저장할 때 파라미터가 빠져,
+    // 목록 조작이 설정 소스까지 다시 받아 고친 설정을 덮던 결함이 되살아난다.
+    const param = CORE_ACTION_RECIPES.navigate.params?.find((p) => p.key === 'refetch_data_sources');
+    expect(param).toBeDefined();
+    expect((param as Record<string, unknown>)?.dependsOn).toEqual({ param: 'replace', equals: true });
+
+    const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
+    for (const refetch of ['policies', ['boardIdentityPolicies', 'boardIdentityPurposes']]) {
+      const action = {
+        handler: 'navigate',
+        params: { path: '/admin/settings', query: { tab: 'identity', page: 2 }, mergeQuery: true, replace: true, refetch_data_sources: refetch },
+      };
+      const card = resolveActionCard(action, normalized);
+      expect(card.kind).toBe('preset');
+      if (card.kind !== 'preset') continue;
+      const recipe = normalized.find((r) => r.id === card.recipeId)!;
+      const rebuilt = buildAction(recipe, card.values) as { params?: Record<string, unknown> };
+      expect(rebuilt.params?.refetch_data_sources).toEqual(refetch);
+      expect(rebuilt.params?.replace).toBe(true);
+    }
+  });
+
+  /**
+   * @scenario catalog_aspect=param_widget
    * @effects editor_core_catalog_lists_every_core_handler, switch_cases_param_locked_advanced
    */
   it('switch 의 cases 는 advanced 잠금 — cases 는 객체맵(Record)이라 action-list 로 표현 불가', () => {

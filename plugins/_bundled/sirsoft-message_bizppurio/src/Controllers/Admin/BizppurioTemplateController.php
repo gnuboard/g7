@@ -59,7 +59,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $paginator = $this->service->list($request->filters(), $request->page(), $request->perPage());
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('sirsoft-message_bizppurio::messages.template.loaded', [
             'templates' => collect($paginator->items())
                 ->map(fn (BizppurioTemplate $row) => $this->listRow($row))
                 ->all(),
@@ -83,7 +83,7 @@ class BizppurioTemplateController extends AdminBaseController
      */
     public function map(): JsonResponse
     {
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('sirsoft-message_bizppurio::messages.template.loaded', [
             'templates' => $this->service->summaryMap(),
         ]);
     }
@@ -98,10 +98,10 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('sirsoft-message_bizppurio::messages.template.loaded', [
             'template' => $this->detailRow($template),
         ]);
     }
@@ -134,7 +134,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -175,7 +175,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -194,7 +194,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -213,7 +213,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -232,7 +232,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -251,7 +251,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
@@ -284,7 +284,7 @@ class BizppurioTemplateController extends AdminBaseController
     {
         $template = $this->service->find($id);
         if ($template === null) {
-            return ResponseHelper::error('messages.not_found', 404);
+            return ResponseHelper::error('sirsoft-message_bizppurio::messages.template.not_found', 404);
         }
 
         return ResponseHelper::success(

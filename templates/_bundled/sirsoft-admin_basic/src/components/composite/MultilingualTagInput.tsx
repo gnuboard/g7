@@ -32,6 +32,15 @@ const getLocaleNameByCode = (code: string): string => {
   return translatedName;
 };
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+// 태그 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
+const removeTagLabel = (tag: string): string => tOr('common.remove_tag', `Remove ${tag}`, { tag });
+
 /** 다국어 값 객체 */
 export interface MultilingualValue {
   [locale: string]: string;
@@ -368,8 +377,8 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
             {!disabled && (
               <Button
                 type="button"
-                aria-label={t('common.remove_tag', { tag: tag[viewLocale]?.trim() || getTagLabel(tag) })}
                 className="p-0 h-4 w-4 min-w-0 border-0 bg-transparent text-blue-600 dark:text-blue-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-transparent"
+                aria-label={removeTagLabel(tag[viewLocale]?.trim() || getTagLabel(tag))}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRemoveTag(index);

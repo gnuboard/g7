@@ -178,8 +178,8 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
 
 ```html
 <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-  <h2 class="text-gray-900 dark:text-white font-bold mb-2" text="$t:dashboard.title"/>
-  <p class="text-gray-600 dark:text-gray-400" text="{{stats.description}}"/>
+  <h2 class="text-gray-900 dark:text-white font-bold mb-2">$t:dashboard.title</h2>
+  <p class="text-gray-600 dark:text-gray-400">{{stats.description}}</p>
 </div>
 ```
 
@@ -197,17 +197,17 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
       "type": "basic",
       "name": "H2",
       "props": {
-        "className": "text-gray-900 dark:text-white font-bold mb-2",
-        "text": "$t:dashboard.title"
-      }
+        "className": "text-gray-900 dark:text-white font-bold mb-2"
+      },
+      "text": "$t:dashboard.title"
     },
     {
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-gray-600 dark:text-gray-400",
-        "text": "{{stats.description}}"
-      }
+        "className": "text-gray-600 dark:text-gray-400"
+      },
+      "text": "{{stats.description}}"
     }
   ]
 }

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 마이페이지 반응 선택 해제(일괄 삭제) 요청
@@ -14,6 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class BulkDestroyMyReactionRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 권한 확인 (인증은 라우트 미들웨어가 담당).
      *

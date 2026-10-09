@@ -17,6 +17,7 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
+            "loading_strategy": "blocking",
             "initLocal": "form",
             "refetchOnMount": true,
             "errorHandling": {
@@ -27,7 +28,7 @@
                     }
                 }
             },
-            "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다)"
+            "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다).\n       blocking 이라 설정을 다 받기 전에는 입력칸을 그리지 않는다 — 받기 전에 칸을 고치면 도착한 값(initLocal)이\n       그 입력을 말없이 덮어써 사용자가 고친 값이 사라졌다(7.1.0 실측 K3 O-K3T-5). 게시판 생성·수정 화면과 같은 방식이다"
         },
         {
             "id": "boardPrivacyRetentionPreview",
@@ -142,6 +143,23 @@
             "fallback": {
                 "data": {
                     "data": []
+                }
+            },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에\n         「권한 없음」 이유로 보였다(7.1.0 S2 #8). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "bulkMembersBoardsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "bulkMembersBoardsError": "failed"
+                    }
                 }
             },
             "comment": "「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다"
@@ -299,6 +317,9 @@
     },
     "computed": {
         "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
+        "bulkMembersLocked": "{{boards_list?.data?.abilities?.can_update !== true}}",
+        "bulkMembersNoPermission": "{{boards_list?.data?.abilities ? boards_list.data.abilities.can_update !== true : _local.bulkMembersBoardsError === 'forbidden'}}",
+        "bulkMembersLoadFailed": "{{!boards_list?.data?.abilities && _local.bulkMembersBoardsError === 'failed'}}",
         "isNotificationReadOnly": "{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}",
         "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
         "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
@@ -313,6 +334,8 @@
         "sirsoft-board.settings.read"
     ],
     "transition_overlay": {
+        "target": "tab_content",
+        "fallback_target": "right_content_area",
         "wait_for": [
             "settings",
             "boardPrivacyRetentionPreview",
@@ -321,7 +344,8 @@
             "roles",
             "board_types",
             "boardNotificationDefinitions",
-            "notification_channels"
+            "notification_channels",
+            "boardIdentityPolicies"
         ]
     },
     "init_actions": [
@@ -408,45 +432,69 @@
                                         "name": "TabNavigation",
                                         "actions": [
                                             {
-                                                "comment": "탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다",
+                                                "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
                                                 "type": "change",
                                                 "event": "onTabChange",
-                                                "handler": "sequence",
-                                                "actions": [
+                                                "handler": "conditions",
+                                                "conditions": [
                                                     {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "errors": null
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "activeBoardSettingsTab": "{{$args[0]}}",
-                                                            "boardBulkMembers": null
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/boards/settings",
-                                                            "replace": true,
-                                                            "query": {
-                                                                "tab": "{{$args[0]}}"
+                                                        "if": "{{_local.hasChanges === true && $args[0] !== (_global.activeBoardSettingsTab || query.tab || 'general')}}",
+                                                        "then": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "pendingBoardSettingsTab": "{{$args[0]}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "modal_board_settings_unsaved_tab"
                                                             }
-                                                        }
+                                                        ]
                                                     },
                                                     {
-                                                        "handler": "scrollIntoView",
-                                                        "params": {
-                                                            "selector": "#tab_content",
-                                                            "behavior": "instant",
-                                                            "block": "start",
-                                                            "waitForElement": true,
-                                                            "timeout": 1000
+                                                        "then": {
+                                                            "comment": "탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "errors": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "activeBoardSettingsTab": "{{$args[0]}}",
+                                                                        "boardBulkMembers": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/boards/settings",
+                                                                        "replace": true,
+                                                                        "query": {
+                                                                            "tab": "{{$args[0]}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "scrollIntoView",
+                                                                    "params": {
+                                                                        "selector": "#tab_content",
+                                                                        "behavior": "instant",
+                                                                        "block": "start",
+                                                                        "waitForElement": true,
+                                                                        "timeout": 1000
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
                                                     }
                                                 ]
@@ -741,6 +789,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,\n               서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3)",
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
@@ -836,7 +885,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
+                                            "disabled": "{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}",
                                             "className": "btn btn-primary flex-center gap-1.5 text-sm"
                                         },
                                         "children": [
@@ -912,6 +961,10 @@
         {
             "comment": "개인정보 보유기간 직권 실행 확인 창(일반 탭 — 작성 IP·비회원 글 두 대상이 함께 쓴다).",
             "partial": "partials/admin_board_settings/_modal_privacy_run.json"
+        },
+        {
+            "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
+            "partial": "partials/admin_board_settings/_modal_unsaved_tab_switch.json"
         }
     ]
 }

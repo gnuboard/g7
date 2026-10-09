@@ -193,6 +193,19 @@ class BoardSettingsService implements ModuleSettingsInterface
             // defaults 스키마에 맞게 정규화
             $categoryDefaults = $defaultValues[$category] ?? [];
 
+            // 벌크 저장 본문에 빠진 비불리언 값은 저장본을 이어 쓴다 — 화면이 설정을 다 받기 전에 칸 하나만
+            // 고쳐 저장하면 그 칸만 실린 본문이 오는데, 구획을 통째로 갈아 쓰면 운영자가 정한 기본 권한·금지어·
+            // 쪽당 글 수가 모듈 기본값으로 돌아갔다(7.1.0 실측 K3). 불리언은 아래 backfill(스위치 끔 미전송 대응)을 따른다.
+            if ($backfillBooleans) {
+                foreach ($this->loadCategorySettings($category) as $key => $storedValue) {
+                    if (! array_key_exists($key, $categorySettings)
+                        && array_key_exists($key, $categoryDefaults)
+                        && ! is_bool($categoryDefaults[$key])) {
+                        $categorySettings[$key] = $storedValue;
+                    }
+                }
+            }
+
             // Toggle/체크박스 OFF 시 키 미전송 대응: boolean 기본값 필드가 누락되면 false로 채움
             // (폼 전체 제출을 전제로 한 보정이라 부분 저장 경로에서는 적용하지 않는다)
             if ($backfillBooleans) {

@@ -7,8 +7,8 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
-// G7Core.t() 번역 함수 참조 — 엔진 밖(단위 테스트)에서는 대체 문구를 쓴다
-const t = (key: string, fallback: string): string => {
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md)
+const tOr = (key: string, fallback: string): string => {
   const translated = (window as any).G7Core?.t?.(key);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
@@ -30,10 +30,18 @@ export interface ActionMenuItem {
 
 export interface ActionMenuProps {
   items: ActionMenuItem[];
+  /** 트리거 글자. 생략하면 공용 문구 `common.actions`(화면 언어), 빈 문자열이면 아이콘만 그린다 */
   triggerLabel?: string;
-  /** 글자 없는 트리거의 접근 가능한 이름. 비우면 「더보기」(common.more_actions) */
-  triggerAriaLabel?: string;
   triggerIconName?: IconName;
+  /**
+   * 글자 없는 아이콘 트리거의 접근 가능한 이름 (aria-label)
+   *
+   * `triggerLabel` 이 비어 아이콘만 그려질 때 쓴다. 주지 않으면 공용 문구 `common.more_actions`(엔진 밖 `More actions`)로
+   * 채워 이름 없는 버튼을 남기지 않는다. 보이는 글자가 있으면 그 글자가 이름이므로 쓰지 않는다.
+   */
+  triggerAriaLabel?: string;
+  /** `triggerAriaLabel` 과 같은 뜻(DataGrid 행 메뉴가 열 머리글 이름을 넘긴다). 둘 다 있으면 `triggerAriaLabel` 이 앞선다 */
+  ariaLabel?: string;
   position?: 'left' | 'right';
   className?: string;
   style?: React.CSSProperties;
@@ -83,9 +91,10 @@ export interface ActionMenuProps {
  */
 export const ActionMenu: React.FC<ActionMenuProps> = ({
   items,
-  triggerLabel,
-  triggerAriaLabel,
+  triggerLabel: triggerLabelProp,
   triggerIconName = IconName.EllipsisVertical,
+  triggerAriaLabel,
+  ariaLabel,
   position = 'right',
   className = '',
   style,
@@ -94,56 +103,46 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 트리거 글자는 화면 언어를 따른다 — 종전 기본값이 한국어 「작업」 고정이라 영어·일본어 화면에도 그대로 보였다.
+  // 번역이 없거나 엔진 밖(단위 테스트)이면 영어 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md).
+  // 빈 문자열("")은 아이콘만 그리는 뜻이라 그대로 둔다.
+  const triggerLabel = triggerLabelProp ?? tOr('common.actions', 'Actions');
+  // 아이콘만 있는 트리거는 글리프 이름(「ellipsis h」)으로 읽히거나 이름 없는 버튼이 되므로 「더보기」 를 이름으로 단다
+  const iconOnlyName = triggerAriaLabel || ariaLabel || tOr('common.more_actions', 'More actions');
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  /** 키보드로 연 메뉴인지 — 그때만 첫 항목으로 초점을 옮긴다(마우스 동작은 종전과 같다). */
+  const openedByKeyboardRef = useRef(false);
 
-  // 트리거 글자: 지정하지 않으면 「작업」(언어별), 빈 문자열이면 아이콘만 — 그때는 「더보기」 를 이름으로 단다.
-  // 종전에는 기본 글자가 언어와 무관하게 「작업」 이었고, 아이콘만 있는 트리거는 글리프 이름(「ellipsis h」)으로 읽혔다.
-  const resolvedTriggerLabel = triggerLabel ?? t('common.actions', '작업');
-  const resolvedTriggerAriaLabel = resolvedTriggerLabel
-    ? undefined
-    : (triggerAriaLabel || t('common.more_actions', '더보기'));
+  const visibleItems = items.filter((item) => item.if !== false);
 
-  /** 메뉴 안의 누를 수 있는 항목(잠긴 항목 제외) */
-  const getEnabledItems = useCallback(
-    (): HTMLButtonElement[] =>
-      Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []),
-    []
-  );
+  /**
+   * 메뉴 안에서 고를 수 있는 항목 요소 목록을 돌려줍니다(구분선·잠긴 항목 제외).
+   *
+   * @returns 초점을 받을 수 있는 항목 요소
+   */
+  const getFocusableItems = (): HTMLElement[] =>
+    Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])') ?? []
+    );
 
-  /** 메뉴를 닫고 초점을 트리거로 돌린다(키보드 사용자가 제자리로 돌아오게) */
-  const closeAndReturnFocus = useCallback(() => {
+  /**
+   * 요소에 초점을 옮깁니다. 메뉴는 스크롤하면 닫히므로 초점 이동이 화면을 굴리지 않게 한다.
+   *
+   * @param element 초점을 줄 요소
+   */
+  const focusWithoutScroll = (element: HTMLElement | null | undefined) => {
+    element?.focus({ preventScroll: true });
+  };
+
+  /**
+   * 메뉴를 닫고 트리거로 초점을 되돌립니다(키보드 경로).
+   */
+  const closeAndRestoreFocus = () => {
     setIsOpen(false);
-    triggerRef.current?.focus();
-  }, []);
-
-  // 열리면 첫 항목에 초점 — 키보드로 연 사용자가 바로 고를 수 있게 한다(메뉴 단추 패턴)
-  useEffect(() => {
-    if (!isOpen) return;
-    getEnabledItems()[0]?.focus();
-  }, [isOpen, getEnabledItems]);
-
-  /** 메뉴 키보드: 위/아래·Home/End 로 잠기지 않은 항목 사이를 돌고, Esc·Tab 은 닫는다 */
-  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const enabled = getEnabledItems();
-    const current = enabled.indexOf(document.activeElement as HTMLButtonElement);
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      if (enabled.length === 0) return;
-      const delta = event.key === 'ArrowDown' ? 1 : -1;
-      enabled[(current + delta + enabled.length) % enabled.length].focus();
-    } else if (event.key === 'Home' || event.key === 'End') {
-      event.preventDefault();
-      (event.key === 'Home' ? enabled[0] : enabled[enabled.length - 1])?.focus();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      closeAndReturnFocus();
-    } else if (event.key === 'Tab') {
-      setIsOpen(false);
-    }
+    focusWithoutScroll(triggerRef.current);
   };
 
   // 메뉴 위치 계산
@@ -183,6 +182,14 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     }
   }, [isOpen, updateMenuPosition]);
 
+  // 키보드로 열었으면 첫 항목으로 초점을 옮긴다(WAI-ARIA 메뉴 버튼).
+  useEffect(() => {
+    if (isOpen && openedByKeyboardRef.current) {
+      openedByKeyboardRef.current = false;
+      focusWithoutScroll(getFocusableItems()[0]);
+    }
+  }, [isOpen]);
+
   // 스크롤/리사이즈 시 메뉴 닫기
   useEffect(() => {
     if (!isOpen) return;
@@ -221,6 +228,92 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     };
   }, [isOpen]);
 
+  /**
+   * 트리거 클릭 — 키보드가 일으킨 클릭(detail 0, 기본 버튼의 Enter·Space)이면 첫 항목으로 초점을 옮기게 표시한다.
+   *
+   * @param event 마우스 이벤트
+   */
+  const handleTriggerClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (!isOpen && event.detail === 0) {
+      openedByKeyboardRef.current = true;
+    }
+    setIsOpen(!isOpen);
+  };
+
+  /**
+   * 트리거의 키 입력 — 아래 화살표로 열고, 열린 상태의 Escape 로 닫는다. children 트리거(Div)는
+   * 버튼처럼 Enter·Space 도 받는다(기본 버튼은 브라우저가 이 두 키를 클릭으로 바꿔 준다).
+   *
+   * @param event 키보드 이벤트
+   * @param handleActivationKeys Enter·Space 를 직접 처리할지(children 트리거)
+   */
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLElement>, handleActivationKeys: boolean) => {
+    const isActivationKey = event.key === 'Enter' || event.key === ' ';
+    if ((isActivationKey && handleActivationKeys) || event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (isOpen) {
+        focusWithoutScroll(getFocusableItems()[0]);
+        return;
+      }
+      openedByKeyboardRef.current = true;
+      setIsOpen(true);
+      return;
+    }
+
+    if (event.key === 'Escape' && isOpen) {
+      event.preventDefault();
+      setIsOpen(false);
+    }
+  };
+
+  /**
+   * 메뉴의 키 입력 — 화살표·Home·End 로 잠기지 않은 항목 사이를 옮기고 Enter·Space 로 고르며 Escape·Tab 으로 닫는다.
+   * 항목에서 올라온 키와 메뉴 자체가 받은 키를 한곳에서 다룬다.
+   *
+   * @param event 키보드 이벤트
+   */
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const focusable = getFocusableItems();
+    const current = document.activeElement as HTMLElement | null;
+    const index = current ? focusable.indexOf(current) : -1;
+
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault();
+        if (focusable.length === 0) return;
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        focusWithoutScroll(focusable[(index + step + focusable.length) % focusable.length]);
+        return;
+      }
+      case 'Home':
+        event.preventDefault();
+        focusWithoutScroll(focusable[0]);
+        return;
+      case 'End':
+        event.preventDefault();
+        focusWithoutScroll(focusable[focusable.length - 1]);
+        return;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (index < 0) return;
+        focusable[index].click();
+        focusWithoutScroll(triggerRef.current);
+        return;
+      case 'Escape':
+        event.preventDefault();
+        event.stopPropagation();
+        closeAndRestoreFocus();
+        return;
+      case 'Tab':
+        // 메뉴는 문서 끝에 그려지므로 트리거로 초점을 돌려 둔 뒤 기본 Tab 이동을 맡긴다.
+        closeAndRestoreFocus();
+        return;
+      default:
+    }
+  };
+
   const handleItemClick = (item: ActionMenuItem) => {
     if (item.disabled) return;
 
@@ -243,7 +336,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
         <div
           ref={menuRef}
           role="menu"
-          aria-label={resolvedTriggerLabel || resolvedTriggerAriaLabel}
+          aria-label={triggerLabel || iconOnlyName}
           onKeyDown={handleMenuKeyDown}
           className="fixed z-[9999] w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
           style={{
@@ -251,7 +344,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
             left: menuPosition.left,
           }}
         >
-          {items.filter((item) => item.if !== false).map((item) => {
+          {visibleItems.map((item) => {
             // 구분선인 경우
             if (item.divider) {
               return (
@@ -275,10 +368,11 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                 key={item.id}
                 type="button"
                 role="menuitem"
+                tabIndex={-1}
                 disabled={item.disabled}
                 aria-disabled={item.disabled || undefined}
                 onClick={() => handleItemClick(item)}
-                className={`w-full text-left flex items-center gap-3 px-4 py-3 transition-colors focus:outline-none ${stateClasses}`}
+                className={`w-full text-left flex items-center gap-3 px-4 py-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${stateClasses}`}
               >
                 {item.iconName && (
                   <Icon name={item.iconName} className="w-4 h-4" />
@@ -303,13 +397,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
           aria-haspopup="menu"
           aria-expanded={isOpen}
           aria-label={triggerAriaLabel}
-          onClick={() => setIsOpen(!isOpen)}
-          onKeyDown={(event: React.KeyboardEvent) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              setIsOpen(!isOpen);
-            }
-          }}
+          onClick={handleTriggerClick}
+          onKeyDown={(event) => handleTriggerKeyDown(event, true)}
           className="cursor-pointer"
         >
           {children}
@@ -317,15 +406,17 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       ) : (
         <Button
           ref={triggerRef as React.RefObject<HTMLButtonElement>}
-          onClick={() => setIsOpen(!isOpen)}
           aria-haspopup="menu"
           aria-expanded={isOpen}
-          aria-label={resolvedTriggerAriaLabel}
+          // 아이콘만 있는 트리거(DataGrid 행 메뉴 … 등)는 글자가 없어 이름 없는 버튼으로 읽혔다(7.1.0 실측 O-KF-1)
+          aria-label={triggerLabel ? undefined : iconOnlyName}
+          onClick={handleTriggerClick}
+          onKeyDown={(event) => handleTriggerKeyDown(event, false)}
           className="flex items-center gap-2 px-2 py-1 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          {resolvedTriggerLabel && (
+          {triggerLabel && (
             <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {resolvedTriggerLabel}
+              {triggerLabel}
             </Span>
           )}
           {triggerIconName && (

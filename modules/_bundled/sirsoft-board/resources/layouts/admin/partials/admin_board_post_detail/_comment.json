@@ -9,7 +9,7 @@
     "name": "Div",
     "children": [
         {
-            "id": "comment_header",
+            "id": "comment_header_{{comment.id}}",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -17,7 +17,7 @@
             },
             "children": [
                 {
-                    "id": "comment_left_section",
+                    "id": "comment_left_section_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -25,7 +25,7 @@
                     },
                     "children": [
                         {
-                            "id": "depth_indicator",
+                            "id": "depth_indicator_{{comment.id}}",
                             "type": "basic",
                             "name": "Span",
                             "if": "{{comment.depth > 0}}",
@@ -49,7 +49,7 @@
                                     },
                                     "children": [
                                         {
-                                            "id": "author_name_menu",
+                                            "id": "author_name_menu_{{comment.id}}",
                                             "type": "composite",
                                             "name": "ActionMenu",
                                             "if": "{{!comment?.author?.is_guest}}",
@@ -143,7 +143,7 @@
                     ]
                 },
                 {
-                    "id": "comment_right_section",
+                    "id": "comment_right_section_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -151,7 +151,7 @@
                     },
                     "children": [
                         {
-                            "id": "reply_button",
+                            "id": "reply_button_{{comment.id}}",
                             "type": "basic",
                             "name": "Button",
                             "if": "{{post?.data?.board?.use_reply && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
@@ -191,7 +191,7 @@
                         },
                         {
                             "comment": "신고 버튼 — 미신고 상태 (모달 오픈)",
-                            "id": "report_button",
+                            "id": "report_button_{{comment.id}}",
                             "type": "basic",
                             "name": "Button",
                             "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && !comment?.is_already_reported}}",
@@ -264,7 +264,7 @@
                             ]
                         },
                         {
-                            "id": "comment_action_menu",
+                            "id": "comment_action_menu_{{comment.id}}",
                             "type": "composite",
                             "name": "ActionMenu",
                             "actions": [
@@ -359,13 +359,13 @@
             ]
         },
         {
-            "id": "comment_content_wrapper",
+            "id": "comment_content_wrapper_{{comment.id}}",
             "type": "basic",
             "name": "Div",
             "if": "{{_local.editingComment !== comment.id}}",
             "children": [
                 {
-                    "id": "deleted_comment_content",
+                    "id": "deleted_comment_content_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{comment?.deleted_at && !comment?.is_cascade_deleted}}",
@@ -436,7 +436,7 @@
                     ]
                 },
                 {
-                    "id": "blinded_comment_content",
+                    "id": "blinded_comment_content_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{comment?.status === 'blinded' && !comment?.deleted_at}}",
@@ -517,7 +517,7 @@
                 },
                 {
                     "comment": "비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다",
-                    "id": "secret_comment_content",
+                    "id": "secret_comment_content_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.is_secret && comment?.content === null}}",
@@ -541,7 +541,7 @@
                     ]
                 },
                 {
-                    "id": "normal_comment_content",
+                    "id": "normal_comment_content_{{comment.id}}",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && !(comment?.is_secret && comment?.content === null)}}",
@@ -610,7 +610,7 @@
             ]
         },
         {
-            "id": "comment_edit_form",
+            "id": "comment_edit_form_{{comment.id}}",
             "type": "basic",
             "name": "Div",
             "if": "{{_local.editingComment === comment.id}}",
@@ -777,7 +777,7 @@
             ]
         },
         {
-            "id": "replies_toggle_button",
+            "id": "replies_toggle_button_{{comment.id}}",
             "type": "basic",
             "name": "Div",
             "if": "{{comment.depth === 0 && comment.replies_count > 0}}",

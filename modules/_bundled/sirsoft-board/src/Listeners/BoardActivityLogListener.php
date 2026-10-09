@@ -12,6 +12,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\ReactionService;
@@ -624,20 +625,31 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 생성 후 로그 기록
      *
-     * @param  Report  $report  생성된 신고
+     * 사유는 케이스(`Report`)가 아니라 이번 신고자 로그(`ReportLog`)에 있다 — 케이스 모델에서
+     * `reason`·`reportable_type` 을 읽던 동안 두 값이 늘 빈 문자열로 남았다(7.1.0 실측 O-K2-6).
+     * 대상 유형은 케이스의 `target_type`(post|comment)이다. 속성 키 이름은 기존 행과 맞춰 둔다.
+     *
+     * @param  Report|null  $report  생성(또는 합류)된 신고 케이스
+     * @param  ReportLog|null  $reportLog  이번 신고자 로그 (훅 둘째 인자)
      * @return void
      */
-    public function handleReportAfterCreate(?Report $report): void
+    public function handleReportAfterCreate(?Report $report, ?ReportLog $reportLog = null): void
     {
         if ($report === null) {
             return;
         }
 
+        $reason = $reportLog?->reason_type;
+        $targetType = $report->target_type;
+
         $this->logActivity('report.create', [
             'loggable' => $report,
             'description_key' => 'sirsoft-board::activity_log.description.report_create',
             'description_params' => ['report_id' => $report->id],
-            'properties' => ['reason' => $report->reason ?? '', 'reportable_type' => $report->reportable_type ?? ''],
+            'properties' => [
+                'reason' => $reason instanceof \BackedEnum ? $reason->value : (string) ($reason ?? ''),
+                'reportable_type' => $targetType instanceof \BackedEnum ? $targetType->value : (string) ($targetType ?? ''),
+            ],
         ]);
     }
 

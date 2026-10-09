@@ -132,7 +132,11 @@ class Plugin extends AbstractPlugin
         return [
             'sirsoft-totp.credential.admin_reset' => [
                 'type' => 'action',
-                'description' => '관리자가 회원의 인증 앱 등록을 강제 해제한 직후 발행. 인자: (User $user, array $context)',
+                'description' => [
+                    'ko' => '관리자가 회원의 인증 앱 등록을 강제 해제한 직후 발행. 인자: (User $user, array $context)',
+                    'en' => 'Fired right after an administrator forcibly removes a member authenticator app enrollment. Arguments: (User $user, array $context)',
+                    'ja' => '管理者が会員の認証アプリ登録を強制解除した直後に発行。引数: (User $user, array $context)',
+                ],
             ],
         ];
     }

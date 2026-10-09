@@ -58,7 +58,8 @@
         </div>
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
-        <select name="filter.scope" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
+        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -68,7 +69,7 @@
           <on type="change">
             <!-- 범위 필터 — 빈 값은 쿼리에서 빼고 페이지를 1로 되돌린다.
                  대기 표시는 표 카드에만 걸고, 이동 뒤 이 구획 머리로 스크롤을 되돌린다. -->
-            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
               <query tab="identity" scope="{{$event.target.value || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -79,7 +80,7 @@
             </navigate>
           </on>
         </select>
-        <select name="filter.source_type" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_sources</option>
             <option value="core">$t:admin.identity.policies.source.core</option>
@@ -89,7 +90,7 @@
           </options>
           <on type="change">
             <!-- 출처 필터(코어/모듈/플러그인/운영자) — 범위 필터와 같은 형태다. -->
-            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
               <query tab="identity" source_type="{{$event.target.value || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -107,9 +108,8 @@
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
           </on>
           <on type="keypress" key="Enter">
-            <!-- 검색은 Enter 로만 낸다(옆 검색 버튼은 조회를 다시 부를 뿐 검색어를 URL 에 넣지 않는다).
-                 그래서 검색어를 바꾸고 버튼만 누르면 조건이 반영되지 않는다 — 지금 그렇게 돼 있다. -->
-            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <!-- Enter 로 검색 — 입력값을 쿼리로 실어 옮긴다. 옆 검색 버튼도 입력 중인 검색어(identityPolicySearch)를 같은 방식으로 싣는다. -->
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
               <query tab="identity" search="{{$event.target.value || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -123,7 +123,7 @@
         <button type="button" class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
           <on type="click">
             <!-- Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다. -->
-            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
               <query tab="identity" search="{{(_local.identityPolicySearch ?? query.search) || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -142,7 +142,7 @@
           </on>
           <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
-            <navigate path="/admin/settings" :replace="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/settings" :replace="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
               <query tab="identity" sub_tab="policies"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -354,7 +354,7 @@
               <on type="click">
                 <!-- 이전 페이지 — 페이지네이션 컴포넌트가 아니라 손으로 만든 버튼이라 **여기서 하한을
                      지킨다**(1 아래로 내려가지 않게). 버튼 자체도 첫 페이지에서 잠긴다. -->
-                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
                   <query tab="identity" page="{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>
@@ -370,7 +370,7 @@
             <button type="button" disabled="{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다. -->
-                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
                   <query tab="identity" page="{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>

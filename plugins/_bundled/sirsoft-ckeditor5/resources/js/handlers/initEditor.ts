@@ -15,7 +15,9 @@ import {
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
 import { ensureCkeditorGlobal } from './ckeditorGlobal';
-import { createG7UploadAdapterPlugin } from './uploadAdapter';
+import { notifyEditorAssetFailure } from './editorFailureNotice';
+import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
+import { createG7UploadAdapterPlugin, UPLOAD_IMAGE_TYPES } from './uploadAdapter';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
@@ -280,33 +282,6 @@ async function retryEditorInit(
     // 폴백이 남긴 `_mode: 'text'` 를 편집기 계약으로 되돌린다
     const G7Core = (window as any).G7Core;
     G7Core?.state?.setLocal?.({ [`form.${name}_mode`]: 'html' });
-}
-
-/**
- * 자산 로드 실패를 코어 안내 배너에 알립니다.
- *
- * 코어 API 가 없으면(구 코어) 콘솔 경고로 떨어진다 — 안내를 못 띄운다고 에디터
- * 초기화를 중단시키지는 않는다.
- *
- * @param id 중복 누적을 막는 식별자
- * @param label 사용자에게 보일 항목명
- * @param retry 다시 시도 동작
- */
-function notifyEditorAssetFailure(
-    id: string,
-    label: string,
-    retry: () => Promise<void> | void,
-    message?: string
-): void {
-    const notify = (window as any)?.G7Core?.assets?.notifyFailure;
-
-    if (typeof notify === 'function') {
-        notify({ id, label, retry, message });
-
-        return;
-    }
-
-    console.warn(`[ckeditor5] 자산 로드 실패: ${label}`);
 }
 
 /**
@@ -918,6 +893,8 @@ async function createEditorInstance(
                 { name: 'resizeImage:75', label: '75%', value: '75' },
             ],
             resizeUnit: '%' as const,
+            // 파일 선택 창 accept·끌어 놓기 필터를 서버가 받는 형식으로 좁힌다(기본값은 bmp·tiff 포함)
+            upload: { types: [...UPLOAD_IMAGE_TYPES] },
         },
         indentBlock: {
             offset: 40,
@@ -1308,6 +1285,9 @@ export async function initEditorHandler(
     const name = params.name ?? 'content';
     const isMultilingual = params.multilingual === true || params.multilingual === 'true';
     const isReadOnly = params.readOnly === true || params.readOnly === 'true';
+    // 초기화 값은 마운트 시점 한 번의 평가다. 권한 확인처럼 로드 뒤에 바뀌는 값은 조각 컨테이너의
+    // 상태 표식(`data-readonly="true|false"`)으로 따라간다 — 편집기를 만드는 순간에도 그 값을 쓴다.
+    const readOnlyNow = (): boolean => readOnlyFromContainer(container, isReadOnly);
     const withImageUpload = params.imageUpload !== undefined
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
@@ -1366,6 +1346,13 @@ export async function initEditorHandler(
         return;
     }
 
+    // 읽기 전용 값 변화 추종 — 컨테이너의 상태 표식 `data-readonly` 가 바뀌면 붙어 있는 편집기(와 평문 폴백)의 잠금을 맞춘다.
+    // 외부 재동기화 핸들로 등록해 두므로 재초기화·해제(stopExternalSyncs) 때 함께 멈춘다.
+    registerExternalSync(
+        containerId,
+        attachReadOnlySync(container, () => editorInstances.get(containerId)?.values() ?? [], isReadOnly)
+    );
+
     if (!editorReady) {
         // 자산 확보 시도(await) 동안 폼 데이터가 도착했을 수 있으므로 **여기서 다시** 해석한다.
         // await 이전에 캡처된 값을 그대로 쓰면 수정 화면에서 폴백이 빈 채로 서고, 폴백이
@@ -1374,7 +1361,7 @@ export async function initEditorHandler(
             container,
             name,
             height,
-            readOnly: isReadOnly,
+            readOnly: readOnlyNow(),
             placeholder,
             trackChanges: tracksChanges,
             multilingual: isMultilingual,
@@ -1400,7 +1387,10 @@ export async function initEditorHandler(
 
     const editorOptions = {
         placeholder,
-        readOnly: isReadOnly,
+        // 편집기를 만드는 순간의 값 — 다국어 탭은 나중에 만들어지므로 그때 다시 읽는다
+        get readOnly(): boolean {
+            return readOnlyNow();
+        },
         imageUpload: withImageUpload,
         height,
         toolbar: toolbarType,
@@ -1493,7 +1483,7 @@ export async function initEditorHandler(
                 container,
                 name,
                 height,
-                readOnly: isReadOnly,
+                readOnly: readOnlyNow(),
                 placeholder,
                 multilingual: true,
                 locales,
@@ -1591,7 +1581,7 @@ export async function initEditorHandler(
                 container,
                 name,
                 height,
-                readOnly: isReadOnly,
+                readOnly: readOnlyNow(),
                 placeholder,
                 multilingual: false,
                 activeLocale: getCurrentLocale(),

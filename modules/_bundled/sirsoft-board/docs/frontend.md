@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 57개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 58개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 57개 |
+| `admin` | 58개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -51,6 +51,7 @@
 | `_modal_notification_template_preview` | `admin` | partial | - |
 | `_modal_privacy_run` | `admin` | partial | - |
 | `_modal_privacy_targets` | `admin` | partial | - |
+| `_modal_unsaved_tab_switch` | `admin` | partial | - |
 | `_reaction_type_cards` | `admin` | partial | - |
 | `_reaction_type_editor` | `admin` | partial | - |
 | `_section_bulk_members` | `admin` | partial | - |
@@ -89,6 +90,8 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 화면이 읽기만 할 때는 둘 다 똑같이 비어 보이지만 그 값이 서버로 실리거나 레이아웃을 `.json`
 원문으로 설치하면 서버가 대상을 찾지 못해 오류도 로그도 없이 적용되지 않습니다. 이 모듈에서는 환경설정의 `initLocal.expandedNotifications` 와 본인인증 정책 폼의 `conditions`, 알림 정의 데이터소스의 `fallback.data.meta` 가 그 자리입니다.
 
+환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="boardIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, blocking·initLocal)까지 다시 받아 고친 설정 값과 「변경 있음」을 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `boardIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-board-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
+
 반복되는 카드·박스 목록은 **간격을 스스로 갖지 않습니다.** 좁은 화면 카드(`excel-card`)는 바깥 여백이 없고
 테두리 박스에 준 `p-3` 같은 안쪽 여백은 이웃과의 거리가 아니므로, 목록을 감싸는 쪽이 `stack-tight`(세로 gap)를
 주거나 카드가 `mb-3` 을 집니다 — 둘 다 없으면 테두리끼리 맞붙어 한 덩어리로 보입니다(반응 유형 카드, 알림
@@ -118,6 +121,12 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 신고·반응·스크랩 관리 목록의 빠른 기간 버튼은 날짜 식에서 「오늘」을 **계정 시간대**(`current_user?.data?.timezone`
 → 없으면 `_global.settings?.general?.timezone`)로 만들고, 그 달력 날짜에서 UTC 셈으로 날·달을 빼 브라우저 시간대가
 끼지 않게 합니다 — 서버가 날짜 칸을 보는 사람의 시간대 하루로 자르기 때문입니다.
+
+게시판 유형 관리 창(`admin_board_form/_board_type_manage_modal`)과 반응 유형 추가 폼의 이름 칸은 **사이트 기본 언어 값이
+필수**입니다 — 서버 규칙(`LocaleRequiredTranslatable`)이 사이트 기본 언어(`app.site_locale`) 값을 필수로 보기 때문입니다(화면 언어와
+무관). 단추 잠금과 추가 확인은 `_global.appConfig?.siteLocale ?? $locale ?? 'ko'` 칸으로 판단합니다. 서버는 이름 오류를
+필드 전체 키 `name` 이나 언어 키 `name.{언어}` 로 돌려주므로 칸의 `error` 는 `name.{사이트 기본 언어}` 를 먼저, `name` 을 다음으로
+읽습니다. 문구는 MultilingualInput 이 칸 아래에 직접 그리므로 같은 문구를 담는 별도 문단을 두지 않습니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

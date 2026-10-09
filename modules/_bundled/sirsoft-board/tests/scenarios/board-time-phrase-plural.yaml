@@ -1,0 +1,23 @@
+feature: 게시판 시간 표기의 단수·복수 (상대 시각, 쿨다운 기간)
+
+description: |
+  게시판 화면의 상대 시각(「N시간 전」)과 연속 작성·신고 간격 안내의 기간 문구가 en 에서 수와
+  상관없이 복수형으로 고정돼 「1 hours ago」, 「1 days ago」, 「1 minutes intervals」 처럼 나왔다
+  (7.1.0 전수 실측 K2 관측 O-K2-4). 단위가 하나면 단수, 그 밖에는 복수로 고른다.
+  ko·ja 처럼 단·복수 구분이 없는 언어는 문구 하나만 두고 종전 표기를 그대로 낸다.
+
+  축 surface 는 시간 표기가 나오는 두 표면(상대 시각, 쿨다운 기간), count 는 단위 수가
+  하나인지 여럿인지다. 기간 문구는 단위마다(시간·분·초) 따로 고른 뒤 이어 붙인다.
+
+axes:
+  surface: [relative_time, cooldown_duration]
+  count: [one, many]
+
+effects:
+  - en_relative_time_uses_singular_for_one_and_plural_otherwise
+  - ko_relative_time_is_unchanged
+  - en_cooldown_duration_uses_singular_for_one_and_plural_otherwise
+  - ko_cooldown_duration_is_unchanged
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Traits/BoardTimePhrasePluralTest.php

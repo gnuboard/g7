@@ -18,6 +18,10 @@ description: |
 
   `all` 의 동작은 건드리지 않는다. 기존 링크·저장된 검색이 그대로 살아 있어야 한다.
 
+  답글 검색(7.1.0 실측 O-K3-13): 관리자 목록 검색은 원글만 훑었다. 이제 어느 검색 대상이든 답글(제목·내용·작성자)도
+  찾는다. 목록은 원글 한 줄 아래 답글 줄을 잇고 페이지·총 건수를 원글 단위로 세므로, 답글이 걸리면 그 답글이 달린
+  맨 위 원글을 결과로 세고 원글 아래 답글 줄을 함께 보인다. 총 건수와 페이지는 같은 원글 ID 로 센다.
+
 # 입력 axis
 #  search_field: 검색 대상 (all 은 종전 동작 유지)
 axes:
@@ -28,6 +32,8 @@ effects:
   - admin_post_list_search_field_title_only
   - admin_post_list_search_field_content_only
   - admin_post_list_search_field_all_unchanged
+  - admin_post_list_search_matches_replies
+  - admin_post_list_search_reply_match_counts_parents_once
   # 레이아웃
   - admin_post_search_field_offers_five_targets
   - admin_post_search_field_values_match_server_whitelist
@@ -36,6 +42,7 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostSearchFieldTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostReplySearchTest.php
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-posts-search-fields.test.ts
 
 validation:

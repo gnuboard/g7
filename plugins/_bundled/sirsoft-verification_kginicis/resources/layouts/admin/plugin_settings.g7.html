@@ -22,7 +22,7 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
               <li class="text-error-soft">{{message}}</li>
             </ul>
@@ -51,10 +51,10 @@
       </div>
       <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
+          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
         </div>
         <div class="p-6 space-y-6">
-          <div data-ref="field_live_mid" class="section-heading-md">
+          <div data-ref="field_live_mid" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_mid</label>
               <p class="form-hint">$t:sirsoft-verification_kginicis.settings.live_mid_hint</p>
@@ -67,7 +67,7 @@
               <p data-ref="field_live_mid_error" data-if="{{_local.errors?.live_mid}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_mid?.[0] ?? ''}}</p>
             </div>
           </div>
-          <div data-ref="field_live_api_key" class="section-heading-md">
+          <div data-ref="field_live_api_key" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_api_key</label>
             </div>
@@ -80,7 +80,7 @@
       </div>
       <div data-ref="duplicate_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_duplicate_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
+          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
         </div>
         <div data-ref="section_duplicate_body" class="p-6 space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">

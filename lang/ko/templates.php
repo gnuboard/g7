@@ -4,7 +4,7 @@ return [
     'title' => '템플릿 관리',
 
     'errors' => [
-        'force_update_no_source' => ':template 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
+        'force_update_no_source' => ':template 템플릿을 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'downgrade_blocked' => '다운그레이드가 차단되었습니다 (:from → :to). 의도적 다운그레이드는 --force 옵션을 사용하세요.',
         'not_found' => '템플릿을 찾을 수 없습니다. (:template)',
         'not_installed' => '템플릿이 설치되지 않았습니다. (:template)',
@@ -77,7 +77,7 @@ return [
         'contact_admin' => '관리자에게 문의하세요.',
 
         // 업데이트 관련 에러
-        'operation_in_progress' => '템플릿 ":name"이(가) 현재 :status 상태입니다. 작업이 완료될 때까지 기다려 주세요.',
+        'operation_in_progress' => '":name" 템플릿이 현재 :status 상태입니다. 작업이 완료될 때까지 기다려 주세요.',
         'github_api_failed' => 'GitHub API 호출에 실패했습니다: :error',
         'invalid_github_url' => '유효하지 않은 GitHub URL입니다.',
         'zip_url_not_found' => 'ZIP 다운로드 URL을 찾을 수 없습니다.',
@@ -114,7 +114,7 @@ return [
         'language_empty' => '다국어 데이터가 비어 있습니다.',
     ],
 
-    'not_found' => '템플릿 :template을(를) 찾을 수 없습니다.',
+    'not_found' => ':template 템플릿을 찾을 수 없습니다.',
     'layout_not_found' => '레이아웃을 찾을 수 없습니다.',
 
     'info' => [
@@ -217,26 +217,26 @@ return [
     'refresh_layouts_failed' => '템플릿 레이아웃 갱신에 실패했습니다: :error',
 
     // 업데이트 관련 메시지
-    'update_success' => '템플릿 ":template"이(가) :version 버전으로 업데이트되었습니다.',
+    'update_success' => '":template" 템플릿이 :version 버전으로 업데이트되었습니다.',
     'update_failed' => '템플릿 업데이트에 실패했습니다: :error',
     'update_hook_failed' => '템플릿 업데이트 훅 실행에 실패했습니다: :error',
     'no_update_available' => '업데이트할 내용이 없습니다.',
     'check_updates_success' => '업데이트 확인이 완료되었습니다.',
     'check_updates_failed' => '업데이트 확인에 실패했습니다: :error',
-    'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
+    'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
     'check_modified_layouts_success' => '수정된 레이아웃 확인이 완료되었습니다.',
     'check_modified_layouts_failed' => '수정된 레이아웃 확인에 실패했습니다: :error',
 
     // _pending 관련 메시지
-    'pending_not_found' => '설치 대기 목록에서 템플릿 ":template"을(를) 찾을 수 없습니다.',
-    'already_exists' => '템플릿 ":template"이(가) 이미 존재합니다.',
+    'pending_not_found' => '설치 대기 목록에서 ":template" 템플릿을 찾을 수 없습니다.',
+    'already_exists' => '":template" 템플릿이 이미 존재합니다.',
     'move_failed' => '템플릿 ":template" 이동에 실패했습니다: :error',
 
     'commands' => [
         'install' => [
             'success' => '템플릿 ":template" 설치 완료',
-            'already_installed' => '템플릿 ":template"이(가) 이미 설치되어 있습니다.',
-            'force_reinstall' => '템플릿 ":template" 을(를) 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
+            'already_installed' => '":template" 템플릿이 이미 설치되어 있습니다.',
+            'force_reinstall' => '":template" 템플릿을 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
             'layouts_created' => '레이아웃 :count개 생성됨',
             'type' => '타입: :type',
             'version' => '버전: :version',
@@ -245,17 +245,17 @@ return [
         ],
         'activate' => [
             'success' => '템플릿 ":template" 활성화 완료',
-            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
+            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
         ],
         'deactivate' => [
             'success' => '템플릿 ":template" 비활성화 완료',
-            'not_active' => '템플릿 ":template"이(가) 활성화되지 않았습니다.',
+            'not_active' => '":template" 템플릿이 활성화되지 않았습니다.',
             'no_active_warning' => '현재 활성화된 :type 템플릿이 없습니다.',
         ],
         'uninstall' => [
             'success' => '템플릿 ":template" 삭제 완료',
-            'confirm_prompt' => '템플릿 ":template"을(를) 삭제하시겠습니까?',
+            'confirm_prompt' => '":template" 템플릿을 삭제하시겠습니까?',
             'confirm_details' => [
                 'layouts' => '- 레이아웃 :count개가 삭제됩니다',
                 'versions' => '- user 타입 템플릿의 경우 버전 히스토리도 삭제됩니다',
@@ -290,7 +290,7 @@ return [
             'success_all' => '전체 템플릿 캐시 :count개 삭제 완료',
         ],
         'check_updates' => [
-            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
+            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'no_installed' => '설치된 템플릿이 없습니다.',
             'update_available' => '업데이트 가능',
             'up_to_date' => '최신',
@@ -302,14 +302,14 @@ return [
                 'status' => '상태',
             ],
             'summary' => '총 :total개 확인 (업데이트 가능: :updates개)',
-            'single_up_to_date' => '템플릿 ":template"은(는) 최신 버전입니다. (v:version)',
+            'single_up_to_date' => '":template" 템플릿은 최신 버전입니다. (v:version)',
             'single_update_available' => '템플릿 ":template" 업데이트 가능: v:current → v:latest (:source)',
         ],
         'update' => [
             'success' => '템플릿 ":template" 업데이트 완료',
             'version_change' => 'v:from → v:to',
             'no_update' => '템플릿 ":template"에 사용 가능한 업데이트가 없습니다.',
-            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
+            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'invalid_strategy' => '잘못된 레이아웃 전략입니다. overwrite 또는 keep만 사용 가능합니다.',
             'current_version' => '현재 버전: :version',
             'latest_version' => '최신 버전: :version',

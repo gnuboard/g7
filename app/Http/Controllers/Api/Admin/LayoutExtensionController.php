@@ -426,7 +426,7 @@ class LayoutExtensionController extends AdminBaseController
 
             return $this->success('common.success', [
                 'token' => $preview->token,
-                'preview_url' => '/preview/'.$preview->token,
+                'preview_url' => $this->layoutPreviewService->previewUrl($preview),
                 'expires_at' => $preview->expires_at->toIso8601String(),
                 'markup_warnings' => $request->markupWarnings(),
             ]);

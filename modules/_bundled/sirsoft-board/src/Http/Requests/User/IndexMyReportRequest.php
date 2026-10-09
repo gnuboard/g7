@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\ReportType;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\FallsBackUnknownSearchField;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 마이페이지 「내 신고」 목록 조회 요청
@@ -14,6 +16,9 @@ use Modules\Sirsoft\Board\Enums\ReportType;
  */
 class IndexMyReportRequest extends FormRequest
 {
+    use FallsBackUnknownSearchField;
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 검색 대상 목록.
      *
@@ -29,6 +34,16 @@ class IndexMyReportRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * 허용 목록 밖의 검색 대상은 422 대신 기본 검색 대상(제목+내용)으로 바꿉니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->fallBackUnknownSearchField(self::SEARCH_FIELDS, 'title_content');
     }
 
     /**

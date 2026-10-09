@@ -15,9 +15,9 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="grid-3col-responsive">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
@@ -37,18 +37,18 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_kginicis.settings.live_mode_warning_title</h3>
-            <p class="text-success-soft font-medium">$t:sirsoft-pay_kginicis.settings.live_mode_warning_body</p>
+            <h3 class="text-sm font-semibold pay-kginicis-tone-warning-strong">$t:sirsoft-pay_kginicis.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-sm pay-kginicis-tone-warning">$t:sirsoft-pay_kginicis.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
       <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_live_keys</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_live_keys</h3>
           <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_live_keys_hint</p>
         </div>
         <div class="p-6 space-y-6">
-          <div data-ref="field_live_mid" class="section-heading-md">
+          <div data-ref="field_live_mid" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_mid</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_mid_hint</p>
@@ -61,7 +61,7 @@
               <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_kginicis.settings.live_mid_example</p>
             </div>
           </div>
-          <div data-ref="field_live_sign_key" class="section-heading-md">
+          <div data-ref="field_live_sign_key" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_sign_key</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_sign_key_hint</p>
@@ -80,7 +80,7 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_iniapi_key" class="section-heading-md">
+          <div data-ref="field_live_iniapi_key" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_key</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_key_hint</p>
@@ -99,7 +99,7 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_iniapi_iv" class="section-heading-md">
+          <div data-ref="field_live_iniapi_iv" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv_hint</p>
@@ -118,7 +118,7 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_mobile_hash_key" class="section-heading-md">
+          <div data-ref="field_live_mobile_hash_key" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key_hint</p>
@@ -141,7 +141,7 @@
       </div>
       <div data-ref="easy_pay_section" data-if="{{false}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_easy_pay</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_easy_pay</h3>
           <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_easy_pay_hint</p>
         </div>
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -184,7 +184,7 @@
       </div>
       <div data-ref="general_options_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_general_options</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_general_options</h3>
         </div>
         <div class="panel-header-row">
           <div>
@@ -196,7 +196,7 @@
       </div>
       <div data-ref="japan_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_japan</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_japan</h3>
           <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_japan_hint</p>
         </div>
         <div class="p-6 space-y-6">
@@ -220,7 +220,7 @@
                 <icon name="flask" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
                 <div>
                   <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_title</h4>
-                  <p class="mt-1 text-warning-soft leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_helper_description</p>
+                  <p class="mt-1 text-xs pay-kginicis-tone-info-strong leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_helper_description</p>
                 </div>
               </div>
               <div class="flex-center flex-wrap gap-2">
@@ -243,19 +243,19 @@
                   <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_create_button</span>
                 </button>
-                <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="text-info-soft inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-md transition-colors">
+                <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="pay-kginicis-tone-info text-xs inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-md transition-colors">
                   <icon name="external-link-alt" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_products_link</span>
                 </a>
               </div>
               <div data-if="{{_local.cbtTestProductResult}}" class="mt-3 p-3 rounded-md bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-xs space-y-1">
-                <p class="font-semibold text-success-soft">$t:sirsoft-pay_kginicis.settings.cbt_helper_create_success</p>
-                <div class="flex flex-wrap gap-3 text-success-soft">
+                <p class="pay-kginicis-tone-success-strong font-medium">$t:sirsoft-pay_kginicis.settings.cbt_helper_create_success</p>
+                <div class="flex flex-wrap gap-3 pay-kginicis-tone-success">
                   <a href="{{_local.cbtTestProductResult?.admin_url}}" target="_blank" rel="noopener" class="underline hover:text-green-900 dark:hover:text-green-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_admin_edit_link</a>
                   <a href="{{_local.cbtTestProductResult?.shop_url}}" target="_blank" rel="noopener" class="underline hover:text-green-900 dark:hover:text-green-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_shop_link</a>
                 </div>
               </div>
-              <div data-if="{{_local.cbtTestProductError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-danger-soft">{{_local.cbtTestProductError}}</div>
+              <div data-if="{{_local.cbtTestProductError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-xs pay-kginicis-tone-danger-strong">{{_local.cbtTestProductError}}</div>
             </div>
             <!-- CBT 호스트 연결 진단 — egress IP + DNS + TCP 443 도달성 -->
             <div data-ref="cbt_connectivity_card" class="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
@@ -263,7 +263,7 @@
                 <icon name="shield-alt" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
                 <div>
                   <h4 class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_title</h4>
-                  <p class="mt-1 text-info-soft leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_description</p>
+                  <p class="mt-1 text-xs pay-kginicis-tone-warning-strong leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_description</p>
                 </div>
               </div>
               <div class="flex-center flex-wrap gap-2">
@@ -292,32 +292,32 @@
                 <!-- IP 정보 카드 -->
                 <div class="p-3 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 text-xs space-y-2">
                   <div class="flex items-baseline gap-2">
-                    <span class="font-semibold text-gray-700 dark:text-gray-300 min-w-[180px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
-                    <span class="font-mono text-warning-soft font-bold select-all">{{_local.cbtConnCheckResult?.egress_ip ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unknown'}}</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
+                    <span class="font-mono pay-kginicis-tone-warning font-bold select-all">{{_local.cbtConnCheckResult?.egress_ip ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unknown'}}</span>
                   </div>
-                  <p class="text-[11px] text-gray-500 dark:text-gray-400 pl-[180px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400 pay-kginicis-indent-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
                   <div class="flex items-baseline gap-2">
-                    <span class="font-semibold text-gray-700 dark:text-gray-300 min-w-[180px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
                     <span class="text-secondary font-mono select-all">{{_local.cbtConnCheckResult?.server_ip ?? '-'}}</span>
                   </div>
                 </div>
                 <!-- APP_URL / callback URL 사전 점검 -->
                 <div class="p-3 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 text-xs space-y-2">
                   <div class="font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_kginicis.settings.cbt_callback_title</div>
-                  <div class="grid grid-cols-[150px_1fr] gap-x-3 gap-y-1.5">
+                  <div class="pay-kginicis-callback-grid gap-x-3 gap-y-1.5">
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_app_url_label</span>
                     <span class="font-mono text-gray-700 dark:text-gray-300 break-all select-all">{{_local.cbtConnCheckResult?.callback?.app_url ?? '-'}}</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_url_label</span>
                     <span class="font-mono text-gray-700 dark:text-gray-300 break-all select-all">{{_local.cbtConnCheckResult?.callback?.callback_url ?? '-'}}</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_https_label</span>
-                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_public_label</span>
-                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_host_match_label</span>
-                    <span data-if="{{_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold pay-kginicis-tone-success">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
+                    <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold pay-kginicis-tone-danger">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                   </div>
                   <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_callback_hint</p>
                 </div>
@@ -329,21 +329,21 @@
                       <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_env_test</span>
                     </div>
                     <div class="flex items-baseline gap-2">
-                      <span class="text-gray-500 dark:text-gray-400 min-w-[60px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_dns_label</span>
+                      <span class="text-gray-500 dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_dns_label</span>
                       <span class="font-mono text-gray-700 dark:text-gray-300">{{host.dns_resolved_ip ?? '-'}}</span>
                     </div>
                     <div class="flex items-baseline gap-2">
-                      <span class="text-gray-500 dark:text-gray-400 min-w-[60px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
-                      <span data-if="{{host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-success-soft font-medium">✓ {{host.tcp_443_latency_ms}}ms</span>
-                      <span data-if="{{!host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-danger-soft font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
+                      <span class="text-gray-500 dark:text-gray-400 pay-kginicis-label-narrow">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
+                      <span data-if="{{host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 pay-kginicis-tone-success-strong font-medium">✓ {{host.tcp_443_latency_ms}}ms</span>
+                      <span data-if="{{!host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 pay-kginicis-tone-danger-strong font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
                     </div>
                   </div>
                 </div>
                 <p class="text-[11px] text-amber-700 dark:text-amber-400 italic">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_whitelist</p>
               </div>
-              <div data-if="{{_local.cbtConnCheckError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-danger-soft">{{_local.cbtConnCheckError}}</div>
+              <div data-if="{{_local.cbtConnCheckError}}" class="mt-3 p-3 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-xs pay-kginicis-tone-danger-strong">{{_local.cbtConnCheckError}}</div>
             </div>
-            <div data-ref="field_live_japan_mid" class="section-heading-md">
+            <div data-ref="field_live_japan_mid" class="grid-3col-responsive">
               <div class="lg:col-span-1">
                 <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_japan_mid</label>
                 <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_mid_hint</p>
@@ -352,7 +352,7 @@
                 <input type="text" name="live_japan_mid" placeholder="" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
               </div>
             </div>
-            <div data-ref="field_live_japan_cbt_key" class="section-heading-md">
+            <div data-ref="field_live_japan_cbt_key" class="grid-3col-responsive">
               <div class="lg:col-span-1">
                 <label class="form-label">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key</label>
                 <p class="form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key_hint</p>
@@ -406,7 +406,7 @@
       </div>
       <div data-ref="escrow_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_escrow</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_escrow</h3>
           <p class="form-hint">$t:sirsoft-pay_kginicis.settings.section_escrow_hint</p>
         </div>
         <div class="p-6">
@@ -421,10 +421,10 @@
       </div>
       <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_kginicis.settings.section_redirect</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_kginicis.settings.section_redirect</h3>
         </div>
         <div class="p-6 space-y-6">
-          <div data-ref="field_redirect_success_url" class="section-heading-md">
+          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.redirect_success_url</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_success_url_hint</p>
@@ -433,7 +433,7 @@
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="section-heading-md">
+          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.redirect_fail_url</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.redirect_fail_url_hint</p>

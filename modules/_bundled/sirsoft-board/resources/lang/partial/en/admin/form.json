@@ -141,8 +141,8 @@
       "channel_mail": "Email",
       "channel_database": "Site Notification"
     },
-    "use_comment_reaction": "Comment reactions",
-    "manage_reaction_types": "Manage types"
+    "use_comment_reaction": "Enable Comment Reactions",
+    "manage_reaction_types": "Manage Types"
   },
   "placeholders": {
     "name": "e.g., Notice Board",
@@ -163,7 +163,7 @@
     "use_scrap": "Enable the scrap feature that lets members save posts to their personal collection",
     "use_reaction": "Enable reactions such as recommend/not recommend on posts",
     "type": "Board types can be managed in Settings > Basic Settings.",
-    "use_comment_reaction": "Show reaction buttons on comments too. Works only where \"Reactions\" is on."
+    "use_comment_reaction": "Show reaction buttons on comments too. Works only on boards where \"Enable Reactions\" is on."
   },
   "options": {
     "secret_mode": {
@@ -175,6 +175,7 @@
   "permissions": {
     "managers_title": "Board Managers",
     "managers_description": "Managers have full permissions for this board.",
+    "members_assign_denied": "Your account is not included in the default board permissions, so on a new board you can only name yourself as manager. Save as is and you become this board's manager. Assign other managers or staff on the board edit screen after the board is created (requires permission to edit boards).",
     "managers_select_button": "Select Manager",
     "manager_email_placeholder": "Enter manager email",
     "search_manager": "Search",

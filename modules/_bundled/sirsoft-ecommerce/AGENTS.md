@@ -367,10 +367,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 668개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 256개 | `vitest.config.ts` |
+| PHPUnit | 671개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 259개 | `vitest.config.ts` |
 | Playwright | 72개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 342개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 347개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

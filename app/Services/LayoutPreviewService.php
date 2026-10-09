@@ -201,6 +201,24 @@ class LayoutPreviewService
     }
 
     /**
+     * 미리보기를 열 화면 셸 주소를 만듭니다.
+     *
+     * 관리자 템플릿 레이아웃은 관리자 셸(`/admin/preview/{token}`)로 열어야 그 템플릿의 컴포넌트·다국어·라우트로
+     * 그려진다. 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다(7.1.0 O-G3-6).
+     * 두 셸 경로는 코어가 모든 템플릿 routes 에 주입하는 시스템 라우트다(`core.routes.filter_merged`).
+     *
+     * @param  TemplateLayoutPreview  $preview  생성된 미리보기
+     * @return string 미리보기 주소
+     */
+    public function previewUrl(TemplateLayoutPreview $preview): string
+    {
+        $template = $this->templateRepository->findById($preview->template_id);
+        $prefix = $template?->type === 'admin' ? '/admin/preview/' : '/preview/';
+
+        return $prefix.$preview->token;
+    }
+
+    /**
      * 만료된 미리보기를 삭제합니다.
      *
      * @return int 삭제된 행 수

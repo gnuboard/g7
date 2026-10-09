@@ -7,6 +7,12 @@ import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 알림 아이템 인터페이스
  */
@@ -424,7 +430,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                               onDelete(notification);
                             }}
                             className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label="Delete notification"
+                            aria-label={tOr('common.delete_notification', 'Delete notification')}
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
                           </Button>

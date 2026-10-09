@@ -91,9 +91,10 @@
                                     "handler": "closeModal"
                                 },
                                 {
+                                    "comment": "서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6).",
                                     "handler": "openWindow",
                                     "params": {
-                                        "path": "/preview/{{response.data.token}}"
+                                        "path": "{{response.data?.preview_url ?? '/preview/' + response.data.token}}"
                                     }
                                 }
                             ],

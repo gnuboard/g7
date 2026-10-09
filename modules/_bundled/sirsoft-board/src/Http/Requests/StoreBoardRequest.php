@@ -11,6 +11,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -18,6 +20,8 @@ use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 
 class StoreBoardRequest extends FormRequest
 {
+    use MapsBoardSettingAttributes;
+    use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
 
@@ -161,7 +165,7 @@ class StoreBoardRequest extends FormRequest
         $newDisplayHoursMax = $limits['new_display_hours_max'];
 
         $rules = [
-            // 기본 정보 (name, description은 다국어 필드 - 기본 언어만 필수)
+            // 기본 정보 (name, description은 다국어 필드 - 사이트 기본 언어 값만 필수. 코어 LocaleRequiredTranslatable 규약(docs/backend/validation.md 「다국어 필드 검증 규칙」))
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
             'slug' => ['required', 'string', 'max:50', 'regex:/^[a-z][a-z0-9-]*$/', new SlugUniqueRule],
             'description' => ['nullable', 'array', new TranslatableField(maxLength: 500)],
@@ -268,9 +272,17 @@ class StoreBoardRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
+            // 다국어 이름·설명 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름을 싣는다.
+            // 없으면 「name의 한국어(ko) 값은 필수입니다」처럼 필드 키가 그대로 보인다
+            'name' => __('sirsoft-board::validation.attributes.board.name'),
+            'description' => __('sirsoft-board::validation.attributes.board.description'),
             'blocked_keywords' => __('sirsoft-board::validation.attributes.board.blocked_keywords'),
             'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
+
+        // 정수/설정 필드의 표시명 매핑 — 수정 요청과 같은 매핑을 쓴다. 없으면 생성 화면 오류 문구에
+        // 「new display hours 필드는…」처럼 필드 키가 그대로 보인다
+        $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);

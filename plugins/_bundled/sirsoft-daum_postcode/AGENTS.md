@@ -44,6 +44,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
+| `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
@@ -51,10 +52,12 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
+| `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
 | `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
+| `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
 
 ## 3. 핵심 흐름
@@ -87,8 +90,8 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 0개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 0개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 1개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -148,12 +151,17 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 0개 | — |
-| Vitest | 1개 | `vitest.config.ts` |
+| PHPUnit | 1개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
+| Vitest | 5개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+
+기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
+# PHPUnit (변경 범위만) (Bash)
+php vendor/bin/phpunit plugins/_bundled/sirsoft-daum_postcode/tests --filter='<대상클래스>'
+
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-daum_postcode && powershell -Command "npm run test:run -- <대상>"
 

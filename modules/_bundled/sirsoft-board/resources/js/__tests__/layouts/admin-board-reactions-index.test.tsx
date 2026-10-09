@@ -98,13 +98,14 @@ describe('관리자 반응 관리 — 데이터소스·권한·라우트', () =>
         expect(route.meta.permission).toBe('sirsoft-board.reactions.view');
     });
 
-    // @scenario case=screen_binds_all_filters_from_query
-    // @effects admin_screen_datasource_reads_every_filter_from_query
-    it('게시판 셀렉트는 목록이 아니라 선택지라 두 칸만 받는다', () => {
-        const ds = layout.data_sources.find((d: any) => d.id === 'reaction_boards');
-
-        expect(ds.endpoint).toContain('per_page=999');
-        expect(ds.endpoint).toContain('fields=id,title');
+    // @scenario case=response_carries_board_options_meta
+    // @effects admin_screen_board_select_iterates_response_meta
+    it('게시판 셀렉트도 게시판 목록 API 가 아니라 목록 응답 메타를 순회한다', () => {
+        // 게시판 목록 API(admin/boards)는 게시판 관리 권한이 있어야 열린다 — 반응 조회만 가진
+        // 매니저에게는 403 이 나고 셀렉트가 빈다(K1 실측 2026-10-06). 유형 옵션과 같은 자리로 받는다.
+        expect(layout.data_sources.some((d: any) => /admin\/boards\?/.test(d.endpoint ?? ''))).toBe(false);
+        expect(layout.data_sources.some((d: any) => d.id === 'reaction_boards')).toBe(false);
+        expect(/reactions\?\.data\?\.boards/.test(layoutJson)).toBe(true);
     });
 });
 
@@ -282,6 +283,16 @@ describe('관리자 반응 관리 — 목록 표', () => {
         const handler = actionForEvent(grid, 'onRowAction');
 
         expect(JSON.stringify(handler)).toContain('go_to_member');
+    });
+
+    // @scenario case=row_go_to_post_disabled_when_board_deleted
+    // @effects admin_screen_go_to_post_disabled_without_board
+    it('게시판이 지워진 행에서는 「게시글 보기」가 잠긴다', () => {
+        // 게시판이 하드 삭제되면 행의 board 가 null 이라 경로가 /admin/board//post/N 이 되어 404 로 간다.
+        // 제목 칸 링크는 이미 `!row.board` 면 감추므로 행 메뉴도 같은 근거로 잠근다.
+        const rowActions = asArray(grid?.props?.rowActions);
+
+        expect(rowActions.find((a: any) => a.id === 'go_to_post')?.disabledField).toBe('board.slug');
     });
 });
 

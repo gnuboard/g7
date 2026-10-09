@@ -89,6 +89,8 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh",
                                             "type": "button",
                                             "className": "btn btn-icon"
                                         },
@@ -923,6 +925,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -1092,6 +1095,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -1261,6 +1265,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -1430,6 +1435,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -1624,6 +1630,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -1818,6 +1825,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -2012,6 +2020,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -2206,6 +2215,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -2375,6 +2385,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
                                                                         "children": [
@@ -4499,6 +4510,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.first_page",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
                                                 },
@@ -4517,6 +4529,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.prev_page",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
                                                 },
@@ -4543,6 +4556,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.next_page",
                                                     "className": "btn btn-icon"
                                                 },
                                                 "children": [
@@ -4560,6 +4574,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.last_page",
                                                     "className": "btn btn-icon"
                                                 },
                                                 "children": [

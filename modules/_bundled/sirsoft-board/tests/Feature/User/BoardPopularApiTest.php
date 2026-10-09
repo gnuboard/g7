@@ -323,8 +323,8 @@ class BoardPopularApiTest extends ModuleTestCase
         $this->assertNotContains('Over One Year', $titles);
 
         // Then: 캐시 키에는 요청 원문이 아니라 해석된 값이 들어간다
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_year_5'));
-        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_v2_nonsense_5'));
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_year_5_'.app()->getLocale()));
+        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_v2_nonsense_5_'.app()->getLocale()));
     }
 
     /**
@@ -479,8 +479,8 @@ class BoardPopularApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_v2_{period}_{limit})
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_week_5'));
+        // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_v2_{period}_{limit}_{locale} — 게시판 이름이 언어별 값)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_week_5_'.app()->getLocale()));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');

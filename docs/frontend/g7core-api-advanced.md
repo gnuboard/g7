@@ -29,7 +29,22 @@
 |--------|------|--------|
 | `current()` | 현재 로케일 반환 | `string` (예: 'ko', 'en') |
 | `supported()` | 지원 로케일 목록 | `string[]` |
-| `change(locale)` | 로케일 변경 | `Promise<void>` |
+| `change(locale, options?)` | 로케일 변경. `options.persist: false` 면 로그인 회원의 언어(`users.language`)를 저장하지 않는다 — 호출자가 이미 저장한 경우 저장 요청이 두 번 나가지 않게 한다 (engine-v1.79.0+). 생략하면 로그인 회원의 언어를 저장한다 | `Promise<void>` |
+| `handoff.isSwitching()` | 언어 전환으로 화면을 다시 마운트하는 중인지 (engine-v1.79.0) | `boolean` |
+| `handoff.stash(key, value)` | 언어 전환 중 언마운트되는 컴포넌트가 저장 전 상태를 맡긴다. 전환 중이 아니면 무시 | `boolean` (맡겼으면 true) |
+| `handoff.take(key)` | 새로 마운트된 컴포넌트가 맡긴 값을 되찾는다. 한 번 꺼내면 지워지고, 다음 화면 이동이 시작되면 남은 값은 버린다 | `unknown \| undefined` |
+
+언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. `_local` 은 엔진이 그대로 이어 주지만, 컴포넌트 안에만 있는 저장 전 상태(업로더가 고른 대기 파일처럼 직렬화할 수 없는 값)는 `handoff` 로 직접 넘긴다. 키는 같은 화면의 인스턴스를 구분하도록 경로와 컴포넌트 식별값을 섞어 정한다.
+
+```typescript
+// 마운트: 맡긴 값이 있으면 되찾는다
+const key = `MyUploader:${location.pathname}:${collection}`;
+const [pending, setPending] = useState(() => G7Core.locale.handoff?.take(key) ?? []);
+// 언마운트: 언어 전환 중일 때만 맡긴다
+useEffect(() => () => {
+  if (G7Core.locale.handoff?.isSwitching()) G7Core.locale.handoff.stash(key, pendingRef.current);
+}, [key]);
+```
 
 ### G7Core.t() 번역 함수
 
@@ -689,7 +704,7 @@ const { isPending } = G7Core.useTransitionState();
 ```typescript
 G7Core.updateQueryParams(
   newPath: string,
-  options?: { transitionOverlayTarget?: string }
+  options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }
 ): Promise<void>
 ```
 
@@ -697,6 +712,7 @@ G7Core.updateQueryParams(
 |---|---|---|
 | `newPath` | `string` | 새 경로 (쿼리스트링 포함). 예: `/admin/products?status=active&page=2` |
 | `options.transitionOverlayTarget` | `string` | `transition_overlay.target` 동적 override (engine-v1.36.0+). 탭 속 서브 탭 등 부분 영역만 spinner 표시 |
+| `options.refetchDataSourceIds` | `string[]` | 이 호출에서 다시 받을 데이터 소스 id (engine-v1.79.0+). 생략하거나 빈 배열이면 종전처럼 auto_fetch 소스 전부. 다시 받지 않은 소스의 데이터와 `_local` 은 그대로 남는다. `navigate` 의 `refetch_data_sources` 가 이 값으로 전달된다 |
 
 **동작**:
 

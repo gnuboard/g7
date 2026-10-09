@@ -6,12 +6,16 @@
  * - is_compatible === false 시 amber 배지 렌더
  * - is_compatible === true 시 배지 미렌더
  * - aria-describedby + sr-only 텍스트 존재
+ * - sr-only 문구는 실제 ko 언어 파일 값을 쓰고, 식별자 뒤 괄호 조사(「은(는)」) 없이 읽힌다(7.1.0 실측 O-R2-5)
+ *
+ * @scenario-manifest tests/scenarios/plugin-list-core-incompatibility.yaml
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import koExtensions from '../../lang/partial/ko/extensions.json';
 
 const TestDiv: React.FC<any> = ({ className, children }) => <div className={className}>{children}</div>;
 const TestSpan: React.FC<any> = ({ className, children, text, id }) => (
@@ -40,9 +44,10 @@ function setupRegistry(): ComponentRegistry {
 const translations = {
   extensions: {
     badges: {
-      incompatible: '코어 업그레이드 필요',
-      incompatible_tooltip: '코어 {{required}} 이상 필요 (현재: {{installed}})',
-      incompatible_sr: '{{name}} 은(는) 코어 {{required}} 이상이 필요하지만 현재 {{installed}} 가 설치되어 있어 업데이트할 수 없습니다.',
+      incompatible: koExtensions.badges.incompatible,
+      incompatible_tooltip: koExtensions.badges.incompatible_tooltip,
+      // 실제 ko 언어 파일 값 — 사본을 두면 문구를 고쳐도 테스트가 옛 문구를 계속 검증한다
+      incompatible_sr: koExtensions.badges.incompatible_sr,
     },
   },
 };
@@ -90,6 +95,8 @@ describe('플러그인 목록 - 코어 호환성 배지', () => {
   beforeEach(() => { registry = setupRegistry(); });
   afterEach(() => { if (testUtils) testUtils.cleanup(); });
 
+  // @scenario compatibility=incompatible
+  // @effects incompatible_badge_shown
   it('is_compatible=false 일 때 코어 업그레이드 필요 배지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -106,6 +113,8 @@ describe('플러그인 목록 - 코어 호환성 배지', () => {
     expect(screen.getByText('코어 업그레이드 필요')).toBeTruthy();
   });
 
+  // @scenario compatibility=compatible
+  // @effects badge_hidden_when_compatible
   it('is_compatible=true 일 때 배지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       buildLayout({ identifier: 'p', name: 'P', is_compatible: true }),
@@ -116,6 +125,8 @@ describe('플러그인 목록 - 코어 호환성 배지', () => {
     expect(screen.queryByText('코어 업그레이드 필요')).toBeNull();
   });
 
+  // @scenario compatibility=incompatible_sr
+  // @effects sr_description_rendered_without_bracket_particle
   it('is_compatible=false 일 때 sr-only 보조설명이 렌더된다', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -132,5 +143,12 @@ describe('플러그인 목록 - 코어 호환성 배지', () => {
     const sr = document.getElementById('compat_sr_test');
     expect(sr).not.toBeNull();
     expect(sr?.className).toContain('sr-only');
+    // sr-only 문구(실제 ko 값)를 값으로 채우면 조사 없이 읽혀야 한다 — 영문 이름 뒤 괄호 조사 금지
+    const filled = koExtensions.badges.incompatible_sr
+      .replace('{{name}}', 'Payment Plugin')
+      .replace('{{required}}', '>=7.5.0')
+      .replace('{{installed}}', '7.0.0');
+    expect(filled).toBe('Payment Plugin 업데이트에는 코어 >=7.5.0 이상이 필요해 업데이트할 수 없습니다. (현재 코어: 7.0.0)');
+    expect(filled).not.toMatch(/은\(는\)|이\(가\)|을\(를\)/);
   });
 });

@@ -93,6 +93,96 @@ class PostNewBadgeDisplayTest extends BoardTestCase
     }
 
     /**
+     * 게시글 상세 응답의 답변 글 목록에서 특정 답변 글의 is_new 값을 찾습니다(손자 답변까지).
+     *
+     * @param  array  $replies  응답의 replies 배열
+     * @param  int  $replyId  대상 답변 글 ID
+     * @return bool|null is_new 값 (없으면 null)
+     */
+    private function findReplyIsNew(array $replies, int $replyId): ?bool
+    {
+        foreach ($replies as $reply) {
+            if (($reply['id'] ?? null) === $replyId) {
+                return $reply['is_new'];
+            }
+            $nested = $this->findReplyIsNew($reply['replies'] ?? [], $replyId);
+            if ($nested !== null) {
+                return $nested;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 관리자 게시글 상세의 답변 글도 게시판의 New 배지 기간을 따른다 — 0시간(배지 안 붙임) 게시판에서 방금 단 답변 글은 New 가 아니다.
+     *
+     * 상세가 답변 글을 따로 불러오며 게시판 관계를 붙이지 않아, 원글은 New 가 아닌데 답변 글만 늘 24시간 기준으로
+     * New 가 붙었다(7.1.0 실측 K3 — 표시 기간 0 게시판의 답변 3개 모두 「New」).
+     *
+     * @scenario case=admin_detail_reply_nh0_not_new
+     *
+     * @effects detail_reply_is_new_follows_board_window
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_detail_replies_follow_new_display_hours(): void
+    {
+        $this->board->update(['new_display_hours' => 0]);
+
+        $parentId = $this->createTestPost(['title' => '원글']);
+        $replyId = $this->createTestPost(['title' => '답변 글', 'parent_id' => $parentId, 'depth' => 1]);
+        $grandId = $this->createTestPost(['title' => '손자 답변 글', 'parent_id' => $replyId, 'depth' => 2]);
+
+        $admin = $this->createAdminUser(["sirsoft-board.{$this->board->slug}.admin.posts.read"]);
+        $response = $this->actingAs($admin)
+            ->getJson("/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts/{$parentId}");
+        $response->assertStatus(200);
+
+        $this->assertFalse($response->json('data.is_new'), '표시 기간 0 게시판의 원글은 New 가 아니어야 한다.');
+        $this->assertFalse(
+            $this->findReplyIsNew($response->json('data.replies') ?? [], $replyId),
+            '표시 기간 0 게시판의 답변 글은 관리자 상세에서도 New 가 아니어야 한다.'
+        );
+        $this->assertFalse(
+            $this->findReplyIsNew($response->json('data.replies') ?? [], $grandId),
+            '손자 답변 글도 게시판 기간을 따라야 한다.'
+        );
+    }
+
+    /**
+     * 관리자 게시글 상세의 답변 글은 48시간 게시판에서 26시간 전 답변이 New 다(기본 24시간이 아닌 게시판 기간).
+     *
+     * @scenario case=admin_detail_reply_nh48_within_new
+     *
+     * @effects detail_reply_is_new_follows_board_window
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_detail_reply_within_long_window_is_new(): void
+    {
+        $this->board->update(['new_display_hours' => 48]);
+
+        $parentId = $this->createTestPost(['title' => '원글', 'created_at' => Carbon::now()->subHours(30)]);
+        $replyId = $this->createTestPost([
+            'title' => '26시간 전 답변 글',
+            'parent_id' => $parentId,
+            'depth' => 1,
+            'created_at' => Carbon::now()->subHours(26),
+        ]);
+
+        $admin = $this->createAdminUser(["sirsoft-board.{$this->board->slug}.admin.posts.read"]);
+        $response = $this->actingAs($admin)
+            ->getJson("/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts/{$parentId}");
+        $response->assertStatus(200);
+
+        $this->assertTrue(
+            $this->findReplyIsNew($response->json('data.replies') ?? [], $replyId),
+            'new_display_hours=48 일 때 26시간 전 답변 글은 관리자 상세에서 New 여야 한다.'
+        );
+    }
+
+    /**
      * 관리자 목록도 게시판의 New 배지 기간을 따른다 — 1시간 게시판에서 2시간 전 글은 New 가 아니다.
      *
      * 관리자 목록이 게시글에 게시판을 붙이지 않던 동안에는 Post::isNew() 가 기본값 24시간으로만 판정해,

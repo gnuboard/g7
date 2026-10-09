@@ -488,7 +488,7 @@
     "injected_props": {
       "title": "확장이 주입한 속성",
       "help": "기본 속성은 모든 화면에 적용되고, 확장 주입 속성은 이 확장이 활성일 때만 적용됩니다.",
-      "origin": "{source} 이(가) 주입함",
+      "origin": "주입: {source}",
       "save_target": "저장 시: 이 확장 행에 기록됩니다.",
       "save_button": "{source} 에 저장",
       "saving": "저장 중…",
@@ -1223,9 +1223,9 @@
       "vars_add": "변수 추가",
       "vars_add_name": "변수 이름",
       "vars_value_hint": "변수는 제목·설명·구조화 데이터에서 {중괄호 이름}으로 가져다 쓸 수 있습니다.",
-      "vars_name_reserved": "{name}은(는) 자동 채움 변수와 이름이 겹칩니다.",
-      "vars_name_duplicate": "{name}은(는) 이미 추가한 변수입니다.",
-      "vars_name_not_provided": "{name}은(는) 어떤 확장도 제공하지 않는 변수입니다.",
+      "vars_name_reserved": "자동 채움 변수와 이름이 겹칩니다: {name}",
+      "vars_name_duplicate": "이미 추가한 변수입니다: {name}",
+      "vars_name_not_provided": "어떤 확장도 제공하지 않는 변수입니다: {name}",
       "bot_preview_title": "검색 봇 미리보기",
       "bot_preview_refresh": "새로고침",
       "bot_preview_disabled": "이 화면은 검색엔진에 노출되지 않습니다.",
@@ -1260,7 +1260,8 @@
       "param_merge_query": "기존 쿼리 유지",
       "param_scroll": "스크롤 위치",
       "param_replace": "히스토리 대체",
-      "param_overlay_target": "이동 중 로딩 표시 영역"
+      "param_overlay_target": "이동 중 로딩 표시 영역",
+      "param_refetch_data_sources": "다시 받을 데이터 소스(쉼표로 구분)"
     },
     "open_window": {
       "label": "새 창으로 열기",

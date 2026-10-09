@@ -108,6 +108,9 @@ return [
             'recipient_value' => 'recipient value',
             'recipient_relation' => 'related user relation',
             'recipient_exclude_trigger_user' => 'exclude trigger user',
+            // Display names of multilingual fields — used as the field name in the required-locale message when saving a template
+            'subject' => 'notification subject',
+            'body' => 'notification body',
         ],
     ],
 

@@ -7,6 +7,12 @@
   "save_success": "設定が保存されました。",
   "save_error": "設定の保存に失敗しました。",
   "unsaved_changes": "保存されていない変更があります。",
+  "unsaved_tab_modal": {
+    "title": "保存されていない変更",
+    "message": "このタブで変更した内容はまだ保存されていません。別のタブに移動すると変更内容は破棄され、保存済みの値に戻ります。",
+    "btn_stay": "このタブにとどまる",
+    "btn_leave": "保存せずに移動"
+  },
   "tabs": {
     "general": "基本設定",
     "basic_defaults": "掲示板設定",
@@ -505,14 +511,17 @@
     "validation": {
       "code_required": "コードを入力してください",
       "code_duplicate": "既に存在するコードです",
+      "code_format": "英小文字で始め、英小文字・数字・アンダースコア(_)のみで2〜50文字で入力してください",
       "name_required": "デフォルト言語の名前を入力してください"
     },
     "confirm_delete": "このリアクションタイプを削除しますか？保存を押して初めて反映されます。",
+    "icon_remove_confirm_title": "アイコンの削除",
+    "icon_remove_confirm_message": "このアイコンを削除しますか？保存を押さなくてもアップロードしたファイルはすぐに削除され、元に戻せません。削除後は既定のアイコンが使われます。",
     "messages": {
-      "icon_upload_failed": "アイコンのアップロードに失敗しました",
+      "icon_upload_failed": "アイコンをアップロードできませんでした — 1MB以下のPNG・JPG・GIF・WEBP画像をアップロードしてください",
       "icon_delete_failed": "アイコンの削除に失敗しました"
     },
-    "delete_blocked_suffix": "提案に反応があるため削除できません — 使用を無効化することのみ可能です"
+    "delete_blocked_suffix": "件の反応があるため削除できません — 使用を無効化することのみ可能です"
   },
   "privacy_retention": {
     "title": "個人情報保有期間",
@@ -597,9 +606,13 @@
     "confirm_add_step": "選択した会員を掲示板スタッフに追加します。",
     "confirm_remove_manager": "選択した会員を掲示板管理者から削除します。",
     "confirm_remove_step": "選択した会員を掲示板スタッフから削除します。",
-    "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外",
+    "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外、変化なし{{unchanged}}件",
     "reason_last_manager": "管理者が0名になる",
     "reason_scope": "管理権限の範囲外",
+    "reason_not_grantable": "このロールを付与できない掲示板（権限不足）",
+    "reason_role_missing": "掲示板のロール情報がない（データ破損）",
+    "no_permission": "管理者・スタッフを一括指定するには掲示板の編集権限が必要です。",
+    "load_failed": "掲示板一覧を読み込めなかったため、一括指定を使用できません。しばらくしてから再度開いてください。",
     "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
   }
 }

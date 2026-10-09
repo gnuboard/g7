@@ -24,6 +24,7 @@ axes:
     - filters_target_type_reaction_type_board_and_sort
     - search_title_excludes_deleted_targets
     - invalid_filter_values_rejected
+    - unknown_search_field_falls_back
     - row_marks_target_board_deleted_and_reaction_off
     - response_carries_type_meta_and_query_echo
     - remove_single_own_only_and_recalculates
@@ -38,12 +39,20 @@ axes:
 
 effects:
   - mypage_filtered_empty_says_no_results
+  # 좁은 화면(390px) 가로 넘침·확인 버튼 커서 (K1 실측 2026-10-06)
+  - mypage_board_tabs_scroll_inside_bar_on_narrow_screen
+  # 처리 중 서버 오류는 400 이 아니라 500 (1.2.0 Fixed 122행 근거 잠금 — K1 실측 2026-10-06)
+  - my_reactions_server_error_returns_500
+  - mypage_reactions_search_input_shrinks_on_narrow_screen
+  - mypage_reaction_confirm_buttons_show_pointer
   # 목록·대상 해석
   - list_mixes_post_and_comment_targets
   - targets_hydrated_without_n_plus_one
   - list_filters_target_type_reaction_type_board_and_sort
   - search_uses_like_and_excludes_deleted_targets
   - invalid_filter_returns_422
+  # 7.1.0 실측 O-K3-3 — 모르는 검색 대상은 422 대신 기본(제목+내용)
+  - unknown_search_field_falls_back_to_title_content
   - row_marks_reaction_off_board_deleted_and_target_deleted
   - response_carries_reaction_types_meta_and_query_echo
   # 해제

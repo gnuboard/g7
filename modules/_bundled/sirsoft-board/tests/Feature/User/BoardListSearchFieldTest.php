@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
  * 검증 목적 (이슈 #524 §4.2 — 사용자 화면에 검색 구분이 어디에도 없던 결함):
  * - search_field=title → 제목만, content → 내용만, author → 작성자만
  * - 기본값(title_content)과 미지정(all)의 결과가 종전과 같다 (회귀)
- * - 허용 목록 밖의 값은 422 (모르는 값이 조용히 all 로 떨어지면 결과만 틀린다)
+ * - 허용 목록 밖의 값은 기본 검색 대상(title_content)으로 처리한다 (관리자 목록처럼 200, 작성자는 섞지 않는다)
  *
  * URL: GET /api/modules/sirsoft-board/boards/{slug}/posts
  *
@@ -158,18 +158,32 @@ class BoardListSearchFieldTest extends BoardTestCase
     }
 
     /**
-     * 허용 목록 밖의 search_field → 422.
+     * 허용 목록 밖의 search_field 는 422 가 아니라 기본 검색 대상(제목+내용)으로 처리한다.
      *
-     * @scenario surface=board_list
+     * 관리자 목록과 같게 잘못된 값으로 목록이 통째로 실패하지 않게 한다(7.1.0 실측 O-K3-3).
+     * 조용히 all 로 떨어지면 작성자까지 섞이므로, 화면 셀렉트 기본값과 같은 title_content 로 둔다.
      *
-     * @effects board_list_rejects_invalid_search_field
+     * @scenario surface=board_list,search_field=invalid
+     *
+     * @effects board_list_unknown_search_field_falls_back_to_title_content
      *
      * @return void 반환값 없음
      */
-    public function test_user_list_rejects_invalid_search_field(): void
+    public function test_user_list_unknown_search_field_falls_back_to_title_content(): void
     {
-        $this->getJson($this->listUrl(['search' => 'x', 'search_field' => 'email']))
-            ->assertStatus(422);
+        $this->createTestPost(['title' => '무관', 'content' => '무관', 'author_name' => '알파작성자']);
+
+        foreach (['email', 'abc'] as $unknown) {
+            $sql = $this->captureListSql(['search' => '알파작성자', 'search_field' => $unknown]);
+
+            $this->assertStringContainsStringIgnoringCase('match', $sql, "{$unknown}: 제목+내용 FULLTEXT 분기를 타야 한다");
+            // 조회 열 목록에는 author_name 이 늘 있으므로 검색 조건(LIKE) 모양으로 가른다
+            $this->assertStringNotContainsString('`author_name` like', $sql, "{$unknown}: 작성자 분기가 섞이면 all 로 떨어진 것이다");
+        }
+
+        // 배열로 온 값도 목록을 실패시키지 않는다
+        $this->getJson($this->listUrl(['search' => 'x', 'search_field' => ['title']]))
+            ->assertStatus(200);
     }
 
     /**

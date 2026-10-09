@@ -119,7 +119,7 @@ describe('내 정보 — 저장한 배송국가가 배송 불가로 내려간 �
   it('내 정보 화면은 저장 국가(미국)가 적용되지 않는다는 것과 지금 적용 중인 국가(대한민국)를 한 문장으로 보인다', () => {
     expect(findNotice(profileView)).toBeDefined();
     expect(evaluate(String(findNoticeCondition(profileView)), context('ko', 'US'))).toBe(true);
-    expect(render(profileView, context('ko', 'US'))).toBe('저장된 배송국가 미국은(는) 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
+    expect(render(profileView, context('ko', 'US'))).toBe('저장된 배송국가 미국: 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
   });
 
   /**
@@ -138,7 +138,7 @@ describe('내 정보 — 저장한 배송국가가 배송 불가로 내려간 �
   it('저장 국가가 배송 국가 목록에서 아예 빠졌으면 국가 코드로 알린다', () => {
     const list = countries.filter((c) => c.code !== 'US');
     expect(evaluate(String(findNoticeCondition(profileView)), context('ko', 'US', undefined, list))).toBe(true);
-    expect(render(profileView, context('ko', 'US', undefined, list))).toBe('저장된 배송국가 US은(는) 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
+    expect(render(profileView, context('ko', 'US', undefined, list))).toBe('저장된 배송국가 US: 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
   });
 
   /**
@@ -159,7 +159,7 @@ describe('내 정보 — 저장한 배송국가가 배송 불가로 내려간 �
   it('내 정보 수정 화면은 콤보가 빈칸이 되는 대신 저장된 배송국가 미국이 적용되지 않음을 알린다', () => {
     expect(findNotice(profileEdit)).toBeDefined();
     expect(evaluate(String(findNoticeCondition(profileEdit)), context('ko', 'US'))).toBe(true);
-    expect(render(profileEdit, context('ko', 'US'))).toBe('저장된 배송국가 미국은(는) 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
+    expect(render(profileEdit, context('ko', 'US'))).toBe('저장된 배송국가 미국: 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: 대한민국');
   });
 
   /**

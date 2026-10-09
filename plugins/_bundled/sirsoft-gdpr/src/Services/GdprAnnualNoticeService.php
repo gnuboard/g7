@@ -233,8 +233,11 @@ class GdprAnnualNoticeService
         $snapshot = $log->snapshot;
         $locale = $snapshot['locale'];
         $sections = '';
+        $sectionLines = [];
         foreach ($snapshot['sections'] as $section) {
             $sections .= '<h3>'.e($section['title'] ?? '').'</h3><p>'.nl2br(e($section['body'] ?? '')).'</p>';
+            // 평문 짝 — 사이트내 알림·문자는 본문을 글자 그대로 보여 주므로 태그·엔티티 없이 「제목: 본문」으로 잇는다.
+            $sectionLines[] = trim(($section['title'] ?? '').': '.preg_replace('/\s+/u', ' ', (string) ($section['body'] ?? '')), ': ');
         }
 
         return [
@@ -254,6 +257,8 @@ class GdprAnnualNoticeService
                     __('sirsoft-gdpr::messages.annual_notice.privacy_policy_link_label', [], $locale),
                 ),
                 'notice_sections' => $sections,
+                'introduction_text' => (string) $snapshot['introduction'],
+                'notice_sections_text' => implode(' / ', array_filter($sectionLines, fn (string $line) => $line !== '')),
                 'privacy_notice_attempt' => $attempt,
             ],
         ];

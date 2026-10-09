@@ -70,6 +70,16 @@
         <field name="data" :value="[]"/>
       </field>
     </fallback>
+    <!-- 실패의 종류를 남긴다 — fallback 이 빈 목록을 주므로 이것이 없으면 403(알림 설정 권한 없음)도 「등록된 알림 정의가 없습니다」로
+         보여 권한이 없는 관리자가 기능이 없다고 오해했다(7.1.0 실측 M1-O5). 이 핸들러가 실패를 받아 끊으므로 설정 화면 전체 오류로 번지지 않는다. -->
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" gdprNotificationDefinitionsError="forbidden"/>
+      </on-code>
+      <default>
+        <set-state target="local" gdprNotificationDefinitionsError="failed"/>
+      </default>
+    </error-handling>
   </data-source>
   <computed name="isNotificationReadOnly">{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
@@ -113,10 +123,10 @@
           <div>
             <div class="flex-center gap-2">
               <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
-              <h3 class="text-error-soft">$t:sirsoft-gdpr.settings.validation_error</h3>
+              <h3 class="text-error-strong">$t:sirsoft-gdpr.settings.validation_error</h3>
             </div>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="grid-3col-responsive">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
@@ -688,6 +698,8 @@
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.introduction</label>
               <multilingual-input data-type="composite" name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+              <!-- 서문 오류는 언어별 키(annual_notice.introduction.ko 등)로 온다 — 첫 오류를 칸 아래에 보인다(상단 알림·토스트에만 나오던 것, M1-O4). -->
+              <span data-if="{{!!_local.errors &amp;&amp; Object.keys(_local.errors).some((key) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))}}" class="form-error">{{_local.errors ? Object.entries(_local.errors).find(([key]) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))?.[1]?.[0] : ''}}</span>
             </div>
             <div class="flex flex-wrap gap-3">
               <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_local.hasChanges || _local.noticeSending}}">
@@ -844,10 +856,13 @@
           </div>
           <!-- 0건 안내 — 형제(게시판·이커머스)와 같은 규약이다. 정의 조회가 실패하면 fallback 이
                빈 배열을 주므로 카드가 아무 말 없이 비는데, 그 침묵은 "기능이 없다" 와 구분되지 않는다. -->
-          <div data-ref="gdpr_notification_empty" data-if="{{(gdprNotificationDefinitions?.data?.data ?? []).length === 0}}" class="row-stack">
+          <div data-ref="gdpr_notification_empty" data-if="{{(gdprNotificationDefinitions?.data?.data ?? []).length === 0 &amp;&amp; !_local.gdprNotificationDefinitionsError}}" class="row-stack">
             <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
             <p class="text-label-subtle">$t:sirsoft-gdpr.notification_definitions.empty_message</p>
           </div>
+          <!-- 조회 실패 — 권한 없음(403)과 그 밖(500·네트워크)을 가른다. 실패 종류는 데이터 소스 error-handling 이 남긴다. -->
+          <p data-ref="gdpr_notification_forbidden" data-if="{{_local.gdprNotificationDefinitionsError === 'forbidden'}}" class="alert-warning">$t:sirsoft-gdpr.notification_definitions.forbidden_message</p>
+          <p data-ref="gdpr_notification_load_failed" data-if="{{_local.gdprNotificationDefinitionsError === 'failed'}}" class="alert-warning">$t:sirsoft-gdpr.notification_definitions.load_failed_message</p>
         </div>
       </div>
       <!-- 하단 sticky 저장/취소 바 — 게시판 설정(admin_board_settings.json footer_buttons)과 동일 패턴으로 통일 (상단 헤더 배치는 스크롤 시 밀리는 것으로 오인되어 재배치). -->

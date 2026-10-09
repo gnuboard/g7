@@ -71,6 +71,7 @@
     "too_large": "File size exceeds the {{size}}MB limit."
   },
   "theme_select": "Theme",
+  "delete_notification": "Delete notification",
   "expand": "Expand",
   "collapse": "Collapse",
   "quantity": "Quantity",

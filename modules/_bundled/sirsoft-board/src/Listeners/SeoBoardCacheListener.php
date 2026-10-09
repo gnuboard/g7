@@ -52,6 +52,37 @@ class SeoBoardCacheListener implements HookListenerInterface
                 'method' => 'onPostDelete',
                 'priority' => 20,
             ],
+            // 관리자 블라인드·복구는 after_update 가 아니라 이 두 훅을 발화한다 — 구독하지 않으면 블라인드한 글이
+            // 사이트맵에 남고, 검색엔진·SNS 용으로 캐시해 둔 상세 화면이 원문을 계속 내보낸다(2026-10-07 실측).
+            'sirsoft-board.post.after_blind' => [
+                'method' => 'onPostUpdate',
+                'priority' => 20,
+            ],
+            'sirsoft-board.post.after_restore' => [
+                'method' => 'onPostUpdate',
+                'priority' => 20,
+            ],
+            // 댓글은 게시글 상세의 검색엔진용 화면에 함께 실린다 — 댓글이 바뀌면 그 글의 상세 캐시를 지운다.
+            'sirsoft-board.comment.after_create' => [
+                'method' => 'onCommentChange',
+                'priority' => 20,
+            ],
+            'sirsoft-board.comment.after_update' => [
+                'method' => 'onCommentChange',
+                'priority' => 20,
+            ],
+            'sirsoft-board.comment.after_delete' => [
+                'method' => 'onCommentChange',
+                'priority' => 20,
+            ],
+            'sirsoft-board.comment.after_blind' => [
+                'method' => 'onCommentChange',
+                'priority' => 20,
+            ],
+            'sirsoft-board.comment.after_restore' => [
+                'method' => 'onCommentChange',
+                'priority' => 20,
+            ],
             'sirsoft-board.board.after_update' => [
                 'method' => 'onBoardUpdate',
                 'priority' => 20,
@@ -127,6 +158,35 @@ class SeoBoardCacheListener implements HookListenerInterface
         $this->invalidateRelatedCaches($args);
 
         $this->syncPostSitemapIndex($args, true);
+    }
+
+    /**
+     * 댓글이 바뀌면 그 글의 검색엔진용 상세 화면 캐시를 지웁니다.
+     *
+     * 상세 화면 캐시에는 댓글 목록이 함께 실린다 — 지우지 않으면 블라인드·삭제한 댓글이나 고친 댓글의
+     * 옛 내용이 검색엔진·SNS 에 계속 나간다. 다시 그리는 것은 다음 봇 방문이 맡는다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 번째: Comment 모델, 두 번째: 게시판 slug)
+     * @return void 반환값 없음
+     */
+    public function onCommentChange(...$args): void
+    {
+        $comment = $args[0] ?? null;
+        $slug = $args[1] ?? null;
+        $postId = is_object($comment) ? ($comment->post_id ?? null) : null;
+
+        if (! $postId || ! $slug) {
+            return;
+        }
+
+        try {
+            app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Board post cache invalidation on comment change failed', [
+                'error' => $e->getMessage(),
+                'post_id' => $postId,
+            ]);
+        }
     }
 
     /**

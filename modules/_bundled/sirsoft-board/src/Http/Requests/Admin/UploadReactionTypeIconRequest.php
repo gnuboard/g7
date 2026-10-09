@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Models\ReactionType;
 
 /**
@@ -11,10 +12,12 @@ use Modules\Sirsoft\Board\Models\ReactionType;
  *
  * 아이콘은 반응 버튼·목록에 20px 안팎으로 렌더되는 작은 이미지다. SVG 는 제외한다 —
  * 첨부 다운로드 엔드포인트가 인증 없이 인라인 스트리밍이라 SVG 를 허용하면
- * 스크립트가 든 파일이 사이트 오리진에서 실행될 수 있다 (PO 결정 R13).
+ * 스크립트가 든 파일이 사이트 오리진에서 실행될 수 있다 (결정 R13).
  */
 class UploadReactionTypeIconRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 요청 권한 확인 (라우트 미들웨어가 권한을 강제한다)
      *

@@ -69,10 +69,16 @@ effects:
   # 조용히 이전 갈래로 나간다(검색 바 초기화 / 검색 결과 배너 초기화 두 자리).
   - mypage_activity_every_reset_clears_search_field
   - mypage_activity_search_field_labels_have_ko_en
+  # K2 실측(2026-10-06) — 390px 에서 입력칸 고유 최소 폭 때문에 검색 줄이 칸 밖으로 넘쳐 페이지가 가로로 밀렸다
+  - mypage_activity_search_input_shrinks_on_narrow_screen
+  # 7.1.0 실측 O-K3-10 — 네 하위 탭(내 글·내 댓글·내 반응·내 신고) 검색칸 Enter 가 검색 버튼과 같은 순서를 탄다
+  - mypage_activity_enter_runs_search_button_sequence
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/UserActivitySearchFieldTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-board-search-field.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-board-search-enter.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mypage-board-search-enter.spec.ts
 
 validation:
   audit_rule: test-scenario-coverage

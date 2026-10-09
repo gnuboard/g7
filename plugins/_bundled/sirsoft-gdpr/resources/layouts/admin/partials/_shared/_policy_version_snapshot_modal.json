@@ -296,14 +296,14 @@
                                             ]
                                         },
                                         {
-                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환.",
+                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 ko→en).",
                                             "type": "basic",
                                             "name": "P",
                                             "if": "{{category?.description}}",
                                             "props": {
                                                 "className": "text-gray-600 dark:text-gray-300 leading-relaxed"
                                             },
-                                            "text": "{{(category?.description && typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}"
+                                            "text": "{{(category?.description && typeof category.description === 'object') ? (category.description[$locale] ?? category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}"
                                         }
                                     ]
                                 }

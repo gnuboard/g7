@@ -1232,7 +1232,8 @@
       "param_merge_query": "既存のクエリを保持",
       "param_scroll": "スクロール位置",
       "param_replace": "履歴を置き換える",
-      "param_overlay_target": "移動中のロード表示エリア"
+      "param_overlay_target": "移動中のロード表示エリア",
+      "param_refetch_data_sources": "再取得するデータソース(カンマ区切り)"
     },
     "open_window": {
       "label": "新しいウィンドウで開く",

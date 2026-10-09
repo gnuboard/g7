@@ -102,12 +102,16 @@ const getInitialTheme = (): ThemeMode => {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText = 'System',
-  lightText = 'Light',
-  darkText = 'Dark',
+  autoText: autoTextProp,
+  lightText: lightTextProp,
+  darkText: darkTextProp,
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const autoText = autoTextProp ?? tOr('admin.theme.auto', 'System');
+  const lightText = lightTextProp ?? tOr('admin.theme.light', 'Light');
+  const darkText = darkTextProp ?? tOr('admin.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
@@ -175,7 +179,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       <Button
         onClick={() => setShowMenu(!showMenu)}
         className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-        aria-label={tOr('common.theme_select', '화면 테마')}
+        aria-label={tOr('common.theme_select', 'Theme')}
         aria-expanded={showMenu}
       >
         <Icon

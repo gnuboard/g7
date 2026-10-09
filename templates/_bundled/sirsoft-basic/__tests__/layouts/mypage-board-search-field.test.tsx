@@ -149,3 +149,25 @@ describe('마이페이지 게시판 활동 — 검색 0건 안내', () => {
         expect(comments.includes('$t:board.no_search_results')).toBe(true);
     });
 });
+
+describe('내 글·내 댓글 — 좁은 화면(390px) 검색 줄 (K2 실측 2026-10-06)', () => {
+    // @scenario tab=posts
+    // @effects mypage_activity_search_input_shrinks_on_narrow_screen
+    it('내 글 검색 입력칸이 줄어들 수 있다', () => {
+        // 입력칸의 고유 최소 폭 때문에 390px 에서 「검색」·「초기화」가 화면 밖(오른쪽 449px)으로 밀렸다.
+        const inputs = flattenNodes(myPosts).filter((n: any) => n?.name === 'Input' && n?.props?.type === 'text');
+
+        expect(inputs.length).toBe(1);
+        expect(inputs[0].props.className).toContain('min-w-0');
+    });
+
+    // @scenario tab=comments
+    // @effects mypage_activity_search_input_shrinks_on_narrow_screen
+    it('내 댓글 검색 입력칸이 줄어들 수 있다', () => {
+        // 같은 이유로 「초기화」가 오른쪽 444px 까지 밀렸다.
+        const inputs = flattenNodes(myComments).filter((n: any) => n?.name === 'Input' && n?.props?.type === 'text');
+
+        expect(inputs.length).toBe(1);
+        expect(inputs[0].props.className).toContain('min-w-0');
+    });
+});

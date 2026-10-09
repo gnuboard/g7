@@ -118,7 +118,8 @@
       "create_success": "ページが登録されました。",
       "update_success": "ページが編集されました。",
       "validation_error": "入力情報を確認してください。",
-      "read_only_message": "編集権限がないため、読み取り専用として表示されます。"
+      "read_only_message": "編集権限がないため、読み取り専用として表示されます。",
+      "read_only_message_create": "登録権限がないため、読み取り専用として表示されます。"
     },
     "attachment": {
       "download": "ダウンロード"

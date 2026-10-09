@@ -13,13 +13,15 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Schedule;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 /**
  * API 문서 실측용 완전 샘플 데이터 서비스
  *
  * 각 API 도메인의 대표 엔티티에 모든 필드가 채워진 완전한 샘플 레코드를
  * 멱등하게 생성하고, docgen 이 상세 GET 실측에 사용할 도메인별 대표 route key
- * 맵을 제공합니다. 개발 환경 전용 — 생성된 샘플은 개발 DB 에 남습니다.
+ * 맵을 제공합니다. 개발 환경 전용 — 실측이 끝나면 cleanup() 이 시드 중 만든 행과
+ * 앞선 실행이 남긴 샘플을 걷어 개발 DB 에 남기지 않습니다.
  */
 class ApiDocSampleService implements ApiDocSampleSeeder
 {
@@ -29,27 +31,96 @@ class ApiDocSampleService implements ApiDocSampleSeeder
     private const MARKER = 'apidoc-sample';
 
     /**
+     * @var ApiDocSampleTracker 시드 중 만든 행 기록기
+     */
+    private ApiDocSampleTracker $tracker;
+
+    /**
+     * ApiDocSampleService 생성자
+     */
+    public function __construct()
+    {
+        $this->tracker = new ApiDocSampleTracker;
+    }
+
+    /**
      * 도메인별 완전 샘플을 멱등 생성하고 대표 route key 맵을 반환합니다.
+     *
+     * 만든 행은 기록해 두었다가 cleanup() 이 지운다.
      *
      * @return array<string, array{model: class-string, key: string, value: string}> 도메인 => 대표 레코드 정보
      */
     public function seed(): array
     {
-        $map = [];
+        return $this->track(function (): array {
+            $map = [];
 
-        // permissions → roles → users 순: user 가 role 을, role 이 permission 을 참조
-        $map['permissions'] = $this->seedPermission();
-        $map['roles'] = $this->seedRole();
-        $map['users'] = $this->seedUser();
-        $map['menus'] = $this->seedMenu();
-        $map['notification-definitions'] = $this->seedNotificationDefinition();
-        $map['schedules'] = $this->seedSchedule();
-        $map['activity-logs'] = $this->seedActivityLog();
-        $map['language-packs'] = $this->seedLanguagePack();
-        $map['notification-logs'] = $this->seedNotificationLog();
-        $map['notification-templates'] = $this->seedNotificationTemplate();
+            // permissions → roles → users 순: user 가 role 을, role 이 permission 을 참조
+            $map['permissions'] = $this->seedPermission();
+            $map['roles'] = $this->seedRole();
+            $map['users'] = $this->seedUser();
+            $map['menus'] = $this->seedMenu();
+            $map['notification-definitions'] = $this->seedNotificationDefinition();
+            $map['schedules'] = $this->seedSchedule();
+            $map['activity-logs'] = $this->seedActivityLog();
+            $map['language-packs'] = $this->seedLanguagePack();
+            $map['notification-logs'] = $this->seedNotificationLog();
+            $map['notification-templates'] = $this->seedNotificationTemplate();
 
-        return array_filter($map);
+            return array_filter($map);
+        });
+    }
+
+    /**
+     * 콜백(확장 시더의 seed() 등)이 만든 행을 같은 기록에 넣습니다.
+     *
+     * @param  callable  $seed  시드 콜백
+     * @return mixed 콜백 반환값
+     */
+    public function track(callable $seed): mixed
+    {
+        return $this->tracker->track($seed);
+    }
+
+    /**
+     * 실측이 끝난 샘플을 걷습니다.
+     *
+     * 시드 중 만든 행(확장 시더분과 모델 이벤트가 함께 만든 행 포함)을 만든 역순으로 지운 뒤, 앞선 실행이
+     * 남긴 코어 샘플을 식별자로 찾아 지운다 — 정리 도입 전 실행이나 실측 중 멈춘 실행이 남긴 샘플은 이번 시드가
+     * 새로 만들지 않고 재사용하므로 기록에 없다. 샘플이 아닌 행은 건드리지 않는다.
+     *
+     * @return int 지운 행 수
+     */
+    public function cleanup(): int
+    {
+        return $this->tracker->purge() + $this->purgeLeftoverSamples();
+    }
+
+    /**
+     * 앞선 실행이 남긴 코어 샘플을 식별자로 찾아 지웁니다(하위·종속 샘플부터).
+     *
+     * @return int 지운 행 수
+     */
+    private function purgeLeftoverSamples(): int
+    {
+        $definitionIds = NotificationDefinition::query()->where('type', self::MARKER.'.event')->pluck('id');
+
+        $leftovers = collect()
+            ->concat(NotificationTemplate::query()->whereIn('definition_id', $definitionIds)->get())
+            ->concat(NotificationLog::query()->where('notification_type', 'apidoc.sample.event')->get())
+            ->concat(LanguagePack::query()->where('identifier', 'apidoc-sample-lang')->get())
+            ->concat(ActivityLog::query()->where('description_key', 'apidoc.sample.action')->get())
+            ->concat(Schedule::query()->where('name', 'API 문서 샘플 스케줄')->get())
+            ->concat(NotificationDefinition::query()->whereIn('id', $definitionIds)->get())
+            ->concat(Menu::query()->where('slug', self::MARKER.'-menu-child')->get())
+            ->concat(Menu::query()->where('slug', self::MARKER.'-menu')->get())
+            ->concat(User::query()->where('email', self::MARKER.'-user@example.com')->get())
+            ->concat(Role::query()->whereIn('identifier', [self::MARKER.'-role', self::MARKER.'-role-fallback'])->get());
+
+        // 권한 샘플은 역할 연결을 끊고 하위부터 지우는 권한 정리에 맡긴다
+        return (int) DB::transaction(
+            fn (): int => $leftovers->sum(fn ($model): int => $this->tracker->delete($model)) + $this->purgeAssignableSamples()
+        );
     }
 
     /**
@@ -129,6 +200,34 @@ class ApiDocSampleService implements ApiDocSampleSeeder
         }
 
         return ['model' => Permission::class, 'key' => $permission->getRouteKeyName(), 'value' => (string) $permission->getRouteKey()];
+    }
+
+    /**
+     * 실측이 끝난 뒤 관리자가 실제 역할에 배정할 수 있는 샘플(권한)을 지웁니다.
+     *
+     * 샘플 권한은 상세 GET 실측(권한 트리 응답)에만 필요하다. 남겨 두면 관리자 권한 트리에
+     * 「API 문서 샘플 권한 > 하위 권한」이 실제 권한처럼 보이고, 운영자가 하위 권한을 실제 역할에
+     * 배정할 수 있다(2026-10-07 실측 O-D2). 하위부터 역할 연결을 먼저 끊고 지운다 — DB 의 연쇄 삭제에
+     * 기대지 않는다. 사용자·역할·메뉴 등 다른 샘플은 cleanup() 의 기록 삭제와 purgeLeftoverSamples() 가 함께 지운다
+     * (이 메서드는 그중 권한 몫이다).
+     *
+     * @return int 지운 샘플 권한 수
+     */
+    public function purgeAssignableSamples(): int
+    {
+        $samples = Permission::query()
+            ->where('identifier', 'like', self::MARKER.'.%')
+            ->get();
+
+        foreach ($samples as $permission) {
+            $permission->roles()->detach();
+        }
+
+        // 하위(parent_id 있음)부터 지운다
+        $samples->sortByDesc(fn (Permission $permission) => $permission->parent_id === null ? 0 : 1)
+            ->each(fn (Permission $permission) => $permission->delete());
+
+        return $samples->count();
     }
 
     /**

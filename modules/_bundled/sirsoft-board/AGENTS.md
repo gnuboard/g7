@@ -92,6 +92,14 @@
 바꿀 수 있고, 명단은 그 역할이 담은 권한을 모두 가진 액터(슈퍼관리자·그 게시판의 기존 관리자)만
 바꿉니다(KVE-2026-2367). 게시판을 새로 만들 때 설정 기본값이 정한 역할(기본 ACL)은 검사하지 않고
 그 위에 얹는 역할만 판정하며, 바뀌지 않은 키·명단(관리자 폼의 평소 저장)은 검사하지 않습니다.
+새로 만든 게시판의 관리자 명단이 생성자 본인 한 명뿐이면 명단 상한을 보지 않습니다(새 게시판의 관리자가
+되는 것은 기존 게시판에 대한 상승이 아니다). 이때 스텝을 관리자보다 먼저 판정해, 방금 얻은 관리자 역할로
+같은 요청의 스텝 지정이 통과하지 않게 합니다. 환경설정 「관리자·스텝 일괄 지정」의 「모든 게시판」은 역할을
+줄 수 없는 게시판만 `not_grantable` 로 건너뛰고(고른 게시판은 403), 건너뛴 게시판의 명단은 그대로입니다.
+바꿀 것이 없던 게시판(「제거」 인데 그 회원이 없거나 「추가」 인데 이미 있는 게시판)은 `unchanged_count` 로 따로 세어
+`updated_count + skipped_count + unchanged_count` 가 대상 게시판 수와 맞습니다. 카드 결과 줄과 완료 메시지(`bulk_members_success`
+의 `:unchanged`)가 이 수를 「변화 없음 N개」로 보입니다 — 응답 필드를 바꾸면 카드 결과 줄의 `unchanged=` 인자도 함께 맞춥니다.
+관리자·스텝 역할 행이 없는(데이터 손상) 게시판은 `role_missing` 사유로 `skipped` 에 실어 카드 결과 줄에 보입니다(서버 로그 경고만으로는 운영자가 알 수 없다). 카드의 게시판 목록 조회가 403 이면 「권한 없음」, 그 밖의 실패면 「불러오지 못함」 이유를 보입니다(`boards_list` 의 error-handling 이 남기는 `_local.bulkMembersBoardsError`).
 위반은 `PermissionEscalationException` → 403 이고, 게시판 생성·수정은 트랜잭션이라 같은 요청의
 다른 변경(이름·앞선 키의 매핑·새 게시판 행)도 함께 되돌아갑니다.
 환경설정의 일괄 적용 확인 창은 저장·적용이 실패(상한 403 포함)해도 창을 닫지 않고 방금 시도한
@@ -105,6 +113,13 @@
 `PostResource` 가 `SecretContentGate` 로 비밀글 여부·열람 권한을 판정해 `content`/`title`/
 `reply`/`attachments` 를 마스킹합니다 — 이 판정은 댓글 목록·첨부 다운로드에도 **개별
 재적용**됩니다(부모 글에서 한 번 판정하고 끝나지 않음, KVE-2026-1914).
+
+**게시글 열람 → 조회수**: `User\PostController::show()` 가 권한 판정을 통과한 열람만
+`PostService::incrementViewCountOnce()` 로 셉니다. 1회 판정 키는 로그인 회원이면 회원 번호,
+비로그인이면 IP 이고(API 는 세션이 없는 무상태 요청), 유효시간은 `spam_security.view_count_cache_ttl`
+입니다. SEO 렌더러가 서버 자신에게 보내는 내부 호출(글 작성·수정 직후 캐시 재생성, 검색 봇 방문)은
+코어 `App\Seo\SeoRenderRequest::matches()` 로 걸러 세지 않습니다 — 세면 글을 쓰자마자 조회수가
+1 이 되고 서버 IP 키가 같은 IP 의 비로그인 방문을 「이미 봄」으로 막습니다.
 
 **신고 접수 → 처리**: `User\ReportController` → `StoreReportRequest` → `ReportService::create()`
 (`before_create`→`filter_create_data`→`after_create`) → 신고 접수 관리자 알림 발송. 관리자가
@@ -120,7 +135,7 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 105개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 88개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 95개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -150,6 +165,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 한국어 문구에 「이(가)」「(으)로」처럼 조사를 괄호로 남기거나 자리표시 바로 뒤에 조사를 붙이지 않는다(값의 받침에 따라 틀린 문장이 된다) — 「값이」「상태로」「에 대해」처럼 받침과 무관한 말로 잇는다. 새 FormRequest 에 `in`·`exists`·`required_with` 같은 규칙을 두면 칸별 문구를 주거나 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다(코어 기본 문구는 조사 자리표시를 남긴다). 잠금: `tests/Unit/Lang/KoreanParticlePlaceholderTest.php`
+- [ ] 검증 문구의 항목 이름 자리에 필드 키(`sort`, `board id`)가 보이지 않게 한다 — 새 요청 칸은 `attributes()` 로 이름을 주거나, 게시판 공용 이름 `validation.fallback_attributes`(ko·en·ja 팩 모두)에 더하고 요청에 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다. 배열 항목(`키.*`)은 부모 칸 이름을 물려받는다. 잠금: `tests/Feature/ValidationAttributeNameTest.php`(게시판 요청 전부를 ko·en 으로 조립해 본다)
 - [ ] 비밀글이 관여하는 새 조회 경로(댓글·첨부·검색 결과 등)를 추가할 때 `SecretContentGate` 재적용 (KVE-2026-1914 — 부모에서 한 번 판정하고 끝나지 않는다)
 - [ ] `boards`/`board_posts`/`board_comments` 의 count 컬럼(`posts_count`/`comments_count`/`replies_count`/`attachments_count`)은 훅 리스너(`*CountSyncListener`)가 갱신 — Service 에서 직접 증감 금지
 - [ ] 게시판 삭제 시 `getDynamicPermissionIdentifiers()`/`getDynamicRoleIdentifiers()`/`getDynamicMenuSlugs()` 가 최신 상태를 반영하도록 동일 트랜잭션에서 정리 (module.php `uninstall()` 의 `chunkById` 패턴 참고 — OFFSET 순회로 삭제 금지)
@@ -180,10 +197,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 212개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 65개 | `vitest.config.ts` |
+| PHPUnit | 225개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 80개 | `vitest.config.ts` |
 | Playwright | 36개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 103개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 128개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -82,4 +82,14 @@ class UploadPageAttachmentRequest extends FormRequest
             'file.mimetypes' => __('sirsoft-page::validation.attachment.file.mimetypes'),
         ];
     }
+
+    /**
+     * 검증 오류에 사용할 사용자 친화적 필드명
+     *
+     * @return array<string, string> 필드명 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return $this->tempKeyAttributes();
+    }
 }

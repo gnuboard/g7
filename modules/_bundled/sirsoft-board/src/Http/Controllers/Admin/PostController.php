@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkPostActionRequest;
@@ -375,6 +376,9 @@ class PostController extends AdminBaseController
                 'sirsoft-board::messages.posts.blind_success',
                 new PostResource($post)
             );
+        } catch (DeletedContentBlindException $e) {
+            // 삭제된 글 — 블라인드하면 삭제가 풀린다. 지금 상태와 충돌하므로 409, 먼저 복구하라고 안내한다
+            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
         } catch (BoardNotFoundException|PostNotFoundException $e) {

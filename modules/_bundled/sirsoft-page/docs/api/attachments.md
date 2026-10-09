@@ -202,13 +202,14 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우, 또는 대상 첨부 중 하나라도 담당 범위 밖(남이 올린 임시 첨부 포함)인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 대상 중 존재하지 않는 첨부 ID 가 있는 경우 (`첨부파일을 찾을 수 없습니다.`). 아무것도 바꾸지 않습니다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `order` 누락/배열 아님/빈 배열, 각 원소의 `id`(정수) 또는 `order`(0 이상 정수) 누락 |
 | 500 | Internal Server Error | 순서 갱신 중 예외 발생 시 `첨부파일 순서 변경에 실패했습니다.` (`error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** 첨부파일 정렬 순서를 변경합니다. `order` 는 FileUploader 가 보내는 `[{id, order}]` 형태의 배열이며, 컨트롤러가 `[ID => order]` 매핑으로 변환해 `PageAttachmentService::reorder()` 에 전달합니다. 편집 화면에서 첨부 목록을 드래그로 재정렬할 때 사용합니다. 권한은 `pages.update` 를 요구합니다.
+**설명** 첨부파일 정렬 순서를 변경합니다. `order` 는 FileUploader 가 보내는 `[{id, order}]` 형태의 배열이며, 컨트롤러가 `[ID => order]` 매핑으로 변환해 `PageAttachmentService::reorder()` 에 전달합니다. 편집 화면에서 첨부 목록을 드래그로 재정렬할 때 사용합니다. 대상 중 하나라도 담당 범위 밖(남이 올린 임시 첨부 포함)이면 전체를 거부하고 403(`auth.scope_denied`)을, 없는 첨부 ID 가 섞이면 404 를 돌려주며 어느 경우에도 순서를 바꾸지 않습니다. 권한은 `pages.update` 를 요구합니다.
 
 
 ### DELETE /api/modules/sirsoft-page/admin/attachments/{id}
@@ -257,6 +258,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 <!-- @generated:end -->
 
-**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 권한은 `pages.update` 를 요구합니다.
+**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 부모 페이지가 액터의 담당 범위 밖이면 403(`auth.scope_denied`)이고, 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 올린 관리자만 지울 수 있어 다른 관리자에게는 같은 403 을 돌려줍니다(작성 화면에서 저장이 검증 오류로 실패한 뒤 이미 올라간 첨부를 빼는 경로). 권한은 `pages.update` 를 요구합니다.
 
 

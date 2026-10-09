@@ -34,6 +34,10 @@ effects:
   - admin_update_accepts_four_category_catalog
   - admin_update_validates_data_storage_location
   - admin_update_never_publishes_policy_version
+  - admin_update_without_cookie_categories_leaves_them_untouched
+  - admin_show_fills_default_categories_when_stored_value_empty
+  - admin_update_validation_messages_read_naturally
+  - admin_update_introduction_too_long_reports_single_error
 
   # 공개 설정 API (기존 계약)
   - public_settings_accessible_without_auth

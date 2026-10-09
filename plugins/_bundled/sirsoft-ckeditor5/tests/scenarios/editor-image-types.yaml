@@ -1,0 +1,15 @@
+feature: 편집기 이미지 파일 선택 창은 서버가 받는 형식만 고르게 한다
+
+description: |
+  CKEditor 기본값(`image.upload.types`)은 bmp·tiff 까지 받아 파일 선택 창 accept 에 서버(`ImageUploadRequest`
+  의 `mimes:jpeg,jpg,png,gif,webp`)가 거절할 형식이 들어 있었다. 편집기 설정이 서버와 같은 목록
+  (`UPLOAD_IMAGE_TYPES`)을 써서 accept 와 끌어 놓기·붙여 넣기 필터가 서버 판정과 맞는다.
+
+axes:
+  image_type: [server_allowed, server_rejected]
+
+effects:
+  - editor_image_picker_matches_server_allowed_types
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/uploadImageTypes.test.ts

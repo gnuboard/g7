@@ -147,3 +147,65 @@ describe('댓글 반응 토글 — 반응 사용의 하위 토글', () => {
         expect(/use_comment_reaction:'basic'/.test(bulkJson)).toBe(true);
     });
 });
+
+describe('반응 설정 라벨 — 같은 스위치를 같은 이름으로 부른다', () => {
+    // 게시판 폼·환경설정·일괄 적용 창이 같은 스위치를 가리키는데 en 라벨이 「Enable Reactions」·「Comment reactions」처럼
+    // 대소문자와 짜임이 갈렸고, 설명은 있지도 않은 라벨(「Reactions」)을 가리켰다. ja 게시판 폼도 같은 스위치를
+    // 「コメント反応を使用」으로 따로 불렀다(K1 실측 2026-10-06).
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const load = (path: string) => require(path);
+    const sources = [
+        { locale: 'ko', form: load('../../../lang/partial/ko/admin/form.json'), settings: load('../../../lang/partial/ko/admin/settings.json') },
+        { locale: 'en', form: load('../../../lang/partial/en/admin/form.json'), settings: load('../../../lang/partial/en/admin/settings.json') },
+        {
+            locale: 'ja',
+            form: load('../../../../../../../lang-packs/_bundled/g7-module-sirsoft-board-ja/frontend/partial/admin/form.json'),
+            settings: load('../../../../../../../lang-packs/_bundled/g7-module-sirsoft-board-ja/frontend/partial/admin/settings.json'),
+        },
+    ];
+
+    // @scenario case=comment_reaction_toggle_off_blocks
+    // @effects comment_reaction_toggle_label_matches_across_screens
+    it('댓글 반응 스위치 라벨이 게시판 폼·환경설정·일괄 적용에서 같다', () => {
+        for (const { locale, form, settings } of sources) {
+            const bulkLabel = settings.bulk_apply.field_labels.use_comment_reaction;
+            expect(form.fields.use_comment_reaction, locale).toBe(bulkLabel);
+            expect(settings.fields.use_comment_reaction, locale).toBe(bulkLabel);
+            expect(settings.fields.use_reaction, locale).toBe(form.fields.use_reaction);
+        }
+    });
+
+    // @scenario case=comment_reaction_toggle_off_blocks
+    // @effects comment_reaction_toggle_label_matches_across_screens
+    it('댓글 반응 설명이 가리키는 상위 스위치 이름이 실제 라벨과 같다', () => {
+        for (const { locale, form, settings } of sources) {
+            const parentLabel: string = form.fields.use_reaction;
+            expect(form.descriptions.use_comment_reaction, locale).toContain(parentLabel);
+            expect(settings.fields.descriptions.use_comment_reaction, locale).toContain(parentLabel);
+        }
+    });
+
+    // @scenario case=comment_reaction_toggle_off_blocks
+    // @effects comment_reaction_toggle_label_matches_across_screens
+    it('en 필드 라벨은 주변 라벨처럼 단어 첫 글자를 대문자로 쓴다', () => {
+        const en = sources[1];
+        const labels: string[] = [
+            en.form.fields.use_reaction,
+            en.form.fields.active_reaction_types,
+            en.form.fields.use_comment_reaction,
+            en.form.fields.manage_reaction_types,
+            en.settings.fields.use_comment_reaction,
+            en.settings.fields.attachment_purge_enabled,
+            en.settings.fields.attachment_purge_retention_days,
+            en.settings.reaction_types.title,
+            en.settings.reaction_types.add_button,
+        ];
+        for (const label of labels) {
+            const lowerWords = label
+                .replace(/\(.*?\)/g, '')
+                .split(/\s+/)
+                .filter((word) => /^[a-z]/.test(word));
+            expect(lowerWords, label).toEqual([]);
+        }
+    });
+});

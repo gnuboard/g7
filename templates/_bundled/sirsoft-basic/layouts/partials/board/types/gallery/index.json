@@ -388,7 +388,7 @@
                                     "name": "Span",
                                     "if": "{{post?.is_new}}",
                                     "props": {
-                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0"
+                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
                                     },
                                     "text": "N"
                                 }

@@ -3,19 +3,19 @@ feature: 반응 유형 인라인 관리 (추가·수정·순서·삭제 + 아이
 description: |
   이슈 #525 후속 — 게시판 모듈이 쓰는 반응 유형(추천/비추천/…)을 운영자가 직접 관리한다.
   전용 CRUD 화면을 만들지 않고 **게시판 환경설정 › 기본 설정 안 인라인 편집기**로 다룬다
-  (PO 결정 R2) — 유형을 만들고 그 자리에서 체크해 활성화하는 흐름이 한 번의 저장으로 끝나야
+  (결정 R2) — 유형을 만들고 그 자리에서 체크해 활성화하는 흐름이 한 번의 저장으로 끝나야
   하기 때문이다. 행 배열이 설정 저장 페이로드에 동승하고 서버가 DB 와 맞춘다
   (sirsoft-ecommerce ShippingTypeService::syncShippingTypes 와 같은 방식).
 
   핵심 동작 (확정):
     - 행 배열의 **순서가 곧 display_order** — 서버가 인덱스로 재부여한다
-    - code 는 `^[a-z][a-z0-9_]{1,49}$`, 중복 불가, **추가 후 불변**(PO 결정 R12)
-    - 이름은 로케일 맵이며 기본 언어(ko)는 필수
-    - 반응이 1건이라도 남은 유형은 삭제 불가 → 422 + 유형명·건수, 비활성화만 가능(PO 결정 R5)
+    - code 는 `^[a-z][a-z0-9_]{1,49}$`, 중복 불가, **추가 후 불변**(결정 R12)
+    - 이름은 로케일 맵이며 화면(요청) 언어 값이 필수 — 게시판 유형 이름과 같은 계약(7.1.0 S2 #9, 한국어 고정 필수였음)
+    - 반응이 1건이라도 남은 유형은 삭제 불가 → 422 + 유형명·건수, 비활성화만 가능(결정 R5)
     - 삭제된 유형 code 는 모든 게시판의 active_reaction_types 에서 함께 빠진다
     - 422 면 설정 JSON 은 저장하지 않는다(부분 저장 금지) — 동기화가 저장보다 먼저다
     - 행 배열은 설정 JSON 에 저장하지 않는다 — 떼지 않으면 basic_defaults.json·config 미러 오염
-    - 아이콘은 **이미지 업로드만**(PO 결정 R4), SVG 제외(PO 결정 R13 — 첨부가 인증 없이
+    - 아이콘은 **이미지 업로드만**(결정 R4), SVG 제외(결정 R13 — 첨부가 인증 없이
       인라인 스트리밍이라 스크립트 실행 위험), 1MB 이하
     - 표시 우선순위: icon_url > icon_name(시드 FA) > 레이아웃 기본 아이콘
     - 관리자가 끈 유형·바꾼 순서는 시더 재실행이 되돌리지 않는다(trackableFields)
@@ -49,6 +49,9 @@ axes:
     - settings_checkbox_reads_form_rows
 
 effects:
+  # 추가 폼이 서버 코드 규칙을 미리 본다 · 아이콘 업로드 실패 문구가 한도를 말한다 (K1 실측 2026-10-06)
+  - settings_editor_add_form_checks_code_format
+  - settings_editor_icon_upload_failure_names_limits
   # 편집기 ↔ 설정 응답 계약
   - editor_iterates_form_reaction_types
   - save_payload_carries_reaction_types

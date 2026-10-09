@@ -316,6 +316,48 @@ class MarketingAdminControllerTest extends PluginTestCase
             ->assertJsonValidationErrors(['channels']);
     }
 
+    /**
+     * 동의가 쌓인 시스템 채널을 빼는 요청은 시스템 채널 보호 사유로만 거절하고 `blocked_channel_keys` 를 싣지 않는다.
+     *
+     * 시스템 채널은 「비활성화로 전환」으로 되살리는 대상이 아니다 — 이 키를 돌려주면 화면이 동의 회원 안내 창을
+     * 띄울 수 있었다(2026-10-07 실측 O-M2-11, 직접 API 호출 시 `blocked_channel_keys:["email_subscription"]`).
+     *
+     * @scenario case=field_validation
+     *
+     * @effects field_errors_shown_without_deactivate_modal
+     *
+     * @return void 반환값 없음
+     */
+    public function test_system_channel_removal_does_not_carry_blocked_channel_keys(): void
+    {
+        $admin = $this->createAdminUser(['core.plugins.update']);
+        $user = User::factory()->create();
+
+        MarketingConsent::create([
+            'user_id' => $user->id,
+            'consent_key' => 'email_subscription',
+            'is_consented' => true,
+            'consented_at' => now(),
+            'revoked_at' => null,
+            'last_source' => 'register',
+            'consent_count' => 1,
+        ]);
+
+        $response = $this->actingAs($admin)->putJson(
+            '/api/plugins/sirsoft-marketing/admin/channels',
+            ['channels' => [
+                ['key' => 'sms_subscription', 'label' => ['ko' => 'SMS', 'en' => 'SMS'], 'page_slug' => '', 'enabled' => true, 'is_system' => false],
+            ]]
+        );
+
+        $systemMessage = __('sirsoft-marketing::messages.channel_system_cannot_delete', ['key' => 'email_subscription']);
+
+        $response->assertUnprocessable()
+            ->assertJsonMissingPath('errors.blocked_channel_keys')
+            ->assertJsonPath('message', $systemMessage)
+            ->assertJsonPath('errors.channels', [$systemMessage]);
+    }
+
     // ── 검증: 필수 필드 누락 ──
 
     /**
@@ -407,6 +449,64 @@ class MarketingAdminControllerTest extends PluginTestCase
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['channels.1.key', 'channels.1.label'])
             ->assertJsonMissingPath('errors.blocked_channel_keys');
+    }
+
+    /**
+     * 항목명이 빠진 채널의 오류 문구는 그 채널 키로 어느 채널인지 알린다.
+     *
+     * 검증기 기본 칸 이름(`channels.1.label`)이 그대로 나가면 화면 오류 목록만 보고는 몇 번째
+     * 채널인지 알 수 없다(2026-10-07 실측 — 영어 화면에서 기존 채널의 영어 이름이 비어 저장 거절).
+     *
+     * @scenario case=field_validation
+     *
+     * @effects field_error_names_the_channel
+     *
+     * @return void 반환값 없음
+     */
+    public function test_missing_label_error_names_the_channel(): void
+    {
+        $admin = $this->createAdminUser(['core.plugins.update']);
+
+        $response = $this->actingAs($admin)->putJson(
+            '/api/plugins/sirsoft-marketing/admin/channels',
+            ['channels' => array_merge(self::EXISTING_CHANNELS, [
+                ['key' => 'sms_subscription', 'label' => ['ko' => '', 'en' => ''], 'page_slug' => '', 'enabled' => true, 'is_system' => false],
+            ])]
+        );
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['channels.1.label']);
+
+        $message = (string) $response->json('errors')['channels.1.label'][0];
+        $this->assertStringContainsString('sms_subscription', $message);
+        $this->assertStringNotContainsString('channels.1.label', $message);
+    }
+
+    /**
+     * 키 형식 오류 문구는 그 채널 키와 쓸 수 있는 문자를 함께 알린다.
+     *
+     * @scenario case=field_validation
+     *
+     * @effects field_error_names_the_channel
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalid_key_error_names_the_key_and_allowed_characters(): void
+    {
+        $admin = $this->createAdminUser(['core.plugins.update']);
+
+        $response = $this->actingAs($admin)->putJson(
+            '/api/plugins/sirsoft-marketing/admin/channels',
+            ['channels' => array_merge(self::EXISTING_CHANNELS, [
+                ['key' => 'Bad-Key', 'label' => ['ko' => '잘못된 키', 'en' => 'Bad key'], 'page_slug' => '', 'enabled' => true, 'is_system' => false],
+            ])]
+        );
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['channels.1.key']);
+
+        $message = (string) $response->json('errors')['channels.1.key'][0];
+        $this->assertStringContainsString('Bad-Key', $message);
+        $this->assertStringNotContainsString('channels.1.key', $message);
+        $this->assertStringContainsString('_', $message, '쓸 수 있는 문자(밑줄 포함) 안내가 문구에 있어야 한다.');
     }
 
     /**

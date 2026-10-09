@@ -19,10 +19,10 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다). -->
-  <data-source id="postStats" label_key="$t:editor.data_source.postStats" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts/stats" method="GET" :auto_fetch="true" :auth_required="false" loading_strategy="progressive"/>
-  <!-- 최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다. -->
-  <data-source id="recentPosts" label_key="$t:editor.data_source.recentPosts" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts" method="GET" :auto_fetch="true" :auth_required="false" loading_strategy="progressive">
+  <!-- 활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다). 로그인했으면 토큰을 실어 보는 사람이 읽을 수 있는 게시판(회원전용 등)의 글까지 센다. -->
+  <data-source id="postStats" label_key="$t:editor.data_source.postStats" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts/stats" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive"/>
+  <!-- 최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다. 위 숫자와 같은 기준이 되도록 로그인했으면 토큰을 싣는다. -->
+  <data-source id="recentPosts" label_key="$t:editor.data_source.recentPosts" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <params :per_page="5"/>
   </data-source>
   <permissions/>
@@ -84,12 +84,12 @@
             <responsive on="portable" class="grid grid-cols-2 gap-3"/>
             <!-- 게시글 수 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
-              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{postStats.data.posts_count ?? 0 | number}}</div>
+              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{postStats.data?.posts_count ?? 0 | number}}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.posts_count</div>
             </div>
             <!-- 댓글 수 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
-              <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{postStats.data.comments_count ?? 0 | number}}</div>
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{postStats.data?.comments_count ?? 0 | number}}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.comments_count</div>
             </div>
           </div>

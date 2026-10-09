@@ -8,6 +8,13 @@ import { Img } from '../basic/Img';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface EmptyStateAction {
   label: string;
   onClick: () => void;
@@ -59,12 +66,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   iconName,
   illustrationSrc,
-  illustrationAlt = 'Empty state illustration',
+  illustrationAlt: illustrationAltProp,
   actions = [],
   className = '',
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const illustrationAlt = illustrationAltProp ?? tOr('common.empty_illustration', 'Empty state illustration');
   // 버튼 variant별 스타일 매핑
   const variantClassMap: Record<'primary' | 'secondary' | 'danger' | 'ghost', string> = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',

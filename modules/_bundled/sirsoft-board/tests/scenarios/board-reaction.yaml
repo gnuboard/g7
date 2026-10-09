@@ -119,7 +119,11 @@ effects:
   - detail_omits_reaction_counts_and_options_when_off
   - detail_omits_deactivated_type
   - recent_posts_widget_includes_reaction_total
+  # 위젯 캐시(board-posts 태그)를 반응·해제 경로가 비운다 — 비우지 않으면 홈에 이전 반응 수가 하루 동안 남는다 (K1 실측 2026-10-06)
+  - recent_posts_widget_reaction_total_refreshes_after_react
   - recent_posts_widget_omits_reaction_total_when_off
+  # 관리자 목록 「반응」 열은 DataGrid 가 읽는 hidden 으로 감춘다 — 열 정의의 if 는 엔진이 평가하지 않아 반응을 끈 게시판에도 열이 남았다 (K1 실측 2026-10-06)
+  - admin_list_reaction_column_hidden_when_use_reaction_off
 test_files:
   - modules/_bundled/sirsoft-board/tests/Unit/Services/ReactionServiceTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Repositories/ReactionRepositoryTest.php
@@ -135,6 +139,7 @@ test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/board-reaction-buttons.test.tsx
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-reaction-flow.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-posts-reaction-column.test.ts
 
 validation:
   audit_rule: frontend-change-requires-e2e

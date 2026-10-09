@@ -156,6 +156,16 @@ describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
         // 첫 액션이 진행 표시를 켜 준다 — 여러 건이라 응답이 늦다.
         expect(actionsOf(confirm)[0].params.bulkPostLoading).toBe(true);
     });
+
+    // disabled 는 다시 그려진 뒤에야 걸린다 — 더블클릭의 두 번째 클릭이 요청을 한 번 더 보내고,
+    // 그 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 창을 띄웠다(K3 실측 2026-10-07: 요청 2건).
+    // @scenario bulk_action=blind
+    // @effects admin_post_bulk_confirm_guards_double_submit
+    it('확인 버튼은 첫 클릭 즉시 스스로 잠근다(lockRepeatClick)', () => {
+        const confirm = buttonByTestId('admin-post-bulk-confirm');
+
+        expect(confirm.props.lockRepeatClick).toBe(true);
+    });
 });
 
 describe('관리자 게시글 일괄 처리 — 건너뛴 글 결과 창', () => {

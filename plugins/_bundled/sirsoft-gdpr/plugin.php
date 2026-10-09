@@ -219,7 +219,7 @@ class Plugin extends AbstractPlugin
             [
                 'name' => 'sirsoft-gdpr.privacy.annual_notice_due',
                 'type' => 'action',
-                'description' => ['ko' => '개인정보 연간 통지 접수 후 발화', 'en' => 'Annual privacy notice queued'],
+                'description' => ['ko' => '개인정보 연간 통지 접수 후 발화', 'en' => 'Annual privacy notice queued', 'ja' => '個人情報の年次通知の受付後に発火'],
                 'parameters' => ['user' => 'User - 수신 회원', 'attemptId' => 'string - 접수 식별자'],
             ],
             [
@@ -228,6 +228,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '동의 부여 시 발화',
                     'en' => 'Fired when consent is granted',
+                    'ja' => '同意が付与されたときに発火',
                 ],
                 'parameters' => [
                     'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
@@ -243,6 +244,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '동의 철회 시 발화',
                     'en' => 'Fired when consent is revoked',
+                    'ja' => '同意が撤回されたときに発火',
                 ],
                 'parameters' => [
                     'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
@@ -258,6 +260,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다)',
                     'en' => 'Extensions provide their own storage keys that non-consenting visitors still need (merged into the strictly necessary allowlist)',
+                    'ja' => '拡張機能が、Cookie に同意していない訪問者にも必要な自身の保存キーを提供(厳密に必要なものの許可リストに統合される)',
                 ],
                 'parameters' => [
                     'keys' => 'array{localStorage: string[], sessionStorage: string[], cookie: string[]} - 지금까지 모인 제공 키 (자기 키를 덧붙여 반환)',
@@ -621,6 +624,8 @@ class Plugin extends AbstractPlugin
                 ['key' => 'privacy_policy_url', 'description' => '개인정보처리방침 URL'],
                 ['key' => 'privacy_policy_link', 'description' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)'],
                 ['key' => 'notice_sections', 'description' => '확장이 기여한 처리 내역'],
+                ['key' => 'introduction_text', 'description' => '운영자 서문 (평문 — 사이트내 알림·문자용)'],
+                ['key' => 'notice_sections_text', 'description' => '확장이 기여한 처리 내역 (평문 — 사이트내 알림·문자용)'],
             ],
             'templates' => [
                 [
@@ -636,7 +641,8 @@ class Plugin extends AbstractPlugin
                     'channel' => 'database',
                     'recipients' => [['type' => 'trigger_user']],
                     'subject' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual privacy notice'],
-                    'body' => ['ko' => '{introduction} / {collection_summary} / {purpose} / {retention} / {notice_sections}', 'en' => '{introduction} / {collection_summary} / {purpose} / {retention} / {notice_sections}'],
+                    // 사이트내 알림은 평문으로 그려진다 — 메일용 HTML 변수(notice_sections·introduction) 대신 평문 짝을 쓴다.
+                    'body' => ['ko' => '{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}', 'en' => '{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}'],
                     'click_url' => '{privacy_policy_url}',
                 ],
             ],

@@ -67,7 +67,8 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | BotDetector | User-Agent 기반 봇 감지 |
 | ExpressionEvaluator | `{{}}` 바인딩 표현식 평가 |
 | ComponentHtmlMapper | 컴포넌트→HTML 태그 매핑 |
-| DataSourceResolver | 내부 HTTP API 호출 (주소는 APP_URL 고정) |
+| DataSourceResolver | 내부 HTTP API 호출 (주소는 APP_URL 고정, 서명한 렌더 표식 헤더 동봉) |
+| SeoRenderRequest | 내부 호출 표식 헤더(`X-G7-Seo-Render`, 앱 키 서명) 생성·판정 — 받는 쪽이 열람 집계에서 뺀다 |
 | SeoUrl | 봇 화면 절대 URL·캐시 키 origin 의 단일 출처 (요청 Host 비의존). 계산은 코어 `App\Support\SiteUrl` 에 위임 — [routing.md](routing.md#절대-url-은-사이트-주소로-만든다) |
 | TemplateRouteResolver | URL→레이아웃 매핑 |
 | SeoMetaResolver | 3계층 캐스케이드 메타 해석 |
@@ -297,6 +298,12 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | 검색 결과 | 모듈 `meta_search_title` → 코어 | 모듈 `meta_search_description` → 코어 |
 | 페이지 | 페이지 `seo_meta.title` → 코어 | 페이지 `seo_meta.description` → 코어 |
 | 메인/게시판 | 코어 title (레이아웃 meta.title) | 코어 meta_description |
+
+위 단계가 모두 비면 title 은 레이아웃 `meta.seo.og.title` → 라우트 `meta.title`(routes.json) 순으로 대신합니다. 그래서 SEO 제목 선언이 없는 화면(회원 프로필 등)도 「화면 제목 | 사이트 이름」 으로 나갑니다.
+
+- **사이트 이름만 되풀이하는 제목은 버립니다.** 확장 제목 틀이 사이트 이름만 낸 경우(게시판 목록 기본값 `{site_name}` 등) 코어 접미사가 사이트 이름을 또 붙여 「사이트 이름 \| 사이트 이름」 이 되므로, 코어 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 제목은 화면 정보가 없는 것으로 보고 다음 단계로 넘깁니다. 대신할 제목이 없으면 사이트 이름만 한 번 나갑니다.
+- **사이트 첫 화면(`/`)은 라우트 제목을 쓰지 않습니다.** 첫 화면은 사이트 이름 자체가 제목이라 「홈 \| 사이트 이름」 대신 사이트 이름만 나갑니다.
+- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 라우트를 거치지 않으므로 라우트 제목 대체가 없습니다.
 
 ## 레이아웃 meta.seo 선언적 설정
 
@@ -1250,6 +1257,20 @@ Host 헤더는 방문자가 마음대로 적어 보낼 수 있습니다. 예전�
 - TLS 검증은 켜 둡니다. 단 APP_URL 호스트가 **루프백(127.0.0.0/8·::1)으로 풀리는 서버**(자기 도메인을 hosts 로 127.0.0.1 에 묶은 구성, 자가서명 인증서를 쓰는 로컬 개발)에서는 연결을 가로챌 경로가 없어 검증을 생략하고, 판정한 주소로 연결을 고정(CURLOPT_RESOLVE)합니다. APP_URL 이 외부 IP 로 풀리는데 인증서를 PHP 가 검증하지 못하면(자가서명·CA 번들 없음) 데이터소스가 fallback 으로 채워지고 `[SEO] DataSource API error` 경고가 남습니다.
 
 마지막 겹으로 전역 `TrustHosts` 미들웨어가 APP_URL 의 도메인·하위 도메인과 `TRUSTED_HOSTS` 가 아닌 Host 로 온 요청을 받지 않습니다(운영 환경·설치 완료 후, `config/trustedhosts.php`). 이 검사는 포트를 보지 않으므로 코드 쪽 방어를 대신하지 않습니다.
+
+### DataSourceResolver — 내부 호출 표식 헤더
+
+SEO 렌더러는 화면을 만들려고 데이터 소스 API 를 서버 자신에게 HTTP 로 부릅니다(봇 방문 렌더, 글 작성·수정 직후 캐시 재생성). 이 호출은 사람의 열람이 아니므로, `DataSourceResolver` 는 모든 내부 호출에 `X-G7-Seo-Render` 헤더를 붙입니다. 값은 앱 키로 만든 HMAC 서명이라 바깥 요청이 흉내 낼 수 없습니다.
+
+받는 쪽은 `App\Seo\SeoRenderRequest::matches($request)` 로 판정해 조회수 같은 열람 집계에서 뺍니다(서명이 틀린 헤더는 일반 요청으로 취급). 예: 게시판 상세 API 는 이 요청을 조회수로 세지 않습니다 — 세면 글을 쓰자마자 조회수가 1 이 되고, 서버 IP 로 잡힌 1회 판정 키가 같은 IP 의 비로그인 방문을 막습니다.
+
+```php
+use App\Seo\SeoRenderRequest;
+
+if (SeoRenderRequest::matches(request())) {
+    return false; // 서버 자신의 렌더 호출 — 열람으로 세지 않는다
+}
+```
 
 ### DataSourceResolver — params 쿼리 파라미터 해석
 

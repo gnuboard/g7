@@ -155,6 +155,27 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
 
     // @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects detail_button_reflects_is_scraped
+    it('담김 여부를 aria-pressed 로도 알린다 (반응 버튼과 같은 방식, 화면 글자 「스크랩됨」에만 기대지 않는다)', () => {
+        // 7.1.0 실측 O-K2-5: 버튼에 aria-pressed 가 없어 담김 상태가 글자로만 전달됐다.
+        const btn = scrapButtons[0];
+        const props = btn.props as Record<string, unknown>;
+        const raw = String(props['aria-pressed'] ?? '');
+        expect(raw).toMatch(/^\{\{.*\}\}$/);
+        const expr = raw.slice(2, -2);
+        // 화면 글자·아이콘과 같은 출처(_local.isScraped 우선, 없으면 서버 is_scraped)를 읽는다.
+        expect(expr).toContain('_local.isScraped ?? post?.data?.is_scraped');
+        const evaluate = (_local: Record<string, unknown>, isScraped: boolean) =>
+            // eslint-disable-next-line no-new-func
+            new Function('_local', 'post', `return (${expr});`)(_local, { data: { is_scraped: isScraped } });
+        expect(evaluate({}, true)).toBe(true);
+        expect(evaluate({}, false)).toBe(false);
+        // 방금 누른 값(_local)이 서버 값보다 앞선다.
+        expect(evaluate({ isScraped: false }, true)).toBe(false);
+        expect(evaluate({ isScraped: true }, false)).toBe(true);
+    });
+
+    // @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+    // @effects detail_button_reflects_is_scraped
     it('회귀: 스크랩 아이콘은 size prop 대신 text-sm 고정 클래스를 쓴다 (fa-sm 상대값 → 부모 text-sm 축소 체인에서 높이 0.88px 로 붕괴)', () => {
         // size="sm" 은 fa-sm(0.875em 상대값)으로 매핑되어 부모 text-sm 과 겹치면 아이콘이 찌그러진다.
         // 부모 버튼 글자 크기(text-sm=14px)에 맞춘 고정 클래스로 렌더해야 아이콘 높이가 보존된다.
@@ -908,6 +929,10 @@ describe('#524 WP-A — 마이페이지 스크랩 검색·선택 삭제·중지 
         const cleared = callbacksOf(call, 'onSuccess')
             .find((a: any) => a.handler === 'setState' && 'scrapSelectedIds' in (a.params ?? {}));
         expect((cleared!.params as any).scrapSelectedIds).toEqual([]);
+        // 선택 배열은 목록(부모 화면)의 지역 상태다 — 창의 지역 상태에 쓰면 목록의 「N개 선택」이 남고
+        // 다음 일괄 해제가 빈 배열로 422 를 받았다(K2 실측 2026-10-06).
+        expect((cleared!.params as any).target).toBe('$parent._local');
+        expect((call.params as any).body.ids).toContain('$parent._local.scrapSelectedIds');
     });
 
     // @scenario action=mypage_delete
@@ -919,6 +944,9 @@ describe('#524 WP-A — 마이페이지 스크랩 검색·선택 삭제·중지 
 
         // 남아 있으면 다음 일괄 삭제가 이미 없는 ID 를 싣는다.
         expect((cleaned!.params as any).scrapSelectedIds).toContain('filter(v => v !== _global.scrapDeleteModal?.id)');
+        // 목록의 선택을 고쳐야 하므로 부모 화면의 지역 상태에 쓴다(K2 실측 2026-10-06 — 「1개 선택」이 남았다).
+        expect((cleaned!.params as any).target).toBe('$parent._local');
+        expect((cleaned!.params as any).scrapSelectedIds).toContain('$parent._local.scrapSelectedIds');
     });
 
     // @scenario board_setting=use_scrap_off
@@ -974,5 +1002,69 @@ describe('마이페이지 스크랩 — 검색 0건 안내', () => {
         expect(json.includes('$t:board.no_search_results')).toBe(true);
         expect(json.includes('{{!!_local.scrapSearchApplied}}')).toBe(true);
         expect(json.includes('{{!(!!_local.scrapSearchApplied)}}')).toBe(true);
+    });
+});
+
+describe('K2 실측(2026-10-06) — 스크랩 목록 후속 수정', () => {
+    // @scenario action=mypage_list,actor=owner,board_setting=board_deleted,post_state=soft_deleted,post_scope=same_board
+    // @effects mypage_list_board_deleted_row_shows_board_deleted_flag
+    it('게시판이 지워진 스크랩은 삭제글 행·카드에서도 「게시판 삭제됨」을 단다', () => {
+        // 게시판을 지우면 글도 함께 하드 삭제돼 이 스크랩은 늘 is_deleted 분기로 온다. 「게시판 삭제됨」
+        // 표시가 is_deleted 가 아닌 분기에만 있어 화면에는 게시판 칸이 빈 채 「삭제됨」만 보였다.
+        const deletedBranches = collectNodes(scrapList, (n) => String((n as any).if ?? '') === '{{item.is_deleted}}');
+
+        expect(deletedBranches.length).toBe(2); // PC 행 + 모바일 카드
+
+        for (const branch of deletedBranches) {
+            const flags = collectNodes(branch, (n) =>
+                String((n as any).if ?? '') === '{{item.board_deleted}}'
+                && JSON.stringify(n).includes('$t:mypage.scrap.board_deleted_flag'));
+
+            expect(flags.length).toBe(1);
+
+            // 게시판명은 게시판이 남아 있을 때만 그린다.
+            const names = collectNodes(branch, (n) =>
+                String((n as any).if ?? '') === '{{!item.board_deleted}}'
+                && JSON.stringify(n).includes('item.board_name'));
+
+            expect(names.length).toBe(1);
+        }
+    });
+
+    // @scenario action=mypage_search,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+    // @effects mypage_list_search_input_shrinks_on_narrow_screen
+    it('검색 입력칸이 줄어들 수 있어 좁은 화면에서 검색 줄이 칸 밖으로 밀리지 않는다', () => {
+        // 입력칸의 고유 최소 폭(약 214px) 때문에 390px 에서 「검색」·「초기화」가 화면 밖(오른쪽 455px)으로
+        // 밀리고 페이지가 가로로 스크롤됐다.
+        const inputs = collectNodes(scrapList, (n) => (n.props as any)?.['data-testid'] === 'scrap-search-input');
+
+        expect(inputs.length).toBe(1);
+        expect((inputs[0].props as any).className).toContain('min-w-0');
+    });
+
+    // @scenario action=mypage_bulk_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+    // @effects mypage_scrap_modal_buttons_show_pointer
+    it('단건·일괄 해제 창의 취소·해제 버튼이 손가락 커서를 쓴다', () => {
+        for (const modal of [scrapDeleteModal, scrapBulkDeleteModal]) {
+            const buttons = collectNodes(modal, (n) => (n as any).name === 'Button');
+
+            expect(buttons.length).toBeGreaterThanOrEqual(2);
+            for (const button of buttons) {
+                expect(String((button.props as any)?.className ?? '')).toContain('cursor-pointer');
+            }
+        }
+    });
+
+    // @scenario action=mypage_bulk_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
+    // @effects mypage_scrap_bulk_button_says_remove
+    it('일괄 버튼 이름이 창·토스트와 같은 「해제」 말을 쓴다', () => {
+        // 버튼만 「선택 삭제」라 원글을 지우는 것처럼 읽혔다 — 창은 「해제」, 영어는 「Remove selected」, 내 반응 탭은 「선택 해제」.
+        const ko = require('../../lang/partial/ko/mypage.json');
+        const en = require('../../lang/partial/en/mypage.json');
+        const scrapKo = ko.scrap ?? ko.mypage?.scrap;
+        const scrapEn = en.scrap ?? en.mypage?.scrap;
+
+        expect(scrapKo.bulk_delete).toBe('선택 해제');
+        expect(scrapEn.bulk_delete).toBe('Remove selected');
     });
 });

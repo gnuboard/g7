@@ -31,7 +31,7 @@ describe('Toast', () => {
   describe('기본 렌더링', () => {
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('toasts 배열이 있으면 모든 토스트를 렌더링해야 함', () => {
       render(<Toast toasts={mockToasts} />);
@@ -42,7 +42,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('toasts가 null이면 아무것도 렌더링하지 않아야 함', () => {
       const { container } = render(<Toast toasts={null} />);
@@ -52,7 +52,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('toasts가 빈 배열이면 아무것도 렌더링하지 않아야 함', () => {
       const { container } = render(<Toast toasts={[]} />);
@@ -62,7 +62,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('고정 위치로 렌더링되어야 함', () => {
       const { container } = render(<Toast toasts={mockToasts} />);
@@ -76,7 +76,7 @@ describe('Toast', () => {
   describe('스택 기능', () => {
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('여러 토스트가 스택으로 쌓여야 함', () => {
       const toasts: ToastItem[] = [
@@ -98,7 +98,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('새 토스트가 추가되면 기존 토스트와 함께 표시되어야 함', () => {
       const initialToasts: ToastItem[] = [
@@ -135,7 +135,7 @@ describe('Toast', () => {
     positions.forEach((position) => {
       /**
        * @scenario component=toast
-       * @effects toast_renders_stack_at_position_with_type_style
+       * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
        */
       it(`position="${position}"일 때 올바른 위치 클래스를 적용해야 함`, () => {
         const { container } = render(<Toast toasts={mockToasts} position={position} />);
@@ -160,7 +160,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('기본 position은 bottom-center여야 함', () => {
       const { container } = render(<Toast toasts={mockToasts} />);
@@ -181,7 +181,7 @@ describe('Toast', () => {
     typeTests.forEach(({ type, bgClass }) => {
       /**
        * @scenario component=toast
-       * @effects toast_renders_stack_at_position_with_type_style
+       * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
        */
       it(`type="${type}"일 때 올바른 스타일을 적용해야 함`, () => {
         const toasts: ToastItem[] = [
@@ -199,7 +199,7 @@ describe('Toast', () => {
   describe('수동 닫기', () => {
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('닫기 버튼 클릭 시 onRemove가 호출되어야 함', async () => {
       const handleRemove = vi.fn();
@@ -222,7 +222,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('onRemove가 없으면 G7Core.state.update를 호출해야 함', async () => {
       const toasts: ToastItem[] = [
@@ -246,7 +246,7 @@ describe('Toast', () => {
   describe('자동 제거', () => {
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('기본 duration(3000ms) 후 자동으로 제거되어야 함', async () => {
       const handleRemove = vi.fn();
@@ -268,7 +268,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('duration prop이 설정된 경우 해당 시간 후 제거되어야 함', async () => {
       const handleRemove = vi.fn();
@@ -288,7 +288,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('개별 toast.duration이 설정된 경우 해당 시간 후 제거되어야 함', async () => {
       const handleRemove = vi.fn();
@@ -308,7 +308,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_removes_manually_or_after_duration
+     * @effects toast_removes_manually_or_after_duration, toast_contract_with_decorative_icon
      */
     it('각 토스트가 개별 타이머로 관리되어야 함', async () => {
       const handleRemove = vi.fn();
@@ -339,7 +339,7 @@ describe('Toast', () => {
   describe('커스텀 아이콘', () => {
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('icon prop이 설정된 경우 해당 아이콘을 사용해야 함', () => {
       const toasts: ToastItem[] = [
@@ -355,7 +355,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('icon prop이 없으면 타입별 기본 아이콘을 사용해야 함', () => {
       const toasts: ToastItem[] = [
@@ -372,7 +372,7 @@ describe('Toast', () => {
   describe('접근성', () => {
     /**
      * @scenario component=toast
-     * @effects toast_announces_politely_with_named_close_button
+     * @effects toast_announces_politely_with_named_close_button, toast_contract_with_decorative_icon
      */
     it('각 토스트에 role="alert"를 가져야 함', () => {
       render(<Toast toasts={mockToasts} />);
@@ -383,7 +383,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_announces_politely_with_named_close_button
+     * @effects toast_announces_politely_with_named_close_button, toast_contract_with_decorative_icon
      */
     it('컨테이너에 aria-live="polite"를 가져야 함', () => {
       const { container } = render(<Toast toasts={mockToasts} />);
@@ -394,7 +394,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_announces_politely_with_named_close_button
+     * @effects toast_announces_politely_with_named_close_button, toast_contract_with_decorative_icon
      */
     it('컨테이너에 aria-atomic="true"를 가져야 함', () => {
       const { container } = render(<Toast toasts={mockToasts} />);
@@ -405,7 +405,7 @@ describe('Toast', () => {
 
     /**
      * @scenario component=toast
-     * @effects toast_announces_politely_with_named_close_button
+     * @effects toast_announces_politely_with_named_close_button, toast_contract_with_decorative_icon
      */
     it('닫기 버튼에 aria-label이 있어야 함', () => {
       render(<Toast toasts={[mockToasts[0]]} />);
@@ -418,7 +418,7 @@ describe('Toast', () => {
   describe('ActionDispatcher 연동 시나리오', () => {
     /**
      * @scenario component=toast
-     * @effects toast_renders_stack_at_position_with_type_style
+     * @effects toast_renders_stack_at_position_with_type_style, toast_contract_with_decorative_icon
      */
     it('_global.toasts 형식의 배열 데이터로 렌더링되어야 함', () => {
       // ActionDispatcher가 설정하는 형식

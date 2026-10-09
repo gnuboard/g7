@@ -5,7 +5,8 @@
       "pageData": "Page Data",
       "pages": "Pages",
       "versions": "Versions",
-      "attachmentSettings": "Attachment Settings"
+      "attachmentSettings": "Attachment Settings",
+      "createAbility": "Create Permission Check"
     }
   },
   "admin": {

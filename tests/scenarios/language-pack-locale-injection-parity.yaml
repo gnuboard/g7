@@ -40,6 +40,10 @@ effects:
   - deactivation_preserves_user_overridden_locale_field
   - activation_merges_identity_notification_locale
   - deactivation_strips_identity_notification_locale
+  # 모듈·플러그인 범위 팩 비활성화가 확장 소유 권한·역할·메뉴·알림에 주입한 로케일까지 걷는다 (2026-10-08 g7_2 실측 후속)
+  - deactivation_strips_extension_pack_locale_from_owned_rows
+  - reactivation_restores_extension_pack_locale
+  - deactivation_keeps_bundled_with_extension_locale
 
 test_files:
   - tests/Feature/LanguagePack/NotificationSeedInjectionTest.php

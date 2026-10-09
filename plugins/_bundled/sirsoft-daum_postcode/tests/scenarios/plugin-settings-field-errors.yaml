@@ -1,0 +1,18 @@
+feature: 우편번호 환경설정 — 칸 아래 저장 오류와 팝업 크기 범위
+
+description: |
+  팝업 너비·높이는 플러그인 설정 스키마의 min 100 · max 2000 으로 묶는다. 코어 설정 저장 검증
+  (UpdatePluginSettingsRequest)이 그 값을 규칙으로 써 범위 밖이면 422 를 내고, 설정 화면 입력칸도 같은
+  min·max 를 갖는다. 저장 오류는 상단 오류 상자와 함께 그 칸 아래에도 보인다(종전에는 상단 상자에만 있어
+  어느 칸을 고쳐야 하는지 칸에서는 보이지 않았다). 서버 422 와 오류 문구의 항목 이름은
+  settings-validation-labels.yaml 이 맡는다.
+
+axes:
+  check: [field_error_under_input, number_range_attributes]
+
+effects:
+  - postcode_settings_field_error_under_input
+  - postcode_popup_size_input_range_matches_schema
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/layouts/pluginSettingsFieldErrors.test.ts

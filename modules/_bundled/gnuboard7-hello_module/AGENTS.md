@@ -54,7 +54,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update gnuboard7-hello_module --force` (빌드 불필요) |
-| `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update gnuboard7-hello_module --force` |
+| `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update gnuboard7-hello_module --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update gnuboard7-hello_module --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update gnuboard7-hello_module --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -155,16 +155,19 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 3개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 0개 | — |
+| PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
+| Vitest | 3개 | — |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit modules/_bundled/gnuboard7-hello_module/tests --filter='<대상클래스>'
+
+# Vitest (저장소 루트에서) (PowerShell)
+powershell -Command "npm run test:run -- modules/_bundled/gnuboard7-hello_module/<대상>"
 
 ```
 

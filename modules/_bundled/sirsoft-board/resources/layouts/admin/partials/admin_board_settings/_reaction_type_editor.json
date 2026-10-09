@@ -1,5 +1,5 @@
 {
-    "comment": "게시판 설정 — 반응 유형 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드\n  (`_reaction_type_cards`)와 같은 배열(`form.basic_defaults.reaction_types`)을 편집한다.\n\n  추가는 **임시 폼**(`reactionTypeForm`)에 담았다가 확인할 때 배열에 붙인다 — 취소하면 임시\n  폼만 버리면 되고 원본 배열은 손대지 않은 상태로 남는다. 필수값·중복 판정은 `<conditions>`\n  로 갈라 통과하면 배열에 반영하고, 아니면 오류 표시만 세운다.\n\n  코드는 만든 뒤 바꿀 수 없다 — 게시판의 `active_reaction_types` 와 이미 쌓인 반응 행이\n  코드로 이어져 있어, 바꾸면 그 연결이 끊긴다. 그래서 기존 행의 코드 칸은 읽기 전용이다.\n  아이콘 업로드도 행이 생긴 뒤에만 할 수 있다 — 업로드가 첨부를 곧바로 만들기 때문이다.",
+    "comment": "게시판 설정 — 반응 유형 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드\n  (`_reaction_type_cards`)와 같은 배열(`form.basic_defaults.reaction_types`)을 편집한다.\n\n  추가는 **임시 폼**(`reactionTypeForm`)에 담았다가 확인할 때 배열에 붙인다 — 취소하면 임시\n  폼만 버리면 되고 원본 배열은 손대지 않은 상태로 남는다. 필수값·중복 판정은 `<conditions>`\n  로 갈라 통과하면 배열에 반영하고, 아니면 오류 표시만 세운다.\n\n  코드는 만든 뒤 바꿀 수 없다 — 게시판의 `active_reaction_types` 와 이미 쌓인 반응 행이\n  코드로 이어져 있어, 바꾸면 그 연결이 끊긴다. 그래서 기존 행의 코드 칸은 읽기 전용이다.\n  아이콘 업로드도 행이 생긴 뒤에만 할 수 있다 — 업로드가 첨부를 곧바로 만들기 때문이다.\n  이름은 사이트 기본 언어 칸이 필수다(서버 LocaleRequiredTranslatable 과 같은 계약, 게시판 유형 이름과 같음 — 다국어 필수 언어는 사이트 기본 언어).\n  서버 오류는 이름 칸 전체 키(`.name`)로 오므로 행 이름 칸은 `.name.{사이트 기본 언어}` 다음에 `.name` 을 읽는다.",
     "meta": {
         "is_partial": true
     },
@@ -285,7 +285,7 @@
                                                     "value": "{{row.name ?? {}}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
-                                                    "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.ko']?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
+                                                    "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }
@@ -349,7 +349,7 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "comment": "아이콘을 떼면 글꼴 아이콘 폴백으로 돌아간다.",
+                                                                        "comment": "아이콘을 떼면 글꼴 아이콘 폴백으로 돌아간다. 업로더가 확인 창(confirmBeforeRemove)을 거친 뒤에만 오고,\n                  그때 서버의 첨부와 파일은 이미 지워졌다 — 저장 전이라도 되돌릴 수 없어 확인 창이 그 사실을 알린다.",
                                                                         "type": "change",
                                                                         "event": "onRemove",
                                                                         "handler": "setState",
@@ -389,6 +389,9 @@
                                                                     "autoUpload": true,
                                                                     "size": "xs",
                                                                     "disabled": "{{_computed.isReadOnly}}",
+                                                                    "confirmBeforeRemove": true,
+                                                                    "confirmRemoveTitle": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title",
+                                                                    "confirmRemoveMessage": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message",
                                                                     "apiEndpoints": {
                                                                         "upload": "/api/modules/sirsoft-board/admin/reaction-types/icons",
                                                                         "delete": "/api/modules/sirsoft-board/admin/reaction-types/icons/:id"
@@ -492,6 +495,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:common.delete",
                                                             "data-testid": "reaction-type-delete-{{row.code}}",
                                                             "type": "button",
                                                             "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
@@ -605,6 +609,15 @@
                                                         "className": "form-error"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.reactionTypeFormErrors?.code === 'format'}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_format"
                                                 }
                                             ]
                                         },
@@ -633,7 +646,7 @@
                                                         "value": "{{_local.reactionTypeForm?.name ?? {}}}",
                                                         "layout": "compact",
                                                         "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
-                                                        "error": "{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}",
+                                                        "error": "{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -713,6 +726,9 @@
                                                                 "autoUpload": true,
                                                                 "size": "xs",
                                                                 "disabled": "{{_computed.isReadOnly}}",
+                                                                "confirmBeforeRemove": true,
+                                                                "confirmRemoveTitle": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title",
+                                                                "confirmRemoveMessage": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message",
                                                                 "apiEndpoints": {
                                                                     "upload": "/api/modules/sirsoft-board/admin/reaction-types/icons",
                                                                     "delete": "/api/modules/sirsoft-board/admin/reaction-types/icons/:id"
@@ -802,7 +818,7 @@
                                                                     "handler": "conditions",
                                                                     "conditions": [
                                                                         {
-                                                                            "if": "{{(_local.reactionTypeForm?.code ?? '').trim() && (_local.reactionTypeForm?.name?.ko ?? '').trim() && !(_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim())}}",
+                                                                            "if": "{{(_local.reactionTypeForm?.code ?? '').trim() && (_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && (_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() && !(_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim())}}",
                                                                             "then": {
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -821,8 +837,8 @@
                                                                                 "params": {
                                                                                     "target": "local",
                                                                                     "reactionTypeFormErrors": {
-                                                                                        "code": "{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null)}}",
-                                                                                        "name_ko": "{{!(_local.reactionTypeForm?.name?.ko ?? '').trim() ? true : null}}"
+                                                                                        "code": "{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : (!((_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch))) ? 'format' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null))}}",
+                                                                                        "name": "{{!(_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() ? true : null}}"
                                                                                     }
                                                                                 }
                                                                             }

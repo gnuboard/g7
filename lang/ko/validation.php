@@ -11,7 +11,7 @@ return [
     */
 
     'accepted' => ':attribute 필드를 승인해야 합니다.',
-    'accepted_if' => ':other이(가) :value일 때 :attribute 필드를 승인해야 합니다.',
+    'accepted_if' => ':other 값이 :value일 때 :attribute 필드를 승인해야 합니다.',
     'active_url' => ':attribute 필드는 유효한 URL이어야 합니다.',
     'after' => ':attribute 필드는 :date 이후 날짜여야 합니다.',
     'after_or_equal' => ':attribute 필드는 :date 이후 또는 같은 날짜여야 합니다.',
@@ -38,8 +38,8 @@ return [
     'date_format' => ':attribute 필드는 :format 형식과 일치해야 합니다.',
     'decimal' => ':attribute 필드는 :decimal 자릿수의 소수점이어야 합니다.',
     'declined' => ':attribute 필드를 거부해야 합니다.',
-    'declined_if' => ':other이(가) :value일 때 :attribute 필드를 거부해야 합니다.',
-    'different' => ':attribute 필드와 :other은(는) 달라야 합니다.',
+    'declined_if' => ':other 값이 :value일 때 :attribute 필드를 거부해야 합니다.',
+    'different' => ':attribute 필드와 :other 필드는 달라야 합니다.',
     'digits' => ':attribute 필드는 :digits 자릿수여야 합니다.',
     'digits_between' => ':attribute 필드는 :min ~ :max 자릿수 사이여야 합니다.',
     'dimensions' => ':attribute 필드의 이미지 크기가 올바르지 않습니다.',
@@ -48,8 +48,8 @@ return [
     'doesnt_start_with' => ':attribute 필드는 다음으로 시작하면 안 됩니다: :values.',
     'email' => ':attribute 필드는 유효한 이메일 주소여야 합니다.',
     'ends_with' => ':attribute 필드는 다음 중 하나로 끝나야 합니다: :values.',
-    'enum' => '선택한 :attribute이(가) 올바르지 않습니다.',
-    'exists' => '선택한 :attribute이(가) 올바르지 않습니다.',
+    'enum' => '선택한 :attribute 값이 올바르지 않습니다.',
+    'exists' => '선택한 :attribute 값이 올바르지 않습니다.',
     'extensions' => ':attribute 필드는 다음 확장자 중 하나여야 합니다: :values.',
     'file' => ':attribute 필드는 파일이어야 합니다.',
     'filled' => ':attribute 필드에 값이 있어야 합니다.',
@@ -67,7 +67,7 @@ return [
     ],
     'hex_color' => ':attribute 필드는 유효한 16진수 색상이어야 합니다.',
     'image' => ':attribute 필드는 이미지여야 합니다.',
-    'in' => '선택한 :attribute이(가) 올바르지 않습니다.',
+    'in' => '선택한 :attribute 값이 올바르지 않습니다.',
     'in_array' => ':attribute 필드는 :other에 존재해야 합니다.',
     'integer' => ':attribute 필드는 정수여야 합니다.',
     'ip' => ':attribute 필드는 유효한 IP 주소여야 합니다.',
@@ -106,12 +106,12 @@ return [
     ],
     'min_digits' => ':attribute 필드는 최소 :min 자릿수 이상이어야 합니다.',
     'missing' => ':attribute 필드가 없어야 합니다.',
-    'missing_if' => ':other이(가) :value일 때 :attribute 필드가 없어야 합니다.',
-    'missing_unless' => ':other이(가) :value이(가) 아닌 경우 :attribute 필드가 없어야 합니다.',
-    'missing_with' => ':values이(가) 있을 때 :attribute 필드가 없어야 합니다.',
-    'missing_with_all' => ':values이(가) 모두 있을 때 :attribute 필드가 없어야 합니다.',
+    'missing_if' => ':other 값이 :value일 때 :attribute 필드가 없어야 합니다.',
+    'missing_unless' => ':other 값이 :value 외의 값이면 :attribute 필드가 없어야 합니다.',
+    'missing_with' => ':values 필드가 있을 때 :attribute 필드가 없어야 합니다.',
+    'missing_with_all' => ':values 필드가 모두 있을 때 :attribute 필드가 없어야 합니다.',
     'multiple_of' => ':attribute 필드는 :value의 배수여야 합니다.',
-    'not_in' => '선택한 :attribute이(가) 올바르지 않습니다.',
+    'not_in' => '선택한 :attribute 값이 올바르지 않습니다.',
     'not_regex' => ':attribute 필드 형식이 올바르지 않습니다.',
     'numeric' => ':attribute 필드는 숫자여야 합니다.',
     'password' => [
@@ -119,29 +119,29 @@ return [
         'mixed' => ':attribute 필드는 최소 하나의 대문자와 소문자를 포함해야 합니다.',
         'numbers' => ':attribute 필드는 최소 하나의 숫자를 포함해야 합니다.',
         'symbols' => ':attribute 필드는 최소 하나의 기호를 포함해야 합니다.',
-        'uncompromised' => '주어진 :attribute이(가) 데이터 유출에 나타났습니다. 다른 :attribute을(를) 선택해 주세요.',
+        'uncompromised' => '입력한 :attribute 값이 유출된 데이터에서 발견되었습니다. 다른 값을 사용해 주세요.',
     ],
     'present' => ':attribute 필드가 있어야 합니다.',
-    'present_if' => ':other이(가) :value일 때 :attribute 필드가 있어야 합니다.',
-    'present_unless' => ':other이(가) :value이(가) 아닌 경우 :attribute 필드가 있어야 합니다.',
-    'present_with' => ':values이(가) 있을 때 :attribute 필드가 있어야 합니다.',
-    'present_with_all' => ':values이(가) 모두 있을 때 :attribute 필드가 있어야 합니다.',
+    'present_if' => ':other 값이 :value일 때 :attribute 필드가 있어야 합니다.',
+    'present_unless' => ':other 값이 :value 외의 값이면 :attribute 필드가 있어야 합니다.',
+    'present_with' => ':values 필드가 있을 때 :attribute 필드가 있어야 합니다.',
+    'present_with_all' => ':values 필드가 모두 있을 때 :attribute 필드가 있어야 합니다.',
     'prohibited' => ':attribute 필드는 금지되어 있습니다.',
-    'prohibited_if' => ':other이(가) :value일 때 :attribute 필드는 금지되어 있습니다.',
-    'prohibited_unless' => ':other이(가) :values에 없는 경우 :attribute 필드는 금지되어 있습니다.',
-    'prohibits' => ':attribute 필드는 :other이(가) 존재하는 것을 금지합니다.',
+    'prohibited_if' => ':other 값이 :value일 때 :attribute 필드는 금지되어 있습니다.',
+    'prohibited_unless' => ':other 값이 :values 중 하나가 아니면 :attribute 필드는 금지되어 있습니다.',
+    'prohibits' => ':attribute 필드가 있으면 :other 필드는 입력할 수 없습니다.',
     'regex' => ':attribute 필드 형식이 올바르지 않습니다.',
     'required' => ':attribute 필드는 필수입니다.',
     'required_array_keys' => ':attribute 필드는 다음 항목을 포함해야 합니다: :values.',
-    'required_if' => ':other이(가) :value일 때 :attribute 필드는 필수입니다.',
-    'required_if_accepted' => ':other이(가) 승인되면 :attribute 필드는 필수입니다.',
-    'required_if_declined' => ':other이(가) 거부되면 :attribute 필드는 필수입니다.',
-    'required_unless' => ':other이(가) :values에 없는 경우 :attribute 필드는 필수입니다.',
-    'required_with' => ':values이(가) 있을 때 :attribute 필드는 필수입니다.',
-    'required_with_all' => ':values이(가) 모두 있을 때 :attribute 필드는 필수입니다.',
-    'required_without' => ':values이(가) 없을 때 :attribute 필드는 필수입니다.',
-    'required_without_all' => ':values이(가) 모두 없을 때 :attribute 필드는 필수입니다.',
-    'same' => ':attribute 필드와 :other이(가) 일치해야 합니다.',
+    'required_if' => ':other 값이 :value일 때 :attribute 필드는 필수입니다.',
+    'required_if_accepted' => ':other 필드가 승인되면 :attribute 필드는 필수입니다.',
+    'required_if_declined' => ':other 필드가 거부되면 :attribute 필드는 필수입니다.',
+    'required_unless' => ':other 값이 :values 중 하나가 아니면 :attribute 필드는 필수입니다.',
+    'required_with' => ':values 필드가 있을 때 :attribute 필드는 필수입니다.',
+    'required_with_all' => ':values 필드가 모두 있을 때 :attribute 필드는 필수입니다.',
+    'required_without' => ':values 필드가 없을 때 :attribute 필드는 필수입니다.',
+    'required_without_all' => ':values 필드가 모두 없을 때 :attribute 필드는 필수입니다.',
+    'same' => ':attribute 필드와 :other 필드가 일치해야 합니다.',
     'size' => [
         'array' => ':attribute 필드는 :size개의 항목을 포함해야 합니다.',
         'file' => ':attribute 필드는 :size KB여야 합니다.',
@@ -151,7 +151,7 @@ return [
     'starts_with' => ':attribute 필드는 다음 중 하나로 시작해야 합니다: :values.',
     'string' => ':attribute 필드는 문자열이어야 합니다.',
     'timezone' => ':attribute 필드는 유효한 시간대여야 합니다.',
-    'unique' => ':attribute은(는) 이미 사용 중입니다.',
+    'unique' => ':attribute 값은 이미 사용 중입니다.',
     'uploaded' => ':attribute 업로드에 실패했습니다.',
     'uppercase' => ':attribute 필드는 대문자여야 합니다.',
     'url' => ':attribute 필드는 유효한 URL이어야 합니다.',
@@ -212,14 +212,14 @@ return [
         'must_be_array' => '레이아웃 데이터는 배열이어야 합니다.',
         'dangerous_expression' => '허용되지 않는 표현식이 포함되어 있습니다: :snippet',
         'external_resource_url' => '외부 리소스 URL은 허용되지 않습니다(동일 출처 경로만 허용): :url',
-        'required_field_missing' => "필수 필드 ':field'가 누락되었습니다.",
+        'required_field_missing' => "필수 필드 ':field' 값이 누락되었습니다.",
         'version_must_be_string' => 'version 필드는 문자열이어야 합니다.',
         'layout_name_must_be_string' => 'layout_name 필드는 문자열이어야 합니다.',
         'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
         'components_or_slots_required' => '상속 레이아웃은 components 또는 slots 중 하나가 필요합니다.',
         'component_must_be_array' => 'components[:index]는 배열이어야 합니다.',
         'max_depth_exceeded' => '컴포넌트 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
-        'component_required_field_missing' => "components[:index]에 필수 필드 ':field'가 누락되었습니다.",
+        'component_required_field_missing' => "components[:index]에 필수 필드 ':field' 값이 누락되었습니다.",
         'component_field_must_be_string' => 'components[:index].component는 문자열이어야 합니다.',
         'component_name_must_be_string' => 'components[:index].name은 문자열이어야 합니다.',
         'component_type_invalid' => 'components[:index].type은 basic, composite, layout 중 하나여야 합니다.',
@@ -233,7 +233,7 @@ return [
         'permissions_max_depth_exceeded' => 'permissions 구조의 최대 중첩 깊이(:max)를 초과했습니다.',
         'permission_must_be_string' => 'components[:index].permissions[:perm_index]는 문자열이어야 합니다.',
         'permission_must_be_string_or_group' => 'permissions의 항목[:index]은 문자열(권한 식별자) 또는 구조화 객체(or/and)여야 합니다.',
-        'permission_invalid_format' => 'components[:index].permissions의 ":permission"은 올바른 권한 식별자 형식이 아닙니다.',
+        'permission_invalid_format' => 'components[:index].permissions의 ":permission" 값은 올바른 권한 식별자 형식이 아닙니다.',
         'actions_must_be_array' => 'components[:index].actions는 배열이어야 합니다.',
         'action_must_be_array' => 'components[:index].actions[:actionIndex]는 배열이어야 합니다.',
         'action_type_missing' => "components[:index].actions[:actionIndex]에 필수 필드 'type'이 누락되었습니다.",
@@ -467,7 +467,7 @@ return [
         'section_must_be_array' => ':section 필드는 배열이어야 합니다.',
         'max_depth_exceeded' => '컴포넌트 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
         'component_must_be_array' => 'components[:index]는 배열이어야 합니다.',
-        'component_required_field_missing' => "components[:index]에 필수 필드 ':field'가 누락되었습니다.",
+        'component_required_field_missing' => "components[:index]에 필수 필드 ':field' 값이 누락되었습니다.",
         'component_name_must_be_string' => 'components[:index].name은 문자열이어야 합니다.',
         'component_type_invalid' => 'components[:index].type은 basic, composite, layout 중 하나여야 합니다.',
         'props_must_be_object' => 'components[:index].props는 객체(배열)여야 합니다.',
@@ -533,7 +533,7 @@ return [
         'template_id_required' => '컴포넌트 검증을 위해서는 template_id가 필요합니다.',
         'manifest_not_found' => '템플릿 :templateId의 컴포넌트 매니페스트(components.json)를 찾을 수 없습니다.',
         'name_empty' => 'components[:index].component 이름은 비어있을 수 없습니다.',
-        'not_found' => "컴포넌트 ':component'는 템플릿에 등록되지 않았습니다. (components[:index])",
+        'not_found' => "템플릿에 등록되지 않은 컴포넌트입니다: ':component' (components[:index])",
     ],
 
     // FormRequest 필드 검증 메시지
@@ -558,7 +558,7 @@ return [
     // 레이아웃 상속 검증 메시지
     'layout_inheritance' => [
         // 부모 레이아웃 검증
-        'parent_not_found' => '부모 레이아웃 ":parent"를 찾을 수 없습니다.',
+        'parent_not_found' => '부모 레이아웃을 찾을 수 없습니다: ":parent"',
         'parent_not_in_same_template' => '부모 레이아웃은 같은 템플릿 내에 있어야 합니다.',
         'circular_reference' => '레이아웃 순환 참조가 감지되었습니다: :trace',
         'max_depth_exceeded' => '레이아웃 상속 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
@@ -572,7 +572,7 @@ return [
         'parent_has_no_slots' => '부모 레이아웃에는 슬롯이 정의되지 않았습니다.',
 
         // 데이터 소스 병합 검증
-        'data_source_id_duplicate' => 'data_sources에 중복된 ID ":id"가 있습니다.',
+        'data_source_id_duplicate' => 'data_sources에 같은 ID 가 둘 이상 있습니다: ":id"',
         'data_sources_must_be_array' => 'data_sources는 배열이어야 합니다.',
         'data_source_must_have_id' => 'data_sources[:index]에 필수 필드 "id"가 누락되었습니다.',
         'data_source_id_must_be_string' => 'data_sources[:index].id는 문자열이어야 합니다.',
@@ -592,13 +592,18 @@ return [
         'max_length' => "':lang' 번역은 :max자를 초과할 수 없습니다.",
         'min_length' => "':lang' 번역은 최소 :min자 이상이어야 합니다.",
         'at_least_one_required' => '최소 하나의 언어로 번역이 필요합니다.',
-        'current_locale_required' => ':locale 언어의 값은 필수입니다.',
+        'current_locale_required' => ':attribute의 :language(:locale) 값은 필수입니다.',
+        'current_locale_required_unnamed' => ':language(:locale) 값은 필수입니다.',
     ],
 
     // 템플릿 검증 메시지
 
     // 메뉴 검증 메시지
     'menu' => [
+        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
+        'attributes' => [
+            'name' => '메뉴 이름',
+        ],
         'roles' => [
             'array' => '역할 목록은 배열이어야 합니다.',
             'integer' => '역할 ID는 숫자여야 합니다.',
@@ -685,6 +690,11 @@ return [
 
     // 권한 검증 메시지
     'permission' => [
+        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
+        'attributes' => [
+            'name' => '권한 이름',
+            'description' => '권한 설명',
+        ],
         'name' => [
             'required' => '권한 이름을 입력해주세요.',
         ],
@@ -695,6 +705,11 @@ return [
 
     // 역할 검증 메시지
     'role' => [
+        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
+        'attributes' => [
+            'name' => '역할 이름',
+            'description' => '역할 설명',
+        ],
         'name' => [
             'required' => '역할 이름을 입력해주세요.',
         ],
@@ -986,7 +1001,7 @@ return [
         'allow_internal_outbound_urls_boolean' => '내부 네트워크 주소 호출 허용은 true 또는 false 값이어야 합니다.',
         // IP 접근 제한
         'ip_restriction_enabled_boolean' => 'IP 접근 제한 사용은 true 또는 false 값이어야 합니다.',
-        'ip_or_cidr_invalid' => '":value" 은(는) IP 주소 또는 CIDR(예: 203.0.113.0/24) 형식이 아닙니다.',
+        'ip_or_cidr_invalid' => '":value" 값은 IP 주소 또는 CIDR(예: 203.0.113.0/24) 형식이 아닙니다.',
         'admin_allowed_ips_array' => '관리자 영역 허용 IP 는 목록이어야 합니다.',
         'admin_allowed_ips_max' => '관리자 영역 허용 IP 는 :max개까지 등록할 수 있습니다.',
         'ip_restriction_rules_array' => '라우트별 규칙은 목록이어야 합니다.',
@@ -999,7 +1014,7 @@ return [
         'ip_restriction_rule_memo_max' => '규칙 메모는 :max자를 초과할 수 없습니다.',
         'ip_restriction_rule_enabled_boolean' => '규칙 사용 여부는 true 또는 false 값이어야 합니다.',
         'ip_restriction_self_lockout' => '현재 접속 IP(:ip)가 관리자 영역 허용 목록에 없습니다. 이대로 저장하면 이 화면을 포함한 관리자 영역에 다시 들어올 수 없습니다 — 현재 IP 를 목록에 추가한 뒤 저장하세요.',
-        'ip_restriction_self_lockout_rule' => '규칙 ":pattern" 이(가) 현재 접속 IP(:ip)를 막습니다. 이대로 저장하면 이 화면에 다시 들어올 수 없습니다 — 그 규칙의 허용 IP 에 현재 IP 를 추가하거나 규칙을 끈 뒤 저장하세요.',
+        'ip_restriction_self_lockout_rule' => '":pattern" 규칙이 현재 접속 IP(:ip)를 막습니다. 이대로 저장하면 이 화면에 다시 들어올 수 없습니다 — 그 규칙의 허용 IP 에 현재 IP 를 추가하거나 규칙을 끈 뒤 저장하세요.',
         'login_attempt_enabled_required' => '로그인 시도 제한 설정을 선택해주세요.',
         'login_attempt_enabled_boolean' => '로그인 시도 제한은 true 또는 false 값이어야 합니다.',
         'auth_token_lifetime_integer' => '인증 토큰 유지시간은 정수여야 합니다.',

@@ -31,6 +31,7 @@ return [
     'attachment' => [
         'not_found' => 'Attachment not found.',
         'file_not_found' => 'Attachment file does not exist in storage.',
+        'preview_not_supported' => 'Preview is not available for this file type.',
         'upload_success' => 'Attachment has been uploaded.',
         'upload_failed' => 'Failed to upload attachment.',
         'delete_success' => 'Attachment has been deleted.',

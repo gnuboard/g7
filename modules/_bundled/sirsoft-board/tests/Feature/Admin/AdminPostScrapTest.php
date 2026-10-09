@@ -459,6 +459,52 @@ class AdminPostScrapTest extends BoardTestCase
     }
 
     /**
+     * 목록 응답에 게시판 필터 선택지가 실린다 — 스크랩 조회 권한만 가진 매니저도 게시판을 고를 수 있다.
+     *
+     * 게시판 목록 API(admin/boards)는 게시판 관리 권한이 있어야 열린다. 화면이 그 API 로 게시판
+     * 셀렉트를 채우면 스크랩 조회만 가진 매니저에게는 403 이 나고 셀렉트가 빈다(K2 실측 2026-10-06).
+     * 지워지지 않은 게시판은 비활성이어도 선택지에 남는다(그 게시판의 스크랩을 정리해야 한다).
+     *
+     * @scenario surface=admin_list, permission=view
+     *
+     * @effects admin_scrap_index_carries_board_options_meta
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_response_carries_board_options_meta(): void
+    {
+        $inactiveId = $this->createOtherBoard('scrap-meta-inactive', '꺼진 게시판');
+        DB::table('boards')->where('id', $inactiveId)->update(['is_active' => false]);
+
+        $boards = $this->actingAs($this->viewer)->getJson($this->indexUrl())->assertOk()->json('data.boards');
+
+        $this->assertIsArray($boards, '목록 응답에 게시판 선택지가 실려야 합니다.');
+        $mine = collect($boards)->firstWhere('id', $this->board->id);
+        $this->assertNotNull($mine);
+        $this->assertSame($this->board->slug, $mine['slug']);
+        $this->assertSame($this->board->getLocalizedName(), $mine['name']);
+        $this->assertNotNull(collect($boards)->firstWhere('id', $inactiveId), '비활성 게시판도 선택지에 남아야 합니다.');
+    }
+
+    /**
+     * 목록 조회 중 서버 오류는 입력 오류(400)가 아니라 서버 오류(500)로 답한다.
+     *
+     * @scenario surface=admin_list, permission=manage
+     *
+     * @effects admin_scrap_index_server_error_returns_500
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_server_error_returns_500(): void
+    {
+        $this->mock(PostScrapService::class, function ($mock): void {
+            $mock->shouldReceive('paginateForAdmin')->andThrow(new \RuntimeException('boom'));
+        });
+
+        $this->actingAs($this->admin)->getJson($this->indexUrl())->assertStatus(500);
+    }
+
+    /**
      * per_page 상한(100) 초과 → 422.
      *
      * @effects admin_scrap_index_rejects_per_page_over_limit
@@ -659,6 +705,35 @@ class AdminPostScrapTest extends BoardTestCase
     }
 
     /**
+     * 스크랩 조회 권한이 없는 관리자에게는 회원 상세에 스크랩 요약을 싣지 않는다.
+     *
+     * 요약을 실으면 화면이 「스크랩」 탭과 건수를 그리고, 「이 회원 스크랩 목록 보기」는 403 화면으로
+     * 끝난다(K2 실측 2026-10-06 — 반응 쪽 K1-D11 과 같은 결함).
+     *
+     * @scenario surface=member_detail_tab, permission=view, member_scope=true
+     *
+     * @effects admin_user_detail_omits_scrap_summary_without_view_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_user_detail_omits_board_scraps_without_view_permission(): void
+    {
+        $this->scrap($this->memberA, $this->createTestPost(['title' => '권한 확인']));
+
+        $reader = $this->createAdminWithOnly(['core.users.read']);
+
+        $response = $this->actingAs($reader)->getJson('/api/admin/users/'.$this->memberA->uuid);
+        $response->assertOk();
+        $this->assertArrayNotHasKey('board_scraps', $response->json('data') ?? []);
+
+        // 조회 권한이 있으면 그대로 실린다.
+        $this->assertSame(
+            1,
+            $this->actingAs($this->admin)->getJson('/api/admin/users/'.$this->memberA->uuid)->json('data.board_scraps.count')
+        );
+    }
+
+    /**
      * 프로필(/api/me)에는 board_scraps 를 싣지 않는다 — 부팅 경로에 집계 비용을 얹지 않는다.
      *
      * @effects profile_endpoint_omits_scrap_summary
@@ -770,6 +845,36 @@ class AdminPostScrapTest extends BoardTestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    /**
+     * 주어진 관리자 권한만 가진 운영자를 만듭니다 (공용 admin 역할을 쓰지 않는다).
+     *
+     * @param  array<int, string>  $permissionIdentifiers  부여할 권한 식별자
+     * @return User 운영자
+     */
+    private function createAdminWithOnly(array $permissionIdentifiers): User
+    {
+        $role = Role::firstOrCreate(
+            ['identifier' => 'sirsoft-board.scrap-only-perms-test'],
+            [
+                'name' => ['ko' => '권한 한정 운영자', 'en' => 'Limited Operator'],
+                'description' => ['ko' => '테스트용', 'en' => 'For tests'],
+            ]
+        );
+
+        foreach ($permissionIdentifiers as $identifier) {
+            $permission = Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => 'admin']
+            );
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        }
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role->id);
+
+        return $user;
     }
 
     /**

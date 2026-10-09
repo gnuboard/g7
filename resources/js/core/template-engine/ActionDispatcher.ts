@@ -3086,13 +3086,22 @@ export class ActionDispatcher {
         const transitionOverlayTarget = typeof (params as any).transition_overlay_target === 'string'
           ? (params as any).transition_overlay_target
           : undefined;
+        // refetch_data_sources: 이 이동에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열).
+        // 같은 탭 안 목록의 검색·필터·쪽 넘김이 설정 폼 소스까지 다시 받아 고친 값을 덮지 않게 한다 (@since engine-v1.79.0)
+        const rawRefetch = (params as any).refetch_data_sources;
+        const refetchDataSourceIds = (Array.isArray(rawRefetch) ? rawRefetch : typeof rawRefetch === 'string' ? rawRefetch.split(',') : [])
+          .map((id: unknown) => String(id).trim())
+          .filter((id: string) => id !== '');
+        const updateOptions: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] } = {};
+        if (transitionOverlayTarget) updateOptions.transitionOverlayTarget = transitionOverlayTarget;
+        if (refetchDataSourceIds.length > 0) updateOptions.refetchDataSourceIds = refetchDataSourceIds;
         await G7Core.updateQueryParams(
           finalPath,
-          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+          Object.keys(updateOptions).length > 0 ? updateOptions : undefined
         );
         logger.log(
           'handleNavigate: Used updateQueryParams for replace mode',
-          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+          Object.keys(updateOptions).length > 0 ? updateOptions : undefined
         );
         // 이동 후 스크롤 위치 적용 (기본: 상단)
         this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');

@@ -67,14 +67,36 @@ class DeactivateModuleCommand extends Command
             // 운영자가 직접 실행한 비활성화다 — 시스템 자동 비활성화와 구분되도록 사유를 명시한다.
             $result = $this->moduleManager->deactivateModule($identifier, $force, DeactivationReason::Manual->value);
 
-            // 경고 응답인 경우 (의존 템플릿 존재)
+            // 경고 응답인 경우 (의존 확장 존재) — 관리자는 템플릿·모듈·플러그인을 모두 돌려준다.
+            // 템플릿만 출력하면 플러그인이 의존할 때 빈 목록 제목만 나와 거절 사유를 알 수 없다(7.1.0 실측).
             if (isset($result['warning']) && $result['warning'] === true) {
                 $this->warn('⚠️  '.$result['message']);
                 $this->line('');
-                $this->info('의존하는 템플릿 목록:');
-                foreach ($result['dependent_templates'] as $template) {
-                    $this->line("   - {$template['identifier']} ({$template['name']})");
+
+                // 의존하는 템플릿 목록
+                if (! empty($result['dependent_templates'])) {
+                    $this->info('의존하는 템플릿 목록:');
+                    foreach ($result['dependent_templates'] as $template) {
+                        $this->line("   - {$template['identifier']} ({$template['name']})");
+                    }
                 }
+
+                // 의존하는 모듈 목록
+                if (! empty($result['dependent_modules'])) {
+                    $this->info('의존하는 모듈 목록:');
+                    foreach ($result['dependent_modules'] as $module) {
+                        $this->line("   - {$module['identifier']} ({$module['name']})");
+                    }
+                }
+
+                // 의존하는 플러그인 목록
+                if (! empty($result['dependent_plugins'])) {
+                    $this->info('의존하는 플러그인 목록:');
+                    foreach ($result['dependent_plugins'] as $plugin) {
+                        $this->line("   - {$plugin['identifier']} ({$plugin['name']})");
+                    }
+                }
+
                 $this->line('');
                 $this->info('강제로 비활성화하려면 --force 옵션을 사용하세요.');
 

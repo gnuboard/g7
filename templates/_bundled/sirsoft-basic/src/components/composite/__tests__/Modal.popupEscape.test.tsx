@@ -1,13 +1,19 @@
 /**
  * @file Modal.popupEscape.test.tsx
- * @description sirsoft-basic Modal — 창 안에서 펼친 선택 목록이 있을 때의 Esc 회귀 테스트 (7.1.0 영역 J D-J3, 관측 O-G6)
+ * @description sirsoft-basic Modal — 창 안에서 펼친 선택 목록이 있을 때의 Esc 회귀 테스트 (7.1.0 O-K3-16 관리자 템플릿 결함과 같은 구조 — admin_basic·sirsoft-basic 대칭)
  *
  * 창과 창 안의 선택 목록이 각자 document keydown 리스너로 Esc 를 받아, 목록을 펼친 채 Esc 를 한 번 누르면
- * 목록과 창이 함께 닫혔다(관리자 템플릿 실측 결함과 같은 구조 — admin_basic·sirsoft-basic 대칭).
+ * 목록과 창이 함께 닫혔다(관리자 템플릿 실측 결함과 같은 구조 — 저장 안 한 입력이 사라진다).
  * 창 안에 펼쳐진 팝업(`aria-haspopup` + `aria-expanded="true"`)이 있으면 그 Esc 는 팝업 몫으로 두고 창은 닫지 않는다.
+ * 자기 키 처리기에서 곧바로 닫히는 팝업(작업 메뉴·태그 입력처럼 React onKeyDown 으로 닫는 것)은 실제 브라우저에서
+ * 창의 document 리스너보다 먼저 닫힌 상태가 그려지므로, 키를 누른 순간(캡처 단계)에 펼침 여부를 읽어 둔다.
+ *
+ * @scenario-manifest tests/scenarios/modal-popup-escape.yaml
  */
 
 import { describe, it, expect, vi } from 'vitest';
+import React, { useState } from 'react';
+import { flushSync } from 'react-dom';
 import { render, fireEvent, screen } from '@testing-library/react';
 import { Modal } from '../Modal';
 import { Select } from '../../basic/Select';
@@ -16,6 +22,30 @@ const OPTIONS = [
   { value: 'artisan', label: 'Artisan' },
   { value: 'shell', label: 'Shell' },
 ];
+
+/**
+ * 자기 onKeyDown 에서 Esc 로 곧바로 닫히는 팝업 — 실제 브라우저처럼 창의 document 리스너보다 먼저 닫힘을 반영한다.
+ *
+ * @returns 팝업 트리거
+ */
+function SelfClosingPopup() {
+  const [open, setOpen] = useState(true);
+  return (
+    <button
+      type="button"
+      aria-haspopup="menu"
+      aria-expanded={open}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && open) {
+          event.preventDefault();
+          flushSync(() => setOpen(false));
+        }
+      }}
+    >
+      작업
+    </button>
+  );
+}
 
 describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] sirsoft-basic Modal — 펼친 선택 목록과 Esc', () => {
   /**
@@ -40,6 +70,29 @@ describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] sirsof
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
 
     fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * @scenario popup=self_closing_on_keydown
+   * @effects escape_closes_popup_before_modal
+   */
+  it('자기 키 처리기에서 곧바로 닫히는 팝업도 그 Esc 로 창까지 닫히지 않는다', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal isOpen onClose={onClose} title="발급 내역">
+        <SelfClosingPopup />
+      </Modal>,
+    );
+
+    const trigger = screen.getByRole('button', { name: '작업' });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(trigger, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -107,6 +160,25 @@ describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] sirsof
     );
 
     fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * @scenario popup=none
+   * @effects escape_closes_modal_without_popup
+   */
+  it('펼친 팝업이 없으면 창 안 입력칸에 초점이 있어도 Esc 한 번에 창이 닫힌다', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal isOpen onClose={onClose} title="확인">
+        <input aria-label="제목" />
+      </Modal>,
+    );
+
+    const input = screen.getByRole('textbox', { name: '제목' });
+    input.focus();
+    fireEvent.keyDown(input, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

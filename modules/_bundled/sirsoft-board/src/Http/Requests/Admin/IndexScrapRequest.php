@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 관리자 스크랩 목록 조회 요청 폼 검증
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
  */
 class IndexScrapRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 허용하는 검색 대상 값
      *

@@ -58,7 +58,7 @@ describe('TabNavigation', () => {
   describe('데스크톱 렌더링', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c01
@@ -74,7 +74,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c02
@@ -89,7 +89,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c03
@@ -107,7 +107,7 @@ describe('TabNavigation', () => {
   describe('활성 탭', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c04
@@ -122,7 +122,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c05
@@ -139,7 +139,7 @@ describe('TabNavigation', () => {
   describe('탭 클릭 이벤트', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c06
@@ -163,7 +163,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c07
@@ -187,7 +187,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_click_changes_only_to_other_enabled_tab
+     * @effects tab_navigation_click_changes_only_to_other_enabled_tab, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c08
@@ -218,7 +218,7 @@ describe('TabNavigation', () => {
   describe('아이콘', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c09
@@ -238,7 +238,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c10
@@ -255,7 +255,7 @@ describe('TabNavigation', () => {
   describe('뱃지', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c11
@@ -275,7 +275,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c12
@@ -293,7 +293,7 @@ describe('TabNavigation', () => {
   describe('비활성화된 탭', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c13
@@ -313,7 +313,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c14
@@ -334,7 +334,7 @@ describe('TabNavigation', () => {
   describe('variant 스타일', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c15
@@ -349,7 +349,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c16
@@ -364,7 +364,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c17
@@ -381,7 +381,7 @@ describe('TabNavigation', () => {
   describe('스타일 커스터마이징', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c18
@@ -398,7 +398,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c19
@@ -421,7 +421,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_mobile_renders_select_dropdown
+     * @effects tab_navigation_mobile_renders_select_dropdown, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c20
@@ -441,7 +441,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_mobile_renders_select_dropdown
+     * @effects tab_navigation_mobile_renders_select_dropdown, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c21
@@ -456,7 +456,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_mobile_renders_select_dropdown
+     * @effects tab_navigation_mobile_renders_select_dropdown, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c22
@@ -473,7 +473,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_mobile_renders_select_dropdown
+     * @effects tab_navigation_mobile_renders_select_dropdown, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c23
@@ -508,7 +508,7 @@ describe('TabNavigation', () => {
   describe('복합 시나리오', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+     * @effects tab_navigation_renders_tabs_with_icon_badge_disabled_variants, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c24
@@ -549,7 +549,7 @@ describe('TabNavigation', () => {
   describe('편집 모드 인플레이스 측정 마커(data-editor-item-path)', () => {
     /**
      * @scenario unit=item_path_marker
-     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode
+     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c25
@@ -571,7 +571,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario unit=item_path_marker
-     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode
+     * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c26
@@ -592,7 +592,7 @@ describe('TabNavigation', () => {
   describe('접근성 (WAI-ARIA Tabs)', () => {
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c27
@@ -607,7 +607,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c28
@@ -624,7 +624,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c29
@@ -641,7 +641,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c30
@@ -655,7 +655,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c31
@@ -675,7 +675,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c32
@@ -691,7 +691,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c33
@@ -711,7 +711,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c34
@@ -732,7 +732,7 @@ describe('TabNavigation', () => {
 
     /**
      * @scenario component=tab_navigation
-     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_mobile_renders_select_dropdown
+     * @effects tab_navigation_exposes_wai_aria_tabs_with_keyboard, tab_navigation_mobile_renders_select_dropdown, tab_navigation_contract_with_decorative_icon
      */
     /**
      * @scenario case=c35

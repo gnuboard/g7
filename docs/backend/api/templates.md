@@ -95897,7 +95897,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | token | string | `9f2c1a4e8b7d…` | 미리보기 토큰 (임시 저장된 확장 content 를 식별) |
-| preview_url | string | `/preview/9f2c1a4e8b7d…` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
+| preview_url | string | `/preview/9f2c1a4e8b7d…` | 미리보기 페이지 경로 — 템플릿 종류의 화면 셸(관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿 `/preview/{token}`), 새 탭으로 열어 확인 |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
 | markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 
@@ -96925,7 +96925,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | token | string | `9f2c1a4e8b7d3c5f` | 미리보기 토큰 (임시 저장된 레이아웃 content 를 식별) |
-| preview_url | string | `/preview/9f2c1a4e8b7d3c5f` | 미리보기 페이지 경로 (새 탭으로 열어 확인) |
+| preview_url | string | `/preview/9f2c1a4e8b7d3c5f` | 미리보기 페이지 경로 — 템플릿 종류의 화면 셸(관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿 `/preview/{token}`), 새 탭으로 열어 확인 |
 | expires_at | string | `2026-07-14T11:00:00+09:00` | 미리보기 만료 일시 (ISO 8601) |
 | markup_warnings | array | `[]` | `format=markup` 컴파일이 낸 lint 경고 `[{code,message,line,column}]` (JSON 본문이면 빈 배열) |
 

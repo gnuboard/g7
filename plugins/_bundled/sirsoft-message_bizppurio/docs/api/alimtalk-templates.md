@@ -51,7 +51,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
   "success": true,
-  "message": "성공적으로 처리되었습니다.",
+  "message": "알림톡 카테고리를 불러왔습니다.",
   "data": {
     "categories": [
       { "code": "001001", "name": "회원가입", "groupName": "회원" },
@@ -107,7 +107,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
   "success": true,
-  "message": "성공적으로 처리되었습니다.",
+  "message": "알림톡 발신 프로필을 불러왔습니다.",
   "data": {
     "profiles": [
       { "senderKey": "05aa099bcbc5220a8c0b2...", "name": "@우리상점", "status": "A", "block": false, "dormant": false }

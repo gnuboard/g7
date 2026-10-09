@@ -1,0 +1,28 @@
+feature: 관리자 파일 업로더(FileUploader) 첨부 목록 동기화·업로드 응답·좁은 칸 크기
+
+description: |
+  관리자 화면 공용 업로더다. 부모가 다시 그려져도 같은 첨부 목록이면 상태를 리셋하지 않고, 업로드 응답의
+  여러 래핑 모양을 같은 첨부로 해석하며, 트리거 이벤트로 올린 뒤 기존과 신규 파일을 순서대로 넘긴다.
+
+  크기(size): 표 한 칸용 xs 는 드롭존만 줄던 것을 첨부 목록까지 넓혔다. 화면 폭 기준 5열 격자를 그대로 쓰면
+  265px 칸에서 썸네일이 30px 로 짜부라져 파일명이 「k.」처럼 잘리고 「1/1개 첨부됨」이 두 줄로 접혔다
+  (K1 실측 2026-10-06, O-K1-4 반응 유형 아이콘 칸). xs 는 두 칸 격자와 줄을 나눈 하단 정보를 쓰고, 기본(md)은 종전 그대로다.
+
+  개수 상한 초과 안내(front_overflow_fires_upload_error 등)는 이커머스 매니페스트 mp12-product-image-limit.yaml 이 함께 소유한다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploader.test.tsx
+
+axes:
+  surface:
+    - initial_files
+    - upload
+    - list_size
+
+effects:
+  - file_uploader_initial_files_sync_without_reset
+  - file_uploader_parses_upload_response_shapes
+  - file_uploader_trigger_emit_keeps_order
+  # xs 첨부 목록은 두 칸 격자·줄을 나눈 하단 정보(K1 후속 2026-10-06)
+  - file_uploader_compact_list_fits_narrow_cell
+  - file_uploader_default_list_unchanged

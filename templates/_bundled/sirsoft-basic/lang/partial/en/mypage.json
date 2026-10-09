@@ -255,7 +255,8 @@
             "content_min_length": "Min. 10 characters",
             "image_label": "Attach Images (Max {{count}})",
             "add_image": "Add Image",
-            "submit_button": "Submit"
+            "submit_button": "Submit",
+            "rating_star": "{{count}} out of 5 stars"
         },
         "status": {
             "pending": "Pending Payment",

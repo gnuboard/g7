@@ -68,17 +68,15 @@ class MarketingSettingsController extends PublicBaseController
         $channels = $this->consentService->getRegisteredChannels();
         $locale = app()->getLocale();
 
+        // 라벨은 회원 응답(filterResourceData)과 같은 규칙으로 해석한다 — label_key 번역이 SSoT 이고 저장된 맵은 폴백이다.
+        // 저장된 맵만 읽으면 언어팩으로 늘어난 로케일(ja 등)에서 가입·프로필 수정 화면의 채널 이름이 ko 로 떨어진다.
         $data['channels'] = array_map(function (array $channel) use ($locale) {
             $slug = $channel['page_slug'] ?? '';
-            $labelRaw = $channel['label'] ?? [];
-            $labelString = is_array($labelRaw)
-                ? ($labelRaw[$locale] ?? $labelRaw[config('app.fallback_locale', 'ko')] ?? $channel['key'])
-                : (string) $labelRaw;
 
             return [
                 'key' => $channel['key'],
-                'label' => $labelString,
-                'label_i18n' => is_array($labelRaw) ? $labelRaw : ['ko' => $labelString, 'en' => $labelString],
+                'label' => $this->consentService->resolveChannelLabel($channel, $locale),
+                'label_i18n' => $this->consentService->localizedLabelMap($channel),
                 'enabled' => (bool) ($channel['enabled'] ?? true),
                 'terms_slug' => $slug ?: null,
                 'terms_slug_set' => ! empty($slug),

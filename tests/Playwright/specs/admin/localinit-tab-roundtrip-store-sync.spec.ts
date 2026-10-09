@@ -103,13 +103,39 @@ async function typeInto(page: Page, selector: string, value: string): Promise<vo
  * `page.goto` 를 쓰면 안 된다 — 전체 새로고침이라 모든 렌더러가 새로 마운트되고 전역 추적도
  * 초기화되어 재현 조건이 통째로 사라진다(실측: goto 왕복으로는 수정 전에도 결함이 안 뜬다).
  * 결함은 SPA 라우팅(탭 클릭)으로 URL 만 바뀌어 보존 컴포넌트의 저장소 A 가 살아남을 때 드러난다.
+ *
+ * 고친 것이 있으면 탭을 누를 때 「저장되지 않은 변경사항」 확인 창이 먼저 뜬다(7.1.0 조치 G2).
+ * - `confirm`: 사용자 경로 그대로 — 탭 클릭 → 확인 창 「저장하지 않고 이동」. 이 버튼은 「변경 있음」을 레이아웃에서 바로 끈다.
+ * - `direct`: 확인 창을 거치지 않고 고친 것이 없을 때의 바로 옮기기 순서(전역 탭 + navigate replace)를 그대로
+ *   실행한다. 「변경 있음」 정리가 레이아웃이 아니라 엔진(initLocal 정리, engine-v1.77.2)에서 오는지 볼 때 쓴다.
  */
-async function tabRoundTrip(page: Page): Promise<void> {
-  await page.getByRole('tab', { name: '마일리지' }).click();
+async function switchTab(page: Page, label: string, tab: string, via: 'confirm' | 'direct'): Promise<void> {
+  if (via === 'direct') {
+    await page.evaluate(async (t) => {
+      await (window as any).G7Core.dispatch({
+        handler: 'sequence',
+        actions: [
+          { handler: 'setState', params: { target: 'global', activeEcommerceSettingsTab: t } },
+          { handler: 'navigate', params: { path: '/admin/ecommerce/settings', replace: true, query: { tab: t } } },
+        ],
+      });
+    }, tab);
+    return;
+  }
+  await page.getByRole('tab', { name: label }).click();
+}
+
+async function tabRoundTrip(page: Page, via: 'confirm' | 'direct' = 'confirm'): Promise<void> {
+  await switchTab(page, '마일리지', 'mileage', via);
+  if (via === 'confirm') {
+    const leave = page.getByTestId('ecommerce-settings-unsaved-tab-leave');
+    await expect(leave).toBeVisible({ timeout: 10_000 });
+    await leave.click();
+  }
   await expect(page).toHaveURL(/tab=mileage/, { timeout: 15_000 });
   await expect(page.locator(FIELD_B)).toHaveCount(0, { timeout: 15_000 });
 
-  await page.getByRole('tab', { name: '주문설정' }).click();
+  await switchTab(page, '주문설정', 'order_settings', via);
   await expect(page).toHaveURL(/tab=order_settings/, { timeout: 15_000 });
   await expect(page.locator(FIELD_B)).toBeAttached({ timeout: 20_000 });
   await expect(page.locator(FIELD_A)).toBeAttached({ timeout: 20_000 });
@@ -264,7 +290,9 @@ test.describe('탭 왕복 후 저장소 A/B 동기화 (engine-v1.54.7)', () => {
     await typeInto(page, FIELD_A, other(serverA));
     await expect(save).toBeEnabled();
 
-    await tabRoundTrip(page);
+    // 확인 창의 「저장하지 않고 이동」은 레이아웃에서 「변경 있음」을 바로 끈다. 엔진 정리 경로만 보려고
+    // 확인 창을 거치지 않는 바로 옮기기 순서로 왕복한다
+    await tabRoundTrip(page, 'direct');
 
     await expect(page.locator(FIELD_A)).toHaveValue(serverA);
     // 수정 전에는 폼 소유 렌더러 저장소 A 의 hasChanges=true 가 남아 활성이었다

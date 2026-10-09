@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 183개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 135개 |
+| `partials` | 136개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -155,6 +155,7 @@
 | `_modal_privacy_run` | `partials` | partial | - |
 | `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
+| `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
 | `_tab_general` | `partials` | partial | - |
@@ -249,6 +250,8 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 
 **본인인증 메일 문구**(7.1.0~): 별도 편집 화면 없이 「알림 설정」 탭의 분류 칩 「본인인증」에서 일반 알림과 같은 카드·
 편집 모달로 다룹니다. 본인인증 탭의 「메시지」 하위 구획(`_tab_identity_messages`)은 그 자리로 가는 안내 상자만 남습니다.
+
+**본인인증 정책 목록의 검색·필터·쪽 넘김**(7.1.0~): `_tab_identity_policies` 의 목록 조작은 모두 `navigate`(replace)에 `refetch_data_sources="policies"` 를 붙여 정책 목록 소스만 다시 받습니다. 붙이지 않으면 쿼리 갱신이 설정 본체(`settings`, initLocal)까지 다시 받아 같은 탭 위쪽에서 고친 칸이 저장된 값으로 돌아가고 「변경 있음」이 풀립니다. 새 목록 조작을 더할 때도 같은 속성을 붙이고, 레이아웃 테스트 `admin-settings-unsaved-tab-confirm.test.ts` 가 이를 잠급니다.
 
 **에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
 `Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
@@ -593,6 +596,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_notification_template_preview.g7.html
 │           ├── _modal_password_confirm.g7.html
 │           ├── _modal_static_cache_republish.g7.html
+│           ├── _modal_unsaved_tab_switch.g7.html (저장하지 않은 변경이 있는 채 다른 탭을 누르면 여는 확인 창 — 게시판·이커머스 환경설정도 같은 창)
 │           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
 │           ├── _tab_identity_basic.g7.html (기본 정책)
 │           ├── _tab_identity_messages.g7.html (인증 메시지 — 알림 설정으로 옮겨졌다는 안내와 이동 링크)
@@ -913,6 +917,15 @@ modals:
   로 주소만 바꾼다(주소가 바뀌면 목록을 다시 받으므로 따로 `refetch-data-source` 하지 않는다). 종전의
   `_local.showHidden` 은 페이지를 넘기면 풀려 체크는 켜진 채 숨김을 뺀 목록을 받았고, `set-state` 직후 재조회가
   이전 값으로 나가 한 박자 늦게 반영됐다(#703). 이 값을 화면 상태로 되돌리지 않는다.
+- 템플릿 관리의 종류 탭 전환(`tab_navigation` 의 `change`)은 다른 주소(`/admin/templates/{type}`)로의 이동이라 쿼리를
+  넘기지 않지만, `include_hidden` 만은 `<query include_hidden="{{query.include_hidden === '1' ? '1' : undefined}}"/>` 로
+  이어 준다 — 보는 방식이지 목록 상태가 아니기 때문이다. 검색어·쪽은 탭마다 다른 목록이라 넘기지 않는다.
+- 설치·제거·업데이트·레이아웃 갱신·비활성화·강제 활성화 확인 창의 성공 갈래는 **`<close-modal/>` 을 먼저 하고 그 뒤에**
+  `selectedModule`·`selectedPlugin`·`selectedTemplate` 를 비운다. 순서를 거꾸로 두면 목록 재조회·확장 재로딩이 끝날 때까지
+  닫히는 창 문구의 확장 이름 자리가 빈 표시로 남았다. 회귀 고정: `__tests__/layouts/admin-extension-modal-close-keeps-name.test.ts`.
+- 레이아웃 편집기의 미리보기(레이아웃 파일·덮어쓰기형 확장 조각·주입형 조각 대상 고르는 창)는 서버가 템플릿 종류에 맞춰 내주는
+  `response.data.preview_url`(관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿 `/preview/{token}`)을 연다. 주소를
+  `/preview/{token}` 으로 고정하면 관리자 템플릿 레이아웃이 사용자 셸에서 활성 사용자 템플릿 자원으로 그려진다.
 - 이 체크는 최고관리자 전용이며 `data-if="{{current_user?.data?.is_super === true}}"` 로 가린다 — 관리자 로그인
   응답 전역 이름은 `current_user` 이고 값은 `data` 아래에 있다. 존재하지 않는 `currentUser` 를 읽어 최고관리자에게도
   체크가 보이지 않던 것을 #703 에서 바로잡았다.

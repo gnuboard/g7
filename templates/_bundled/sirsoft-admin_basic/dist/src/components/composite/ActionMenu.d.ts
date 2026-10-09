@@ -17,10 +17,18 @@ export interface ActionMenuItem {
 }
 export interface ActionMenuProps {
     items: ActionMenuItem[];
+    /** 트리거 글자. 생략하면 공용 문구 `common.actions`(화면 언어), 빈 문자열이면 아이콘만 그린다 */
     triggerLabel?: string;
-    /** 글자 없는 트리거의 접근 가능한 이름. 비우면 「더보기」(common.more_actions) */
-    triggerAriaLabel?: string;
     triggerIconName?: IconName;
+    /**
+     * 글자 없는 아이콘 트리거의 접근 가능한 이름 (aria-label)
+     *
+     * `triggerLabel` 이 비어 아이콘만 그려질 때 쓴다. 주지 않으면 공용 문구 `common.more_actions`(엔진 밖 `More actions`)로
+     * 채워 이름 없는 버튼을 남기지 않는다. 보이는 글자가 있으면 그 글자가 이름이므로 쓰지 않는다.
+     */
+    triggerAriaLabel?: string;
+    /** `triggerAriaLabel` 과 같은 뜻(DataGrid 행 메뉴가 열 머리글 이름을 넘긴다). 둘 다 있으면 `triggerAriaLabel` 이 앞선다 */
+    ariaLabel?: string;
     position?: 'left' | 'right';
     className?: string;
     style?: React.CSSProperties;

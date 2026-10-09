@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { TabNavigationScroll, Tab } from '../TabNavigationScroll';
 import * as scrollHandler from '../../../handlers/scrollToSectionHandler';
 
@@ -113,7 +113,7 @@ describe('TabNavigationScroll', () => {
   describe('기본 렌더링', () => {
     /**
      * @scenario case=c01
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_renders_tabs_and_initial_active
      */
     it('모든 탭을 렌더링해야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
@@ -126,7 +126,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c02
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_renders_tabs_and_initial_active
      */
     it('div 요소로 렌더링되어야 함', () => {
       const { container } = render(<TabNavigationScroll tabs={mockTabs} />);
@@ -137,7 +137,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c03
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_renders_tabs_and_initial_active
      */
     it('첫 번째 탭이 기본 활성화되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
@@ -148,7 +148,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c04
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_renders_tabs_and_initial_active
      */
     it('activeTabId가 설정된 탭이 활성화되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
@@ -161,7 +161,7 @@ describe('TabNavigationScroll', () => {
   describe('탭 클릭 이벤트', () => {
     /**
      * @scenario case=c05
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_click_scrolls_and_activates
      */
     it('탭 클릭 시 scrollToSectionHandler가 호출되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
@@ -183,7 +183,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c06
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_click_scrolls_and_activates
      */
     it('탭 클릭 시 활성 탭이 변경되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
@@ -196,7 +196,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c07
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_click_scrolls_and_activates
      */
     it('비활성화된 탭은 클릭할 수 없어야 함', () => {
       const tabsWithDisabled: Tab[] = [
@@ -214,7 +214,7 @@ describe('TabNavigationScroll', () => {
   describe('개별 탭 onClick 콜백 (우선순위 1)', () => {
     /**
      * @scenario case=c08
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('개별 탭 onClick이 있으면 실행하고 기본 동작 실행 안 함', () => {
       const individualOnClick = vi.fn();
@@ -236,7 +236,7 @@ describe('TabNavigationScroll', () => {
   describe('공통 onTabChange 콜백 (우선순위 2)', () => {
     /**
      * @scenario case=c09
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('onTabChange가 있으면 실행하고 기본 동작 실행 안 함', () => {
       const onTabChange = vi.fn();
@@ -252,7 +252,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c10
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('개별 onClick이 없고 onTabChange만 있으면 onTabChange 실행', () => {
       const onTabChange = vi.fn();
@@ -280,7 +280,7 @@ describe('TabNavigationScroll', () => {
   describe('개별 탭 스크롤 설정', () => {
     /**
      * @scenario case=c11
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_settings_per_tab
      */
     it('탭별로 다른 scrollOffset을 사용해야 함', () => {
       const tabsWithOffset: Tab[] = [
@@ -307,7 +307,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c12
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_settings_per_tab
      */
     it('탭별로 다른 scrollDelay를 사용해야 함', () => {
       const tabsWithDelay: Tab[] = [
@@ -336,7 +336,7 @@ describe('TabNavigationScroll', () => {
   describe('Scroll Spy 기능', () => {
     /**
      * @scenario case=c13
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_spy_activates_visible_section
      */
     it('enableScrollSpy가 false면 IntersectionObserver를 생성하지 않음', () => {
       render(<TabNavigationScroll tabs={mockTabs} enableScrollSpy={false} />);
@@ -347,7 +347,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c14
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_spy_activates_visible_section
      */
     it('enableScrollSpy가 true면 IntersectionObserver를 생성함', () => {
       render(<TabNavigationScroll tabs={mockTabs} enableScrollSpy={true} />);
@@ -358,7 +358,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c15
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_spy_activates_visible_section
      */
     it('섹션이 화면에 보이면 해당 탭이 활성화되어야 함', async () => {
       render(
@@ -388,7 +388,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c16
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_spy_activates_visible_section
      */
     it('숫자형 ID도 올바르게 처리해야 함', async () => {
       const numericTabs: Tab[] = [
@@ -422,7 +422,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c17
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_spy_activates_visible_section
      */
     it('존재하지 않는 탭 ID는 무시해야 함', async () => {
       render(
@@ -452,7 +452,7 @@ describe('TabNavigationScroll', () => {
   describe('스타일 커스터마이징', () => {
     /**
      * @scenario case=c18
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_style_customizable
      */
     it('className prop을 적용해야 함', () => {
       const { container } = render(
@@ -465,7 +465,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c19
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_style_customizable
      */
     it('style prop을 적용해야 함', () => {
       const { container } = render(
@@ -478,7 +478,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c20
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_style_customizable
      */
     it('activeClassName을 커스터마이징할 수 있어야 함', () => {
       render(
@@ -495,7 +495,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c21
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_style_customizable
      */
     it('inactiveClassName을 커스터마이징할 수 있어야 함', () => {
       render(
@@ -514,7 +514,7 @@ describe('TabNavigationScroll', () => {
   describe('scrollContainerId 커스터마이징', () => {
     /**
      * @scenario case=c22
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_container_custom
      */
     it('scrollContainerId가 지정되면 scrollToSectionHandler에 전달되어야 함', () => {
       render(
@@ -542,7 +542,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c23
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_container_custom
      */
     it('scrollContainerId가 없으면 params에 undefined로 전달되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
@@ -565,7 +565,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c24
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_container_custom
      */
     it('scrollContainerId가 지정되면 IntersectionObserver root를 해당 element로 설정해야 함', () => {
       const mockContainer = document.createElement('div');
@@ -616,7 +616,7 @@ describe('TabNavigationScroll', () => {
   describe('sectionIdPrefix 커스터마이징', () => {
     /**
      * @scenario case=c25
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_settings_per_tab
      */
     it('sectionIdPrefix를 변경할 수 있어야 함', () => {
       render(
@@ -645,7 +645,7 @@ describe('TabNavigationScroll', () => {
   describe('enableScrollSpy + onTabChange 조합', () => {
     /**
      * @scenario case=c26
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('enableScrollSpy=true이면 onTabChange 실행 후에도 스크롤이 실행되어야 함', () => {
       const onTabChange = vi.fn();
@@ -667,7 +667,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c27
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('enableScrollSpy=false이면 onTabChange 실행 후 스크롤 실행 안 함 (기존 동작)', () => {
       const onTabChange = vi.fn();
@@ -689,7 +689,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c28
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_callback_priority
      */
     it('enableScrollSpy=true + 개별 onClick이면 onClick 실행 후에도 스크롤이 실행되어야 함', () => {
       const individualOnClick = vi.fn();
@@ -720,7 +720,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c29
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_mobile_select_fallback
      */
     it('데스크톱 Nav 버튼 대신 Select 드롭다운만 렌더링해야 함', () => {
       const { container } = render(<TabNavigationScroll tabs={mockTabs} />);
@@ -732,7 +732,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c30
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_mobile_select_fallback
      */
     it('현재 활성 탭의 label을 Select trigger에 표시해야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
@@ -742,7 +742,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c31
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_mobile_select_fallback
      */
     it('Select trigger 클릭 → 옵션 선택 시 scrollToSectionHandler가 호출되어야 함', () => {
       const { container } = render(<TabNavigationScroll tabs={mockTabs} />);
@@ -767,7 +767,7 @@ describe('TabNavigationScroll', () => {
   describe('복합 시나리오', () => {
     /**
      * @scenario case=c32
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_scroll_settings_per_tab
      */
     it('개별 설정, 공통 설정, 기본값을 모두 함께 사용할 수 있어야 함', () => {
       const onTabChange = vi.fn();
@@ -819,7 +819,7 @@ describe('TabNavigationScroll', () => {
   describe('접근성 (WAI-ARIA Tabs)', () => {
     /**
      * @scenario case=c33
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_wai_aria_tabs_keyboard
      */
     it('목록은 tablist, 각 항목은 tab 으로 노출된다', () => {
       render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
@@ -830,7 +830,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c34
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_wai_aria_tabs_keyboard
      */
     it('활성 탭만 aria-selected=true 이고 Tab 키 초점을 받는다', () => {
       render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
@@ -844,7 +844,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c35
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_wai_aria_tabs_keyboard
      */
     it('좌우 화살표로 이동하며 비활성 탭은 건너뛴다', () => {
       const onTabChange = vi.fn();
@@ -863,7 +863,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c36
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_wai_aria_tabs_keyboard
      */
     it('Home/End 로 첫/마지막 탭으로 이동한다', () => {
       const onTabChange = vi.fn();
@@ -881,7 +881,7 @@ describe('TabNavigationScroll', () => {
 
     /**
      * @scenario case=c37
-     * @effects tab_navigation_scrolls
+     * @effects tab_navigation_scrolls, tab_nav_wai_aria_tabs_keyboard
      */
     it('모바일 전환 시에는 tablist/tab 을 두지 않는다', () => {
       setMobile();
@@ -933,6 +933,115 @@ describe('TabNavigationScroll', () => {
 
       expect(screen.queryAllByText('조건 거짓')).toHaveLength(0);
       expect(screen.getAllByText('조건 참').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('항목 조건(if)', () => {
+    // 확장이 inject_props 로 덧붙이는 탭(회원 상세 「반응」·「스크랩」 등)은 항목에 if 를 싣는다.
+    // 엔진은 그 표현식을 값(boolean 등)으로 풀어 넘기므로, 거짓인 항목은 탭 목록에서 빠져야 한다.
+    const conditionalTabs = [
+      { id: 'basic', label: '기본정보' },
+      { id: 'ext_board_scraps', label: '스크랩', if: true },
+      { id: 'ext_board_reactions', label: '반응', if: false },
+      { id: 'activity_info', label: '활동정보', if: undefined },
+      { id: 'ext_mileage', label: '마일리지', if: 'yes' },
+    ] as unknown as Tab[];
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_hides_items_with_falsy_if
+    it('if 가 거짓인 항목은 탭 버튼을 그리지 않는다', () => {
+      render(<TabNavigationScroll tabs={conditionalTabs} />);
+
+      const labels = screen.getAllByRole('tab').map((tab) => tab.textContent);
+      expect(labels).toEqual(['기본정보', '스크랩', '마일리지']);
+    });
+
+    // @scenario viewport=mobile
+    // @effects tab_nav_hides_items_with_falsy_if
+    it('모바일 선택 목록에서도 if 가 거짓인 항목을 뺀다', () => {
+      setMobile();
+      render(<TabNavigationScroll tabs={conditionalTabs} activeTabId="basic" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /기본정보/ }));
+      expect(screen.queryByText('반응')).not.toBeInTheDocument();
+      expect(screen.queryByText('활동정보')).not.toBeInTheDocument();
+      expect(screen.getAllByText('마일리지').length).toBeGreaterThan(0);
+    });
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_hides_items_with_falsy_if
+    it('화살표 이동은 숨긴 항목을 건너뛴다', () => {
+      const onTabChange = vi.fn();
+      render(
+        <TabNavigationScroll tabs={conditionalTabs} activeTabId="ext_board_scraps" onTabChange={onTabChange} />
+      );
+
+      fireEvent.keyDown(screen.getAllByRole('tab')[1], { key: 'ArrowRight' });
+      expect(onTabChange).toHaveBeenLastCalledWith('ext_mileage');
+    });
+  });
+
+  describe('누른 탭 고정 (Scroll Spy)', () => {
+    // 회원 상세에서 아래쪽 탭을 누르면 스크롤이 끝나기 전에 Scroll Spy 가 다시 켜져, 스크롤 도중·바닥 도달 때
+    // 보이는 다른 섹션(마지막 탭 등)이 활성으로 바뀌었다(7.1.0 실측 O-KF-2). 누른 탭은 사용자가 직접
+    // 스크롤(휠·터치·키보드)할 때까지 활성으로 남는다.
+    const spyTabs: Tab[] = [
+      { id: 'basic', label: '기본정보' },
+      { id: 'reactions', label: '반응' },
+      { id: 'shopping', label: '쇼핑 데이터' },
+    ];
+
+    /** 관찰 콜백에 섹션 교차를 흘린다 */
+    const intersect = (id: string, ratio: number) => {
+      observerCallback(
+        [{ isIntersecting: true, target: { id: `tab_content_${id}` } as HTMLElement, intersectionRatio: ratio } as IntersectionObserverEntry],
+        {} as any
+      );
+    };
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_clicked_tab_stays_active_until_user_scroll
+    it('누른 뒤 스크롤 지연이 지나도 다른 섹션이 더 보여도 누른 탭이 활성으로 남는다', async () => {
+      render(<TabNavigationScroll tabs={spyTabs} enableScrollSpy={true} activeTabId="basic" />);
+      fireEvent.click(getTabButton('반응')!);
+      // 종전 구현이 Scroll Spy 를 다시 켜던 시점(지연 100ms + 500ms)을 넘긴다
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      });
+      await act(async () => {
+        intersect('shopping', 0.9);
+      });
+      expect(getTabButton('반응')).toHaveAttribute('aria-selected', 'true');
+      expect(getTabButton('쇼핑 데이터')).toHaveAttribute('aria-selected', 'false');
+    });
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_clicked_tab_stays_active_until_user_scroll
+    it('사용자가 휠로 스크롤하면 다시 보이는 섹션을 따라간다', async () => {
+      render(<TabNavigationScroll tabs={spyTabs} enableScrollSpy={true} activeTabId="basic" />);
+      fireEvent.click(getTabButton('반응')!);
+      fireEvent.wheel(window, { deltaY: 120 });
+      intersect('shopping', 0.9);
+      await waitFor(() => {
+        expect(getTabButton('쇼핑 데이터')).toHaveAttribute('aria-selected', 'true');
+      });
+    });
+
+    // @scenario viewport=mobile
+    // @effects tab_nav_clicked_tab_stays_active_until_user_scroll
+    it('모바일 선택 목록으로 고른 탭도 고정된다', async () => {
+      setMobile();
+      render(<TabNavigationScroll tabs={spyTabs} enableScrollSpy={true} activeTabId="basic" />);
+      fireEvent.click(screen.getByRole('button', { name: /기본정보/ }));
+      fireEvent.click(screen.getByText('반응'));
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      });
+      await act(async () => {
+        intersect('shopping', 0.9);
+      });
+      expect(screen.getByRole('button', { name: /반응/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /쇼핑 데이터/ })).not.toBeInTheDocument();
     });
   });
 });

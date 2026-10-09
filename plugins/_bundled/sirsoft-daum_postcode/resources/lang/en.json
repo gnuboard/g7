@@ -42,11 +42,11 @@
       },
       "popup_width": {
         "label": "Popup Width (px)",
-        "hint": "Window width used in popup mode."
+        "hint": "Window width used in popup mode. (100–2000)"
       },
       "popup_height": {
         "label": "Popup Height (px)",
-        "hint": "Window height used in popup mode."
+        "hint": "Window height used in popup mode. (100–2000)"
       },
       "theme_color": {
         "label": "Theme Color",

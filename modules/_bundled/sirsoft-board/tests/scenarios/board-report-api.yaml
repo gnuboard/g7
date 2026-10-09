@@ -29,6 +29,7 @@ effects:
   - authenticated_user_can_report_comment
   - cannot_report_own_comment
   - cannot_report_blinded_comment
+  - report_create_activity_log_carries_reason_and_target_type
   - scope_by_status_with_enum
   - scope_by_status_with_string
   - scope_by_status_returns_empty_when_no_match

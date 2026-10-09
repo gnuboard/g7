@@ -339,6 +339,7 @@ class AttachmentServiceTest extends ModuleTestCase
                     && $data['temp_key'] === null
                     && str_starts_with($data['path'], "{$slug}/{$datePath}/")
                     && str_ends_with($data['path'], 'uuid1.pdf')
+                    && $data['order'] === 1
                     && isset($data['board_id']);
             }))
             ->andReturn(true);
@@ -354,6 +355,7 @@ class AttachmentServiceTest extends ModuleTestCase
                     && $data['temp_key'] === null
                     && str_starts_with($data['path'], "{$slug}/{$datePath}/")
                     && str_ends_with($data['path'], 'uuid2.jpg')
+                    && $data['order'] === 2
                     && isset($data['board_id']);
             }))
             ->andReturn(true);
@@ -366,6 +368,9 @@ class AttachmentServiceTest extends ModuleTestCase
             ->once()
             ->with($slug, $tempKey)
             ->andReturn($tempAttachments);
+
+        // 새 글이라 기존 첨부가 없다 — 번호는 1 부터 (수정 화면이면 기존 마지막 번호 뒤)
+        $this->repository->shouldReceive('getMaxOrder')->andReturn(0);
 
         // Storage: 파일 이동 (get + put + delete) x 2
         $this->storage
@@ -434,6 +439,7 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $this->repository->shouldReceive('getByTempKey')->once()->with($slug, $tempKey)
             ->andReturn(new EloquentCollection([$attachment]));
+        $this->repository->shouldReceive('getMaxOrder')->andReturn(0);
         $this->storage->shouldReceive('get')->once()->andReturn('zip-content');
         $this->storage->shouldReceive('put')->once()->andReturn(true);
         $this->storage->shouldReceive('delete')->once()->andReturn(true);
@@ -695,6 +701,9 @@ class AttachmentServiceTest extends ModuleTestCase
             3 => 2,
         ];
 
+        // 순서 변경은 대상 첨부를 하나씩 찾아 범위와 올린 사람을 확인한다(맵의 키가 첨부 ID)
+        $this->mockOwnedAttachmentsForReorder([1, 2, 3]);
+
         $this->repository
             ->shouldReceive('reorder')
             ->once()
@@ -731,6 +740,7 @@ class AttachmentServiceTest extends ModuleTestCase
             $afterReorderFired = true;
         });
 
+        $this->mockOwnedAttachmentsForReorder([1, 2]);
         $this->repository->shouldReceive('reorder')->andReturn(true);
 
         // Act
@@ -1049,5 +1059,22 @@ class AttachmentServiceTest extends ModuleTestCase
             ->andReturnNull();
 
         $this->assertNull($this->service->getUrl('notice', 99));
+    }
+
+    /**
+     * 순서 변경 대상 첨부를 현재 사용자가 올린 글 첨부로 돌려주도록 저장소를 설정합니다.
+     *
+     * @param  array<int, int>  $ids  첨부 ID 목록
+     * @return void 반환값 없음
+     */
+    private function mockOwnedAttachmentsForReorder(array $ids): void
+    {
+        foreach ($ids as $id) {
+            $attachment = new Attachment(['post_id' => 1, 'path' => "notice/file-{$id}.pdf", 'collection' => 'attachments']);
+            $attachment->id = $id;
+            $attachment->created_by = $this->user->id;
+
+            $this->repository->shouldReceive('findById')->with('notice', $id)->andReturn($attachment);
+        }
     }
 }

@@ -50,6 +50,7 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "props": {
+                                        "aria-label": "$t:common.edit",
                                         "type": "button",
                                         "className": "btn btn-icon btn-ghost"
                                     },
@@ -68,6 +69,7 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "props": {
+                                        "aria-label": "$t:common.delete",
                                         "type": "button",
                                         "className": "btn btn-icon btn-ghost"
                                     },
@@ -112,6 +114,7 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "props": {
+                                        "aria-label": "$t:common.edit",
                                         "type": "button",
                                         "className": "btn btn-icon btn-ghost"
                                     },
@@ -130,6 +133,7 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "props": {
+                                        "aria-label": "$t:common.delete",
                                         "type": "button",
                                         "className": "btn btn-icon btn-ghost"
                                     },

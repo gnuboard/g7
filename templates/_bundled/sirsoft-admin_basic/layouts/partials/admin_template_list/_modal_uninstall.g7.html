@@ -92,8 +92,9 @@
         <on type="click">
           <!-- 보존된 백업 안내를 본 뒤 닫는다 — 대상·데이터 삭제 선택·안내·백업 목록을 전부 비워야 다음에 다른 템플릿을 지울 때 이전 백업 경로가 남아 보이지 않는다. -->
           <sequence>
-            <set-state target="global" :selectedTemplate="null" :deleteTemplateData="false" :templateUninstallInfo="null" :templateUninstallBackups="null"/>
             <close-modal/>
+            <!-- 창을 먼저 닫고 선택을 비운다 — 먼저 비우면 닫히는 몇 초 동안 문구의 확장 이름 자리가 빈 표시로 보였다(7.1.0 O-G3-7). -->
+            <set-state target="global" :selectedTemplate="null" :deleteTemplateData="false" :templateUninstallInfo="null" :templateUninstallBackups="null"/>
           </sequence>
         </on>
         <span>$t:common.close</span>

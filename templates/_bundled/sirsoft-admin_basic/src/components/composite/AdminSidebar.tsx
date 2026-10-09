@@ -7,6 +7,13 @@ import { I } from '../basic/I';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 // G7Core 전역 객체 접근 헬퍼
 const G7Core = () => (window as any).G7Core;
 
@@ -76,7 +83,7 @@ export interface AdminSidebarProps {
  */
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   logo,
-  logoAlt = 'Logo',
+  logoAlt: logoAltProp,
   menu = [],
   collapsed = false,
   onToggleCollapse,
@@ -85,6 +92,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const logoAlt = logoAltProp ?? tOr('common.logo', 'Logo');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);

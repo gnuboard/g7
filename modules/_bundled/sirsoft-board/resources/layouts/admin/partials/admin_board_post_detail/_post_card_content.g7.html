@@ -139,43 +139,46 @@
       </div>
     </div>
     <div data-ref="attachments_section" data-if="{{post?.data?.has_attachment}}" class="panel-header-row">
-      <div data-ref="attachments_toggle" class="flex-between cursor-pointer">
+      <button data-ref="attachments_toggle" type="button" class="flex-between w-full text-left cursor-pointer" aria-expanded="{{!!_local.showAttachments}}" aria-controls="post_attachments_list">
         <on type="click">
           <!-- 첨부 목록을 폈다 접었다 한다 — 기본은 접힘이라 첨부가 많아도 본문이 밀리지 않는다 -->
           <set-state target="local" showAttachments="{{!_local.showAttachments}}"/>
         </on>
-        <div class="flex-center gap-2 text-body font-medium">
+        <span class="flex-center gap-2 text-body font-medium">
           <icon name="paperclip" class="text-base"/>
           <span>$t:sirsoft-board.admin.posts.detail.attachments|count={{post?.data?.attachment_count ?? 0}}</span>
-        </div>
+        </span>
         <icon name="{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}" class="text-base text-gray-500 dark:text-gray-400"/>
-      </div>
-      <div data-ref="attachments_list_{{index}}" data-if="{{_local.showAttachments}}" data-each="attachment, index in post?.data?.attachments ?? []" class="mt-3 ml-4 space-y-2">
-        <div data-ref="attachment_card_{{index}}" class="group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-          <on type="click">
-            <!-- 첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
-            <action handler="sirsoft-board.downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}">
-              <fail>
-                <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
-              </fail>
-            </action>
-          </on>
-          <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
-          <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700">
-            <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="w-full h-full object-cover"/>
-          </div>
-          <!-- 파일 아이콘 (일반 파일인 경우) -->
-          <div data-if="{{!attachment?.is_image}}" class="flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center">
-            <icon name="file" class="text-lg text-gray-400 dark:text-gray-500"/>
-          </div>
-          <!-- 파일 정보 -->
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{{attachment?.original_filename}}</div>
-            <div class="text-[10px] text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</div>
-          </div>
-          <!-- 다운로드 아이콘 -->
-          <div class="flex-shrink-0">
-            <icon name="download" class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"/>
+      </button>
+      <!-- 펼침 토글의 aria-controls 가 가리키는 목록 묶음 — 접혀 있어도 자리는 남아 가리키는 대상이 사라지지 않는다 -->
+      <div data-ref="post_attachments_list">
+        <div data-ref="attachments_list_{{index}}" data-if="{{_local.showAttachments}}" data-each="attachment, index in post?.data?.attachments ?? []" class="mt-3 ml-4 space-y-2">
+          <div data-ref="attachment_card_{{index}}" class="group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <on type="click">
+              <!-- 첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
+              <action handler="sirsoft-board.downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}">
+                <fail>
+                  <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
+                </fail>
+              </action>
+            </on>
+            <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
+            <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700">
+              <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="w-full h-full object-cover"/>
+            </div>
+            <!-- 파일 아이콘 (일반 파일인 경우) -->
+            <div data-if="{{!attachment?.is_image}}" class="flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center">
+              <icon name="file" class="text-lg text-gray-400 dark:text-gray-500"/>
+            </div>
+            <!-- 파일 정보 -->
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{{attachment?.original_filename}}</div>
+              <div class="text-[10px] text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</div>
+            </div>
+            <!-- 다운로드 아이콘 -->
+            <div class="flex-shrink-0">
+              <icon name="download" class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"/>
+            </div>
           </div>
         </div>
       </div>

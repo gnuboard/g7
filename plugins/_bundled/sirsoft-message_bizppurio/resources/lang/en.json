@@ -275,7 +275,9 @@
             "warning": "Delete the Bizppurio template settings of '{name}'. The Kakao-side template is deleted together only when it is in a deletable state (registered/rejected).",
             "btn_confirm": "Delete",
             "done_with_kakao": "Template deleted. (including the Kakao-side template)",
-            "done_db_only": "Template settings deleted. The Kakao-side template remains due to its state."
+            "done_db_only": "Template settings deleted. The Kakao-side template remains due to its state.",
+            "done_not_registered": "Template settings deleted.",
+            "done_kakao_failed": "Template settings deleted. The Kakao-side template could not be deleted —"
         }
     },
     "templates": {

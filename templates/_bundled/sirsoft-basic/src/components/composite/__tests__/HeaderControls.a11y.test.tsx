@@ -33,11 +33,12 @@ describe('사용자 머리말 단추 이름', () => {
    * @scenario control=header_controls
    * @effects header_controls_named_by_locale
    */
-  it('모바일 장바구니 단추(레이아웃)는 「장바구니」 이름을 갖는다', () => {
+  it('모바일 장바구니 단추(레이아웃)는 담긴 상품 수를 싣는 「장바구니」 이름을 갖는다', () => {
+    // PC 머리말(Header.tsx)과 같은 nav.cart_with_count — 배지 숫자만으로는 무엇의 수인지 읽히지 않는다
     const layout = require('../../../../layouts/_user_base.json');
     const json = JSON.stringify(layout);
     const idx = json.indexOf('"mobile_cart_btn"');
     expect(idx).toBeGreaterThan(-1);
-    expect(json.slice(Math.max(0, idx - 400), idx + 400)).toContain('$t:shop.cart.title');
+    expect(json.slice(Math.max(0, idx - 400), idx + 400)).toContain('$t:nav.cart_with_count|count=');
   });
 });

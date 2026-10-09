@@ -109,6 +109,23 @@
               }
             }
           ],
+          "boards": [
+            {
+              "id": 3,
+              "slug": "temp",
+              "name": "임시게시판"
+            },
+            {
+              "id": 2,
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            {
+              "id": 1,
+              "slug": "free",
+              "name": "자유게시판"
+            }
+          ],
           "abilities": {
             "can_manage": true
           },
@@ -121,27 +138,6 @@
             "to": 3,
             "has_more_pages": false
           }
-        }
-      },
-      "scrap_boards": {
-        "data": {
-          "data": [
-            {
-              "id": 1,
-              "name": "자유게시판",
-              "slug": "free"
-            },
-            {
-              "id": 2,
-              "name": "공지사항",
-              "slug": "notice"
-            },
-            {
-              "id": 3,
-              "name": "임시게시판",
-              "slug": "temp"
-            }
-          ]
         }
       },
       "posts": {
@@ -2026,31 +2022,27 @@
               "is_active": false
             }
           ],
+          "boards": [
+            {
+              "id": 3,
+              "slug": "temp",
+              "name": "임시게시판"
+            },
+            {
+              "id": 2,
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            {
+              "id": 1,
+              "slug": "free",
+              "name": "자유게시판"
+            }
+          ],
           "abilities": {
             "can_view": true,
             "can_manage": true
           }
-        }
-      },
-      "reaction_boards": {
-        "data": {
-          "data": [
-            {
-              "id": 1,
-              "name": "자유게시판",
-              "slug": "free"
-            },
-            {
-              "id": 2,
-              "name": "공지사항",
-              "slug": "notice"
-            },
-            {
-              "id": 3,
-              "name": "임시게시판",
-              "slug": "temp"
-            }
-          ]
         }
       },
       "privacyManualRuns": {

@@ -206,7 +206,9 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 
 <!-- @generated:end -->
 
-**설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다.
+**설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다. 다국어 `subject`·`body` 에서 지금 화면 언어 값을 비우면 422 `errors.subject`·`errors.body` 가 칸 이름과 언어 이름을 함께 알린다(「알림 제목의 한국어(ko) 값은 필수입니다.」·「알림 본문의 한국어(ko) 값은 필수입니다.」).
+
+**수신자 순서** `recipients` 는 보낸 규칙 순서 그대로 JSON 배열로 저장되고, 조회 응답(알림 정의 상세의 `templates[].recipients`)도 같은 순서의 배열로 나온다. 값 칸이 없는 규칙(`trigger_user`) 뒤에 값이 있는 규칙(`role` 등)을 보내도 순서가 바뀌지 않으며, 예전에 줄 번호 객체(`{"1":…,"0":…}`)로 저장된 행도 응답에서는 줄 번호 순서의 배열로 나온다.
 
 
 ### POST /api/admin/notification-templates/{template}/reset

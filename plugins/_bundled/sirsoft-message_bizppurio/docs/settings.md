@@ -27,6 +27,11 @@
 때만 아이디·비밀번호·API 키·발신번호를 요구합니다. 검수 모드에서는 비어 있어도 저장되어야
 합니다.
 
+같은 리스너가 저장 검증 때마다(검수·운영 모드 모두) 6개 항목의 이름을 요청 언어로 등록합니다
+(`messages.settings.{필드}_attribute`). 스키마 `label` 은 ko/en 만 들고 있어, 등록하지 않으면
+일본어 화면의 검증 오류에 한국어 항목 이름이 섞입니다. 설정 항목을 더하면 이 번역 키도 ko/en
+lang 과 언어팩에 함께 둡니다.
+
 크리덴셜 셋(`password` · `api_key` · `sender_key`)은 `frontend_schema` 에서 `expose: false`
 + `sensitive: true` 로 선언되어 **프론트엔드로 나가지 않습니다.** 관리자 설정 화면은 코어의
 `/api/admin/plugins/{id}/settings` 로 서버에서 직접 조회하므로 `window.G7Config` 노출이

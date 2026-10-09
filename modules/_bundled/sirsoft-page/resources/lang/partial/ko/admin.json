@@ -118,7 +118,8 @@
       "create_success": "페이지가 등록되었습니다.",
       "update_success": "페이지가 수정되었습니다.",
       "validation_error": "입력 정보를 확인해주세요.",
-      "read_only_message": "수정 권한이 없어 읽기 전용으로 표시됩니다."
+      "read_only_message": "수정 권한이 없어 읽기 전용으로 표시됩니다.",
+      "read_only_message_create": "등록 권한이 없어 읽기 전용으로 표시됩니다."
     },
     "attachment": {
       "download": "다운로드"

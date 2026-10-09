@@ -101,7 +101,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -121,7 +121,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "section-heading-md"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -153,7 +153,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.channels"
                                     }
@@ -317,7 +317,8 @@
                                                                                 "page_slug": "",
                                                                                 "enabled": true,
                                                                                 "is_system": false,
-                                                                                "_editing": false
+                                                                                "_editing": false,
+                                                                                "_labelTouched": false
                                                                             }
                                                                         }
                                                                     },
@@ -441,13 +442,13 @@
                                                                                 },
                                                                                 "children": [
                                                                                     {
-                                                                                        "comment": "채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다",
+                                                                                        "comment": "채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다",
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
                                                                                             "className": "text-heading"
                                                                                         },
-                                                                                        "text": "{{channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key}}"
+                                                                                        "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
@@ -556,7 +557,7 @@
                                                                                                 "handler": "setState",
                                                                                                 "params": {
                                                                                                     "target": "global",
-                                                                                                    "editingChannel": "{{{ ...channel, _editing: true }}}"
+                                                                                                    "editingChannel": "{{{ ...channel, _editing: true, _labelTouched: false }}}"
                                                                                                 }
                                                                                             },
                                                                                             {
@@ -661,7 +662,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.legal"
                                     }
@@ -1208,31 +1209,49 @@
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.label_ko"
                                 },
                                 {
-                                    "type": "composite",
-                                    "name": "MultilingualInput",
+                                    "id": "channel_label_field",
+                                    "type": "basic",
+                                    "name": "Div",
                                     "actions": [
                                         {
-                                            "comment": "채널 이름 — 로케일별로 입력받아 객체 그대로 담는다",
-                                            "event": "onChange",
+                                            "comment": "항목명 입력칸(언어 탭 포함)을 떠나면 그때부터 이름 필수 안내를 보인다 — 창을 막 연 입력 전에는 빨간 안내를 띄우지 않는다",
+                                            "type": "blur",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "editingChannel.label": "{{$args[0]?.target?.value ?? _global.editingChannel.label}}"
+                                                "editingChannel._labelTouched": true
                                             }
                                         }
                                     ],
-                                    "props": {
-                                        "value": "{{_global.editingChannel.label ?? {ko: '', en: ''}}}",
-                                        "layout": "tabs",
-                                        "name": "channel_label",
-                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
-                                    }
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "actions": [
+                                                {
+                                                    "comment": "채널 이름 — 로케일별로 입력받아 객체 그대로 담는다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "editingChannel.label": "{{$args[0]?.target?.value ?? _global.editingChannel.label}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.editingChannel.label ?? {ko: '', en: ''}}}",
+                                                "layout": "tabs",
+                                                "name": "channel_label",
+                                                "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
-                                    "comment": "이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다",
+                                    "comment": "이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다. 입력칸을 떠났거나 확정을 누른 뒤에만 보인다",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}",
+                                    "if": "{{(_global.editingChannel?._labelTouched ?? false) && String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
                                     "props": {
                                         "className": "text-error-soft mt-1"
                                     },
@@ -1319,33 +1338,47 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "편집 확정 —새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다",
+                                    "comment": "편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다)",
                                     "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
+                                    "handler": "conditions",
+                                    "conditions": [
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
+                                            "if": "{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "editingChannel._labelTouched": true
+                                                }
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "hasChanges": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
+                                            "then": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "$parent._local",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
                             ],
                             "props": {
                                 "type": "button",
-                                "disabled": "{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || String(_global.editingChannel?.label?.[$locale] ?? '').trim() === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
+                                "disabled": "{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
                                 "className": "btn btn-primary"
                             },
                             "children": [
@@ -1406,7 +1439,7 @@
                                     "props": {
                                         "className": "text-heading"
                                     },
-                                    "text": "{{blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key}} ({{blockedChannel.key}})"
+                                    "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})"
                                 }
                             ]
                         },

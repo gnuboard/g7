@@ -1,0 +1,25 @@
+feature: sirsoft-admin_basic LanguageSelector — 헤더 언어 메뉴의 listbox 구조와 키보드
+
+description: |
+  헤더 언어 단추는 aria-haspopup="listbox" 인데 펼친 항목은 역할 없는 단추라 화면 읽기 프로그램에 목록 항목으로
+  읽히지 않았다(7.1.0 O-PF-1, 결정 ⑬). 목록은 이름 있는 role="listbox"(단추가 aria-controls 로 가리킴),
+  항목은 role="option" + aria-selected 다. 단추에서 ↓/↑·Enter 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서
+  ↓/↑/Home/End 로 옮기며 Enter 로 고른다. Esc 는 목록을 닫고 단추로 초점을 돌린다. 현재 언어를 다시 고르면
+  요청 없이 닫힌다.
+
+axes:
+  case: [open_by_click, open_by_arrow, arrow_and_enter, escape, reselect_current]
+
+effects:
+  - listbox_named
+  - options_have_role
+  - selected_marked
+  - trigger_controls_listbox
+  - focus_on_selected_option
+  - arrow_moves_focus
+  - enter_selects
+  - escape_closes_and_returns_focus
+  - reselect_closes_without_request
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LanguageSelector.listbox.test.tsx

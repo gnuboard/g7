@@ -215,8 +215,8 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key)
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5'));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5_'.app()->getLocale()));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
@@ -336,6 +336,44 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         // created_at_formatted: 표시용 포맷 (비어있지 않은 문자열)
         $this->assertArrayHasKey('created_at_formatted', $item);
         $this->assertNotEmpty($item['created_at_formatted']);
+    }
+
+    /**
+     * 최근글·인기글 캐시는 언어와 무관하게 공유되지 않고, 시간에 따라 바뀌는 값은 응답 시점에 다시 센다.
+     *
+     * 2026-10-07 실측(O-K1-14·O-N4 → K4-D8): 캐시 키에 언어가 없어 영어 화면이 먼저 채운 캐시를
+     * 한국어 화면이 그대로 받아 게시판 이름·「10 minutes ago」가 영어로 나왔고, 「n분 전」·New 배지가
+     * 캐시를 채운 시점에 굳었다.
+     *
+     * @scenario listing=recent_posts, request_case=default
+     *
+     * @effects recent_and_popular_cache_follow_request_locale_and_time
+     *
+     * @return void 반환값 없음
+     */
+    public function test_recent_and_popular_cache_follow_request_locale_and_time(): void
+    {
+        $board = $this->createBoardWithPosts(1);
+        $board->update(['name' => ['ko' => '한국어 게시판', 'en' => 'English Board']]);
+        DB::table('board_posts')->where('board_id', $board->id)->update(['view_count' => 7]);
+
+        $recentEn = $this->withHeader('Accept-Language', 'en')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
+        $this->assertSame('English Board', $recentEn->json('data.0.board_name'));
+        $this->assertTrue((bool) $recentEn->json('data.0.is_new'));
+
+        $recentKo = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
+        $this->assertSame('한국어 게시판', $recentKo->json('data.0.board_name'), '영어로 채운 캐시가 한국어 응답에 섞였다');
+
+        $popularEn = $this->withHeader('Accept-Language', 'en')->getJson('/api/modules/sirsoft-board/boards/popular')->assertOk();
+        $popularKo = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/popular')->assertOk();
+        $this->assertSame('English Board', $popularEn->json('data.0.board_name'));
+        $this->assertSame('한국어 게시판', $popularKo->json('data.0.board_name'), '인기글 캐시도 언어가 섞였다');
+
+        // 캐시를 비우지 않은 채 25시간 뒤 — 신규 표시 기간(24시간)이 지나 New 가 꺼져야 한다
+        $this->travel(25)->hours();
+        $later = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
+        $this->assertFalse((bool) $later->json('data.0.is_new'), 'New 배지가 캐시를 채운 시점에 굳었다');
+        $this->assertSame($recentKo->json('data.0.id'), $later->json('data.0.id'));
     }
 
     /**

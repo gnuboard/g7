@@ -58,7 +58,7 @@
           <!-- 상품 옵션명 + 삭제 버튼 -->
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{item.options ? Object.values(item.options).join(' / ') : ''}}</span>
-            <button type="button" aria-label="$t:common.delete" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+            <button type="button" aria-label="$t:common.delete" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
               <on type="click">
                 <!-- 쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다 -->
                 <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_local.selectedOptionItems}}"/>

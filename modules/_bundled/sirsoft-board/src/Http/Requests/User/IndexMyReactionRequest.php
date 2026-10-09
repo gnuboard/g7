@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\FallsBackUnknownSearchField;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 마이페이지 「내 반응」 목록 조회 요청
@@ -12,6 +14,9 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IndexMyReactionRequest extends FormRequest
 {
+    use FallsBackUnknownSearchField;
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 검색 대상 목록.
      *
@@ -27,6 +32,16 @@ class IndexMyReactionRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * 허용 목록 밖의 검색 대상은 422 대신 기본 검색 대상(제목+내용)으로 바꿉니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->fallBackUnknownSearchField(self::SEARCH_FIELDS, 'title_content');
     }
 
     /**

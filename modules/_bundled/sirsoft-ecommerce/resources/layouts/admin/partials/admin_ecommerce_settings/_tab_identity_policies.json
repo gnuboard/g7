@@ -190,6 +190,7 @@
                     },
                     "children": [
                         {
+                            "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다.",
                             "type": "basic",
                             "name": "Select",
                             "actions": [
@@ -202,6 +203,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "ecommerceIdentityPolicies",
                                         "query": {
                                             "tab": "identity_policies",
                                             "scope": "{{$event.target.value || undefined}}",
@@ -218,6 +220,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
                                 "options": [
@@ -241,9 +244,19 @@
                             }
                         },
                         {
+                            "comment": "검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식.",
                             "type": "basic",
                             "name": "Input",
                             "actions": [
+                                {
+                                    "comment": "입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": "{{$event.target.value}}"
+                                    }
+                                },
                                 {
                                     "comment": "검색어 Enter. 필터와 같이 query 로 나가고 쪽을 1로 되돌린다.",
                                     "type": "keypress",
@@ -254,6 +267,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "ecommerceIdentityPolicies",
                                         "query": {
                                             "tab": "identity_policies",
                                             "search": "{{$event.target.value || undefined}}",
@@ -271,7 +285,8 @@
                             "props": {
                                 "type": "text",
                                 "name": "filter.search",
-                                "value": "{{query.search ?? ''}}",
+                                "autoBinding": false,
+                                "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
                                 "className": "input md:flex-1 md:min-w-[200px]"
                             }
@@ -281,10 +296,26 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "Enter 키와 같이 입력값을 쿼리로 실어 옮긴다 — 다시 받기만 하면 입력 중인 검색어가 반영되지 않는다.",
                                     "type": "click",
-                                    "handler": "refetchDataSource",
+                                    "handler": "navigate",
                                     "params": {
-                                        "dataSourceId": "ecommerceIdentityPolicies"
+                                        "path": "/admin/ecommerce/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "ecommerceIdentityPolicies",
+                                        "query": {
+                                            "tab": "identity_policies",
+                                            "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
                                     }
                                 }
                             ],
@@ -306,6 +337,15 @@
                             "if": "{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
                                 {
+                                    "comment": "입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": ""
+                                    }
+                                },
+                                {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "type": "click",
                                     "handler": "navigate",
@@ -314,6 +354,7 @@
                                         "replace": true,
                                         "mergeQuery": false,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "ecommerceIdentityPolicies",
                                         "query": {
                                             "tab": "identity_policies"
                                         },
@@ -1065,6 +1106,7 @@
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "ecommerceIdentityPolicies",
                                                         "query": {
                                                             "tab": "identity_policies",
                                                             "page": "{{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}"
@@ -1112,6 +1154,7 @@
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "ecommerceIdentityPolicies",
                                                         "query": {
                                                             "tab": "identity_policies",
                                                             "page": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"

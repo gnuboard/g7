@@ -64,4 +64,19 @@ class StorePageRequest extends FormRequest
             'published.boolean' => __('sirsoft-page::validation.published.boolean'),
         ];
     }
+
+    /**
+     * 검증 오류에 사용할 사용자 친화적 필드명
+     *
+     * @return array<string, string> 필드명 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return array_merge([
+            // 다국어 제목·본문 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다.
+            // 없으면 칸 이름 없이 「한국어(ko) 값은 필수입니다」만 나왔다(2026-10-07 실측)
+            'title' => __('sirsoft-page::validation.attributes.title'),
+            'content' => __('sirsoft-page::validation.attributes.content'),
+        ], $this->tempKeyAttributes());
+    }
 }

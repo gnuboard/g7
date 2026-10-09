@@ -229,7 +229,7 @@
             "snapshot_modal": {
                 "editor_label": "정책 버전 본문 보기",
                 "title": "정책 버전 v{version} 본문",
-                "description": "발행 시점 settings 의 카테고리 목록·개인정보처리방침 주소·차단 도메인 등 전체 본문입니다. DPO 가 동의 분쟁 시 입증 자료로 활용합니다.",
+                "description": "발행할 때 저장돼 있던 설정의 쿠키 카테고리 목록·개인정보처리방침 주소·차단 도메인 등 전체 내용입니다. 동의를 두고 다툼이 생기면 개인정보 보호책임자(DPO)가 입증 자료로 씁니다.",
                 "section_categories": "쿠키 카테고리",
                 "section_privacy_policy": "개인정보처리방침 주소",
                 "section_blocked_domains": "차단 도메인 카탈로그",
@@ -338,8 +338,8 @@
             "btn_renew_all": "현재 동의 갱신",
             "btn_renew_this_item": "정책 갱신",
             "renew_all_success": "활성 항목 {renewed} 개를 새 정책 버전으로 갱신했습니다.",
-            "operator_and_storage_meta": "본 사이트는 {entity}이(가) 운영하며, 데이터는 {location}에 저장됩니다",
-            "operator_only_meta": "본 사이트는 {entity}이(가) 운영합니다",
+            "operator_and_storage_meta": "본 사이트 운영자: {entity}, 데이터 저장 위치: {location}",
+            "operator_only_meta": "본 사이트 운영자: {entity}",
             "storage_only_meta": "사용자 데이터는 {location}에 저장됩니다"
         }
     },
@@ -362,8 +362,8 @@
         "preferences_description": "카테고리별 쿠키 사용을 개별 동의/철회할 수 있습니다. 필수 카테고리는 끌 수 없습니다.",
         "category_required_badge": "필수",
         "view_policy_label": "변경된 정책 본문 보기",
-        "operator_and_storage_line": "본 사이트는 {entity}이(가) 운영하며, 데이터는 {location}에 저장됩니다",
-        "operator_only_line": "본 사이트는 {entity}이(가) 운영합니다",
+        "operator_and_storage_line": "본 사이트 운영자: {entity}, 데이터 저장 위치: {location}",
+        "operator_only_line": "본 사이트 운영자: {entity}",
         "storage_only_line": "사용자 데이터는 {location}에 저장됩니다"
     },
     "annual_notice": {
@@ -463,7 +463,9 @@
             "btn_close": "닫기"
         },
         "card_description": "각 알림의 발송 채널을 고르고 채널별 제목·본문·수신자를 편집합니다. 이 확장이 들인 정의는 코어 「알림 정의」 화면에 나오지 않습니다.",
-        "empty_message": "등록된 알림 정의가 없습니다."
+        "empty_message": "등록된 알림 정의가 없습니다.",
+        "forbidden_message": "알림 템플릿을 볼 권한이 없습니다. 알림 설정을 바꿔야 하면 알림 관리 권한이 있는 관리자에게 요청하세요.",
+        "load_failed_message": "알림 정의를 불러오지 못했습니다. 잠시 뒤 화면을 새로 고쳐 다시 시도하세요."
     },
     "notification_channels": "발송 수단",
     "save_channels": "발송 수단 저장",

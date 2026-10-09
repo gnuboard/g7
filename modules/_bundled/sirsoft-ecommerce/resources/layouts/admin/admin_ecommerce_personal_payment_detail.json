@@ -799,6 +799,8 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
+                                                    "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
                                                     "type": "button",
                                                     "className": "btn btn-primary btn-icon"
                                                 },
@@ -1355,6 +1357,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.first_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -1374,6 +1377,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.prev_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -1402,6 +1406,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.next_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon"
                                                 },
@@ -1420,6 +1425,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.last_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon"
                                                 },

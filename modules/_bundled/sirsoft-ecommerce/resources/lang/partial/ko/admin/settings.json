@@ -1,6 +1,12 @@
 {
   "title": "쇼핑몰 환경설정",
   "description": "쇼핑몰의 기본 환경을 설정합니다.",
+  "unsaved_tab_modal": {
+    "title": "저장되지 않은 변경사항",
+    "message": "이 탭에서 고친 내용을 아직 저장하지 않았습니다. 다른 탭으로 옮기면 고친 내용이 사라지고 저장된 값으로 돌아갑니다.",
+    "btn_stay": "이 탭에 머무르기",
+    "btn_leave": "저장하지 않고 이동"
+  },
   "tabs": {
     "basic_info": "기본정보",
     "language_currency": "언어/통화",
@@ -781,11 +787,5 @@
       "preview_failed": "대상 건수를 불러오지 못했습니다.",
       "editor_label": "쇼핑몰 개인정보 보유기간 직권 실행"
     }
-  },
-  "unsaved_tab_change": {
-    "title": "저장하지 않은 변경이 있습니다",
-    "message": "저장하지 않은 변경이 있습니다 — 다른 탭으로 이동하면 사라집니다. 이동할까요?",
-    "stay": "머무르기",
-    "leave": "이동"
   }
 }

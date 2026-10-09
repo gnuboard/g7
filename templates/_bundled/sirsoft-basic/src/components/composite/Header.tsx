@@ -12,7 +12,7 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 
 // 기본 컴포넌트 import
 import { Div } from '../basic/Div';
@@ -190,6 +190,12 @@ const Header: React.FC<HeaderProps> = ({
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  // 언어 메뉴는 listbox 패턴이다(7.1.0 O-PF-1, 관리자 템플릿 LanguageSelector 와 같은 계약) — 단추가 aria-controls 로
+  // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
+  const langListboxId = `${useId()}-language-listbox`;
+  const langTriggerRef = useRef<HTMLButtonElement>(null);
+  const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const langPendingFocusRef = useRef<number | null>(null);
 
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
   const G7Core = (window as any).G7Core;
@@ -280,13 +286,82 @@ const Header: React.FC<HeaderProps> = ({
     });
   };
 
+  // 언어 메뉴가 열린 뒤 맡겨 둔 항목으로 초점을 옮긴다
+  useEffect(() => {
+    if (!showLangMenu || langPendingFocusRef.current === null) return;
+    langOptionRefs.current[langPendingFocusRef.current]?.focus();
+    langPendingFocusRef.current = null;
+  }, [showLangMenu]);
+
+  // 언어 메뉴를 연다 — 초점은 현재 언어 항목(없으면 where 쪽 끝 항목)
+  const openLangMenu = (where: 'first' | 'last' = 'first') => {
+    const locales = availableLocales ?? [];
+    const selected = locales.indexOf(currentLocale);
+    const index = selected >= 0 ? selected : (where === 'last' ? locales.length - 1 : 0);
+    if (showLangMenu) {
+      langOptionRefs.current[index]?.focus();
+      return;
+    }
+    langPendingFocusRef.current = index;
+    setShowLangMenu(true);
+  };
+
+  // 언어 메뉴를 닫는다(returnFocus 면 단추로 초점)
+  const closeLangMenu = (returnFocus: boolean) => {
+    setShowLangMenu(false);
+    if (returnFocus) langTriggerRef.current?.focus();
+  };
+
+  // 언어 단추 키보드 — ↓/↑ 는 목록을 열고 항목으로 들어간다(Enter·Space 는 단추 기본 동작인 클릭)
+  const handleLangTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      openLangMenu(event.key === 'ArrowUp' ? 'last' : 'first');
+    }
+  };
+
+  // 언어 목록 키보드 — 항목 사이 이동, Esc 로 닫기, Tab 으로 벗어나면 닫기
+  const handleLangListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const count = availableLocales?.length ?? 0;
+    if (count === 0) return;
+    const current = langOptionRefs.current.findIndex((el) => el === document.activeElement);
+    let next: number | null = null;
+    switch (event.key) {
+      case 'ArrowDown':
+        next = current < 0 ? 0 : (current + 1) % count;
+        break;
+      case 'ArrowUp':
+        next = current < 0 ? count - 1 : (current - 1 + count) % count;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = count - 1;
+        break;
+      case 'Escape':
+        event.preventDefault();
+        event.stopPropagation();
+        closeLangMenu(true);
+        return;
+      case 'Tab':
+        closeLangMenu(false);
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    langOptionRefs.current[next]?.focus();
+  };
+
   // 언어 변경 핸들러 — 헤더 독립 언어 버튼(코어 기능)에서 호출. setLocale 은 비회원도 동작.
   const handleLocaleChange = (locale: string) => {
     (window as any).G7Core?.dispatch?.({
       handler: 'setLocale',
       target: locale,
     });
-    setShowLangMenu(false);
+    // 고른 뒤 초점은 언어 단추로 돌린다(목록 항목이 사라지며 초점이 문서 맨 위로 빠지지 않게)
+    closeLangMenu(true);
   };
 
   // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전)
@@ -364,7 +439,7 @@ const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* 장바구니 */}
-            <Button onClick={() => navigate(`${shopBase}/cart`)} aria-label={t('shop.cart.title')} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+            <Button onClick={() => navigate(`${shopBase}/cart`)} aria-label={t('nav.cart_with_count', { count: cartCount })} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
               <Icon name="shopping-cart" className="w-5 h-5" />
               {cartCount > 0 && (
                 <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-500 dark:bg-blue-600 text-white rounded-full">
@@ -378,10 +453,13 @@ const Header: React.FC<HeaderProps> = ({
             {availableLocales && availableLocales.length > 1 && (
               <Div ref={langMenuRef} className="relative">
                 <Button
-                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  ref={langTriggerRef}
+                  onClick={() => (showLangMenu ? closeLangMenu(false) : openLangMenu())}
+                  onKeyDown={handleLangTriggerKeyDown}
                   className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                   aria-haspopup="listbox"
                   aria-expanded={showLangMenu}
+                  aria-controls={showLangMenu ? langListboxId : undefined}
                   aria-label={t('common.language')}
                 >
                   <Icon name="globe" className="w-4 h-4" />
@@ -390,16 +468,22 @@ const Header: React.FC<HeaderProps> = ({
                 </Button>
                 {showLangMenu && (
                   <Div
+                    id={langListboxId}
                     role="listbox"
+                    aria-label={t('common.language')}
+                    onKeyDown={handleLangListboxKeyDown}
                     className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50 overflow-hidden"
                   >
-                    {availableLocales.map((locale) => {
+                    {availableLocales.map((locale, index) => {
                       const isActive = locale === currentLocale;
                       return (
                         <Button
                           key={locale}
+                          ref={(el: HTMLButtonElement | null) => { langOptionRefs.current[index] = el; }}
+                          type="button"
                           role="option"
                           aria-selected={isActive}
+                          tabIndex={isActive ? 0 : -1}
                           onClick={() => handleLocaleChange(locale)}
                           className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors ${
                             isActive

@@ -58,11 +58,14 @@ return [
         'alimtalk_sender_key_missing' => 'Please set the Alimtalk sender profile key.',
     ],
 
-    // 설정 검증 — 운영(live) 환경 필수 자격증명 항목 라벨 (validation.attributes 병합용)
+    // 설정 검증 — 설정 항목 이름 (검증 오류 문구의 validation.attributes 병합용, 스키마 전 항목)
     'settings' => [
+        'is_test_mode_attribute' => 'Test Mode',
         'bizppurio_id_attribute' => 'Bizppurio ID',
         'password_attribute' => 'Password',
+        'api_key_attribute' => 'API Key',
         'sender_number_attribute' => 'Sender Number',
+        'sender_key_attribute' => 'Alimtalk Sender Profile Key',
     ],
 
     // webhook(URL PUSH) 리포트 수신
@@ -111,6 +114,11 @@ return [
         'cancel_approval_not_allowed' => 'Approval cannot be cancelled because the template is not approved. (current: :status)',
         'release_not_allowed' => 'The template is not dormant. (current: :status)',
         'code_generation_failed' => 'Failed to allocate a template code. Please try again later.',
+        // Lookup responses (list, summary, detail, AlimTalk categories and sender profiles, missing row)
+        'loaded' => 'Notification templates loaded.',
+        'not_found' => 'Notification template not found.',
+        'categories_loaded' => 'AlimTalk categories loaded.',
+        'profiles_loaded' => 'AlimTalk sender profiles loaded.',
     ],
 
     // Notification template validation (FormRequest — only documented limits; kapi is the final gate)
@@ -177,6 +185,11 @@ return [
             'page' => 'page',
             'per_page' => 'items per page',
         ],
+    ],
+
+    // Dispatch result lookup (DispatchResultController — result column of the notification log screen)
+    'dispatch_result' => [
+        'loaded' => 'Dispatch results loaded.',
     ],
 
     // Connection check (TokenCheckController response)

@@ -220,6 +220,8 @@ class PostResource extends BaseApiResource
      */
     private function getCommonFields(Request $request, ?string $slug): array
     {
+        $attachmentCount = $this->getVisibleAttachmentCount($request, $slug);
+
         return [
             'id' => $this->id,
             'category' => $this->category,
@@ -239,8 +241,8 @@ class PostResource extends BaseApiResource
             'view_count' => $this->view_count,
             'comment_count' => (int) ($this->comments_count ?? 0),
             'reply_count' => (int) ($this->replies_count ?? 0),
-            'attachment_count' => (int) ($this->attachments_count ?? 0),
-            'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
+            'attachment_count' => $attachmentCount,
+            'has_attachment' => $attachmentCount > 0,
             // 목록의 반응 표시는 «몇 명이 눌렀나» 한 숫자면 된다 — 유형별로 나눠 보여 줄 자리가
             // 없다. 캐시 컬럼(board_posts.reaction_counts)의 합이라 목록에서 COUNT 를 돌리지 않는다.
             // 반응을 끈 게시판에서는 키 자체를 싣지 않는다 — 캐시 컬럼을
@@ -337,16 +339,43 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 응답에 실을 첨부 개수를 반환합니다.
+     *
+     * 블라인드 글의 첨부 목록·서빙은 작성자·게시판 관리자에게만 주므로, 그 밖의 사람에게는 개수도 0 으로 싣는다.
+     * 개수가 남으면 목록의 클립 아이콘과 상세의 첨부 개수가 보이는데 파일은 받을 수 없다(2026-10-08 실측).
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return int 첨부 개수
+     */
+    private function getVisibleAttachmentCount(Request $request, ?string $slug): int
+    {
+        $count = (int) ($this->attachments_count ?? 0);
+
+        if ($count > 0 && $this->status === PostStatus::Blinded && ! $this->canViewBlindedContent($request, $slug)) {
+            return 0;
+        }
+
+        return $count;
+    }
+
+    /**
      * 썸네일 이미지 URL을 반환합니다.
      *
+     * @param  string|null  $slug  게시판 슬러그 (서명 주소 발급용)
+     * @param  bool  $signed  한시 서명 주소 발급 여부
      * @return string|null 썸네일 URL
      */
-    private function getThumbnailUrl(): ?string
+    private function getThumbnailUrl(?string $slug = null, bool $signed = false): ?string
     {
         $attachments = is_array($this->attachments) ? collect($this->attachments) : $this->attachments;
         $firstImage = $attachments
             ?->filter(fn ($attachment) => InlineMediaPolicy::isInlineImage($attachment?->mime_type))
             ?->first();
+
+        if ($firstImage && $signed && $slug && $firstImage->hash) {
+            return $firstImage->previewUrlForSlug($slug, signed: true);
+        }
 
         return $firstImage?->preview_url ?? null;
     }
@@ -371,19 +400,31 @@ class PostResource extends BaseApiResource
             return null;
         }
 
+        $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
+
+        // 블라인드 글: 첨부 서빙은 작성자·게시판 관리자만 받으므로 다른 사람 목록에는 썸네일 주소를 싣지 않는다.
+        // 실으면 카드형·갤러리형 목록 이미지가 깨지고(미리보기 403), 본문 이미지 폴백은 공개 서빙이라 그대로 새어 나간다.
+        if ($this->status === PostStatus::Blinded && ! $this->canViewBlindedContent(request(), $slug)) {
+            return null;
+        }
+
         $url = null;
+
+        // 비밀글·블라인드 글 썸네일은 서빙이 열람 권한자 인증을 요구하는데 <img> 요청에는 토큰이 실리지 않는다 —
+        // 상세의 첨부처럼 서명 주소로 내보내야 작성자·관리자 목록에서도 이미지가 보인다. 여기까지 온 비밀글·블라인드 글은
+        // 위 게이트를 통과한 열람 권한자 응답이다.
+        $signed = $this->is_secret || $this->status === PostStatus::Blinded;
 
         // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
         if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
             $attachment = $this->thumbnailAttachment;
-            $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
 
             if ($slug && $attachment->hash) {
-                $url = $attachment->previewUrlForSlug($slug);
+                $url = $attachment->previewUrlForSlug($slug, signed: $signed);
             }
         } elseif ($this->relationLoaded('attachments')) {
             // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
-            $url = $this->getThumbnailUrl();
+            $url = $this->getThumbnailUrl($slug, $signed);
         }
 
         // 이미지 첨부가 없을 때만 본문 첫 내부 이미지 캐시 폴백 (첨부 우선 정책)
@@ -737,7 +778,8 @@ class PostResource extends BaseApiResource
         // 비밀글·삭제글 첨부는 무서명 preview 가 서빙 게이트에 차단되므로,
         // 이 직렬화(게이트 통과가 확인된 응답)에 한해 <img> 렌더 가능한
         // 한시 서명 preview URL 을 발급한다. 정상글은 무서명 공개 URL 유지.
-        $signedPreviewSlug = ($this->deleted_at || $this->is_secret)
+        // 블라인드 글도 서빙 게이트가 무서명 preview 를 막으므로(작성자·관리자만) 같은 방식으로 서명한다.
+        $signedPreviewSlug = ($this->deleted_at || $this->is_secret || $this->status === PostStatus::Blinded)
             ? ($slug ?? $this->getSlug($request))
             : null;
 
@@ -751,6 +793,12 @@ class PostResource extends BaseApiResource
             )->values();
 
             return AttachmentResource::collectionFor($cascadeAttachments, $signedPreviewSlug);
+        }
+
+        // 블라인드 글: 본문처럼 첨부 목록도 작성자·게시판 관리자에게만 (화면이 첨부 영역을 숨겨도 응답에는
+        // 내려받기 주소가 실려 있었다 — 2026-10-07 실측)
+        if ($this->status === PostStatus::Blinded && ! $this->canViewBlindedContent($request, $slug)) {
+            return [];
         }
 
         if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {

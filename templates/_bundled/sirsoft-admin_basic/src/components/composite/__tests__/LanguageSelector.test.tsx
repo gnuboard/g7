@@ -87,7 +87,26 @@ describe('LanguageSelector', () => {
       const englishButton = screen.getByText('English');
       await user.click(englishButton);
 
-      expect(localeMock.change).toHaveBeenCalledWith('en');
+      expect(localeMock.change).toHaveBeenCalledWith('en', { persist: false });
+    });
+
+    // @scenario surface=language_selector_switch
+    // @effects member_language_saved_on_reselect
+    it('현재 언어를 다시 고르면 저장 요청을 직접 보내지 않고 코어 언어 전환에 맡겨 회원 언어를 맞춘다 (7.1.0 결정)', async () => {
+      // 다른 기기에서 바뀐 회원 언어(users.language)가 이 화면 언어와 갈려 있을 수 있다 — 코어 changeLocale 은
+      // 같은 언어면 화면은 그대로 두고 로그인 회원의 언어를 저장한다(engine-v1.79.0)
+      localStorage.setItem('g7_locale', 'ko');
+      const user = userEvent.setup();
+      render(<LanguageSelector availableLocales={['ko', 'en']} />);
+
+      await user.click(screen.getByRole('button'));
+      await user.click(screen.getByText('한국어'));
+
+      expect(localeMock.change).toHaveBeenCalledTimes(1);
+      expect(localeMock.change).toHaveBeenCalledWith('ko');
+      expect(apiMock.patch).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+      localStorage.removeItem('g7_locale');
     });
 
     // @scenario surface=language_selector_ui
@@ -384,7 +403,7 @@ describe('LanguageSelector', () => {
       await chooseEnglish();
 
       expect(localeMock.change).toHaveBeenCalledTimes(1);
-      expect(localeMock.change).toHaveBeenCalledWith('en');
+      expect(localeMock.change).toHaveBeenCalledWith('en', { persist: false });
       expect(touched).toBe(false);
     });
 
@@ -413,7 +432,7 @@ describe('LanguageSelector', () => {
 
       await chooseEnglish();
 
-      expect(localeMock.change).toHaveBeenCalledWith('en');
+      expect(localeMock.change).toHaveBeenCalledWith('en', { persist: false });
       warnSpy.mockRestore();
     });
   });

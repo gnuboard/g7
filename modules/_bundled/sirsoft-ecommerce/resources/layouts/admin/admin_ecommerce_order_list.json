@@ -522,7 +522,8 @@
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-icon",
-                                            "aria-label": "$t:common.refresh"
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh"
                                         },
                                         "children": [
                                             {

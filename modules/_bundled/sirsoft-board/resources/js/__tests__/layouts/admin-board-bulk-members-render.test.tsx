@@ -73,7 +73,7 @@ async function renderSection(global: Record<string, any>, readOnly = false) {
             locale: 'ko',
             templateId: 'test-template',
             translations: { 'sirsoft-board': { admin: { settings: koSettings } } },
-            initialData: { _computed: { isReadOnly: readOnly, boardOptions: [{ value: 1, label: '자유게시판' }] } },
+            initialData: { _computed: { isReadOnly: readOnly, bulkMembersLocked: readOnly, bulkMembersNoPermission: readOnly, boardOptions: [{ value: 1, label: '자유게시판' }] } },
         }
     );
 
@@ -131,7 +131,7 @@ describe('게시판 관리자·스텝 일괄 지정 카드 — 렌더 (#708)', (
 
     // @scenario member_type=manager, mode=remove, target=all
     // @effects bulk_members_card_renders_on_defaults_tab
-    it('읽기 전용 운영자에게는 라디오·회원 칸·「적용」 이 모두 잠긴다', async () => {
+    it('게시판 수정 권한이 없는 운영자에게는 라디오·회원 칸·「적용」 이 모두 잠기고 이유가 보인다', async () => {
         utils = await renderSection({ activeBoardSettingsTab: 'basic_defaults', boardBulkMembers: { all: true, userUuids: ['uuid-u1'] } }, true);
 
         expect(await screen.findByText(bulk.title)).toBeTruthy();
@@ -140,6 +140,7 @@ describe('게시판 관리자·스텝 일괄 지정 카드 — 렌더 (#708)', (
         }
         expect(screen.getByTestId('bulk_members_users_input').dataset.disabled).toBe('true');
         expect((document.getElementById('bulk_members_apply_button') as HTMLButtonElement).disabled).toBe(true);
+        expect(screen.getByText(bulk.no_permission)).toBeTruthy();
     });
 
     // @scenario member_type=manager, mode=add, target=all

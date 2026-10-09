@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
@@ -20,6 +21,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
  */
 class UploadAttachmentRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
     use ValidatesTempKey;

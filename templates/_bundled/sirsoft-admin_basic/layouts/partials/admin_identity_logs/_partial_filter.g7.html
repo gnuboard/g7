@@ -97,7 +97,7 @@
             <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
           </on>
         </input>
-        <span class="text-gray-400">~</span>
+        <span class="text-gray-400 dark:text-gray-500">~</span>
         <input type="date" aria-label="$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
           <on type="change">
             <!-- 종료일. 두 칸 다 비워 두면 기간 조건 없이 전체를 본다. -->
@@ -150,10 +150,10 @@
         <select name="sourceType" class="input w-48" value="{{_local.filter.sourceType || ''}}">
           <options>
             <option value="">$t:admin.identity.logs.filter.source_type_any</option>
-            <option value="core">$t:identity.policy.source_type.core</option>
-            <option value="module">$t:identity.policy.source_type.module</option>
-            <option value="plugin">$t:identity.policy.source_type.plugin</option>
-            <option value="admin">$t:identity.policy.source_type.admin</option>
+            <option value="core">$t:admin.identity.policies.source.core</option>
+            <option value="module">$t:admin.identity.policies.source.module</option>
+            <option value="plugin">$t:admin.identity.policies.source.plugin</option>
+            <option value="admin">$t:admin.identity.policies.source.admin</option>
           </options>
           <on type="change">
             <!-- 그 정책을 누가 등록했는지로 나눈다 — 코어가 심은 것, 확장이 들고 온 것, 관리자가 화면에서 만든 것. -->

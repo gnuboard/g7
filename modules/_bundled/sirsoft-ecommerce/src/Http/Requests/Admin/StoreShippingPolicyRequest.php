@@ -179,6 +179,7 @@ class StoreShippingPolicyRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.shipping_policy_name'),
             'country_settings.*.claim_fee_mode' => __('sirsoft-ecommerce::validation.request_attributes.claim_fee_mode'),
             'country_settings.*.return_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.return_fixed_fee'),
             'country_settings.*.exchange_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.exchange_fixed_fee'),

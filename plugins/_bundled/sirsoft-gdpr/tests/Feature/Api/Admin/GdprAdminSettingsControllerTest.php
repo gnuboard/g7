@@ -408,10 +408,105 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
         $this->assertNotEmpty($errors['privacy_policy_url'] ?? null);
         $this->assertStringContainsString('개인정보처리방침 주소', $errors['privacy_policy_url'][0]);
         $this->assertStringNotContainsString('privacy policy url', $errors['privacy_policy_url'][0]);
+        // 조사는 항목 이름에 붙인다 — 「개인정보처리방침 주소 에는」처럼 띄우면 문장이 어색하다.
+        $this->assertStringStartsWith('개인정보처리방침 주소에는 ', $errors['privacy_policy_url'][0]);
 
         $this->assertNotEmpty($errors['legal_entity_name'] ?? null);
         $this->assertStringContainsString('법인명 / 운영 주체', $errors['legal_entity_name'][0]);
         $this->assertStringNotContainsString('legal entity name', $errors['legal_entity_name'][0]);
+    }
+
+    /**
+     * 자동 통지를 켠 채 채널·상한을 비우면 「켜려면 무엇을 채워야 하는지」를 알리고, 코어 기본 문구의
+     * 괄호 조사(「개인정보 연간 통지이(가) 있을 때 … 필수입니다」)를 남기지 않는다.
+     *
+     * 요청이 칸별 문구를 정하지 않은 규칙(in·required_with)도 괄호 조사 없는 플러그인 문구로 떨어진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=admin_update
+     *
+     * @effects admin_update_validation_messages_read_naturally
+     */
+    public function test_update_annual_notice_and_choice_errors_read_without_bracketed_particles(): void
+    {
+        $user = $this->createPrivacyOperatorUser();
+        $url = '/api/plugins/sirsoft-gdpr/admin/settings';
+
+        foreach (['ko', 'en'] as $locale) {
+            app()->setLocale($locale);
+            $headers = ['Accept-Language' => $locale];
+
+            $errors = $this->actingAs($user)->withHeaders($headers)->putJson($url, [
+                'annual_notice' => ['enabled' => true, 'channels' => [], 'batch_size' => null],
+            ])->assertStatus(422)->json('errors');
+            $this->assertSame(
+                __('sirsoft-gdpr::messages.settings.fields.annual_notice_channels.required_when_enabled'),
+                $errors['annual_notice.channels'][0] ?? null,
+            );
+            $this->assertSame(
+                __('sirsoft-gdpr::messages.settings.fields.annual_notice_batch_size.required_when_enabled'),
+                $errors['annual_notice.batch_size'][0] ?? null,
+            );
+
+            // 키를 빠뜨린 요청(enabled 없음)·허용 밖 선택값(in) — 칸별 문구가 없는 규칙
+            $missing = $this->actingAs($user)->withHeaders($headers)->putJson($url, [
+                'annual_notice' => ['channels' => ['database'], 'batch_size' => 500],
+                'banner_position' => 'top_banner',
+            ])->assertStatus(422)->json('errors');
+            $unknown = $this->actingAs($user)->withHeaders($headers)->putJson($url, [
+                'annual_notice' => ['enabled' => true, 'channels' => ['sms'], 'batch_size' => 500],
+            ])->assertStatus(422)->json('errors');
+
+            foreach ([
+                $missing['annual_notice.enabled'][0] ?? '(없음)',
+                $missing['banner_position'][0] ?? '(없음)',
+                $unknown['annual_notice.channels.0'][0] ?? '(없음)',
+            ] as $message) {
+                $this->assertNotSame('(없음)', $message);
+                $this->assertDoesNotMatchRegularExpression('/[이을은과와]\([가를는과와]\)/u', $message, $message);
+                $this->assertStringNotContainsString('annual notice', $message);
+                $this->assertStringNotContainsString('is present', $message);
+            }
+        }
+    }
+
+    /**
+     * 통지문 서문이 상한(2000자)을 넘으면 오류가 한 건만 나오고, 어느 언어 칸인지 알린다.
+     *
+     * 종전에는 다국어 규칙(「'ko' 번역은 2000자를 …」)과 언어별 길이 규칙(「통지문 서문 필드는 …」)이
+     * 같은 뜻의 오류를 두 키(`annual_notice.introduction`·`.ko`)로 함께 냈다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=admin_update
+     *
+     * @effects admin_update_introduction_too_long_reports_single_error
+     */
+    public function test_update_too_long_introduction_reports_a_single_error_naming_the_language(): void
+    {
+        $user = $this->createPrivacyOperatorUser();
+        config(['app.translatable_locales' => ['ko', 'en']]);
+
+        // 언어 이름은 코어 언어 목록(config app.locale_names)의 자기 언어 표기를 쓴다 — 화면 언어 탭과 같다
+        foreach (['ko' => '한국어', 'en' => '한국어'] as $locale => $language) {
+            app()->setLocale($locale);
+
+            $errors = $this->actingAs($user)->withHeaders(['Accept-Language' => $locale])
+                ->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+                    'annual_notice' => [
+                        'enabled' => true, 'channels' => ['database'], 'batch_size' => 500,
+                        'introduction' => ['ko' => str_repeat('가', 2001), 'en' => 'Notice'],
+                    ],
+                ])->assertStatus(422)->json('errors');
+
+            $keys = array_values(array_filter(array_keys($errors), fn (string $key) => str_starts_with($key, 'annual_notice.introduction')));
+            $this->assertSame(['annual_notice.introduction.ko'], $keys);
+            $this->assertCount(1, $errors['annual_notice.introduction.ko']);
+            $this->assertStringContainsString(__('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label'), $errors['annual_notice.introduction.ko'][0]);
+            $this->assertStringContainsString($language, $errors['annual_notice.introduction.ko'][0]);
+            $this->assertStringContainsString('2000', $errors['annual_notice.introduction.ko'][0]);
+        }
     }
 
     /**
@@ -1024,6 +1119,80 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 저장 페이로드를 가로채는 PluginSettingsService mock 을 등록합니다.
      *
      * @return object 저장된 페이로드를 담는 컨테이너 (`value` 프로퍼티)
+     */
+    /**
+     * 쿠키 카테고리 키를 보내지 않은 저장은 저장된 카탈로그를 건드리지 않는다.
+     *
+     * 예전에는 키가 없어도 null 로 채워 저장해, 다른 항목만 고친 저장 한 번이 카탈로그를 지웠다.
+     * 그 뒤 관리자 화면은 카테고리 카드와 차단 도메인 입력칸을 하나도 그리지 못했다.
+     *
+     * 트러블슈팅 `[case:backend-53]` 의 회귀 그물이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=admin_update
+     *
+     * @effects admin_update_without_cookie_categories_leaves_them_untouched
+     */
+    public function test_update_without_cookie_categories_key_leaves_them_untouched(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        $this->actingAs($user)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'banner_enabled' => true,
+        ])->assertOk();
+
+        $this->assertArrayNotHasKey('cookie_categories', $captured->value);
+    }
+
+    /**
+     * 저장된 쿠키 카테고리가 비어 있으면 관리자 조회도 공개 응답과 같은 기본 카탈로그를 싣는다.
+     *
+     * 관리자 화면은 이 값으로 카테고리 카드와 카테고리별 차단 도메인 입력칸을 그린다 — null 이 오면
+     * 두 곳이 통째로 사라져 운영자가 차단 도메인을 고칠 길이 없다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=admin_show
+     *
+     * @effects admin_show_fills_default_categories_when_stored_value_empty
+     */
+    public function test_show_fills_default_categories_when_stored_value_is_empty(): void
+    {
+        foreach ([null, '[]', ''] as $stored) {
+            $values = ['banner_enabled' => true, 'cookie_categories' => $stored];
+
+            $mock = $this->createMock(PluginSettingsService::class);
+            $mock->method('get')->willReturnCallback(
+                function (string $id, ?string $key = null, mixed $default = null) use ($values) {
+                    if ($key === null) {
+                        return $values;
+                    }
+
+                    return array_key_exists($key, $values) ? $values[$key] : $default;
+                }
+            );
+            $this->app->instance(PluginSettingsService::class, $mock);
+
+            $user = $this->createPrivacyOperatorUser();
+
+            $response = $this->actingAs($user)->getJson('/api/plugins/sirsoft-gdpr/admin/settings');
+
+            $response->assertOk();
+            $this->assertSame(
+                ['necessary', 'functional', 'analytics', 'marketing'],
+                array_column($response->json('data.settings.cookie_categories') ?? [], 'key'),
+                '저장값 '.var_export($stored, true).' 일 때도 기본 카탈로그 4종이 실려야 한다',
+            );
+        }
+    }
+
+    /**
+     * 설정 저장 서비스를 가짜로 바꿔, 저장에 넘어온 값을 잡아 둡니다.
+     *
+     * @return object 마지막 저장 값을 `value` 속성으로 담는 객체
      */
     private function captureSave(): object
     {

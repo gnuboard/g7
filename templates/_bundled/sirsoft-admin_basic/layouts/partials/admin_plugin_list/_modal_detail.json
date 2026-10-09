@@ -985,6 +985,15 @@
                                             ]
                                         },
                                         {
+                                            "comment": "이 칸은 플러그인이 getHooks() 로 선언해 다른 확장에 제공하는 훅만 보여 준다(구독하는 훅은 싣지 않는다) — 필터 칸과 같이 설명을 둬 「구독 훅이 비어 보인다」는 오해를 막는다",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary mb-2"
+                                            },
+                                            "text": "$t:admin.plugins.modals.hooks_description"
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "P",
                                             "if": "{{!_global.selectedPlugin.hooks || _global.selectedPlugin.hooks.filter(h => h.type === 'action').length === 0}}",

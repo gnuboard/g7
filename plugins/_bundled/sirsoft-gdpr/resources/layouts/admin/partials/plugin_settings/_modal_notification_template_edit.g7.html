@@ -158,14 +158,15 @@
                   </searchable-dropdown>
                 </div>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="flex-center gap-2">
-                  <toggle data-type="composite" checked="{{rcpt.exclude_trigger_user ?? false}}">
+                  <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
+                       이름 없는 스위치로 읽혔다(7.1.0 실측 M1-O14). label 이 스위치 옆 글자도 함께 그린다. -->
+                  <toggle data-type="composite" label="$t:admin.settings.notification_definitions.recipients.exclude_trigger_user" checked="{{rcpt.exclude_trigger_user ?? false}}">
                     <on type="change">
                       <!-- 행위자 제외 — 그 일을 벌인 본인에게는 보내지 않는다(자기 행동을 자기가 통보받지
                            않게). 역할·특정 회원 규칙에만 있는 칸이고, 현재 값을 뒤집어 담는다. -->
                       <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"/>
                     </on>
                   </toggle>
-                  <span class="text-secondary text-xs">$t:admin.settings.notification_definitions.recipients.exclude_trigger_user</span>
                 </div>
               </div>
             </div>

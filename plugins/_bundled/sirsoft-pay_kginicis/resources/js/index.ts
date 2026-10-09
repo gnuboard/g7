@@ -6,6 +6,8 @@
  * (resources/extensions/*.g7.html)이 맡고, 주문서 결제수단 제한은 서버 훅(RestrictPaymentMethodsForCurrencyListener)이
  * 맡는다 — 이 엔트리는 화면을 엿보거나 남의 요청을 가로채지 않는다.
  */
+// 설정 화면 안내 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { handlerMap } from './handlers';
 import {
     installPaymentCloseMessageListener,

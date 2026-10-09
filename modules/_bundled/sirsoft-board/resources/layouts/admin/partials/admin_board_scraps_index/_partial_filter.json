@@ -199,7 +199,7 @@
                                     "type": "basic",
                                     "name": "Option",
                                     "iteration": {
-                                        "source": "{{scrap_boards?.data?.data ?? []}}",
+                                        "source": "{{scraps?.data?.boards ?? []}}",
                                         "item_var": "b"
                                     },
                                     "props": {

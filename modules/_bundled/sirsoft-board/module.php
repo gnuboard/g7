@@ -1275,12 +1275,12 @@ class Module extends AbstractModule
                     'channel' => 'mail',
                     'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => [
-                        'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
+                        'ko' => '[{board_name}] \'{post_title}\' {target_type} {action_type} 처리 안내',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
                     ],
                     'body' => [
                         'ko' => '<h1>{name}님, 안녕하세요.</h1>'
-                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}이(가) 관리자에 의해 <strong>{action_type}</strong> 처리되었습니다.</p>'
+                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}에 대해 관리자가 <strong>{action_type}</strong> 처리를 했습니다.</p>'
                             .'<p>문의사항이 있으시면 관리자에게 연락해 주세요.</p>'
                             .$this->notificationButton('게시글 보기', '{post_url}')
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1294,8 +1294,8 @@ class Module extends AbstractModule
                 [
                     'channel' => 'database',
                     'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
-                    'subject' => ['ko' => '{target_type}이(가) 처리되었습니다', 'en' => 'Your {target_type} has been actioned'],
-                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
+                    'subject' => ['ko' => '{target_type} 처리 안내', 'en' => 'Your {target_type} has been actioned'],
+                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}에 대해 {action_type} 처리를 했습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',
                 ],
             ],
@@ -1449,12 +1449,12 @@ class Module extends AbstractModule
                     'channel' => 'mail',
                     'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => [
-                        'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
+                        'ko' => '[{board_name}] \'{post_title}\' {target_type} {action_type} 처리 안내',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
                     ],
                     'body' => [
                         'ko' => '<h1>{name}님, 안녕하세요.</h1>'
-                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}이(가) 신고 처리에 의해 <strong>{action_type}</strong> 처리되었습니다.</p>'
+                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}에 대해 신고 처리로 <strong>{action_type}</strong> 조치가 이루어졌습니다.</p>'
                             .'<p>문의사항이 있으시면 관리자에게 연락해 주세요.</p>'
                             .$this->notificationButton('게시글 보기', '{post_url}')
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1469,7 +1469,7 @@ class Module extends AbstractModule
                     'channel' => 'database',
                     'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => ['ko' => '신고 처리 결과 안내', 'en' => 'Report action result'],
-                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
+                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}에 대해 {action_type} 처리를 했습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',
                 ],
             ],

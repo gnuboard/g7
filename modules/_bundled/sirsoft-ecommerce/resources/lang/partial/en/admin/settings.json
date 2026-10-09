@@ -1,6 +1,12 @@
 {
   "title": "Shop Settings",
   "description": "Configure basic shop settings.",
+  "unsaved_tab_modal": {
+    "title": "Unsaved changes",
+    "message": "You have unsaved changes on this tab. If you switch tabs, your changes will be discarded and the saved values will be restored.",
+    "btn_stay": "Stay on this tab",
+    "btn_leave": "Leave without saving"
+  },
   "tabs": {
     "basic_info": "Basic Info",
     "language_currency": "Language/Currency",
@@ -783,11 +789,5 @@
       "preview_failed": "Could not load the target count.",
       "editor_label": "Shop retention manual run"
     }
-  },
-  "unsaved_tab_change": {
-    "title": "You have unsaved changes",
-    "message": "You have unsaved changes — they will be lost if you move to another tab. Do you want to move?",
-    "stay": "Stay",
-    "leave": "Move"
   }
 }

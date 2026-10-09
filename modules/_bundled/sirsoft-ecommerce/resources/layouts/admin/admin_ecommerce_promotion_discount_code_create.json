@@ -86,6 +86,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.back",
                                             "type": "button",
                                             "className": "btn btn-icon"
                                         },

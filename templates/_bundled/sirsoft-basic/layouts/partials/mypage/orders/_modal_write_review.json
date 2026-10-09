@@ -129,6 +129,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=1",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 1}}",
                                         "type": "button",
                                         "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                                     },
@@ -159,6 +161,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=2",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 2}}",
                                         "type": "button",
                                         "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                                     },
@@ -189,6 +193,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=3",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 3}}",
                                         "type": "button",
                                         "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                                     },
@@ -219,6 +225,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=4",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 4}}",
                                         "type": "button",
                                         "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                                     },
@@ -249,6 +257,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=5",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 5}}",
                                         "type": "button",
                                         "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                                     },

@@ -771,7 +771,7 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 | page | query | integer | 아니오 | min 1 | 페이지 번호 |
 | per_page | query | integer | 아니오 | 1~100 (기본 10) | 페이지당 건수 |
 | search | query | string | 아니오 | max 255 | 검색어 |
-| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content`, `reason` | 검색 대상. 규칙 밖이면 422 |
+| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content`, `reason` | 검색 대상. 규칙 밖의 값은 기본값 `title_content` 로 처리 |
 | target_type | query | string | 아니오 | `post`, `comment` | 대상 구분 필터 |
 | status | query | string | 아니오 | `pending`, `review`, `rejected`, `suspended`, `deleted` | 처리 상태 필터 |
 | board_slug | query | string | 아니오 | max 50 | 게시판 필터 |

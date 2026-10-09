@@ -26,6 +26,7 @@ effects:
   - can_fetch_activity_stats
   - guest_cannot_fetch_activity_stats
   - stats_comments_on_deleted_posts_are_excluded
+  - stats_total_comments_counts_comments_written_by_user
   - can_sort_activities
   - deleted_posts_are_excluded_from_activities
   - pagination_works

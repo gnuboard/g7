@@ -99,7 +99,7 @@ HTTP/1.1 200
 | 422 (연결 실패) | 비즈뿌리오 서버에 닿지 못한 경우(타임아웃·DNS·프록시) | `messages.error.connection_failed` 안내, errors 없음. 행 상태는 바뀌지 않는다 |
 | 422 (상태 전이 위반) | 현재 상태에서 허용되지 않는 액션인 경우 | 위반 사유 메시지 (예: "현재 상태(requested)에서는 알림톡 내용을 수정할 수 없습니다. …") |
 | 422 (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 | `error.errors` 에 필드별 메시지 |
-| 404 | `{id}` 에 해당하는 템플릿이 없는 경우 | `messages.not_found` |
+| 404 | `{id}` 에 해당하는 템플릿이 없는 경우 | `messages.template.not_found`(「알림 템플릿을 찾을 수 없습니다.」) |
 | 401 / 403 | 토큰 없음·만료 / 요구 권한 없음 | 표준 |
 
 kapi 실패 422 응답 예시:
@@ -179,7 +179,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "templates": [
             {
@@ -269,7 +269,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "templates": {
             "order_completed": {
@@ -354,7 +354,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "알림 템플릿을 불러왔습니다.",
     "data": {
         "template": {
             "id": 3,

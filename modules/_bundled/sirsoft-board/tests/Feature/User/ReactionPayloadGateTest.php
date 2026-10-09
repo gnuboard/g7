@@ -72,7 +72,7 @@ class ReactionPayloadGateTest extends BoardTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @return string 문자열
      */
@@ -82,7 +82,7 @@ class ReactionPayloadGateTest extends BoardTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @param  $postId  postId 값
      * @return string 문자열
@@ -310,6 +310,54 @@ class ReactionPayloadGateTest extends BoardTestCase
         $row = collect($rows)->firstWhere('id', $postId);
 
         $this->assertSame(5, $row['reaction_total']);
+    }
+
+    /**
+     * 홈 최근 게시글 위젯 — 캐시된 뒤에 반응을 남기거나 지워도 반응 수가 곧바로 맞는다.
+     *
+     * 위젯 목록은 `board-posts` 태그로 하루 동안 캐시된다. 반응 처리 경로가 이 태그를
+     * 비우지 않으면, 회원이 반응을 남긴 뒤에도 홈에는 이전 반응 수(0)가 계속 보인다.
+     *
+     * @scenario case=register_first_like
+     *
+     * @effects recent_posts_widget_reaction_total_refreshes_after_react
+     *
+     * @return void 반환값 없음
+     */
+    public function test_recent_posts_widget_reaction_total_refreshes_after_react(): void
+    {
+        $author = $this->createUser();
+        $reactor = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $author->id]);
+
+        $this->setGuestPermissions(['posts.read']);
+        $this->grantUserRolePermissions(['posts.read']);
+
+        $recentTotal = function () use ($postId): ?int {
+            $row = collect($this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=20')->assertOk()->json('data'))
+                ->firstWhere('id', $postId);
+
+            return $row['reaction_total'] ?? null;
+        };
+
+        // 첫 조회가 위젯 목록을 캐시에 담는다.
+        $this->assertSame(0, $recentTotal());
+
+        $this->actingAs($reactor, 'sanctum')
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/react", ['reaction_type_id' => $this->likeId])
+            ->assertOk();
+        $this->app['auth']->forgetGuards();
+
+        $this->assertSame(1, $recentTotal(), '반응을 남긴 뒤 위젯의 반응 수가 갱신되어야 한다.');
+
+        // 마이페이지에서 해제해도 위젯이 따라온다.
+        $reactionId = (int) DB::table('board_reactions')->where('user_id', $reactor->id)->value('id');
+        $this->actingAs($reactor, 'sanctum')
+            ->deleteJson("/api/modules/sirsoft-board/me/reactions/{$reactionId}")
+            ->assertOk();
+        $this->app['auth']->forgetGuards();
+
+        $this->assertSame(0, $recentTotal(), '반응을 해제한 뒤 위젯의 반응 수가 갱신되어야 한다.');
     }
 
     /**

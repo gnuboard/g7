@@ -214,7 +214,7 @@
 | `_modal_notification_template_preview` | `admin` | partial | - |
 | `_modal_privacy_run` | `admin` | partial | - |
 | `_modal_privacy_targets` | `admin` | partial | - |
-| `_modal_unsaved_tab_change` | `admin` | partial | - |
+| `_modal_unsaved_tab_switch` | `admin` | partial | - |
 | `_payment_methods_cards` | `admin` | partial | - |
 | `_payment_methods_list` | `admin` | partial | - |
 | `_refund_reason_cards` | `admin` | partial | - |
@@ -315,9 +315,9 @@
 칸 값이 직전 선택의 자동 값 그대로면 새 선택 기준으로 바꾸고(섞이면 비움), 운영자가 고쳐 적은 값은 둡니다.
 
 환경설정의 탭 전환은 같은 화면으로의 재진입(`navigate replace`)이라 설정 소스가 `refetchOnMount` 로 다시 받아 폼을
-덮습니다. 그래서 탭 줄은 `_local.hasChanges` 가 참이면 옮기지 않고 확인 창(`_modal_unsaved_tab_change`)을 엽니다 —
+덮습니다. 그래서 탭 줄은 `_local.hasChanges` 가 참이고 지금 탭이 아닌 탭을 누르면 옮기지 않고 확인 창(`_modal_unsaved_tab_switch`, 코어·게시판 환경설정과 같은 공통 창)을 엽니다 —
 가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 창의 [이동] 은 창이 자기 지역 상태를 따로 가지므로
-`$parent._local` 에 탭 줄 「변경 없음」 갈래와 **같은 정리 목록**(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false` 를
+전역 `_local`(저장 가드가 읽는 자리)과 `$parent._local`(화면 폼이 읽는 자리)에 탭 줄 「변경 없음」 갈래와 **같은 정리 목록**(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false` 를
 쓰고 옮깁니다. 인라인 폼이 새로 생기면 두 목록을 함께 고칩니다(회귀 테스트가 키 일치를 단언). 창에서 사건(`emit-event`)을
 보내 부모의 `<on listen>` 하나로 모으는 방식은 쓰지 않습니다 — 엔진의 컴포넌트 사건 구독이 `handler`·`params` 만 넘겨
 `sequence` 를 받는 쪽이 아무것도 하지 않습니다.
@@ -344,6 +344,10 @@
 `author` → 「문의 작성자」).
 <!-- @intent END -->
 
+
+### 환경설정 본인인증 정책 탭의 목록 조작
+
+환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
 
 ### 레이아웃 주석과 클레임 모달의 입력 전달
 

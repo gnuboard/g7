@@ -612,6 +612,7 @@
                                                             },
                                                             "children": [
                                                                 {
+                                                                    "comment": "스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에\n                       이름 없는 스위치로 읽혔다(7.1.0 실측 M1-O14). label 이 스위치 옆 글자도 함께 그린다.",
                                                                     "type": "composite",
                                                                     "name": "Toggle",
                                                                     "actions": [
@@ -626,16 +627,9 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "label": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user",
                                                                         "checked": "{{rcpt.exclude_trigger_user ?? false}}"
                                                                     }
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "text-secondary text-xs"
-                                                                    },
-                                                                    "text": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user"
                                                                 }
                                                             ]
                                                         }

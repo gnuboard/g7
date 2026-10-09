@@ -943,6 +943,18 @@ DOM 에 직접 주입됩니다. Toast 와 달리 **사용자가 닫을 때까지
 갖습니다. `retry` 가 resolve 되면 그 실패는 자동으로 해제되고, reject 되면 배너를 유지한 채
 재시도 실패를 알립니다.
 
+#### 레이아웃 스크립트 실패 id — `layout-script:{id}`
+
+레이아웃 `scripts`(`<script src="…" id="…">`)를 코어가 끝내 불러오지 못하면 코어가 직접 실패를 등록합니다.
+그 `id` 는 **`layout-script:{스크립트 id}`** 입니다(예: `layout-script:daum_postcode_script`). 항목명은 스크립트의
+`label`(없으면 「화면 기능 스크립트」)이며 스크립트 `id` 원문은 안내에 쓰지 않습니다.
+
+같은 SDK 의 실패를 확장도 자기 `notifyFailure` 로 알리면(직접 입력 안내, 임시 입력창 전환 안내 등) 배너에 두 건이 쌓여
+「2개 항목을 불러오지 못했습니다. …」 묶음 문구가 되고 확장의 `message` 가 보이지 않습니다. 확장 안내의 재시도가 같은
+SDK 를 다시 불러온다면, 확장 안내를 띄운 뒤 `getFailures()` 로 이 id 를 찾아 `clearFailure('layout-script:{id}')` 로
+코어 쪽 건을 걷습니다. 코어 건은 확장 안내보다 늦게 올 수 있으므로 확장 안내가 떠 있는 동안 짧게 다시 살핍니다
+(선례: `sirsoft-daum_postcode` 의 `postcodeSdk.ts`).
+
 ---
 
 ## 방문자 동의 (G7Core.consent)

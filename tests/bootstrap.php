@@ -146,6 +146,24 @@ if (file_exists($configCacheFile)) {
 }
 
 /*
+| 시작 때 지우는 것만으로는 부족하다 — 테스트가 도는 사이 같은 클론에서 확장을 반영하면
+| (`plugin:update`·`module:update`·`template:update` 는 config 캐시를 다시 굽는다) 그 뒤에 만들어지는
+| 테스트 앱이 캐시된 개발 config 로 부팅해 `.env.testing` 을 무시한다. 그러면 테스트가 개발 DB 에
+| 붙고 확장 저장소 디스크가 `storage/app` 을 가리킨다(2026-10-08 00:50 실측: 게시판 테스트 정리 쿼리가
+| 개발 DB 에서 실행됨, 2026-10-07 23:38 실측: GDPR 설정 테스트가 개발 사이트 설정 파일을 덮음).
+| 라우트 캐시(아래)와 같이 경로를 테스트 전용 위치로 돌려, 운영 캐시가 언제 다시 구워지든 읽지 않게 한다.
+| 자식 프로세스도 env 를 물려받으므로 같은 격리를 받는다.
+*/
+$testingConfigCache = 'storage/framework/testing/config.php';
+putenv('APP_CONFIG_CACHE='.$testingConfigCache);
+$_ENV['APP_CONFIG_CACHE'] = $testingConfigCache;
+$_SERVER['APP_CONFIG_CACHE'] = $testingConfigCache;
+if (file_exists(__DIR__.'/../'.$testingConfigCache)) {
+    // 테스트 안에서 config:cache 를 구운 잔재 — 다음 실행이 그 값으로 부팅하지 않게 지운다
+    unlink(__DIR__.'/../'.$testingConfigCache);
+}
+
+/*
 |--------------------------------------------------------------------------
 | 라우트 캐시 격리 (테스트 환경 보장)
 |--------------------------------------------------------------------------

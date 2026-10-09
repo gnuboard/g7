@@ -9,6 +9,9 @@
 ### Added
 
 - 목록 필터 기간 칸의 읽기 이름 「{{label}} 開始日」·「{{label}} 終了日」(`common.range_start`·`common.range_end`)의 일본어 번역을 추가했습니다.
+- 환경설정의 탭 전환 확인 창 문구(`admin.settings.unsaved_tab_modal.*` — 제목, 본문, 「이 탭에 머무르기」, 「저장하지 않고 이동」)의 일본어 번역을 추가했습니다.
+- 머리글 테마 전환 단추, 알림 삭제 단추, 안내 메시지 닫기 단추, 현재 위치 경로 영역, 태그 지우기 단추에 붙은 새 이름(`common.theme_select` — 「画面テーマ」, `common.delete_notification` — 「通知を削除」, `common.close_alert` — 「メッセージを閉じる」, `common.breadcrumb` — 「パンくずリスト」, `common.tag_input.remove` — 「{{label}}を削除」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 화면 읽기 프로그램이 이 이름들을 한국어로 읽습니다.
+- 관리자 첨부 업로더가 고른 파일을 용량·형식으로 거절할 때의 안내 문구(`attachment.file_too_large`·`attachment.type_not_allowed`)를 일본어로 번역했습니다. 없으면 일본어 화면에서 이 안내만 영어로 보입니다.
 - 환경설정 > 개인정보 탭의 「동의 관리 제공자」 카드 문구(`settings.privacy.consent_provider.*` — 제목·설명·자동 선택·제공자 2개 이상/선택 제공자 비활성/제공자 없음/동의 수집 꺼짐 안내), 확장 상세 창의 「함께 쓰면 연동되는 확장」 절(`extension_integrations.*`), 방문자 통계 설정의 「제공자 선택 필요」·「개인정보 탭에서 고르기」(`analytics.settings.privacy.consent_source_needs_selection`·`consent_source_choose`)의 일본어 번역을 추가했습니다.
 - 코드 편집기 경고·오류 항목의 줄 이동 안내(`admin.templates.layout_edit.go_to_line` 「{{line}} 行目へ移動」)와 휴대폰 폭 파일 정보 펼치기·접기(`info_toggle_show`·`info_toggle_hide`)의 일본어 번역을 추가했습니다.
 - 확장 설치 창에서 함께 고른 언어팩을 설치하지 못했을 때의 경고 문구(`extensions.alerts.language_pack_install_failed`)를 일본어로 번역했습니다.
@@ -21,7 +24,7 @@
 - 회원관리 목록의 새 필터 영역 문구를 일본어로 번역했습니다 — 필터 행 이름 12개(계정 상태·권한 그룹·가입일·최근 로그인·관리자 여부·계정 잠금·휴면 전환일·상태 변경일·언어·국가·이메일 인증·본인인증, `admin.users.filter.*`)와 선택지, 빠른 기간 버튼, 권한 그룹 검색 안내 문구, 상세 영역 제목, 상세검색·검색편집·초기화 버튼, 새 검색 대상(휴대폰/전화·회원번호/고유ID·관리자 메모), 계정 상태 4종(ブロック·退会·登録待機中·休眠), 새 열 이름(닉네임·이메일 인증일·본인인증일)과 이름 정렬입니다. 상태 이름은 코어 팩(`user.status.*`)과 같은 표기로 맞췄습니다.
 - 알림 정의 목록의 새 알림 이름 2종(비밀번호 만료 사전 안내·비밀번호 만료, `admin.settings.notification_definitions.types.*`)을 일본어로 번역했습니다.
 - 보안 탭 「활동 로그(접속기록) 보관」 카드 문구(`admin.settings.security.activity_log_retention.*` — 제목·설명·보관 기간 칸·법정 최소 안내)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면에서 이 카드만 한국어로 보입니다.
-- 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드와 직권 실행 확인 창, 관리자 로그인 비밀번호 변경 단계, 회원 등록/수정·상세·역할 수정의 비밀번호 칸 문구(`admin.settings.security.password_policy.*`·`password_expiry.*`·`admin.users.form.password_policy.*`·`admin.users.detail.password.*`·`admin.roles.form.password_expiry*`·`auth.login.password_change.*`·`auth.password_rules.*`·편집기 데이터 소스 이름 2종)를 일본어로 번역했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 없음).
+- 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드와 직권 실행 확인 창, 관리자 로그인 비밀번호 변경 단계, 회원 등록/수정·상세·역할 수정의 비밀번호 칸 문구(`admin.settings.security.password_policy.*`·`password_expiry.*`·`admin.users.form.password_policy.*`·`admin.users.detail.password.*`·`admin.roles.form.password_expiry*`·`auth.login.password_change.*`·`auth.password_rules.*`·편집기 데이터 소스 이름 2종)를 일본어로 번역했습니다.
 - 방문자 통계의 집계 신선도(기간 줄 「마지막 집계」·스케줄러 미가동/집계 멈춤/상한 초과 경고·「지금 집계」), 한 항목 추이 창,
   신규·재방문 선과 카드, 새 탭 다섯(캠페인 매체·검색 탭·이벤트·체류시간 구간·본 페이지 수 구간), 설정 「집계」 묶음,
   진단의 스케줄러 표시·실행 주체 「화면 열 때」 문구(`admin.analytics.freshness.*`·`alerts.*`·`row_trend.*` 등)의 일본어
@@ -100,6 +103,7 @@
 - 화면 이동 중 로딩 막대의 읽기 이름 「ページ読み込み中」(`common.page_loading`)의 일본어 번역을 추가했습니다.
 - 다국어 입력칸 언어 제거 버튼의 읽기 이름 「{{language}} の入力を削除」(`common.remove_language`)의 일본어 번역을 추가했습니다.
 - 다국어 태그 칸의 태그 제거 버튼 읽기 이름 「{{tag}} を外す」(`common.remove_tag`)의 일본어 번역을 추가했습니다.
+- 아이콘만 있는 단추 이름(더보기, 선택 지우기, 값 보기와 숨기기, 사용자 메뉴, 언어 삭제, 수신자 규칙 삭제)과 컴포넌트 기본 문구(파일 선택, 로그아웃 중, 검색어 입력 안내, 빈 화면 그림, 로고, 선택한 항목 없음)의 일본어 번역을 추가했습니다.
 
 ### Changed
 
@@ -108,6 +112,7 @@
 - 관리자 로그인 화면의 무기한 잠김 안내(`auth.login.locked_permanent`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다.
 - 메뉴 편집의 역할 안내(`admin.menus.form.roles_hint`)를 「선택하지 않으면 모든 역할이 접근」 에서 「관리자 역할은 항상 포함」(「管理者ロールは常に含まれます」)으로 바꿨고, 더 이상 쓰지 않는 「すべてのロール」(`admin.menus.info.all_roles`)를 지우고 「ロール未指定」(`admin.menus.info.no_roles`)를 추가했습니다 — 메뉴 역할 저장 시 관리자 역할이 항상 남도록 바뀐 동작에 맞췄습니다.
 - 레이아웃 편집 화면 설명(`admin.templates.layout_edit.description`·`page_description`)을 「JSONファイルを編集して…」에서 「画面マークアップ（.g7.html）を編集して…」로 고쳤습니다 — 코드 편집기가 마크업을 열고 저장하며 JSON 은 읽기 전용 산출물이 된 동작에 맞췄습니다.
+- 확장 관리 > 플러그인 정보 창 「훅」·「필터」 칸의 설명과 빈 상태 문구(`admin.plugins.modals.hooks_description`·`no_hooks`·`filters_description`·`no_filters`)를 「다른 확장에 제공하는 훅」 뜻에 맞춰 고쳐 번역했습니다.
 
 ### Removed
 

@@ -42,7 +42,7 @@ class AlimtalkTemplateController extends AdminBaseController
      */
     public function categories(): JsonResponse
     {
-        return $this->guard(fn () => ResponseHelper::success('messages.success', [
+        return $this->guard(fn () => ResponseHelper::success('sirsoft-message_bizppurio::messages.template.categories_loaded', [
             'categories' => $this->service->categories(),
         ]));
     }
@@ -54,7 +54,7 @@ class AlimtalkTemplateController extends AdminBaseController
      */
     public function profiles(): JsonResponse
     {
-        return $this->guard(fn () => ResponseHelper::success('messages.success', [
+        return $this->guard(fn () => ResponseHelper::success('sirsoft-message_bizppurio::messages.template.profiles_loaded', [
             'profiles' => $this->service->senderProfiles(),
         ]));
     }

@@ -16,7 +16,7 @@ description: |
   실패 처리를 세 벌 유지해야 한다.
 
   건너뛴 건은 조용히 버리지 않고 사유를 돌려준다(`already_deleted` · `has_replies` ·
-  `already_blinded` · `already_published`). 여러 건을 다루는 자리라 "몇 건이 왜 빠졌는지" 를
+  `already_blinded` · `already_published` · `not_found`). 블라인드도 삭제된 글은 `already_deleted` 로 건너뛴다. 여러 건을 다루는 자리라 "몇 건이 왜 빠졌는지" 를
   읽을 시간이 필요하다 — 그래서 실패는 토스트가 아니라 오류 창으로 세운다.
 
   훅은 루프 **앞에서 한 번만** 발화한다(`sirsoft-board.post.before_bulk_action`). 항목마다
@@ -53,6 +53,10 @@ effects:
   - admin_post_bulk_delete_skips_already_deleted
   - admin_post_bulk_delete_skips_posts_with_replies
   - admin_post_bulk_blind_changes_status
+  # 삭제된 글은 블라인드하지 않고 건너뛴다 — 블라인드하면 삭제가 풀린다 (7.1.0 실측 O-K3T-2)
+  - admin_post_bulk_blind_skips_deleted
+  # 다른 게시판 글·없는 번호는 「처리 중 오류」가 아니라 「찾을 수 없는 글」 (7.1.0 실측 O-K3-2)
+  - admin_post_bulk_skips_missing_with_not_found_reason
   - admin_post_bulk_restore_restores_blinded_and_deleted
   - admin_post_bulk_restore_skips_already_published
   - admin_post_bulk_skipped_items_carry_title_and_reason_label

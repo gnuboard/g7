@@ -125,7 +125,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -283,7 +283,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-verification_kginicis.settings.section_live_keys"
                                     }
@@ -301,7 +301,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -383,7 +383,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -459,7 +459,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-verification_kginicis.settings.section.duplicate_field"
                                     }

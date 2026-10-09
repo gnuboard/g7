@@ -143,10 +143,10 @@ describe('반응 유형 편집기 — 편집 대상과 추가 폼', () => {
 
     // @scenario case=settings_editor_add_form_validates
     // @effects settings_editor_add_form_checks_required_and_duplicate
-    it('코드와 기본 언어 이름이 있어야 하고 코드가 겹치면 거절한다', () => {
+    it('코드와 사이트 기본 언어 이름이 있어야 하고 코드가 겹치면 거절한다', () => {
         // 통과 조건 — 세 가지를 모두 본다.
         expect(/reactionTypeForm\?\.code \?\? ''\)\.trim\(\)/.test(editorJson)).toBe(true);
-        expect(/reactionTypeForm\?\.name\?\.ko \?\? ''\)\.trim\(\)/.test(editorJson)).toBe(true);
+        expect(editorJson).toContain("reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim()");
         expect(/\.some\(t => t\.code ===/.test(editorJson)).toBe(true);
         // 실패하면 배열은 건드리지 않고 어느 칸이 문제인지만 세운다.
         expect(/'required'/.test(editorJson)).toBe(true);
@@ -379,4 +379,149 @@ describe('반응 유형 편집기 — 읽기 전용·저장 페이로드', () =>
         expect(/reaction-type-delete-m-/.test(cardsJson)).toBe(true);
         expect(/reaction-type-row-m-/.test(editorJson)).toBe(false);
     });
+});
+
+/** 하위 트리에서 키가 key 이고 값이 pred 를 만족하는 문자열 값을 모두 모은다. */
+function collectStringValues(node: unknown, key: string, pred: (v: string) => boolean, out: string[] = []): string[] {
+    if (Array.isArray(node)) {
+        node.forEach((child) => collectStringValues(child, key, pred, out));
+        return out;
+    }
+    if (node && typeof node === 'object') {
+        for (const [k, v] of Object.entries(node as Node)) {
+            if (k === key && typeof v === 'string' && pred(v)) out.push(v);
+            collectStringValues(v, key, pred, out);
+        }
+    }
+    return out;
+}
+
+/** `{{ … }}` 표현식을 주어진 지역 상태로 평가한다. */
+function evaluate(expr: string, local: Record<string, unknown>, locale = 'ko', global: Record<string, unknown> = { appConfig: { siteLocale: 'ko' } }): unknown {
+    const body = expr.trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+    // eslint-disable-next-line no-new-func
+    return new Function('_local', '$locale', '_global', `return (${body});`)(local, locale, global);
+}
+
+describe('반응 유형 편집기 — 추가 폼 코드 형식 검사', () => {
+    const existing = [{ code: 'like' }, { code: 'dislike' }];
+    const stateFor = (code: string) => ({
+        reactionTypeForm: { code, name: { ko: '이름' } },
+        form: { basic_defaults: { reaction_types: existing } },
+    });
+
+    // 서버 규칙(StoreBoardSettingsRequest): ^[a-z][a-z0-9_]{1,49}$ — 추가 단계에서 거르지 않으면
+    // 「Bad Code!」 같은 코드가 목록에 붙고(만든 뒤엔 코드 칸을 고칠 수 없다) 저장에서야 422 가 났다(K1 실측 2026-10-06).
+    const cases: Array<[string, boolean, string | null]> = [
+        ['qa_type1', true, null],
+        ['ab', true, null],
+        ['', false, 'required'],
+        ['like', false, 'duplicate'],
+        ['bad code!', false, 'format'],
+        ['1abc', false, 'format'],
+        ['a', false, 'format'],
+        ['a'.repeat(51), false, 'format'],
+        ['abc-def', false, 'format'],
+    ];
+
+    for (const [label, tree] of bothTrees) {
+        // @scenario case=settings_editor_add_form_validates
+        // @effects settings_editor_add_form_checks_code_format
+        it(`${label} — 확인 조건과 오류 갈래가 서버 코드 규칙을 따른다`, () => {
+            const passIf = collectStringValues(tree, 'if', (v) => v.includes('reactionTypeForm?.code') && v.includes('.some(t =>'));
+            const errorValue = collectStringValues(tree, 'code', (v) => v.includes("'required'") && v.includes("'duplicate'"));
+
+            expect(passIf.length, '확인 조건').toBe(1);
+            expect(errorValue.length, '오류 갈래').toBe(1);
+
+            for (const [code, ok, error] of cases) {
+                expect(Boolean(evaluate(passIf[0], stateFor(code))), `통과 ${JSON.stringify(code)}`).toBe(ok);
+                expect(evaluate(errorValue[0], stateFor(code)), `오류 ${JSON.stringify(code)}`).toBe(error);
+            }
+        });
+
+        // @scenario case=settings_editor_add_form_validates
+        // @effects settings_editor_add_form_checks_code_format
+        it(`${label} — 형식 오류 문구가 코드 칸 아래에 선다`, () => {
+            expect(JSON.stringify(tree)).toContain('reaction_types.validation.code_format');
+        });
+    }
+});
+
+describe('반응 유형 편집기 — 아이콘 업로드 실패 안내', () => {
+    // @scenario case=settings_editor_icon_uploader_wired
+    // @effects settings_editor_icon_upload_failure_names_limits
+    it('업로드 실패 문구가 허용 형식과 1MB 한도를 함께 말한다', () => {
+        // 좁은 칸(size xs)의 업로더는 빈 상태에서 한도 안내를 숨긴다 — 1MB 초과·SVG 를 고르면 문구가 유일한 안내였는데
+        // 「아이콘 업로드에 실패했습니다」만 떠서 왜 거절됐는지 알 수 없었다(K1 실측 2026-10-06).
+        for (const locale of ['ko', 'en']) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const settings = require(`../../../lang/partial/${locale}/admin/settings.json`);
+            const message: string = settings.reaction_types.messages.icon_upload_failed;
+
+            expect(message, locale).toMatch(/PNG/);
+            expect(message, locale).toMatch(/WEBP/);
+            expect(message, locale).toMatch(/1MB/);
+        }
+    });
+});
+
+/**
+ * 반응 유형 이름의 필수 언어는 사이트 기본 언어다 — 게시판 유형 이름과 같은 계약(서버 LocaleRequiredTranslatable,
+ * 2026-10-09 PO 확정). 화면 언어와 무관하게 사이트 기본 언어 칸이 비면 추가하지 않고, 서버가 이름 칸 전체 키(name)나
+ * 사이트 기본 언어 키(name.{언어})로 돌려준 오류를 그 행 이름 칸에 붙인다.
+ */
+describe('반응 유형 편집기 — 이름 필수 언어는 사이트 기본 언어', () => {
+    const stateWith = (name: Record<string, string>) => ({
+        reactionTypeForm: { code: 'qa_type1', name },
+        form: { basic_defaults: { reaction_types: [{ code: 'like' }] } },
+    });
+
+    for (const [label, tree] of bothTrees) {
+        // @scenario case=settings_editor_add_form_validates
+        // @effects add_requires_code_and_default_name
+        it(`${label} — 추가 확인 조건과 이름 오류 갈래가 사이트 기본 언어 칸을 본다`, () => {
+            const passIf = collectStringValues(tree, 'if', (v) => v.includes('reactionTypeForm?.code') && v.includes('.some(t =>'));
+            const nameError = collectStringValues(tree, 'name', (v) => v.includes('reactionTypeForm?.name'));
+            expect(passIf.length, '확인 조건').toBe(1);
+            expect(nameError.length, '이름 오류 갈래').toBe(1);
+
+            const cases: Array<[string, string, Record<string, string>, boolean]> = [
+                ['en', 'ko', { ko: '', en: 'Cheer' }, false],
+                ['en', 'ko', { ko: '응원' }, true],
+                ['ja', 'ko', { ja: '応援' }, false],
+                ['ja', 'ko', { ko: '응원', en: 'Cheer' }, true],
+                ['ko', 'ko', { en: 'Cheer' }, false],
+                ['ko', 'ko', { ko: '응원' }, true],
+                ['ko', 'en', { en: 'Cheer' }, true],
+                ['ko', 'en', { ko: '응원' }, false],
+            ];
+            for (const [locale, site, name, ok] of cases) {
+                const tag = `${locale}/${site} ${JSON.stringify(name)}`;
+                const g = { appConfig: { siteLocale: site } };
+                expect(Boolean(evaluate(passIf[0], stateWith(name), locale, g)), `통과 ${tag}`).toBe(ok);
+                expect(evaluate(nameError[0], stateWith(name), locale, g), `오류 ${tag}`).toBe(ok ? null : true);
+            }
+            expect(JSON.stringify(tree)).not.toContain('name_ko');
+        });
+
+        // @scenario case=settings_missing_default_name_rejected
+        // @effects add_requires_code_and_default_name
+        it(`${label} — 저장 422 의 이름 오류(name 또는 name.{사이트 기본 언어})가 그 행 이름 칸에 붙는다`, () => {
+            const rowError = collectStringValues(tree, 'error', (v) => v.includes("'.name"));
+            expect(rowError.length, '행 이름 칸 오류').toBe(1);
+            const rowErr = (errors: Record<string, string[]>, locale: string, site = 'ko') => {
+                const body = rowError[0].trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+                // eslint-disable-next-line no-new-func
+                return new Function('_local', '$locale', 'row', '_global', `return (${body});`)(
+                    { errors }, locale, { _idx: 2 }, { appConfig: { siteLocale: site } }
+                );
+            };
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name': ['한국어 값은 필수'] }, 'en')).toBe('한국어 값은 필수');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.ko': ['50자 초과'] }, 'en')).toBe('50자 초과');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.en': ['화면 언어 키'] }, 'en')).toBe('');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.en': ['영어 값'] }, 'ko', 'en')).toBe('영어 값');
+            expect(rowErr({}, 'ko')).toBe('');
+        });
+    }
 });

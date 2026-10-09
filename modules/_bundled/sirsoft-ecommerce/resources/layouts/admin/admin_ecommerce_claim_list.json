@@ -289,6 +289,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.back",
                                             "type": "button",
                                             "className": "btn btn-ghost btn-icon hidden"
                                         },
@@ -353,6 +354,8 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh",
                                             "type": "button",
                                             "className": "btn btn-icon"
                                         },

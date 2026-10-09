@@ -21,6 +21,12 @@ return [
         'web_siteid' => 'Web Site ID',
         'live_site_cd_attribute' => 'Live Site Code',
         'live_enc_key_attribute' => 'Live Encryption Key',
+        'is_test_mode_attribute' => 'Test Mode',
+        'test_site_cd_attribute' => 'Test Site Code',
+        'test_enc_key_attribute' => 'Test Encryption Key',
+        'web_siteid_attribute' => 'Web Site ID',
+        'duplicate_field_attribute' => 'Duplicate Check Basis',
+        'duplicate_block_enabled_attribute' => 'Block Duplicate Signup',
         'duplicate_field' => 'Duplicate check basis',
         'duplicate_block_enabled' => [
             'label' => 'Block Duplicate Signup',
@@ -32,6 +38,8 @@ return [
         'title' => 'Identity Verification',
         'method' => 'Method',
         'method_value' => 'NHN KCP Mobile Verification',
+        // Card lookup response (MyKcpIdentityShowController)
+        'loaded' => 'Identity verification information loaded.',
         'verified_at' => 'Verified At',
         'name' => 'Name',
         'birthday' => 'Date of Birth',

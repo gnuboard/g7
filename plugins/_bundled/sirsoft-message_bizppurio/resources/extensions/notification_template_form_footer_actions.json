@@ -339,7 +339,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "저장만(검수 신청 없음) — 생성 / 갱신 / 발송 설정만(본문이 없거나 내용이 잠긴 상태) 세 갈래 중 하나가 성립한다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다.",
+                            "comment": "저장만(검수 신청 없음) — 생성 / 갱신 / 발송 설정만(본문이 없거나 내용이 잠긴 상태) 세 갈래 중 하나가 성립한다. 생성·갱신은 draft 표시를 실어 쓰다 만 알림톡 내용(카테고리·템플릿명 등 미입력)도 초안으로 남긴다 — 「알림 템플릿 관리」 탭 작성 창의 「저장」과 같은 규약이고, 빠진 필수값은 [저장 후 검수 신청]에서 서버가 항목별로 돌려준다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다.",
                             "type": "click",
                             "handler": "sequence",
                             "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false) && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
@@ -363,6 +363,7 @@
                                     "params": {
                                         "method": "POST",
                                         "body": {
+                                            "draft": true,
                                             "notification_type": "{{_global.bz_tpl_modal?.notification_type}}",
                                             "content": "{{_global.bz_tpl_modal?.content}}",
                                             "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
@@ -488,6 +489,7 @@
                                     "params": {
                                         "method": "PUT",
                                         "body": {
+                                            "draft": true,
                                             "content": "{{_global.bz_tpl_modal?.content}}",
                                             "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
                                             "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",

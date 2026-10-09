@@ -42,6 +42,7 @@ class UpdateCouponRequest extends FormRequest
      * 추가 검증을 등록합니다. (적용대상 미선택 차단 — A16①/A17①)
      *
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -55,6 +56,8 @@ class UpdateCouponRequest extends FormRequest
      * nullable 숫자 필드(discount_max_amount/total_quantity)와 NOT NULL default 0 인
      * min_order_amount 의 빈 문자열 입력을 각각 null / 0 으로 변환해
      * decimal/integer cast 오류(빈 문자열 → 저장 500)를 차단합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -146,6 +149,8 @@ class UpdateCouponRequest extends FormRequest
 
     /**
      * 할인값 검증 규칙을 반환합니다.
+     *
+     * @return array<int, mixed> 할인값 검증 규칙
      */
     protected function discountValueRules(): array
     {
@@ -215,6 +220,20 @@ class UpdateCouponRequest extends FormRequest
             'valid_from.required_if' => __('sirsoft-ecommerce::validation.coupon.valid_from_required'),
             'valid_to.required_if' => __('sirsoft-ecommerce::validation.coupon.valid_to_required'),
             'valid_to.after_or_equal' => __('sirsoft-ecommerce::validation.coupon.valid_to_after_from'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시 이름
+     *
+     * 다국어 칸의 현재 언어 값을 비우면 「쿠폰명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
+     *
+     * @return array<string, string> 필드 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.coupon_name'),
         ];
     }
 }

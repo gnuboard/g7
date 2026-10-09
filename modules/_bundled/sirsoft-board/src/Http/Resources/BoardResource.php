@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\GuestRoleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
@@ -252,6 +253,8 @@ class BoardResource extends BaseApiResource
                 'use_reaction' => $this->use_reaction,
                 'use_comment_reaction' => $this->use_comment_reaction,
                 'secret_mode' => $this->secret_mode,
+                // 관리자 목록 「조회수」 열이 이 값으로 열을 감춘다(사용자 목록과 같은 자리)
+                'show_view_count' => $this->show_view_count,
                 'per_page' => $this->per_page,
                 'per_page_mobile' => $this->per_page_mobile ?? $this->per_page,
                 'order_by' => $this->order_by instanceof \BackedEnum ? $this->order_by->value : ($this->order_by ?? 'created_at'),
@@ -561,23 +564,15 @@ class BoardResource extends BaseApiResource
     /**
      * 비회원(Guest)의 권한을 확인합니다.
      *
-     * Guest role에 해당 권한이 부여되어 있는지 확인합니다.
+     * Guest role에 해당 권한이 부여되어 있는지 확인합니다. 역할 해석은 코어 미들웨어·Gate 와 같은
+     * 요청 단위 해석기(GuestRoleResolver)에 맡긴다 — 함수 정적 변수에 역할을 담으면 프로세스가 끝날
+     * 때까지 첫 역할 행을 붙잡아, 장기 실행 프로세스가 다시 만든 guest 역할의 권한을 보지 못한다.
      *
      * @param  Permission  $permission  권한 객체
      * @return bool 권한 보유 여부
      */
     private function checkGuestPermission(Permission $permission): bool
     {
-        static $guestRole = null;
-
-        if ($guestRole === null) {
-            $guestRole = Role::where('identifier', 'guest')->first();
-        }
-
-        if (! $guestRole) {
-            return false;
-        }
-
-        return $guestRole->permissions()->where('permissions.id', $permission->id)->exists();
+        return GuestRoleResolver::hasPermission($permission->identifier);
     }
 }

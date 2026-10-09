@@ -12,7 +12,12 @@
           <span>$t:sirsoft-board.admin.form.permissions.managers_title</span>
         </label>
         <p data-ref="permissions_managers_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.managers_description</p>
-        <tag-input data-type="composite" data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+        <!-- 다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다(K4F-2). 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다 -->
+        <div data-ref="permissions_members_assign_denied" data-if="{{_local.form?._meta?.can_assign_board_members === false}}" class="alert-warning mb-3">
+          <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <span class="text-warning-soft">$t:sirsoft-board.admin.form.permissions.members_assign_denied</span>
+        </div>
+        <tag-input data-type="composite" data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}">
           <on event="onInputChange">
             <!-- 운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다).
               검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 목록 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로, 다른 회원 검색 칸과 같이 검색어 없는 조회는 보내지 않는다 -->
@@ -43,7 +48,7 @@
           <span>$t:sirsoft-board.admin.form.permissions.steps_title</span>
         </label>
         <p data-ref="permissions_steps_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.steps_description</p>
-        <tag-input data-type="composite" data-ref="permissions_steps_taginput" value="{{_local.form?.board_step_ids ?? []}}" options="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="green" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+        <tag-input data-type="composite" data-ref="permissions_steps_taginput" value="{{_local.form?.board_step_ids ?? []}}" options="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="green" :isSearchable="true" disabled="{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}">
           <on event="onInputChange">
             <!-- 단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다. 빈 검색어 차단도 운영자 칸과 같다 -->
             <api-call :debounce="300" :auth_required="true" if="{{String($event.target.value ?? '').trim() !== ''}}" target="/api/admin/users" method="GET">

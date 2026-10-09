@@ -184,6 +184,9 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `Footer` | 사이트 푸터 (저작권, 링크, 소셜) | siteName |
 | `MobileNav` | 모바일 네비게이션 드로어 | - |
 
+- **`Header` 언어 메뉴와 장바구니 단추**: 언어 단추는 `aria-haspopup="listbox"` 와 펼쳤을 때 `aria-controls` 로 목록을 가리키고, 목록은 `role="listbox"`(이름 = 언어), 항목은 `role="option"` + `aria-selected` 다. 단추에서 ↓/↑·Enter·Space 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑·Home·End 로 옮기며 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌리고, 고른 뒤에도 초점은 단추로 돌아온다. 아이콘만 있는 장바구니 단추의 이름은 `nav.cart_with_count`(담긴 수 포함), 좁은 폭에서 그리는 메뉴 단추의 이름은 `user.menu` 다. 회귀 테스트: `src/components/composite/__tests__/HeaderLanguageListbox.test.tsx`.
+- **모바일 머리글(`_user_base` 레이아웃)**: 아이콘만 있는 단추는 다국어 `aria-label` 을 갖는다 — 장바구니 `nav.cart_with_count`(담긴 수), 사용자 `common.mypage`/`common.login`(로그인 여부는 `_global.currentUser?.uuid` 로 가린다 — 비회원의 `currentUser` 는 빈 값이어도 참으로 읽힌다), 메뉴 `user.menu` + `aria-expanded`(드로어 열림), 드로어 닫기 `nav.close_menu`. 드로어 언어 칩(`role="option"`)을 감싼 목록은 `role="listbox"`(이름 `common.language`)다. 회귀 테스트: `__tests__/layouts/user-base-mobile-header-a11y.test.ts`.
+
 #### 쇼핑몰
 
 | 컴포넌트 | 설명 | 주요 Props |
@@ -228,6 +231,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `FileUploader` | 파일 업로드 | accept, maxSize, multiple |
 
+- **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
+- **언어 전환 인계**: 화면 언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. 업로더는 언어 전환 중에 내려갈 때만 아직 올리지 않은 대기 파일과 끌어 놓은 순서를 `G7Core.locale.handoff` 에 맡기고(키: 경로 + collection + 업로드 시점), 새 인스턴스가 마운트 때 한 번 꺼내 이어 쓴다. 올리던 항목은 대기 상태로 되돌린다. 일반 화면 이동에서는 맡기지 않는다(engine-v1.79.0). 회귀 테스트: `src/components/composite/__tests__/FileUploaderLocaleHandoff.test.tsx`.
+- **생략한 배열 속성의 기본값**: `initialFiles`·`roleIds` 를 생략하면 모듈 상수인 얼린 빈 배열을 쓴다(렌더마다 새 배열을 기본값으로 만들면 `initialFiles` 동기화 effect 가 끝없이 돈다). 훅은 같은 ID 목록이 새 배열로 들어와도 이전 참조를 쓴다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderDefaultInitialFiles.test.tsx`.
+
 #### 네비게이션/피드백
 
 | 컴포넌트 | 설명 | 주요 Props |
@@ -250,6 +257,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
+
+- `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
+- **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
+- **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`)을 문구 키로 단다. 레이아웃 예: 삭제 `common.delete`, 뒤로가기 `common.back`, 더보기 `common.more`, 이전과 다음 `common.prev`/`common.next`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 찜 `shop.product.add_to_wishlist`/`remove_from_wishlist`, 리뷰 별점 `mypage.order_detail.review_modal.rating_star`(`{{count}}`). 기본 문구도 키를 따른다: `FileInput`(`common.file_input.*`), `ThemeToggle` 메뉴(`common.theme.auto`/`light`/`dark`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `AvatarUploader` 미리보기 대체 글 `mypage.profile.avatar_preview`. 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
 
 #### 페이지 전환
 

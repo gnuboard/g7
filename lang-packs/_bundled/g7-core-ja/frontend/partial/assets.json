@@ -1,6 +1,7 @@
 {
   "load_failed": "{label}を読み込めませんでした。",
   "load_failed_multiple": "{count}個の項目を読み込めませんでした。",
+  "layout_script": "画面機能スクリプト",
   "retry": "再試行",
   "retrying": "再試行中...",
   "close": "閉じる",

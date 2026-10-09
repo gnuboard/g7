@@ -23,6 +23,8 @@ effects:
   - public_post_is_indexed
   - secret_post_is_not_indexed
   - blinded_post_is_deindexed
+  # 실제 블라인드·복구는 after_blind·after_restore 를 발화한다 — 그 훅으로 색인과 검색엔진용 화면 캐시를 맞춘다(2026-10-07 실측 K4-D3)
+  - blind_and_restore_hooks_sync_index_and_seo_cache
   - deleted_post_is_deindexed
   - board_row_follows_active_state
   - post_detail_toggle_off_deindexes

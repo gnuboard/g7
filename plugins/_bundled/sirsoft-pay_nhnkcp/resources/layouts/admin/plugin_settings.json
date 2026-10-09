@@ -222,7 +222,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
                                                         "text": "{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
@@ -273,7 +273,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
                                                         "text": "{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
@@ -324,7 +324,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
                                                         "text": "{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
@@ -494,7 +494,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -514,7 +514,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -615,7 +615,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "text-sm font-semibold pay-nhnkcp-tone-warning-strong"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title"
                                             },
@@ -623,7 +623,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "mt-1 text-sm pay-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body"
                                             }
@@ -652,7 +652,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_live_keys"
                                     }
@@ -670,7 +670,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -749,7 +749,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -822,7 +822,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_easy_pay"
                                     },
@@ -1080,7 +1080,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_redirect"
                                     }
@@ -1098,7 +1098,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -1152,7 +1152,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -1224,7 +1224,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_vbank"
                                     },
@@ -1250,7 +1250,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -1356,7 +1356,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "text-sm font-semibold pay-nhnkcp-tone-warning-strong"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title"
                                             },
@@ -1364,7 +1364,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "mt-1 text-sm pay-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body"
                                             },
@@ -1746,7 +1746,7 @@
                                         "name": "Div",
                                         "if": "{{_local.form.use_escrow && _local.form.is_test_mode}}",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {

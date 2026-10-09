@@ -65,6 +65,7 @@ effects:
   - test_mode_on_empty_credentials_return_200
   - test_mode_off_filled_credentials_return_200
   - validation_error_messages_use_localized_field_labels
+  - validation_error_labels_follow_request_locale_for_every_settings_field
   - test_mode_off_selects_live_domain_test_mode_on_selects_dev_domain
   - password_is_not_stored_as_plaintext_in_settings_file
   - password_decrypts_back_to_original_via_settings_service_get

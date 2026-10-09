@@ -9,11 +9,11 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:296` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:424` |
+| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:299` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:427` |
 | `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:213` |
-| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:288` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:420` |
+| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:291` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:423` |
 | `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:164` |
 | `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:166` |
 | `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:106` |

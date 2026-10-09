@@ -186,6 +186,23 @@
                     "data": []
                 }
             },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 이 빈 목록을 주므로 이것이 없으면 403(알림 설정 권한 없음)도 「등록된 알림 정의가 없습니다」로\n         보여 권한이 없는 관리자가 기능이 없다고 오해했다(7.1.0 실측 M1-O5). 이 핸들러가 실패를 받아 끊으므로 설정 화면 전체 오류로 번지지 않는다.",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "gdprNotificationDefinitionsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "gdprNotificationDefinitionsError": "failed"
+                    }
+                }
+            },
             "comment": "켠 채널 전부의 템플릿을 한 번에 받는다(params template_channel=all) — 이 인자가 없으면\n       응답의 templates 가 비어 편집 버튼이 그려지지 않는다(형제 확장과 같은 규약)."
         }
     ],
@@ -353,7 +370,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-soft"
+                                                            "className": "text-error-strong"
                                                         },
                                                         "text": "$t:sirsoft-gdpr.settings.validation_error"
                                                     }
@@ -375,7 +392,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -3240,6 +3257,16 @@
                                                             "maxLength": 2000,
                                                             "disabled": "{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "comment": "서문 오류는 언어별 키(annual_notice.introduction.ko 등)로 온다 — 첫 오류를 칸 아래에 보인다(상단 알림·토스트에만 나오던 것, M1-O4).",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_local.errors && Object.keys(_local.errors).some((key) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors ? Object.entries(_local.errors).find(([key]) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))?.[1]?.[0] : ''}}"
                                                     }
                                                 ]
                                             },
@@ -3799,7 +3826,7 @@
                                         "id": "gdpr_notification_empty",
                                         "type": "basic",
                                         "name": "Div",
-                                        "if": "{{(gdprNotificationDefinitions?.data?.data ?? []).length === 0}}",
+                                        "if": "{{(gdprNotificationDefinitions?.data?.data ?? []).length === 0 && !_local.gdprNotificationDefinitionsError}}",
                                         "props": {
                                             "className": "row-stack"
                                         },
@@ -3821,6 +3848,27 @@
                                                 "text": "$t:sirsoft-gdpr.notification_definitions.empty_message"
                                             }
                                         ]
+                                    },
+                                    {
+                                        "comment": "조회 실패 — 권한 없음(403)과 그 밖(500·네트워크)을 가른다. 실패 종류는 데이터 소스 error-handling 이 남긴다.",
+                                        "id": "gdpr_notification_forbidden",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.gdprNotificationDefinitionsError === 'forbidden'}}",
+                                        "props": {
+                                            "className": "alert-warning"
+                                        },
+                                        "text": "$t:sirsoft-gdpr.notification_definitions.forbidden_message"
+                                    },
+                                    {
+                                        "id": "gdpr_notification_load_failed",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.gdprNotificationDefinitionsError === 'failed'}}",
+                                        "props": {
+                                            "className": "alert-warning"
+                                        },
+                                        "text": "$t:sirsoft-gdpr.notification_definitions.load_failed_message"
                                     }
                                 ]
                             }

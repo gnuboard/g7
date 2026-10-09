@@ -273,6 +273,73 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
+     * 게시판 생성 요청도 수정 요청과 같은 설정 필드 표시명을 쓴다.
+     *
+     * 생성 화면에서 신규 표시 기간에 -1 을 넣으면 「new display hours 필드는 최소 0 이상이어야 합니다.」처럼
+     * 영문 필드 키가 그대로 보였다(수정 화면은 「신규 표시 시간 필드는…」). 표시명 매핑이 수정 요청에만 있었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario request=store_board
+     *
+     * @effects store_board_attribute_names_match_update
+     */
+    public function test_store_request_uses_same_setting_attribute_names_as_update(): void
+    {
+        app()->setLocale('ko');
+
+        $storeAttributes = (new StoreBoardRequest)->attributes();
+        $updateAttributes = $this->makeUpdateRequest()->attributes();
+
+        foreach (['new_display_hours', 'per_page', 'max_file_size', 'max_file_count', 'allowed_extensions'] as $field) {
+            $this->assertArrayHasKey($field, $storeAttributes, "생성 요청에 {$field} 표시명이 없다");
+            $this->assertSame($updateAttributes[$field] ?? null, $storeAttributes[$field], "{$field} 표시명이 수정 요청과 다르다");
+        }
+
+        $data = $this->getValidStoreBoardData();
+        $data['new_display_hours'] = -1;
+        $request = new StoreBoardRequest;
+        $validator = Validator::make($data, $request->rules(), $request->messages(), $request->attributes());
+
+        $this->assertTrue($validator->fails());
+        $this->assertStringNotContainsString('new display hours', $validator->errors()->first('new_display_hours'));
+        $this->assertStringContainsString('신규 표시 시간', $validator->errors()->first('new_display_hours'));
+    }
+
+    /**
+     * 게시판 이름(다국어) 필수 문구가 칸 이름을 「name」 이 아니라 화면 이름으로 부른다.
+     *
+     * 2026-10-07 실측(K4, O-KF3-1 후속): 코어 다국어 필수 문구가 칸 이름(:attribute)을 싣도록
+     * 바뀐 뒤, 게시판 생성 화면에서 이름을 비우면 「name의 한국어(ko) 값은 필수입니다.」 로 필드 키가
+     * 그대로 보였다 — 생성·수정 요청의 표시명 매핑에 name·description 이 없었다.
+     *
+     * @scenario request=store_board
+     *
+     * @effects board_name_attribute_named_in_locale_message
+     *
+     * @return void 반환값 없음
+     */
+    public function test_board_name_locale_required_message_uses_display_name(): void
+    {
+        foreach (['ko' => ['게시판 이름', '한국어(ko)'], 'en' => ['Board Name', '한국어 (ko)']] as $locale => [$label, $language]) {
+            app()->setLocale($locale);
+
+            $data = $this->getValidStoreBoardData();
+            $data['name'] = ['ko' => '', 'en' => ''];
+
+            $store = new StoreBoardRequest;
+            $storeMessage = Validator::make($data, $store->rules(), $store->messages(), $store->attributes())->errors()->first('name');
+            $this->assertStringNotContainsString('name', $storeMessage, "[{$locale}] 생성 요청 문구에 필드 키가 보인다: {$storeMessage}");
+            $this->assertStringContainsString($label, $storeMessage, "[{$locale}] 생성 요청 문구: {$storeMessage}");
+            $this->assertStringContainsString($language, $storeMessage, "[{$locale}] 생성 요청 문구: {$storeMessage}");
+
+            $update = $this->makeUpdateRequest();
+            $this->assertSame($label, $update->attributes()['name'] ?? null, "[{$locale}] 수정 요청에 name 표시명이 없다");
+            $this->assertSame($store->attributes()['description'] ?? null, $update->attributes()['description'] ?? null);
+        }
+    }
+
+    /**
      * max_reply_depth 범위 검증 테스트 (rules만 독립 검증)
      *
      * @return void 반환값 없음

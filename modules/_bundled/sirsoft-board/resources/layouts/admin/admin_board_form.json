@@ -225,6 +225,7 @@
                         }
                     },
                     {
+                        "comment": "입력 오류 상자 — 아이콘을 제목 첫 줄에 맞추고(items-start + leading-5) 아래 폼과 띄운다(mb-6). 게시글 작성·환경설정 상자와 같은 서식이다.\n           #524 에서 고친 서식이 15차 병합에서 빠져 아이콘이 상자 가운데로 내려가고(제목보다 15~43px 아래) 폼과 0px 로 붙어 있었다(K3 실측 2026-10-07)",
                         "id": "validation_error",
                         "type": "basic",
                         "name": "Div",
@@ -237,7 +238,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "alert-danger"
+                                    "className": "alert-danger items-start mb-6"
                                 },
                                 "children": [
                                     {
@@ -245,7 +246,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
                                         }
                                     },
                                     {

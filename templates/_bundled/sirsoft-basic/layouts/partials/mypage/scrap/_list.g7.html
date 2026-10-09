@@ -24,7 +24,7 @@
           <set-state target="local" scrapSearchField="{{$event.target.value}}"/>
         </on>
       </select>
-      <input data-ref="scrap_search_input" data-testid="scrap-search-input" type="text" placeholder="$t:mypage.scrap.search_placeholder" value="{{_local.scrapSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <input data-ref="scrap_search_input" data-testid="scrap-search-input" type="text" placeholder="$t:mypage.scrap.search_placeholder" value="{{_local.scrapSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <!-- 검색어 — 담아만 둔다 -->
           <set-state target="local" scrapSearch="{{$event.target.value}}"/>
@@ -200,7 +200,7 @@
                 </button>
               </td>
             </tr>
-            <!-- 삭제된 원글 행 — 클릭 이동 액션 없음. 톤다운 + '삭제됨' 표시, 게시판명·작성자는 유지(확정 정책) -->
+            <!-- 삭제된 원글 행 — 클릭 이동 액션 없음. 톤다운 + '삭제됨' 표시, 게시판명·작성자는 유지(확정 정책). 게시판 자체가 지워진 스크랩(board_deleted)도 이 행으로 온다 — 게시판을 지우면 글도 함께 하드 삭제되기 때문이다. 그때는 게시판 칸에 「게시판 삭제됨」을 단다(게시판명은 남아 있지 않다) -->
             <tr data-testid="scrap-card-{{item.id}}" data-if="{{item.is_deleted}}" class="border-b border-gray-100 dark:border-gray-700 opacity-50">
               <td class="px-4 py-3">
                 <input data-testid="scrap-check-{{item.id}}" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
@@ -210,7 +210,10 @@
                   </on>
                 </input>
               </td>
-              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">{{item.board_name ?? ''}}</td>
+              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
+                <span data-if="{{!item.board_deleted}}">{{item.board_name ?? ''}}</span>
+                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-{{item.id}}" class="text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+              </td>
               <td class="px-4 py-3">
                 <span class="italic text-gray-400 dark:text-gray-500">$t:mypage.scrap.deleted_post</span>
                 <span class="ml-2 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
@@ -282,10 +285,11 @@
               <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
             </div>
           </div>
-          <!-- 삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음 -->
+          <!-- 삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음. 게시판이 지워진 스크랩도 이 카드로 오므로 게시판 뱃지 자리에 「게시판 삭제됨」을 단다 -->
           <div data-if="{{item.is_deleted}}">
             <div class="flex items-center gap-2 mb-1">
-              <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+              <span data-if="{{!item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+              <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
               <h3 class="shrink-0 text-sm font-medium text-gray-400 dark:text-gray-500 italic">$t:mypage.scrap.deleted_post</h3>
               <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
             </div>

@@ -8,7 +8,8 @@
       "pageData": "ページデータ",
       "pages": "ページ一覧",
       "versions": "バージョン履歴",
-      "attachmentSettings": "添付設定"
+      "attachmentSettings": "添付設定",
+      "createAbility": "登録権限の確認"
     }
   }
 }

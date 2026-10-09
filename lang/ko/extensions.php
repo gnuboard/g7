@@ -8,8 +8,8 @@ return [
     ],
 
     'errors' => [
-        'state_contract_conflict' => "':name' 상태 계약은 :owner 가 소유합니다. :extension 은(는) 같은 이름을 선언할 수 없습니다.",
-        'core_version_mismatch' => ':extension (:type)은(는) 그누보드7 코어 버전 :required 이상을 요구합니다. (현재: :installed)',
+        'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
+        'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',
         'update_already_running' => '":name" 업데이트가 이미 진행 중입니다. 끝난 뒤 다시 확인하세요.',
@@ -26,7 +26,7 @@ return [
     ],
 
     'warnings' => [
-        'auto_deactivated' => ':type ":identifier"이(가) 코어 버전 호환성 문제로 자동 비활성화되었습니다.',
+        'auto_deactivated' => '코어 버전 호환성 문제로 :type ":identifier"의 활성 상태를 자동으로 해제했습니다.',
     ],
 
     'alerts' => [
@@ -50,7 +50,7 @@ return [
     'badges' => [
         'incompatible' => '코어 업그레이드 필요',
         'incompatible_tooltip' => '코어 :required 이상 필요 (현재: :installed)',
-        'incompatible_sr' => ':name 은(는) 코어 :required 이상이 필요하지만 현재 :installed 가 설치되어 있어 업데이트할 수 없습니다.',
+        'incompatible_sr' => ':name 업데이트에는 코어 :required 이상이 필요해 업데이트할 수 없습니다. (현재 코어: :installed)',
     ],
 
     'banner' => [
@@ -62,7 +62,7 @@ return [
 
     'update_modal' => [
         'compat_warning_title' => '코어 버전 호환성 경고',
-        'compat_warning_message' => '이 :type 은(는) 코어 :required 이상이 필요합니다. (현재: :installed)',
+        'compat_warning_message' => '이 :type에는 코어 :required 이상이 필요합니다. (현재: :installed)',
         'compat_guide_link' => '코어 업그레이드 가이드 보기',
         'force_label' => '경고를 무시하고 강제 업데이트 (권장하지 않음)',
     ],

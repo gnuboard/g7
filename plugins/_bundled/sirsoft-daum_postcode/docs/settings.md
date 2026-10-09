@@ -22,8 +22,12 @@
 | 키 | 기본값 | 왜 그 기본값인가 |
 |---|---|---|
 | `display_mode` | `layer` | 팝업은 브라우저·확장 프로그램에 차단될 수 있고, 차단되면 사용자에게는 "버튼을 눌러도 아무 일이 없는" 것으로 보입니다. 레이어는 그 위험이 없습니다 |
-| `popup_width` · `popup_height` | 500 × 600 | 팝업 모드에서만 쓰입니다 |
+| `popup_width` · `popup_height` | 500 × 600 | 팝업 모드에서만 쓰입니다. 스키마의 `min` 100 · `max` 2000 을 코어 설정 저장 검증이 규칙으로 쓰고(범위 밖 422), 설정 화면 입력칸도 같은 값을 갖습니다 |
 | `theme_color` | `#1D4ED8` | 검색 창의 강조 색 |
+
+저장 검증 오류 문구의 항목 이름은 `RegisterSettingsAttributeLabelsListener` 가 `core.plugin_settings.update_validation_rules`
+필터에서 요청 언어로 등록합니다(`messages.settings.{필드}_attribute`). 스키마 `label` 은 ko/en 만 들고 있어, 등록하지 않으면
+일본어 화면의 오류에 한국어 항목 이름이 섞입니다. 설정 항목을 더하면 이 번역 키도 ko/en lang 과 언어팩에 함께 둡니다.
 
 `getConfigValues()` 가 같은 값을 한 번 더 선언합니다 — 스키마의 `default` 는 설정 화면의
 초기값이고, 이쪽은 설정이 아직 저장되지 않은 상태에서 코드가 읽는 폴백입니다. **두 곳이

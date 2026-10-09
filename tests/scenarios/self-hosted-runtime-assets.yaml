@@ -33,6 +33,8 @@ effects:
   - vendored_asset_declared_path_exists_on_disk
   - vendored_asset_version_matches_declaration
   - vendored_editor_mounts_without_fallback
+  # 본체 실패 때 코어 레이아웃 스크립트 안내와 겹치지 않고 플러그인 안내 한 건(임시 입력창 전환 문장)만 남는다.
+  - editor_script_failure_shows_single_plugin_notice
   # 로더가 두 번 돌아도 먼저 뜬 편집기는 살아 있어 「마운트됨」 축은 green 이다 — 따로 센다.
   - vendored_amd_loader_runs_exactly_once
   - template_external_asset_field_resolves_to_asset_url
@@ -41,11 +43,15 @@ effects:
   - bot_render_path_uses_same_origin_asset
   - layout_script_retries_before_failing
   - layout_script_url_converted_to_current_mode
+  - trusted_external_layout_script_not_mode_converted
+  - already_loaded_layout_script_skipped
+  - undeclared_external_layout_script_blocked
   # 레이아웃 편집기 미리보기도 런타임처럼 레이아웃 스크립트 주소를 자산 주소 방식으로 바꿔 싣는다
   - preview_layout_script_url_converted_to_current_mode
   # 미리보기·편집기 플러그인 로더가 겹치거나 초기화 요청이 동시에 와도 편집기 본체(UMD)는 한 번만 실행된다
   - vendored_editor_umd_executes_once_across_loaders
   - failed_layout_script_recorded_and_others_continue
+  - layout_script_failure_label_is_human_readable
   - failed_asset_shows_retry_notice
   - failed_asset_falls_back_to_plain_input
   - retry_recovers_editor

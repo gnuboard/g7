@@ -1,0 +1,20 @@
+feature: 우편번호 환경설정 저장 검증 — 팝업 크기 범위와 오류 문구의 항목 이름
+
+description: |
+  팝업 너비·높이는 설정 스키마의 min 100 · max 2000 으로 묶이고, 코어 설정 저장 검증(UpdatePluginSettingsRequest)이
+  범위 밖을 422 로 거절한다(범위 안은 저장). 스키마 label 은 ko/en 만 들고 있어, 설정 리스너
+  (RegisterSettingsAttributeLabelsListener)가 항목 이름을 요청 언어로 `validation.attributes` 에 등록한다 — 등록하지
+  않으면 일본어 화면의 오류 문구에 한국어 항목 이름(「팝업 너비 (px)」)이 섞인다. 일본어 이름은 번들 일본어 언어팩이
+  채운다. 범위 판정(422·저장)은 en·ko 요청으로 확인한다.
+
+axes:
+  locale: [ko, en, ja]
+
+effects:
+  - popup_size_out_of_range_returns_422
+  - popup_size_in_range_saves
+  - every_settings_field_error_label_follows_request_locale
+  - no_korean_field_label_in_non_korean_error
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/tests/Feature/Settings/SettingsValidationLabelTest.php

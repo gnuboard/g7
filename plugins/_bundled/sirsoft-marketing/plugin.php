@@ -21,6 +21,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 변경 시 실행되는 액션 훅',
                     'en' => 'Action hook executed when user marketing consent changes',
+                    'ja' => 'ユーザーのマーケティング同意が変更されたときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -33,6 +34,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅',
                     'en' => 'Action hook executed when a marketing consent field is granted',
+                    'ja' => 'ユーザーのマーケティング同意項目が同意(granted)に変わったときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -45,6 +47,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅',
                     'en' => 'Action hook executed when a marketing consent field is revoked',
+                    'ja' => 'ユーザーのマーケティング同意項目が撤回(revoked)に変わったときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -57,6 +60,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅',
                     'en' => 'Filter hook to modify marketing consent data before saving consents in bulk',
+                    'ja' => '同意項目を一括保存する前に同意データを加工するフィルターフック',
                 ],
                 'parameters' => [
                     'data' => 'array - 동의 데이터 [동의 키 => bool]',

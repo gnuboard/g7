@@ -22,6 +22,18 @@ interface AttachmentRepositoryInterface
     public function findById(string $slug, int $id): ?Attachment;
 
     /**
+     * 이 게시판에 올렸지만 아직 글에 이어지지 않은 임시 첨부를 ID 로 조회
+     *
+     * 임시 첨부는 board_id=0 이라 findById 로는 찾지 못한다. 게시판 임시 경로(`{slug}/temp/…`)의
+     * 것만 돌려주므로 다른 게시판 주소로는 찾을 수 없다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  첨부파일 ID
+     * @return Attachment|null 임시 첨부 또는 null
+     */
+    public function findTempById(string $slug, int $id): ?Attachment;
+
+    /**
      * 해시로 첨부파일 조회
      *
      * @param  string  $slug  게시판 슬러그
@@ -158,6 +170,15 @@ interface AttachmentRepositoryInterface
      * @return int 연결된 첨부파일 수
      */
     public function linkAttachmentsByIds(string $slug, array $ids, int $postId): int;
+
+    /**
+     * 주어진 ID 중 다른 사람이 올린 임시 첨부(아직 글에 이어지지 않은 것)의 ID 를 돌려줍니다.
+     *
+     * @param  array<int>  $ids  첨부파일 ID 배열
+     * @param  int|null  $userId  현재 사용자 ID (null 이면 비회원 — 회원이 올린 임시 첨부가 남의 것)
+     * @return array<int, int> 남이 올린 임시 첨부 ID 목록
+     */
+    public function findForeignTempAttachmentIds(array $ids, ?int $userId): array;
 
     /**
      * 게시판 ID 기준으로 첨부파일을 일괄 소프트 삭제합니다.

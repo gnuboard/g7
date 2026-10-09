@@ -7,6 +7,7 @@ use App\Enums\TotalRelation;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchPagePolicy;
+use App\Seo\SeoRenderRequest;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -22,6 +23,7 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
@@ -532,6 +534,7 @@ class PostService
      * @return Post 블라인드 처리된 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
+     * @throws DeletedContentBlindException 삭제된 게시글인 경우 (먼저 복구해야 한다)
      */
     public function blindPost(string $slug, int $id, string $reason, ?string $triggerType = null): Post
     {
@@ -539,6 +542,12 @@ class PostService
         $this->validateBoardExists($slug);
 
         $post = $this->postRepository->findOrFail($slug, $id);
+
+        // 삭제된 글은 블라인드하지 않는다 — 상태 변경이 deleted_at 을 지워 삭제가 풀린다.
+        // 되돌리는 길은 명시적인 복구 하나다(관리자 단건, 신고 게시 중단·자동 블라인드 공통).
+        if ($post->status === PostStatus::Deleted || $post->trashed()) {
+            throw DeletedContentBlindException::post();
+        }
 
         // 멱등성: 이미 블라인드 상태이면 중복 처리 방지
         if ($post->status === PostStatus::Blinded) {
@@ -696,7 +705,14 @@ class PostService
 
             try {
                 $post = $this->postRepository->findOrFail($slug, $id);
+            } catch (ModelNotFoundException) {
+                // 다른 게시판의 글이거나 없는 번호다 — 처리 중 오류가 아니라 대상이 없다는 사유로 알린다.
+                $skipped[] = $this->bulkSkippedEntry($id, 'not_found', null);
 
+                continue;
+            }
+
+            try {
                 $skipReason = $this->resolveBulkSkipReason($post, $slug, $id, $action, $board);
 
                 if ($skipReason !== null) {
@@ -778,6 +794,11 @@ class PostService
         }
 
         if ($action === 'blind') {
+            // 삭제된 글을 블라인드하면 삭제가 풀린다 — 단건 블라인드가 거절하는 것과 같은 판정이다.
+            if ($post->status === PostStatus::Deleted || $post->trashed()) {
+                return 'already_deleted';
+            }
+
             return $post->status === PostStatus::Blinded ? 'already_blinded' : null;
         }
 
@@ -804,8 +825,10 @@ class PostService
     /**
      * 캐시 기반으로 조회수를 한 번만 증가시킵니다.
      *
-     * 로그인 사용자는 user_id, 비로그인은 IP 기반으로 식별하며,
+     * 로그인 사용자는 user_id, 비로그인은 IP 기반으로 식별하며(API 는 세션이 없는 무상태 요청),
      * 환경설정의 view_count_cache_ttl(기본 86400초) 내 동일 게시글 재조회 시 조회수가 증가하지 않습니다.
+     * SEO 렌더러가 서버 자신에게 보내는 내부 호출(글 작성·수정 직후 캐시 재생성, 검색 봇 방문)은
+     * 열람이 아니므로 세지 않는다 — 세면 글을 쓰자마자 조회수 1 이 되고 서버 IP 키가 먼저 잡힌다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
@@ -814,6 +837,10 @@ class PostService
      */
     public function incrementViewCountOnce(string $slug, int $id, ?int $boardId = null): bool
     {
+        if (SeoRenderRequest::matches(request())) {
+            return false;
+        }
+
         $identifier = Auth::id() ?? request()->ip();
         $key = "post_view_{$slug}_{$id}_{$identifier}";
 
@@ -1053,6 +1080,9 @@ class PostService
         string $context = ''
     ): void {
         // 방안 A: 업로드 완료된 첨부파일 ID로 연결 (신규 방식)
+        // 남이 올린 임시 첨부는 번호로도 잇지 않는다 (임시 키 경로와 같은 소유 기준)
+        $attachmentIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds);
+
         if (! empty($attachmentIds)) {
             // 개수 상한 최종 방어선 (기존 연결분과 합산) — Request 는 files[] 만 세므로 여기서 다시 판정한다
             $this->attachmentService->assertAttachmentCountWithin($slug, $postId, count($attachmentIds));
@@ -1157,6 +1187,10 @@ class PostService
             $filters['user_id'] = $requestParams['user_id'] ?? null;
             $filters['created_at_from'] = $requestParams['created_at_from'] ?? null;
             $filters['created_at_to'] = $requestParams['created_at_to'] ?? null;
+            // 작성자 검색이 회원 이메일까지 찾는 것은 이메일을 보여 주는 관리자 목록에서만
+            $filters['search_author_email'] = true;
+            // 관리자 목록 검색은 답글(제목·내용·작성자)도 찾는다 — 걸린 답글이 달린 원글을 결과로 센다(7.1.0 실측 O-K3-13)
+            $filters['search_replies'] = true;
         }
         // 사용자 컨텍스트에는 추가 필터가 없다. 예전에는 여기서 `exclude_blinded` 를 세웠지만
         // 저장소가 그 키를 읽지 않아 한 번도 적용되지 않았고, 뒤늦게 배선하면 블라인드 글이
@@ -1389,7 +1423,15 @@ class PostService
 
         return $this->cache->remember(
             "user_activity_stats_{$userId}",
-            fn () => $this->postRepository->getUserActivityStats($userId),
+            function () use ($userId) {
+                $stats = $this->postRepository->getUserActivityStats($userId);
+
+                // 「작성한 댓글」은 내가 쓴 댓글 수다 — 내 글들에 달린 댓글 합(받은 댓글)이 아니라
+                // 「내가 쓴 댓글」 목록과 같은 조건으로 센다. 두 숫자가 어긋나면 탭 숫자와 목록 건수가 다르게 보인다.
+                $stats['total_comments'] = $this->commentRepository->countUserComments($userId);
+
+                return $stats;
+            },
             $ttl,
             tags: ['board-stats']
         );
@@ -1437,11 +1479,18 @@ class PostService
      */
     public function getUserPublicStats(int $userId): array
     {
-        $cacheKey = "user_public_stats_{$userId}";
+        // 작성글 목록(getUserPublicPosts)과 같은 기준 — 본인이 아니면 읽을 수 없는 게시판을 뺀다.
+        // 보는 사람마다 뺄 게시판이 달라지므로 그 목록을 캐시 키에 넣는다(키를 바꿔 옛 공용 값은 쓰지 않는다).
+        $viewerId = Auth::id();
+        $excludeBoardIds = $viewerId !== null && $viewerId === $userId
+            ? []
+            : $this->boardService->getUnreadableActiveBoardIds();
+        sort($excludeBoardIds);
+        $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds));
 
         return $this->cache->remember(
             $cacheKey,
-            fn () => $this->postRepository->getUserPublicStats($userId),
+            fn () => $this->postRepository->getUserPublicStats($userId, $excludeBoardIds),
             g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
         );

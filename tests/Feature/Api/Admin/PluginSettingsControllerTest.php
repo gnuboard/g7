@@ -47,7 +47,6 @@ class PluginSettingsControllerTest extends TestCase
      * 관리자 역할 생성 및 할당
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
-     *
      * @return User User 인스턴스
      */
     private function createAdminUser(array $permissions = ['core.plugins.read', 'core.plugins.update']): User
@@ -122,8 +121,8 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 플러그인 생성 (DB 레코드만)
-     * @param $identifier 식별자
      *
+     * @param  $identifier  식별자
      * @return Plugin Plugin 인스턴스
      */
     private function createTestPlugin(string $identifier = 'test-settings-plugin'): Plugin
@@ -140,9 +139,9 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 생성
-     * @param $identifier 식별자
-     * @param $settings 설정 배열
      *
+     * @param  $identifier  식별자
+     * @param  $settings  설정 배열
      * @return void 반환값 없음
      */
     private function createTestSettingsFile(string $identifier, array $settings): void
@@ -159,8 +158,8 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 삭제
-     * @param $identifier 식별자
      *
+     * @param  $identifier  식별자
      * @return void 반환값 없음
      */
     private function cleanupTestSettings(string $identifier): void
@@ -598,5 +597,52 @@ class PluginSettingsControllerTest extends TestCase
 
         // 정리
         $this->cleanupTestSettings('sirsoft-daum_postcode');
+    }
+
+    /**
+     * 우편번호 팝업 크기는 스키마의 범위(min·max) 밖이면 422 로 거절하고, 설정 파일을 만들지 않는다.
+     *
+     * 종전 스키마는 정수 여부만 걸어 너비 -10 도 저장됐다(7.1.0 실측 M1-O11). 숫자 칸 둘(너비·높이) 모두 본다.
+     *
+     * @scenario endpoint=update,plugin_existence=installed,payload_scope=out_of_range
+     *
+     * @effects update_rejects_out_of_range_plugin_setting
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_rejects_out_of_range_postcode_popup_size(): void
+    {
+        if (! $this->pluginManager->getPlugin('sirsoft-daum_postcode')) {
+            $this->markTestSkipped('sirsoft-daum_postcode plugin not installed');
+        }
+        if (! Plugin::where('identifier', 'sirsoft-daum_postcode')->exists()) {
+            $this->createTestPlugin('sirsoft-daum_postcode');
+        }
+
+        // 개발 사이트와 같은 저장 경로를 쓰므로, 시작 때 없던 설정 파일은 끝나면 지운다(수정 전 실행이 200 으로 저장해도 남지 않게)
+        $settingsDir = ExtensionStoragePath::plugin('sirsoft-daum_postcode');
+        $existedBefore = File::isDirectory($settingsDir);
+
+        try {
+            app()->setLocale('ko');
+            foreach (['popup_width', 'popup_height'] as $field) {
+                foreach ([-10, 0, 99, 2001] as $value) {
+                    $response = $this->authRequest()->withHeaders(['Accept-Language' => 'ko'])
+                        ->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [$field => $value]);
+
+                    $response->assertStatus(422)->assertJsonValidationErrors($field);
+                    $message = $response->json('errors.'.$field.'.0');
+                    $this->assertStringContainsString($field === 'popup_width' ? '팝업 너비' : '팝업 높이', $message);
+                    $this->assertMatchesRegularExpression('/100|2000/', $message);
+                }
+            }
+
+            $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', ['popup_width' => 100, 'popup_height' => 2000])
+                ->assertStatus(200);
+        } finally {
+            if (! $existedBefore) {
+                $this->cleanupTestSettings('sirsoft-daum_postcode');
+            }
+        }
     }
 }

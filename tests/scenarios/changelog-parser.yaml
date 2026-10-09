@@ -1,0 +1,21 @@
+feature: 코어 CHANGELOG 파서 — 버전·카테고리 파싱, 버전 범위, 경로 결정, 이어 쓴 줄
+
+description: |
+  확장 상세 「변경 내역」·코어 업데이트 안내가 읽는 `App\Extension\Helpers\ChangelogParser` 의 계약이다.
+  Keep a Changelog 형식의 버전 머리(대괄호 유무·날짜 유무·프리릴리스)와 카테고리를 파싱하고, 비었거나 없는 파일은 빈 결과를,
+  버전 범위는 from 초과·to 이하로 고르며, active/_bundled 소스에서 파일 경로를 정한다.
+  항목 밑에 들여써 이어 쓴 줄은 앞 항목에 이어 붙인다 — 종전에는 둘째 줄부터 버려져 상세 창의 문장이 잘렸다(7.1.0 O-G3-1).
+  중첩 bullet·느슨한 목록·코드 블록·소제목·CRLF 경계와 실제 번들 CHANGELOG 전수를 함께 고정한다.
+
+axes:
+  case: [parse_versions, empty_input, version_range, resolve_path, continuation_lines]
+
+effects:
+  - changelog_versions_and_categories_parsed
+  - changelog_empty_inputs_return_empty
+  - changelog_version_range_filtered
+  - changelog_path_resolved_by_source
+  - changelog_continuation_lines_kept
+
+test_files:
+  - tests/Unit/Extension/ChangelogParserTest.php

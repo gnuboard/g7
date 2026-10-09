@@ -18,7 +18,7 @@ return [
         'update_success' => 'Board has been updated.',
         'delete_success' => 'Board has been deleted.',
         'copy_success' => 'Board has been copied.',
-        'bulk_members_success' => 'Updated member lists of :count board. (:skipped skipped)|Updated member lists of :count boards. (:skipped skipped)',
+        'bulk_members_success' => 'Updated member lists of :count board. (:skipped skipped, :unchanged unchanged)|Updated member lists of :count boards. (:skipped skipped, :unchanged unchanged)',
         'bulk_members_failed' => 'Failed to assign board managers/staff in bulk.',
         'config_retrieved' => 'Board configuration retrieved.',
         'types_retrieved' => 'Board types retrieved.',
@@ -77,6 +77,7 @@ return [
         'delete_failed' => 'Failed to delete post.',
         'blind_success' => 'Post has been blinded.',
         'blind_failed' => 'Failed to blind post.',
+        'blind_deleted_not_allowed' => 'A deleted post cannot be blinded. Restore it first, then blind it.',
         'restore_success' => 'Post has been restored.',
         'restore_failed' => 'Failed to restore post.',
         'blinded_post_access_denied' => 'This post has been blinded.',
@@ -113,6 +114,8 @@ return [
         'delete_forbidden' => 'You do not have permission to delete this comment.',
         'blind_success' => 'Comment has been blinded.',
         'blind_failed' => 'Failed to blind comment.',
+        'blind_deleted_not_allowed' => 'A deleted comment cannot be blinded. Restore it first, then blind it.',
+        'restore_parent_deleted' => 'The post this comment belongs to is deleted. Restore the post first.',
         'restore_success' => 'Comment has been restored.',
         'restore_failed' => 'Failed to restore comment.',
         'blinded_comment_content' => 'This comment has been hidden according to the community guidelines.',
@@ -333,7 +336,7 @@ return [
         'blind_by_report' => 'Blinded by report processing',
         'blind_by_auto_hide' => 'Automatically blinded due to accumulated reports.',
         // Modal notice messages
-        'blinded_will_be_public' => '{count} blinded content(s) will be made public.',
+        'blinded_will_be_public' => '{count} blinded item will be made public.|{count} blinded items will be made public.',
         'already_reported' => 'You have already reported this content.',
     ],
 
@@ -371,6 +374,7 @@ return [
             'has_replies' => 'Has replies (the reply deletion policy blocks deleting it)',
             'already_blinded' => 'Already blinded',
             'already_published' => 'Already published',
+            'not_found' => 'Post not found in this board',
             'unknown_action' => 'Unknown action',
             'error' => 'An error occurred while processing',
         ],
@@ -436,6 +440,7 @@ return [
             'manual' => 'Manual',
         ],
         // Display convention for FormatsBoardDate — shared across post/comment lists, dashboard captions.
+        // Counted phrases are read with trans_choice: singular|plural.
         'relative_time' => [
             'just_now' => 'just now',
             'minutes_ago' => ':count minute ago|:count minutes ago',

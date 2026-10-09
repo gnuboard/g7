@@ -532,10 +532,16 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | --- | --- | --- |
 | `md`(기본) | 전체 폭 첸부 영역 | 여백 `p-8`, 안내 문구 2줄 |
 | `sm` | 종형 패널·좌우 분할 폼 | 여백 `p-4` |
-| `xs` | 표 한 칸(아이콘 지정 등) | 여백 `p-2`, 제한 안내 접음 |
+| `xs` | 표 한 칸(아이콘 지정 등) | 여백 `p-2`, 제한 안내 접음. 첨부 목록도 화면 폭과 무관한 두 칸 격자로 그리고, 첨부 개수와 한도 안내를 줄을 나눠 세운다 |
 
 크기를 호출처 className 으로 덮어쓰지 않는다 — 화면마다 값이 갈려 같은 부품이 서로 다르게 보인다.
 받지 않는 속성을 적으면 **조용히 무시**된다(감사 룰 `component-unknown-prop` 이 잡는다).
+
+##### FileUploader 키보드 초점
+
+- **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
+- **언어 전환 인계**: 화면 언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. 업로더는 언어 전환 중에 내려갈 때만 아직 올리지 않은 대기 파일과 끌어 놓은 순서를 `G7Core.locale.handoff` 에 맡기고(키: 경로 + collection + 업로드 시점), 새 인스턴스가 마운트 때 한 번 꺼내 이어 쓴다. 올리던 항목은 대기 상태로 되돌린다. 일반 화면 이동에서는 맡기지 않는다(engine-v1.79.0). 회귀 테스트: `src/components/composite/__tests__/FileUploaderLocaleHandoff.test.tsx`.
+- **생략한 배열 속성의 기본값**: `initialFiles`·`roleIds` 를 생략하면 모듈 상수인 얼린 빈 배열을 쓴다. 렌더마다 새 배열을 기본값으로 만들면 `initialFiles` 동기화 effect 가 상태를 바꾸고 다시 그리기를 부르는 일이 끝없이 이어진다. 동기화 effect 는 같은 항목이 같은 순서로 있으면 상태를 바꾸지 않으므로, 부모가 렌더마다 새 빈 배열을 넘겨도 다시 그리기가 이어지지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderDefaultInitialFiles.test.tsx`.
 
 #### 에디터
 
@@ -551,8 +557,12 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `TabNavigation` | 탭 네비게이션 | tabs, activeTabId, onTabChange, variant, style |
 | `TabNavigationScroll` | 탭 네비게이션 + 스크롤 (setState + scrollToSection 내장) | tabs, activeTabId, actions, style, activeClassName, ... |
 | `Breadcrumb` | 브레드크럼 | items, separator, showHome, homeHref, maxItems |
-| `ActionMenu` | 드롭다운 액션 메뉴 (메뉴 단추 패턴 — 항목은 `role=menuitem` 단추, 화살표·Esc) | items, triggerLabel(비우면 아이콘만), triggerAriaLabel(아이콘만일 때 이름, 기본 「더보기」), triggerIconName, position, style |
+| `ActionMenu` | 드롭다운 액션 메뉴 (메뉴 단추 패턴 — 항목은 `role=menuitem` 단추, 키보드로 열면 첫 항목에 초점, 화살표·Home·End·Enter·Space·Esc) | items, triggerLabel(비우면 아이콘만), triggerAriaLabel·ariaLabel(아이콘만일 때 이름, 기본 「더보기」), triggerIconName, position, style |
 | `Dropdown` | 드롭다운 메뉴 | label, items, onItemClick, position, style |
+
+- `TabNavigationScroll` 의 `tabs` 항목에 `if` 를 실을 수 있다. 엔진이 `{{…}}` 를 값으로 풀어 넘기면 컴포넌트가 **키가 있고 값이 거짓인 항목**을 탭 버튼, 좁은 화면 선택 목록, 화살표 이동, Scroll Spy 에서 모두 뺀다(키가 없으면 늘 보인다). 확장이 `inject_props` 로 덧붙이는 탭(회원 상세 「반응」 등)이 데이터나 권한이 없을 때 버튼만 남지 않게 하는 용도다. `ActionMenu` 의 `items[].if` 는 `false` 일 때만 뺀다.
+- `TabNavigationScroll` 은 `enableScrollSpy` 일 때 **누른 탭을 사용자가 직접 스크롤(휠·터치·스크롤 키)할 때까지 활성으로 고정**한다. 스크롤 이동이 길거나 섹션이 맨 위까지 오지 못하는 페이지 바닥에서도 Scroll Spy 가 다른 탭으로 바꾸지 않는다. `onTabChange`·항목 `onClick` 을 줘도 Scroll Spy 를 쓰면 누른 탭을 바로 활성으로 그린다.
+- `ActionMenu` 는 WAI-ARIA 메뉴 버튼이다. children 으로 넘긴 트리거(목록의 회원 이름 등)도 `role="button"`·`tabindex=0`·`aria-haspopup="menu"`·`aria-expanded` 를 받고 Enter·Space·아래 화살표로 열린다. 키보드로 열면 첫 항목에 초점이 가고, 항목(`role="menuitem"`, 잠긴 항목은 `aria-disabled`)은 위아래 화살표·Home·End 로 옮겨 Enter·Space 로 고르며 Escape 로 닫고 트리거로 초점을 돌린다. children 트리거 안에 버튼·링크를 넣지 않는다(초점 자리가 겹친다). 글자 없는 아이콘 트리거(`triggerLabel=""`)는 `triggerAriaLabel`(같은 뜻의 `ariaLabel` 도 받는다)을 이름으로 달고, 주지 않으면 공용 문구 `common.more_actions`(엔진 밖 대체 `More actions`)로 채운다. 잠긴 항목은 위험 색을 빼고 회색으로 흐리게 그린다. DataGrid 행 메뉴(…)는 작업 열 머리말 문구(`actionsColumnHeader`)를 넘긴다.
 
 #### 모달/다이얼로그
 
@@ -564,6 +574,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `AlertDialog` | 알림 다이얼로그 (확인 버튼만) | isOpen, onClose, title, message, confirmText, ... |
 | `Toast` | 토스트 알림 | toasts, position, onRemove |
 | `Alert` | 알림 메시지 | type, message, dismissible, onDismiss |
+
+- `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다.** 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안에서 쓰는 드롭다운·메뉴·검색 목록은 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 자기 onKeyDown 으로 곧바로 닫는 팝업도 키를 누른 순간(캡처 단계)의 펼침 여부로 판정한다. `aria-haspopup` 없는 펼침(아코디언)과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 
 #### 관리자 UI
 
@@ -579,6 +591,11 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `ThemeToggle` | 테마 모드 전환 (다크/라이트/자동) | onThemeChange, autoText, lightText, darkText |
 | `LanguageSelector` | 언어 선택 드롭다운 (`apiEndpoint` 가 동일 출처일 때만 토큰을 싣는다) | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
 | `PageTransitionIndicator` | 페이지 전환 로딩 표시 | style |
+
+- **`LanguageSelector` 목록 구조와 키보드**: 독립 모드 단추는 `aria-haspopup="listbox"` 와 펼쳤을 때 `aria-controls` 로 목록을 가리킨다. 목록은 `role="listbox"`(이름 = `languageText`), 항목은 `role="option"` + `aria-selected` 다. 단추에서 ↓/↑·Enter·Space 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑(끝에서 돈다)·Home·End 로 옮기며 Enter 로 고른다. Esc 는 목록을 닫고 단추로 초점을 돌리고, Tab 으로 벗어나면 닫힌다. 현재 언어를 다시 고르면 요청 없이 닫힌다. 회귀 테스트: `src/components/composite/__tests__/LanguageSelector.listbox.test.tsx`.
+- **아이콘 단추와 영역의 접근 이름**: 글자 없는 단추와 이름 붙은 영역은 이름을 공용 문구 키로 단다 — `ThemeToggle` 단추 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추 `common.delete_notification`, `Alert` 닫기 단추 `common.close_alert`, `Breadcrumb` 영역 `common.breadcrumb`, `TagSelect` 태그 지우기 단추 `common.tag_input.remove`(`{{label}}` = 태그 이름). 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
+- **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 그래서 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`, 필요하면 `title`)을 공용 문구 키로 단다. 레이아웃 예: 새로고침 `common.refresh`, 삭제 `common.delete`, 편집 `common.edit`, 더보기 `common.more_actions`, 선택 지우기 `common.clear_selection`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 쪽 넘김 `common.first_page`/`common.prev_page`/`common.next_page`/`common.last_page`, 값 보기 `common.show_value`/`common.hide_value`. `IconButton` 은 `label` 이 없으면 `ariaLabel`, 다음으로 아이콘별 기본 이름(새로고침, 추가, 닫기, 삭제, 편집, 검색, 내려받기, 더보기) 순으로 이름과 `title` 을 단다. 컴포넌트 안 아이콘 단추: `MultilingualInput` 언어 삭제 `common.multilingual.remove_language`(`{{language}}`), `MultilingualTagInput` 태그 지우기 `common.tag_input.remove`, `SortableMenuItem` 펼침 단추 `common.expand`/`common.collapse`, `UserProfile` 덮개 단추 모드 `common.user_menu`. `Alert` 유형 아이콘은 꾸밈이다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconButton.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
+- **화면 문구 기본값**: 레이아웃이 문구 prop 을 넘기지 않으면 기본값은 공용 문구 키를 따르고, 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. `LoginForm`(`auth.login.*`), `NotificationCenter`(`admin.notifications` 계열), `UserProfile`(`admin.profile_settings`, `admin.logout`, 처리 중 `common.logging_out`), `SearchableDropdown`(`common.search_placeholder`, `common.no_results`, `common.type_to_search`, `common.select_placeholder`, `common.selected_count`), `LanguageSelector`(`admin.language`), `EmptyState` 그림 대체 글 `common.empty_illustration`, `AdminSidebar` 로고 대체 글 `common.logo`, `TagSelect` 빈 안내 `common.no_items_selected`, `ThemeToggle` 메뉴(`admin.theme.auto`/`light`/`dark`), `FileInput`(`common.file_input.*`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `ActionMenu` 트리거 글자 `common.actions`(대체 문구 `Actions`, 빈 문자열은 아이콘만), 아이콘 단추 접근 이름 `ThemeToggle` `common.theme_select`(대체 `Theme`), `UserProfile` 덮개 단추 `common.user_menu`(대체 `User menu`). 기본값을 영문 문자열로 되돌려 박지 않는다. 회귀 테스트: `src/components/composite/__tests__/DefaultTextI18n.test.tsx`.
 
 #### 레이아웃 편집
 

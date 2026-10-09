@@ -36,6 +36,7 @@ use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 
 /**
@@ -72,6 +73,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         BoardService::class,
         CommentService::class,
         PostService::class,
+        ReactionService::class,
         ReportService::class,
     ];
 

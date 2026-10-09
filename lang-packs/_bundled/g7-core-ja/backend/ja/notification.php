@@ -97,6 +97,8 @@ return [
             'recipient_value' => '受信者の値',
             'recipient_relation' => '関連ユーザーの関係',
             'recipient_exclude_trigger_user' => 'イベント発生者を除外',
+            'subject' => '通知の件名',
+            'body' => '通知の本文',
         ],
     ],
     // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数、identity は本人認証通知の共通変数。キーがない場合は宣言文字列をそのまま使う。

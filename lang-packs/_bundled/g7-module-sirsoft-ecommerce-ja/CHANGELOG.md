@@ -9,11 +9,12 @@
 ### Added
 
 - 상품 등록·수정 옵션의 마일리지 칸 이름(`admin/product.options.mileage_value_label`·`mileage_type_label` — 「マイレージ積立値」「マイレージ積立単位」)과 마일리지 설정의 적립 지연 일수 칸 이름(`admin/mileage_settings.basic.earn_delay_days` — 「積立遅延日数」), 라벨 하나 뒤에 칸이 여럿 붙은 자리의 칸 이름(`admin/personal_payment.filter.date_type`·`admin/order.filter.date_type_select`·`currency_select`·`admin/product.filter.date_type_select`·`price_type_select`·`admin/product.modal.bulk_price.unit`·`admin/claim.filter.currency`·`admin/promotion_discount_code.create.field.benefit_unit_fixed`·`benefit_unit_rate`·`admin/promotion_discount_code.filter.benefit_amount_unit`·`admin/main_banner.detail.field.title_position`·`content_position`·`admin/settings.basic_info.business_info.email_domain_select`·`admin/mileage_settings.currency.earn_rounding_unit_label`·`earn_rounding_method_label`·`earn_rounding_unit_of`·`earn_rounding_method_of` — 「日付の基準」「通貨」「価格の基準」「変更の単位」「定額割引の単位」「定率割引の単位」「特典金額の単位」「タイトルの位置」「内容の位置」「メールドメインの選択」「積立の切り捨て単位」「積立の切り捨て方式」)의 일본어 번역을 추가했습니다.
+- 카테고리·브랜드·쿠폰·상품 공통정보·상품정보제공고시·상품 옵션·배송사·배송정책 저장의 다국어 필수 문구에 쓰는 칸 이름(`validation.attributes.category_name` 「カテゴリ名」, `brand_name` 「ブランド名」, `coupon_name` 「クーポン名」, `common_info_name` 「共通情報名」, `notice_template_*` 「商品グループ名」·「項目名」·「項目の内容」, `shipping_carrier_name` 「配送業者名」, `shipping_policy_name` 「配送ポリシー名」, 환경설정 배송 탭의 `shipping.carriers.*.name`·`shipping.types.*.name` 「配送業者名」·「配送タイプ名」, `validation.product.attributes.option_group_name` 등 상품 옵션·고시 항목 5건)의 일본어 번역을 추가했습니다.
+- 이커머스 환경설정의 탭 전환 확인 창 문구(`admin/settings.unsaved_tab_modal.*` — 제목, 본문, 「이 탭에 머무르기」, 「저장하지 않고 이동」)의 일본어 번역을 추가했습니다.
 - 결제 통화에서 쓸 수 없는 결제수단을 골랐을 때의 주문 거절 문구(`validation.order.payment_method_not_allowed_for_currency`)의 일본어 번역을 추가했습니다.
 - 대시보드 「오늘」 배지로 연 주문 목록에 보이는 사이트 시간대 기준 안내(`admin/order.filter.site_day_notice`)와, 주문 목록 날짜 기준 인자 검증 문구(`validation.orders.date_basis.in`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
 - 관리자 주문 상세 관리자 메모 저장 실패 안내(`admin/order.detail.handler.memo_save_failed` — 「管理者メモの保存に失敗しました。」)와 반품·교환 [완료 처리] 창의 사용 마일리지 반환 표기 2건(`admin/claim.complete.row_points`·`refund_now_desc_points`)의 일본어 번역을 추가했습니다.
-- 쇼핑몰 환경설정에서 저장하지 않은 변경이 있을 때 탭 이동 전에 묻는 확인 창 문구(`admin/settings.unsaved_tab_change.*` — 「保存していない変更があります」·[とどまる]·[移動])의 일본어 번역을 추가했습니다.
 - 상품 등록·수정 화면에서 선택지 조회 권한이 없을 때 칸 아래에 뜨는 안내 7건(`admin/product.selector_forbidden.*` — 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급, 예: 「配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。」)의 일본어 번역을 추가했습니다.
 - 교환 재발송지의 해외 주소 도시·주 칸 문구 — 관리자 대리 접수 창 입력 안내(`admin/order.claim_request.city`·`state`)와 검증 항목명(`validation.request_attributes.redelivery_city`·`redelivery_state`) — 의 일본어 번역(「都市」「州/道」)을 추가했습니다.
 - 부분 취소 주문을 되살리는 확인 창의 안내(`admin/order.manual_paid.restoration_hint_partial`)와, 사용 마일리지를 차감하지 않은 주문의 환불 확인 창 안내(`admin/claim.detail.refund_execute.points_not_deducted`)의 일본어 번역을 추가했습니다.
@@ -38,6 +39,7 @@
 - 관리자가 무통장 주문에 입금을 기록했을 때 남는 활동 로그 문구(`activity_log.action.deposit_record`·`activity_log.description.order_deposit_recorded`, 「入金記録」)의 일본어 번역을 추가했습니다.
 - 관리자 무통장 입금확인 창에서 이미 결제 이후 단계인 주문에 보이는 안내(`admin/order.detail.modal.confirm_deposit.past_payment_hint`)와, 그런 주문에 입금을 기록했을 때의 응답 문장(`messages.orders.deposit_recorded_status_kept`)의 일본어 번역을 추가했습니다.
 - 「문의 답변 완료」 알림의 수신자 관계 이름(`messages.notification_relations.author`, 「お問い合わせの投稿者」)을 일본어로 번역했습니다.
+- 관리자 경로 표시 정보의 모듈 이름(`common.module_name` 「eコマース」)을 일본어로 번역했습니다.
 - 「마일리지로 환불」 현금분 지급(환불 지급 유형·활동로그), 환불 실행 중 마일리지·쿠폰·재고 복원 실패 안내, PG 장부 반영 실패 표식 안내, 관리자 주문·클레임 상세의 「마일리지로 환불」 행 문구를 추가했습니다.
 - 관리자 주문 수동 결제 처리 확인 창(재고 차감·사용 마일리지 차감·결제금액 기록)과 취소 주문 재활성 복원 안내 문구(`admin/order.manual_paid.*`), 관련 예외(`exceptions.mileage.insufficient_for_payment_complete*`·`exceptions.manual_paid.*`·`exceptions.reactivation.*`)·응답 메시지(`orders.manual_paid_preview_*`)·활동 로그(`action.manual_paid_effects`·`description.order_manual_paid_effects`·`manual_paid.items.*`)·환불 한도 수단 이름(`claims.cancellable_method.reactivated_cash`)의 일본어 번역을 추가했습니다.
 - 관리자 클레임 목록·취소 상세의 「재활성됨」·「일부 재활성됨」 배지와 취소 정보 카드의 재활성 줄 문구(`admin/claim.column.reactivated_*`·`detail.cancel_info.reactivated_*`)의 일본어 번역을 추가했습니다.
@@ -213,6 +215,7 @@
   일본어 번역을 지웠습니다. 신청서 상태 변경 칸에 「완료」가 더 이상 서지 않아 그 안내가 뜰 자리가 없어졌습니다.
 - 원본에서 지운 번역을 함께 정리했습니다. 화면에 한 번도 나오지 않던 관리자 창 설명 문구 15개(`admin.*.modal.*.description`, `admin.product.labels.modal_description`)와, 걷어낸 쿠폰 목록 좁은 화면 카드의 라벨(`admin.promotion_coupon.mobile.*` 8개)입니다.
 - `seed/identity_messages.json` — 이커머스 1.3.0 에서 본인인증 문구가 알림 정의로 옮겨졌습니다.
+- 한국어 원본에서 사라진 옛 마일리지 적립 설정 화면 문구 묶음(`admin.mileage_deposit_settings`)의 진입 항목과 그 번역 파일(`frontend/partial/admin/mileage_deposit_settings.json`)을 지웠습니다. 화면에 쓰이지 않던 문구입니다.
 
 ## [1.1.4] - 2026-09-06
 

@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 /**
  * 반응 유형 아이콘 이미지 업로드 Feature 테스트.
  *
- * 아이콘은 이미지 업로드만 지원하며(PO 결정 R4), SVG 는 제외한다(PO 결정 R13 —
+ * 아이콘은 이미지 업로드만 지원하며(결정 R4), SVG 는 제외한다(결정 R13 —
  * 첨부 다운로드가 인증 없이 인라인 스트리밍이라 스크립트 실행 위험).
  * 업로드 응답은 코어 <file-uploader> 계약을 따라야 컴포넌트가 그대로 붙는다.
  */
@@ -39,6 +39,8 @@ class ReactionTypeIconUploadTest extends BoardTestCase
             'sirsoft-board.settings.read',
             'sirsoft-board.settings.update',
         ]);
+        // 반응 유형 이름은 사이트 기본 언어 값이 필수다 — 픽스처는 한국어 이름을 싣는다
+        $this->admin->forceFill(['language' => 'ko'])->save();
 
         DB::table('board_reactions')->delete();
         ReactionType::query()->delete();

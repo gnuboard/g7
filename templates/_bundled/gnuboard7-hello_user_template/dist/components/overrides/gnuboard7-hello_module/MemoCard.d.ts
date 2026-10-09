@@ -15,6 +15,10 @@ export interface HelloModuleMemoCardProps {
     accent?: string;
     /** 사용자 정의 클래스 */
     className?: string;
+    /** DOM id — 레이아웃 편집기 [속성] 탭의 「요소 ID」가 여기에 닿는다 */
+    id?: string;
+    /** 레이아웃 편집기가 주입하는 표식과 선택 핸들러 (편집 모드 전용) — 원본과 같은 계약으로 루트에 펼친다 */
+    editorAttrs?: Record<string, unknown>;
 }
 /**
  * `gnuboard7-hello_module` 이 제공하는 `MemoCard` 를 **이 템플릿이 대체한 판본**.

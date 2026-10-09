@@ -179,11 +179,10 @@ return [
     'cooldown_required' => 'Please wait :time before posting again.',
     'cooldown_required_report' => 'Reports can be submitted at :time intervals. Please try again later.',
     'cooldown_duration' => [
+        // Read per unit with trans_choice (singular|plural) and joined with a space — e.g. "1 hour 30 minutes".
         'seconds' => ':seconds second|:seconds seconds',
         'minutes' => ':minutes minute|:minutes minutes',
-        'minutes_seconds' => ':minutes_text :seconds_text',
         'hours' => ':hours hour|:hours hours',
-        'hours_minutes' => ':hours_text :minutes_text',
     ],
 
     // Board validation (backward compatibility)
@@ -394,6 +393,39 @@ return [
             'spam_security.comment_cooldown_seconds' => 'Comment Cooldown (Seconds)',
             'spam_security.report_cooldown_seconds' => 'Report Cooldown (Seconds)',
             'spam_security.view_count_cache_ttl' => 'View Count Cache TTL (Seconds)',
+            // Groups and remaining fields — screen names so fallback messages never show field keys
+            '_tab' => 'Settings Tab',
+            'basic_defaults' => 'Board Settings',
+            'basic_defaults.use_scrap' => 'Enable Scrap',
+            'basic_defaults.blocked_keywords' => 'Blocked Keywords',
+            'basic_defaults.reaction_types.*.id' => 'Reaction Type',
+            'report_policy' => 'Report Policy',
+            'report_policy.notify_admin_on_report' => 'Report Received Admin Notification',
+            'report_policy.notify_admin_on_report_scope' => 'Notification Scope',
+            'report_policy.notify_admin_on_report_channels' => 'Admin Notification Channels',
+            'report_policy.notify_author_on_report_action' => 'Report Action Notification',
+            'report_policy.notify_author_on_report_action_channels' => 'Author Notification Channels',
+            'report_permissions' => 'Report Management Permissions',
+            'spam_security' => 'Security Settings',
+            'notifications' => 'Notification Settings',
+            'notifications.channels' => 'Notification Channels',
+            'notifications.channels.*.id' => 'Notification Channel',
+            'notifications.channels.*.is_active' => 'Notification Channel Enabled',
+            'notifications.channels.*.sort_order' => 'Notification Channel Order',
+            'display' => 'Display Settings',
+            'display.date_display_format' => 'Date Display Format',
+            'seo' => 'SEO Settings',
+            'seo.meta_boards_title' => 'Board List Page Meta Title',
+            'seo.meta_boards_description' => 'Board List Page Meta Description',
+            'seo.meta_board_title' => 'Board Posts Page Meta Title',
+            'seo.meta_board_description' => 'Board Posts Page Meta Description',
+            'seo.meta_post_title' => 'Post Detail Page Meta Title',
+            'seo.meta_post_description' => 'Post Detail Page Meta Description',
+            'seo.seo_boards' => 'Board List Page SEO',
+            'seo.seo_board' => 'Board Posts Page SEO',
+            'seo.seo_post_detail' => 'Post Detail Page SEO',
+            'attachment_settings.purge_enabled' => 'Permanent Cleanup Of Deleted Attachments',
+            'attachment_settings.purge_retention_days' => 'Deleted Attachment Retention Period',
         ],
         'post' => [
             'title' => 'Title',
@@ -434,8 +466,14 @@ return [
             'reason' => 'Restore Reason',
         ],
         'board' => [
+            'name' => 'Board Name',
+            'description' => 'Board Description',
             'add_to_menu' => 'Show in admin menu',
             'blocked_keywords' => 'Blocked Keywords',
+        ],
+        // Board type — multilingual name field (used as the field name in the core required-locale message)
+        'board_type' => [
+            'name' => 'Board Type Name',
         ],
         // Bulk apply of board settings
         'bulk_apply' => [
@@ -511,7 +549,7 @@ return [
         'depth' => [
             'integer' => 'Comment depth must be an integer.',
             'min' => 'Comment depth must be at least :min.',
-            'max' => 'Replies can only be nested up to :max levels.',
+            'max' => 'Replies can only be nested up to :max level.|Replies can only be nested up to :max levels.',
             'exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
         ],
         'user_id' => [
@@ -526,6 +564,9 @@ return [
             'min' => 'Password must be at least :min characters.',
         ],
         'blocked_keyword' => 'Content contains blocked keyword: ":keyword".',
+        'status' => [
+            'in' => 'Invalid comment status.',
+        ],
     ],
 
     // Attachment validation
@@ -750,5 +791,71 @@ return [
         'ip_retention_days' => 'Author IP Retention Period',
         'guest_retention_days' => 'Guest Author Information Retention Period',
         'guest_mode' => 'Guest Post Processing Mode',
+    ],
+
+    // Shared fallback messages for board requests (Concerns\ProvidesFallbackRuleMessages) — used for rules
+    // a request does not word itself
+    'fallback' => [
+        'in' => 'The selected :attribute is invalid.',
+        'not_in' => 'The selected :attribute is not allowed.',
+        'enum' => 'The selected :attribute is invalid.',
+        'exists' => 'The selected :attribute does not exist.',
+        'unique' => 'The :attribute has already been taken.',
+        'required_if' => 'The :attribute field is required when :other is :value.',
+        'required_with' => 'The :attribute field is required when :values is present.',
+        'required_without' => 'The :attribute field is required when :values is not present.',
+        'same' => 'The :attribute field must match :other.',
+        'different' => 'The :attribute field and :other must be different.',
+    ],
+
+    // Shared field names for board requests (Concerns\ProvidesFallbackRuleMessages) — used for fields the
+    // request does not name in attributes(). Array items (key.*) inherit the parent field name.
+    'fallback_attributes' => [
+        'ids' => 'Selected Items',
+        'reason' => 'Reason',
+        'limit' => 'Number Of Items',
+        'period' => 'Period',
+        'type' => 'Board Type',
+        'name' => 'Name',
+        'slug' => 'Slug',
+        'is_active' => 'Active',
+        'search' => 'Search Keyword',
+        'search_field' => 'Search Field',
+        'sort' => 'Sort Order',
+        'sort_by' => 'Sort By',
+        'sort_order' => 'Sort Direction',
+        'filters' => 'Search Filters',
+        'filters.*.field' => 'Search Field',
+        'filters.*.value' => 'Search Keyword',
+        'filters.*.operator' => 'Search Operator',
+        'board_id' => 'Board',
+        'board_slug' => 'Board',
+        'user_uuid' => 'Member',
+        'post_id' => 'Post',
+        'parent_id' => 'Parent Post',
+        'reaction_type_id' => 'Reaction Type',
+        'target_type' => 'Target Type',
+        'target_status' => 'New Status',
+        'reacted_at_from' => 'Reacted From',
+        'reacted_at_to' => 'Reacted To',
+        'scrapped_at_from' => 'Scrapped From',
+        'scrapped_at_to' => 'Scrapped To',
+        'reported_at_from' => 'Reported From',
+        'reported_at_to' => 'Reported To',
+        'verification_token' => 'Verification Token',
+        'force_delete' => 'Permanent Delete',
+        'collection' => 'Attachment Collection',
+        'temp_key' => 'Temporary Upload Key',
+        'order' => 'Attachment Order',
+        'order.*.id' => 'Attachment',
+        'order.*.order' => 'Attachment Position',
+        'categories' => 'Categories',
+        'board_manager_ids' => 'Board Manager',
+        'board_step_ids' => 'Board Staff',
+        'permissions' => 'Permissions',
+        'permissions.*.roles' => 'Permission Roles',
+        'reply_delete_policy' => 'Reply Delete Policy',
+        'attachment_ids' => 'Attachments',
+        'password' => 'Password',
     ],
 ];

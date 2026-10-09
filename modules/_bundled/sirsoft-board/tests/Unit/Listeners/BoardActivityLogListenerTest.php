@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Mockery\MockInterface;
+use Modules\Sirsoft\Board\Enums\ReportType;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -68,7 +70,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=subscription_contract
      *
@@ -98,7 +100,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=subscription_contract
      *
@@ -154,7 +156,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=subscription_contract
      *
@@ -186,7 +188,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 게시판 · 생성을(를) 돕는 헬퍼입니다.
+     * 게시판 · 생성 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_handlers
      *
@@ -213,7 +215,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시판 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_handlers
      *
@@ -243,7 +245,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 · 삭제을(를) 돕는 헬퍼입니다.
+     * 게시판 · 삭제 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_handlers
      *
@@ -270,7 +272,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판을(를) 돕는 헬퍼입니다.
+     * 게시판 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_handlers
      *
@@ -302,7 +304,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
@@ -330,7 +332,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
@@ -368,7 +370,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
@@ -405,7 +407,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 게시판 · 유형 · 생성을(를) 돕는 헬퍼입니다.
+     * 게시판 · 유형 · 생성 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_type_handlers
      *
@@ -431,7 +433,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 · 유형 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시판 · 유형 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_type_handlers
      *
@@ -460,7 +462,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 · 유형 · 삭제을(를) 돕는 헬퍼입니다.
+     * 게시판 · 유형 · 삭제 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=board_type_handlers
      *
@@ -490,7 +492,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 게시글 · 생성을(를) 돕는 헬퍼입니다.
+     * 게시글 · 생성 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=post_handlers
      *
@@ -519,7 +521,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시글 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시글 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=post_handlers
      *
@@ -564,15 +566,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시글을(를) 돕는 헬퍼입니다.
+     * 게시글 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=post_handlers
      *
      * @effects post_crud_and_state_changes_are_logged
-     * @param $method HTTP 메서드
-     * @param $expectedAction expectedAction 값
-     * @param $expectedDescriptionKey expectedDescriptionKey 값
      *
+     * @param  $method  HTTP 메서드
+     * @param  $expectedAction  expectedAction 값
+     * @param  $expectedDescriptionKey  expectedDescriptionKey 값
      * @return void 반환값 없음
      */
     #[Test]
@@ -604,7 +606,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 댓글 · 생성을(를) 돕는 헬퍼입니다.
+     * 댓글 · 생성 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=comment_handlers
      *
@@ -633,7 +635,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 댓글 · 수정을(를) 돕는 헬퍼입니다.
+     * 댓글 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=comment_handlers
      *
@@ -676,15 +678,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 댓글을(를) 돕는 헬퍼입니다.
+     * 댓글 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=comment_handlers
      *
      * @effects comment_crud_and_state_changes_are_logged
-     * @param $method HTTP 메서드
-     * @param $expectedAction expectedAction 값
-     * @param $expectedDescriptionKey expectedDescriptionKey 값
      *
+     * @param  $method  HTTP 메서드
+     * @param  $expectedAction  expectedAction 값
+     * @param  $expectedDescriptionKey  expectedDescriptionKey 값
      * @return void 반환값 없음
      */
     #[Test]
@@ -714,7 +716,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=attachment_handlers
      *
@@ -742,7 +744,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 삭제을(를) 돕는 헬퍼입니다.
+     * 삭제 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=attachment_handlers
      *
@@ -769,7 +771,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=attachment_handlers
      *
@@ -797,7 +799,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -821,7 +823,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 신고 · 생성을(를) 돕는 헬퍼입니다.
+     * 신고 · 생성 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=report_handlers
      *
@@ -832,7 +834,8 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     #[Test]
     public function handle_report_after_create는_report_create_로그를_기록한다(): void
     {
-        $report = $this->createMockReport(1, '스팸', 'post');
+        $report = $this->createMockReport(1, 'post');
+        $reportLog = new ReportLog(['reason_type' => 'spam']);
 
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -840,15 +843,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-board::activity_log.description.report_create'
                     && $context['description_params']['report_id'] === 1
-                    && $context['properties']['reason'] === '스팸'
+                    && $context['properties']['reason'] === 'spam'
                     && $context['properties']['reportable_type'] === 'post';
             }));
 
-        $this->listener->handleReportAfterCreate($report);
+        $this->listener->handleReportAfterCreate($report, $reportLog);
     }
 
     /**
-     * 신고 · 수정 · 상태을(를) 돕는 헬퍼입니다.
+     * 신고 · 수정 · 상태 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=report_handlers
      *
@@ -859,7 +862,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     #[Test]
     public function handle_report_after_update_status는_report_update_status_로그를_기록한다(): void
     {
-        $report = $this->createMockReport(1, '스팸', 'post');
+        $report = $this->createMockReport(1, 'post');
         // status 오버라이드 (resolved 상태)
         $report->shouldReceive('getAttribute')->with('status')->andReturn('resolved');
 
@@ -876,7 +879,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 신고 · 일괄 · 수정을(를) 돕는 헬퍼입니다.
+     * 신고 · 일괄 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=report_handlers
      *
@@ -915,7 +918,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 신고 · 삭제을(를) 돕는 헬퍼입니다.
+     * 신고 · 삭제 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=report_handlers
      *
@@ -926,7 +929,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     #[Test]
     public function handle_report_after_delete는_report_delete_로그를_기록한다(): void
     {
-        $report = $this->createMockReport(1, '스팸', 'post');
+        $report = $this->createMockReport(1, 'post');
 
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -966,15 +969,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 신고을(를) 돕는 헬퍼입니다.
+     * 신고 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=report_handlers
      *
      * @effects report_lifecycle_events_are_logged
-     * @param $method HTTP 메서드
-     * @param $expectedAction expectedAction 값
-     * @param $expectedDescriptionKey expectedDescriptionKey 값
      *
+     * @param  $method  HTTP 메서드
+     * @param  $expectedAction  expectedAction 값
+     * @param  $expectedDescriptionKey  expectedDescriptionKey 값
      * @return void 반환값 없음
      */
     #[Test]
@@ -984,7 +987,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         string $expectedAction,
         string $expectedDescriptionKey
     ): void {
-        $report = $this->createMockReport(7, '스팸', 'post');
+        $report = $this->createMockReport(7, 'post');
 
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1002,7 +1005,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 로그 · 활동을(를) 돕는 헬퍼입니다.
+     * 로그 · 활동 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=logging_failure_is_absorbed
      *
@@ -1035,7 +1038,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1056,7 +1059,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 설정 · 일괄을(를) 돕는 헬퍼입니다.
+     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
@@ -1078,7 +1081,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 신고 · 일괄 · 수정을(를) 돕는 헬퍼입니다.
+     * 신고 · 일괄 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1106,7 +1109,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 게시판 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시판 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1130,7 +1133,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 · 유형 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시판 · 유형 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1153,7 +1156,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시글 · 수정을(를) 돕는 헬퍼입니다.
+     * 게시글 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1177,7 +1180,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 댓글 · 수정을(를) 돕는 헬퍼입니다.
+     * 댓글 · 수정 검증을 돕는 헬퍼입니다.
      *
      * @scenario case=snapshotless_and_null_inputs
      *
@@ -1296,8 +1299,8 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  int  $id  댓글 ID
      * @param  int  $postId  게시글 ID
+     * @param  $board  board 값
      * @return Comment&MockInterface Comment&MockInterface 인스턴스
-     * @param $board board 값
      */
     private function createMockComment(int $id, int $postId, $board = null): Comment
     {
@@ -1324,8 +1327,8 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * @param  string  $originalName  원본 파일명
      * @param  int  $size  파일 크기
+     * @param  $postId  postId 값
      * @return Attachment&MockInterface Attachment&MockInterface 인스턴스
-     * @param $postId postId 값
      */
     private function createMockAttachment(string $originalName, int $size, ?int $postId = null): Attachment
     {
@@ -1341,17 +1344,17 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Report 모의 객체를 생성합니다.
      *
+     * 케이스 모델에는 사유가 없다(사유는 신고자 로그에 있다) — 실재하는 `target_type` 만 모의한다.
+     *
      * @param  int  $id  신고 ID
-     * @param  string  $reason  신고 사유
-     * @param  string  $reportableType  신고 대상 타입
+     * @param  string  $targetType  신고 대상 타입 (post|comment)
      * @return Report&MockInterface Report&MockInterface 인스턴스
      */
-    private function createMockReport(int $id, string $reason, string $reportableType): Report
+    private function createMockReport(int $id, string $targetType): Report
     {
         $report = Mockery::mock(Report::class)->makePartial();
         $report->shouldReceive('getAttribute')->with('id')->andReturn($id);
-        $report->shouldReceive('getAttribute')->with('reason')->andReturn($reason);
-        $report->shouldReceive('getAttribute')->with('reportable_type')->andReturn($reportableType);
+        $report->shouldReceive('getAttribute')->with('target_type')->andReturn(ReportType::from($targetType));
         $report->shouldReceive('getAttribute')->with('status')->andReturn(null)->byDefault();
 
         return $report;

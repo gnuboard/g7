@@ -128,6 +128,8 @@ class ReactionRepository implements ReactionRepositoryInterface
         $counts = $actual + $zeroed;
 
         $target->reaction_counts = $counts;
+        // 반응은 읽는 사람의 행동이라 글·댓글의 수정 시각(사이트맵 lastmod 포함)을 올리지 않는다
+        $target->timestamps = false;
         $target->save();
 
         return $counts;

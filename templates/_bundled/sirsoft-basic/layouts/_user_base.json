@@ -718,7 +718,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "aria-label": "$t:shop.cart.title",
+                                        "aria-label": "$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
                                     },
                                     "children": [
@@ -743,7 +743,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼",
+                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다.",
                                     "id": "mobile_user_btn",
                                     "type": "basic",
                                     "name": "Button",
@@ -758,7 +758,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "aria-label": "{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}",
+                                        "aria-label": "{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
@@ -841,6 +841,7 @@
                                     "text": "$t:user.menu"
                                 },
                                 {
+                                    "id": "mobile_drawer_close_btn",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -856,7 +857,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "aria-label": "$t:common.close",
+                                        "aria-label": "$t:nav.close_menu",
                                         "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     },
                                     "children": [
@@ -1022,7 +1023,9 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex flex-wrap gap-2"
+                                                        "className": "flex flex-wrap gap-2",
+                                                        "role": "listbox",
+                                                        "aria-label": "$t:common.language"
                                                     },
                                                     "children": [
                                                         {

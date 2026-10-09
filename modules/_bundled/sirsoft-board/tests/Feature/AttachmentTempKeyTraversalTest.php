@@ -280,6 +280,72 @@ class AttachmentTempKeyTraversalTest extends BoardTestCase
     }
 
     /**
+     * 다른 회원이 올린 임시 첨부를 `attachment_ids` 로 자기 글(수정)에 이을 수 없다.
+     *
+     * 2026-10-07 실측(K4-D1): temp_key 경로만 소유자를 확인하고 `attachment_ids` 경로는 확인하지
+     * 않아, 첨부 번호(순번)만 알면 남이 올려 둔 임시 첨부를 자기 글에 붙일 수 있었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects foreign_temp_attachments_not_linked_or_deleted
+     */
+    public function test_foreign_temp_attachment_ids_are_not_linked_on_member_update(): void
+    {
+        $owner = $this->createMember('temp-ids-owner@test.com');
+        $uploaded = $this->actingAs($owner, 'sanctum')
+            ->postJson($this->attachmentsUrl(), ['file' => UploadedFile::fake()->image('owner-ids.png')])
+            ->assertStatus(201);
+        $foreignId = (int) $uploaded->json('data.data.id');
+
+        $memberPostId = $this->createTestPost(['user_id' => $this->memberUser->id]);
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->putJson("{$this->postsUrl()}/{$memberPostId}", $this->postPayload(['attachment_ids' => [$foreignId]]))
+            ->assertStatus(200);
+
+        $attachment = Attachment::query()->findOrFail($foreignId);
+        $this->assertNull($attachment->post_id);
+        $this->assertSame(0, (int) $attachment->board_id);
+        $this->assertNotNull($attachment->temp_key);
+    }
+
+    /**
+     * 관리자 경로의 `attachment_ids` 도 남이 올린 임시 첨부를 잇지 않고, 자기 임시 첨부는 그대로 잇는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects foreign_temp_attachments_not_linked_or_deleted, owned_attachment_ids_still_linked
+     */
+    public function test_admin_attachment_ids_link_only_own_temp_attachments(): void
+    {
+        $slug = $this->getTestBoardSlug();
+        $admin = $this->createAdminUser([
+            "sirsoft-board.{$slug}.admin.posts.write",
+            "sirsoft-board.{$slug}.admin.attachments.upload",
+            "sirsoft-board.{$slug}.admin.manage",
+        ]);
+        $foreignId = (int) $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson($this->attachmentsUrl(), ['file' => UploadedFile::fake()->image('member-ids.png')])
+            ->assertStatus(201)
+            ->json('data.data.id');
+        $ownId = (int) $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-board/admin/board/{$slug}/attachments", [
+                'file' => UploadedFile::fake()->image('admin-ids.png'),
+            ])
+            ->assertStatus(201)
+            ->json('data.data.id');
+
+        $response = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-board/admin/board/{$slug}/posts", $this->postPayload([
+                'attachment_ids' => [$foreignId, $ownId],
+            ]))
+            ->assertStatus(201);
+        $postId = (int) $response->json('data.id');
+
+        $this->assertNull(Attachment::query()->findOrFail($foreignId)->post_id);
+        $this->assertSame($postId, (int) Attachment::query()->findOrFail($ownId)->post_id);
+    }
+
+    /**
      * 글도 temp_key 도 없이 올린 첨부는 서버가 만든 UUID 키의 임시 경로에 저장된다.
      *
      * 업로드 후 attachment_ids 로 잇는 흐름이다. 키를 비워 두면 경로가 `{slug}/temp//파일` 이

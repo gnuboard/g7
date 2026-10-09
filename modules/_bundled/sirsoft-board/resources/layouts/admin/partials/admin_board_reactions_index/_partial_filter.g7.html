@@ -52,7 +52,7 @@
         <select data-ref="board_filter_select" class="select-composite w-64" value="{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}">
           <responsive on="portable" class="select-composite w-full"/>
           <option value="">$t:sirsoft-board.admin.reactions.filters.board_all</option>
-          <option data-each="b in {{reaction_boards?.data?.data ?? []}}" value="{{b.id}}">{{b.name}}</option>
+          <option data-each="b in {{reactions?.data?.boards ?? []}}" value="{{b.id}}">{{b.name}}</option>
           <on type="change">
             <!-- 담아만 두고 실제 조회는 검색 버튼이 한 번에 한다 -->
             <set-state target="global" reactionBoardFilter="{{$event.target.value}}"/>

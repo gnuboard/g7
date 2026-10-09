@@ -130,6 +130,47 @@ class BoardSitemapIndexTest extends ModuleTestCase
     }
 
     /**
+     * 관리자 블라인드·복구 훅이 색인과 검색엔진용 화면 캐시를 함께 맞춘다.
+     *
+     * 2026-10-07 실측(K4-D3): 실제 블라인드는 `post.after_update` 가 아니라 `post.after_blind` 를
+     * 발화하는데 리스너가 그 훅을 구독하지 않아, 블라인드한 글이 사이트맵에 남고 검색엔진·SNS 용으로
+     * 캐시해 둔 상세 화면이 원문을 계속 내보냈다. 복구(`after_restore`)도 다시 실리지 않았다.
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects blind_and_restore_hooks_sync_index_and_seo_cache
+     *
+     * @return void 반환값 없음
+     */
+    public function test_blind_and_restore_hooks_sync_index_and_seo_cache(): void
+    {
+        $hooks = SeoBoardCacheListener::getSubscribedHooks();
+        $this->assertArrayHasKey('sirsoft-board.post.after_blind', $hooks, '블라인드 훅을 구독하지 않는다');
+        $this->assertArrayHasKey('sirsoft-board.post.after_restore', $hooks, '복구 훅을 구독하지 않는다');
+
+        $this->listener->onPostCreate(
+            (object) ['id' => 110, 'status' => PostStatus::Published, 'is_secret' => false, 'updated_at' => now()],
+            'notice'
+        );
+        $this->assertSame(1, SitemapUrl::where('resource_id', '110')->count());
+
+        $blindMethod = $hooks['sirsoft-board.post.after_blind']['method'];
+        $this->listener->{$blindMethod}(
+            (object) ['id' => 110, 'status' => PostStatus::Blinded, 'is_secret' => false, 'updated_at' => now()],
+            'notice'
+        );
+        $this->assertSame(0, SitemapUrl::where('resource_id', '110')->count(), '블라인드한 글이 사이트맵 색인에 남았다');
+        app(SeoCacheManagerInterface::class)->shouldHaveReceived('invalidateByUrl')->with('/board/notice/110')->atLeast()->once();
+
+        $restoreMethod = $hooks['sirsoft-board.post.after_restore']['method'];
+        $this->listener->{$restoreMethod}(
+            (object) ['id' => 110, 'status' => PostStatus::Published, 'is_secret' => false, 'updated_at' => now()],
+            'notice'
+        );
+        $this->assertSame(1, SitemapUrl::where('resource_id', '110')->count(), '복구한 글이 사이트맵에 다시 실리지 않았다');
+    }
+
+    /**
      * 게시글 삭제 시 색인이 제거된다.
      *
      * @scenario lifecycle=post_hook

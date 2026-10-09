@@ -49,7 +49,7 @@
 | page | query | integer | 아니오 | min 1 | 페이지 번호 |
 | per_page | query | integer | 아니오 | 1~100 (기본 10) | 페이지당 건수 |
 | search | query | string | 아니오 | max 255 | 검색어 |
-| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content` | 검색 대상. 규칙 밖이면 422 |
+| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content` | 검색 대상. 규칙 밖의 값은 기본값 `title_content` 로 처리 |
 | reaction_type_id | query | integer | 아니오 | min 1 | 반응 유형 필터 |
 | target_type | query | string | 아니오 | `all`(기본), `post`, `comment` | 대상 구분 필터 |
 | board_slug | query | string | 아니오 | max 50 | 게시판 필터 |
@@ -82,6 +82,7 @@
 | 필드 | 타입 | 용도 |
 | --- | --- | --- |
 | data.reaction_types[] | array | 필터 셀렉트 옵션. **비활성 유형 포함** — 이미 끈 유형으로 남긴 과거 반응도 골라내야 합니다 |
+| data.boards[] | array | 게시판 필터 셀렉트 옵션(`id`·`slug`·`name`, 비활성 게시판 포함, 최근 생성 순). 게시판 목록 API 는 게시판 관리 권한이 있어야 열리므로 `reactions.view` 만 가진 매니저도 고를 수 있게 여기 싣습니다 |
 | data.query | object | 적용된 필터 에코 (화면 상태 복원용) |
 | data.pagination | object | 표준 페이지네이션 메타 |
 
@@ -142,7 +143,7 @@
 | reaction_type.is_active | boolean | 비활성 유형 배지 판정 |
 | abilities.can_delete | boolean | = `reactions.manage` |
 
-**응답 메타**: `data.abilities{can_view,can_manage}` + `data.reaction_types[]`(비활성 포함).
+**응답 메타**: `data.abilities{can_view,can_manage}` + `data.reaction_types[]`(비활성 포함) + `data.boards[]`(게시판 선택지).
 유형 옵션을 목록 응답에 싣는 이유는 `reactions.view` 만 가진 매니저가 `settings.read` 가 없어
 유형 API 를 부를 수 없기 때문입니다.
 
@@ -170,7 +171,8 @@
 ## 회원 상세 요약 (코어 응답에 주입)
 
 `UserReactionInfoListener` 가 `core.user.filter_resource_data` 필터 훅(priority 31)을 구독해
-**관리자 회원 상세 응답에만** 아래 블록을 병합합니다.
+**관리자 회원 상세 응답에만** 아래 블록을 병합합니다. 보는 관리자에게 `sirsoft-board.reactions.view` 권한이
+없으면 싣지 않습니다 — 실으면 회원 상세가 건수를 그리고, 「이 회원 반응 목록 보기」는 403 화면으로 끝납니다.
 
 ```json
 "board_reactions": { "count": 12, "post_count": 9, "comment_count": 3, "latest_reacted_at": "..." }

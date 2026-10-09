@@ -24,4 +24,16 @@ trait ValidatesTempKey
     {
         return ['nullable', 'string', 'uuid'];
     }
+
+    /**
+     * temp_key 검증 오류 문구에 쓸 항목 이름을 반환합니다.
+     *
+     * 지정하지 않으면 Laravel 이 필드명을 풀어 「temp key」를 그대로 문구에 넣는다.
+     *
+     * @return array<string, string> 필드명 → 표시 이름
+     */
+    protected function tempKeyAttributes(): array
+    {
+        return ['temp_key' => __('sirsoft-page::validation.attributes.temp_key')];
+    }
 }

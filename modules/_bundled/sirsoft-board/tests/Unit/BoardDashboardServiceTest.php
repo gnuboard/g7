@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../ModuleTestCase.php';
 
+use Carbon\CarbonImmutable;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardStat;
@@ -32,6 +33,11 @@ class BoardDashboardServiceTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 집계의 「오늘」은 사이트 표준시의 하루다(siteToday). 사이트 날짜와 UTC 날짜가 같은 시각으로
+        // 고정해 실행 시각(한국 새벽 등)과 무관하게 같은 결과를 낸다 — 날짜 경계 자체는
+        // BoardSiteDayBoundaryTest 가 잰다.
+        $this->travelTo(CarbonImmutable::parse('2030-01-15 03:00:00', 'UTC'));
 
         // DatabaseTransactions 는 테스트 시작 전부터 있던 데이터를 정리하지 못한다.
         // board_stats 는 전역 단일 집계 테이블이고, 같은 PHPUnit 스위트의 다른 테스트가
@@ -130,7 +136,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects today_posts_badge_reflects_overview_api
+     * @effects today_posts_badge_reflects_overview_api, overview_zero_when_today_row_missing
      *
      * @return void 반환값 없음
      */
@@ -179,7 +185,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_previous_week, user_role=admin_with_dashboard_permission
      *
-     * @effects posts_change_rate_emerald_when_positive
+     * @effects posts_change_rate_emerald_when_positive, post_graph_change_rate_vs_previous_week
      *
      * @return void 반환값 없음
      */
@@ -359,7 +365,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api, board_stats_aggregate_upserts_recent_days_only
      *
      * @return void 반환값 없음
      */
@@ -397,7 +403,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api, board_stats_aggregate_idempotent
      *
      * @return void 반환값 없음
      */

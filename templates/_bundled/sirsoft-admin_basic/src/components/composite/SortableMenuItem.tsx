@@ -14,6 +14,12 @@ const G7Core = () => (window as any).G7Core;
 const t = (key: string, params?: Record<string, string | number>) =>
   G7Core()?.t?.(key, params) ?? key;
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /** 행에 바로 보이는 역할 배지 수 — 나머지는 「외 n개」 로 접고 전체는 title 로 보인다 */
 const MAX_ROLE_BADGES = 3;
 
@@ -159,6 +165,8 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
                 onExpandToggle?.();
               }}
               className={`flex-shrink-0 p-1 ${dragHandleClassName}`}
+              aria-label={isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')}
+              aria-expanded={!!isExpanded}
             >
               <Icon
                 name={isExpanded ? 'chevron-down' : 'chevron-right'}

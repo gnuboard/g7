@@ -800,4 +800,67 @@ class NotificationTemplateControllerTest extends TestCase
 
         $this->assertFalse((bool) $definition->fresh()->is_default, '운영자가 추가한 정의가 「기본」(삭제 불가)으로 바뀌었다');
     }
+
+    /**
+     * 수신자 규칙 여러 개를 저장하면 보낸 순서 그대로 목록(JSON 배열)으로 저장되고, 다시 열 때도 같은 순서다.
+     *
+     * 값 칸이 없는 규칙(이벤트 유발자) 뒤에 역할 규칙이 오면, 검증 결과를 규칙 순서대로 다시 조립하면서
+     * 둘째 규칙이 먼저 자리를 잡아 `{"1":…,"0":…}` 객체로 저장됐고 다시 열면 순서가 뒤집혔다(2026-10-07 실측).
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_recipients_keep_submitted_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_keeps_recipient_rule_order_as_list(): void
+    {
+        Role::create(['name' => ['ko' => '운영자'], 'identifier' => 'manager', 'is_admin' => true]);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'trigger_user'],
+                ['type' => 'role', 'value' => ['super_admin', 'manager']],
+            ],
+        ])->assertStatus(200);
+
+        $raw = $this->template->fresh()->getRawOriginal('recipients');
+        $this->assertStringStartsWith('[', $raw, '수신자 규칙은 JSON 배열로 저장한다');
+        $stored = $this->template->fresh()->recipients;
+        $this->assertTrue(array_is_list($stored));
+        $this->assertSame(['trigger_user', 'role'], array_column($stored, 'type'));
+        $this->assertSame(['super_admin', 'manager'], $stored[1]['value']);
+
+        $recipients = $this->authRequest()
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200)
+            ->json('data.templates.0.recipients');
+
+        $this->assertSame(['trigger_user', 'role'], array_column($recipients, 'type'));
+    }
+
+    /**
+     * 이미 객체(`{"1":…,"0":…}`)로 저장된 수신자 규칙도 응답에서는 원래 줄 번호 순서의 목록으로 돌려준다.
+     *
+     * @scenario editing_axis=role_recipients, layer=resource_payload
+     *
+     * @effects notification_template_resource_lists_keyed_recipients_in_index_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_template_resource_lists_keyed_recipients_in_index_order(): void
+    {
+        NotificationTemplate::query()->whereKey($this->template->id)->update([
+            'recipients' => '{"1":{"type":"role","value":["super_admin"]},"0":{"type":"trigger_user"}}',
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200);
+
+        $this->assertStringContainsString('"recipients":[{"type":"trigger_user"', $response->getContent());
+        $recipients = $response->json('data.templates.0.recipients');
+        $this->assertSame(['trigger_user', 'role'], array_column($recipients, 'type'));
+    }
 }

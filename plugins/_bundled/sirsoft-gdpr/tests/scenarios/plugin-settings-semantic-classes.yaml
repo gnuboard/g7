@@ -1,0 +1,19 @@
+feature: GDPR 환경설정 화면 — 의미 클래스 위치(#408 치환 밀림 교정)
+
+description: |
+  관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀렸다. 섹션 제목과 입력 줄은 앞서 바로잡혔지만 저장 오류 상자의 제목에 옅은 오류 클래스, 오류 목록 줄에 3열 그리드 클래스가 남아 있었다.
+  원래 매핑대로 입력 줄 = grid-3col-responsive, 섹션 제목 = section-heading-md, 오류 제목 = text-error-strong,
+  오류 목록 줄 = text-error-soft 를 고정한다(7.1.0 전수 실측 #408 클래스 밀림 후속).
+
+axes:
+  plugin: [sirsoft-gdpr]
+  element: [field_row, section_title, error_box, misplaced]
+
+effects:
+  - settings_rows_use_three_column_grid
+  - section_titles_use_heading_class
+  - error_box_uses_error_classes
+  - semantic_classes_not_misplaced
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts

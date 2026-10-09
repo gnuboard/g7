@@ -9,6 +9,18 @@
 ### Added
 
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
+- 게시판 환경설정의 탭 전환 확인 창 문구(`admin/settings.unsaved_tab_modal.*` — 제목, 본문, 「이 탭에 머무르기」, 「저장하지 않고 이동」)의 일본어 번역을 추가했습니다.
+- 게시판 유형 추가·수정 검증 문구의 칸 이름 「掲示板タイプ名」(`validation.attributes.board_type.name`)의 일본어 번역을 추가했습니다.
+- 게시판 생성·복사 화면에서 기본 권한 밖 계정에게 보이는 안내(`admin/form.permissions.members_assign_denied` — 「基本権限設定に含まれていないアカウントは、新しい掲示板の管理者に本人のみ指定できます。…」)의 일본어 번역을 추가했습니다.
+- 반응 유형 아이콘을 지울 때의 확인 창 문구(`admin/settings.reaction_types.icon_remove_confirm_title`·`icon_remove_confirm_message` — 「アイコンの削除」「…元に戻せません。…」)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정의 건너뜀 사유 「このロールを付与できない掲示板（権限不足）」(`admin/settings.bulk_members.reason_not_grantable`)와 게시판 수정 권한이 없을 때의 잠금 안내(`bulk_members.no_permission`)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정의 건너뜀 사유 「掲示板のロール情報がない（データ破損）」(`admin/settings.bulk_members.reason_role_missing`)와 게시판 목록을 불러오지 못했을 때의 잠금 안내(`bulk_members.load_failed`)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정 결과 줄과 완료 안내에 바꿀 것이 없던 게시판 수 「変化なし{{unchanged}}件」을 더했습니다(`admin/settings.bulk_members.result_summary`, `messages.boards.bulk_members_success` 「…(除外 :skipped件、変化なし :unchanged件)」).
+- 게시판 요청 검증 문구의 공용 항목 이름(`validation.fallback_attributes.*` — 「並び順」「掲示板」「検索キーワード」 등 46건)과 게시판 환경설정 저장 검증의 항목 이름(`validation.attributes.settings` — SEO·알림 채널·신고 정책·표시 설정 등 32건)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일의 검증 문구에 `sort`·`board id` 같은 필드 키가 그대로 보입니다.
+- 댓글 상태 조작 거절 문구(`validation.comment.status.in` 「無効なコメントステータスです。」)와 게시판 요청 공용 대체 검증 문구(`validation.fallback.*` — 「選択された :attribute の値は正しくありません。」 등 10건)의 일본어 번역을 추가했습니다.
+- 게시판 생성·수정 검증 문구의 칸 이름 「掲示板名」·「掲示板の説明」(`validation.attributes.board.name`·`description`)의 일본어 번역을 추가했습니다.
+- 원글이 삭제된 상태에서 댓글만 복구하려 할 때의 거절 안내(`messages.comment.restore_parent_deleted`「元の投稿が削除されているため、コメントだけを復元できません。…」)의 일본어 번역을 추가했습니다.
+- 삭제된 게시글·댓글을 블라인드하려 할 때의 거절 안내(`messages.posts.blind_deleted_not_allowed`·`messages.comment.blind_deleted_not_allowed` — 「削除された投稿はブラインドできません。先に復元してからブラインドしてください。」)와 관리자 일괄 처리의 건너뜀 사유 「この掲示板に見つからない投稿」(`messages.posts_bulk.skip_reasons.not_found`)의 일본어 번역을 추가했습니다.
 - 관리자 게시글 상세에서 비밀글 조회 권한이 없는 관리자에게 비밀 댓글 자리에 뜨는 안내(`admin/posts.detail.secret_comment_notice` — 「非公開コメントです」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내만 한국어로 보입니다.
 - 관리자 게시글·답변 카드의 첨부파일 내려받기 실패 안내(`admin/posts.detail.download_failed`)의 일본어 번역을 추가했습니다.
 - 상품 문의 연동 실패 문구(문의·답변 수정·삭제 실패, 답변 없음, 게시판 설정 변경으로 글을 찾을 수 없음)와 활동 이력의 비밀글 표기 일본어 번역을 추가했습니다.
@@ -26,11 +38,19 @@
 - 게시판 환경설정 「관리자·스텝 일괄 지정」(「管理者・スタッフ一括指定」) 카드·확인 창·결과 문구(`admin/settings.bulk_members.*`, 탭 라벨 `board_settings_tabs.bulk_members`)와 처리 결과 안내(`messages.boards.bulk_members_*`), 요청 검증 항목명(`validation.attributes.bulk_members.*`)의 일본어 번역을 추가했습니다.
 - 관리자 게시글 일괄 처리에서 건너뛴 글을 사유와 함께 보여 주는 「スキップされた投稿」 창의 제목·안내(`admin/posts.bulk.skipped.*`)와, 글마다 붙는 건너뛴 사유 6종(`messages.posts_bulk.skip_reasons.*` — 「既に削除された投稿」·「返信が付いた投稿（返信削除ポリシーにより削除不可）」 등)의 일본어 번역을 추가했습니다.
 - 알림 수신자 규칙 「관련 사용자」의 관계 이름 네 가지(`messages.notification_relations.*`, 「投稿者」·「元コメントの投稿者」·「元投稿の投稿者」·「掲示板管理者」)를 일본어로 번역했습니다.
+- 반응 유형 추가 창의 코드 형식 안내(`admin/settings.reaction_types.validation.code_format` 「英小文字で始め、英小文字・数字・アンダースコア(_)のみで2〜50文字で入力してください」)의 일본어 번역을 추가했고, 아이콘 업로드 실패 안내(`admin/settings.reaction_types.messages.icon_upload_failed`)는 원문처럼 올릴 수 있는 형식과 용량(1MB 이하 PNG, JPG, GIF, WEBP)을 함께 알리도록 다시 번역했습니다.
+- 게시판 폼의 댓글 반응 스위치 이름과 설명(`admin/form.fields.use_comment_reaction`, `descriptions.use_comment_reaction`)을 같은 화면의 「リアクション使用」과 같은 용어인 「コメントリアクション使用」「リアクション使用」으로 번역했습니다.
+- 환경설정 반응 유형 표에서 이미 쓰인 유형의 삭제 버튼에 붙는 안내(`admin/settings.reaction_types.delete_blocked_suffix` 「2件の反応があるため…」)의 일본어 번역을 추가했습니다.
 
 ### Removed
 
 - 어디서도 쓰지 않던 「IP 주소는 필수입니다」 검증 문구(`validation.comment.ip_address.required`, 백엔드·프론트 각 1건)를 원본 모듈과 함께 지웠습니다 — 게시글 작성 IP 가 개인정보 보유기간 처리로 비워질 수 있게 되면서 뜻도 틀리게 되었습니다.
 - ko 원본에서 지운 관리자 설정 문구의 **일본어 번역이 남아 있던 것**(반응 유형 2건)을 정리했습니다. 화면에는 쓰이지 않던 문구입니다.
+- 연속 작성·신고 간격 안내에서 「1時間 30分」처럼 두 단위를 한 문구로 두던 키(`validation.cooldown_duration.minutes_seconds`, `hours_minutes`)를 원본 모듈과 함께 지웠습니다 — 이제 단위 문구(`hours`, `minutes`, `seconds`)를 하나씩 읽어 공백으로 잇습니다. 화면 표기(「1 時間 30 分」)는 같습니다.
+
+### Fixed
+
+- 관리자 게시글 상세에서 댓글 아래 대댓글을 펼치는 버튼(`admin/posts.detail.show_replies`·`hide_replies`)이 「返信 N件を表示」로 적혀 글의 답변글을 여는 것처럼 읽히던 것을 원본 모듈과 함께 「返信コメント N件を表示」·「返信コメントを非表示」로 바로잡았습니다.
 
 ## [1.0.4] - 2026-09-06
 

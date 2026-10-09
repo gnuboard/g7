@@ -16,6 +16,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
@@ -954,7 +955,9 @@ class LayoutService
                 );
             }
 
-            $layoutData = $layout->content;
+            // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 배열 캐스트는 `{}` 를 `[]` 로
+            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측 O-K3-4)
+            $layoutData = LayoutEmptyObjects::decode($layout->getAttributes()['content'] ?? null, $layout->content ?? []);
 
             // 5. 상속 처리 (extends가 있는 경우)
             if (isset($layoutData['extends'])) {

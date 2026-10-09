@@ -836,6 +836,8 @@ final class DocumentCompiler
             match ($bare) {
                 'src' => $script['src'] = (string) $attribute->value,
                 'id' => $script['id'] = (string) $attribute->value,
+                // 로드 실패 안내에 쓸 사람이 읽는 이름(`$t:키` 허용) — 없으면 엔진이 일반 이름을 쓴다.
+                'label' => $script['label'] = (string) $attribute->value,
                 'async' => $script['async'] = $typed
                     ? MarkupValue::decodeTypeLiteral($attribute, 'async', $path)
                     : ($attribute->isBoolean() ? true : $attribute->value),

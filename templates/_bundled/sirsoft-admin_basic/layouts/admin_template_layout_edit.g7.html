@@ -204,7 +204,8 @@
       <when if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.extension_type === 'overlay'}}">
         <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
           <success>
-            <open-window path="/preview/{{response.data.token}}"/>
+            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6). -->
+            <open-window path="{{response.data?.preview_url ?? '/preview/' + response.data.token}}"/>
           </success>
           <fail>
             <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>
@@ -219,7 +220,8 @@
       <else>
         <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
           <success>
-            <open-window path="/preview/{{response.data.token}}"/>
+            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6). -->
+            <open-window path="{{response.data?.preview_url ?? '/preview/' + response.data.token}}"/>
           </success>
           <fail>
             <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? _global.markupCompileError ?? null}}"/>

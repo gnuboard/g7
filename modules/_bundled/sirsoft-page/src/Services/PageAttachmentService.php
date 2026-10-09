@@ -218,8 +218,10 @@ class PageAttachmentService
     /**
      * 임시 첨부파일을 페이지에 연결하고 파일을 이동합니다.
      *
-     * getByTempKey 가 order(업로드 시점 부여) 순으로 반환하므로, 그 순서대로
-     * order 를 1..N 으로 재부여한다 (이커머스 ProductImageService::linkTempImages 와 동일).
+     * getByTempKey 가 order(업로드 시점 부여) 순으로 반환하므로, 그 순서대로 order 를 다시 매긴다
+     * (이커머스 ProductImageService::linkTempImages 와 동일). 이미 첨부가 있는 페이지(수정 화면)에서는
+     * 기존 첨부의 마지막 번호 뒤에 붙인다 — 1 부터 다시 매기면 새 첨부가 기존 첨부와 같은 번호를 받아
+     * 목록 중간에 낀다. 새 페이지는 기존 첨부가 없어 1..N 이 된다.
      *
      * @param  string  $tempKey  임시 키
      * @param  int  $pageId  연결할 페이지 ID
@@ -238,6 +240,7 @@ class PageAttachmentService
         // 개수 상한 최종 방어선 — FormRequest 는 단건 업로드만 보므로 temp_key 연결 경로가 그대로 뚫린다
         $this->assertAttachmentCountWithin($pageId, $tempAttachments->count());
         $linkedCount = 0;
+        $baseOrder = $this->attachmentRepository->getMaxOrder($pageId);
 
         foreach ($tempAttachments as $index => $attachment) {
             // 최종 경로 생성
@@ -250,12 +253,12 @@ class PageAttachmentService
                 $this->storage->delete('attachments', $attachment->path);
             }
 
-            // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서)
+            // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서, 기존 첨부 뒤)
             $this->attachmentRepository->update($attachment, [
                 'page_id' => $pageId,
                 'temp_key' => null,
                 'path' => $newPath,
-                'order' => $index + 1,
+                'order' => $baseOrder + $index + 1,
             ]);
 
             $linkedCount++;
@@ -435,13 +438,26 @@ class PageAttachmentService
      * 스코프 대상은 첨부가 아니라 **부모 페이지**다 — `sirsoft-page.pages.update` 의
      * owner_key 가 페이지의 `created_by` 이기 때문이다.
      *
+     * 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 부모가 없으므로 **올린 사람**만
+     * 다룰 수 있다. 작성 화면은 [저장] 때 첨부를 먼저 올리고 페이지를 만들므로, 페이지 저장이
+     * 검증 오류로 실패하면 임시 첨부가 업로더 목록에 남는다 — 이것을 지우는 요청까지 부모 없음으로
+     * 막으면 사용자는 방금 올린 파일을 뺄 수 없다.
+     *
      * @param  PageAttachment  $attachment  대상 첨부
      * @return void
      *
-     * @throws AccessDeniedHttpException 부모 페이지가 스코프 밖인 경우
+     * @throws AccessDeniedHttpException 부모 페이지가 스코프 밖이거나, 남이 올린 임시 첨부인 경우
      */
     private function assertPageScope(PageAttachment $attachment): void
     {
+        if ($attachment->page_id === null) {
+            if ($attachment->created_by === null || (int) $attachment->created_by !== (int) Auth::id()) {
+                throw new AccessDeniedHttpException(__('auth.scope_denied'));
+            }
+
+            return;
+        }
+
         $page = $attachment->page;
 
         // 부모를 못 읽으면 막는다(fail-closed) — 첨부에 page_id 가 있는데 페이지를 못 찾는
@@ -457,7 +473,10 @@ class PageAttachmentService
      * 순서는 집합 전체에 대한 하나의 배열이라 일부만 반영하면 나머지와 어긋난다 —
      * 걸러내지 않고 전량 거부한다(코어 첨부/메뉴 순서 변경과 같은 의미론).
      *
-     * @param  array<int, array{id: int, order: int}>  $orders  순서 데이터
+     * 대상 ID 는 `reorder()` 가 받는 `[첨부 ID => 순서]` 매핑의 **키**다. 값(순서)에서 `id` 를 찾으면
+     * ID 를 하나도 읽지 못해 검사 없이 통과한다.
+     *
+     * @param  array<int, int>  $orders  [첨부 ID => 순서] 매핑
      * @return void
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부가 하나라도 포함된 경우
@@ -465,7 +484,7 @@ class PageAttachmentService
     private function assertReorderScope(array $orders): void
     {
         $ids = array_values(array_unique(array_filter(
-            array_map(static fn ($item): int => (int) ($item['id'] ?? 0), $orders)
+            array_map(static fn ($id): int => (int) $id, array_keys($orders))
         )));
 
         foreach ($ids as $id) {

@@ -270,6 +270,12 @@ return [
             'option_stock_quantity' => '옵션 재고 수량',
             'option_name' => '옵션명',
             'option_code' => '옵션코드',
+            // 다국어 필수 칸 이름 (옵션그룹·추가옵션·상품정보제공고시)
+            'option_group_name' => '옵션그룹명',
+            'additional_option_name' => '추가옵션 그룹명',
+            'additional_option_value_name' => '추가옵션 선택지명',
+            'notice_item_name' => '상품정보제공고시 항목명',
+            'notice_item_content' => '상품정보제공고시 내용',
         ],
         'name' => [
             'required' => '상품명을 입력해주세요.',
@@ -1582,6 +1588,19 @@ return [
         'claim_reason_is_active' => '사용여부',
         'claim_reason_sort_order' => '정렬순서',
         'claim_reason_search' => '검색어',
+
+        // 다국어 이름 칸 (현재 언어 값 필수 문구의 칸 이름)
+        'category_name' => '카테고리명',
+        'brand_name' => '브랜드명',
+        'coupon_name' => '쿠폰명',
+        'common_info_name' => '공통정보명',
+        'notice_template_name' => '상품군명',
+        'notice_template_field_name' => '항목명',
+        'notice_template_field_content' => '항목 내용',
+        'shipping_carrier_name' => '배송사명',
+        'shipping_policy_name' => '배송정책명',
+        'shipping.carriers.*.name' => '배송사명',
+        'shipping.types.*.name' => '배송유형명',
     ],
 
     // 필드별 커스텀 검증 메시지

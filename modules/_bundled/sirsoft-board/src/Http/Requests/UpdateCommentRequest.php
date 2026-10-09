@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 
@@ -14,6 +15,8 @@ use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
  */
 class UpdateCommentRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -81,6 +84,8 @@ class UpdateCommentRequest extends FormRequest
             'content.max' => __('sirsoft-board::validation.comment.content.max'),
             'password.required' => __('sirsoft-board::validation.comment.password.required'),
             'password.min' => __('sirsoft-board::validation.comment.password.min'),
+            // 상태 조작 거부 — 코어 기본 문구(「선택한 상태이(가) …」) 대신 게시글과 같은 꼴의 전용 문구
+            'status.in' => __('sirsoft-board::validation.comment.status.in'),
         ];
     }
 

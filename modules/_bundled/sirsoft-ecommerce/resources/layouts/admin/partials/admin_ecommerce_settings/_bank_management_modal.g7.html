@@ -102,7 +102,7 @@
                 <set-state target="$parent._local" :bankModalSaving="false" form.order_settings.banks="{{response.data?.order_settings?.banks ?? $parent._local.form?.order_settings?.banks}}"/>
                 <refetch-data-source dataSourceId="settings"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.save_success"/>
-                <close-modal id="bank_management_modal"/>
+                <close-modal target="bank_management_modal"/>
               </success>
               <fail>
                 <set-state target="$parent._local" :bankModalSaving="false" :bankModalErrors="null"/>

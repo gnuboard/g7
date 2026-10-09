@@ -1,0 +1,16 @@
+feature: 이커머스 API 문서 실측 샘플 정리
+
+description: |
+  `api:docgen --scope=module:sirsoft-ecommerce --seed` 는 이커머스 시더로 샘플(상품·카테고리·브랜드·주문·쿠폰·배송정책·배송사·
+  클레임 사유·라벨·공통정보·고시 템플릿·추가배송비 템플릿·배송지 등)을 만든다. 종전에는 그 샘플이 개발 DB 에 남았다
+  (2026-10-09 실측 O-R2-6 — 카테고리·브랜드·쿠폰·추가배송비 템플릿 4행). 코어 정리가 확장 시더의 생성분도 기록했다가
+  실측 뒤 지우므로 실행이 끝나면 샘플과 시드 중 만든 행이 남지 않아야 한다.
+
+axes:
+  scope: [module_ecommerce]
+
+effects:
+  - ecommerce_apidoc_samples_removed_after_docgen_run
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/ApiDocSampleCleanupEcommerceTest.php

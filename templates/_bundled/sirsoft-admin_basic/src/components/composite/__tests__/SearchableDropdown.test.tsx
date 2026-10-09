@@ -41,7 +41,7 @@ describe('SearchableDropdown', () => {
 
     expect(screen.getByText('Nike')).toBeInTheDocument();
     expect(screen.getByText('Adidas')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('검색...')).toBeInTheDocument();
   });
 
   /**
@@ -55,7 +55,7 @@ describe('SearchableDropdown', () => {
     const trigger = screen.getByText('Select');
     await user.click(trigger);
 
-    const searchInput = screen.getByPlaceholderText('Search...');
+    const searchInput = screen.getByPlaceholderText('검색...');
     await user.type(searchInput, 'nike');
 
     expect(screen.getByText('Nike')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('SearchableDropdown', () => {
     const trigger = screen.getByText('Select');
     await user.click(trigger);
 
-    const searchInput = screen.getByPlaceholderText('Search...');
+    const searchInput = screen.getByPlaceholderText('검색...');
     await user.type(searchInput, '전자제품');
 
     expect(screen.getByText('Samsung')).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('SearchableDropdown', () => {
     const trigger = screen.getByText('Select');
     await user.click(trigger);
 
-    const searchInput = screen.getByPlaceholderText('Search...');
+    const searchInput = screen.getByPlaceholderText('검색...');
     await user.type(searchInput, 'xyz없는검색어');
 
     expect(screen.getByText('No results found')).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('SearchableDropdown', () => {
 
     expect(onChange).toHaveBeenCalledWith('nike');
     // 드롭다운이 닫힘 (검색 입력창이 사라짐)
-    expect(screen.queryByPlaceholderText('Search...')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('검색...')).not.toBeInTheDocument();
   });
 
   /**
@@ -227,7 +227,7 @@ describe('SearchableDropdown', () => {
     await user.click(trigger);
 
     // 드롭다운이 열리지 않음
-    expect(screen.queryByPlaceholderText('Search...')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('검색...')).not.toBeInTheDocument();
   });
 
   /** @effects value_prop_seeds_the_current_selection */
@@ -321,7 +321,7 @@ describe('SearchableDropdown', () => {
     const trigger = screen.getByText('Select');
     await user.click(trigger);
 
-    const searchInput = screen.getByPlaceholderText('Search...');
+    const searchInput = screen.getByPlaceholderText('검색...');
     await user.type(searchInput, 'test');
 
     expect(onSearch).toHaveBeenCalled();
@@ -361,11 +361,11 @@ describe('SearchableDropdown', () => {
     const trigger = screen.getByText('역할');
     await user.click(trigger);
 
-    const searchInput = screen.getByPlaceholderText('Search...');
+    const searchInput = screen.getByPlaceholderText('검색...');
     await user.type(searchInput, 'adm');
 
     // 드롭다운이 살아 있고, 정상 옵션은 그대로 걸린다.
-    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('검색...')).toBeInTheDocument();
     expect(screen.getByText('최고관리자')).toBeInTheDocument();
   });
   });

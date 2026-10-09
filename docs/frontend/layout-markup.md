@@ -81,7 +81,7 @@
 | `errorHandling` | `<error-handling><on-code code="403">…</on-code></error-handling>` |
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
-| `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
+| `scripts` | `<script src="…" id="…" label="…" :async data-if="…"/>` (반복, src 화이트리스트, `label` 은 로드 실패 안내 이름) |
 | `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>`(인라인 항목의 `layout_name` 은 `<modal name="partials/_modal_delete">` — 설치가 `<modal src>` 조각을 인라인할 때 붙이는 이름의 표현이라 편집기가 연 설치본에서 나타난다. `src` 와 `name` 은 함께 쓸 수 없다. 인라인 항목의 `data_sources`(창이 열릴 때 받는 것)는 본문 루트의 `<data-source>` 자식으로 적는다 — 조각 루트와 같은 규약이다) — 소스는 **소스를 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 소스가 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
 
 ### 3.1 조각 참조 표기 — 소스는 소스를 가리킨다
@@ -315,13 +315,15 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 ```html
 <modal title="재고 조정">
-  <div text="{{_local.stockMessage}}"/>
+  <div>{{_local.stockMessage}}</div>
   <prop-footer>
-    <button type="button" text="$t:common.cancel"><on event="click"><close-modal target="…"/></on></button>
-    <button variant="primary" text="$t:common.save"><on event="click">…</on></button>
+    <button type="button"><on event="click"><close-modal target="…"/></on>$t:common.cancel</button>
+    <button variant="primary"><on event="click">…</on>$t:common.save</button>
   </prop-footer>
 </modal>
 ```
+
+> **기본 태그(`div`·`span`·`h1`~`h4`·`p`·`button` 등)의 글자는 본문에 쓴다.** `<h2 text="제목"/>` 처럼 `text=` 속성으로 적으면 노드 `text` 가 아니라 `props.text` 로 컴파일되고, 기본 컴포넌트는 `props.text` 를 그리지 않아 컴파일·렌더 모두 통과한 채 빈 칸이 된다. `text` prop 을 선언한 컴포넌트(`<badge>`·`<loading-spinner>` 등)만 `text=` 로 쓴다.
 
 `<modal>` 안에서는 옛 표기 `<footer>` 도 같은 `props.footer` 가 된다. Modal 밖의 `<footer>` 는 `Footer` 컴포넌트로 해석된다.
 

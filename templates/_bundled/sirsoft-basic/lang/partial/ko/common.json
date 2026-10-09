@@ -71,6 +71,7 @@
     "too_large": "파일 크기가 {{size}}MB 를 넘습니다."
   },
   "theme_select": "화면 테마",
+  "delete_notification": "알림 삭제",
   "expand": "펼치기",
   "collapse": "접기",
   "quantity": "수량",

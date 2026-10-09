@@ -46,6 +46,7 @@
 | `mergeQuery` | boolean | false | 기존 쿼리 파라미터와 병합 |
 | `replace` | boolean | false | URL만 변경 (페이지 리로드 없음) |
 | `transition_overlay_target` | string | - | `replace: true` 호출 시 `transition_overlay.target` 을 동적으로 override (engine-v1.36.0+) |
+| `refetch_data_sources` | string \| string[] | - | `replace: true` 호출에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열). 생략하면 auto_fetch 소스 전부 (engine-v1.79.0+) |
 | `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
 | `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
 | `fallback` | `false \| string \| object` | `"openWindow"` | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow`(새 창). `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정, 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용 |
@@ -140,6 +141,44 @@
 이 컨벤션으로 pagination 버튼은 spinner 위에 표시되어 사용자가 연속 클릭 가능하다.
 
 > 상세: [layout-json-components-loading.md#wait_for — 데이터소스 가드](../frontend/layout-json-components-loading.md#wait_for--데이터소스-가드-engine-v1340)
+
+### refetch_data_sources 옵션 (engine-v1.79.0+)
+
+`replace: true` 이동은 기본으로 현재 쿼리에서 고른 auto_fetch 데이터 소스를 **전부** 다시 받는다. 탭 전환처럼 화면 전체를 서버 값으로 되돌리는 것이 목적이면 이 기본이 맞다. 그러나 한 화면 안에 설정 폼(`initLocal`)과 목록이 함께 있고 목록만 검색·필터·쪽 넘김을 하는 경우, 기본 동작은 설정 소스까지 다시 받아 **고친 칸을 서버 값으로 되돌리고 `hasChanges` 를 푼다.**
+
+`refetch_data_sources` 를 주면 그 소스만 다시 받는다. URL·`query` 문맥·computed 는 종전처럼 갱신되고, 다시 받지 않은 소스의 데이터와 `_local` 은 그대로 남는다.
+
+```html
+<on type="change">
+  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
+    <query tab="identity" scope="{{$event.target.value || undefined}}" :page="1"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/settings",
+    "replace": true,
+    "mergeQuery": true,
+    "transition_overlay_target": "policy_table_card",
+    "refetch_data_sources": "policies",
+    "query": { "tab": "identity", "scope": "{{$event.target.value || undefined}}", "page": 1 }
+  }
+}
+```
+
+- 목록 소스가 blocking 이 아니면 덮개는 `transition_overlay.wait_for` 에 그 소스가 있을 때만 뜬다. 목록 영역 덮개가 필요하면 `wait_for` 에 목록 소스를 넣는다.
+- 지정한 id 가 현재 쿼리에서 고른 소스에 없으면 아무것도 다시 받지 않는다(URL 만 바뀐다). id 오타를 레이아웃 테스트로 잠근다.
+- `replace` 없는 이동에서는 읽지 않는다(새 레이아웃 진입은 항상 전체를 받는다).
+
+### replace 이동이 겹칠 때 (engine-v1.79.0+)
+
+탭을 빠르게 오가면 `replace: true` 이동이 겹친다. 엔진은 데이터 소스마다 **가장 최근에 다시 받기 시작한 이동의 응답만** 화면에 적용하고, 늦게 끝난 옛 이동의 같은 소스 응답은 버린다. 덮개와 대기 표시(`blur_until_loaded`)는 현재 화면 소스를 아직 받고 있는 이동이 모두 끝난 뒤 걷는다. 종전에는 먼저 시작한 이동이 끝나면서 뒤 이동의 덮개를 걷어, 뒤 이동의 설정 응답(blocking·`initLocal`)이 도착하기 전에 칸이 열렸고 그 사이 입력이 응답에 말없이 덮였다.
 
 ### fallback 옵션 (engine-v1.40.0+)
 
@@ -1048,7 +1087,7 @@ URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수�
 | 특성 | `navigate` (`replace: true`) | `replaceUrl` |
 | ------ | ------------------------------ | -------------- |
 | URL 변경 | O | O |
-| 데이터소스 refetch | O (auto_fetch 전체) | **X** |
+| 데이터소스 refetch | O (auto_fetch 전체, `refetch_data_sources` 로 좁힘) | **X** |
 | 컴포넌트 리마운트 | X | **X** |
 | 히스토리 | 현재 항목 교체 | 현재 항목 교체 |
 

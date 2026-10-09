@@ -118,7 +118,7 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ### 기본 사용법
 
 ```html
-<div data-if="{{_global.isLoading}}" class="{{_global.sidebarOpen ? 'open' : 'closed'}}" text="{{_global.currentTheme}}">본문</div>
+<div data-if="{{_global.isLoading}}" class="{{_global.sidebarOpen ? 'open' : 'closed'}}">{{_global.currentTheme}}</div>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -126,9 +126,9 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ```json
 {
   "props": {
-    "className": "{{_global.sidebarOpen ? 'open' : 'closed'}}",
-    "text": "{{_global.currentTheme}}"
+    "className": "{{_global.sidebarOpen ? 'open' : 'closed'}}"
   },
+  "text": "{{_global.currentTheme}}",
   "if": "{{_global.isLoading}}"
 }
 ```
@@ -190,6 +190,9 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 ❌ 하네스에서 `globalState._local` 을 손으로 채워 발산 상황을 위조 (실 writer 를 거치지 않으면 결함이 시험에 등장하지 않는다)
 ❌ 구독 기반 선택적 리렌더 재시도 (과거에 도입 후 롤백된 실패 경로 — 반드시 검토 후 논의)
 ❌ 보존 컴포넌트(`_fromBase`)의 저장소 A 초기화를 `useEffect`/`useLayoutEffect` 에 두기 — 새 페이지의 첫 렌더와 자식 마운트 콜백보다 늦어 되쓰기가 B 에 고정된다 (engine-v1.72.1)
+❌ 저장소 A 초기화 조건을 레이아웃 이름만으로 판정 — 한 레이아웃이 여러 경로(수정·등록)를 겸하면 앞 화면 폼이 A 를 거쳐 되살아난다. 라우트 경로도 함께 본다 (engine-v1.79.0)
+❌ 언어 전환 재진입에 레이아웃 init·initLocal 을 다시 적용 — 저장하지 않은 입력이 사라진다 (engine-v1.79.0)
+❌ React 루트가 살아 있는 컨테이너를 엔진 밖 DOM(`innerHTML`·`ErrorDisplay`)으로 덮기 — 먼저 `releaseTemplateRoot()` 로 루트를 반납한다. 반납 중 업데이트를 큐에 남기면 떠난 화면의 `_local` 이 다음 화면에 흘러든다 (engine-v1.79.0)
 ```
 
 ### 엔진 수정 시 필수 확인 사항
@@ -254,10 +257,15 @@ SPA navigate 시 `_local` 상태는 **레이아웃 이름 기준으로 선택적
 | -------- | ---- | --- |
 | **다른 레이아웃 전환** | `_local = {}` 완전 초기화 후 새 initLocal 적용 | 주문관리 → 배송정책 |
 | **같은 레이아웃 재진입** | 기존 `_local` 유지, undefined 키만 initLocal에서 채움 | 상품목록 → 상품수정 → 상품목록 |
+| **같은 레이아웃, 다른 경로** | `_local` 은 유지(레이아웃이 init 에서 정리), 상태 소유 루트의 내부 저장소(A)만 비움 (engine-v1.79.0) | 게시판 수정 → 게시판 등록 |
+| **쿼리만 변경** (탭·검색·쪽 번호) | `_local`·내부 저장소 유지. 다시 받은 데이터의 initLocal 은 편집 중이어도 적용되어 폼이 서버 값으로 돌아감 — 탭마다 그 탭 구획만 저장하는 화면에서 다른 탭의 미저장 편집이 남지 않게 하는 계약. 미저장 변경이 사라진다는 안내는 레이아웃이 탭 전환 전에 확인 창으로 한다 | 환경설정 탭 전환 |
+| **언어 전환** | 같은 경로로 다시 그리되 전환 직전 `_local` 을 그대로 쓰고 initLocal 을 적용하지 않음. 데이터 소스는 새 언어로 다시 받음 (engine-v1.79.0) | 작성 화면에서 언어 변경 |
 
 ```text
 다른 레이아웃 전환 시 이전 _local 키가 잔존하지 않음 (완전 초기화)
 ✅ 같은 레이아웃 재진입 시 필터, 컬럼 설정 등 사용자 상태 보존
+✅ 같은 레이아웃이라도 경로가 바뀌면 앞 화면의 폼 값이 내부 저장소를 거쳐 되살아나지 않음 — 화면에 남길 값은 레이아웃이 init 에서 직접 정한다
+✅ 언어 전환은 저장하지 않은 입력을 지우지 않음. 컴포넌트 안에만 있는 저장 전 상태(업로더 대기 파일 등)는 G7Core.locale.handoff 로 넘긴다
 ```
 
 ### 상태 공유 메커니즘

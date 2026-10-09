@@ -42,8 +42,8 @@ class BackendPluralMessagesTest extends ModuleTestCase
         $p = 'sirsoft-board::';
 
         return [
-            'boards.bulk_members_success' => [$p.'messages.boards.bulk_members_success', ['skipped' => 0], 'count',
-                'Updated member lists of 1 board. (0 skipped)', 'Updated member lists of 2 boards. (0 skipped)'],
+            'boards.bulk_members_success' => [$p.'messages.boards.bulk_members_success', ['skipped' => 0, 'unchanged' => 0], 'count',
+                'Updated member lists of 1 board. (0 skipped, 0 unchanged)', 'Updated member lists of 2 boards. (0 skipped, 0 unchanged)'],
             'reaction.bulk_removed' => [$p.'messages.reaction.bulk_removed', [], 'count',
                 '1 reaction has been removed.', '2 reactions have been removed.'],
             'reaction.admin.bulk_removed' => [$p.'messages.reaction.admin.bulk_removed', [], 'count',

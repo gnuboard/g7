@@ -1,0 +1,36 @@
+feature: 글에 이어지지 않은 게시판 임시 첨부의 삭제와 순서 변경
+
+description: |
+  글쓰기 화면은 [저장]을 누를 때 첨부를 먼저 올리고(임시 첨부, board_id=0) 글을 보낸다. 글 저장이 422 로
+  실패하면 임시 첨부가 업로더 목록에 남는데, 이것을 지우면 첨부 조회가 「이 게시판 id」로만 찾아
+  `DELETE …/attachments/{id} → 404` 「파일을 찾을 수 없습니다」가 났다(7.1.0 전수 실측 O-F1-1, 페이지 L-D4 와
+  같은 결함군). 순서 변경도 같은 조회를 거쳐 서버 오류가 났다.
+  임시 첨부는 그 게시판 임시 경로(`{slug}/temp/…`)의 것만 찾고, 올린 사람만 지우거나 순서를 바꾼다.
+  남이 올린 임시 첨부는 관리자 경로에서도 403 이다(KVE-2026-2349 「잇지도 지우지도 못한다」와 같은 기준).
+
+axes:
+  route: [user, admin]
+  actor: [uploader, other_member, other_admin]
+  operation: [delete, reorder]
+
+exclusions:
+  - { route: user, actor: other_admin,
+      reason: "사용자 경로의 다른 관리자는 다른 회원과 같은 판정(올린 사람 확인)이라 other_member 로 대표한다." }
+  - { route: admin, actor: other_member,
+      reason: "관리자 첨부 경로는 auth:sanctum + admin 미들웨어가 회원을 먼저 막는다." }
+  - { route: admin, operation: reorder,
+      reason: "관리자·사용자 순서 변경은 같은 서비스 판정(assertReorderWithinScope)을 거친다 — 사용자 경로로 대표한다." }
+  - { actor: other_admin, operation: reorder,
+      reason: "순서 변경의 남의 임시 첨부 거절은 other_member 로 대표한다(같은 서비스 판정)." }
+  - { actor: other_member, operation: reorder, route: admin,
+      reason: "관리자 경로는 회원을 미들웨어가 막는다." }
+
+effects:
+  - own_temp_attachment_deleted
+  - others_temp_attachment_rejected_with_403
+  - temp_attachment_bound_to_uploaded_board
+  - existing_attachments_untouched
+  - own_temp_attachments_reordered
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/TempAttachmentDeleteTest.php

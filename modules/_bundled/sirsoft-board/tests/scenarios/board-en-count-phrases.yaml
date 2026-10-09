@@ -1,0 +1,23 @@
+feature: 게시판 모듈 영어 문구가 수가 1 일 때도 읽힌다
+
+description: |
+  「Settings applied to {{count}} boards.」 처럼 복수 명사를 박아 둔 영어 문구는 단수 갈래가 없으면 1 일 때
+  「1 boards」 로 나왔다(7.1.0 전수 실측 K2 후속 관측 O-KF2-1). 영어 개수 문구는 PO 결정대로 1 이면 단수,
+  그 밖은 복수로 쓰고 `(s)` 표기를 쓰지 않는다. 화면 문구는 같은 파일에 `키_one` 단수 갈래가 있어야 하고,
+  서버 문구는 `단수|복수` 로 쓴다(issue759 → develop-7.1.0 리베이스에서 base #754 의 `_one` 방식에 맞춰 기준을 바꿨다).
+
+axes:
+  phrase_kind: [frontend_count, backend_count]
+
+effects:
+  - en_count_phrases_read_correctly_for_one
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/lang/board-en-count-phrases.test.ts
+
+validation:
+  note: |
+    수정 전 원본(HEAD)에는 화면 문구 중 수 뒤 고정 복수 명사가 settings 6, admin 12, posts 2, dashboard 2 줄 있었다.
+    3차 실측(K3, 2026-10-07)에서 서버 문구 2줄을 더 찾았다 — 게시판마다 1 로 둘 수 있는 상한을 받는
+    「You can upload up to :max files only.」(글당 첨부 개수), 「Replies can only be nested up to :max levels.」
+    (댓글 깊이). 서버 문구 검사에 `:max files|levels` 갈래를 더했다(수정 전 2건 → 0건).

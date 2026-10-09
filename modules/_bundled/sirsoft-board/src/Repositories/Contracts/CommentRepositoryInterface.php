@@ -242,6 +242,16 @@ interface CommentRepositoryInterface
     public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 사용자가 작성한 댓글 수를 셉니다 («내가 쓴 댓글» 목록과 같은 조건).
+     *
+     * 삭제된 글의 댓글, 비활성 게시판·댓글 기능을 끈 게시판의 댓글은 세지 않는다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @return int 작성한 댓글 수
+     */
+    public function countUserComments(int $userId): int;
+
+    /**
      * 부모 댓글의 replies_count 컬럼을 활성 대댓글 수로 재계산해 갱신합니다.
      *
      * Listener (CommentReplySyncListener) 가 호출하는 영속 단일 진입점.

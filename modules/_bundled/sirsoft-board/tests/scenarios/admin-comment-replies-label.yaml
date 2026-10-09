@@ -1,0 +1,16 @@
+feature: 관리자 게시글 상세의 대댓글 펼침 버튼 문구
+
+description: |
+  관리자 게시글 상세에서 댓글 아래 답글(대댓글)을 펼치고 접는 버튼이 「답변글 N개 보기」·「Hide reply posts」로
+  나와, 글의 답글(답변글)을 여는 버튼처럼 읽혔다(7.1.0 실측 K3 관측 O-K3-8). 이 모듈은 글의 답글을 「답변글」,
+  댓글의 답글을 「대댓글」로 나눠 부르므로(답변글 최대 깊이 / 대댓글 최대 깊이) 버튼도 대댓글로 부른다.
+  일본어 언어팩은 같은 구분을 「返信コメント」로 쓴다.
+
+axes:
+  locale: [ko, en, ja]
+
+effects:
+  - admin_comment_replies_toggle_says_comment_replies
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/lang/admin-comment-replies-label.test.ts

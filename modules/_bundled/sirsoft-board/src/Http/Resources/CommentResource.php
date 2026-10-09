@@ -82,7 +82,9 @@ class CommentResource extends BaseApiResource
             'action_logs' => $this->getActionLogsForResponse($slug),
 
             // 소유권 정보
-            'is_author' => Auth::id() === $this->user_id,
+            // 회원 댓글만 본인 판정한다 — 비로그인(null)과 비회원 댓글(user_id null)을 같은
+            // 값으로 비교하면 방문자가 비회원 댓글의 작성자로 판정된다(PostResource 와 같은 기준).
+            'is_author' => $this->user_id !== null && Auth::id() === $this->user_id,
             'is_guest_comment' => $this->user_id === null,
 
             // 신고 여부 (로그인 사용자 + post.board 관계 로드 시에만)
@@ -222,7 +224,7 @@ class CommentResource extends BaseApiResource
 
         $counts = $this->reaction_counts ?? [];
 
-        foreach ($this->resolveActiveReactionTypeIds($board) as $typeId) {
+        foreach ($this->resolveActiveReactionTypeIds($request, $board) as $typeId) {
             $key = (string) $typeId;
             $counts[$key] = (int) ($counts[$key] ?? 0);
         }
@@ -234,26 +236,29 @@ class CommentResource extends BaseApiResource
      * 게시판이 켠 반응 유형 ID 목록을 요청 단위로 한 번만 해석합니다.
      *
      * 댓글마다 유형을 조회하면 댓글 수에 비례해 쿼리가 늘어난다(목록 응답의 N+1).
-     * 같은 요청 안에서는 게시판당 결과가 불변이므로 정적 캐시에 담아 재사용한다.
+     * 같은 요청 안에서는 게시판당 결과가 불변이므로 요청 속성에 담아 재사용한다.
+     * 함수 정적 변수에 담으면 프로세스가 끝날 때까지 남아, 장기 실행 프로세스가 관리자가 끄거나
+     * 다시 만든 유형의 옛 ID 를 계속 쓴다 — 게시글 리소스(`PostResource::activeReactionTypeIds`)와
+     * 같은 요청 속성 캐시를 쓴다.
      *
+     * @param  Request  $request  HTTP 요청
      * @param  mixed  $board  게시판 모델
      * @return array<int, int> 활성 반응 유형 ID 목록
      */
-    private function resolveActiveReactionTypeIds($board): array
+    private function resolveActiveReactionTypeIds(Request $request, $board): array
     {
-        static $cache = [];
+        $codes = $board->active_reaction_types ?? [];
+        $key = 'sirsoft-board.comment_active_reaction_type_ids.'.$board->id.':'.implode(',', $codes);
 
-        $key = (int) $board->id;
-
-        if (! array_key_exists($key, $cache)) {
-            $cache[$key] = app(ReactionTypeRepositoryInterface::class)
-                ->findByCodes($board->active_reaction_types ?? [])
+        if (! $request->attributes->has($key)) {
+            $request->attributes->set($key, app(ReactionTypeRepositoryInterface::class)
+                ->findByCodes($codes)
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
-                ->all();
+                ->all());
         }
 
-        return $cache[$key];
+        return $request->attributes->get($key);
     }
 
     /**

@@ -89,12 +89,15 @@ return [
             ],
             'annual_notice_channels' => [
                 'label' => '발송 채널',
+                'required_when_enabled' => '자동 통지를 켜려면 발송 채널을 하나 이상 선택하세요.',
             ],
             'annual_notice_batch_size' => [
                 'label' => '1회 실행당 발송 상한',
+                'required_when_enabled' => '자동 통지를 켜려면 1회 실행당 발송 상한을 입력하세요.',
             ],
             'annual_notice_introduction' => [
                 'label' => '통지문 서문',
+                'label_with_language' => ':label (:language)',
             ],
             'cookie_policy_version' => [
                 'label' => '정책 버전',
@@ -104,7 +107,7 @@ return [
                 'label' => '개인정보처리방침 주소',
                 'hint' => '처리방침을 게시한 주소를 입력하세요. 사이트 안의 페이지는 / 로 시작하는 경로(예: /page/privacy), 다른 사이트는 https:// 로 시작하는 전체 주소를 적습니다. 비어 있으면 쿠키 배너의 정책 링크가 표시되지 않습니다.',
                 'placeholder' => '예: /page/privacy 또는 https://example.com/privacy',
-                'invalid' => ':attribute 에는 / 로 시작하는 사이트 경로나 https:// 로 시작하는 주소만 입력할 수 있습니다.',
+                'invalid' => ':attribute에는 / 로 시작하는 사이트 경로나 https:// 로 시작하는 주소만 입력할 수 있습니다.',
             ],
             'legal_entity_name' => [
                 'label' => '법인명 / 운영 주체',
@@ -344,6 +347,22 @@ return [
             'privacy_policy_url' => '개인정보처리방침 URL',
             'privacy_policy_link' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)',
             'notice_sections' => '확장이 기여한 처리 내역',
+        ],
+    ],
+    'validation' => [
+        // 요청이 칸별 문구를 정하지 않은 규칙의 대체 문구(ProvidesFallbackRuleMessages 트레이트).
+        // 칸 이름 뒤에 「값」「항목」을 붙여 받침과 무관하게 읽히게 쓴다(조사를 괄호로 남기지 않는다).
+        'fallback' => [
+            'in' => '선택한 :attribute 값이 올바르지 않습니다.',
+            'not_in' => '선택한 :attribute 값은 쓸 수 없습니다.',
+            'enum' => '선택한 :attribute 값이 올바르지 않습니다.',
+            'exists' => '선택한 :attribute 값이 존재하지 않습니다.',
+            'unique' => ':attribute 값이 이미 사용 중입니다.',
+            'required_if' => ':other 값이 :value일 때 :attribute 항목은 필수입니다.',
+            'required_with' => ':values 항목이 있으면 :attribute 항목도 필수입니다.',
+            'required_without' => ':values 항목이 없으면 :attribute 항목은 필수입니다.',
+            'same' => ':attribute 값이 :other 값과 같아야 합니다.',
+            'different' => ':attribute 값은 :other 값과 달라야 합니다.',
         ],
     ],
 ];

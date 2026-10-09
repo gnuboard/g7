@@ -10,6 +10,7 @@ use Modules\Sirsoft\Page\Http\Requests\ReorderPageAttachmentsRequest;
 use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Http\Resources\PageAttachmentResource;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 페이지 첨부파일 컨트롤러
@@ -86,6 +87,8 @@ class PageAttachmentController extends AdminBaseController
             return $this->success('sirsoft-page::messages.attachment.delete_success');
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-page::messages.attachment.not_found');
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.delete_failed', 500, $e->getMessage());
         }
@@ -108,6 +111,11 @@ class PageAttachmentController extends AdminBaseController
             $this->attachmentService->reorder($orders);
 
             return $this->success('sirsoft-page::messages.attachment.reorder_success');
+        } catch (ModelNotFoundException) {
+            // 범위 검사가 대상 첨부를 하나씩 찾으므로, 없는 ID 는 500 이 아니라 404 로 끊는다(삭제와 같은 응답).
+            return $this->notFound('sirsoft-page::messages.attachment.not_found');
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.reorder_failed', 500, $e->getMessage());
         }

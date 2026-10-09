@@ -149,7 +149,7 @@
                         "type": "text",
                         "placeholder": "$t:mypage.scrap.search_placeholder",
                         "value": "{{_local.scrapSearch ?? ''}}",
-                        "className": "flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     }
                 },
                 {
@@ -823,7 +823,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "삭제된 원글 행 — 클릭 이동 액션 없음. 톤다운 + '삭제됨' 표시, 게시판명·작성자는 유지(확정 정책)",
+                                            "comment": "삭제된 원글 행 — 클릭 이동 액션 없음. 톤다운 + '삭제됨' 표시, 게시판명·작성자는 유지(확정 정책). 게시판 자체가 지워진 스크랩(board_deleted)도 이 행으로 온다 — 게시판을 지우면 글도 함께 하드 삭제되기 때문이다. 그때는 게시판 칸에 「게시판 삭제됨」을 단다(게시판명은 남아 있지 않다)",
                                             "type": "basic",
                                             "name": "Tr",
                                             "if": "{{item.is_deleted}}",
@@ -868,7 +868,24 @@
                                                     "props": {
                                                         "className": "px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate"
                                                     },
-                                                    "text": "{{item.board_name ?? ''}}"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!item.board_deleted}}",
+                                                            "text": "{{item.board_name ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.board_deleted}}",
+                                                            "props": {
+                                                                "data-testid": "scrap-board-deleted-{{item.id}}",
+                                                                "className": "text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700"
+                                                            },
+                                                            "text": "$t:mypage.scrap.board_deleted_flag"
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
@@ -1186,7 +1203,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음",
+                                    "comment": "삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음. 게시판이 지워진 스크랩도 이 카드로 오므로 게시판 뱃지 자리에 「게시판 삭제됨」을 단다",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{item.is_deleted}}",
@@ -1201,10 +1218,21 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
+                                                    "if": "{{!item.board_deleted}}",
                                                     "props": {
                                                         "className": "shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700"
                                                     },
                                                     "text": "{{item.board_name ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{item.board_deleted}}",
+                                                    "props": {
+                                                        "data-testid": "scrap-board-deleted-m-{{item.id}}",
+                                                        "className": "shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700"
+                                                    },
+                                                    "text": "$t:mypage.scrap.board_deleted_flag"
                                                 },
                                                 {
                                                     "type": "basic",

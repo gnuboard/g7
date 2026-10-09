@@ -113,7 +113,7 @@
                 <span data-if="{{posts?.data?.board?.settings?.use_reaction !== false &amp;&amp; (post?.reaction_total ?? 0) > 0}}" class="text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post?.reaction_total}}</span></span>
                 <!-- 삭제됨 배지 -->
                 <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-                <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
+                <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
               </div>
               <!-- 작성자 -->
               <div class="flex items-center gap-2">
@@ -158,7 +158,7 @@
                 <span data-if="{{posts?.data?.board?.settings?.use_reaction !== false &amp;&amp; (post?.reaction_total ?? 0) > 0}}" class="text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post?.reaction_total}}</span></span>
                     <!-- 삭제됨 배지 -->
                     <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-                    <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
+                    <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
                   </div>
                 </div>
               </div>

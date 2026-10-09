@@ -270,6 +270,8 @@ JSON 레이아웃에서는 노드 `name` 에 등록 이름을 그대로 쓴다.
 
 prop 컨트롤은 `components.json` 의 `props` 선언에서 나오고, 그 선언은 빌드가 컴포넌트 소스의 `{이름}Props` 인터페이스에서 추출한다 — 인터페이스를 선언하지 않으면 컨트롤이 생기지 않는다.
 
+팔레트에 등재한 composite/layout 컴포넌트는 `editorAttrs?: EditorAttrs` 를 받아 **시각적 루트 요소에 `{...editorAttrs}` 로 spread** 해야 한다. 템플릿 컴포넌트와 같은 계약이다([components-types.md](../frontend/components-types.md) 「editorAttrs 패스스루」). 빠뜨리면 팔레트에서 꺼내 놓은 노드를 편집기가 선택하거나 옮기지 못한다. 기본 판본(`resources/js/components/`), 템플릿 전용 판본(`…/for/<템플릿>/`), 템플릿 대체본(`templates/<템플릿>/src/components/overrides/<확장>/`) 모두 해당한다.
+
 ### 캔버스 미리보기
 
 편집기는 호스트 페이지와 **별도의 격리 레지스트리**를 만들어 편집 대상 템플릿을 렌더한다. 확장 IIFE 는 호스트 부팅 때 이미 실행이 끝났으므로, 코어는 확장의 **선언 전체**를 클래스에 보관해 두고 격리 인스턴스가 `applyExtensionComponents()` 로 자기 몫을 다시 고른다.

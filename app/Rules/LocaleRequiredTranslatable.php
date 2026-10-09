@@ -4,6 +4,9 @@ namespace App\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\ValidatorAwareRule;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Validator;
 
 /**
  * 사이트 기본 언어 필수 다국어 필드 검증 규칙
@@ -12,8 +15,13 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * 다른 로케일은 선택적으로 검증합니다. 요청 언어(`app()->getLocale()`)를 쓰지 않는 것은
  * 필수 언어가 보는 사람마다 달라지면 다른 언어 관리자가 만든 레코드를 이어 고칠 수 없기 때문입니다.
  */
-class LocaleRequiredTranslatable implements ValidationRule
+class LocaleRequiredTranslatable implements ValidationRule, ValidatorAwareRule
 {
+    /**
+     * 이 규칙을 돌리는 검증기 (칸 표시 이름이 정해져 있는지 보는 데 쓴다)
+     */
+    private ?Validator $validator = null;
+
     /**
      * LocaleRequiredTranslatable 생성자
      *
@@ -28,6 +36,19 @@ class LocaleRequiredTranslatable implements ValidationRule
         private ?string $requiredLocale = null,
         private bool $strictLocales = false
     ) {}
+
+    /**
+     * 이 규칙을 돌리는 검증기를 받습니다.
+     *
+     * @param  Validator  $validator  검증기
+     * @return $this 검증기를 받은 규칙 자신
+     */
+    public function setValidator($validator): static
+    {
+        $this->validator = $validator;
+
+        return $this;
+    }
 
     /**
      * 검증 규칙 실행
@@ -61,8 +82,16 @@ class LocaleRequiredTranslatable implements ValidationRule
         $requiredValue = $value[$requiredLocale] ?? null;
 
         if (is_null($requiredValue) || (is_string($requiredValue) && trim($requiredValue) === '')) {
-            $fail(__('validation.translatable.current_locale_required', [
+            // 칸 이름(:attribute — 검증기가 표시 이름으로 바꾼다)과 언어 이름을 함께 알린다. 코드만 내보내면
+            // 「en 언어의 값은 필수입니다」처럼 어느 칸의 어느 언어를 채워야 하는지 알 수 없었다(2026-10-07 실측).
+            // 표시 이름을 정하지 않은 칸은 검증기가 필드 키(name)를 그대로 넣으므로, 그때는 칸 이름 없이 언어만 알린다.
+            $languageNames = (array) config('app.locale_names', []);
+            $messageKey = $this->hasDisplayName($attribute)
+                ? 'validation.translatable.current_locale_required'
+                : 'validation.translatable.current_locale_required_unnamed';
+            $fail(__($messageKey, [
                 'locale' => $requiredLocale,
+                'language' => $languageNames[$requiredLocale] ?? $requiredLocale,
             ]));
 
             return;
@@ -118,5 +147,27 @@ class LocaleRequiredTranslatable implements ValidationRule
                 }
             }
         }
+    }
+
+    /**
+     * 칸에 사람이 읽는 표시 이름이 정해져 있는지 확인합니다.
+     *
+     * 요청의 attributes() 로 넘긴 이름이나 `validation.attributes.{칸}` 번역이 있으면(검증기의 표시 이름 규칙) 표시 이름이 있다.
+     * 검증기 없이 직접 부른 경우(단위 사용)는 종전처럼 칸 이름을 싣는 문구를 쓴다.
+     *
+     * @param  string  $attribute  필드명
+     * @return bool 표시 이름이 있으면 true
+     */
+    private function hasDisplayName(string $attribute): bool
+    {
+        if ($this->validator === null) {
+            return true;
+        }
+
+        // 검증기가 표시 이름을 못 찾으면 필드 키를 snake_case 를 띄어 쓴 꼴로 돌려준다(와일드카드 칸 포함 같은 규칙)
+        $displayable = $this->validator->getDisplayableAttribute($attribute);
+
+        return $displayable !== $attribute
+            && $displayable !== str_replace('_', ' ', Str::snake($attribute));
     }
 }

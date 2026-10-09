@@ -7,13 +7,14 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\ReactionType;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
  * 마이페이지 「내 반응」 API Feature 테스트.
  *
  * 회원이 남긴 반응을 게시글·댓글 구분 없이 한 목록으로 보여주고, 단건·선택 해제를 제공한다.
- * 반응이 꺼진 게시판·삭제된 대상의 반응도 **해제는 허용**한다 (PO 결정 R11) —
+ * 반응이 꺼진 게시판·삭제된 대상의 반응도 **해제는 허용**한다 (결정 R11) —
  * 남긴 기록을 회수하는 행위는 게시판 설정과 무관한 회원의 권리다.
  */
 class MyReactionsApiTest extends BoardTestCase
@@ -54,12 +55,12 @@ class MyReactionsApiTest extends BoardTestCase
 
     /**
      * 반응 행을 직접 만듭니다 (API 를 거치지 않는 픽스처).
-     * @param $userId 회원 ID
-     * @param $targetType 대상 유형
-     * @param $targetId 대상 ID
-     * @param $typeId 유형 ID
-     * @param $boardId 게시판 ID
      *
+     * @param  $userId  회원 ID
+     * @param  $targetType  대상 유형
+     * @param  $targetId  대상 ID
+     * @param  $typeId  유형 ID
+     * @param  $boardId  게시판 ID
      * @return int 정수 식별자
      */
     private function seedReaction(int $userId, string $targetType, int $targetId, int $typeId, ?int $boardId = null): int
@@ -190,7 +191,7 @@ class MyReactionsApiTest extends BoardTestCase
     }
 
     /**
-     * 잘못된 검색 대상·대상 구분은 422.
+     * 잘못된 대상 구분은 422.
      *
      * @scenario case=invalid_filter_values_rejected
      *
@@ -198,15 +199,39 @@ class MyReactionsApiTest extends BoardTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_index_rejects_invalid_search_field_and_target_type(): void
+    public function test_index_rejects_invalid_target_type(): void
     {
-        $this->actingAs($this->member, 'sanctum')
-            ->getJson(self::ENDPOINT.'?search_field=author')
-            ->assertStatus(422);
-
         $this->actingAs($this->member, 'sanctum')
             ->getJson(self::ENDPOINT.'?target_type=board')
             ->assertStatus(422);
+    }
+
+    /**
+     * 잘못된 검색 대상은 422 가 아니라 기본(제목+내용)으로 처리하고, 적용한 값을 data.query 로 되돌린다
+     * (게시판 목록·관리자 목록과 같은 처리, 7.1.0 실측 O-K3-3).
+     *
+     * @scenario case=unknown_search_field_falls_back
+     *
+     * @effects unknown_search_field_falls_back_to_title_content
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_unknown_search_field_falls_back_to_title_content(): void
+    {
+        $author = $this->createUser();
+        $titleHit = $this->createTestPost(['user_id' => $author->id, 'title' => '대체검색 제목', 'content' => '무관']);
+        $contentHit = $this->createTestPost(['user_id' => $author->id, 'title' => '무관', 'content' => '대체검색 본문']);
+
+        $this->seedReaction($this->member->id, 'post', $titleHit, $this->likeId);
+        $this->seedReaction($this->member->id, 'post', $contentHit, $this->likeId);
+
+        foreach (['author', 'abc'] as $unknown) {
+            $this->actingAs($this->member, 'sanctum')
+                ->getJson(self::ENDPOINT.'?search=대체검색&search_field='.$unknown)
+                ->assertOk()
+                ->assertJsonCount(2, 'data.data')
+                ->assertJsonPath('data.query.search_field', 'title_content');
+        }
     }
 
     /**
@@ -377,7 +402,7 @@ class MyReactionsApiTest extends BoardTestCase
     }
 
     /**
-     * 반응이 꺼진 게시판이라도 해제는 허용한다 (PO 결정 R11).
+     * 반응이 꺼진 게시판이라도 해제는 허용한다 (결정 R11).
      *
      * @scenario case=remove_allowed_when_reaction_off
      *
@@ -456,5 +481,28 @@ class MyReactionsApiTest extends BoardTestCase
         $response->assertOk();
         $this->assertSame(1, $response->json('data.total_reactions'));
         $this->assertSame(0, $response->json('data.total_reports'));
+    }
+
+    /**
+     * 내 반응 목록이 처리 중 서버 오류를 만나면 입력 오류(400)가 아니라 서버 오류(500)로 답한다.
+     *
+     * 종전에는 400 으로 답해 화면이 「입력을 확인하세요」 류로 받아들였다(1.2.0 Fixed).
+     *
+     * @scenario case=list_mixes_post_and_comment_rows
+     *
+     * @effects my_reactions_server_error_returns_500
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_server_error_returns_500(): void
+    {
+        $this->mock(ReactionService::class)
+            ->shouldReceive('paginateForUser')
+            ->andThrow(new \RuntimeException('simulated failure'));
+
+        $this->actingAs($this->member, 'sanctum')
+            ->getJson(self::ENDPOINT)
+            ->assertStatus(500)
+            ->assertJsonPath('success', false);
     }
 }

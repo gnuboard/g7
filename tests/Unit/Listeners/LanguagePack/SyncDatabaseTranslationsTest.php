@@ -6,10 +6,12 @@ use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Listeners\LanguagePack\SyncDatabaseTranslations;
 use App\Models\LanguagePack;
+use App\Models\Menu;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -358,5 +360,194 @@ class SyncDatabaseTranslationsTest extends TestCase
         $def->refresh();
         $this->assertArrayNotHasKey('ja', $def->name);
         $this->assertSame('회원가입 인증', $def->name['ko']);
+    }
+
+    /**
+     * 플러그인 범위 ja 팩을 만들고 seed 파일을 적습니다.
+     *
+     * @param  string  $sourceType  팩 소스 유형
+     * @return LanguagePack 생성된 언어팩
+     */
+    private function createPluginPack(string $sourceType = 'bundled'): LanguagePack
+    {
+        $root = base_path('lang-packs/test-plugin-qa-ja');
+        File::ensureDirectoryExists($root.'/seed');
+        File::put($root.'/seed/permissions.json', json_encode([
+            'qa-plugin.view' => ['name' => '閲覧', 'description' => '閲覧の説明'],
+        ]));
+        File::put($root.'/seed/roles.json', json_encode([
+            'qa-plugin.manager' => ['name' => '運営者', 'description' => '運営者の説明'],
+            'qa-plugin.edited' => ['name' => 'パック値', 'description' => '説明'],
+        ]));
+        File::put($root.'/seed/menus.json', json_encode([
+            'qa-plugin-log' => ['name' => '履歴'],
+        ]));
+        File::put($root.'/seed/notifications.json', json_encode([
+            'qa_plugin_notice' => [
+                'definition' => ['name' => 'お知らせ', 'description' => 'お知らせの説明'],
+                'templates' => ['mail' => ['subject' => '件名', 'body' => '<p>本文</p>']],
+            ],
+        ]));
+
+        return LanguagePack::query()->create([
+            'identifier' => 'test-plugin-qa-ja',
+            'vendor' => 'test',
+            'scope' => LanguagePackScope::Plugin->value,
+            'target_identifier' => 'qa-plugin',
+            'locale' => 'ja',
+            'locale_name' => 'Japanese',
+            'locale_native_name' => '日本語',
+            'text_direction' => 'ltr',
+            'version' => '1.0.0',
+            'status' => LanguagePackStatus::Active->value,
+            'is_protected' => false,
+            'manifest' => [],
+            'source_type' => $sourceType,
+        ]);
+    }
+
+    /**
+     * 플러그인이 소유한 권한·역할·메뉴·알림 정의·알림 템플릿 행과 코어 소유 권한 행을 만듭니다.
+     *
+     * @return array<string, Model> 이름별 행
+     */
+    private function createPluginOwnedRows(): array
+    {
+        $owner = ['extension_type' => 'plugin', 'extension_identifier' => 'qa-plugin'];
+
+        $perm = Permission::query()->create($owner + [
+            'identifier' => 'qa-plugin.view',
+            'name' => ['ko' => '보기', 'en' => 'View'],
+            'description' => ['ko' => '보기 설명', 'en' => 'View desc'],
+            'order' => 1,
+        ]);
+        $role = Role::query()->create($owner + [
+            'identifier' => 'qa-plugin.manager',
+            'name' => ['ko' => '운영자', 'en' => 'Manager'],
+            'description' => ['ko' => '운영자 설명', 'en' => 'Manager desc'],
+            'is_active' => true,
+        ]);
+        $edited = Role::query()->create($owner + [
+            'identifier' => 'qa-plugin.edited',
+            'name' => ['ko' => '수정됨', 'en' => 'Edited'],
+            'description' => ['ko' => '', 'en' => ''],
+            'is_active' => true,
+        ]);
+        $menu = Menu::query()->create($owner + [
+            'name' => ['ko' => '이력', 'en' => 'Log'],
+            'slug' => 'qa-plugin-log',
+            'url' => '/admin/qa-plugin/log',
+            'order' => 1,
+            'is_active' => true,
+        ]);
+        $def = NotificationDefinition::query()->create($owner + [
+            'type' => 'qa_plugin_notice',
+            'hook_prefix' => 'qa-plugin',
+            'category' => 'qa',
+            'name' => ['ko' => '안내', 'en' => 'Notice'],
+            'description' => ['ko' => '안내 설명', 'en' => 'Notice desc'],
+            'channels' => ['mail'],
+            'hooks' => [],
+            'variables' => [],
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+        $tpl = NotificationTemplate::query()->create([
+            'definition_id' => $def->id,
+            'channel' => 'mail',
+            'subject' => ['ko' => '제목', 'en' => 'Subject'],
+            'body' => ['ko' => '<p>본문</p>', 'en' => '<p>Body</p>'],
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+        $corePerm = Permission::query()->create([
+            'identifier' => 'core.qa.view',
+            'name' => ['ko' => '코어', 'en' => 'Core', 'ja' => 'コア'],
+            'description' => ['ko' => '', 'en' => ''],
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'order' => 1,
+        ]);
+
+        return compact('perm', 'role', 'edited', 'menu', 'def', 'tpl', 'corePerm');
+    }
+
+    /**
+     * 플러그인 범위 팩을 끄면 그 팩이 플러그인 소유 권한·역할·메뉴·알림 정의·알림 템플릿에 넣은 ja 를 걷고,
+     * 운영자가 고친 값(user_overrides)과 다른 소유자(코어) 행의 ja 는 남긴다. 다시 켜면 ja 가 다시 들어간다.
+     *
+     * 종전에는 플러그인 범위 비활성화가 플러그인 행의 이름·설명만 걷어, 끈 뒤에도 메뉴·역할·권한·알림에
+     * ja 문구가 남았다(2026-10-07 g7-plugin-sirsoft-gdpr-ja 실측).
+     *
+     * @effects deactivation_strips_extension_pack_locale_from_owned_rows, reactivation_restores_extension_pack_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deactivate_plugin_pack_strips_locale_from_plugin_owned_rows(): void
+    {
+        $rows = $this->createPluginOwnedRows();
+        $pack = $this->createPluginPack();
+
+        try {
+            $this->listener->handleActivated($pack);
+
+            $this->assertSame('閲覧', $rows['perm']->refresh()->name['ja']);
+            $this->assertSame('運営者', $rows['role']->refresh()->name['ja']);
+            $this->assertSame('履歴', $rows['menu']->refresh()->name['ja']);
+            $this->assertSame('お知らせ', $rows['def']->refresh()->name['ja']);
+            $this->assertSame('件名', $rows['tpl']->refresh()->subject['ja']);
+
+            // 운영자가 ja 이름을 직접 고친 역할(실제로는 HasUserOverrides 가 name.ja 를 기록한다)
+            $edited = $rows['edited']->refresh();
+            $edited->name = array_merge($edited->name, ['ja' => '運営者が直した値']);
+            $edited->user_overrides = ['name.ja'];
+            $edited->save();
+
+            $this->listener->handleDeactivated($pack);
+
+            $this->assertArrayNotHasKey('ja', $rows['perm']->refresh()->name);
+            $this->assertArrayNotHasKey('ja', $rows['perm']->description);
+            $this->assertArrayNotHasKey('ja', $rows['role']->refresh()->name);
+            $this->assertArrayNotHasKey('ja', $rows['menu']->refresh()->name);
+            $this->assertArrayNotHasKey('ja', $rows['def']->refresh()->name);
+            $this->assertArrayNotHasKey('ja', $rows['tpl']->refresh()->subject);
+            $this->assertArrayNotHasKey('ja', $rows['tpl']->body);
+            $this->assertSame('보기', $rows['perm']->name['ko']);
+            $this->assertSame('<p>Body</p>', $rows['tpl']->body['en']);
+            $this->assertSame('運営者が直した値', $rows['edited']->refresh()->name['ja'], '운영자 수정값은 비활성화가 걷지 않는다');
+            $this->assertSame('コア', $rows['corePerm']->refresh()->name['ja'], '다른 소유자 행의 ja 는 플러그인 팩과 무관하다');
+
+            $this->listener->handleActivated($pack);
+
+            $this->assertSame('閲覧', $rows['perm']->refresh()->name['ja']);
+            $this->assertSame('履歴', $rows['menu']->refresh()->name['ja']);
+            $this->assertSame('<p>本文</p>', $rows['tpl']->refresh()->body['ja']);
+            $this->assertSame('運営者が直した値', $rows['edited']->refresh()->name['ja'], '재활성화도 운영자 수정값을 덮지 않는다');
+        } finally {
+            File::deleteDirectory(base_path('lang-packs/test-plugin-qa-ja'));
+        }
+    }
+
+    /**
+     * 확장에 내장된 언어팩(bundled_with_extension)은 그 확장 자신의 언어라, 꺼질 때 확장 소유 행의 그 로케일을 걷지 않는다.
+     *
+     * @effects deactivation_keeps_bundled_with_extension_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deactivate_bundled_with_extension_pack_keeps_owned_row_locale(): void
+    {
+        $rows = $this->createPluginOwnedRows();
+        $rows['perm']->name = array_merge($rows['perm']->name, ['ja' => '内蔵']);
+        $rows['perm']->save();
+        $pack = $this->createPluginPack('bundled_with_extension');
+
+        try {
+            $this->listener->handleDeactivated($pack);
+
+            $this->assertSame('内蔵', $rows['perm']->refresh()->name['ja']);
+        } finally {
+            File::deleteDirectory(base_path('lang-packs/test-plugin-qa-ja'));
+        }
     }
 }
