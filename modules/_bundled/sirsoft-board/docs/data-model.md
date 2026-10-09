@@ -202,9 +202,9 @@ MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 �
 를 추가할 때는 반드시 인터페이스를 함께 만들고 `CoreServiceProvider`(또는 이 모듈의
 서비스 프로바이더)에서 바인딩합니다 — Service 가 구체 클래스를 직접 타입힌트하면 안 됩니다.
 
-`board_stats.date` 와 일일 신고 한도의 「오늘」은 **사이트 표준시의 하루**입니다(`Support\SiteDay` —
-`general.timezone` → `app.default_user_timezone`, 스케줄러의 `app.schedule_timezone` 과 같은 값). 저장값과
-앱 시간대(`app.timezone`)는 UTC 이므로, 하루를 앱 시간대로 자르면 한국 사이트에서는 오전 9시에 날짜가 바뀌어
-새벽 글이 전날 집계로 가고 일일 신고 한도가 오전 9시에 풀립니다. 하루 단위로 세는 쿼리는 `SiteDay::utcRange()`
-로 그 하루를 UTC 범위로 바꿔 비교합니다.
+`board_stats.date`(대시보드 일 집계)의 「오늘」은 **사이트 표준시의 하루**입니다(`BoardDashboardService::siteToday()` —
+`general.timezone` → `app.default_user_timezone`). 일일 신고 한도의 「오늘」은 **신고하는 사람의 계정 시간대**의
+하루이고, 계정 시간대가 없으면 사이트 기본 시간대입니다(코어 `FiltersByDateRange::applyViewerTodayFilter`). 저장값과
+앱 시간대(`app.timezone`)는 UTC 이므로, 하루를 앱 시간대로 자르면 한국 사이트에서는 오전 9시에 날짜가 바뀌어 새벽 글이
+전날 집계로 가고 일일 신고 한도가 오전 9시에 풀립니다. 하루 단위로 세는 쿼리는 그 하루를 UTC 범위로 바꿔 비교합니다.
 <!-- @intent END -->

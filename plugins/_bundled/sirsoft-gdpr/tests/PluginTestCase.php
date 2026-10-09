@@ -32,7 +32,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 테스트 격리용 임시 plugins 스토리지 루트 (setUp 에서 만들고 tearDown 에서 지운다).
      *
-     * 설정 저장 테스트(`PluginSettingsService::save`)는 `plugins` 디스크의 `sirsoft-gdpr/settings/setting.json`
+     * 설정 저장 테스트(`PluginSettingsService::save`)는 `plugins` 디스크의 `storage/app/plugins/sirsoft-gdpr/settings/setting.json`
      * 에 실제로 쓴다. 디스크 루트를 테스트마다 따로 두어, 앞 테스트·앞 실행이 남긴 설정이 다음 테스트로
      * 새지 않고 어떤 경우에도 개발 사이트 설정 파일(`storage/app/plugins/...`)을 덮지 않게 한다
      * (2026-10-07 실측 O-M1F-A: 설정 저장 테스트 실행 시각에 개발 사이트 설정이 테스트 값 「필수」로 바뀜).

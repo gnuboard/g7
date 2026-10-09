@@ -822,6 +822,7 @@ use App\Rules\LocaleRequiredTranslatable;
 「메뉴 이름의 한국어(ko) 값은 필수입니다.」처럼 그 이름을 싣는다. 표시 이름이 없으면 필드 키(`name`)를 내보이지
 않으려고 칸 이름 없이 「한국어(ko) 값은 필수입니다.」만 나오므로, 어느 칸인지 알 수 없다(7.1.0 실측 — 메뉴·역할·권한·
 알림 템플릿·게시판 유형·페이지 요청에 매핑을 넣었다).
+
 ```php
 public function attributes(): array
 {
@@ -830,6 +831,7 @@ public function attributes(): array
     ];
 }
 ```
+
 ### TranslatableField 사용법
 
 **파일 위치**: `app/Rules/TranslatableField.php`

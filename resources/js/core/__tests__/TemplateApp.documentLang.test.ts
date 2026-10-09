@@ -26,6 +26,7 @@ vi.mock('../template-engine', () => ({
   initTemplateEngine: vi.fn().mockResolvedValue(undefined),
   renderTemplate: vi.fn().mockResolvedValue(undefined),
   destroyTemplate: vi.fn(),
+  releaseTemplateRoot: vi.fn(),
   getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
   getState: vi.fn().mockReturnValue({
     actionDispatcher: sharedActionDispatcher,

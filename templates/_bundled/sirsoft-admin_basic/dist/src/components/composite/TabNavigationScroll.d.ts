@@ -22,12 +22,6 @@ export interface Tab {
     scrollDelay?: number;
     /** 개별 탭 클릭 시 실행될 콜백 (우선순위: 개별 > 공통 > 기본) */
     onClick?: (tabId: string | number) => void;
-    /**
-     * 항목 노출 조건 — 엔진이 `{{…}}` 를 값으로 풀어 넘긴다. 키가 있고 값이 거짓이면 탭 목록에서 뺀다.
-     * 확장이 inject_props 로 덧붙이는 탭(회원 상세 「반응」·「스크랩」 등)이 데이터·권한이 없을 때
-     * 버튼만 남지 않도록 쓴다. 키가 없으면 항상 보인다.
-     */
-    if?: unknown;
 }
 /**
  * TabNavigationScroll Props

@@ -82,7 +82,8 @@ class MultilingualFieldDisplayNameApiTest extends ModuleTestCase
     }
 
     /**
-     * 영어 관리자에게 칸 이름을 실은 422 문구가 간다.
+     * 영어 관리자에게도 칸 이름을 실은 422 문구가 간다 — 필수 언어는 화면 언어가 아니라 사이트 기본 언어(ko)다.
+     * 언어 이름은 제품 관례대로 그 언어 자신의 표기(「한국어」)다.
      *
      * @scenario locale=en
      *
@@ -103,7 +104,7 @@ class MultilingualFieldDisplayNameApiTest extends ModuleTestCase
         $response = $this->send('en', $method, $path, $permission, $payload);
 
         $response->assertStatus(422);
-        $this->assertSame("The English (en) value of the {$en} field is required.", $this->firstError($response, $errorKey));
+        $this->assertSame("The 한국어 (ko) value of the {$en} field is required.", $this->firstError($response, $errorKey));
     }
 
     /**

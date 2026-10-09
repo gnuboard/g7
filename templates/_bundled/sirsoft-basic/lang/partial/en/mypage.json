@@ -163,8 +163,7 @@
             "expired": "Expired",
             "other_devices_logged_out": "You have been logged out on other devices. This device stays logged in.",
             "changed_toast": "Your password has been changed. You have been logged out on other devices."
-        },
-        "avatar_preview": "New profile image preview"
+        }
     },
     "orders": {
         "title": "Order History",

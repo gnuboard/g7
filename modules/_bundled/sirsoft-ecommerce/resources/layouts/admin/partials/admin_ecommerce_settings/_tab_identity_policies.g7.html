@@ -90,6 +90,7 @@
         <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
         <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
           <on type="change">
+            <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
           </on>
           <on type="keypress" key="Enter">

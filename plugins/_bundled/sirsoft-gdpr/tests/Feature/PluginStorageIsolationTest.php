@@ -9,7 +9,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  * GDPR 플러그인 테스트의 설정 저장소 격리 테스트
  *
  * 설정 저장 테스트(관리자 설정 API, 연간 통지 명령)는 `PluginSettingsService::save` 로 `plugins` 디스크의
- * `sirsoft-gdpr/settings/setting.json` 에 실제로 쓴다. 2026-10-07 실측(O-M1F-A)에서 설정 저장 테스트 실행 시각에
+ * `storage/app/plugins/sirsoft-gdpr/settings/setting.json` 에 실제로 쓴다. 2026-10-07 실측(O-M1F-A)에서 설정 저장 테스트 실행 시각에
  * 개발 사이트 설정 파일이 테스트 값(쿠키 분류 라벨 「필수」/Necessary)으로 바뀌었다. 테스트마다 따로 둔 임시 루트에만
  * 쓰고, 개발 사이트 설정 파일과 여러 실행이 함께 쓰는 테스트 저장소 경로는 건드리지 않는지 본다.
  *

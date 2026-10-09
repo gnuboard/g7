@@ -57,7 +57,9 @@ describe('관리자 상세 대댓글 펼침 버튼 문구', () => {
     // @effects admin_comment_replies_toggle_says_comment_replies
     it('영어는 comment replies 로 부른다 (reply posts 아님)', () => {
         for (const { file, prefix } of sources('en')) {
-            expect(read(file, `${prefix}.show_replies`), file).toBe('Show comment replies ({{count}})');
+            // 개수 문구는 단수·복수 갈래(`_one`)로 쓴다(PO 결정 「영어 개수 문구」 — `(s)`·괄호 수 표기 대신)
+            expect(read(file, `${prefix}.show_replies`), file).toBe('Show {{count}} comment replies');
+            expect(read(file, `${prefix}.show_replies_one`), file).toBe('Show {{count}} comment reply');
             expect(read(file, `${prefix}.hide_replies`), file).toBe('Hide comment replies');
         }
     });

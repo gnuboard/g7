@@ -549,7 +549,7 @@ return [
         'depth' => [
             'integer' => 'Comment depth must be an integer.',
             'min' => 'Comment depth must be at least :min.',
-            'max' => 'Replies can only be nested up to :max levels.',
+            'max' => 'Replies can only be nested up to :max level.|Replies can only be nested up to :max levels.',
             'exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
         ],
         'user_id' => [

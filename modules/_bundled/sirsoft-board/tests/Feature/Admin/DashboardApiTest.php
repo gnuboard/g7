@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardStat;
 use Modules\Sirsoft\Board\Services\BoardDashboardService;
@@ -36,7 +37,7 @@ class DashboardApiTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 대시보드의 「오늘」은 사이트 표준시의 하루다(SiteDay). 사이트 날짜와 UTC 날짜가 같은 시각으로
+        // 대시보드의 「오늘」은 사이트 표준시의 하루다(siteToday). 사이트 날짜와 UTC 날짜가 같은 시각으로
         // 고정해 실행 시각과 무관하게 같은 결과를 낸다 — 날짜 경계 자체는 BoardSiteDayBoundaryTest 가 잰다.
         $this->travelTo(CarbonImmutable::parse('2030-01-15 03:00:00', 'UTC'));
 

@@ -230,7 +230,7 @@
                                                 "value": "{{row.name ?? {}}}",
                                                 "layout": "compact",
                                                 "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
-                                                "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
+                                                "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
@@ -776,7 +776,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{(_local.reactionTypeForm?.code ?? '').trim() && (_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && (_local.reactionTypeForm?.name?.[$locale ?? 'ko'] ?? '').trim() && !(_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim())}}",
+                                            "if": "{{(_local.reactionTypeForm?.code ?? '').trim() && (_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && (_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() && !(_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim())}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {
@@ -796,7 +796,7 @@
                                                     "target": "local",
                                                     "reactionTypeFormErrors": {
                                                         "code": "{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : (!((_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch))) ? 'format' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null))}}",
-                                                        "name": "{{!(_local.reactionTypeForm?.name?.[$locale ?? 'ko'] ?? '').trim() ? true : null}}"
+                                                        "name": "{{!(_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() ? true : null}}"
                                                     }
                                                 }
                                             }

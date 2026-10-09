@@ -107,7 +107,7 @@ class BoardTypeNameLocaleRequiredMessageTest extends ModuleTestCase
     public function test_english_message_names_board_type_name(): void
     {
         foreach ($this->collectNameErrors('en') as $request => $message) {
-            $this->assertSame('The English (en) value of the Board Type Name field is required.', $message, "[{$request}]");
+            $this->assertSame('The 한국어 (ko) value of the Board Type Name field is required.', $message, "[{$request}]");
         }
     }
 }

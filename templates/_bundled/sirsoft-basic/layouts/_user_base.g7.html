@@ -257,7 +257,7 @@
           <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </button>
         <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
-        <button type="button" aria-label="{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <button type="button" aria-label="{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <navigate path="{{_global.currentUser ? '/mypage' : '/login'}}"/>
           </on>

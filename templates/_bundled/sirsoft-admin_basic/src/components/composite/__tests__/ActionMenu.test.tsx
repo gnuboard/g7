@@ -268,8 +268,9 @@ describe('ActionMenu', () => {
   describe('아이콘만 있는 트리거의 접근 가능한 이름', () => {
     const expectedFallback = () => {
       // 컴포넌트와 같은 규칙 — 번역이 없거나 엔진 밖이면 영어 대체 문구
-      const translated = (window as any).G7Core?.t?.('common.actions') as string | undefined;
-      return translated && translated !== 'common.actions' ? translated : 'Actions';
+      // 아이콘만 있는 트리거의 기본 이름은 「더보기」(common.more_actions) — 글자 트리거 기본값 「작업」(common.actions)과 다르다
+      const translated = (window as any).G7Core?.t?.('common.more_actions') as string | undefined;
+      return translated && translated !== 'common.more_actions' ? translated : 'More actions';
     };
 
     // @scenario space_below=enough
@@ -284,7 +285,7 @@ describe('ActionMenu', () => {
 
     // @scenario space_below=enough
     // @effects action_menu_trigger_has_accessible_name
-    it('ariaLabel 이 없으면 공용 「작업」(엔진 밖 Actions) 문구로 이름을 채운다 (이름 없는 버튼을 남기지 않는다)', () => {
+    it('ariaLabel 이 없으면 공용 「더보기」(엔진 밖 More actions) 문구로 이름을 채운다 (이름 없는 버튼을 남기지 않는다)', () => {
       render(<ActionMenu items={mockItems} triggerLabel="" triggerIconName={IconName.EllipsisVertical} />);
       const trigger = screen.getByRole('button');
 

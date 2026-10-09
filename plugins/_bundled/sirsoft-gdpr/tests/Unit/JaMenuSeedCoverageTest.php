@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 /**
  * 번들 ja 언어팩의 메뉴 시드가 이 플러그인의 관리자 메뉴를 빠짐없이 덮는지 검증합니다.
  *
- * 플러그인 언어팩을 켜면 코어는 `seed/menus.json` 만 읽어 메뉴 이름에 ja 를 넣는다. 1.1.0 에서 생긴
+ * 플러그인 언어팩을 켜면 코어는 `lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja/seed/menus.json` 만 읽어 메뉴 이름에 ja 를 넣는다. 1.1.0 에서 생긴
  * 「개인정보 통지 이력」 메뉴의 번역이 다른 이름의 파일(`admin_menus.json`)에만 있어, ja 팩을 켜도 그 메뉴만
  * 일본어 사이드바에 영어로 남았다.
  */

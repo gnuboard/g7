@@ -15,7 +15,6 @@
 - 반응 유형 아이콘을 지울 때의 확인 창 문구(`admin/settings.reaction_types.icon_remove_confirm_title`·`icon_remove_confirm_message` — 「アイコンの削除」「…元に戻せません。…」)의 일본어 번역을 추가했습니다.
 - 관리자·스텝 일괄 지정의 건너뜀 사유 「このロールを付与できない掲示板（権限不足）」(`admin/settings.bulk_members.reason_not_grantable`)와 게시판 수정 권한이 없을 때의 잠금 안내(`bulk_members.no_permission`)의 일본어 번역을 추가했습니다.
 - 관리자·스텝 일괄 지정의 건너뜀 사유 「掲示板のロール情報がない（データ破損）」(`admin/settings.bulk_members.reason_role_missing`)와 게시판 목록을 불러오지 못했을 때의 잠금 안내(`bulk_members.load_failed`)의 일본어 번역을 추가했습니다.
-- 반응 유형 추가 폼의 이름 필수 안내(`admin/settings.reaction_types.validation.name_required`)를 화면 언어 기준 「現在の表示言語で名前を入力してください」로 바꿨습니다(이름 필수 언어가 한국어 고정에서 화면 언어로 바뀜).
 - 관리자·스텝 일괄 지정 결과 줄과 완료 안내에 바꿀 것이 없던 게시판 수 「変化なし{{unchanged}}件」을 더했습니다(`admin/settings.bulk_members.result_summary`, `messages.boards.bulk_members_success` 「…(除外 :skipped件、変化なし :unchanged件)」).
 - 게시판 요청 검증 문구의 공용 항목 이름(`validation.fallback_attributes.*` — 「並び順」「掲示板」「検索キーワード」 등 46건)과 게시판 환경설정 저장 검증의 항목 이름(`validation.attributes.settings` — SEO·알림 채널·신고 정책·표시 설정 등 32건)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일의 검증 문구에 `sort`·`board id` 같은 필드 키가 그대로 보입니다.
 - 댓글 상태 조작 거절 문구(`validation.comment.status.in` 「無効なコメントステータスです。」)와 게시판 요청 공용 대체 검증 문구(`validation.fallback.*` — 「選択された :attribute の値は正しくありません。」 등 10건)의 일본어 번역을 추가했습니다.

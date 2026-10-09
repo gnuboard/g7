@@ -514,7 +514,7 @@
       "code_required": "Enter a code",
       "code_duplicate": "That code already exists",
       "code_format": "Use 2-50 characters: start with a lowercase letter, then lowercase letters, digits or underscores (_)",
-      "name_required": "Enter the name in the current display language"
+      "name_required": "Enter the name in the default language"
     },
     "confirm_delete": "Delete this reaction type? It applies once you save.",
     "icon_remove_confirm_title": "Delete Icon",

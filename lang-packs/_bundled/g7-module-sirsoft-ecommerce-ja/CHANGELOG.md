@@ -15,7 +15,6 @@
 - 대시보드 「오늘」 배지로 연 주문 목록에 보이는 사이트 시간대 기준 안내(`admin/order.filter.site_day_notice`)와, 주문 목록 날짜 기준 인자 검증 문구(`validation.orders.date_basis.in`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
 - 관리자 주문 상세 관리자 메모 저장 실패 안내(`admin/order.detail.handler.memo_save_failed` — 「管理者メモの保存に失敗しました。」)와 반품·교환 [완료 처리] 창의 사용 마일리지 반환 표기 2건(`admin/claim.complete.row_points`·`refund_now_desc_points`)의 일본어 번역을 추가했습니다.
-- 쇼핑몰 환경설정에서 저장하지 않은 변경이 있을 때 탭 이동 전에 묻는 확인 창 문구(`admin/settings.unsaved_tab_change.*` — 「保存していない変更があります」·[とどまる]·[移動])의 일본어 번역을 추가했습니다.
 - 상품 등록·수정 화면에서 선택지 조회 권한이 없을 때 칸 아래에 뜨는 안내 7건(`admin/product.selector_forbidden.*` — 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급, 예: 「配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。」)의 일본어 번역을 추가했습니다.
 - 교환 재발송지의 해외 주소 도시·주 칸 문구 — 관리자 대리 접수 창 입력 안내(`admin/order.claim_request.city`·`state`)와 검증 항목명(`validation.request_attributes.redelivery_city`·`redelivery_state`) — 의 일본어 번역(「都市」「州/道」)을 추가했습니다.
 - 부분 취소 주문을 되살리는 확인 창의 안내(`admin/order.manual_paid.restoration_hint_partial`)와, 사용 마일리지를 차감하지 않은 주문의 환불 확인 창 안내(`admin/claim.detail.refund_execute.points_not_deducted`)의 일본어 번역을 추가했습니다.

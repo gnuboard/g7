@@ -1251,7 +1251,7 @@
                                     "comment": "이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다. 입력칸을 떠났거나 확정을 누른 뒤에만 보인다",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(_global.editingChannel?._labelTouched ?? false) && String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}",
+                                    "if": "{{(_global.editingChannel?._labelTouched ?? false) && String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
                                     "props": {
                                         "className": "text-error-soft mt-1"
                                     },
@@ -1343,7 +1343,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}",
+                                            "if": "{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {

@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 183개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 135개 |
+| `partials` | 136개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -596,6 +596,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_notification_template_preview.g7.html
 │           ├── _modal_password_confirm.g7.html
 │           ├── _modal_static_cache_republish.g7.html
+│           ├── _modal_unsaved_tab_switch.g7.html (저장하지 않은 변경이 있는 채 다른 탭을 누르면 여는 확인 창 — 게시판·이커머스 환경설정도 같은 창)
 │           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
 │           ├── _tab_identity_basic.g7.html (기본 정책)
 │           ├── _tab_identity_messages.g7.html (인증 메시지 — 알림 설정으로 옮겨졌다는 안내와 이동 링크)

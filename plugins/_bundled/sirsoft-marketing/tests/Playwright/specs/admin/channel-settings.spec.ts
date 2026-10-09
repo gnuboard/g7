@@ -14,7 +14,7 @@
 import { test, expect, authenticatePage } from '../../fixtures/marketing-auth';
 
 const SETTINGS_URL = '/admin/plugins/sirsoft-marketing/settings';
-const LABEL_REQUIRED = '지금 화면 언어의 항목명을 입력하세요.';
+const LABEL_REQUIRED = '사이트 기본 언어의 항목명을 입력하세요.';
 
 test.describe('마케팅 동의 설정 — 채널', () => {
   // @scenario case=add_channel

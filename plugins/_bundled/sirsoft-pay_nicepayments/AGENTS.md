@@ -148,9 +148,9 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 33개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 20개 | `vitest.config.ts` |
+| Vitest | 23개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 29개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -321,7 +321,7 @@ class BoardRequestTest extends ModuleTestCase
      */
     public function test_board_name_locale_required_message_uses_display_name(): void
     {
-        foreach (['ko' => ['게시판 이름', '한국어(ko)'], 'en' => ['Board Name', 'English (en)']] as $locale => [$label, $language]) {
+        foreach (['ko' => ['게시판 이름', '한국어(ko)'], 'en' => ['Board Name', '한국어 (ko)']] as $locale => [$label, $language]) {
             app()->setLocale($locale);
 
             $data = $this->getValidStoreBoardData();

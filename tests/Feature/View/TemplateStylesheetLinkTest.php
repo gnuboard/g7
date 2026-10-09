@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * 사용자·관리자 화면 HTML 의 템플릿 CSS 링크가 템플릿 매니페스트 선언(`assets.css`)과 산출물을 따르는지 검증합니다.
  *
- * 종전에는 두 화면이 템플릿과 무관하게 `css/components.css` 링크를 늘 넣어, CSS 를 선언하지 않은
+ * 종전에는 두 화면이 템플릿과 무관하게 `{템플릿}?file=css/components.css` 링크를 늘 넣어, CSS 를 선언하지 않은
  * 템플릿에서 모든 화면이 `GET /api/templates/assets/{id}?file=css/components.css → 422` 를 남겼다
  * (2026-10-07 실측, CSS 빌드가 없는 학습용 템플릿).
  */
@@ -151,7 +151,7 @@ class TemplateStylesheetLinkTest extends TestCase
      *
      * @param  string  $type  템플릿 유형 (user|admin)
      * @param  array<int, string>  $css  매니페스트 `assets.css` 선언
-     * @param  bool  $withCssBuild  `dist/css/components.css` 산출물을 둘지 여부
+     * @param  bool  $withCssBuild  `{템플릿}/dist/css/components.css` 산출물을 둘지 여부
      * @return void 반환값 없음
      */
     private function activateFixtureTemplate(string $type, array $css, bool $withCssBuild): void

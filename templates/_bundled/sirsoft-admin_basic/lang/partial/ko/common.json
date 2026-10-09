@@ -110,7 +110,7 @@
     "selected": "{{label}} 선택됨",
     "deselected": "{{label}} 선택 해제됨",
     "cleared": "고른 항목을 모두 지웠습니다",
-    "disabled_option": "{{label}}은(는) 고를 수 없습니다. 다른 항목을 고르세요",
+    "disabled_option": "{{label}}: 고를 수 없는 항목입니다. 다른 항목을 고르세요",
     "focus_value": "고른 항목 {{label}}, {{index}}/{{total}}",
     "focus_option": "{{label}}{{state}}, {{index}}/{{total}}",
     "state_selected": " (선택됨)",

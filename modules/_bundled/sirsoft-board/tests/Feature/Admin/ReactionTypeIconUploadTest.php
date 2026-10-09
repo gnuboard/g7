@@ -39,7 +39,7 @@ class ReactionTypeIconUploadTest extends BoardTestCase
             'sirsoft-board.settings.read',
             'sirsoft-board.settings.update',
         ]);
-        // 반응 유형 이름은 요청 언어 값이 필수다 — 한국어 이름만 싣는 픽스처가 한국어 화면 관리자로 저장한다
+        // 반응 유형 이름은 사이트 기본 언어 값이 필수다 — 픽스처는 한국어 이름을 싣는다
         $this->admin->forceFill(['language' => 'ko'])->save();
 
         DB::table('board_reactions')->delete();

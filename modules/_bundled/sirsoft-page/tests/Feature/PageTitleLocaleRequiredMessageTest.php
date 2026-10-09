@@ -87,7 +87,7 @@ class PageTitleLocaleRequiredMessageTest extends FeatureTestCase
     }
 
     /**
-     * 영어 관리자에게 칸 이름 「page title」과 언어 이름이 함께 나온다.
+     * 영어 관리자에게 칸 이름 「page title」과 언어 이름이 함께 나온다 — 필수 언어는 사이트 기본 언어(ko)다.
      *
      * @scenario locale=en
      *
@@ -98,7 +98,7 @@ class PageTitleLocaleRequiredMessageTest extends FeatureTestCase
     public function test_english_message_names_page_title(): void
     {
         foreach ($this->collectTitleErrors('en') as $request => $message) {
-            $this->assertSame('The English (en) value of the page title field is required.', $message, "[{$request}]");
+            $this->assertSame('The 한국어 (ko) value of the page title field is required.', $message, "[{$request}]");
         }
     }
 }

@@ -46,7 +46,7 @@ const tOr = (key: string, fallback: string, params?: Record<string, string | num
 // 언어 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
 const removeLanguageLabel = (code: string): string => {
   const language = getLocaleNameByCode(code);
-  return tOr('common.multilingual.remove_language', `Remove ${language}`, { language });
+  return tOr('common.remove_language', `Remove ${language}`, { language });
 };
 
 // 시스템 언어 목록을 LocaleOption[]으로 변환
@@ -393,7 +393,6 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 type="button"
                 className="ml-0.5 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
-                aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
                 aria-label={removeLanguageLabel(localeCode)}
               >
@@ -536,7 +535,6 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 type="button"
                 className="mr-2 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
-                aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
                 aria-label={removeLanguageLabel(localeCode)}
               >

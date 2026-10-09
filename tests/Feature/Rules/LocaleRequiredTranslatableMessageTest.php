@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 /**
- * 현재 언어 필수 다국어 칸의 오류 문구가 칸 이름과 언어 이름을 알려 준다.
+ * 사이트 기본 언어 필수 다국어 칸의 오류 문구가 칸 이름과 언어 이름을 알려 준다(필수 언어는 화면 언어가 아니라
+ * 사이트 기본 언어 — PO 결정 2026-10-09).
  *
  * 2026-10-07 실측(O-KF3-1): 영어 화면에서 게시판을 만들며 이름을 비우면 「The en language value is required.」,
  * 한국어 화면에서는 「ko 언어의 값은 필수입니다.」처럼 로케일 코드만 나와 어느 칸의 어느 언어를 채워야 하는지
@@ -34,7 +35,7 @@ class LocaleRequiredTranslatableMessageTest extends TestCase
     }
 
     /**
-     * 영어 화면의 필수 언어 오류에 칸 이름과 언어 이름(코드 병기)이 들어간다.
+     * 영어 화면에서도 필수 언어는 사이트 기본 언어(ko)이고, 오류에 칸 이름과 언어 이름(코드 병기)이 들어간다.
      *
      * @scenario locale=en
      *
@@ -46,9 +47,9 @@ class LocaleRequiredTranslatableMessageTest extends TestCase
     {
         app()->setLocale('en');
 
-        $message = $this->messageFor(['name' => ['ko' => '게시판', 'en' => '']], ['name' => 'Board Name']);
+        $message = $this->messageFor(['name' => ['ko' => '', 'en' => 'Board']], ['name' => 'Board Name']);
 
-        $this->assertSame('The English (en) value of the Board Name field is required.', $message);
+        $this->assertSame('The 한국어 (ko) value of the Board Name field is required.', $message);
     }
 
     /**
@@ -88,7 +89,7 @@ class LocaleRequiredTranslatableMessageTest extends TestCase
         $this->assertSame('한국어(ko) 값은 필수입니다.', $this->messageFor(['name' => ['ko' => '', 'en' => 'Menu']], []));
 
         app()->setLocale('en');
-        $this->assertSame('The English (en) value is required.', $this->messageFor(['name' => ['ko' => '메뉴', 'en' => '']], []));
+        $this->assertSame('The 한국어 (ko) value is required.', $this->messageFor(['name' => ['ko' => '', 'en' => 'Menu']], []));
     }
 
     /**

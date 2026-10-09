@@ -8,7 +8,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
  * Hello 모듈 프론트엔드 라우트 파일 구조 테스트.
  *
  * 7.1.0 전수 실측 M3: 공개 메모 목록(`*\/memos` → `user_memo_list`)을 레거시 단일 파일
- * `resources/routes.json` 에 적어 두어, 코어가 그 파일을 관리자 템플릿에만 병합하는 탓에
+ * `{모듈}/resources/routes.json` 에 적어 두어, 코어가 그 파일을 관리자 템플릿에만 병합하는 탓에
  * 사용자 화면에서 `/memos` 가 404 였다(사용자 템플릿 routes 응답 51개에 memos 0건). 또 관리자
  * 라우트를 읽을 때마다 「레거시 위치」 경고 로그가 남았다. 학습용 샘플이므로 문서화된 분할 구조
  * (`resources/routes/admin.json`, `resources/routes/user.json`)로 둔다.

@@ -24,6 +24,7 @@
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
                 <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
                   <set-state target="local" form.notify_post_complete="{{$event.target.checked}}"/>
                 </on>
               </input>
@@ -34,6 +35,7 @@
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_post_reply" checked="{{_local.form?.notify_post_reply ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
                 <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
                   <set-state target="local" form.notify_post_reply="{{$event.target.checked}}"/>
                 </on>
               </input>
@@ -44,6 +46,7 @@
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_comment" checked="{{_local.form?.notify_comment ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
                 <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
                   <set-state target="local" form.notify_comment="{{$event.target.checked}}"/>
                 </on>
               </input>
@@ -54,6 +57,7 @@
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="notify_reply_comment" checked="{{_local.form?.notify_reply_comment ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
                 <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
                   <set-state target="local" form.notify_reply_comment="{{$event.target.checked}}"/>
                 </on>
               </input>

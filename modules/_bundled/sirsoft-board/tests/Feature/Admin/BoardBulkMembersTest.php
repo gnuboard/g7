@@ -359,7 +359,7 @@ class BoardBulkMembersTest extends ModuleTestCase
         $this->assertSame($total - $updated - $skipped, $response->json('data.unchanged_count'));
         $this->assertGreaterThanOrEqual(1, $response->json('data.unchanged_count'));
         $this->assertSame(
-            __('sirsoft-board::messages.boards.bulk_members_success', [
+            trans_count('sirsoft-board::messages.boards.bulk_members_success', [
                 'count' => $updated, 'skipped' => $skipped, 'unchanged' => $response->json('data.unchanged_count'),
             ]),
             $response->json('message')

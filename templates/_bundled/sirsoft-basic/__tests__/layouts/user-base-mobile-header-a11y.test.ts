@@ -94,10 +94,13 @@ describe('모바일 머리글 아이콘 단추 접근 이름', () => {
     const $t = (k: string) => k;
     // eslint-disable-next-line no-new-func
     const run = (currentUser: unknown) => new Function('_global', '$t', `return (${m![1]});`)({ currentUser }, $t);
-    expect(run({ uuid: 'u' })).toBe('nav.mypage');
-    expect(run(null)).toBe('nav.login');
-    // 비회원도 전역 currentUser 는 빈 객체다 — 로그인 여부는 uuid 로 가린다(단추를 누르면 로그인 화면으로 간다)
-    expect(run({})).toBe('nav.login');
+    // 키는 base(#754)의 아이콘 단추 이름 정리(common.*)를 따른다. 로그인 여부는 topic 대로 uuid 로 가린다.
+    expect(run({ uuid: 'u' })).toBe('$t:common.mypage');
+    expect(run(null)).toBe('$t:common.login');
+    // 비회원도 전역 currentUser 는 빈 값([] 또는 {})이고 참으로 읽힌다 — uuid 로 가려야 「마이페이지」 로 잘못 부르지 않는다
+    // (issue759 리베이스가 base 식 `_global.currentUser ?` 를 들여와 비회원에게 「마이페이지」 로 나온 것을 2026-10-09 실측)
+    expect(run({})).toBe('$t:common.login');
+    expect(run([])).toBe('$t:common.login');
   });
 
   // @scenario button=cart

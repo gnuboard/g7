@@ -7,7 +7,7 @@
  * - API: GET/POST/PUT/DELETE board-types 엔드포인트
  * - 핸들러: sequence, apiCall, setState, refetchDataSource, toast
  *
- * @scenario-manifest tests/scenarios/board-type-manage-modal-screen-locale.yaml
+ * @scenario-manifest tests/scenarios/board-type-manage-modal-site-locale.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -810,11 +810,11 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      *
      * @effects server_name_error_shown_under_name_field_once
      */
-    it('MultilingualInput에 error prop이 전달된다 (화면 언어 키 → 필드 전체 키 순)', () => {
+    it('MultilingualInput에 error prop이 전달된다 (사이트 기본 언어 키 → 필드 전체 키 순)', () => {
       // 이름 오류 문구는 MultilingualInput 이 칸 아래에 직접 그린다(별도 문단 bt_name_error 는 두지 않는다 — O-E-2)
       const nameInput = findById(modal, 'bt_input_name');
       expect(nameInput.props.error).toBeDefined();
-      expect(nameInput.props.error).toContain("btFormErrors?.['name.' + ($locale ?? 'ko')]");
+      expect(nameInput.props.error).toContain("btFormErrors?.['name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]");
       expect(nameInput.props.error).toContain("btFormErrors?.['name']");
     });
 
@@ -927,10 +927,10 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
   });
 
-  // O-E-2 — 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable: 요청 로케일 값만 필수)과 같은 「현재 화면 언어」다.
-  // 화면이 한국어를 따로 강제하면 영어·일본어 관리자는 한국어 칸을 채워야만 추가할 수 있고,
-  // 서버가 `name`(필드 전체) 키로 돌려준 오류는 칸에 붙지 않는다.
-  describe('이름 필수 언어와 오류 키 (화면 언어 기준)', () => {
+  // O-E-2 — 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable)과 같은 「사이트 기본 언어」다(2026-10-09 PO 확정).
+  // 화면 언어와 무관하게 사이트 기본 언어 칸이 비면 잠그고, 서버가 `name`(필드 전체) 키나 사이트 기본 언어 키로
+  // 돌려준 오류를 칸에 붙인다.
+  describe('이름 필수 언어와 오류 키 (사이트 기본 언어 기준)', () => {
     /** 레이아웃 바인딩 `{{…}}` 한 개를 주어진 문맥으로 평가한다(엔진과 같은 식 의미). */
     const evalBinding = (binding: string, ctx: Record<string, unknown>): unknown => {
       const m = binding.match(/^\{\{([\s\S]*)\}\}$/);
@@ -939,33 +939,43 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       // eslint-disable-next-line no-new-func
       return new Function(...names, `return (${m![1]});`)(...names.map((n) => ctx[n]));
     };
-    const ctxFor = ($locale: string, g: Record<string, unknown>) => ({
+    const ctxFor = ($locale: string, g: Record<string, unknown>, siteLocale = 'ko') => ({
       $locale,
       _computed: { isReadOnly: false },
-      _global: { btSaving: false, btFormSlug: 'notice', ...g },
+      _global: { btSaving: false, btFormSlug: 'notice', appConfig: { siteLocale }, ...g },
     });
 
     /**
      * @scenario case=submit_gate
      *
-     * @effects submit_enabled_when_screen_locale_name_filled_even_if_ko_empty
+     * @effects submit_enabled_when_site_locale_name_filled
      */
-    it.each(['en', 'ja'])('%s 화면은 한국어 칸이 비어도 화면 언어 칸만 채우면 추가 단추가 열린다', (loc) => {
+    it.each(['ko', 'en', 'ja'])('%s 화면은 사이트 기본 언어(ko) 칸만 채워도 추가 단추가 열린다', (loc) => {
       const submitBtn = findById(modal, 'bt_submit_btn');
-      const disabled = evalBinding(submitBtn.props.disabled, ctxFor(loc, { btFormName: { ko: '', en: '', [loc]: 'Notice' } }));
+      const disabled = evalBinding(submitBtn.props.disabled, ctxFor(loc, { btFormName: { ko: '공지', en: '', ja: '' } }));
       expect(disabled).toBe(false);
     });
 
     /**
      * @scenario case=submit_gate
      *
-     * @effects submit_locked_when_screen_locale_name_empty
+     * @effects submit_locked_when_site_locale_name_empty
      */
-    it.each(['ko', 'en', 'ja'])('%s 화면은 화면 언어 칸이 비면 추가 단추가 잠긴다', (loc) => {
+    it.each(['ko', 'en', 'ja'])('%s 화면은 다른 언어 칸이 차 있어도 사이트 기본 언어(ko) 칸이 비면 추가 단추가 잠긴다', (loc) => {
       const submitBtn = findById(modal, 'bt_submit_btn');
-      const others = { ko: 'k', en: 'e', ja: 'j' } as Record<string, string>;
-      const disabled = evalBinding(submitBtn.props.disabled, ctxFor(loc, { btFormName: { ...others, [loc]: '' } }));
+      const disabled = evalBinding(submitBtn.props.disabled, ctxFor(loc, { btFormName: { ko: '', en: 'e', ja: 'j' } }));
       expect(disabled).toBe(true);
+    });
+
+    /**
+     * @scenario case=submit_gate
+     *
+     * @effects submit_locked_when_site_locale_name_empty
+     */
+    it('사이트 기본 언어가 en 이면 한국어 화면에서도 영어 칸으로 잠금을 판단한다', () => {
+      const submitBtn = findById(modal, 'bt_submit_btn');
+      expect(evalBinding(submitBtn.props.disabled, ctxFor('ko', { btFormName: { ko: '공지', en: '' } }, 'en'))).toBe(true);
+      expect(evalBinding(submitBtn.props.disabled, ctxFor('ko', { btFormName: { ko: '', en: 'Notice' } }, 'en'))).toBe(false);
     });
 
     /**
@@ -974,13 +984,13 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      * @effects server_name_error_shown_under_name_field_once
      */
     it.each([
-      ['en', { name:['The board type name (English) field is required.'] }, 'The board type name (English) field is required.'],
-      ['en', { 'name.en': ['en only'] }, 'en only'],
-      ['ja', { 'name.ja': ['ja only'] }, 'ja only'],
-      ['ko', { 'name.ko': ['ko only'] }, 'ko only'],
-    ])('%s 화면의 서버 오류 %j 가 이름 칸 오류로 붙는다', (loc, errors, expected) => {
+      ['en', 'ko', { name: ['The board type name (Korean) field is required.'] }, 'The board type name (Korean) field is required.'],
+      ['en', 'ko', { 'name.ko': ['ko only'] }, 'ko only'],
+      ['ja', 'ko', { 'name.ko': ['ko only'] }, 'ko only'],
+      ['ko', 'en', { 'name.en': ['en only'] }, 'en only'],
+    ])('%s 화면(사이트 기본 %s)의 서버 오류 %j 가 이름 칸 오류로 붙는다', (loc, site, errors, expected) => {
       const nameInput = findById(modal, 'bt_input_name');
-      expect(evalBinding(nameInput.props.error, ctxFor(loc as string, { btFormErrors: errors }))).toBe(expected);
+      expect(evalBinding(nameInput.props.error, ctxFor(loc as string, { btFormErrors: errors }, site as string))).toBe(expected);
     });
 
     /**

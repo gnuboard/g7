@@ -185,7 +185,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `MobileNav` | 모바일 네비게이션 드로어 | - |
 
 - **`Header` 언어 메뉴와 장바구니 단추**: 언어 단추는 `aria-haspopup="listbox"` 와 펼쳤을 때 `aria-controls` 로 목록을 가리키고, 목록은 `role="listbox"`(이름 = 언어), 항목은 `role="option"` + `aria-selected` 다. 단추에서 ↓/↑·Enter·Space 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑·Home·End 로 옮기며 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌리고, 고른 뒤에도 초점은 단추로 돌아온다. 아이콘만 있는 장바구니 단추의 이름은 `nav.cart_with_count`(담긴 수 포함), 좁은 폭에서 그리는 메뉴 단추의 이름은 `user.menu` 다. 회귀 테스트: `src/components/composite/__tests__/HeaderLanguageListbox.test.tsx`.
-- **모바일 머리글(`_user_base` 레이아웃)**: 아이콘만 있는 단추는 다국어 `aria-label` 을 갖는다 — 장바구니 `nav.cart_with_count`(담긴 수), 사용자 `nav.mypage`/`nav.login`(로그인 여부), 메뉴 `user.menu` + `aria-expanded`(드로어 열림), 드로어 닫기 `nav.close_menu`. 드로어 언어 칩(`role="option"`)을 감싼 목록은 `role="listbox"`(이름 `common.language`)다. 회귀 테스트: `__tests__/layouts/user-base-mobile-header-a11y.test.ts`.
+- **모바일 머리글(`_user_base` 레이아웃)**: 아이콘만 있는 단추는 다국어 `aria-label` 을 갖는다 — 장바구니 `nav.cart_with_count`(담긴 수), 사용자 `common.mypage`/`common.login`(로그인 여부는 `_global.currentUser?.uuid` 로 가린다 — 비회원의 `currentUser` 는 빈 값이어도 참으로 읽힌다), 메뉴 `user.menu` + `aria-expanded`(드로어 열림), 드로어 닫기 `nav.close_menu`. 드로어 언어 칩(`role="option"`)을 감싼 목록은 `role="listbox"`(이름 `common.language`)다. 회귀 테스트: `__tests__/layouts/user-base-mobile-header-a11y.test.ts`.
 
 #### 쇼핑몰
 

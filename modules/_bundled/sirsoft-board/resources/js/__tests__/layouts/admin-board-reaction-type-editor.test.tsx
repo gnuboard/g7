@@ -143,10 +143,10 @@ describe('반응 유형 편집기 — 편집 대상과 추가 폼', () => {
 
     // @scenario case=settings_editor_add_form_validates
     // @effects settings_editor_add_form_checks_required_and_duplicate
-    it('코드와 화면 언어 이름이 있어야 하고 코드가 겹치면 거절한다', () => {
+    it('코드와 사이트 기본 언어 이름이 있어야 하고 코드가 겹치면 거절한다', () => {
         // 통과 조건 — 세 가지를 모두 본다.
         expect(/reactionTypeForm\?\.code \?\? ''\)\.trim\(\)/.test(editorJson)).toBe(true);
-        expect(/reactionTypeForm\?\.name\?\.\[\$locale \?\? 'ko'\] \?\? ''\)\.trim\(\)/.test(editorJson)).toBe(true);
+        expect(editorJson).toContain("reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim()");
         expect(/\.some\(t => t\.code ===/.test(editorJson)).toBe(true);
         // 실패하면 배열은 건드리지 않고 어느 칸이 문제인지만 세운다.
         expect(/'required'/.test(editorJson)).toBe(true);
@@ -397,10 +397,10 @@ function collectStringValues(node: unknown, key: string, pred: (v: string) => bo
 }
 
 /** `{{ … }}` 표현식을 주어진 지역 상태로 평가한다. */
-function evaluate(expr: string, local: Record<string, unknown>, locale = 'ko'): unknown {
+function evaluate(expr: string, local: Record<string, unknown>, locale = 'ko', global: Record<string, unknown> = { appConfig: { siteLocale: 'ko' } }): unknown {
     const body = expr.trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
     // eslint-disable-next-line no-new-func
-    return new Function('_local', '$locale', `return (${body});`)(local, locale);
+    return new Function('_local', '$locale', '_global', `return (${body});`)(local, locale, global);
 }
 
 describe('반응 유형 편집기 — 추가 폼 코드 형식 검사', () => {
@@ -467,11 +467,11 @@ describe('반응 유형 편집기 — 아이콘 업로드 실패 안내', () => 
 });
 
 /**
- * 반응 유형 이름의 필수 언어는 화면 언어다 — 게시판 유형 이름과 같은 계약(7.1.0 S2 #9, 지침 2026-10-09).
- * 추가 폼이 한국어(name.ko)를 고정 필수로 잠가, 영어·일본어 화면 관리자도 쓰지 않는 한국어 칸을 채워야 했고,
- * 서버 오류도 `name.ko` 키만 칸에 붙였다. 서버는 이제 요청 언어 값만 필수이고 오류를 이름 칸 전체 키(name)로 돌려준다.
+ * 반응 유형 이름의 필수 언어는 사이트 기본 언어다 — 게시판 유형 이름과 같은 계약(서버 LocaleRequiredTranslatable,
+ * 2026-10-09 PO 확정). 화면 언어와 무관하게 사이트 기본 언어 칸이 비면 추가하지 않고, 서버가 이름 칸 전체 키(name)나
+ * 사이트 기본 언어 키(name.{언어})로 돌려준 오류를 그 행 이름 칸에 붙인다.
  */
-describe('반응 유형 편집기 — 이름 필수 언어는 화면 언어', () => {
+describe('반응 유형 편집기 — 이름 필수 언어는 사이트 기본 언어', () => {
     const stateWith = (name: Record<string, string>) => ({
         reactionTypeForm: { code: 'qa_type1', name },
         form: { basic_defaults: { reaction_types: [{ code: 'like' }] } },
@@ -480,41 +480,47 @@ describe('반응 유형 편집기 — 이름 필수 언어는 화면 언어', ()
     for (const [label, tree] of bothTrees) {
         // @scenario case=settings_editor_add_form_validates
         // @effects add_requires_code_and_default_name
-        it(`${label} — 추가 확인 조건과 이름 오류 갈래가 화면 언어 칸을 본다`, () => {
+        it(`${label} — 추가 확인 조건과 이름 오류 갈래가 사이트 기본 언어 칸을 본다`, () => {
             const passIf = collectStringValues(tree, 'if', (v) => v.includes('reactionTypeForm?.code') && v.includes('.some(t =>'));
             const nameError = collectStringValues(tree, 'name', (v) => v.includes('reactionTypeForm?.name'));
             expect(passIf.length, '확인 조건').toBe(1);
             expect(nameError.length, '이름 오류 갈래').toBe(1);
 
-            const cases: Array<[string, Record<string, string>, boolean]> = [
-                ['en', { ko: '', en: 'Cheer' }, true],
-                ['en', { ko: '응원' }, false],
-                ['ja', { ja: '応援' }, true],
-                ['ja', { ko: '응원', en: 'Cheer' }, false],
-                ['ko', { en: 'Cheer' }, false],
-                ['ko', { ko: '응원' }, true],
+            const cases: Array<[string, string, Record<string, string>, boolean]> = [
+                ['en', 'ko', { ko: '', en: 'Cheer' }, false],
+                ['en', 'ko', { ko: '응원' }, true],
+                ['ja', 'ko', { ja: '応援' }, false],
+                ['ja', 'ko', { ko: '응원', en: 'Cheer' }, true],
+                ['ko', 'ko', { en: 'Cheer' }, false],
+                ['ko', 'ko', { ko: '응원' }, true],
+                ['ko', 'en', { en: 'Cheer' }, true],
+                ['ko', 'en', { ko: '응원' }, false],
             ];
-            for (const [locale, name, ok] of cases) {
-                const tag = `${locale} ${JSON.stringify(name)}`;
-                expect(Boolean(evaluate(passIf[0], stateWith(name), locale)), `통과 ${tag}`).toBe(ok);
-                expect(evaluate(nameError[0], stateWith(name), locale), `오류 ${tag}`).toBe(ok ? null : true);
+            for (const [locale, site, name, ok] of cases) {
+                const tag = `${locale}/${site} ${JSON.stringify(name)}`;
+                const g = { appConfig: { siteLocale: site } };
+                expect(Boolean(evaluate(passIf[0], stateWith(name), locale, g)), `통과 ${tag}`).toBe(ok);
+                expect(evaluate(nameError[0], stateWith(name), locale, g), `오류 ${tag}`).toBe(ok ? null : true);
             }
             expect(JSON.stringify(tree)).not.toContain('name_ko');
         });
 
         // @scenario case=settings_missing_default_name_rejected
         // @effects add_requires_code_and_default_name
-        it(`${label} — 저장 422 의 이름 오류(name 또는 name.{화면 언어})가 그 행 이름 칸에 붙는다`, () => {
+        it(`${label} — 저장 422 의 이름 오류(name 또는 name.{사이트 기본 언어})가 그 행 이름 칸에 붙는다`, () => {
             const rowError = collectStringValues(tree, 'error', (v) => v.includes("'.name"));
             expect(rowError.length, '행 이름 칸 오류').toBe(1);
-            const rowErr = (errors: Record<string, string[]>, locale: string) => {
+            const rowErr = (errors: Record<string, string[]>, locale: string, site = 'ko') => {
                 const body = rowError[0].trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
                 // eslint-disable-next-line no-new-func
-                return new Function('_local', '$locale', 'row', `return (${body});`)({ errors }, locale, { _idx: 2 });
+                return new Function('_local', '$locale', 'row', '_global', `return (${body});`)(
+                    { errors }, locale, { _idx: 2 }, { appConfig: { siteLocale: site } }
+                );
             };
-            expect(rowErr({ 'basic_defaults.reaction_types.2.name': ['영어 값은 필수'] }, 'en')).toBe('영어 값은 필수');
-            expect(rowErr({ 'basic_defaults.reaction_types.2.name.en': ['50자 초과'] }, 'en')).toBe('50자 초과');
-            expect(rowErr({ 'basic_defaults.reaction_types.2.name.ko': ['옛 키'] }, 'en')).toBe('');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name': ['한국어 값은 필수'] }, 'en')).toBe('한국어 값은 필수');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.ko': ['50자 초과'] }, 'en')).toBe('50자 초과');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.en': ['화면 언어 키'] }, 'en')).toBe('');
+            expect(rowErr({ 'basic_defaults.reaction_types.2.name.en': ['영어 값'] }, 'ko', 'en')).toBe('영어 값');
             expect(rowErr({}, 'ko')).toBe('');
         });
     }

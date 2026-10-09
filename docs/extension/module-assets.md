@@ -226,7 +226,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 그 화면에만 있는 임의값 배치(`grid-cols-[150px_1fr]`, `min-w-[180px]` 등)도 같은 파일에 접두 클래스로 둡니다. 템플릿은
   자기 레이아웃만 훑어 CSS 를 만들므로 확장 레이아웃에만 있는 임의값 유틸리티는 규칙이 생성되지 않습니다.
 - 배선은 세 곳입니다. manifest 에 `assets.css`(`entry`·`output`)를 선언하고, JS 엔트리가 CSS 를 import 하며,
-  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(`css/plugin.css` 등)로 냅니다.
+  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(예: `{확장}/dist/css/plugin.css`)로 냅니다.
 
 ```ts
 // vite.config.ts — rollupOptions.output

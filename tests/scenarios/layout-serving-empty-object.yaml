@@ -27,3 +27,6 @@ effects:
   - root_map_section_restored
   - array_consumer_sees_arrays
   - unreadable_raw_falls_back_to_cast
+  # base #747 이 같은 테스트 파일에 단 결함 고정 효과 — issue759 → develop-7.1.0 리베이스로 합류(이 트랙의 코어 수정으로 통과).
+  - empty_object_served_as_object
+  - empty_array_served_as_array

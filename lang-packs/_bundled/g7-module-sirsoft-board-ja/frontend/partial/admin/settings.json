@@ -512,7 +512,7 @@
       "code_required": "コードを入力してください",
       "code_duplicate": "既に存在するコードです",
       "code_format": "英小文字で始め、英小文字・数字・アンダースコア(_)のみで2〜50文字で入力してください",
-      "name_required": "現在の表示言語で名前を入力してください"
+      "name_required": "デフォルト言語の名前を入力してください"
     },
     "confirm_delete": "このリアクションタイプを削除しますか？保存を押して初めて反映されます。",
     "icon_remove_confirm_title": "アイコンの削除",

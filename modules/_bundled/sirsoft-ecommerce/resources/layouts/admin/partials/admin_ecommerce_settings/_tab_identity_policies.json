@@ -249,6 +249,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

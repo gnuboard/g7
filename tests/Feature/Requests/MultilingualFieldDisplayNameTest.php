@@ -81,7 +81,7 @@ class MultilingualFieldDisplayNameTest extends TestCase
     {
         app()->setLocale('en');
 
-        $this->assertSame("The English (en) value of the {$en} field is required.", $this->messageFor($requestClass, $field));
+        $this->assertSame("The 한국어 (ko) value of the {$en} field is required.", $this->messageFor($requestClass, $field));
     }
 
     /**

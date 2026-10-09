@@ -65,8 +65,8 @@
 `[data-editor-path]` 로 노드를 찾는데, composite 컴포넌트는 도메인 prop 만 받으므로 코어가
 주입하는 `editorAttrs` 를 받아 시각적 루트에 펼쳐야 합니다. 펼치지 않으면 팔레트에서 꺼낸
 카드가 캔버스에 그려지기만 하고 선택·이동·삭제가 되지 않습니다. 편집 역량의 `coreProps: ["id"]`
-가 기입하는 요소 ID 도 `id` prop 으로 받아 같은 루트에 둡니다. 두 판본(`composite/MemoCard.tsx`,
-`for/gnuboard7-hello_admin_template/MemoCard.tsx`)과 Hello 사용자 템플릿의 대체본이 모두 그렇게
+가 기입하는 요소 ID 도 `id` prop 으로 받아 같은 루트에 둡니다. 두 판본(`resources/js/components/composite/MemoCard.tsx`,
+`resources/js/components/for/gnuboard7-hello_admin_template/MemoCard.tsx`)과 Hello 사용자 템플릿의 대체본이 모두 그렇게
 합니다(규약: `docs/frontend/components-types.md` 「editorAttrs 패스스루」).
 <!-- @intent END -->
 

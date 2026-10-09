@@ -273,7 +273,7 @@
             </multilingual-input>
           </div>
           <!-- 이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다. 입력칸을 떠났거나 확정을 누른 뒤에만 보인다 -->
-          <p data-if="{{(_global.editingChannel?._labelTouched ?? false) &amp;&amp; String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.label_required</p>
+          <p data-if="{{(_global.editingChannel?._labelTouched ?? false) &amp;&amp; String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.label_required</p>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.page_slug</label>
@@ -297,7 +297,7 @@
           <on type="click">
             <!-- 편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다) -->
             <conditions>
-              <when if="{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}">
+              <when if="{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}">
                 <set-state target="global" :editingChannel._labelTouched="true"/>
               </when>
               <else>

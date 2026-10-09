@@ -45,7 +45,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -186,14 +186,14 @@
           <on type="click">
             <!-- 넓은 화면 임시 행과 같은 규칙으로 같은 배열에 붙인다. -->
             <conditions>
-              <when if="{{(_local.reactionTypeForm?.code ?? '').trim() &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &gt;= 2 &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &lt;= 50 &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch =&gt; 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; (_local.reactionTypeForm?.name?.[$locale ?? 'ko'] ?? '').trim() &amp;&amp; !(_local.form?.basic_defaults?.reaction_types ?? []).some(t =&gt; t.code === (_local.reactionTypeForm?.code ?? '').trim())}}">
+              <when if="{{(_local.reactionTypeForm?.code ?? '').trim() &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &gt;= 2 &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &lt;= 50 &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch =&gt; 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; (_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() &amp;&amp; !(_local.form?.basic_defaults?.reaction_types ?? []).some(t =&gt; t.code === (_local.reactionTypeForm?.code ?? '').trim())}}">
                 <set-state target="local" form.basic_defaults.reaction_types="{{[...(_local.form?.basic_defaults?.reaction_types ?? []), {code: (_local.reactionTypeForm?.code ?? '').trim(), name: _local.reactionTypeForm?.name ?? {}, icon_name: null, icon_attachment_id: _local.reactionTypeForm?.icon_attachment_id ?? null, icon_url: _local.reactionTypeForm?.icon_url ?? null, icon_attachment: _local.reactionTypeForm?.icon_attachment ?? null, is_active: _local.reactionTypeForm?.is_active ?? true, reaction_count: 0, display_order: (_local.form?.basic_defaults?.reaction_types ?? []).length}]}}" :isAddingReactionType="false" :reactionTypeForm="null" :reactionTypeFormErrors="null" :hasChanges="true"/>
               </when>
               <else>
                 <set-state target="local">
                   <field name="reactionTypeFormErrors">
                     <field name="code" value="{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : (!((_local.reactionTypeForm?.code ?? '').trim().length &gt;= 2 &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &lt;= 50 &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch =&gt; 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch))) ? 'format' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t =&gt; t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null))}}"/>
-                    <field name="name" value="{{!(_local.reactionTypeForm?.name?.[$locale ?? 'ko'] ?? '').trim() ? true : null}}"/>
+                    <field name="name" value="{{!(_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() ? true : null}}"/>
                   </field>
                 </set-state>
               </else>

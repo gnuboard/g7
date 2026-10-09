@@ -106,6 +106,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -151,6 +152,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -196,6 +198,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -241,6 +244,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {

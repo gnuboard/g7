@@ -42,7 +42,7 @@ class BoardDashboardService
      * 오늘 새 글/새 댓글 수를 집계 테이블에서 조회합니다.
      *
      * board_stats 의 오늘 행을 읽으며, 행이 없으면 0 으로 반환합니다 (최대 1시간 지연 허용).
-     * 「오늘」과 집계 행의 날짜는 사이트 표준시의 하루다(SiteDay) — 앱 시간대(UTC)로 자르면 한국
+     * 「오늘」과 집계 행의 날짜는 사이트 표준시의 하루다(siteToday) — 앱 시간대(UTC)로 자르면 한국
      * 사이트에서는 오전 9시에 날짜가 바뀌고 새벽 글이 전날로 집계된다.
      *
      * @return array{today_posts: int, today_comments: int} 오늘 집계

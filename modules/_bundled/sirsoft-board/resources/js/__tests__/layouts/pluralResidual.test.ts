@@ -66,7 +66,7 @@ describe('게시판 en 사전 — 단수·복수', () => {
     ['admin.reports.modals.blinded_will_be_public', '{{count}} blinded item will be made public.'],
     ['admin.reports.detail.report_count_with_unit', '{count} Report'],
     ['admin.settings.reaction_types.delete_blocked_suffix', ' reaction uses this type, so it cannot be deleted — you can turn it off instead'],
-    ['admin.settings.bulk_members.result_summary', '{{updated}} board changed, {{skipped}} skipped'],
+    ['admin.settings.bulk_members.result_summary', '{{updated}} board changed, {{skipped}} skipped, {{unchanged}} unchanged'],
     ['admin.posts.form.attachments_desc', 'Max {{maxFiles}} file, {{maxSize}}MB'],
   ])('%s_one = 단수형', (key, one) => {
     expect(en[`${key}_one`]).toBe(one);

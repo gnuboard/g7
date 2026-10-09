@@ -109,9 +109,15 @@ effects:
   # 11차 develop 병합 유입(7.0.11) — 공개 서빙 캐시 키는 서버 현재 버전으로만 조립한다(클라이언트 ?v 는 HTTP 캐시 우회용).
   - serving_cache_key_uses_server_current_version
   # #747 유입 — 서빙 응답의 빈 객체·빈 배열 보존(LayoutServingEmptyObjectTest, 소유 매니페스트 layout-serving-empty-object.yaml).
-  # 게이트 필터 `LayoutServing` 에 걸려 도는 테스트라 그 effect 도 등재한다. 코어 수정 전까지 첫 effect 는 결함 고정용으로 실패한다.
+  # 게이트 필터 `LayoutServing` 에 걸려 도는 테스트라 그 effect 도 등재한다. 코어 수정(#759 리베이스로 합류)으로 두 effect 모두 통과한다.
   - empty_object_served_as_object
   - empty_array_served_as_array
+  # 같은 테스트 파일이 topic(#759) 쪽에서 단 효과 — issue759 → develop-7.1.0 리베이스로 한 파일에 합쳐져 게이트에서 함께 돈다.
+  - init_state_empty_object_preserved
+  - fallback_empty_object_preserved
+  - action_params_empty_object_preserved
+  - empty_list_stays_list
+  - root_map_section_restored
   # --- S1 토큰 방출
   - start_tag_carries_name_attributes_and_source_position
   - end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order
@@ -1233,7 +1239,7 @@ test_files:
   - tests/Feature/Api/Public/LayoutServingStaleClientVersionKeyTest.php
   # #747 이커머스 전수 실측 유입 — 서빙 응답이 빈 객체 `{}` 를 빈 배열 `[]` 로 바꾸는 코어 결함을 고정한 테스트(소유 매니페스트는
   # layout-serving-empty-object.yaml). 이 트랙 산출물이 아니지만 클래스명이 게이트 필터 `LayoutServing` 에 걸려 게이트에서 돌므로 등재한다.
-  # 코어 수정 전까지는 결함 고정용으로 실패하는 것이 정상이다.
+  # 코어 수정이 #759 리베이스로 합류해 지금은 통과해야 한다(빈 객체 보존 시험 8효과).
   - tests/Feature/Api/Public/LayoutServingEmptyObjectTest.php
   # S21.4 — 같은 명제의 **세 번째 파일 종류**: 상속원(베이스 레이아웃).
   # 이 단락이 `_admin_base` 에 26건을 넣었고 그것은 관리자 전 화면이 상속하는 자리다. 베이스 주석이

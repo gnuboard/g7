@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  * 템플릿 매니페스트(`template.json`)의 `assets.css` 가 선언한 파일 가운데 설치본에 실재하는
  * 것만 싣는다 — 봇 화면(SeoRenderer)과 같은 기준이다.
  *
- * 종전에는 두 화면이 템플릿과 무관하게 `css/components.css` 를 늘 링크해, CSS 를 선언하지
+ * 종전에는 두 화면이 템플릿과 무관하게 `{템플릿}?file=css/components.css` 를 늘 링크해, CSS 를 선언하지
  * 않은 템플릿에서 모든 화면이 `GET /api/templates/assets/{id}?file=css/components.css → 422`
  * 를 남겼다.
  *
@@ -23,7 +23,7 @@ trait CollectsTemplateStylesheets
     /**
      * 활성 템플릿이 선언하고 산출물이 있는 CSS 의 서빙 경로 목록을 반환합니다.
      *
-     * 서빙 경로는 `dist/` 접두를 뗀 형태다(예: `dist/css/components.css` → `css/components.css`).
+     * 서빙 경로는 `dist/` 접두를 뗀 형태다(예: `templates/_bundled/sirsoft-basic/dist/css/components.css` → `?file=css/components.css`).
      * 자산 라우트가 `dist/` 이하만 서빙하므로 `AssetUrl::templateAsset()` 에 그대로 넘긴다.
      *
      * @param  string|null  $templateIdentifier  템플릿 식별자

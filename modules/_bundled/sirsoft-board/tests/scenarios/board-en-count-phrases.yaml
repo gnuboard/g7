@@ -1,10 +1,10 @@
 feature: 게시판 모듈 영어 문구가 수가 1 일 때도 읽힌다
 
 description: |
-  템플릿 엔진 번역에는 단수·복수 갈래가 없어, 「Settings applied to {{count}} boards.」 처럼 복수 명사를
-  박아 둔 영어 문구는 1 일 때 「1 boards」 로 나왔다(7.1.0 전수 실측 K2 후속 관측 O-KF2-1). 시간 표기는
-  K2 후속(KF2-4)에서 trans_choice 로 고쳤고, 그 밖의 수 문구는 이 모듈이 이미 쓰는 「board(s)」·
-  「Total: {{count}}」 형식으로 맞춘다. 서버 문구도 같은 기준으로 본다(단수|복수 갈래 문구는 제외).
+  「Settings applied to {{count}} boards.」 처럼 복수 명사를 박아 둔 영어 문구는 단수 갈래가 없으면 1 일 때
+  「1 boards」 로 나왔다(7.1.0 전수 실측 K2 후속 관측 O-KF2-1). 영어 개수 문구는 PO 결정대로 1 이면 단수,
+  그 밖은 복수로 쓰고 `(s)` 표기를 쓰지 않는다. 화면 문구는 같은 파일에 `키_one` 단수 갈래가 있어야 하고,
+  서버 문구는 `단수|복수` 로 쓴다(issue759 → develop-7.1.0 리베이스에서 base #754 의 `_one` 방식에 맞춰 기준을 바꿨다).
 
 axes:
   phrase_kind: [frontend_count, backend_count]

@@ -39,7 +39,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
             'sirsoft-board.settings.read',
             'sirsoft-board.settings.update',
         ]);
-        // 반응 유형 이름은 요청 언어 값이 필수다(게시판 유형과 같은 계약) — 한국어 이름만 싣는 픽스처가 한국어 화면 관리자로 저장한다
+        // 반응 유형 이름은 사이트 기본 언어 값이 필수다(게시판 유형과 같은 계약) — 픽스처는 한국어 이름을 싣는다
         $this->admin->forceFill(['language' => 'ko'])->save();
 
         // FK(restrictOnDelete) 순서: 이력 먼저 정리 후 유형 삭제
@@ -226,10 +226,10 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
     }
 
     /**
-     * 화면(요청) 언어의 이름이 비면 422 — 오류는 이름 칸 전체 키(name)로 돌아온다.
+     * 사이트 기본 언어의 이름이 비면 422 — 오류는 이름 칸 전체 키(name)로 돌아온다.
      *
-     * 반응 유형 이름은 한국어(name.ko)를 고정 필수로 받아, 영어 화면 관리자도 쓰지 않는 한국어 칸을 채워야 했다.
-     * 게시판 유형 이름과 같게 요청 언어 값만 필수로 한다(7.1.0 S2 #9, 지침 2026-10-09).
+     * 반응 유형 이름은 게시판 유형 이름과 같게 코어 LocaleRequiredTranslatable 로 검증하고, 필수 언어는 사이트
+     * 기본 언어다(2026-10-09 PO 확정 — 다른 언어 화면의 대체 표시가 늘 채워지도록).
      *
      * @scenario case=settings_missing_default_name_rejected
      *
@@ -237,7 +237,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_missing_request_locale_name_returns_422(): void
+    public function test_missing_site_locale_name_returns_422(): void
     {
         $response = $this->actingAs($this->admin)->putJson(self::ENDPOINT, [
             '_tab' => 'basic_defaults',
@@ -258,7 +258,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
     }
 
     /**
-     * 영어 화면 관리자는 한국어 이름 없이 영어 이름만으로 반응 유형을 추가한다.
+     * 영어 화면 관리자도 사이트 기본 언어(한국어) 이름이 비면 영어 이름이 있어도 422 다.
      *
      * @scenario case=settings_missing_default_name_rejected
      *
@@ -266,7 +266,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_english_admin_adds_type_with_english_name_only(): void
+    public function test_english_admin_still_needs_site_locale_name(): void
     {
         $this->admin->forceFill(['language' => 'en'])->save();
 
@@ -277,14 +277,15 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
                     ['id' => null, 'code' => 'en_only', 'name' => ['ko' => '', 'en' => 'English Only'], 'is_active' => true],
                 ],
             ],
-        ])->assertOk();
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['basic_defaults.reaction_types.0.name']);
 
-        $created = ReactionType::where('code', 'en_only')->firstOrFail();
-        $this->assertSame('English Only', $created->name['en'] ?? null);
+        $this->assertNull(ReactionType::where('code', 'en_only')->first());
     }
 
     /**
-     * 영어 화면 관리자가 영어 이름을 비우면 한국어가 있어도 422 다.
+     * 영어 화면 관리자는 사이트 기본 언어(한국어) 이름만으로 반응 유형을 추가한다 — 화면 언어 칸은 선택이다.
      *
      * @scenario case=settings_missing_default_name_rejected
      *
@@ -292,7 +293,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_english_admin_missing_english_name_returns_422(): void
+    public function test_english_admin_adds_type_with_site_locale_name_only(): void
     {
         $this->admin->forceFill(['language' => 'en'])->save();
 
@@ -303,9 +304,9 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
                     ['id' => null, 'code' => 'ko_only', 'name' => ['ko' => '한국어만'], 'is_active' => true],
                 ],
             ],
-        ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['basic_defaults.reaction_types.0.name']);
+        ])->assertOk();
+
+        $this->assertSame('한국어만', ReactionType::where('code', 'ko_only')->firstOrFail()->name['ko'] ?? null);
     }
 
     /**

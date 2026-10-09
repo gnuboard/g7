@@ -758,7 +758,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "aria-label": "{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}",
+                                        "aria-label": "{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [

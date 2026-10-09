@@ -336,7 +336,7 @@ return [
         'blind_by_report' => 'Blinded by report processing',
         'blind_by_auto_hide' => 'Automatically blinded due to accumulated reports.',
         // Modal notice messages
-        'blinded_will_be_public' => '{count} blinded content(s) will be made public.',
+        'blinded_will_be_public' => '{count} blinded item will be made public.|{count} blinded items will be made public.',
         'already_reported' => 'You have already reported this content.',
     ],
 

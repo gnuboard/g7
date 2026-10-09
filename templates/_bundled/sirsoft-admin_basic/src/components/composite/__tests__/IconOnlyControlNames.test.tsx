@@ -56,9 +56,11 @@ afterEach(() => {
 
 // 태그 이름은 화면에 보이는 태그 글자(언어별 값을 이은 것) 그대로 들어간다
 const EXPECTED: Record<Locale, { removeLanguage: RegExp; removeTag: RegExp; expand: string; collapse: string }> = {
-  ko: { removeLanguage: /^English 삭제$/, removeTag: /^KO: 빨강 \/ EN: red 지우기$/, expand: '펼치기', collapse: '접기' },
-  en: { removeLanguage: /^Remove English$/, removeTag: /^Remove KO: 빨강 \/ EN: red$/, expand: 'Expand', collapse: 'Collapse' },
-  ja: { removeLanguage: /^Englishを削除$/, removeTag: /^KO: 빨강 \/ EN: redを削除$/, expand: '展開', collapse: '折りたたむ' },
+  // 다국어 입력·태그 입력의 지우기 단추는 공용 키 common.remove_language·common.remove_tag 를 쓴다. 태그 이름은 보는 언어의
+  // 값이 있으면 그 값, 없으면 언어별 묶음 표기다.
+  ko: { removeLanguage: /^English 입력 제거$/, removeTag: /^빨강 제거$/, expand: '펼치기', collapse: '접기' },
+  en: { removeLanguage: /^Remove English$/, removeTag: /^Remove red$/, expand: 'Expand', collapse: 'Collapse' },
+  ja: { removeLanguage: /^English の入力を削除$/, removeTag: /^KO: 빨강 \/ EN: red を外す$/, expand: '展開', collapse: '折りたたむ' },
 };
 
 const LOCALES = [

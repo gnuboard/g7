@@ -165,7 +165,7 @@ class StoreBoardRequest extends FormRequest
         $newDisplayHoursMax = $limits['new_display_hours_max'];
 
         $rules = [
-            // 기본 정보 (name, description은 다국어 필드 - 요청 로케일(화면 언어)의 값만 필수. 코어 LocaleRequiredTranslatable 규약(docs/backend/validation.md 「다국어 필드 검증 규칙」)이며 사이트 기본 언어 기준이 아니다)
+            // 기본 정보 (name, description은 다국어 필드 - 사이트 기본 언어 값만 필수. 코어 LocaleRequiredTranslatable 규약(docs/backend/validation.md 「다국어 필드 검증 규칙」))
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
             'slug' => ['required', 'string', 'max:50', 'regex:/^[a-z][a-z0-9-]*$/', new SlugUniqueRule],
             'description' => ['nullable', 'array', new TranslatableField(maxLength: 500)],

@@ -102,7 +102,7 @@
       "cancel": "キャンセル",
       "key_invalid": "項目キーには英小文字、数字、アンダースコア(_)のみ使用できます。",
       "key_duplicate": "既に存在する項目キーです。別のキーを入力してください。",
-      "label_required": "現在の画面言語の項目名を入力してください。"
+      "label_required": "サイトのデフォルト言語の項目名を入力してください。"
     },
     "channel_deactivate_modal": {
       "title": "チャネルを削除できません",

@@ -72,7 +72,7 @@
 | …reaction_types | array | 아니오 | max 50 | 행 배열. 보내지 않으면 유형을 건드리지 않습니다 |
 | …[].id | integer\|null | 아니오 | 존재하는 유형 | null 이면 신규 행 |
 | …[].code | string | 예 | `^[a-z][a-z0-9_]{1,49}$`, 중복 불가 | **추가 후 불변** — 기존 행의 code 변경은 무시됩니다 (결정 R12) |
-| …[].name | object | 예 | 요청 언어(관리자 화면 언어) 값 필수, 각 50자 — 게시판 유형 이름과 같은 계약. 빠지면 오류 키는 `…[].name` | 로케일별 라벨 맵 |
+| …[].name | object | 예 | 사이트 기본 언어 값 필수, 각 50자 — 게시판 유형 이름과 같은 계약. 빠지면 오류 키는 `…[].name` | 로케일별 라벨 맵 |
 | …[].icon_attachment_id | integer\|null | 아니오 | `reaction_type_icon` collection + 모듈 소스의 첨부 | 업로드한 아이콘 |
 | …[].display_order | integer\|null | 아니오 | min 0 | 서버가 배열 순서로 재부여합니다 |
 | …[].is_active | boolean\|null | 아니오 | — | 끄면 화면에서 감추되 이력·카운트는 보존 |

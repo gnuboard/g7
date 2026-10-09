@@ -211,8 +211,10 @@ describe('게시판 관리자·스텝 일괄 지정 — 회원 검색칸과 결�
         return [key, rest.join('=')];
       }),
     );
-    expect(Object.keys(params).sort()).toEqual(['skipped', 'unchanged', 'updated']);
+    // count 는 단수·복수 갈래(result_summary_one)를 고르는 수 — 바뀐 게시판 수와 같아야 한다
+    expect(Object.keys(params).sort()).toEqual(['count', 'skipped', 'unchanged', 'updated']);
     const ctx = { _global: { boardBulkMembers: { result: { updated_count: 1, skipped_count: 2, unchanged_count: 31 } } } };
+    expect(evaluate(params.count, ctx)).toBe(evaluate(params.updated, ctx));
     expect(evaluate(params.unchanged, ctx)).toBe(31);
     expect(evaluate(params.unchanged, { _global: { boardBulkMembers: { result: { updated_count: 1 } } } })).toBe(0);
   });
