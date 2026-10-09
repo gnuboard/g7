@@ -537,6 +537,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.collection.enabled",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -728,6 +729,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.site_search_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.collection.site_search",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -760,6 +762,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.track_downloads",
+                                                            "ariaLabel": "$t:admin.analytics.settings.collection.track_downloads",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -792,6 +795,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.track_outlinks",
+                                                            "ariaLabel": "$t:admin.analytics.settings.collection.track_outlinks",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -859,6 +863,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.public_summary_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.collection.public_summary",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1383,6 +1388,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.respect_dnt",
+                                                            "ariaLabel": "$t:admin.analytics.settings.privacy.respect_dnt",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1569,6 +1575,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.geo_before_mask",
+                                                            "ariaLabel": "$t:admin.analytics.settings.privacy.geo_before_mask",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1609,6 +1616,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.pseudonymize_user_id",
+                                                            "ariaLabel": "$t:admin.analytics.settings.privacy.pseudonymize_user_id",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1669,6 +1677,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.bot_detector_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.bots.bot_detector_enabled",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1709,6 +1718,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.bot_tracking_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.bots.bot_tracking_enabled",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1741,6 +1751,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.block_headless",
+                                                            "ariaLabel": "$t:admin.analytics.settings.bots.block_headless",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -1781,6 +1792,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.exclude_prefetch",
+                                                            "ariaLabel": "$t:admin.analytics.settings.bots.exclude_prefetch",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -2032,6 +2044,7 @@
                                                                 "name": "Toggle",
                                                                 "props": {
                                                                     "name": "settings.block_cloud_ip_ranges",
+                                                                    "ariaLabel": "$t:admin.analytics.settings.bots.block_cloud_ip_ranges",
                                                                     "size": "md",
                                                                     "disabled": "{{_computed.isReadOnly}}"
                                                                 }
@@ -2607,6 +2620,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.archive_on_view_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.retention.archive_on_view_enabled",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -3017,6 +3031,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.report_weekly_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.reports.weekly",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -3057,6 +3072,7 @@
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "settings.report_monthly_enabled",
+                                                            "ariaLabel": "$t:admin.analytics.settings.reports.monthly",
                                                             "size": "md",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }

@@ -402,6 +402,8 @@ const ControlRow: React.FC<{
           checked={pendingChecked ?? serverChecked}
           disabled={item.toggle.disabled}
           name={item.toggle.label ?? item.name}
+          // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다(O-Q2-1).
+          ariaLabel={item.toggle.label ?? item.name}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);
             setPendingChecked(value);

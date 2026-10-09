@@ -265,6 +265,34 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 내보내기 파일 이름의 날짜가 사이트 표준시 날짜인지 확인합니다.
+     *
+     * 사이트가 Asia/Seoul 이고 UTC 로는 아직 전날인 시각(KST 06:50 = UTC 전날 21:50)에 받으면
+     * 파일 이름이 전날 날짜로 나왔다(7.1.0 실측 E-D6) — 화면의 모든 날짜는 사이트 표준시다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects subject_export_filename_uses_the_site_date
+     */
+    public function test_the_export_filename_uses_the_site_date(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        Carbon::setTestNow(Carbon::parse('2026-10-05 21:50:00', 'UTC'));
+
+        try {
+            $response = $this->actingAs($this->privacyAdmin())
+                ->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.99');
+
+            $response->assertOk();
+            $this->assertSame('analytics-subject-20261006.json', $response->json('data.export_filename'));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
      * 코어 방문이 0건인 조회도 내보내기 파일 이름을 싣는지 확인합니다.
      *
      * 정보주체 화면은 이 이름이 왔는지로 「검색 응답이 도착했다」를 알고 내보내기·삭제를 켠다. 코어
@@ -507,5 +535,36 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.visits'), '오늘·어제 솔트의 방문만 찾아져야 한다');
+    }
+
+    /**
+     * 주소를 그리는 행마다 그 주소가 실제로 가려진 값인지 싣는지 확인합니다.
+     *
+     * 마스킹을 켜면서 소급을 건너뛰면 그 전 기록은 원래 주소 그대로 남는다. 열 이름만 설정을 따라
+     * 「IP (마스킹됨)」으로 바뀌면 원래 주소가 가려진 값처럼 읽힌다(7.1.0 실측 O-E8).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects each_address_row_says_whether_it_is_masked
+     */
+    public function test_each_subject_row_says_whether_its_address_is_masked(): void
+    {
+        config(['g7_settings.core.analytics.ip_mask_octets' => 2]);
+
+        // 가린 값이 공인 대역으로 나가지 않도록 사설 대역으로 잰다(문서용 대역도 두 옥텟을 지우면 범위를 벗어난다).
+        $raw = $this->visit(['ip' => '10.20.30.40', 'user_id' => 4242]);
+        $masked = $this->visit(['ip' => '10.20.0.0', 'user_id' => 4242]);
+
+        $rows = collect(
+            $this->actingAs($this->privacyAdmin())
+                ->getJson('/api/admin/analytics/privacy/subjects?user_id=4242')
+                ->assertOk()
+                ->json('data.visits'),
+        )->keyBy('visit_id');
+
+        $this->assertFalse($rows[$raw->id]['ip_masked'] ?? null, '설정 전 원래 주소는 가려진 값이 아니다');
+        $this->assertTrue($rows[$masked->id]['ip_masked'] ?? null, '설정대로 뒤 옥텟이 지워진 주소');
     }
 }

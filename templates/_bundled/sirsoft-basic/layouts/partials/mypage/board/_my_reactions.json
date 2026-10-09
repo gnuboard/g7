@@ -518,7 +518,12 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit)"
+                            "text": "({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myReactions?.data?.pagination?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": ")"
                         }
                     ]
                 },

@@ -48,7 +48,7 @@ class StorePostRequest extends FormRequest
      * 비밀글 여부를 문자열 "true"/"false" 로 보내는 클라이언트도 수용하도록
      * boolean 으로 정규화합니다. (해석 불가값은 유지 → boolean 규칙이 422 처리)
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -69,7 +69,7 @@ class StorePostRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -148,19 +148,18 @@ class StorePostRequest extends FormRequest
         // 파일 업로드 검증 규칙 (게시판 설정에 따라)
         $useFileUpload = $board->use_file_upload ?? $defaults['use_file_upload'] ?? false;
         if ($useFileUpload) {
-            $maxFiles = $board->max_file_count ?? $defaults['max_file_count'] ?? 5;
+            $maxFiles = $this->maxFileCount();
             $maxSizeMB = $board->max_file_size ?? $defaults['max_file_size'] ?? 10;
             $maxSizeKB = $maxSizeMB * 1024;
             // 게시판/기본값이 모두 비어 있으면(null 또는 []) 최종 기본 확장자로 폴백한다.
-            // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
+            // 빈 배열을 그대로 쓰면 'extensions:' 빈 규칙이 되어 전 파일이 거부된다.
             $allowedExtensions = $this->resolveAllowedExtensions(
                 $board->allowed_extensions,
                 $defaults['allowed_extensions'] ?? null
             );
-            $mimes = implode(',', $allowedExtensions);
-
             $rules['files'] = ['nullable', 'array', 'max:'.$maxFiles];
-            $rules['files.*'] = ['file', 'max:'.$maxSizeKB, 'mimes:'.$mimes];
+            // 이름 확장자와 내용 추론 확장자가 모두 허용 목록에 들어야 통과 (첨부 단건 업로드와 같은 기준)
+            $rules['files.*'] = ['file', 'max:'.$maxSizeKB, ...$this->attachmentFileTypeRules($allowedExtensions)];
         }
 
         // 훅: 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 필터 제공
@@ -168,9 +167,22 @@ class StorePostRequest extends FormRequest
     }
 
     /**
+     * 이 게시판의 첨부 파일 개수 상한을 구합니다 (게시판 설정 → 모듈 기본값 → 5).
+     *
+     * @return int 첨부 파일 개수 상한
+     */
+    private function maxFileCount(): int
+    {
+        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
+        $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
+
+        return (int) ($board->max_file_count ?? $defaults['max_file_count'] ?? 5);
+    }
+
+    /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string>
+     * @return array<string, string> 규칙별 오류 메시지
      */
     public function messages(): array
     {
@@ -190,17 +202,18 @@ class StorePostRequest extends FormRequest
             'parent_id.exists' => __('sirsoft-board::validation.post.parent_id.exists'),
             'is_notice.in' => __('sirsoft-board::validation.post.is_notice.guest_not_allowed'),
             'files.array' => __('sirsoft-board::validation.post.files.array'),
-            'files.max' => __('sirsoft-board::validation.post.files.max'),
+            // 상한이 게시판 설정값이라 1 일 수 있다 — 검증기는 단·복수를 고르지 않으므로 여기서 고른다.
+            'files.max' => trans_choice('sirsoft-board::validation.post.files.max', $maxFiles = $this->maxFileCount(), ['max' => $maxFiles]),
             'files.*.file' => __('sirsoft-board::validation.post.files.file'),
             'files.*.max' => __('sirsoft-board::validation.post.files.file_max'),
-            'files.*.mimes' => __('sirsoft-board::validation.post.files.mimes'),
+            'files.*.extensions' => __('sirsoft-board::validation.post.files.mimes'),
         ];
     }
 
     /**
      * 검증할 필드의 이름을 커스터마이징
      *
-     * @return array<string, string>
+     * @return array<string, string> 필드별 표시명
      */
     public function attributes(): array
     {
@@ -248,7 +261,7 @@ class StorePostRequest extends FormRequest
      * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
      *
      * @param  Validator  $validator  검증기
-     * @return void
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {

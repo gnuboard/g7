@@ -73,7 +73,7 @@
       <responsive on="portable" class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"/>
       <p class="text-sm text-blue-700 dark:text-blue-300 mb-2">$t:shop.checkout.vbank_info</p>
       <!-- 입금 기한 — 서버(OrderProcessingService::resolveAutoCancelDays)와 같은 규칙으로 폴백한다. ?? 는 null/undefined 만 막아 빈 문자열('')이 통과하면 days 가 비어 치환이 스킵되고 '{{days}}' 원문이 그대로 노출된다(실측 2026-08-01). 0/음수/비숫자도 서버가 기본치 3 으로 되돌리므로 화면도 동일 판정을 쓴다. -->
-      <p class="text-xs text-blue-600 dark:text-blue-400">$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
+      <p class="text-xs text-blue-600 dark:text-blue-400">$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
       <!-- 입금자명 입력 -->
       <div class="mt-4">
         <responsive on="portable" class="mt-3"/>
@@ -204,7 +204,7 @@
         <default/>
       </extension-point>
       <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. -->
-      <p class="text-xs text-amber-600 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
+      <p class="text-xs text-amber-600 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
     </div>
   </div>
 </partial>

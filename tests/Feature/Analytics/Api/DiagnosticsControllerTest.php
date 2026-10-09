@@ -449,4 +449,33 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
             '시간대가 다른 운영자는 시각 기준을 알아야 한다',
         );
     }
+
+    /**
+     * 적재 실패 행마다 그 주소가 실제로 가려진 값인지 싣는지 확인합니다.
+     *
+     * 열 이름이 설정을 따라 「IP (마스킹됨)」이 되어도 설정 전 행은 원래 주소다(7.1.0 실측 O-E8).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=collect_failures, role=privacy
+     *
+     * @effects each_address_row_says_whether_it_is_masked
+     */
+    public function test_each_failure_row_says_whether_its_address_is_masked(): void
+    {
+        config(['g7_settings.core.analytics.ip_mask_octets' => 1]);
+
+        $raw = AnalyticsCollectFailure::factory()->create(['ip' => '198.51.100.23']);
+        $masked = AnalyticsCollectFailure::factory()->create(['ip' => '198.51.100.0']);
+
+        $rows = collect(
+            $this->actingAs($this->privacyAdmin())
+                ->getJson('/api/admin/analytics/collect-failures')
+                ->assertOk()
+                ->json('data.data'),
+        )->keyBy('id');
+
+        $this->assertFalse($rows[$raw->id]['ip_masked'] ?? null, '설정 전 원래 주소');
+        $this->assertTrue($rows[$masked->id]['ip_masked'] ?? null, '설정대로 가려진 주소');
+    }
 }

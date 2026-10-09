@@ -42,7 +42,7 @@ import {
 import { deriveSampleRouteParams } from '../utils/sampleRouteParams';
 import { EDITOR_TRANSLATIONS_REFRESHED_EVENT } from '../hooks/useInlineEdit';
 import { buildSampleGlobalSeed } from '../sample-data/sampleGlobalChain';
-import { extractDollarGlobals, stripDollarGlobals } from '../sample-data/dollarGlobals';
+import { previewDollarGlobals, stripDollarGlobals } from '../sample-data/dollarGlobals';
 import { findNodeByPath, type EditorNode } from '../utils/layoutTreeUtils';
 import { limitIterationSourceToOne } from '../utils/iterationSampleLimit';
 import { buildBaseEditorComponents } from '../utils/baseEditorSlotMarkers';
@@ -1061,7 +1061,9 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     // sampleGlobal)에 선언된 `$`-키를 PreviewCanvas 가 여기서 노출하지 않으면
     // 로케일 선택 드롭다운 등이 빈 채로 렌더된다. dataContext 의 다른
     // 명시 키(route/query 등)보다 먼저 펴서 충돌 시 그쪽이 이기게 둔다.
-    ...extractDollarGlobals(isolatedGlobal),
+    // `$locale` 은 표본 값이 아니라 콘텐츠 언어로 둔다 — 표본 값이 올라가면 식 안 `$t()` 가 콘텐츠 언어를 무시한다
+    // (engine-v1.78.3, previewDollarGlobals 참조).
+    ...previewDollarGlobals(isolatedGlobal, state.locale),
     // `_global` 에서는 `$`-키를 제거(혼동 방지 — `_global.$locales` 는 어떤
     // 바인딩도 읽지 않는 사구역). 일반 `_global.*` 키스페이스만 흘려보낸다.
     _global: stripDollarGlobals(isolatedGlobal),

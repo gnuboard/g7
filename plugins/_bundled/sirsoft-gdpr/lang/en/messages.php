@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'annual_notice' => ['privacy_policy_link_label' => 'Privacy policy', 'target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'manual_run_label' => 'Send annual privacy notice', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
+    'annual_notice' => ['privacy_policy_link_label' => 'Privacy policy', 'target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'manual_run_label' => 'Send annual privacy notice', 'queued_count' => ':count recipient queued|:count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
     'consent_provider' => [
         'label' => 'Cookie consent banner (sirsoft-gdpr)',
     ],
@@ -10,7 +10,7 @@ return [
         'granted_again' => 'Consent has been renewed.',
         'rejected_saved' => 'Continuing without consent. Optional items will not be used.',
         'revoked' => 'Consent has been revoked.',
-        'renew_all_success' => '{renewed} active consent item(s) renewed to the new policy version.',
+        'renew_all_success' => ':renewed active consent item renewed to the new policy version.|:renewed active consent items renewed to the new policy version.',
         'granting' => 'Granting...',
         'revoking' => 'Revoking...',
         'renewing' => 'Renewing...',
@@ -331,5 +331,19 @@ return [
         'preferences_description' => 'You can grant or revoke each category individually. Required categories cannot be turned off.',
         'category_required_badge' => 'Required',
         'view_policy_label' => 'View updated policy',
+    ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'recipient_name' => 'Recipient name',
+            'app_name' => 'Site name',
+            'introduction' => 'Operator introduction',
+            'collection_summary' => 'Summary of collected items',
+            'purpose' => 'Purpose of use',
+            'retention' => 'Retention period',
+            'privacy_policy_url' => 'Privacy policy URL',
+            'privacy_policy_link' => 'Privacy policy link line (empty if there is no address)',
+            'notice_sections' => 'Processing details contributed by extensions',
+        ],
     ],
 ];

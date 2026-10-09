@@ -406,10 +406,12 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
             data-testid="file-tree-overlay"
             // 서랍은 왼쪽에서 200ms 슬라이드, 시트는 아래에서 올라온다(§7.4·§7.5). 키프레임은
             // `main.css` 의 `g7le-drawer-enter`/`g7le-sheet-enter` — 움직임 축소 설정이면 즉시 뜬다.
+            // 둘 다 관리자 모바일 헤더(`.mobile_header_portable` h-16·z-50) **아래**에서 시작한다 — top:0 이면
+            // 머리(제목·검색칸)가 헤더에 가려 검색칸을 누를 수 없다. 사이드바 드로어(`_admin_base.css`)와 같은 처리다.
             className={
               resolved === 'drawer'
-                ? 'fixed inset-y-0 left-0 z-40 w-[380px] max-w-[85vw] flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl g7le-drawer-enter'
-                : 'fixed inset-0 z-40 flex flex-col bg-white dark:bg-gray-800 g7le-sheet-enter'
+                ? 'fixed top-16 bottom-0 left-0 z-40 w-[380px] max-w-[85vw] flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl g7le-drawer-enter'
+                : 'fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col bg-white dark:bg-gray-800 g7le-sheet-enter'
             }
           >
             {treePanel}

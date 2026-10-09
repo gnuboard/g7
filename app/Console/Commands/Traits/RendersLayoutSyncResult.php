@@ -81,7 +81,7 @@ trait RendersLayoutSyncResult
         }
 
         $this->newLine();
-        $this->warn('⚠️  '.__($domain.'.commands.update.modified_layouts_warning', ['count' => $modified['modified_count']]));
+        $this->warn('⚠️  '.trans_choice($domain.'.commands.update.modified_layouts_warning', (int) $modified['modified_count']));
 
         foreach ($modified['modified_layouts'] ?? [] as $item) {
             $this->warn(__($domain.'.commands.update.modified_layout_item', ['name' => $item['name'], 'date' => $item['updated_at'] ?? '']));

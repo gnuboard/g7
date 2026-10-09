@@ -7,6 +7,12 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 엔진 밖(단위 테스트)에서는 대체 문구를 쓴다
+const t = (key: string, fallback: string): string => {
+  const translated = (window as any).G7Core?.t?.(key);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface ActionMenuItem {
   id: string | number;
   label?: string;
@@ -25,6 +31,8 @@ export interface ActionMenuItem {
 export interface ActionMenuProps {
   items: ActionMenuItem[];
   triggerLabel?: string;
+  /** 글자 없는 트리거의 접근 가능한 이름. 비우면 「더보기」(common.more_actions) */
+  triggerAriaLabel?: string;
   triggerIconName?: IconName;
   position?: 'left' | 'right';
   className?: string;
@@ -75,7 +83,8 @@ export interface ActionMenuProps {
  */
 export const ActionMenu: React.FC<ActionMenuProps> = ({
   items,
-  triggerLabel = '작업',
+  triggerLabel,
+  triggerAriaLabel,
   triggerIconName = IconName.EllipsisVertical,
   position = 'right',
   className = '',
@@ -89,6 +98,53 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 트리거 글자: 지정하지 않으면 「작업」(언어별), 빈 문자열이면 아이콘만 — 그때는 「더보기」 를 이름으로 단다.
+  // 종전에는 기본 글자가 언어와 무관하게 「작업」 이었고, 아이콘만 있는 트리거는 글리프 이름(「ellipsis h」)으로 읽혔다.
+  const resolvedTriggerLabel = triggerLabel ?? t('common.actions', '작업');
+  const resolvedTriggerAriaLabel = resolvedTriggerLabel
+    ? undefined
+    : (triggerAriaLabel || t('common.more_actions', '더보기'));
+
+  /** 메뉴 안의 누를 수 있는 항목(잠긴 항목 제외) */
+  const getEnabledItems = useCallback(
+    (): HTMLButtonElement[] =>
+      Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []),
+    []
+  );
+
+  /** 메뉴를 닫고 초점을 트리거로 돌린다(키보드 사용자가 제자리로 돌아오게) */
+  const closeAndReturnFocus = useCallback(() => {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
+  // 열리면 첫 항목에 초점 — 키보드로 연 사용자가 바로 고를 수 있게 한다(메뉴 단추 패턴)
+  useEffect(() => {
+    if (!isOpen) return;
+    getEnabledItems()[0]?.focus();
+  }, [isOpen, getEnabledItems]);
+
+  /** 메뉴 키보드: 위/아래·Home/End 로 잠기지 않은 항목 사이를 돌고, Esc·Tab 은 닫는다 */
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const enabled = getEnabledItems();
+    const current = enabled.indexOf(document.activeElement as HTMLButtonElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (enabled.length === 0) return;
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      enabled[(current + delta + enabled.length) % enabled.length].focus();
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      (event.key === 'Home' ? enabled[0] : enabled[enabled.length - 1])?.focus();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndReturnFocus();
+    } else if (event.key === 'Tab') {
+      setIsOpen(false);
+    }
+  };
 
   // 메뉴 위치 계산
   const updateMenuPosition = useCallback(() => {
@@ -186,6 +242,9 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     ? ReactDOM.createPortal(
         <div
           ref={menuRef}
+          role="menu"
+          aria-label={resolvedTriggerLabel || resolvedTriggerAriaLabel}
+          onKeyDown={handleMenuKeyDown}
           className="fixed z-[9999] w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
           style={{
             top: menuPosition.top,
@@ -198,31 +257,34 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               return (
                 <div
                   key={item.id}
+                  role="separator"
                   className="border-t border-gray-200 dark:border-gray-600 my-1"
                 />
               );
             }
 
-            const variantClasses =
-              item.variant === 'danger'
-                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
-
-            const disabledClasses = item.disabled
-              ? 'opacity-50 cursor-not-allowed'
-              : 'cursor-pointer';
+            // 잠긴 항목은 위험(빨강) 색·hover 를 빼고 회색으로 흐리게 — 빨강이 남으면 눌릴 것처럼 보였다(O-F11).
+            const stateClasses = item.disabled
+              ? 'text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
+              : item.variant === 'danger'
+                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 cursor-pointer';
 
             return (
-              <div
+              <button
                 key={item.id}
+                type="button"
+                role="menuitem"
+                disabled={item.disabled}
+                aria-disabled={item.disabled || undefined}
                 onClick={() => handleItemClick(item)}
-                className={`flex items-center gap-3 px-4 py-3 transition-colors ${variantClasses} ${disabledClasses}`}
+                className={`w-full text-left flex items-center gap-3 px-4 py-3 transition-colors focus:outline-none ${stateClasses}`}
               >
                 {item.iconName && (
                   <Icon name={item.iconName} className="w-4 h-4" />
                 )}
                 <span className="text-sm font-medium">{item.label}</span>
-              </div>
+              </button>
             );
           })}
         </div>,
@@ -236,7 +298,18 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       {children ? (
         <Div
           ref={triggerRef as React.RefObject<HTMLDivElement>}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-label={triggerAriaLabel}
           onClick={() => setIsOpen(!isOpen)}
+          onKeyDown={(event: React.KeyboardEvent) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setIsOpen(!isOpen);
+            }
+          }}
           className="cursor-pointer"
         >
           {children}
@@ -245,11 +318,14 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
         <Button
           ref={triggerRef as React.RefObject<HTMLButtonElement>}
           onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-label={resolvedTriggerAriaLabel}
           className="flex items-center gap-2 px-2 py-1 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          {triggerLabel && (
+          {resolvedTriggerLabel && (
             <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {triggerLabel}
+              {resolvedTriggerLabel}
             </Span>
           )}
           {triggerIconName && (

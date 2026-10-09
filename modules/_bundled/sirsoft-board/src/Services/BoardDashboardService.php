@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Helpers\TimezoneHelper;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
@@ -46,7 +47,7 @@ class BoardDashboardService
      */
     public function getOverview(): array
     {
-        $today = CarbonImmutable::today()->toDateString();
+        $today = $this->siteToday()->toDateString();
         $row = $this->boardStatRepository->findByDate($today);
 
         return [
@@ -75,7 +76,7 @@ class BoardDashboardService
      */
     public function getPostGraph(int $graphDays = 7): array
     {
-        $today = CarbonImmutable::today();
+        $today = $this->siteToday();
         $currentStart = $today->subDays($graphDays - 1);
         $previousStart = $today->subDays($graphDays * 2 - 1);
         $previousEnd = $currentStart->subDay();
@@ -167,7 +168,7 @@ class BoardDashboardService
      */
     public function aggregateRecentDays(int $days = 7): array
     {
-        $today = CarbonImmutable::today();
+        $today = $this->siteToday();
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
@@ -185,6 +186,20 @@ class BoardDashboardService
         }
 
         return $result;
+    }
+
+    /**
+     * 사이트 표준시의 오늘(0시)을 돌려줍니다.
+     *
+     * 집계 표(board_stats)는 모든 운영자가 함께 보는 하루 1행이라 보는 사람마다 하루 경계를 달리할 수 없다.
+     * 방문자 통계처럼 사이트 표준시의 하루로 행을 만들고 읽는다 — UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이
+     * 전날 행에 들어가고 「오늘」 카드가 아침 9시까지 어제 행을 읽는다(7.1.0 O-CF3).
+     *
+     * @return CarbonImmutable 사이트 표준시 오늘 0시
+     */
+    public function siteToday(): CarbonImmutable
+    {
+        return CarbonImmutable::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
     }
 
     /**

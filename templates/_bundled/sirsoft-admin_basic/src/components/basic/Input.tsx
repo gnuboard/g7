@@ -1,5 +1,6 @@
 // e2e:allow basic Input 디폴트 시맨틱(.input/.checkbox/.radio) 머지 — 동작 무변, 외형 통일 시범. 패턴 확정 후 다음 사이클에 E2E spec 일괄 작성 예정.
 import React, { useRef, useCallback, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -166,6 +167,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 
   // HTML 표준 속성이 아닌 것들을 필터링 (템플릿 엔진 내부 속성)
   const { loadingactions, formdata, ...validProps } = props as any;
+
+  // 곁 라벨(`<label class="form-label">`)을 이름으로 잇는다 — 없으면 placeholder 값이 이름으로 읽혔다(7.1.0 J D-J7)
+  useAdjacentLabel(internalRef as React.RefObject<HTMLElement | null>, !isCheckableType);
 
   // radio/checkbox: checked 속성 사용
   // text input: value 속성 사용 (IME 처리 포함)

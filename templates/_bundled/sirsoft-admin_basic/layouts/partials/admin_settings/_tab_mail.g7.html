@@ -1,5 +1,5 @@
 <!-- 메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.
-  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다. -->
+  메일 본문 템플릿은 이 탭이 아니라 알림 정의 탭(`_tab_notification_definitions`)이 다룬다. -->
 <partial description="환경설정 메일 탭 콘텐츠">
   <div data-ref="tab_content_mail" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'mail'}}">
     <div data-ref="card_mail_settings" class="admin-card">

@@ -225,7 +225,8 @@
                 },
                 "bulk_delete": {
                     "title": "Delete the selected wishlist items?",
-                    "message": "Delete {{count}} selected item(s)?",
+                    "message": "Delete {{count}} selected items?",
+                    "message_one": "Delete {{count}} selected item?",
                     "deleting": "Deleting..."
                 }
             }
@@ -287,7 +288,8 @@
                 },
                 "bulk_delete": {
                     "title": "Delete the selected cart items?",
-                    "message": "Delete {{count}} selected item(s)?",
+                    "message": "Delete {{count}} selected items?",
+                    "message_one": "Delete {{count}} selected item?",
                     "deleting": "Deleting..."
                 }
             }
@@ -356,7 +358,8 @@
                 },
                 "bulk_delete": {
                     "title": "Delete the selected addresses?",
-                    "message": "Deletes the {{count}} selected addresses."
+                    "message": "Deletes the {{count}} selected addresses.",
+                    "message_one": "Deletes the {{count}} selected address."
                 }
             }
         },
@@ -424,7 +427,8 @@
                 },
                 "bulk_delete": {
                     "title": "Delete the selected inquiries?",
-                    "message": "Delete {{count}} selected inquiry(ies)?",
+                    "message": "Delete {{count}} selected inquiries?",
+                    "message_one": "Delete {{count}} selected inquiry?",
                     "deleting": "Deleting..."
                 },
                 "reply": {

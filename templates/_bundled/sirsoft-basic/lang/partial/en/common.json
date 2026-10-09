@@ -13,6 +13,7 @@
   "create": "Create",
   "search": "Search",
   "search_placeholder": "Search...",
+  "no_results": "No results found",
   "back": "Back",
   "next": "Next",
   "prev": "Previous",
@@ -62,5 +63,14 @@
   "last_page": "Last page",
   "page_n": "Page {{n}}",
   "currency_unit": "",
-  "select_all": "Select all"
+  "select_all": "Select all",
+  "file_input": {
+    "clear": "Clear file",
+    "browse": "Browse",
+    "no_file": "No file selected",
+    "too_large": "File size exceeds the {{size}}MB limit."
+  },
+  "theme_select": "Theme",
+  "expand": "Expand",
+  "collapse": "Collapse"
 }

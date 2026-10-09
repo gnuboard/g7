@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Console;
 
+use App\Enums\ExtensionOwnerType;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -68,6 +70,17 @@ class PlaywrightIssueTokenScopeTest extends TestCase
      */
     public function test_scope_suffix_grants_permission_with_that_scope(): void
     {
+        // 발급 커맨드는 없는 권한을 거절하고 만들지 않는다(7.1.0 O-D2) — 코어 정의 권한 두 개가 DB 에 있게 한다.
+        foreach (['core.users.read', 'core.dashboard.read'] as $identifier) {
+            Permission::firstOrCreate(['identifier' => $identifier], [
+                'name' => ['ko' => $identifier, 'en' => $identifier],
+                'description' => ['ko' => $identifier, 'en' => $identifier],
+                'extension_type' => ExtensionOwnerType::Core,
+                'extension_identifier' => 'core',
+                'type' => 'admin',
+            ]);
+        }
+
         $this->artisan('playwright:issue-token', [
             '--permissions' => ['core.users.read:self', 'core.dashboard.read'],
             '--no-admin-role' => true,

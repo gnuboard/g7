@@ -12,6 +12,7 @@
       "created_asc": "Oldest First"
     },
     "products_count": "{{count}} products",
+    "products_count_one": "{{count}} product",
     "empty": "No brands registered"
   },
   "info": {
@@ -51,6 +52,7 @@
     "message_suffix": " brand. Are you sure you want to delete it?",
     "cannot_delete_title": "Cannot Delete",
     "has_products_cannot_delete": "There are {count} products linked to this brand. Please change the brand of products first.",
+    "has_products_cannot_delete_one": "There is {count} product linked to this brand. Please change the brand of the product first.",
     "irreversible_warning": "This action cannot be undone. Are you sure you want to proceed?"
   },
   "messages": {

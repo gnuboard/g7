@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 
@@ -145,6 +145,9 @@ export const Modal: React.FC<ModalProps> = ({
     : closeOnBackdropClick;
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  // 제목 id 는 창마다 달라야 한다 — 고정 `modal-title` 이면 겹친 창(정보 위 라이선스 등)의 이름이
+  // 문서에서 먼저 나온 아래 창 제목으로 읽혔다(#736 F 실측). 클래스 `modal-title` 은 그대로 둔다.
+  const titleId = `modal-title-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(#736 S2 — 열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
   // 순서는 열린 시점으로 정하므로 onClose·closeOnEscape 는 ref 로 읽어 다시 그려져도 순서가 바뀌지 않게 한다.
@@ -163,14 +166,20 @@ export const Modal: React.FC<ModalProps> = ({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || openModalStack[openModalStack.length - 1] !== token) return;
+      // 창 안에서 펼친 팝업(선택 목록·태그 메뉴 등)이 있으면 이 Esc 는 팝업 몫이다 — 팝업이 자기 리스너로 닫는다.
+      // 창과 팝업이 각자 document 리스너로 Esc 를 받아, 목록을 펼친 채 누른 Esc 한 번에 창까지 닫혔다(7.1.0 J D-J3).
+      // 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
+      if (modalRef.current?.querySelector('[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])')) return;
       if (closeOnEscapeRef.current) {
         onCloseRef.current();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
+    // capture 단계에서 판정한다 — 입력칸에 초점이 있는 팝업(태그 입력·검색 선택)은 Esc 를 자기 요소에서 먼저 받아
+    // 목록을 닫으므로, bubble 단계에서 보면 `aria-expanded` 가 이미 false 라 창까지 닫혔다(회원 역할 일괄 변경 창 E2E).
+    document.addEventListener('keydown', handleEscape, true);
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleEscape, true);
       const index = openModalStack.indexOf(token);
       if (index !== -1) openModalStack.splice(index, 1);
     };
@@ -287,7 +296,7 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-labelledby={title ? titleId : undefined}
       >
         {/* Header */}
         {(title || titlePrefix || titleSuffix || showCloseButton) && (
@@ -297,7 +306,7 @@ export const Modal: React.FC<ModalProps> = ({
               {renderLayoutComponents(titlePrefix, 'title-prefix')}
               {title && (
                 <Div
-                  id="modal-title"
+                  id={titleId}
                   className="modal-title"
                 >
                   {title}

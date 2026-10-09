@@ -16,7 +16,7 @@
       <div class="min-w-0 space-y-1">
         <p data-if="{{!!claim.data?.claim?.collection_due_date_formatted}}" class="text-sm text-indigo-800 dark:text-indigo-200">$t:claim.detail.advance_exchange_notice|date={{claim.data?.claim?.collection_due_date_formatted ?? ''}}</p>
         <p data-if="{{!claim.data?.claim?.collection_due_date_formatted}}" class="text-sm text-indigo-800 dark:text-indigo-200">$t:claim.detail.advance_exchange_notice_no_due</p>
-        <span data-if="{{claim.data?.claim?.is_collection_overdue === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.collection_overdue|days={{claim.data?.claim?.collection_overdue_days ?? 0}}</span>
+        <span data-if="{{claim.data?.claim?.is_collection_overdue === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.collection_overdue|count={{claim.data?.claim?.collection_overdue_days ?? 0}}|days={{claim.data?.claim?.collection_overdue_days ?? 0}}</span>
       </div>
     </div>
     <!-- 회수 — 교환·반품 공통. 운송장마다 한 묶음이고 묶음 안에 담긴 상품 × 수량과 도착 여부를 적는다. 송장 없이 회수도착한 상품은 「송장 없이 도착」 묶음으로 따로 온다(no_tracking). -->

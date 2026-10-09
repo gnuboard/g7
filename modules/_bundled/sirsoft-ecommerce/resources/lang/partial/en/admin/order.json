@@ -131,7 +131,8 @@
       "activity_log": "Activity Log"
     },
     "handler": {
-      "bulk_change_success": "Status of {{count}} option(s) has been changed.",
+      "bulk_change_success": "Status of {{count}} options has been changed.",
+      "bulk_change_success_one": "Status of {{count}} option has been changed.",
       "bulk_change_failed": "Failed to change status.",
       "memo_save_success": "Admin memo has been saved.",
       "address_save_success": "Delivery info has been saved."
@@ -158,6 +159,7 @@
         "message": "Message",
         "message_placeholder": "Enter message content",
         "char_count": "{{count}} chars",
+        "char_count_one": "{{count}} char",
         "plugin_label": "SMS Plugin",
         "cancel": "Cancel",
         "send": "Send"
@@ -170,6 +172,7 @@
         "message": "Message",
         "message_placeholder": "Enter message content",
         "char_count": "{{count}} chars",
+        "char_count_one": "{{count}} char",
         "cancel": "Cancel",
         "send": "Send",
         "validation_error": "Please check the input values.",
@@ -209,9 +212,11 @@
       },
       "batch_change": {
         "title": "Batch Change Confirmation",
-        "confirm_message": "Are you sure you want to batch change {{count}} selected product(s)?",
+        "confirm_message": "Are you sure you want to batch change {{count}} selected products?",
+        "confirm_message_one": "Are you sure you want to batch change {{count}} selected product?",
         "confirm_prefix": "Change",
-        "confirm_count": "{{count}} selected product(s) to",
+        "confirm_count": "{{count}} selected products to",
+        "confirm_count_one": "{{count}} selected product to",
         "confirm_status": "{{status}}",
         "confirm_suffix": "?",
         "status_label": "Status:",
@@ -387,6 +392,7 @@
       "per_page": "Per Page:",
       "per_page_option": "{{count}}",
       "items_count": "{{count}} items",
+      "items_count_one": "{{count}} item",
       "columns": {
         "date": "Date",
         "actor": "Actor",
@@ -487,6 +493,7 @@
     },
     "start_date": "Start Date",
     "end_date": "End Date",
+    "site_day_notice": "Filtered by the same site time zone ({{timezone}}) day as the dashboard \"Today\" badges. Change the dates or period and search to switch back to your own time zone.",
     "date_quick": {
       "today": "Today",
       "week": "1 Week",
@@ -676,8 +683,10 @@
       "description": "Select the range of orders to download.",
       "option_search": "Download with current search conditions",
       "option_search_desc": "Total {{count}} orders will be downloaded.",
+      "option_search_desc_one": "Total {{count}} order will be downloaded.",
       "option_selected": "Download selected orders only",
       "option_selected_desc": "{{count}} orders will be downloaded.",
+      "option_selected_desc_one": "{{count}} order will be downloaded.",
       "cancel": "Cancel",
       "download": "Download"
     },
@@ -715,7 +724,8 @@
     "confirmed": "Confirmed"
   },
   "datagrid": {
-    "total_count": "Total {count} items"
+    "total_count": "Total {count} items",
+    "total_count_one": "Total {count} item"
   },
   "message": {
     "no_orders": "No orders found"
@@ -741,8 +751,10 @@
     "download_failed": "Failed to download the Excel file",
     "option_search": "Download with current search criteria",
     "option_search_desc": "Total {{count}} orders will be downloaded",
+    "option_search_desc_one": "Total {{count}} order will be downloaded",
     "option_selected": "Download selected orders only",
-    "option_selected_desc": "{{count}} orders will be downloaded"
+    "option_selected_desc": "{{count}} orders will be downloaded",
+    "option_selected_desc_one": "{{count}} order will be downloaded"
   },
   "bulk": {
     "selected_count": "{{count}} selected",
@@ -759,6 +771,7 @@
     "tracking_placeholder": "Enter tracking number",
     "confirm_title": "Confirm Bulk Changes",
     "confirm_message": "The following changes will be applied to {{count}} selected orders.",
+    "confirm_message_one": "The following changes will be applied to {{count}} selected order.",
     "confirm_status_label": "Order Status: ",
     "confirm_carrier_label": "Carrier: ",
     "confirm_tracking_label": "Tracking Number: ",

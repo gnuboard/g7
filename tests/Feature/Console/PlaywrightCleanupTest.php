@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Console;
 
+use App\Enums\ExtensionOwnerType;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
@@ -245,6 +248,7 @@ class PlaywrightCleanupTest extends TestCase
         // 스키마를 다시 만들지 않으므로 기존 잔여물이 있을 수 있다 — 「없는 상태」를 먼저 만든다.
         // 트랜잭션 안이라 이 삭제도 테스트 종료 시 되돌아간다.
         Role::where('identifier', 'like', 'playwright_test_%')->delete();
+        $this->leftoverShapedPermissions()->each(fn (Permission $permission) => $permission->delete());
 
         $this->assertSame(
             0,
@@ -255,5 +259,131 @@ class PlaywrightCleanupTest extends TestCase
         $this->artisan('playwright:cleanup')
             ->expectsOutputToContain('회수할 Playwright 잔여물이 없습니다.')
             ->assertExitCode(0);
+    }
+
+    /**
+     * 발급 커맨드가 없는 권한 식별자로 토큰을 받을 때 만드는 모양의 권한 행을 만듭니다.
+     *
+     * 이름·설명이 식별자 그대로이고, 코어 소유이며, 트리 부모가 없다(`PlaywrightIssueToken::makeAdminUser`).
+     *
+     * @param  string  $identifier  권한 식별자
+     * @return Permission 생성된 권한
+     */
+    private function makeIssuedPermission(string $identifier): Permission
+    {
+        return Permission::create([
+            'identifier' => $identifier,
+            'name' => ['ko' => $identifier, 'en' => $identifier],
+            'description' => ['ko' => $identifier, 'en' => $identifier],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => 'admin',
+        ]);
+    }
+
+    /**
+     * 발급 커맨드 모양(이름 = 식별자 · 코어 소유 · 부모 없음)의 권한 행을 모읍니다.
+     *
+     * @return Collection<int, Permission> 해당 권한들
+     */
+    private function leftoverShapedPermissions(): Collection
+    {
+        return Permission::query()
+            ->whereNull('parent_id')
+            ->where('extension_identifier', 'core')
+            ->get()
+            ->filter(fn (Permission $permission) => ($permission->name['ko'] ?? null) === $permission->identifier);
+    }
+
+    /**
+     * 발급 커맨드가 만든 권한 행 중 테스트 역할 말고는 쓰는 곳이 없는 것을 함께 회수한다(7.1.0 O-D2 · 결정 P8).
+     *
+     * 게시판이 생기기 전(또는 지워진 뒤) 그 게시판 권한으로 토큰을 받으면 코어 소유·이름 = 식별자인 권한 행이
+     * 남아 관리자 권한 트리에 식별자 그대로 보였다. 정당한 권한(사람이 읽는 이름)·사람 역할이 쓰는 권한은 남긴다.
+     *
+     * @scenario mode=delete
+     *
+     * @effects leftover_permissions_removed, legitimate_permissions_kept
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reclaims_issued_permission_rows_only(): void
+    {
+        $normalRole = $this->makeRole('editor_perm_');
+        $leftoverRole = $this->makeRole('playwright_test_perm_');
+
+        $onlyTestRole = $this->makeIssuedPermission('sirsoft-board.g2s-'.$this->suffix.'.posts.read');
+        $orphan = $this->makeIssuedPermission('sirsoft-board.g2m-'.$this->suffix.'.comments.write');
+        $usedByHuman = $this->makeIssuedPermission('sirsoft-board.g2h-'.$this->suffix.'.posts.read');
+        $legitimate = Permission::create([
+            'identifier' => 'core.qa_legit_'.$this->suffix,
+            'name' => ['ko' => '정당한 권한', 'en' => 'Legit permission'],
+            'description' => ['ko' => '사람이 읽는 이름', 'en' => 'Human name'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => 'admin',
+        ]);
+
+        $leftoverRole->permissions()->sync([$onlyTestRole->id, $usedByHuman->id]);
+        $normalRole->permissions()->sync([$usedByHuman->id]);
+
+        $this->artisan('playwright:cleanup')->assertExitCode(0);
+
+        $this->assertDatabaseMissing('permissions', ['id' => $onlyTestRole->id]);
+        $this->assertDatabaseMissing('permissions', ['id' => $orphan->id]);
+        $this->assertDatabaseHas('permissions', ['id' => $usedByHuman->id]);
+        $this->assertDatabaseHas('permissions', ['id' => $legitimate->id]);
+        $this->assertDatabaseHas('role_permissions', ['role_id' => $normalRole->id, 'permission_id' => $usedByHuman->id]);
+    }
+
+    /**
+     * 코어가 정의한 권한 식별자는 이름이 식별자와 같아도 지우지 않는다.
+     *
+     * @scenario mode=delete
+     *
+     * @effects legitimate_permissions_kept
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_defined_permission_identifier_is_never_reclaimed(): void
+    {
+        $identifier = 'core.users.read';
+        $existing = Permission::where('identifier', $identifier)->first();
+
+        if ($existing === null) {
+            $existing = $this->makeIssuedPermission($identifier);
+        } else {
+            $existing->forceFill(['name' => ['ko' => $identifier, 'en' => $identifier], 'parent_id' => null])->save();
+        }
+
+        $this->artisan('playwright:cleanup')->assertExitCode(0);
+
+        $this->assertDatabaseHas('permissions', ['id' => $existing->id]);
+    }
+
+    /**
+     * --dry-run 은 권한 행도 세기만 하고, --keep-hours 는 최근 권한 행을 남긴다.
+     *
+     * @scenario mode=dry_run
+     *
+     * @effects nothing_deleted_on_dry_run, recent_leftovers_kept
+     *
+     * @return void 반환값 없음
+     */
+    public function test_permission_rows_respect_dry_run_and_keep_hours(): void
+    {
+        $old = $this->makeIssuedPermission('sirsoft-board.g2o-'.$this->suffix.'.posts.read');
+        DB::table('permissions')->where('id', $old->id)->update(['created_at' => now()->subHours(5)]);
+        $recent = $this->makeIssuedPermission('sirsoft-board.g2r-'.$this->suffix.'.posts.read');
+
+        $this->artisan('playwright:cleanup --dry-run')
+            ->expectsOutputToContain('권한')
+            ->assertExitCode(0);
+        $this->assertDatabaseHas('permissions', ['id' => $old->id]);
+
+        $this->artisan('playwright:cleanup --keep-hours=2')->assertExitCode(0);
+
+        $this->assertDatabaseMissing('permissions', ['id' => $old->id]);
+        $this->assertDatabaseHas('permissions', ['id' => $recent->id]);
     }
 }

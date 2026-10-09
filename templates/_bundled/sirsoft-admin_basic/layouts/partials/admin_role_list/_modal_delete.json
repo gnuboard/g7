@@ -22,6 +22,24 @@
             "text": "$t:admin.roles.modals.delete_confirm"
         },
         {
+            "comment": "어떤 역할을 지우는지 창만 보고 알 수 있게 목록이 담아 준 이름을 보인다(예약 작업 삭제 창과 같은 모양).",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-primary font-medium"
+                    },
+                    "text": "{{_global.deleteTargetName}}"
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Div",
             "props": {

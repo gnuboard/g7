@@ -122,7 +122,7 @@
             <td class="px-4 py-2 text-center">
               <!-- 반응이 쌓인 유형은 지울 수 없다 — 지우면 그 반응 행이 가리킬 유형이 없어진다.
                 disabled 버튼은 hover 이벤트가 죽어 툴팁이 뜨지 않으므로 래퍼 span 에 건다. -->
-              <div data-testid="reaction-type-delete-wrap-{{row.code}}" class="inline-block" title="{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + $t('sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix') : ''}}">
+              <div data-testid="reaction-type-delete-wrap-{{row.code}}" class="inline-block" title="{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}">
                 <button data-testid="reaction-type-delete-{{row.code}}" type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
                   <on type="click">
                     <!-- 행을 빼고 남은 자리 번호를 다시 매긴다. 게시판이 고른 코드 목록에서도

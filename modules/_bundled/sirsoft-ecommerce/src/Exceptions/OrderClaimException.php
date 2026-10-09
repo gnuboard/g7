@@ -25,7 +25,7 @@ class OrderClaimException extends Exception
         private string $messageKey,
         private array $replace = []
     ) {
-        parent::__construct(__($messageKey, $replace));
+        parent::__construct(trans_count($messageKey, $replace));
     }
 
     /**
@@ -100,6 +100,8 @@ class OrderClaimException extends Exception
         return new self('sirsoft-ecommerce::exceptions.claim_quantity_locked', [
             'requested' => $requested,
             'available' => $available,
+            // 「1 item」/「2 items」 를 고르는 수
+            'count' => $requested,
         ]);
     }
 
@@ -143,6 +145,7 @@ class OrderClaimException extends Exception
     {
         return new self('sirsoft-ecommerce::exceptions.claim_request_period_expired', [
             'days' => $days,
+            'count' => $days,
         ]);
     }
 
@@ -688,6 +691,7 @@ class OrderClaimException extends Exception
     {
         return new self('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', [
             'max' => $max,
+            'count' => $max,
         ]);
     }
 

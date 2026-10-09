@@ -111,3 +111,37 @@ describe('TagInput — Enter 키', () => {
     expect(tags).toEqual(['10.9.9.9']);
   });
 });
+
+// 7.1.0 영역 J D-J6(관측 O-CF6): 메뉴가 열린 채 Tab 으로 칸을 떠나면 react-select 기본값(tabSelectsValue)이
+// 포커스된 옵션을 골라, 회원 역할 칸에서 「관리자」 같은 역할이 의도치 않게 붙을 뻔했다. Tab 은 고르지 않고 떠난다.
+describe('TagInput — Tab 키', () => {
+  // @scenario mode=select_only, input=tab_with_open_menu
+  // @effects tag_input_tab_never_selects_option
+  it('고르기 전용 칸: 메뉴를 연 채 Tab 을 누르면 아무것도 선택하지 않는다', async () => {
+    const handleChange = vi.fn();
+    const user = userEvent.setup();
+
+    render(<TagInput value={[]} options={roleOptions} onChange={handleChange} creatable={false} />);
+
+    await user.click(screen.getByRole('combobox'));
+    await screen.findByText('회원');
+    await user.keyboard('{ArrowDown}');
+    await user.tab();
+
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  // @scenario mode=creatable, input=typed_then_tab
+  // @effects tag_input_tab_never_selects_option
+  it('만들기 칸: 친 글자는 Tab 으로 태그가 된다(종전 동작 유지)', async () => {
+    const handleChange = vi.fn();
+    const user = userEvent.setup();
+
+    render(<TagInput value={[]} options={[]} onChange={handleChange} creatable />);
+
+    await user.type(screen.getByRole('combobox'), 'abc');
+    await user.tab();
+
+    expect(lastValue(handleChange)).toEqual(['abc']);
+  });
+});

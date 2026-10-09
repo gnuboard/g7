@@ -462,6 +462,21 @@ return [
                     ['identifier' => 'core.user-notifications.delete', 'type' => 'user', 'name' => ['ko' => '알림 삭제', 'en' => 'Delete Notifications'], 'description' => ['ko' => '본인의 알림을 삭제할 수 있습니다.', 'en' => 'Can delete own notifications.'], 'order' => 3],
                 ],
             ],
+            // 사용자 API 의 본인 프로필(`/api/user/profile`·활동 기록)이 요구하는 권한. 라우트만 이 식별자를
+            // 걸고 정의가 없어 모든 회원이 403 이던 것을 정의로 채웠다(7.1.0 실측 A O-2). 비활성 상태 회원의
+            // 본인 정보 조회(`GET /api/me`·`GET /api/auth/user`)도 이 읽기 권한을 기준으로 허용한다(CheckUserStatus).
+            [
+                'identifier' => 'core.profile',
+                'name' => ['ko' => '내 정보 (사용자)', 'en' => 'My Profile (User)'],
+                'description' => ['ko' => '사용자 화면에서 본인 정보를 조회·수정하는 권한', 'en' => 'Permissions to view and edit own profile in the user UI'],
+                'category' => 'profile',
+                'order' => 7.65,
+                'type' => 'user',
+                'permissions' => [
+                    ['identifier' => 'core.profile.read', 'type' => 'user', 'name' => ['ko' => '내 정보 조회', 'en' => 'View My Profile'], 'description' => ['ko' => '본인 정보와 활동 기록을 조회할 수 있습니다. 계정이 비활성·차단 등 정상 상태가 아니어도 본인 정보 조회는 이 권한으로 허용됩니다.', 'en' => 'Can view own profile and activity history. Viewing own profile is allowed by this permission even when the account is not active (inactive, blocked, etc.).'], 'order' => 1],
+                    ['identifier' => 'core.profile.update', 'type' => 'user', 'name' => ['ko' => '내 정보 수정', 'en' => 'Edit My Profile'], 'description' => ['ko' => '본인 정보를 수정할 수 있습니다.', 'en' => 'Can edit own profile.'], 'order' => 2],
+                ],
+            ],
             [
                 'identifier' => 'core.identity',
                 'name' => ['ko' => '본인인증 (사용자)', 'en' => 'Identity Verification (User)'],
@@ -639,6 +654,7 @@ return [
             'attributes' => ['is_active' => true],
             'permissions' => [
                 'core.user-notifications.read', 'core.user-notifications.update', 'core.user-notifications.delete',
+                'core.profile.read', 'core.profile.update',
                 'core.identity.request', 'core.identity.verify', 'core.identity.cancel',
             ],
             // verify/cancel 은 본인 challenge(user_id 일치) 만 — PermissionMiddleware 의 scope=self 가드가 자동 검증

@@ -290,7 +290,7 @@
                             "props": {
                                 "className": "text-warning-soft flex-1 min-w-0"
                             },
-                            "text": "$t:admin.analytics.alerts.archive_stale|hours={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(5, 16).replace('-', '/')}}"
+                            "text": "$t:admin.analytics.alerts.archive_stale|count={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|hours={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(5, 16).replace('-', '/')}}"
                         },
                         {
                             "type": "basic",

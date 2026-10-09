@@ -62,7 +62,7 @@
                 <success>
                   <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}"/>
                   <refetch-data-source dataSourceId="gdprMyConsent"/>
-                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.renew_all_success|renewed={{response?.data?.renewed ?? 0}}"/>
+                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.renew_all_success|count={{response?.data?.renewed ?? 0}}|renewed={{response?.data?.renewed ?? 0}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :gdprBannerSubmittingAction="null"/>

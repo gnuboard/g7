@@ -64,6 +64,7 @@
     "delete_editor_label": "Confirm reaction deletion",
     "bulk_delete_title": "Delete the selected reactions?",
     "bulk_delete_confirm": "Delete {{count}} selected reactions? They disappear from the members' reaction lists.",
+    "bulk_delete_confirm_one": "Delete {{count}} selected reaction? It disappears from the member's reaction list.",
     "bulk_delete_editor_label": "Confirm bulk reaction deletion",
     "processing": "Processing..."
   },

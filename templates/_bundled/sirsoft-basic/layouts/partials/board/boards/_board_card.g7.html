@@ -12,7 +12,7 @@
         <h3 class="font-semibold text-gray-900 dark:text-white">{{board.name}}</h3>
       </div>
       <!-- 게시글 수 배지 -->
-      <span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">{{board.posts_count ?? 0}}개</span>
+      <span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">$t:board.post_count|count={{board.posts_count ?? 0}}</span>
     </div>
     <!-- 설명 -->
     <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{{board.description ?? ''}}</p>

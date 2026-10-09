@@ -1,0 +1,29 @@
+feature: 회원 상세 「인증 앱」 카드의 등록 여부 표시 (7.1.0 관측 R-26·B O-B5, 결정 2026-10-07)
+
+description: |
+  카드가 등록 여부를 보이지 않아 미등록 회원에게도 [강제 해제] 가 보였다. 관리자 회원 상세 응답에
+  `totp_enrollment {enrolled, enrolled_at}` 를 싣고(UserTotpEnrollmentInfoListener — `core.user.filter_resource_data`),
+  카드는 그 값으로 등록됨/미등록을 보이며 등록된 회원에게만 단추를 낸다. 값은 해제 권한
+  (`sirsoft-totp.credentials.delete`)을 가진 관리자의 관리자 응답에만 실린다 — 해제 라우트와 같은 경계.
+  「등록됨」은 확인까지 마친 등록(`confirmed_at`)만이다.
+
+axes:
+  viewer: [reset_permitted_admin, admin_without_reset_permission, member_self]
+  enrollment: [confirmed, none]
+
+exclusions:
+  - { viewer: admin_without_reset_permission, enrollment: none, reason: "권한이 없으면 등록 여부와 무관하게 값이 실리지 않는다 — confirmed 쪽 검증이 같은 경계" }
+  - { viewer: member_self, enrollment: none, reason: "본인 프로필에는 등록 여부와 무관하게 싣지 않는다 — confirmed 쪽 검증이 같은 경계" }
+
+effects:
+  - member_detail_reports_enrollment_to_reset_permitted_admin
+  - enrollment_hidden_without_reset_permission
+  - enrollment_absent_from_profile_response
+  - enrollment_status_listener_is_registered_by_the_plugin
+  - member_card_shows_enrollment_and_hides_reset_when_not_enrolled
+  - member_card_explains_missing_status_without_permission
+  - member_card_refreshes_after_reset
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/tests/Feature/TotpAdminEnrollmentStatusTest.php
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/layouts/totp-layouts.test.ts

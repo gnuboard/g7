@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use App\Repositories\Concerns\FiltersByDateRange;
@@ -105,7 +106,9 @@ class CollectFailureRepository implements CollectFailureRepositoryInterface
     {
         $query = AnalyticsCollectFailure::query();
 
-        $this->applyDateRangeFilter($query, 'occurred_at', $from, $to);
+        // 같은 익명화 실행이 방문 원장을 `visit_date`(사이트 표준시 일자)로 자른다 — 곁 원장도
+        // 사이트 표준시 하루로 잘라야 같은 기간을 가리킨다(UTC 하루면 한국 새벽 기록이 어긋난다).
+        $this->applyDateRangeFilterInTimezone($query, 'occurred_at', $from, $to, AnalyticsClock::siteTimezone());
 
         $query->orderBy('id')->chunkById(max(1, $chunkSize), $callback);
     }

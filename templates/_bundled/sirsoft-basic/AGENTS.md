@@ -183,6 +183,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 사용자 화면에서 변환표(`IconTypes.ts` 의 `iconNameMap`)에 없는 Lucide 식 이름(`log-out`·`alert-circle`·`loader-2` 등) | Font Awesome 6.4.0 이름(`right-from-bracket`·`circle-exclamation`·`spinner`) 또는 변환표에 있는 별칭 | 변환표에 없는 이름은 `fa-{이름}` 로 그대로 붙어 **빈칸**으로 그려진다. 관리자 화면에 들어가는 조각은 변환표가 없다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `extension_point` 의 콜백 액션을 `props` 에 선언 | 형제 키 `callbacks` 에 둔다 (`"callbacks": { "onAddressSelect": { … } }`) | 엔진은 `props` 를 **평가해** `extensionPointProps` 로, `callbacks` 를 **그대로** `extensionPointCallbacks` 로 넘기는데 주입된 컴포넌트가 읽는 자리는 후자다. `props` 에 두면 액션이 도달하지 않고, 도달해도 `{{$event.*}}` 가 `$event` 이전에 평가돼 빈 값으로 굳는다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데 고른 값만 폼에 안 돌아와, 그 필드가 필수면 저장에 영영 도달하지 못한다 |
 | 색 배경 유틸(`bg-blue-500` 등)을 `dark:` 짝 없이 쓰기 | 한 단계 밝은 짝을 함께 둔다(`bg-blue-600 dark:bg-blue-500`, `bg-blue-500 dark:bg-blue-400`) | 다크 모드에서 밝은 화면 색이 그대로 떠 배지·아바타 원만 튄다. 가드: audit `darkmode-class-pair` |
+| 동시에 여럿 그려질 수 있는 컴포넌트(`Modal` 등)에 고정 id(`id="modal-title"`)를 두고 `aria-labelledby` 로 잇기 | `useId()` 로 만든 id 를 쓴다(스타일·E2E 선택자는 클래스 `.modal-title`) | 창 위에 창이 열리면 id 가 겹쳐 위 창이 아래 창 제목으로 읽힌다(#736). 가드: `Modal.nestedEscape.test.tsx` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -191,9 +192,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 217개 | `vitest.config.ts` |
+| Vitest | 232개 | `vitest.config.ts` |
 | Playwright | 9개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 31개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

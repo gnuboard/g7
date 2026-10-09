@@ -47,7 +47,7 @@
     <!-- === 수량 제한 안내 (판매중일 때만) === -->
     <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; (product.data?.min_purchase_qty > 1 || product.data?.max_purchase_qty > 0)}}" class="px-1 mb-2 space-y-0.5">
       <span data-if="{{product.data?.min_purchase_qty > 1}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}</span>
-      <span data-if="{{product.data?.max_purchase_qty > 0}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.max_purchase_qty_notice|qty={{product.data?.max_purchase_qty}}</span>
+      <span data-if="{{product.data?.max_purchase_qty > 0}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}|qty={{product.data?.max_purchase_qty}}</span>
     </div>
     <!-- === 선택한 상품 섹션 (옵션 있는 상품, 총 금액 위에 표시, 판매중일 때만) === -->
     <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; _local.selectedOptionItems &amp;&amp; _local.selectedOptionItems.length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
@@ -58,7 +58,7 @@
           <!-- 상품 옵션명 + 삭제 버튼 -->
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{item.options ? Object.values(item.options).join(' / ') : ''}}</span>
-            <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+            <button type="button" aria-label="$t:common.delete" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
               <on type="click">
                 <!-- 쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다 -->
                 <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_local.selectedOptionItems}}"/>

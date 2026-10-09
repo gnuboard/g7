@@ -1,0 +1,20 @@
+feature: 엔진 — 문서 언어(<html lang>)를 앱 로케일에 맞춤 (engine-v1.78.1, 7.1.0 전수 실측 O-5)
+
+description: |
+  서버는 첫 응답의 `<html lang>` 을 요청 언어(Accept-Language·회원 언어)로 찍는다. 앱은 사용자가 고른 언어
+  (localStorage `g7_locale`)를 우선하고 언어를 바꿔도 페이지를 다시 받지 않으므로, 화면은 한국어인데
+  `<html lang="en">` 이 남았다. TemplateApp 이 시작할 때와 `changeLocale()` 때 문서 언어를 앱 로케일로 맞춘다
+  (밑줄 로케일은 서버 템플릿과 같이 하이픈으로 바꾼다).
+
+axes:
+  entry: [boot_with_saved_locale, change_locale]
+  locale_form: [plain, underscore]
+
+exclusions:
+  - { entry: boot_with_saved_locale, locale_form: underscore, reason: "시작 경로와 변경 경로가 같은 변환 함수를 쓰므로 밑줄 형태는 변경 경로 하나로 잠근다" }
+
+effects:
+  - document_lang_follows_app_locale
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.documentLang.test.ts

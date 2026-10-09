@@ -67,10 +67,11 @@ interface VisitRepositoryInterface
      * 지정한 날짜의 순방문자 수를 원장에서 직접 셉니다.
      *
      * 오늘 숫자는 집계 배치를 기다리면 최대 한 시간 늦으므로 원장을 바로 읽습니다.
+     * 일 집계와 같은 정의(방문자 유형별 순방문자의 합)로 셉니다.
      *
      * @param  string  $date  사이트 표준시 기준 일자 (Y-m-d)
      * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
-     * @return int 순방문자 수
+     * @return int 순방문자 수 (유형별 순방문자의 합)
      */
     public function uniqueVisitorsOnDate(string $date, array $visitorTypes = []): int;
 

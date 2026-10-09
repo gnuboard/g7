@@ -46,7 +46,7 @@
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <!-- 뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로 -->
-          <button class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button type="button" aria-label="$t:common.back" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
               <navigate path="{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"/>
             </on>

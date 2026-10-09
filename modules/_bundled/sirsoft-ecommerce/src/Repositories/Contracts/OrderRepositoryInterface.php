@@ -112,6 +112,17 @@ interface OrderRepositoryInterface
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 관리자 주문 목록과 같은 권한 범위·필터로 주문 수를 셉니다. (목록과 같은 출발 쿼리·필터 단일 출처를 그대로 쓴다)
+     *
+     * 대시보드 「오늘」 배지처럼 「이 숫자 = 그 조건으로 연 목록의 총 건수」여야 하는 값이 쓴다.
+     * 목록처럼 현재 인증 사용자의 주문 조회 권한 범위(`orders.read` 본인·역할 범위)를 건다 — 전체 권한이면 조건 없음.
+     *
+     * @param  array  $filters  목록 필터 조건 (OrderListRequest 검증값과 같은 키)
+     * @return int 조건에 맞는 주문 수
+     */
+    public function countWithListFilters(array $filters): int;
+
+    /**
      * 주문 생성
      *
      * @param  array  $data  주문 데이터

@@ -38,7 +38,7 @@
     <div data-ref="report_detail_wrapper" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reports.detail.page_title" description="$t:sirsoft-board.admin.reports.detail.page_description">
-        <button data-ref="refresh_button" class="btn-icon">
+        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다 -->
             <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="true">

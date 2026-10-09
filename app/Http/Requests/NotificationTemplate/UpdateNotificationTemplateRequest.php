@@ -116,7 +116,9 @@ class UpdateNotificationTemplateRequest extends FormRequest
     private function valueRulesFor(mixed $type): array
     {
         if ($type === 'specific_users') {
-            return ['nullable', 'array'];
+            // 키가 붙은 객체(`{"a":"uuid"}`)는 배열 규칙을 통과하지만 목록이 아니다 — 저장되면 편집 창이
+            // 그 값을 목록으로 다루다 어긋난다. 목록만 받는다.
+            return ['nullable', 'array', 'list'];
         }
 
         if ($type !== 'role') {
@@ -128,7 +130,8 @@ class UpdateNotificationTemplateRequest extends FormRequest
                 return;
             }
 
-            if (is_array($value) && count($value) === count(array_filter($value, 'is_string'))) {
+            // 문자열만 담긴 **목록**이어야 한다 — 키가 붙은 객체는 문자열만 담겨도 거절한다.
+            if (is_array($value) && array_is_list($value) && count($value) === count(array_filter($value, 'is_string'))) {
                 return;
             }
 
@@ -146,6 +149,26 @@ class UpdateNotificationTemplateRequest extends FormRequest
         return [
             'subject.required' => __('validation.required', ['attribute' => __('notification.subject')]),
             'body.required' => __('validation.required', ['attribute' => __('notification.body')]),
+        ];
+    }
+
+    /**
+     * 검증 항목 이름을 반환합니다.
+     *
+     * 수신자 칸은 규칙 줄 번호가 붙는 배열이라 이름을 주지 않으면 「recipients.0.relation」 같은
+     * 내부 키가 안내 문구에 그대로 나온다.
+     *
+     * @return array<string, string> 필드별 항목 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'recipients' => __('notification.validation.attributes.recipients'),
+            'recipients.*.type' => __('notification.validation.attributes.recipient_type'),
+            'recipients.*.value' => __('notification.validation.attributes.recipient_value'),
+            'recipients.*.value.*' => __('notification.validation.attributes.recipient_value'),
+            'recipients.*.relation' => __('notification.validation.attributes.recipient_relation'),
+            'recipients.*.exclude_trigger_user' => __('notification.validation.attributes.recipient_exclude_trigger_user'),
         ];
     }
 }

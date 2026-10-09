@@ -112,7 +112,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-600 dark:text-gray-400"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix"
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix|count={{_local.form?.mileage?.expiry_notification_days_before ?? 7}}"
                                 }
                             ]
                         }

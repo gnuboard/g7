@@ -14,6 +14,8 @@ import { describe, it, expect } from 'vitest';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import form from '../../layouts/admin_user_form.json';
+import enAuth from '../../lang/partial/en/auth.json';
+import koAuth from '../../lang/partial/ko/auth.json';
 
 function flatten(node: any): any[] {
   if (!node || typeof node !== 'object') return [];
@@ -61,6 +63,25 @@ describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
     expect(json).not.toContain('count=8');
     const reuse = flatten(hint).find((n) => String(n.if).includes('password_reuse_prevention_enabled'));
     expect(String(reuse?.if)).toContain(SELF);
+  });
+
+  /**
+   * 규칙 안내 줄은 운영자가 다른 회원의 비밀번호를 정하는 화면에도 뜬다. 「your user ID」처럼 읽는 사람 기준으로 쓰면
+   * 운영자 자신의 아이디를 넣지 말라는 뜻으로 읽힌다(7.1.0 실측 O-7) — 대상과 무관한 문장이어야 한다.
+   *
+   * @scenario actor=other, password=entered
+   * @effects rules_hint_wording_fits_admin_assignment
+   */
+  it('아이디 포함 금지 안내는 본인·다른 회원 어느 쪽에도 맞는 문장이다', () => {
+    const hint = find('password_rules_hint');
+    expect(JSON.stringify(hint)).toContain('auth.password_rules.identifier');
+
+    const en = (enAuth as any).password_rules.identifier as string;
+    const ko = (koAuth as any).password_rules.identifier as string;
+    expect(en).not.toMatch(/\byour\b/i);
+    expect(en).toMatch(/user ID/);
+    expect(ko).toContain('아이디(이메일 앞부분)');
+    expect(ko).not.toMatch(/본인|내 아이디/);
   });
 
   /**

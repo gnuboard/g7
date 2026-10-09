@@ -1294,7 +1294,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "disabled": true,
-                                                "value": "{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}",
+                                                "value": "{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}",
                                                 "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
                                             }
                                         },

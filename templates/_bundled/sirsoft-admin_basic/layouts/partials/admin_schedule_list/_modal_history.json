@@ -14,11 +14,12 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
+            "initGlobal": "scheduleHistory",
             "params": {
                 "page": "{{_global.historyPage ?? 1}}",
                 "per_page": 10
             },
-            "comment": "이력은 목록 응답에 없어 창 안에서 따로 받는다. 쪽 번호를 전역에서 읽으므로, 아래 쪽 이동이 그 값을 바꾸고 이 데이터소스를 다시 불러 다음 쪽을 가져온다."
+            "comment": "이력은 목록 응답에 없어 창 안에서 따로 받는다. 쪽 번호를 전역에서 읽으므로, 아래 쪽 이동이 그 값을 바꾸고 이 데이터소스를 다시 불러 다음 쪽을 가져온다.\n      창의 데이터소스는 창이 열릴 때 받은 값을 id 로 화면에 싣지 않고 initGlobal 로만 넘긴다 — 그래서 받은 이력을\n      `_global.scheduleHistory`({data, pagination})로 받아 읽는다(id 로 읽으면 열 때마다 「실행 이력이 없습니다」만 보였다)."
         }
     ],
     "id": "schedule_history_modal",
@@ -49,7 +50,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{!schedule_history?.data?.data || schedule_history?.data?.data?.length === 0}}",
+            "if": "{{_global.scheduleHistory && (!_global.scheduleHistory?.data || _global.scheduleHistory?.data?.length === 0)}}",
             "props": {
                 "className": "py-8 text-center text-gray-500 dark:text-gray-400"
             },
@@ -72,7 +73,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{schedule_history?.data?.data && schedule_history?.data?.data?.length > 0}}",
+            "if": "{{_global.scheduleHistory?.data && _global.scheduleHistory?.data?.length > 0}}",
             "props": {
                 "className": "space-y-3 max-h-96 overflow-y-auto"
             },
@@ -81,7 +82,7 @@
                     "type": "basic",
                     "name": "Div",
                     "iteration": {
-                        "source": "schedule_history?.data?.data",
+                        "source": "_global.scheduleHistory?.data",
                         "item_var": "item",
                         "index_var": "$idx"
                     },
@@ -156,7 +157,7 @@
                                     "props": {
                                         "className": "text-tertiary"
                                     },
-                                    "text": "{{item.started_at}}"
+                                    "text": "{{item.started_at | datetime}}"
                                 }
                             ]
                         },
@@ -182,8 +183,8 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{item.triggered_by_name}}",
-                                    "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by_name}}"
+                                    "if": "{{item.triggered_by?.name}}",
+                                    "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}"
                                 }
                             ]
                         },
@@ -230,7 +231,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{((schedule_history?.data?.pagination?.last_page ?? 0) > 1) || (schedule_history?.data?.pagination?.has_more_pages === true) || ((schedule_history?.data?.pagination?.current_page ?? 1) > 1)}}",
+            "if": "{{((_global.scheduleHistory?.pagination?.last_page ?? 0) > 1) || (_global.scheduleHistory?.pagination?.has_more_pages === true) || ((_global.scheduleHistory?.pagination?.current_page ?? 1) > 1)}}",
             "props": {
                 "className": "mt-4 flex justify-center"
             },
@@ -262,10 +263,10 @@
                         }
                     ],
                     "props": {
-                        "currentPage": "{{schedule_history?.data?.pagination?.current_page ?? 1}}",
-                        "totalPages": "{{schedule_history?.data?.pagination?.last_page ?? null}}",
-                        "hasMorePages": "{{schedule_history?.data?.pagination?.has_more_pages ?? false}}",
-                        "totalItems": "{{schedule_history?.data?.pagination?.total ?? 0}}",
+                        "currentPage": "{{_global.scheduleHistory?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{_global.scheduleHistory?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}",
+                        "totalItems": "{{_global.scheduleHistory?.pagination?.total ?? 0}}",
                         "perPage": 10,
                         "showAlways": false
                     }

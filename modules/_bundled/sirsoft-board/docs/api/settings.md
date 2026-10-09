@@ -369,7 +369,7 @@ HTTP/1.1 200
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
 | report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
 | report_policy.auto_hide_target | body | string | 아니오 | `post`, `comment`, `both` | 자동 숨김 대상 (게시글 / 댓글 / 둘 다) |
-| report_policy.daily_report_limit | body | integer | 아니오 | min 0, max 100 | 사용자별 일일 신고 한도 |
+| report_policy.daily_report_limit | body | integer | 아니오 | min 0, max 100 | 사용자별 일일 신고 한도 — 「하루」는 신고하는 회원의 시간대 기준 |
 | report_policy.rejection_limit_count | body | integer | 아니오 | min 0, max 50 | 신고 기각 한도 (누적 기각 횟수 제한) |
 | report_policy.rejection_limit_days | body | integer | 아니오 | min 1, max 365 | 신고 기각 한도 산정 기간(일) |
 | report_policy.notify_admin_on_report | body | boolean | 아니오 | — | 신고 접수 시 관리자 알림 발송 여부 |

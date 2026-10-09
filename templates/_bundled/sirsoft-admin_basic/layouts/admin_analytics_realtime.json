@@ -84,9 +84,6 @@
             "comment": "소켓 설정 여부 배지용."
         }
     ],
-    "computed": {
-        "canReadUsers": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}"
-    },
     "permissions": [
         "core.analytics.read"
     ],
@@ -563,10 +560,10 @@
                                                                     "text": "{{row.ip}}"
                                                                 },
                                                                 {
-                                                                    "comment": "지금 보고 있는 사람이 회원이면 그 자리에서 회원 화면으로 건너뛴다(§4.10 「프로필 링크」).\n                       목록 화면과 같은 규율 — 목적지(/admin/users/{uuid})는 core.users.read 를 요구하므로\n                       그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.",
+                                                                    "comment": "지금 보고 있는 사람이 회원이면 그 자리에서 회원 화면으로 건너뛴다(§4.10 「프로필 링크」).\n                       목록 화면과 같은 규율 — 목적지(/admin/users/{uuid})는 core.users.read 를 요구하므로\n                       그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.\n                       표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4).",
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "if": "{{!!row.user?.name && !_computed.canReadUsers}}",
+                                                                    "if": "{{!!row.user?.name && !(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}",
                                                                     "props": {
                                                                         "className": "text-hint block"
                                                                     },
@@ -576,7 +573,7 @@
                                                                     "id": "realtime_member_link_{{$idx}}",
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{!!row.user?.uuid && _computed.canReadUsers}}",
+                                                                    "if": "{{!!row.user?.uuid && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}",
                                                                     "actions": [
                                                                         {
                                                                             "type": "click",

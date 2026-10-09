@@ -185,8 +185,10 @@ return [
         'settings_test_driver_connection' => '드라이버 연결 테스트',
 
         // 인증
-        'auth_login' => '관리자 로그인',
-        'auth_logout' => '관리자 로그아웃',
+        'auth_login' => '로그인',
+        'auth_admin_login' => '관리자 로그인',
+        'auth_logout' => '로그아웃',
+        'auth_admin_logout' => '관리자 로그아웃',
         'auth_register' => '회원가입',
         'auth_forgot_password' => '비밀번호 찾기 요청',
         'auth_reset_password' => '비밀번호 재설정',

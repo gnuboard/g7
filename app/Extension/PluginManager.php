@@ -22,6 +22,7 @@ use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
+use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
@@ -71,12 +72,14 @@ class PluginManager implements PluginManagerInterface
 {
     use ResolvesExtensionIcons;
     use ResolvesExtensionSharedRecords;
+    use ResolvesUpdateCoreCompatibility;
     use Traits\CachesPluginStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\RefreshesLayoutExtensions;
+    use Traits\ReloadsChangedExtensionClass;
     use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesSeoVariables;
@@ -209,10 +212,17 @@ class PluginManager implements PluginManagerInterface
                 // (_bundled에서 이미 로드된 경우 중복 선언 방지)
                 if (! class_exists($pluginClass, false)) {
                     require_once $pluginFile;
+                    $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
                 }
 
                 if (class_exists($pluginClass)) {
-                    $plugin = new $pluginClass;
+                    // 같은 프로세스에서 진입 파일이 바뀌었으면(업데이트 직후) 새 정의로 만든다 — 구버전 인스턴스의
+                    // getHookListeners() 로 훅 캐시를 구우면 새 리스너가 빠진다(mem:hook-cache-misses-last-updated-extension).
+                    $plugin = $this->instantiateCurrentExtensionClass(
+                        $pluginClass,
+                        $pluginFile,
+                        fn () => $this->evalFreshPlugin($pluginFile, $pluginClass, $directory)
+                    );
                     if ($plugin instanceof PluginInterface) {
                         $this->plugins[$pluginName] = $plugin;
 
@@ -879,15 +889,18 @@ class PluginManager implements PluginManagerInterface
                     ];
                 })->toArray(),
                 'dependent_modules' => $dependentModules->map(function (Module $module) {
+                    // 경고 창이 의존 확장마다 「v{버전}」 배지를 그린다 — 버전이 없으면 「v」 만 남는다.
                     return [
                         'identifier' => $module->identifier,
                         'name' => $module->getLocalizedName(),
+                        'version' => $module->version,
                     ];
                 })->toArray(),
                 'dependent_plugins' => $dependentPlugins->map(function (Plugin $plugin) {
                     return [
                         'identifier' => $plugin->identifier,
                         'name' => $plugin->getLocalizedName(),
+                        'version' => $plugin->version,
                     ];
                 })->toArray(),
                 'message' => __('plugins.warnings.has_dependents'),
@@ -1042,8 +1055,7 @@ class PluginManager implements PluginManagerInterface
      * @param  bool  $deleteData  플러그인 데이터(테이블) 삭제 여부
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
-     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
-     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
      *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @return bool 제거 성공 여부
      *
@@ -1428,6 +1440,12 @@ class PluginManager implements PluginManagerInterface
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
                     'update_source' => $record->update_source ?? null,
+                    // 업데이트 대상 버전의 코어 호환 — 업데이트 창의 경고·강제 업데이트 체크가 읽는다(업데이트가 있을 때만).
+                    ...($updateAvailable ? $this->buildUpdateCompatibilityFields($this->resolveUpdateTargetRequiredCoreVersion(
+                        $record->update_source ?? null,
+                        $this->findBundledPluginManifest($identifier),
+                        $plugin->getRequiredCoreVersion()
+                    )) : []),
                     'github_url' => $plugin->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
                     'hidden' => $plugin->isHidden(),
@@ -2399,7 +2417,7 @@ class PluginManager implements PluginManagerInterface
      *
      * _bundled 에 plugin.php 가 부재한 외부 설치 플러그인(GitHub 직접 설치 등) 은 skip.
      *
-     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>}
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자와 실패 사유
      *
      * @since 7.0.0-beta.4
      */
@@ -3985,8 +4003,12 @@ class PluginManager implements PluginManagerInterface
         if (class_exists($pluginClass, false)) {
             // 클래스가 이미 메모리에 있으면 eval로 새 버전 로드
             $plugin = $this->evalFreshPlugin($pluginFile, $pluginClass, $pluginDir);
+            if ($plugin !== null) {
+                $this->rememberFreshExtensionInstance($pluginClass, $pluginFile, $plugin);
+            }
         } else {
             require_once $pluginFile;
+            $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
             if (class_exists($pluginClass)) {
                 $plugin = new $pluginClass;
             }
@@ -4070,7 +4092,7 @@ class PluginManager implements PluginManagerInterface
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  플러그인 식별자
-     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
+     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
      */
     public function checkPluginUpdate(string $identifier): array
     {
@@ -4129,7 +4151,7 @@ class PluginManager implements PluginManagerInterface
         // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
         if (isset($this->bundledPlugins[$identifier])) {
             $bundledVersion = $this->bundledPlugins[$identifier]['version'] ?? null;
-            $bundledRequired = $this->bundledPlugins[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+            $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $this->bundledPlugins[$identifier], $activeRequiredCoreVersion);
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                 return $this->buildPluginUpdateResponse(
                     true,
@@ -4143,7 +4165,7 @@ class PluginManager implements PluginManagerInterface
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
-                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+                $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $bundledMeta[$identifier], $activeRequiredCoreVersion);
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                     return $this->buildPluginUpdateResponse(
                         true,
@@ -4176,7 +4198,7 @@ class PluginManager implements PluginManagerInterface
      * @param  string|null  $latestVersion  최신 버전
      * @param  string|null  $currentVersion  현재 설치된 버전
      * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약 (null 이면 호환으로 간주)
-     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string} 업데이트 확인 응답(코어 호환 필드 포함)
      */
     protected function buildPluginUpdateResponse(
         bool $updateAvailable,
@@ -4190,16 +4212,14 @@ class PluginManager implements PluginManagerInterface
             'update_source' => $updateSource,
             'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
-            'required_core_version' => $requiredCoreVersion,
-            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
-            'current_core_version' => CoreVersionChecker::getCoreVersion(),
+            ...$this->buildUpdateCompatibilityFields($requiredCoreVersion),
         ];
     }
 
     /**
      * 설치된 모든 플러그인의 업데이트를 확인하고 DB를 갱신합니다.
      *
-     * @return array{updated_count: int, details: array}
+     * @return array{updated_count: int, details: array} 갱신 건수와 플러그인별 결과
      */
     public function checkAllPluginsForUpdates(): array
     {
@@ -4401,7 +4421,7 @@ class PluginManager implements PluginManagerInterface
      * 관리자 UI 업데이트 모달에서 layout_strategy 선택 시 보존 대상 목록 표시에 사용됩니다.
      *
      * @param  string  $identifier  플러그인 식별자
-     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array} 수정한 레이아웃 존재 여부·개수·목록
      */
     public function hasModifiedLayouts(string $identifier): array
     {
@@ -4426,7 +4446,7 @@ class PluginManager implements PluginManagerInterface
      * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
      * @param  string|null  $sourceOverride  업데이트 소스 강제 지정 (auto|bundled|github)
      * @param  string|null  $zipPath  사전 다운로드된 zip 파일 경로
-     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
+     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string} 업데이트 결과(성공 여부·이전/이후 버전·메시지)
      *
      * @throws \RuntimeException 업데이트 실패 시
      * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
@@ -4896,6 +4916,23 @@ class PluginManager implements PluginManagerInterface
         $meta = ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json');
 
         return $meta[$identifier]['version'] ?? null;
+    }
+
+    /**
+     * 같은 식별자의 _bundled plugin 매니페스트를 반환합니다 (업데이트 대상 코어 호환 판정용).
+     *
+     * @param  string  $identifier  plugin 식별자
+     * @return array<string, mixed>|null _bundled 매니페스트 또는 null
+     */
+    private function findBundledPluginManifest(string $identifier): ?array
+    {
+        if (isset($this->bundledPlugins[$identifier])) {
+            return $this->bundledPlugins[$identifier];
+        }
+
+        $meta = ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json');
+
+        return $meta[$identifier] ?? null;
     }
 
     /**

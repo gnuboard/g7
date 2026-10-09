@@ -217,7 +217,7 @@
       <div class="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 space-y-1" role="status" aria-live="polite">
         <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">$t:auth.password_change.title</p>
         <p data-if="{{_global.passwordChange?.reason !== 'admin_assigned' &amp;&amp; !_global.passwordChange?.can_postpone}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_expired|date={{_global.passwordChange?.expired_at | date}}</p>
-        <p data-if="{{_global.passwordChange?.reason !== 'admin_assigned' &amp;&amp; _global.passwordChange?.can_postpone}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_remind|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}</p>
+        <p data-if="{{_global.passwordChange?.reason !== 'admin_assigned' &amp;&amp; _global.passwordChange?.can_postpone}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_remind|count={{_global.passwordChange?.postpone_days ?? 0}}|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}</p>
         <p data-if="{{_global.passwordChange?.reason === 'admin_assigned'}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_admin_assigned</p>
       </div>
       <!-- 변경 단계 상단 오류(잠금·그 밖의 실패) — 규칙 위반은 칸 아래에 싣는다 -->

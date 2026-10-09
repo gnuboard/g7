@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\LanguagePackScope;
+use App\Enums\LanguagePackSourceType;
 use App\Models\LanguagePack;
 use App\Models\Menu;
 use App\Models\Module;
@@ -102,6 +103,12 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         $audit = [];
         $locale = $pack->locale;
 
+        // 확장에 내장된 언어팩(ko·en)은 그 확장 매니페스트 자신의 언어다. 확장을 끌 때 함께 꺼지는데,
+        // 여기서 그 언어 키를 지우면 다시 켜도 채울 seed 가 없어 확장 이름·설명이 `[]` 로 남는다.
+        if ($pack->source_type === LanguagePackSourceType::BundledWithExtension->value) {
+            return $audit;
+        }
+
         $modelMaps = [
             LanguagePackScope::Core->value => [
                 Permission::class => ['name', 'description'],
@@ -149,7 +156,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
      * @param  string  $matchColumn  seed 키와 대조할 컬럼 (identifier/slug)
      * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
+     * @return void 반환값 없음
      */
     protected function applyByIdentifier(
         string $modelClass,
@@ -180,7 +187,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @param  array<string, array<string, mixed>>  $seed  정의 키 → 컬럼별 번역 맵
      * @param  string  $locale  적용할 로케일
      * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
+     * @return void 반환값 없음
      */
     protected function applyNotifications(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -241,7 +248,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @param  array<string, mixed>  $seed  name/description 평탄 번역 맵
      * @param  string  $locale  적용할 로케일
      * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
+     * @return void 반환값 없음
      */
     protected function applyManifest(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -277,7 +284,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      *
      * @param  Builder  $query  대상 쿼리 빌더
      * @param  LanguagePack  $pack  소유권 기준이 될 언어팩
-     * @return void
+     * @return void 반환값 없음
      */
     protected function scopeOwnership(Builder $query, LanguagePack $pack): void
     {
@@ -314,7 +321,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @param  string  $locale  적용할 로케일
      * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
      * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
+     * @return void 반환값 없음
      */
     protected function mergeLocaleColumns(Model $row, array $entry, string $locale, array $columns, array &$audit): void
     {
@@ -364,7 +371,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @param  string  $locale  제거할 로케일
      * @param  array<int, string>  $columns  제거 대상 다국어 컬럼
      * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
-     * @return void
+     * @return void 반환값 없음
      */
     protected function stripLocaleColumns(Model $row, string $locale, array $columns, array &$audit): void
     {

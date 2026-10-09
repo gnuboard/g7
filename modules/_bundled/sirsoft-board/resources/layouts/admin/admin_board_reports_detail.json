@@ -112,6 +112,9 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh",
                                     "className": "btn-icon"
                                 },
                                 "children": [

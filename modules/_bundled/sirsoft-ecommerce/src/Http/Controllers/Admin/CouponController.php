@@ -25,6 +25,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class CouponController extends AdminBaseController
 {
+    /**
+     * 쿠폰 서비스를 주입받습니다.
+     *
+     * @param  CouponService  $couponService  쿠폰 서비스
+     */
     public function __construct(
         private CouponService $couponService
     ) {}
@@ -209,7 +214,7 @@ class CouponController extends AdminBaseController
                 $messageKey,
                 $result,
                 200,
-                ['issued' => $result['issued'], 'skipped' => count($result['skipped'])]
+                ['issued' => $result['issued'], 'skipped' => count($result['skipped']), 'count' => $result['issued']]
             );
         } catch (CouponNotIssuableException $e) {
             // 발급기간 만료·수량 소진·발급중단 같은 발급 관문 거절은 운영자가 고칠 수 있는

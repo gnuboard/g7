@@ -239,6 +239,157 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
   });
 });
 
+describe('코드 편집기 — 컴파일 실패 시 경고·좌표 표기 (2026-10-07 실측 O-I1-10·O-I1-11)', () => {
+  const markupEditor = findAll(layoutJson, (n) => n.name === 'CodeWorkspace')[0];
+  const compile = actionsOf(markupEditor).find((a) => a.handler === 'apiCall' && stringify(targetOf(a)).includes('markup-compile'));
+
+  /**
+   * 컴파일이 실패하면 직전 성공본의 경고를 지운다 — 남기면 바뀐 본문의 엉뚱한 줄을 가리키는 노란 표시가 남는다.
+   *
+   * @effects code_editor_compile_failure_clears_stale_warnings
+   */
+  it('markup-compile 실패 시 markupWarnings 를 비운다', () => {
+    const fails = flattenActions(compile?.onError);
+    const reset = fails.find((a) => a.handler === 'setState' && a.params && 'markupWarnings' in a.params);
+
+    expect(reset, '실패 경로에서 경고를 비우는 setState').toBeDefined();
+    expect(stringify(reset.params.markupWarnings)).toBe(stringify([]));
+  });
+
+  /**
+   * 좌표를 모르는 경고·오류(서버 lint·보안 검사)는 「0:0」 을 찍지 않고, 화면 밖 코드(`request_failed`)도 보이지 않는다.
+   *
+   * @effects code_editor_panels_hide_unknown_coordinates
+   */
+  it('경고·오류 패널은 줄 번호가 있을 때만 좌표를 쓰고 내부 대체 코드를 보이지 않는다', () => {
+    const warningRow = findAll(layoutJson, (n) => n.iteration?.item_var === 'warning')[0];
+    expect(warningRow, 'warning row').toBeDefined();
+    // 줄 있는 항목(버튼)만 좌표를 쓰고, 줄 없는 항목은 좌표 없이 문구만
+    const withLine = (warningRow.children ?? []).find((c: any) => c.name === 'Button');
+    const withoutLine = (warningRow.children ?? []).find((c: any) => c.name !== 'Button');
+    expect(stringify(withLine?.if)).toContain('warning.line ?? 0) > 0');
+    expect(stringify(withLine?.text)).toContain("warning.line + ':'");
+    expect(stringify(withoutLine?.if)).toContain('!((warning.line ?? 0) > 0)');
+    expect(stringify(withoutLine?.text)).not.toContain("line + ':'");
+
+    const errorWithLine = findAll(layoutJson, (n) => n.name === 'Button' && stringify(n.text).includes("markupCompileError.line + ':'"))[0];
+    const errorWithoutLine = findAll(layoutJson, (n) => n.name !== 'Button' && stringify(n.text).includes('markupCompileError?.message'))[0];
+    expect(stringify(errorWithLine?.if)).toContain('markupCompileError?.line ?? 0) > 0');
+    expect(stringify(errorWithoutLine?.if)).toContain('!((_global.markupCompileError?.line ?? 0) > 0)');
+    expect(stringify(errorWithoutLine?.text)).not.toContain("line + ':'");
+
+    const fails = flattenActions(compile?.onError);
+    expect(stringify(fails)).not.toContain('request_failed');
+  });
+});
+
+describe('코드 편집기 — 검사 경고·오류 줄로 이동 (7.1.0 P16)', () => {
+  /**
+   * 줄이 있는 경고·오류 항목은 버튼이고, 누르면 HTML 탭으로 돌려 그 줄·칸으로 커서를 옮긴다(`editorRevealAt` — 같은
+   * 항목을 다시 눌러도 움직이도록 nonce 를 바꾼다). 버튼 이름은 「N번째 줄로 이동」 안내를 title 로 갖는다.
+   *
+   * @effects code_editor_issue_rows_reveal_source_line
+   */
+  it('경고 항목·오류 항목 버튼이 editorRevealAt(line·column·nonce)과 HTML 탭 전환을 싣는다', () => {
+    const warningRow = findAll(layoutJson, (n) => n.iteration?.item_var === 'warning')[0];
+    const warningButton = (warningRow.children ?? []).find((c: any) => c.name === 'Button');
+    const errorButton = findAll(layoutJson, (n) => n.name === 'Button' && stringify(n.text).includes("markupCompileError.line + ':'"))[0];
+
+    for (const [label, button, line] of [['warning', warningButton, 'warning.line'], ['error', errorButton, '_global.markupCompileError.line']] as const) {
+      expect(button, label).toBeDefined();
+      expect(button.props?.type, label).toBe('button');
+      expect(stringify(button.props?.title), label).toContain('$t:admin.templates.layout_edit.go_to_line|line=');
+      const reveal = flattenActions(button.actions).find((a: any) => a.handler === 'setState' && a.params?.editorRevealAt);
+      expect(reveal, label).toBeDefined();
+      expect(reveal.params.target).toBe('global');
+      expect(reveal.params.editorFormat).toBe('markup');
+      expect(reveal.params.editorRevealAt).toContain(`line: ${line}`);
+      expect(reveal.params.editorRevealAt).toContain('nonce: Date.now()');
+    }
+  });
+
+  /**
+   * @effects code_editor_issue_rows_reveal_source_line
+   */
+  it('코드 편집기는 editorRevealAt 을 revealAt 으로 받는다', () => {
+    const markupEditor = findAll(layoutJson, (n) => n.name === 'CodeWorkspace')[0];
+    expect(markupEditor.props.revealAt).toBe('{{_global.editorRevealAt ?? null}}');
+  });
+
+  /**
+   * 레이아웃만 고치고 빌드하지 않으면 새 Tailwind 유틸은 화면 CSS 에 없다 — 브라우저는 모르는 클래스를 조용히
+   * 무시하므로 항목 버튼의 점선 밑줄(누를 수 있다는 표시)이 오류 없이 사라진다(7.1.0 validate q2, `decoration-dotted`
+   * 누락 실측). 줄 이동 버튼·정보 토글·접히는 블록이 쓰는 클래스(식 안 문자열 포함)가 빌드 CSS 에 모두 있어야 한다.
+   *
+   * @effects code_editor_issue_rows_reveal_source_line
+   */
+  it('줄 이동 버튼·정보 토글·접히는 블록의 클래스가 빌드 CSS 에 있다', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, '../../dist/css/components.css'), 'utf8');
+    const backslash = String.fromCharCode(92);
+    const selector = (token: string) => '.' + token.replace(/([:\/.\[\]()%!])/g, (m) => backslash + m);
+    const inCss = (token: string) => {
+      const sel = selector(token);
+      for (let i = css.indexOf(sel); i >= 0; i = css.indexOf(sel, i + 1)) {
+        const next = css[i + sel.length];
+        if (!/[a-z0-9_-]/i.test(next) && next !== backslash) return true;
+      }
+      return false;
+    };
+    const classTokens = (className: unknown): string[] =>
+      String(className ?? '')
+        .replace(/\{\{[\s\S]*?\}\}/g, (expr) => ' ' + [...expr.matchAll(/'([^']*)'/g)].map((m) => m[1]).join(' ') + ' ')
+        .split(/\s+/)
+        .filter((t) => /^[a-z][a-z0-9:\/.\-\[\]%]*$/.test(t));
+
+    const warningRow = findAll(layoutJson, (n) => n.iteration?.item_var === 'warning')[0];
+    const nodes = [
+      ...(warningRow?.children ?? []),
+      ...findAll(layoutJson, (n) => n.id === 'markup_error_goto' || n.id === 'code_editor_info_toggle'),
+      ...['code_editor_file_desc', 'code_editor_file_meta', 'code_editor_inline_notice'].map(
+        (id) => findAll(layoutJson, (n) => n.props?.id === id)[0],
+      ),
+    ];
+    const tokens = [...new Set(nodes.flatMap((n: any) => classTokens(n?.props?.className)))];
+    expect(tokens).toContain('decoration-dotted');
+    expect(tokens.filter((t) => !inCss(t))).toEqual([]);
+  });
+});
+
+describe('코드 편집기 — 휴대폰 폭에서 위쪽 정보 접기 (7.1.0 P17)', () => {
+  const toggle = findAll(layoutJson, (n) => n.id === 'code_editor_info_toggle')[0];
+
+  /**
+   * 휴대폰 폭(md 미만)에서는 설명·수정일·이력 버튼·하단 안내를 접어 두고 [파일 정보 펼치기] 로 연다 —
+   * 390x844 에서 코드 칸이 128px 였다(R-09). md 이상에서는 늘 펼쳐져 있고 버튼이 없다.
+   *
+   * @effects code_editor_mobile_info_collapsed
+   */
+  it('토글 버튼은 md 이상에서 숨고, aria-expanded·aria-controls 를 갖고, 누르면 codeEditorInfoOpen 을 뒤집는다', () => {
+    expect(toggle, 'toggle').toBeDefined();
+    expect(toggle.name).toBe('Button');
+    expect(toggle.props.className).toContain('md:hidden');
+    expect(toggle.props['aria-expanded']).toBe("{{_global.codeEditorInfoOpen ? 'true' : 'false'}}");
+    expect(toggle.props['aria-controls']).toBe('code_editor_file_desc code_editor_file_meta code_editor_inline_notice');
+    const flip = flattenActions(toggle.actions).find((a: any) => a.handler === 'setState');
+    expect(flip.params.codeEditorInfoOpen).toBe('{{!_global.codeEditorInfoOpen}}');
+    expect(stringify(toggle.children)).toContain('$t:admin.templates.layout_edit.info_toggle_show');
+    expect(stringify(toggle.children)).toContain('$t:admin.templates.layout_edit.info_toggle_hide');
+  });
+
+  /**
+   * @effects code_editor_mobile_info_collapsed
+   */
+  it('접히는 세 블록은 닫혀 있을 때 휴대폰에서만 숨고(md 이상 표시), 열리면 보인다', () => {
+    for (const id of ['code_editor_file_desc', 'code_editor_file_meta', 'code_editor_inline_notice']) {
+      // aria-controls 가 가리키는 DOM id — 노드 id(data-ref)가 아니라 props.id 다
+      const node = findAll(layoutJson, (n) => n.props?.id === id)[0];
+      expect(node, id).toBeDefined();
+      expect(node.props.className, id).toContain('_global.codeEditorInfoOpen');
+      expect(node.props.className, id).toMatch(/hidden md:(block|flex)/);
+    }
+  });
+});
+
 describe("[case:init-global-reruns-on-refetch-and-resets-selection] 목록 재조회가 선택을 되돌리지 않는다", () => {
   /**
    * @effects code_editor_file_selection_is_not_reset_by_init_global

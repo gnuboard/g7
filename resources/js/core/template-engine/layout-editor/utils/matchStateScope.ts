@@ -108,25 +108,57 @@ export function deriveCurrentScope(
  *
  * @param groups editor-spec.json.states.groups (병합 결과)
  * @param scope 현재 편집 대상 scope 기준
+ * @param hostLayoutName 창 편집일 때 창을 연 화면의 레이아웃 이름(주인 확장 묶음 우선, 생략 시 종전 동작)
  * @return 매칭된 상태 items
  */
 export function matchStateItems(
   groups: EditorStateGroupSpec[] | undefined,
   scope: CurrentStateScope | null,
+  hostLayoutName?: string | null,
 ): EditorStateItemSpec[] {
   if (!scope || !Array.isArray(groups) || groups.length === 0) return [];
 
+  let matched = groups.filter((group) => matchScope(group.scope, scope));
+  // 창 id 는 확장마다 겹쳐 쓴다(`delete_confirm_modal`·`privacy_run_modal` …). 창을 연 화면(호스트 레이아웃)을 알면
+  // 그 화면 주인이 낸 묶음만 쓴다 — 다른 확장의 표본이 섞이면 고르개에 같은 id 가 겹쳐 보이고, 먼저 병합된 확장의
+  // 표본이 이 화면의 창에 적용된다. 주인이 낸 묶음이 없으면 종전처럼 매칭된 묶음을 모두 쓴다. @since engine-v1.78.3
+  if (scope.kind === 'modal' && typeof hostLayoutName === 'string' && hostLayoutName.length > 0) {
+    const owned = matched.filter((group) => isOwnedByHost(group, hostLayoutName));
+    if (owned.length > 0) matched = owned;
+  }
+
   const items: EditorStateItemSpec[] = [];
-  for (const group of groups) {
-    if (matchScope(group.scope, scope)) {
-      for (const item of group.items ?? []) {
-        if (item && typeof item.id === 'string' && item.id.length > 0) {
-          items.push(item);
-        }
+  for (const group of matched) {
+    for (const item of group.items ?? []) {
+      if (item && typeof item.id === 'string' && item.id.length > 0) {
+        items.push(item);
       }
     }
   }
   return items;
+}
+
+/**
+ * 상태 묶음이 호스트 레이아웃의 주인에게서 왔는가.
+ *
+ * 확장 레이아웃 이름은 `{확장 식별자}.{레이아웃}`(예 `sirsoft-board.admin_board_settings`)이고 템플릿 레이아웃은 점이 없다
+ * (`admin_settings`, `mypage/profile`). 확장 레이아웃이면 같은 식별자의 모듈·플러그인 묶음이, 템플릿 레이아웃이면 템플릿 묶음이
+ * 주인이다. 출처가 없는 묶음(테스트·하위호환)은 주인으로 보지 않는다.
+ *
+ * @param group 상태 묶음
+ * @param hostLayoutName 창을 연 화면의 레이아웃 이름
+ * @return 주인 묶음 여부
+ * @since engine-v1.78.3
+ */
+function isOwnedByHost(group: EditorStateGroupSpec, hostLayoutName: string): boolean {
+  const source = group.__source;
+  if (!source || typeof source.kind !== 'string') return false;
+  const dot = hostLayoutName.indexOf('.');
+  if (dot > 0) {
+    const owner = hostLayoutName.slice(0, dot);
+    return (source.kind === 'module' || source.kind === 'plugin') && source.id === owner;
+  }
+  return source.kind === 'template';
 }
 
 /**

@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 31 · 엔드포인트 샘플 4 · 페이지 상태 34
+> 단일 파일 · 프리뷰 샘플 31 · 엔드포인트 샘플 4 · 페이지 상태 37
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -33,7 +33,7 @@
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 31 | `editor-spec.json (인라인)` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 4 | `editor-spec.json (인라인)` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 1 | `editor-spec.json (인라인)` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 34 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 37 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -72,7 +72,7 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 31 | `reactionTypes` · `scraps` · `scrap_boards` · `posts` · `post` · `reports` · `report_detail` · `reporters_list` · `boards` · `boards_list` · `board_types` · `form_data` … 외 19개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 4 | `/api/modules/sirsoft-board/boards/*/posts*` · `/api/modules/sirsoft-board/boards/popular*` · `/api/modules/sirsoft-board/me/*` · `/api/modules/sirsoft-board/users/*/posts*` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 34 | `/board/:slug/:id` · `/board/:slug` · `/boards` · `/board/:slug/write` · `*/admin/boards/:slug/edit` · `*/admin/board/:slug/:id/edit` · `*/admin/boards/settings` · `*/admin/board/:slug/post/:id` · `admin_reaction_bulk_delete_modal` · `admin_reaction_delete_modal` · `blind_modal` · `board_identity_policy_delete_modal` … 외 22개 |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 37 | `/board/:slug/:id` · `/board/:slug` · `/boards` · `/board/:slug/write` · `*/admin/boards/:slug/edit` · `*/admin/board/:slug/:id/edit` · `*/admin/boards/settings` · `*/admin/board/:slug/post/:id` · `admin_reaction_bulk_delete_modal` · `admin_reaction_delete_modal` · `blind_modal` · `board_identity_policy_delete_modal` … 외 25개 |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

@@ -614,7 +614,17 @@ Repository 는 인터페이스와 구현이 1:1 로 짝을 이루며, 서비스�
   동시 요청에서 잔액이 음수가 됩니다.
 
 `EcommerceStatRepository` 만 성격이 다릅니다 — 대시보드용 일별 집계 테이블을 읽고 쓰며, 원본
-주문에서 매번 집계하지 않기 위한 자리입니다. 집계를 채우는 것은 `aggregate-stats` 스케줄입니다.
+주문에서 매번 집계하지 않기 위한 자리입니다. 집계를 채우는 것은 `aggregate-stats` 스케줄입니다. 판매 추세 그래프
+(수량·순매출)가 이 표를 읽습니다. 「오늘」 상태 배지는 이 표의 상태별 수량 기록(`option_status_counts`, 옵션 수량)을
+읽지 않고, 배지 링크가 여는 주문 목록과 같은 필터로 사이트 오늘의 **주문 수**를 주문 표에서 바로 셉니다
+(`OrderRepository::countWithListFilters` — 목록 필터 단일 출처, 목록과 같은 주문 조회 권한 범위) — 배지 숫자 = 배지로 연 목록 건수.
+행 하나는 **사이트 기본 시간대의 하루**입니다 — 모든 운영자가 같은 행을 읽으므로 보는 사람마다 경계를 달리할 수
+없고, UTC 자정으로 자르면 한국 시간 새벽 주문이 전날로 묶입니다. 저장 시각(`orders.ordered_at`)은 UTC 그대로이고
+집계할 때 사이트 하루를 UTC 범위로 바꿔 셉니다(`EcommerceDashboardService::siteToday()`). 주문 통계의 오늘·이번 달
+수치와 상품 라벨 기간(`ProductLabelAssignment::siteToday()`) 판정도 같은 사이트 기준입니다.
+관리자 주문 목록의 날짜 필터는 보는 사람의 하루가 기본이고, `date_basis=site` 를 받았을 때만(대시보드 「오늘」 배지
+링크) 사이트 기본 시간대의 하루로 거릅니다(`OrderRepository` 의 목록 필터) — 배지가 센 주문이 목록에 그대로 나오게
+하기 위해서입니다.
 
 클레임 저장소(`OrderExchangeRepository` · `OrderReturnRepository` · `OrderRefundRepository` ·
 `ClaimPaymentRepository`)는 `findForUpdate()` 를 갖습니다 — 신청서 전이는 그 행을 잠근 채

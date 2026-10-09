@@ -45,7 +45,7 @@ describe('ActionMenu', () => {
     const trigger = screen.getByRole('button');
     await user.click(trigger);
 
-    const menuItem = screen.getByText('수정').closest('div');
+    const menuItem = screen.getByText('수정').closest('[role="menuitem"]');
     fireEvent.click(menuItem!);
 
     expect(onClickMock).toHaveBeenCalledTimes(1);
@@ -115,7 +115,7 @@ describe('ActionMenu', () => {
     await user.click(trigger);
 
     const menuItem = screen.getByText('삭제');
-    expect(menuItem.closest('div')).toHaveClass('text-red-600');
+    expect(menuItem.closest('[role="menuitem"]')).toHaveClass('text-red-600');
   });
 
   // @scenario space_below=enough

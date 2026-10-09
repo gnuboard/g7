@@ -73,7 +73,7 @@ test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열
 // @scenario screen=board_post_detail, leak_axis=extension_point
 // @effects html_content_host_clean
 test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이로드가 남지 않는다', async ({ page }) => {
-  const token = issueToken('sirsoft-board.posts.read');
+  const token = issueToken('sirsoft-board.archive.admin.posts.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/board/archive/post/219');
@@ -95,7 +95,7 @@ test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이
 // @scenario screen=board_post_form, leak_axis=extension_point
 // @effects html_editor_host_clean
 test('engine-v1.55.1 - 글 편집기 영역을 정리해도 편집기는 그대로 뜨고 입력이 반영된다', async ({ page }) => {
-  const token = issueToken('sirsoft-board.posts.read', 'sirsoft-board.posts.create');
+  const token = issueToken('sirsoft-board.archive.admin.posts.read', 'sirsoft-board.archive.admin.posts.write');
   await authenticatePage(page, token);
 
   await page.goto('/admin/board/archive/create');

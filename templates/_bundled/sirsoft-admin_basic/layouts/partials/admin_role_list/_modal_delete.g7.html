@@ -4,6 +4,10 @@
 <partial description="역할 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_role_list.delete_confirm_modal">
   <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.roles.modals.delete_title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:admin.roles.modals.delete_confirm</p>
+    <!-- 어떤 역할을 지우는지 창만 보고 알 수 있게 목록이 담아 준 이름을 보인다(예약 작업 삭제 창과 같은 모양). -->
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span class="text-primary font-medium">{{_global.deleteTargetName}}</span>
+    </div>
     <div class="modal-footer-buttons">
       <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
         <on type="click">

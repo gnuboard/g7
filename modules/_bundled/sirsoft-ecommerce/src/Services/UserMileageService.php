@@ -325,7 +325,7 @@ class UserMileageService
         $minUse = (int) ($rule['min_use_amount'] ?? 0);
         if ($usePoints < $minUse) {
             throw new MileageValidationException(
-                __('sirsoft-ecommerce::exceptions.mileage.below_min_use_amount', ['amount' => $minUse])
+                trans_choice('sirsoft-ecommerce::exceptions.mileage.below_min_use_amount', $minUse, ['amount' => $minUse])
             );
         }
 
@@ -341,8 +341,9 @@ class UserMileageService
             // 사용 가능한 최대 금액을 함께 안내 — 얼마로 줄여야 결제되는지 알 수 없으면
             // 사용자는 값을 낮춰가며 재시도할 수밖에 없다.
             throw new MileageValidationException(
-                __('sirsoft-ecommerce::exceptions.mileage.exceeds_max_use', [
-                    'amount' => $this->resolveAllowedUseAmount($rule, $paymentAmount),
+                trans_count('sirsoft-ecommerce::exceptions.mileage.exceeds_max_use', [
+                    'amount' => $allowed = $this->resolveAllowedUseAmount($rule, $paymentAmount),
+                    'count' => $allowed,
                 ])
             );
         }
@@ -738,7 +739,7 @@ class UserMileageService
                 $this->logActivity('mileage.extend_expiry', [
                     'loggable' => $ownerLots->first(),
                     'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_extend_expiry',
-                    'description_params' => ['days' => $days],
+                    'description_params' => ['days' => $days, 'count' => $days],
                     'properties' => ['user_id' => (int) $ownerId, 'lot_count' => $ownerLots->count(), 'days' => $days],
                 ]);
             }

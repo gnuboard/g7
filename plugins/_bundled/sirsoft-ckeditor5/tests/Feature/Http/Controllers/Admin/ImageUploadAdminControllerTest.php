@@ -4,12 +4,14 @@ namespace Plugins\Sirsoft\Ckeditor5\Tests\Feature\Http\Controllers\Admin;
 
 use App\Enums\PermissionType;
 use App\Extension\Storage\PluginStorageDriver;
+use App\Http\Middleware\SetTimezone;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
+use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageUploadRepositoryInterface;
 use Plugins\Sirsoft\Ckeditor5\Services\ImageUploadAdminService;
 use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
 
@@ -76,6 +78,32 @@ class ImageUploadAdminControllerTest extends PluginTestCase
             'file_size' => 5,
             'mime_type' => 'image/png',
         ]));
+    }
+
+    /**
+     * 업로드일 필터는 보는 사람의 시간대 하루로 자른다 — 목록은 업로드 시각을 보는 사람의
+     * 시간대로 그리므로, UTC 하루로 자르면 한국 시간 새벽 업로드가 목록에는 그날로 보이는데
+     * 그날로 거르면 빠진다.
+     *
+     * @effects admin_index_date_filter_follows_viewer_day
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function index_date_filter_follows_viewer_timezone_day(): void
+    {
+        app()->instance(SetTimezone::TIMEZONE_KEY, 'Asia/Seoul');
+
+        // 2026-03-09 15:30 UTC = 2026-03-10 00:30 KST(그날 안), 2026-03-10 15:30 UTC = 2026-03-11 00:30 KST(다음날)
+        $inside = $this->makeUpload('tzdayinside1');
+        DB::table($inside->getTable())->where('id', $inside->id)->update(['created_at' => '2026-03-09 15:30:00']);
+        $outside = $this->makeUpload('tzdayoutsid');
+        DB::table($outside->getTable())->where('id', $outside->id)->update(['created_at' => '2026-03-10 15:30:00']);
+
+        $page = app(ImageUploadRepositoryInterface::class)
+            ->paginateForAdmin(['date_from' => '2026-03-10', 'date_to' => '2026-03-10'], 50);
+
+        $this->assertSame([$inside->id], collect($page->items())->pluck('id')->all());
     }
 
     /**

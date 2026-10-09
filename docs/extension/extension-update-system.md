@@ -79,8 +79,14 @@
     'update_source'    => 'github' | 'bundled',  // pending 없음
     'latest_version'   => '1.2.0',
     'current_version'  => '1.0.0',
+    // 업데이트 대상 버전의 코어 호환
+    'required_core_version' => '>=7.2.0',  // 번들 출처: _bundled 매니페스트 g7_version / GitHub 출처: 활성 매니페스트 g7_version
+    'is_compatible'         => false,
+    'current_core_version'  => '7.1.0',
 ]
 ```
+
+목록 API(모듈·플러그인·템플릿)의 설치된 행도 **업데이트가 있을 때만** 같은 규칙으로 `required_core_version`·`is_compatible`·`current_core_version` 을 싣는다(`ResolvesUpdateCoreCompatibility`). GitHub 출처는 원격 매니페스트를 받지 않는 추정값이고, 정확한 판정은 업데이트 스테이징 단계에서 한다. 관리자 화면은 이 값으로 업데이트 창에 코어 호환 경고와 「강제 업데이트」 체크를 띄우며, 목록의 업데이트 버튼은 잠그지 않는다. 설치본 자체의 호환은 별도 필드 `core_compatible` 이 맡는다.
 
 ### 소스 강제 경로 (sourceOverride)
 

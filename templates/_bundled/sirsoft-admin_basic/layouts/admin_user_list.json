@@ -900,13 +900,25 @@
                         },
                         "children": [
                             {
+                                "comment": "총 건수를 끝까지 센 경우 / 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다",
                                 "id": "total_count",
                                 "type": "basic",
                                 "name": "Span",
+                                "if": "{{users?.data?.pagination?.total_is_exact !== false}}",
                                 "props": {
                                     "className": "text-label"
                                 },
                                 "text": "$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "id": "total_count_at_least",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{users?.data?.pagination?.total_is_exact === false}}",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}"
                             },
                             {
                                 "id": "list_options",
@@ -1472,7 +1484,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1631,7 +1643,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -2002,7 +2014,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -2161,7 +2173,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],

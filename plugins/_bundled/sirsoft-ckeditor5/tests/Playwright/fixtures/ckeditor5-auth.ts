@@ -28,12 +28,15 @@ export const test = base.extend<Ckeditor5AuthFixtures>({
   // 권한 경계를 실제로 밟으려면 admin 역할이 없어야 한다 — `issueToken` 은 admin 역할을 함께
   // 부여하고 admin 은 전체 권한을 보유하므로, 그 토큰으로는 삭제가 통과해 403 대신 404 가 온다.
   uploadsReadOnlyToken: async ({}, use) => {
-    await use(issueScopedToken('admin.access', 'sirsoft-ckeditor5.uploads.read'));
+    // `sirsoft-ckeditor5.uploads.read` 가 관리자 종류 권한이라 이것만으로 관리자 화면에 들어간다
+    // (예전의 `admin.access` 는 없는 권한이었다 — 발급 커맨드가 이제 거절한다).
+    await use(issueScopedToken('sirsoft-ckeditor5.uploads.read'));
   },
   // 자산 실패 폴백은 권한 경계가 아니라 편집기 마운트를 보는 검증이므로 admin 역할을
   // 함께 받는 `issueToken` 으로 충분하다 (게시글 작성 화면 전체가 열려야 한다).
   editorToken: async ({}, use) => {
-    await use(issueToken('sirsoft-board.posts.create'));
+    // admin 역할이 게시판 작성 권한을 모두 가진다 — 게시판 이름 없는 `sirsoft-board.posts.create` 는 없는 권한이었다.
+    await use(issueToken());
   },
 });
 

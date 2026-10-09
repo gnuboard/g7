@@ -609,6 +609,19 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 핸들러 TS 를 고치면 **빌드가 필요합니다** — `php artisan module:build` 후
 `module:update --force`. 커밋되는 `dist/` 는 배포 산출물이므로 `--production` 으로 굽고
 `sourceMappingURL` 이 남지 않아야 합니다.
+
+관리자 화면이 「오늘」을 만드는 핸들러(`setDateRange`·`setLabelDatePreset`·`setLabelDatePresetInline`)는 **계정
+시간대**(로그인한 회원의 시간대 → 없으면 사이트 기본 시간대)의 날짜를 씁니다(`resources/js/utils/timezoneDate.ts`).
+`toISOString()`(UTC)이나 브라우저 날짜로 만들면 서버가 해석하는 하루와 어긋납니다. 대시보드 「오늘」 배지의 주문 목록
+링크만은 배지가 센 하루와 같은 **사이트 기본 시간대**의 날짜를 싣습니다. 배지 숫자는 서버가 그 링크와 같은 목록 조건
+(`EcommerceDashboardService::BADGE_LIST_FILTERS` — 상태 조건, 반품은 `claim_return_statuses[]=completed`)으로 센 주문
+수라, 링크의 상태 조건을 바꾸면 서버 표도 함께 바꿉니다.
+
+그 링크는 `date_basis=site` 도 함께 실어, 주문 목록이 그 날짜를 사이트 기본 시간대의 하루로 거르게 합니다(목록의
+기본은 보는 사람의 하루라, 빼면 계정 시간대가 사이트와 다른 운영자에게 배지 1건 → 목록 0건이 됩니다). 주문 목록은
+이 인자를 필터 상태 `dateBasis` 로 들고 있다가 검색할 때 다시 싣고, 날짜 종류·시작일·종료일·빠른 기간·프리셋·초기화가
+그 상태를 비워 보는 사람의 하루로 돌아갑니다. 날짜와 무관한 조건만 바꿔 검색하면 사이트 하루가 유지됩니다. 인자가
+걸린 동안 날짜 필터 줄에 사이트 시간대 기준이라는 안내(`admin.order.filter.site_day_notice`)를 보입니다.
 <!-- @intent END -->
 
 ## 전역 진입점

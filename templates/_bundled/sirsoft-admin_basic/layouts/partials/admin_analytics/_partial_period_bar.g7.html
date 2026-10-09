@@ -118,8 +118,10 @@
       <div data-ref="period_dates" class="flex items-center gap-1 w-full sm:w-auto">
         <input data-ref="period_from" name="analytics_period_from" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodFrom || ''}}" aria-label="$t:admin.analytics.period.from">
           <on type="change">
-            <!-- 달력을 직접 고치면 프리셋 표시가 빠진다 — 버튼이 만든 범위를 손으로 바꾼 순간 그 버튼은 지금 조건이 아니다. -->
-            <sequence if="{{!!$event.target.value}}">
+            <!-- 달력을 직접 고치면 프리셋 표시가 빠진다 — 버튼이 만든 범위를 손으로 바꾼 순간 그 버튼은 지금 조건이 아니다.
+                 키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면
+                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다. -->
+            <sequence if="{{!!$event.target.value}}" :debounce="600">
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query from="{{$event.target.value}}" to="{{(function(f, t) { return t &amp;&amp; t >= f ? t : f; })($event.target.value, _computed.periodTo || '')}}" preset="{{undefined}}" :page="1"/>
               </navigate>
@@ -130,8 +132,10 @@
         <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
           <on type="change">
             <!-- 끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).
-                 비운 값으로는 이동하지 않는다. -->
-            <sequence if="{{!!$event.target.value}}">
+                 비운 값으로는 이동하지 않는다.
+                 키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면
+                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다. -->
+            <sequence if="{{!!$event.target.value}}" :debounce="600">
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query from="{{(function(f, t) { return f &amp;&amp; t >= f ? f : t; })(_computed.periodFrom || '', $event.target.value)}}" to="{{$event.target.value}}" preset="{{undefined}}" :page="1"/>
               </navigate>

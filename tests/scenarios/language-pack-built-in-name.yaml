@@ -1,0 +1,15 @@
+feature: 내장(보호) 언어팩도 사람이 읽는 이름으로 보인다
+
+description: |
+  확장·코어에 내장된 언어팩은 매니페스트 파일이 없어 이름이 없고, 언어팩 관리 카드는 이름이 없으면 식별자를 그려
+  보호 언어팩 카드가 「sirsoft-template-sirsoft-admin_basic-en」 같은 내부 식별자로만 보였다(#736 F 영역 실측 O-F4).
+  매니페스트 이름이 없는 내장 언어팩은 대상 확장 이름(코어는 「코어」)과 언어 이름으로 표시 이름을 만든다.
+
+axes:
+  case: [built_in_without_manifest_name, manifest_name_present]
+
+effects:
+  - built_in_language_pack_has_readable_name
+
+test_files:
+  - tests/Unit/Resources/LanguagePackResourceBuiltInNameTest.php

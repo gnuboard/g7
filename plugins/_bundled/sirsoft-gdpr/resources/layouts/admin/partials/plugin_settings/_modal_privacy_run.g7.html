@@ -28,7 +28,7 @@
         </on>
         $t:sirsoft-gdpr.annual_notice.manual_run.cancel
       </button>
-      <button data-ref="privacy_run_execute" type="button" class="btn btn-danger flex-center gap-2" disabled="{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}">
+      <button data-ref="privacy_run_execute" type="button" :lockRepeatClick="true" class="btn btn-danger flex-center gap-2" disabled="{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}">
         <on type="click">
           <!-- 접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로
                주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가

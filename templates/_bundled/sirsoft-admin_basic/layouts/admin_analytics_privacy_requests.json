@@ -784,12 +784,32 @@
                                                     "width": "140px",
                                                     "cellChildren": [
                                                         {
+                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8).",
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "Div",
                                                             "props": {
-                                                                "className": "text-label font-mono"
+                                                                "className": "flex-center flex-wrap gap-1"
                                                             },
-                                                            "text": "{{row.ip ?? '-'}}"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-label font-mono"
+                                                                    },
+                                                                    "text": "{{row.ip ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{row.ip_masked === false}}",
+                                                                    "props": {
+                                                                        "color": "yellow",
+                                                                        "text": "$t:admin.analytics.common.ip_not_masked",
+                                                                        "size": "sm"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
                                                     ]
                                                 },

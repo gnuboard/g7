@@ -482,7 +482,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
 | `FormField` | 폼 필드 래퍼 (라벨, 에러, 헬퍼 텍스트) | label, required, error, helperText, labelClassName, ... |
-| `Toggle` | 토글 스위치 (Flowbite 스타일) | checked, value, onChange, disabled, label, ... |
+| `Toggle` | 토글 스위치 (Flowbite 스타일). 라벨이 스위치 밖(표 열 머리글·옆 문구)에 있으면 `ariaLabel` 로 보이는 라벨 없이 이름만 붙인다 | checked, value, onChange, disabled, label, ariaLabel, ... |
 | `TagInput` | 태그 입력 (다중 선택, 생성 가능) | value, options, onChange, creatable, placeholder, ... |
 | `TagSelect` | 태그 기반 선택 표시 | options, value, onChange, placeholder, disabled |
 | `RadioGroup` | 라디오 버튼 그룹 | name, value, options, onChange, disabled, ... |
@@ -536,7 +536,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `TabNavigation` | 탭 네비게이션 | tabs, activeTabId, onTabChange, variant, style |
 | `TabNavigationScroll` | 탭 네비게이션 + 스크롤 (setState + scrollToSection 내장) | tabs, activeTabId, actions, style, activeClassName, ... |
 | `Breadcrumb` | 브레드크럼 | items, separator, showHome, homeHref, maxItems |
-| `ActionMenu` | 드롭다운 액션 메뉴 | items, triggerLabel, triggerIconName, position, style |
+| `ActionMenu` | 드롭다운 액션 메뉴 (메뉴 단추 패턴 — 항목은 `role=menuitem` 단추, 화살표·Esc) | items, triggerLabel(비우면 아이콘만), triggerAriaLabel(아이콘만일 때 이름, 기본 「더보기」), triggerIconName, position, style |
 | `Dropdown` | 드롭다운 메뉴 | label, items, onItemClick, position, style |
 
 #### 모달/다이얼로그
@@ -596,7 +596,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `MenuAccessTree` | 역할이 접근할 관리자 메뉴 체크 트리 (하위 선택 시 상위 자동, 상위 해제 시 하위 해제) | data, value, onChange, disabled, lockedAll, installedModules, installedPlugins |
 | `SortableMenuList` | 드래그앤드롭 계층형 메뉴 목록 (선택 모드·행별 역할 배지) | items, selectedId, onSelect, onOrderChange, onToggleStatus, selectionMode, selectedIds, onSelectionChange, roleOptions, ... |
 | `SortableMenuItem` | 개별 드래그 가능 메뉴 아이템 | item, isSelected, isExpanded, level, onClick, ... |
-| `IconButton` | 아이콘 버튼 | iconName, label, onClick, variant, size, ... |
+| `IconButton` | 아이콘 버튼 (글자 없으면 ariaLabel → 아이콘별 기본 이름을 aria-label·title 로) | iconName, label, ariaLabel, onClick, variant, size, ... |
 | `Accordion` | 아코디언 (접기/펼치기) | defaultOpen, isOpen, onToggle, style, disabled |
 | `Card` | 카드 컨테이너 (헤더, 본문, 푸터) | title, content, imageUrl, imageAlt, onClick, ... |
 | `LoadingSpinner` | 로딩 스피너 | size, color, fullscreen, text |
@@ -894,3 +894,9 @@ interface SlotContainerProps {
 - [컴포넌트 개발 규칙](../../../../docs/frontend/components.md)
 - [컴포넌트 Props 레퍼런스](../../../../docs/frontend/component-props.md)
 - [컴포넌트 Props 레퍼런스 - Composite](../../../../docs/frontend/component-props-composite.md)
+
+## 접근 가능한 이름 규약 (7.1.0)
+
+- **Icon** — `ariaLabel` 을 준 아이콘만 이미지(`role="img"`)로 읽히고, 나머지는 꾸밈으로 `aria-hidden` 입니다. 글리프 이름(「ellipsis」·「trash can」)이 단추 이름에 섞이지 않습니다. 아이콘만 있는 단추는 단추 쪽에 `aria-label="$t:…"` 를 답니다(`IconButton` 은 `ariaLabel` 또는 아이콘별 기본 이름).
+- **곁 라벨 잇기** — `Input`·`Textarea`·`Select`·`Toggle`·`TagInput` 은 스스로 이름(aria-label·aria-labelledby·`<label for>`·`label`/`ariaLabel` prop)이 없으면, 가까운 조상 3단계 안에서 앞에 놓인 `label`·`.form-label`·`.filter-label`·`.text-heading` 을 `aria-labelledby` 로 잇습니다(스위치는 뒤따르는 제목·앞 형제 상자의 첫 글자도 봅니다). 라벨과 입력 사이에 다른 입력이 끼면 그 라벨은 앞 칸의 것으로 보고 잇지 않습니다(`src/hooks/useAdjacentLabel.ts`). 같은 행에 입력이 여럿이면 레이아웃에서 이름을 직접 주는 편이 정확합니다.
+- **창 Esc** — 창 안에 펼친 팝업(`aria-haspopup` + `aria-expanded="true"`)이 있으면 첫 Esc 는 팝업 몫입니다. 팝업을 여는 부품은 트리거에 두 속성을 정확히 답니다.

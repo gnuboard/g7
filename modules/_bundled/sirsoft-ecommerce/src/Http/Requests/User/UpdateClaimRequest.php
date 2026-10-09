@@ -48,7 +48,7 @@ class UpdateClaimRequest extends FormRequest
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
-     * @return bool
+     * @return bool 요청 허용 여부
      */
     public function authorize(): bool
     {
@@ -162,7 +162,7 @@ class UpdateClaimRequest extends FormRequest
             'charge_method.in' => __('sirsoft-ecommerce::validation.claims.charge_method.in'),
             'charge_method.prohibited' => __('sirsoft-ecommerce::validation.claims.amounts.prohibited'),
             'add_image_ids.array' => __('sirsoft-ecommerce::validation.claims.image_ids.array'),
-            'add_image_ids.max' => __('sirsoft-ecommerce::validation.claims.image_ids.max'),
+            'add_image_ids.max' => trans_choice('sirsoft-ecommerce::validation.claims.image_ids.max', $maxImages = $this->maxImages(), ['max' => $maxImages]),
             'remove_image_ids.array' => __('sirsoft-ecommerce::validation.claims.image_ids.array'),
             'redelivery_address.array' => __('sirsoft-ecommerce::validation.claims.redelivery_address.array'),
             'redelivery_address.prohibited' => __('sirsoft-ecommerce::validation.claims.amounts.prohibited'),

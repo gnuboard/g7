@@ -53,6 +53,7 @@ return [
     'language' => [
         'ko' => '한국어',
         'en' => 'English',
+        'ja' => '日本語',
     ],
 
     // User management messages
@@ -83,9 +84,10 @@ return [
     'invalid_language' => 'Unsupported language.',
     'activity_log_success' => 'Activity log retrieved successfully.',
     'activity_log_failed' => 'Failed to retrieve activity log.',
-    'bulk_status_updated' => ':count user(s) status updated successfully.',
+    'bulk_status_updated' => 'Status of :count user updated successfully.|Status of :count users updated successfully.',
     'bulk_update_status_failed' => 'Failed to update user status in bulk.',
-    'bulk_roles_updated' => 'Changed roles of :count user(s). (:skipped skipped)',
+    'bulk_roles_updated' => 'Changed roles of :count user. (:skipped skipped)|Changed roles of :count users. (:skipped skipped)',
+    'bulk_roles_updated_with_unchanged' => 'Changed roles of :count user. (:skipped skipped, :unchanged already up to date)|Changed roles of :count users. (:skipped skipped, :unchanged already up to date)',
     'bulk_roles_failed' => 'Failed to change user roles in bulk.',
     'bulk_roles_ceiling' => 'Nothing was changed because the selection includes a role with permissions you cannot grant.',
     'last_admin_role_cannot_remove' => 'Cannot remove the admin role because you are the only user with the admin role in the system.',

@@ -420,7 +420,7 @@ export function AvatarUploader({
         <Div className="relative">
           <Img
             src={previewUrl}
-            alt="Preview"
+            alt={t('mypage.profile.avatar_preview')}
             className={`rounded-full object-cover ${
               size === 'sm' ? 'w-10 h-10' :
               size === 'md' ? 'w-12 h-12' :

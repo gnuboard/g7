@@ -527,6 +527,8 @@ Content-Type: application/json
 | updated_count | integer | `1` | 역할 구성이 실제로 바뀐 회원 수 (이미 같은 상태인 회원은 제외) |
 | skipped_count | integer | `2` | 건너뛴 회원 수 |
 | skipped | array | `[{"uuid":"…","reason":"grade"},{"uuid":"…","reason":"scope"}]` | 건너뛴 회원과 사유 — `grade`(최고관리자 등 등급 상한), `scope`(권한 범위 밖), `last_admin`(마지막 관리자인 본인에게서 관리자 역할 제거), `last_role`(빼고 나면 역할이 하나도 남지 않는 회원) |
+| unchanged_count | integer | `1` | 이미 원하는 상태라 바뀌지 않은 회원 수 (변경·제외 어디에도 들지 않는다 — 고른 회원 수 = 변경 + 제외 + 변경 없음) |
+| unchanged | array | `[{"uuid":"…","reason":"already_assigned"}]` | 바뀌지 않은 회원과 사유 — `already_assigned`(추가할 역할을 이미 가짐), `not_assigned`(뺄 역할을 가지지 않음) |
 
 **응답 예시**
 
@@ -544,7 +546,9 @@ HTTP/1.1 200
         "skipped": [
             { "uuid": "f672c40a-0000-0000-0000-000000000003", "reason": "grade" },
             { "uuid": "9d1d7a07-0000-0000-0000-000000000004", "reason": "scope" }
-        ]
+        ],
+        "unchanged_count": 0,
+        "unchanged": []
     }
 }
 ```
@@ -1053,7 +1057,7 @@ _단건 응답: `data` 객체의 필드._
 | total_users | integer | `82` | 전체 사용자 수 (통계 객체는 count/추이 포함) |
 | users_this_week | integer | `82` | 이번 주 신규 가입자 수 |
 | users_this_month | integer | `82` | 이번 달 신규 가입자 수 |
-| users_today | integer | `70` | 오늘 신규 가입자 수 |
+| users_today | integer | `70` | 오늘 신규 가입자 수 (보는 사람의 시간대로 오늘) |
 | active_users_this_week | integer | `3` | 이번 주 활동(로그인) 사용자 수 |
 | language_distribution | object | `{"ko":82}` | 언어별 사용자 분포 (언어 코드 => 사용자 수) |
 

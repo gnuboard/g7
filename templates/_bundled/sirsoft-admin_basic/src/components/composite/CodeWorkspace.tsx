@@ -33,6 +33,13 @@ interface Buffer {
   baseRevision: number;
   /** 마지막으로 활성이었던 시각 — 탭 상한을 넘길 때 LRU 로 쓴다 */
   touchedAt: number;
+  /**
+   * 기준선(서버 본문)을 아직 모른다 — 열려 있지 않은 파일의 초안을 복원한 버퍼.
+   *
+   * 그 파일 본문이 도착하면 기준선을 채운다. 이 표시 없이 초안 자신을 기준선으로 잡으면 「바뀐 것
+   * 없음」 이 되어, 본문이 도착하는 순간 「깨끗한 버퍼는 최신본을 받는다」 규칙이 초안을 덮어썼다.
+   */
+  baseUnknown?: boolean;
 }
 
 export interface CodeWorkspaceProps {
@@ -269,8 +276,10 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
    * 미저장 탭 닫기 요청 — 3지선다(저장 / 버림 / 취소) 대화상자의 상태 (계획서 §4.3 표 6행).
    * `saving` 이면 «저장하고 닫기» 를 골라 저장 완료를 기다리는 중이다.
    */
-  const [closeRequest, setCloseRequest] = useState<{ key: string; saving: boolean } | null>(null);
+  const [closeRequest, setCloseRequest] = useState<{ key: string; saving: boolean; failed?: boolean } | null>(null);
   const closeSaveFiredRef = useRef(false);
+  /** «저장하고 닫기» 로 부른 저장이 실제로 진행 중(isLoading)인 것을 한 번이라도 봤는지 — 끝났는데 dirty 면 실패다. */
+  const closeSawSavingRef = useRef(false);
 
   /** 충돌 바의 [차이 보기] — 내 편집분과 서버 본문을 나란히 보여 주는 창 (계획서 §7.7 표 7행) */
   const [diffOpen, setDiffOpen] = useState(false);
@@ -356,6 +365,26 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
         return {
           ...current,
           [fileKey]: { value: serverValue, base: serverValue, baseRevision: serverRevision, touchedAt: now },
+        };
+      }
+
+      if (existing.baseUnknown) {
+        // 복원해 둔 초안에 이제야 기준선이 생긴다 — 초안은 그대로 두고 서버 본문을 기준선으로 삼는다.
+        // 초안을 적은 뒤 누군가 저장했다면(판본이 올랐다) 조용히 고르지 않고 충돌로 세운다.
+        if (existing.value === serverValue) {
+          return {
+            ...current,
+            [fileKey]: { value: serverValue, base: serverValue, baseRevision: serverRevision, touchedAt: now },
+          };
+        }
+
+        if (serverRevision > existing.baseRevision) {
+          setConflictKeys((keys) => (keys.includes(fileKey) ? keys : [...keys, fileKey]));
+        }
+
+        return {
+          ...current,
+          [fileKey]: { value: existing.value, base: serverValue, baseRevision: existing.baseRevision, touchedAt: now },
         };
       }
 
@@ -598,7 +627,24 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     if (isDirty(key)) {
       if (!closeSaveFiredRef.current) {
         closeSaveFiredRef.current = true;
+        closeSawSavingRef.current = false;
         onSave?.();
+
+        return;
+      }
+
+      if (isLoading) {
+        closeSawSavingRef.current = true;
+
+        return;
+      }
+
+      // 저장이 끝났는데(진행 → 끝) 여전히 dirty — 서버가 거절했다. 「저장하는 중」 으로 굳히지 않고
+      // 실패를 알린 뒤 버튼을 풀어 다시 저장하거나 버리고 닫을 수 있게 한다(편집분은 그대로).
+      if (closeSawSavingRef.current) {
+        closeSaveFiredRef.current = false;
+        closeSawSavingRef.current = false;
+        setCloseRequest({ key, saving: false, failed: true });
       }
 
       return;
@@ -607,7 +653,8 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     performClose(key);
     setCloseRequest(null);
     closeSaveFiredRef.current = false;
-  }, [closeRequest, fileKey, isDirty, onSave, performClose]);
+    closeSawSavingRef.current = false;
+  }, [closeRequest, fileKey, isDirty, isLoading, onSave, performClose]);
 
   const requestSaveAndClose = useCallback(() => {
     if (!closeRequest) {
@@ -691,11 +738,15 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       for (const [key, draft] of Object.entries(pendingDrafts)) {
         const existing = next[key];
 
+        // 열려 있지 않은 파일은 서버 본문을 아직 모른다 — 기준선은 본문이 도착할 때 채운다.
+        const baseUnknown = !existing && key !== fileKey;
+
         next[key] = {
           value: draft.value,
-          base: existing?.base ?? (key === fileKey ? serverValue : draft.value),
+          base: existing?.base ?? (key === fileKey ? serverValue : ''),
           baseRevision: existing?.baseRevision ?? draft.baseRevision,
           touchedAt: now,
+          ...(baseUnknown ? { baseUnknown: true } : {}),
         };
       }
 
@@ -1156,7 +1207,9 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
             <Span className="block mt-1 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
               {closeRequest.saving
                 ? t('admin.templates.layout_edit.draft.close_saving')
-                : t('admin.templates.layout_edit.draft.close_question')}
+                : closeRequest.failed
+                  ? t('admin.templates.layout_edit.draft.close_failed')
+                  : t('admin.templates.layout_edit.draft.close_question')}
             </Span>
             <Div className="flex flex-wrap justify-end gap-2 mt-4">
               <Button

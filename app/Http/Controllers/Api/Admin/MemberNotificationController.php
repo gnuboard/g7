@@ -93,7 +93,7 @@ class MemberNotificationController extends AdminBaseController
             $count = $this->service->bulkDeleteByAdmin($ids);
 
             return $this->success(
-                __('member_notification.bulk_deleted', ['count' => $count]),
+                trans_choice('member_notification.bulk_deleted', $count),
                 ['deleted_count' => $count]
             );
         } catch (\Exception $e) {

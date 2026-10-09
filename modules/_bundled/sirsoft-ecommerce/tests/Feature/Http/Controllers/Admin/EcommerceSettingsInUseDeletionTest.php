@@ -27,6 +27,11 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 설정 읽기·수정 권한을 가진 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,11 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 대체한 Mockery 객체를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -51,6 +61,7 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * 것은 사용량 집계가 아니라 그 결과가 어떤 응답이 되는가이기 때문이다.
      *
      * @param  int  $count  사용 건수
+     * @return void 반환값 없음
      */
     private function pretendInUse(int $count): void
     {
@@ -67,6 +78,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_type, error_class=domain
      *
      * @effects in_use_shipping_type_deletion_returns_400_with_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_in_use_shipping_type_returns_400_with_reason(): void
     {
@@ -91,7 +104,7 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
         $response->assertStatus(400);
         $response->assertJsonPath(
             'message',
-            __('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
+            trans_count('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
                 'name' => $type->getLocalizedName(),
                 'count' => 3,
             ])
@@ -113,6 +126,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=domain
      *
      * @effects in_use_shipping_carrier_deletion_returns_400_with_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_in_use_shipping_carrier_returns_400_with_reason(): void
     {
@@ -136,7 +151,7 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
         $response->assertStatus(400);
         $response->assertJsonPath(
             'message',
-            __('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', ['count' => 2])
+            trans_count('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', ['count' => 2])
         );
         $this->assertNotSame(
             __('sirsoft-ecommerce::messages.settings.save_error'),
@@ -156,6 +171,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_type, error_class=domain
      *
      * @effects in_use_shipping_type_deletion_returns_400_with_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_in_use_shipping_type_deletion_leaves_the_settings_file_untouched(): void
     {
@@ -195,6 +212,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=domain
      *
      * @effects in_use_shipping_carrier_deletion_returns_400_with_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_in_use_carrier_deletion_leaves_the_settings_file_untouched(): void
     {
@@ -239,6 +258,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=none
      *
      * @effects settings_shipping_section_with_only_catalogs_does_not_wipe_scalars
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_payload_with_only_catalogs_does_not_wipe_scalar_settings(): void
     {
@@ -279,6 +300,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=none
      *
      * @effects settings_shipping_null_catalog_does_not_wipe_scalars
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_payload_with_a_null_carrier_catalog_does_not_wipe_scalar_settings(): void
     {
@@ -318,6 +341,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_type, error_class=none
      *
      * @effects settings_shipping_null_catalog_does_not_wipe_scalars
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_payload_with_a_null_type_catalog_does_not_wipe_scalar_settings(): void
     {
@@ -354,6 +379,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_type, error_class=infrastructure
      *
      * @effects settings_save_infrastructure_exception_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_infrastructure_exception_on_settings_save_returns_500(): void
     {
@@ -390,6 +417,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=infrastructure
      *
      * @effects settings_save_carrier_infrastructure_exception_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_infrastructure_exception_on_carrier_settings_save_returns_500(): void
     {
@@ -428,6 +457,8 @@ class EcommerceSettingsInUseDeletionTest extends ModuleTestCase
      * @scenario resource=shipping_carrier, error_class=none
      *
      * @effects settings_catalog_only_save_reports_its_section_to_the_save_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_catalog_only_save_reports_its_section_to_the_save_hook(): void
     {

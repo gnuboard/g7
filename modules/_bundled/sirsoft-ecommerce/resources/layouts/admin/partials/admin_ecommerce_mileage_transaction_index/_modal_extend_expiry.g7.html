@@ -29,7 +29,7 @@
               <set-state target="global" mileageExtend.days="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix|count={{_global.mileageExtend?.days ?? 30}}</span>
         </div>
         <span data-if="{{_global.mileageExtend?.errors?.errors?.days}}" class="form-error">{{_global.mileageExtend?.errors?.errors?.days?.[0] ?? ''}}</span>
       </div>

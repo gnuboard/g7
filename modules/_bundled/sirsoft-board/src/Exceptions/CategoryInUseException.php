@@ -21,7 +21,7 @@ class CategoryInUseException extends Exception
      */
     public function __construct(string $categoryName, int $postCount = 0, int $code = 0, ?\Throwable $previous = null)
     {
-        $message = __('sirsoft-board::messages.errors.category_in_use', [
+        $message = trans_count('sirsoft-board::messages.errors.category_in_use', [
             'category' => $categoryName,
             'count' => $postCount,
         ]);

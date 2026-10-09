@@ -9,6 +9,7 @@
 ### Added
 
 - 환경설정 「동의 관리 제공자」 목록에 보이는 이 플러그인의 이름(`messages.consent_provider.label`, 「クッキー同意バナー (sirsoft-gdpr)」)의 일본어 번역을 추가했습니다.
+- 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
 - 개인정보처리방침 주소 설정(`settings.fields.privacy_policy_url.*`)과 그 검증 문구, 스냅샷의 옛 슬러그 기록 안내(`legacy_slug_note`), 주소 미등록 안내(`no_policy_url`), 연간 통지 메일의 처리방침 링크 문구의 일본어 번역을 추가했습니다.
 - 필수 저장 항목의 「확장이 제공하는 항목(자동)」 라벨·안내(`necessary_storage_allowlist.provided_label`·`provided_hint`)와 레이아웃 편집기에 쓰이는 연간 통지 대상·직권 발송 창 이름의 일본어 번역을 추가했습니다.
 - 개인정보 연간 통지 「지금 발송」 직권 실행의 일본어 번역을 추가했습니다 — 확인 창·진행 상태 줄·남은 건수 문구(`annual_notice.manual_run.*`)와 직권 실행 대상 이름(`messages.annual_notice.manual_run_label`), 연간 통지 대상 줄 이름(`annual_notice.targets.row_label`)입니다.
@@ -21,11 +22,14 @@
 ### Changed
 
 - 운영 정보 설명·저장 항목 찾기 안내·정책 버전 스냅샷 설명과 항목명을 한국어 원문 변경(페이지 슬러그 → 처리방침 주소, 확장 제공 항목 자동 표시)에 맞춰 다시 번역했습니다.
-- 개인정보 연간 통지 메일 본문의 처리방침 링크 줄을 원문과 같은 자리표시자로 바꿨습니다 — 처리방침 주소를 비워 둔 사이트에서는 링크 줄이 생략되고, 종전처럼 주소 없는 링크가 남지 않습니다.
 
 ### Removed
 
 - 페이지 슬러그 설정(`settings.fields.privacy_policy_slug.*`)과 슬러그 미등록 안내(`snapshot_modal.no_policy_slug`) 번역을 정리했습니다.
+
+### Fixed
+
+- 동의 일괄 갱신 API 응답 문구(`consent.renew_all_success`)에 갱신 수가 채워지지 않고 「アクティブな項目 {renewed} 個を…」처럼 자리표시자가 그대로 나오던 문제를 수정했습니다(`{renewed}` → `:renewed`).
 
 ## [1.0.2] - 2026-09-06
 

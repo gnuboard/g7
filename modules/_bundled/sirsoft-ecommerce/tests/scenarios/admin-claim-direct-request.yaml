@@ -41,6 +41,7 @@ effects:
   - admin_claim_list_filters_by_request_source
   # 운영자 축이 풀지 않는 것 · 승인이 따로 막히는 자리 (계획 검증 §7-1 보강)
   - admin_request_follows_the_quantity_lock
+  - legacy_cancel_quantity_lock_reason_is_one_plural_form
   - admin_blocked_approval_keeps_the_request_and_reports_the_reason
   - admin_approval_with_an_unpaid_charge_goes_to_payment_pending
   - admin_request_rejects_an_option_of_another_order

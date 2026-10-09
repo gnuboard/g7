@@ -68,6 +68,28 @@ class UserCountryDisplayTest extends TestCase
     }
 
     /**
+     * 본인 프로필(/api/me) 응답이 언어 이름을 싣는다 — 마이페이지 「내 정보」 가 `language_label ?? language`
+     * 를 읽는데 프로필 응답만 이름이 없어 코드(`ko`·`en`)가 그대로 보였다(7.1.0 N O-N7). 언어 칸은 필수라 비어 있는 경우는 없다.
+     *
+     * @scenario filter_axis=language, outcome=narrows
+     *
+     * @effects user_language_label_exposed_on_profile
+     *
+     * @return void 반환값 없음
+     */
+    public function test_profile_includes_language_label(): void
+    {
+        app()->setLocale('ko');
+        $en = User::factory()->create(['language' => 'en', 'email' => Str::random(8).'@cd.test']);
+        $ja = User::factory()->create(['language' => 'ja', 'email' => Str::random(8).'@cd.test']);
+        $this->actingAs($en)->getJson('/api/me')->assertOk()
+            ->assertJsonPath('data.language', 'en')
+            ->assertJsonPath('data.language_label', 'English');
+        $this->actingAs($ja)->getJson('/api/me')->assertOk()
+            ->assertJsonPath('data.language_label', '日本語');
+    }
+
+    /**
      * 회원 조회 권한을 가진 운영자를 만듭니다.
      *
      * @return User 운영자

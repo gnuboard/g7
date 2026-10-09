@@ -179,11 +179,11 @@ return [
     'cooldown_required' => 'Please wait :time before posting again.',
     'cooldown_required_report' => 'Reports can be submitted at :time intervals. Please try again later.',
     'cooldown_duration' => [
-        'seconds' => ':seconds seconds',
-        'minutes' => ':minutes minutes',
-        'minutes_seconds' => ':minutes minutes :seconds seconds',
-        'hours' => ':hours hours',
-        'hours_minutes' => ':hours hours :minutes minutes',
+        'seconds' => ':seconds second|:seconds seconds',
+        'minutes' => ':minutes minute|:minutes minutes',
+        'minutes_seconds' => ':minutes_text :seconds_text',
+        'hours' => ':hours hour|:hours hours',
+        'hours_minutes' => ':hours_text :minutes_text',
     ],
 
     // Board validation (backward compatibility)
@@ -276,7 +276,7 @@ return [
             'blinded' => 'Cannot create reply on blinded post.',
             'deleted' => 'Cannot create reply on deleted post.',
             'secret' => 'Cannot create reply on a secret post you are not allowed to view.',
-            'depth_exceeded' => 'This board allows replies up to :max level(s) only.',
+            'depth_exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
         'reply_not_allowed' => 'Reply feature is disabled for this board.',
@@ -303,7 +303,7 @@ return [
         'blocked_keyword' => 'Content contains blocked keyword: ":keyword".',
         'files' => [
             'array' => 'Attachments must be an array.',
-            'max' => 'You can upload up to :max files only.',
+            'max' => 'You can upload up to :max file only.|You can upload up to :max files only.',
             'file' => 'Invalid file.',
             'file_max' => 'File size exceeds the allowed limit.',
             'mimes' => 'File type is not allowed.',
@@ -512,7 +512,7 @@ return [
             'integer' => 'Comment depth must be an integer.',
             'min' => 'Comment depth must be at least :min.',
             'max' => 'Replies can only be nested up to :max levels.',
-            'exceeded' => 'This board allows replies up to :max level(s) only.',
+            'exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
         ],
         'user_id' => [
             'exists' => 'User does not exist.',
@@ -571,7 +571,7 @@ return [
     ],
 
     // Custom Rule messages
-    'category_in_use' => 'The ":category" category is currently in use by :count post(s).',
+    'category_in_use' => 'The ":category" category is currently in use by :count post.|The ":category" category is currently in use by :count posts.',
     'board_type_invalid' => 'Invalid board type. Available types: :types',
 
     // Board type management validation
@@ -633,11 +633,11 @@ return [
     'report_permissions' => [
         'view_roles' => [
             'required_with' => 'Please select at least one role for report view permission.',
-            'min' => 'Please select at least :min role(s) for report view permission.',
+            'min' => 'Please select at least :min role for report view permission.',
         ],
         'manage_roles' => [
             'required_with' => 'Please select at least one role for report manage permission.',
-            'min' => 'Please select at least :min role(s) for report manage permission.',
+            'min' => 'Please select at least :min role for report manage permission.',
         ],
     ],
 
@@ -689,8 +689,8 @@ return [
             'min' => 'Report detail must be at least :min characters.',
             'max' => 'Report detail cannot exceed :max characters.',
         ],
-        'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit reports).',
-        'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejections within the last :days days. Please try again later.',
+        'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit report).|You have exceeded the daily report limit (:limit reports).',
+        'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejection in the last :days-day period. Please try again later.|Reporting is restricted due to :count rejections in the last :days-day period. Please try again later.',
     ],
 
     // Scrap validation messages

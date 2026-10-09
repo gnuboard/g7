@@ -29,7 +29,6 @@ const DEFINITIONS_TAB = '/admin/settings?tab=notification_definitions';
 const SETTINGS_PERMISSIONS = [
   'core.settings.read',
   'core.settings.update',
-  'core.admin.notifications.read',
 ] as const;
 
 /** 채널 탭 표시명 (lang/ko/notification.php) */

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\PrivacyManualRun;
+use App\Privacy\ManualRun\PrivacyManualRunService;
 use Illuminate\Http\Request;
 
 /**
@@ -37,7 +38,8 @@ class PrivacyManualRunResource extends BaseApiResource
             'processed_count' => $run->processed_count,
             'remaining_count' => $run->remaining_count,
             'mode' => $run->mode,
-            'error' => $run->error,
+            // 코어가 붙인 사유는 번역 키로 저장돼 있다 — 보는 관리자의 언어로 푼다.
+            'error' => PrivacyManualRunService::displayError($run->error),
             'requester_name' => $run->requester?->name,
             'queued_at' => $this->formatDateTimeStringForUser($run->queued_at),
             'started_at' => $this->formatDateTimeStringForUser($run->started_at),

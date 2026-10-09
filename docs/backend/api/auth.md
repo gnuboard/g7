@@ -512,7 +512,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) |
-| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`) |
+| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`). 응답 상위 `message` 도 사유를 따른다 — 식별자는 유효한데 연기할 수 없으면 `auth.password_change_postpone_not_allowed`, 식별자가 무효면 `auth.password_change_invalid_challenge` |
 | 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 |
 
@@ -1022,7 +1022,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 관리자 경로에 비관리자 식별자가 온 경우 (`auth.admin_required`) |
-| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`) |
+| 422 | Unprocessable Entity | 식별자 형식 위반, 무효·만료·경로 불일치(`auth.password_change_invalid_challenge`), 같은 식별자 처리 중(`auth.password_change_in_progress`), 연기할 수 없는 사유(만료 + '변경해야 로그인' 모드 또는 관리자가 정해 준 비밀번호 — `auth.password_change_postpone_not_allowed`). 응답 상위 `message` 도 사유를 따른다 — 식별자는 유효한데 연기할 수 없으면 `auth.password_change_postpone_not_allowed`, 식별자가 무효면 `auth.password_change_invalid_challenge` |
 | 423 | Locked | 계정이 잠긴 경우 (`POST /api/auth/login` 의 423 과 동일한 형태) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 |
 
@@ -1562,6 +1562,8 @@ HTTP/1.1 200
 프론트(사용자) 레이아웃 전역 부트스트랩 엔드포인트. `_user_base.g7.html` 의 `current_user` data_source 가 모든 페이지 진입 시 호출한다. 관리자 `user` 와 달리 응답을 `UserResource::toAuthArray()` 로 만들어 `core.user.filter_resource_data` 필터를 적용하므로, marketing 플러그인·ecommerce 모듈이 훅으로 병합한 필드(`notify_*`, `marketing_consent*`, `channels`, `ecommerce_*` 등)가 함께 내려온다. 이 필드들은 확장 소유이므로 상세 설명은 각 확장 문서를 따른다. 로그인 시 이 응답이 계정 영속 통화를 덮어쓰는 계약(D-LOGIN-CUR)의 출처다.
 
 **인증 계약**: 이 경로(`api.auth.user`)는 `auth:sanctum` 으로 인증이 필수다. 인증 여부와 무관하게 게스트 컨텍스트가 필요한 화면은 `optional.sanctum` 이 걸린 `/api/user/auth/user`(`api.user.auth.user`)를 사용해야 한다 — 프론트 `data_source` 의 `auth_mode: "optional"` 이 이 경로에 대응한다. 두 경로의 미들웨어 차이가 곧 `auth_required`/`auth_mode` 계약이므로 변경 시 프론트와 함께 검토한다(이슈 #64).
+
+**계정 상태**: 이 경로는 `check.user_status:core.profile.read` 를 건다 — 활성이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200, 없으면 403 과 상태 사유다. 라우트 `auth_required` 판정이 이 응답을 보므로, 403 이면 마이페이지 대신 로그인 화면으로 간다. 같은 판정이 `GET /api/me` 에도 걸리고(`me.md` 「계정 상태와 조회」), `POST /api/auth/logout` 등 쓰기는 권한과 무관하게 상태로 403 이다.
 
 
 ### POST /api/auth/validate-reset-token

@@ -134,7 +134,7 @@
         <icon name="search" size="sm"/>
         <span>$t:mypage.board_activities.search_result</span>
         <span data-if="{{myReactions?.data?.query?.search}}" class="font-medium">"{{myReactions?.data?.query?.search}}"</span>
-        <span>({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit)</span>
+        <span>({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myReactions?.data?.pagination?.total ?? 0}}</span><span>)</span>
       </div>
       <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
         <on type="click">

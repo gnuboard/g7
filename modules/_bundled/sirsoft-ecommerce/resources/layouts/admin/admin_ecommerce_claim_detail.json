@@ -492,7 +492,7 @@
                                 "props": {
                                     "className": "mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-sm text-red-800 dark:text-red-300"
                                 },
-                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}"
+                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|count={{claim?.data?.claim?.collection_overdue_days ?? 0}}|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}"
                             },
                             {
                                 "comment": "「진행 방식」 줄 (교환만, D1) — 일반 교환/선교환 뱃지와 전환 버튼. 전환할 수 있는지는 서버(`exchange_mode_abilities`)가 실제 거절 조건과 같은 판정으로 준다. 막힌 이유는 버튼 옆 문구다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다.",

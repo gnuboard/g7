@@ -897,7 +897,9 @@ class UserService
         $userIds = array_map(static fn (User $u): int => $u->id, $modifiable);
 
         if (empty($userIds)) {
-            HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, 0);
+            // 훅에는 실제로 바뀐 회원만 싣는다 — 활동 로그 리스너가 이 목록의 회원마다 「상태 변경」 을 남기므로,
+            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 영역 C 실측).
+            HookManager::doAction('sirsoft-core.user.after_bulk_update', [], $status, 0);
 
             return [
                 'updated_count' => 0,
@@ -928,8 +930,9 @@ class UserService
             return $count;
         });
 
-        // after_bulk_update 훅 실행
-        HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, $updatedCount);
+        // after_bulk_update 훅 실행 — 실제로 바뀐 회원(등급·범위를 통과한 대상)만 싣는다(위 빈 목록 분기와 같은 이유).
+        $changedUuids = array_map(static fn (User $u): string => $u->uuid, $modifiable);
+        HookManager::doAction('sirsoft-core.user.after_bulk_update', $changedUuids, $status, $updatedCount);
 
         return [
             'updated_count' => $updatedCount,
@@ -946,10 +949,14 @@ class UserService
      * 거부하고(액터가 부여할 수 없는 역할은 붙이지도 떼지도 못한다), 등급·범위·자기 잠금·마지막 역할로
      * 걸러진 회원은 사유와 함께 돌려준다.
      *
+     * 이미 원하는 상태인 회원(추가할 역할을 이미 가짐·뺄 역할을 가지지 않음)은 변경도 제외도 아니므로
+     * `unchanged` 에 사유(`already_assigned`/`not_assigned`)와 함께 따로 돌려준다 — 고른 회원 수가
+     * 변경·제외·변경 없음의 합으로 맞아떨어지게.
+     *
      * @param  array<int, string>  $uuids  대상 회원 UUID
      * @param  array<int, int|string>  $roleIds  더하거나 뺄 역할 ID
      * @param  string  $mode  'add' | 'remove'
-     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{uuid: string, reason: string}>} 처리 결과
+     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{uuid: string, reason: string}>, unchanged_count: int, unchanged: array<int, array{uuid: string, reason: string}>} 처리 결과
      *
      * @throws PermissionEscalationException 액터 상한을 넘는 역할이 포함된 경우
      */
@@ -1006,7 +1013,8 @@ class UserService
             }));
         }
 
-        $changedUsers = DB::transaction(function () use ($modifiable, $roleIds, $mode, $actor) {
+        $unchanged = [];
+        $changedUsers = DB::transaction(function () use ($modifiable, $roleIds, $mode, $actor, &$unchanged) {
             $changed = [];
             foreach ($modifiable as $user) {
                 $before = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
@@ -1014,6 +1022,8 @@ class UserService
                 if ($mode === 'add') {
                     $attach = array_values(array_diff($roleIds, $before));
                     if ($attach === []) {
+                        $unchanged[] = ['uuid' => $user->uuid, 'reason' => 'already_assigned'];
+
                         continue;
                     }
                     $pivot = ['assigned_by' => $actor instanceof User ? $actor->id : null, 'assigned_at' => now()];
@@ -1022,6 +1032,8 @@ class UserService
                 } else {
                     $detach = array_values(array_intersect($roleIds, $before));
                     if ($detach === []) {
+                        $unchanged[] = ['uuid' => $user->uuid, 'reason' => 'not_assigned'];
+
                         continue;
                     }
                     $user->roles()->detach($detach);
@@ -1046,6 +1058,8 @@ class UserService
             'updated_count' => count($changedUsers),
             'skipped_count' => count($skipped),
             'skipped' => $skipped,
+            'unchanged_count' => count($unchanged),
+            'unchanged' => $unchanged,
         ];
 
         HookManager::doAction(
@@ -1151,6 +1165,7 @@ class UserService
         $updatedCount = 0;
         $failedCount = 0;
         $failedReasons = [];
+        $withdrawnUuids = [];
 
         foreach ($uuids as $uuid) {
             $user = $this->userRepository->findByUuid($uuid);
@@ -1165,6 +1180,7 @@ class UserService
             try {
                 $this->withdrawUser($user);
                 $updatedCount++;
+                $withdrawnUuids[] = $uuid;
             } catch (Exception $e) {
                 $failedCount++;
                 $failedReasons[] = $this->describeWithdrawFailure($e);
@@ -1176,8 +1192,8 @@ class UserService
             }
         }
 
-        // after_bulk_update 훅 실행
-        HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, $updatedCount);
+        // after_bulk_update 훅 실행 — 탈퇴가 실제로 끝난 회원만 싣는다(실패한 회원에 상태 변경 기록이 남지 않게).
+        HookManager::doAction('sirsoft-core.user.after_bulk_update', $withdrawnUuids, $status, $updatedCount);
 
         // 사유를 함께 돌려주지 않으면 화면은 "몇 건 실패" 까지만 말할 수 있다 —
         // 운영자는 왜 안 됐는지 알 방법이 없어 같은 조작을 반복하게 된다.

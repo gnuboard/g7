@@ -305,6 +305,26 @@
             "id": "user_layout_root",
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.\n           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6.",
+                    "type": "keydown",
+                    "key": "Escape",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{_global.mobileMenuOpen}}",
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "props": {
                 "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
             },
@@ -697,6 +717,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:shop.cart.title",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
                                     },
                                     "children": [
@@ -709,18 +731,12 @@
                                             }
                                         },
                                         {
-                                            "comment": "세 자리(99+)일 때만 9px — 12px 은 20px 원을 넘친다(7.1.0 출시 전 점검 실측)",
+                                            "comment": "수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝).",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
-                                            "classMap": {
-                                                "base": "absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white font-bold rounded-full flex items-center justify-center",
-                                                "key": "{{_global.cartCount > 99 ? 'triple' : 'short'}}",
-                                                "variants": {
-                                                    "triple": "text-[9px]",
-                                                    "short": "text-xs"
-                                                },
-                                                "default": "text-xs"
+                                            "props": {
+                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
                                             },
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
                                         }
@@ -741,6 +757,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
+                                        "aria-label": "{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
@@ -770,6 +788,9 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:user.menu",
+                                        "aria-expanded": "{{!!_global.mobileMenuOpen}}",
                                         "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     },
                                     "children": [
@@ -788,14 +809,14 @@
                     ]
                 },
                 {
-                    "comment": "=== 모바일 사이드 메뉴 (MobileNav 드로어) ===",
+                    "comment": "=== 모바일 사이드 메뉴 (MobileNav 드로어) ===\n         닫힌 서랍은 화면 밖으로 밀기만 하면 Tab·화면 읽기가 그 안으로 들어간다 — invisible 로 숨기고,\n         밀려 나가는 움직임이 끝난 뒤 숨도록 visibility 도 전환에 넣는다(transition-all).",
                     "id": "mobile_nav_drawer",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "{{_global.mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-transform duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
+                                "className": "{{_global.mobileMenuOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-all duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
                             }
                         }
                     },
@@ -834,6 +855,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:common.close",
                                         "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     },
                                     "children": [

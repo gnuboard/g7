@@ -106,7 +106,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "새로고침 — query 를 합치지 않고 비운 주소로 이동해 검색·필터를 초기 상태로 되돌린다",
+                                        "comment": "새로고침 — 보고 있던 목록을 그대로 다시 부른다(`mergeQuery=true` 라 페이지·검색·필터를 유지한다)",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -117,6 +117,9 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh",
                                     "className": "btn-icon"
                                 },
                                 "children": [

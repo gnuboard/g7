@@ -149,7 +149,7 @@
           "board": {
             "slug": "free",
             "name": "자유게시판",
-            "description": "<p>회원 자유 소통 공간</p>",
+            "description": "회원 자유 소통 공간",
             "type": "normal",
             "categories": [
               "일상",
@@ -240,7 +240,7 @@
               "reply_count": 2,
               "attachment_count": 3,
               "has_attachment": true,
-              "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "parent_id": null,
               "depth": 0,
               "is_reply": false,
@@ -455,7 +455,7 @@
           "reply_count": 1,
           "attachment_count": 3,
           "has_attachment": true,
-          "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+          "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "parent_id": null,
           "depth": 0,
           "is_reply": false,
@@ -525,7 +525,7 @@
               "collection": "attachments",
               "order": 0,
               "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "is_image": true,
               "meta": null
             },
@@ -1400,7 +1400,7 @@
               "collection": "attachments",
               "order": 0,
               "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "is_image": true,
               "meta": null
             }
@@ -1551,6 +1551,9 @@
                 "admin"
               ]
             }
+          },
+          "abilities": {
+            "can_update": true
           }
         }
       },
@@ -2272,7 +2275,7 @@
                     "reply_count": 0,
                     "attachment_count": 0,
                     "has_attachment": false,
-                    "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "parent_id": null,
                     "depth": 0,
                     "is_reply": false,
@@ -2352,7 +2355,7 @@
           },
           {
             "id": "replies_expanded",
-            "label": "답글 펼침",
+            "label": "$t:editor.state.replies_expanded",
             "comment": "대댓글(depth>0) 은 collapsedReplies 기본 접힘이라 캔버스 미렌더. collapsedReplies:{501:false} 로 댓글 502(대댓글) 본체를 표시. 첨부는 `!== false` 라 기본 펼침.",
             "initialState": {
               "local": {
@@ -2385,7 +2388,7 @@
                     "board": {
                       "slug": "free",
                       "name": "자유게시판",
-                      "description": "<p>회원 자유 소통 공간</p>",
+                      "description": "회원 자유 소통 공간",
                       "type": "normal",
                       "categories": [
                         "일상",
@@ -2508,7 +2511,7 @@
           },
           {
             "id": "validation_failed",
-            "label": "검증 실패",
+            "label": "$t:editor.state.validation_failed",
             "comment": "게시글 작성 폼 검증 실패 — _post_form partial 이 _local.errors.{title,...} 인라인 에러를 if/className 으로 표시(본문 line 17/552).",
             "formErrors": {
               "_local.errors.title": [
@@ -2801,7 +2804,7 @@
           },
           {
             "id": "attachments_replies_open",
-            "label": "첨부·답글 펼침",
+            "label": "$t:editor.state.attachments_replies_open",
             "comment": "첨부파일 목록(image/non-image 분기) + 대댓글(depth>0) 펼침. showAttachments:true + collapsedReplies:{501:false}(댓글 502 의 root=501).",
             "initialState": {
               "local": {
@@ -3605,35 +3608,29 @@
                 "selectedIds": [
                   11,
                   12,
-                  13
+                  13,
+                  14,
+                  15
                 ],
-                "bulkActionType": "pending",
+                "bulkActionType": "suspended",
                 "statusCountsLoading": false,
                 "statusCountsData": {
-                  "changeable_count": 0,
+                  "changeable_count": 3,
                   "changeable_status_counts": {
                     "pending": {
-                      "count": 3,
-                      "label": "샘플 제목"
-                    },
-                    "rejected": {
-                      "count": 3,
-                      "label": "샘플 제목"
+                      "count": 2,
+                      "label": "접수"
                     },
                     "review": {
-                      "count": 3,
-                      "label": "샘플 제목"
-                    },
-                    "suspended": {
-                      "count": 3,
-                      "label": "샘플 제목"
+                      "count": 1,
+                      "label": "검토"
                     }
                   },
-                  "deleted_count": 3,
+                  "deleted_count": 1,
                   "restorable_blind_count": 0,
-                  "same_status_count": 3,
-                  "target_status_label": "샘플 제목",
-                  "unchangeable_count": 3
+                  "same_status_count": 1,
+                  "target_status_label": "게시중단",
+                  "unchangeable_count": 2
                 },
                 "bulkActionReason": "샘플 사유입니다.",
                 "bulkStatusLoading": false
@@ -3766,6 +3763,103 @@
               }
             },
             "default": true
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 「관리자·스텝 일괄 지정」 확인 창. 일괄 지정 패널이 `_global.boardBulkMembers` 에 동작·역할 종류·대상 게시판·회원을 담고 연다 — 상태 없이는 대상 게시판 수·회원 칩 없이 그려진다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_members_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "boardBulkMembers": {
+                  "mode": "add",
+                  "type": "manager",
+                  "all": false,
+                  "boardIds": [
+                    1,
+                    2
+                  ],
+                  "users": [
+                    {
+                      "id": 31,
+                      "uuid": "00000000-0000-4000-8000-000000000031",
+                      "name": "홍길동"
+                    },
+                    {
+                      "id": 32,
+                      "uuid": "00000000-0000-4000-8000-000000000032",
+                      "name": "김철수"
+                    }
+                  ],
+                  "error": null
+                },
+                "isProcessing": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 개인정보 보유기간 탭 「지금 실행」 확인 창. 카드의 버튼이 `_global.privacyRun` 에 대상 키·이름을 담고 건수를 받아 온 뒤 연다 — 상태 없이는 제목이 「{{target}} — 직권 실행」 원문으로 그려진다. 값은 표본 privacyManualRuns 의 것.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_run_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyRun": {
+                  "key": "retention:sirsoft-board.ip",
+                  "label": "게시판 작성 IP",
+                  "supportsSkip": false,
+                  "skipWaiting": false,
+                  "preview": {
+                    "count": 128,
+                    "mode": "erase_ip",
+                    "enabled": true
+                  },
+                  "loading": false,
+                  "submitting": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 개인정보 보유기간 탭 「대상 보기」 창. 카드의 버튼이 `_global.privacyTargets` 에 조회 경로와 창 제목을 담고 연다 — 상태 없이는 제목이 빈 칸이다.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_targets_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyTargets": {
+                  "path": "retention-targets/sirsoft-board.ip",
+                  "currentPage": 1,
+                  "hasMore": false,
+                  "isLoadingMore": false,
+                  "title": "$t:sirsoft-board.admin.settings.privacy_retention.targets.title_ip"
+                }
+              }
+            }
           }
         ]
       }

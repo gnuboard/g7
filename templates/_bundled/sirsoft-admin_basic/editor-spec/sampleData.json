@@ -1473,6 +1473,7 @@
           "has_more_pages": false
         },
         "abilities": {
+          "can_create": true,
           "can_update": true
         }
       }
@@ -2505,6 +2506,7 @@
     },
     "language_packs": {
       "data": {
+        "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
         "data": [
           {
             "id": 1,
@@ -3669,6 +3671,7 @@
     },
     "modules": {
       "data": {
+        "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
         "data": [
           {
             "identifier": "sirsoft-ecommerce",
@@ -3915,6 +3918,7 @@
     },
     "plugins": {
       "data": {
+        "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
         "data": [
           {
             "identifier": "sirsoft-payment",
@@ -4588,6 +4592,7 @@
     },
     "schedules": {
       "data": {
+        "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
         "data": [
           {
             "id": 1,
@@ -5103,6 +5108,7 @@
     },
     "templates": {
       "data": {
+        "pagination": { "total": 2, "current_page": 1, "last_page": 1, "per_page": 15 },
         "data": [
           {
             "identifier": "sirsoft-admin_basic",

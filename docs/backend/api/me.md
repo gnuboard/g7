@@ -268,6 +268,8 @@ HTTP/1.1 200
 
 현재 로그인한 사용자의 프로필 정보를 조회한다. 프론트의 마이페이지(`mypage/profile.g7.html`)와 프로필 수정 화면(`mypage/profile-edit.g7.html`)이 소비한다. 응답은 `UserResource::toProfileArray()` 산물로, 비밀번호 등 민감 필드는 제외된다. 표의 `notify_*`(게시판 모듈)·`marketing_consent*`/`email_subscription*`/`third_party_consent*`/`info_disclosure*`/`channels`/`consent_histories`(마케팅 플러그인)·`ecommerce_*`(이커머스 모듈) 필드는 코어가 아니라 각 확장이 `core.user.filter_resource_data` 훅으로 병합하는 확장 소유 필드이며, 해당 확장이 비활성인 환경에서는 응답에 나타나지 않는다.
 
+**계정 상태와 조회**: 활성(`active`)이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면, 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200 으로 응답한다 — 마이페이지가 `status`·`status_label`·`status_variant` 로 계정 상태 배지와 안내를 그릴 수 있게 하기 위함이다. 권한이 없으면 종전처럼 403 과 상태 사유(`auth.account_blocked` 등)를 돌려준다. 같은 판정이 `GET /api/auth/user` 에도 걸린다. 쓰기(`PUT`·`DELETE /api/me`, 비밀번호·아바타)와 그 밖의 사용자 API 는 권한과 무관하게 상태로 403 이며, 로그인 자체의 상태 거부도 그대로다.
+
 
 ### PUT /api/me
 <!-- @generated:start:api.me.update -->

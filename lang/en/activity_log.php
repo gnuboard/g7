@@ -133,12 +133,12 @@ return [
         'user_search' => 'User search performed',
         'user_check_email' => 'Email duplication checked',
         'user_update_language' => 'User language setting changed',
-        'user_bulk_update_status' => 'Users status bulk updated (:count items)',
+        'user_bulk_update_status' => 'Users status bulk updated (:count item)|Users status bulk updated (:count items)',
         'user_bulk_roles' => 'User roles bulk changed (ID: :user_id)',
         'user_roles_update' => 'User roles changed (ID: :user_id, added: :added, removed: :removed)',
 
         // Member notification inbox (admin deleting a member's received notifications)
-        'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count items)',
+        'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count item)|Member notifications bulk deleted (:count items)',
 
         // Role management
         'role_index' => 'Role list viewed',
@@ -183,15 +183,17 @@ return [
         'settings_test_driver_connection' => 'Driver connection tested',
 
         // Authentication
-        'auth_login' => 'Admin login',
-        'auth_logout' => 'Admin logout',
+        'auth_login' => 'Login',
+        'auth_admin_login' => 'Admin login',
+        'auth_logout' => 'Logout',
+        'auth_admin_logout' => 'Admin logout',
         'auth_register' => 'User registered',
         'auth_forgot_password' => 'Password reset requested',
         'auth_reset_password' => 'Password reset',
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
-        'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
-        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
+        'auth_account_locked' => 'Account locked (:attempts attempt, :minutes min lockout)|Account locked (:attempts attempts, :minutes min lockout)',
+        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempt, administrator unlock or password reset required)|Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',
         'auth_account_unlocked_by_password_reset' => 'Account unlocked by password reset (:email)',
         'auth_password_change_self' => 'Password changed (by the member)',
@@ -199,7 +201,7 @@ return [
         'auth_password_change_on_login_expired' => 'Password changed at sign-in (expired)',
         'auth_password_change_on_login_admin_assigned' => 'Password changed at sign-in (set by an administrator)',
         'auth_password_change_postpone' => 'Password change postponed (until :until)',
-        'auth_password_expiry_logout' => 'Signed out on password expiry (ID: :user_id, :count devices)',
+        'auth_password_expiry_logout' => 'Signed out on password expiry (ID: :user_id, :count device)|Signed out on password expiry (ID: :user_id, :count devices)',
 
         // Security — IP access restriction
         'security_ip_blocked' => 'IP access blocked (:ip → :path)',
@@ -208,7 +210,7 @@ return [
         'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
         'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
         'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
-        'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count items)',
+        'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count item)|Privacy action manual run completed (:target, :count items)',
         'privacy_manual_run_failed' => 'Privacy action manual run failed (:target)',
         'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
 
@@ -220,8 +222,8 @@ return [
         'schedule_delete' => 'Schedule deleted (ID: :schedule_id)',
         'schedule_run' => 'Schedule manually executed (ID: :schedule_id)',
         'schedule_duplicate' => 'Schedule duplicated',
-        'schedule_bulk_update_status' => 'Schedule status bulk updated (:count items)',
-        'schedule_bulk_delete' => 'Schedules bulk deleted (:count items)',
+        'schedule_bulk_update_status' => 'Schedule status bulk updated (:count item)|Schedule status bulk updated (:count items)',
+        'schedule_bulk_delete' => 'Schedules bulk deleted (:count item)|Schedules bulk deleted (:count items)',
         'schedule_statistics' => 'Schedule statistics viewed',
         'schedule_history' => 'Schedule execution history viewed (ID: :schedule_id)',
         'schedule_delete_history' => 'Schedule history deleted',
@@ -319,7 +321,7 @@ return [
         // Activity log
         'activity_log_index' => 'Activity log list viewed',
         'activity_log_delete' => 'Activity log deleted (ID: :log_id)',
-        'activity_log_bulk_delete' => 'Activity logs bulk deleted (:count entries)',
+        'activity_log_bulk_delete' => 'Activity logs bulk deleted (:count entry)|Activity logs bulk deleted (:count entries)',
     ],
 
     // ChangeDetector field labels

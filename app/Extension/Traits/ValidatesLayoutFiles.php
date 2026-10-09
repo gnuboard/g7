@@ -372,7 +372,7 @@ trait ValidatesLayoutFiles
             default => "modules.errors.layout_validation_{$errorType}",
         };
 
-        return __($translationKey, $params);
+        return trans_count($translationKey, $params);
     }
 
     /**

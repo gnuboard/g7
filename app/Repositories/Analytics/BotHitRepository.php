@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
 use App\Models\Analytics\AnalyticsBotHit;
 use App\Repositories\Concerns\FiltersByDateRange;
@@ -30,13 +31,21 @@ class BotHitRepository implements BotHitRepositoryInterface
      * 최근 봇 요청을 조회합니다.
      *
      * @param  int  $limit  최대 건수
-     * @return Collection<int, AnalyticsBotHit> 봇 요청 목록
+     * @param  string|null  $from  시작일 (Y-m-d, 사이트 표준시 — null 이면 제한 없음)
+     * @param  string|null  $to  종료일 (Y-m-d, 사이트 표준시 — null 이면 제한 없음)
+     * @return Collection<int, AnalyticsBotHit> 봇 요청 목록 (최신순)
      */
-    public function recent(int $limit = 50): Collection
+    public function recent(int $limit = 50, ?string $from = null, ?string $to = null): Collection
     {
-        return AnalyticsBotHit::query()
-            ->select(['id', 'bot_name', 'url', 'ip', 'cache_status', 'occurred_at'])
+        $query = AnalyticsBotHit::query()
+            ->select(['id', 'bot_name', 'url', 'ip', 'cache_status', 'occurred_at']);
+
+        // 봇 화면의 다른 숫자처럼 사이트 표준시 하루로 자른다 — UTC 하루면 서울 새벽 요청이 전날로 간다.
+        $this->applyDateRangeFilterInTimezone($query, 'occurred_at', $from, $to, AnalyticsClock::siteTimezone());
+
+        return $query
             ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
             ->limit($limit)
             ->get();
     }
@@ -106,7 +115,9 @@ class BotHitRepository implements BotHitRepositoryInterface
     {
         $query = AnalyticsBotHit::query();
 
-        $this->applyDateRangeFilter($query, 'occurred_at', $from, $to);
+        // 같은 익명화 실행이 방문 원장을 `visit_date`(사이트 표준시 일자)로 자른다 — 곁 원장도
+        // 사이트 표준시 하루로 잘라야 같은 기간을 가리킨다(UTC 하루면 한국 새벽 기록이 어긋난다).
+        $this->applyDateRangeFilterInTimezone($query, 'occurred_at', $from, $to, AnalyticsClock::siteTimezone());
 
         $query->orderBy('id')->chunkById(max(1, $chunkSize), $callback);
     }

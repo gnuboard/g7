@@ -69,6 +69,23 @@ describe('SortableMenuList — 행마다 부여된 역할', () => {
     expect(child.textContent).not.toContain('99');
   });
 
+  // @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=child_only
+  // @effects menu_list_shows_assigned_roles
+  it('이름표 밖 역할(비활성 역할 등)도 개수에는 센다 — 「외 n개」 와 title 이 부여된 역할 수를 줄여 말하지 않는다 (실측 O-D6)', () => {
+    // 비활성 역할도 접근(사이드바·권한)을 그대로 주므로, 이름을 몰라도 「몇 개 더 있다」 는 보여야 한다.
+    const withUnknown: MenuItem[] = [{ ...menus[0], role_ids: [1, 2, 3, 98, 99] }];
+    render(<SortableMenuList items={withUnknown} roleOptions={ROLES} enableDrag={false} />);
+
+    const row = rolesRowOf('대시보드');
+    // 이름 있는 배지 3개 + 「외 2개」(98·99) — 종전엔 이름 3개뿐이라 「외 n개」 가 없었다
+    expect(within(row).getByText('관리자')).toBeTruthy();
+    expect(within(row).getByText('검수자')).toBeTruthy();
+    expect(within(row).getByText('admin.menus.list_roles_more')).toBeTruthy();
+    // title 은 이름을 아는 역할 뒤에 이름 모르는 역할 수를 덧붙인다
+    expect(row.getAttribute('title')).toContain('관리자, 편집자, 검수자 admin.menus.list_roles_more');
+    expect(row.textContent).not.toContain('98');
+  });
+
   // @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=top_level
   // @effects menu_list_shows_assigned_roles
   it('역할 목록이 아직 안 왔으면 「역할 없음」 이라고 단정하지 않고 배지 줄을 비워 둔다 (실측: 로그인 직후 진입)', () => {

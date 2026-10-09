@@ -64,8 +64,8 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login` | User | User |
-| `core.auth.logout` | `handleAuthLogout` | `auth.logout` | User | User |
+| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login`(설명 키: 관리자 로그인 경로 `api/auth/admin/*` 면 `auth_admin_login`, 그 외 `auth_login`) | User | User |
+| `core.auth.logout` | `handleAuthLogout` | `auth.logout`(설명 키: 관리자 경로 `api/admin/*` 면 `auth_admin_logout`, 그 외 `auth_logout`) | 관리자 경로면 Admin, 그 외 User | User |
 | `core.auth.after_register` | `handleAuthRegister` | `auth.register` | User | User |
 | `core.auth.after_reset_password_request` (sync — 인자에 재설정 토큰) | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
 | `core.auth.password_change_recorded` | `handlePasswordChangeRecorded` | `source=reset` 이면 `auth.reset_password`, 그 외 `auth.password_change`(설명 키 `auth_password_change_self` · `_by_admin` · `_on_login_expired` · `_on_login_admin_assigned`) | `admin` 이면 Admin, 그 외 User | User (행위자: 훅 인자 `actor_id`) |

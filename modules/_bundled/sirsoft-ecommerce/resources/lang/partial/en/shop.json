@@ -16,6 +16,7 @@
   "already_added_option": "This option has already been added.",
   "min_purchase_qty_notice": "Minimum {{qty}} items required",
   "max_purchase_qty_notice": "Maximum {{qty}} items allowed",
+  "max_purchase_qty_notice_one": "Maximum {{qty}} item allowed",
   "write_review": "Write Review",
   "wishlist_added": "Added to wishlist.",
   "wishlist_removed": "Removed from wishlist.",
@@ -62,7 +63,8 @@
       "confirm": "Confirm Delete",
       "message_single": "Are you sure you want to delete this item?",
       "message_multiple": "Are you sure you want to delete selected items?",
-      "count": "{{count}} items"
+      "count": "{{count}} items",
+      "count_one": "{{count}} item"
     },
     "option_modal": {
       "title": "Change Option",
@@ -133,6 +135,7 @@
     "coupon_select_placeholder": "Select a coupon",
     "coupon_no_available": "No coupons available",
     "coupon_available_count": "{{count}} coupons available",
+    "coupon_available_count_one": "{{count}} coupon available",
     "coupon_applicable": "Coupon available",
     "coupon_applied": "Coupon applied",
     "coupon_removed": "Coupon removed",
@@ -214,6 +217,7 @@
     "status_message_coming_soon": "This product is coming soon",
     "min_purchase_qty_notice": "Minimum {{qty}} items required",
     "max_purchase_qty_notice": "Maximum {{qty}} items allowed",
+    "max_purchase_qty_notice_one": "Maximum {{qty}} item allowed",
     "additional_options": "Additional Options",
     "required": "Required",
     "select_options_guide": "Please select options",

@@ -165,6 +165,20 @@ effects:
   # 이름 입력칸 placeholder 는 한 폼의 모든 언어 칸이 공유하는 단일 prop 이다 — 어떤 언어명도 값이 될 수 없다.
   - settings_name_placeholder_never_names_a_language
   - settings_charge_payment_method_options_are_not_literal_builtins
+  # 사유 상세 관리 API (설정 탭의 형제 경로) — 목록·조회는 유형별 카탈로그를 돌려주고 무타입은 환불로 해석한다.
+  - claim_reason_api_lists_catalog_by_type
+  # 읽기·수정 권한이 없으면 각 엔드포인트가 403 이다.
+  - claim_reason_api_requires_permission
+  # 생성은 설정 탭과 같은 코드 형식·필수·유일성 검사를 거치고, 확장의 도메인 거절은 400 + 전용 문구다.
+  - claim_reason_api_creates_and_validates
+  # 수정은 저장되고, 이미 저장된 코드는 형식 검사를 면제받는다.
+  - claim_reason_api_updates_reason
+  # 신청서가 쓰는 사유는 지울 수 없고(사용 건수 안내), 쓰지 않는 사유는 지워진다.
+  - claim_reason_api_deletes_only_unused
+  # 사용 여부 토글과 대상 부재 시 400 + 전용 문구.
+  - claim_reason_api_toggles_status
+  # 회원용 목록은 회원이 고를 수 있는 활성 사유만 보인다.
+  - claim_reason_user_list_shows_selectable_only
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaim.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaimRender.test.tsx

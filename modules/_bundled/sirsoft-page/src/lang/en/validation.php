@@ -42,7 +42,7 @@ return [
     'ids' => [
         'required' => 'Please select pages to process.',
         'array' => 'The page list format is invalid.',
-        'min' => 'Please select at least :min page(s).',
+        'min' => 'Please select at least :min page.',
         'integer' => 'Page ID must be an integer.',
         'exists' => 'Some selected pages do not exist.',
     ],

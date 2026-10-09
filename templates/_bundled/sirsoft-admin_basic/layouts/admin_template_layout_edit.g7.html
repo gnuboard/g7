@@ -337,7 +337,7 @@
         <!-- 모바일 ⋯ 더보기 — 내려받기·복사를 접는다. 같은 동작을 위 버튼과 두 벌로 적는 이유는
              `<action handler>` 가 문서 층 `<action name>` 으로 올릴 수 없는 인라인 핸들러이기 때문이다. -->
         <div class="relative md:hidden">
-          <button type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-haspopup="menu" aria-expanded="{{!!_global.headerMoreOpen}}" data-testid="layout-more-menu">
+          <button type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.more_actions" aria-haspopup="menu" aria-expanded="{{!!_global.headerMoreOpen}}" data-testid="layout-more-menu">
             <on type="click">
               <!-- 모바일 더보기 메뉴 — 내려받기·복사를 접어 둔 메뉴를 열고 닫는다 -->
               <set-state target="global" headerMoreOpen="{{!_global.headerMoreOpen}}"/>
@@ -450,10 +450,12 @@
           <set-state :debounce="200" target="global" fileSearchQuery="{{$args[0]}}"/>
         </on>
         <on type="search" event="onSearch">
-          <!-- 내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다 -->
-          <conditions>
+          <!-- 내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다.
+               디바운스는 **이 최상위 액션**에 건다 — 엔진은 이벤트에 직접 달린 액션의 debounce 만 읽어,
+               `<when>` 안 액션에 걸면 무시되고 글자마다 요청이 나간다(실측 2026-10-06: 한 단어에 25건). -->
+          <conditions :debounce="600">
             <when if="{{String($args[0] ?? '').length >= 2}}">
-              <refetch-data-source :debounce="600" dataSourceId="layout_search"/>
+              <refetch-data-source dataSourceId="layout_search"/>
             </when>
           </conditions>
         </on>
@@ -474,7 +476,8 @@
         <on type="rename" event="onRename">
           <!-- 이름 바꾸기 — 노드 키의 종류 접두를 떼어 대상·초기 이름으로 삼는다 -->
           <sequence>
-            <set-state target="global" fileFormMode="rename" fileFormTarget="{{String($args[0]).slice(7)}}" fileFormName="{{String($args[0]).slice(7)}}" :fileFormError="null"/>
+            <!-- 앞선 거둠 알림을 비우고 시작한다 — 작업 공간은 알림 하나를 한 번만 처리하므로 같은 키가 다시 와도 새 알림으로 받게. -->
+            <set-state target="global" fileFormMode="rename" fileFormTarget="{{String($args[0]).slice(7)}}" fileFormName="{{String($args[0]).slice(7)}}" :fileFormError="null" :retiredFileKey="null"/>
             <open-modal target="file_form_modal"/>
           </sequence>
         </on>
@@ -500,13 +503,22 @@
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{current_extension?.data?.source_label ?? ''}}</span>
                   <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName) &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.is_modified}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
+                  <!-- 휴대폰 폭(md 미만)에서는 설명·수정일·이력 버튼·하단 안내를 접어 두어 코드 칸에 높이를 준다(7.1.0 P17,
+                       실측 390x844 에서 코드 칸 128px). 이 버튼으로 펼친다. md 이상에서는 늘 펼쳐져 있어 버튼을 숨긴다. -->
+                  <button data-ref="code_editor_info_toggle" type="button" class="md:hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" aria-controls="code_editor_file_desc code_editor_file_meta code_editor_inline_notice" aria-expanded="{{_global.codeEditorInfoOpen ? 'true' : 'false'}}">
+                    <on type="click">
+                      <set-state target="global" codeEditorInfoOpen="{{!_global.codeEditorInfoOpen}}"/>
+                    </on>
+                    <icon name="{{_global.codeEditorInfoOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+                    <span>{{_global.codeEditorInfoOpen ? '$t:admin.templates.layout_edit.info_toggle_hide' : '$t:admin.templates.layout_edit.info_toggle_show'}}</span>
+                  </button>
                 </div>
                 <!-- 설명·수정일·버전 히스토리는 «불러온 파일» 의 것이다. 없는 파일 탭은 서버를 부르지 않아 current_layout 이
                      직전 파일로 남으므로, 고른 파일과 불러온 파일이 다르면 그리지 않는다 — 그리면 지워진 파일 이름 옆에
                      다른 파일의 수정일·이력이 붙는다(실측 2026-10-03). 평소 파일 전환 중의 짧은 공백도 같은 이유로 비운다. -->
-                <p data-ref="layout_meta_description" data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" class="mt-1 text-label-subtle">{{raw:current_layout?.data?.description || ''}}</p>
+                <p data-ref="layout_meta_description" data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" id="code_editor_file_desc" class="mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}">{{raw:current_layout?.data?.description || ''}}</p>
               </div>
-              <div class="flex-center gap-3 shrink-0">
+              <div id="code_editor_file_meta" class="{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden md:flex md:items-center'}} gap-3 shrink-0">
                 <span data-ref="layout_meta_modified_at" data-if="{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" class="text-label-subtle whitespace-nowrap">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
                 <!-- shrink-0·nowrap — 설명이 긴 레이아웃(시드 화면 등)에서 헤더 행이 눌리면 이 버튼 글자가 세로로 한 자씩 꺾였다(1280 실측). -->
                 <button data-ref="layout_meta_version_history" data-if="{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}" type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0 whitespace-nowrap" data-testid="layout-version-history-open">
@@ -571,7 +583,9 @@
                     <set-state target="global" editorContent="{{response.data.content}}" markupWarnings="{{response.data.warnings ?? []}}" :markupCompileError="null" :jsonViewStale="false"/>
                   </success>
                   <fail>
-                    <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? {code: 'request_failed', message: error.message ?? '', line: 0, column: 0}}}" :jsonViewStale="true"/>
+                    <!-- 실패한 본문의 경고는 알 수 없다 — 직전 성공본의 경고를 남기면 바뀐 본문의 엉뚱한 줄을 가리킨다(O-I1-11).
+                         구조화 오류가 없는 실패(보안 검사 422 등)는 줄을 모르므로 좌표 0·코드 없이 서버 문구만 싣는다. -->
+                    <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? {code: null, message: error.message ?? '', line: 0, column: 0}}}" :markupWarnings="[]" :jsonViewStale="true"/>
                   </fail>
                   <body markup="{{$event.target.value}}"/>
                 </api-call>
@@ -682,16 +696,32 @@
               <icon name="fa-solid fa-circle-xmark" class="text-base"/>
               <span>$t:admin.templates.layout_edit.markup_error_title</span>
             </div>
-            <div class="font-mono text-xs mt-1 break-all">{{_global.markupCompileError?.line ?? 0}}:{{_global.markupCompileError?.column ?? 0}} · {{_global.markupCompileError?.message ?? ''}} · {{_global.markupCompileError?.code ?? ''}}</div>
+            <!-- 줄이 있는 오류는 누르면 코드 편집기가 그 줄로 간다(7.1.0 P16 — 검사 위치를 소스 줄과 연결). -->
+            <button data-ref="markup_error_goto" data-if="{{(_global.markupCompileError?.line ?? 0) > 0}}" type="button" class="block w-full text-left font-mono text-xs mt-1 break-all underline decoration-dotted hover:decoration-solid" title="$t:admin.templates.layout_edit.go_to_line|line={{_global.markupCompileError?.line ?? 0}}">
+              <on type="click">
+                <set-state target="global" editorFormat="markup" editorRevealAt="{{({line: _global.markupCompileError.line, column: _global.markupCompileError.column || 1, nonce: Date.now()})}}"/>
+              </on>
+              {{_global.markupCompileError.line + ':' + (_global.markupCompileError.column ?? 0) + ' · '}}{{_global.markupCompileError?.message ?? ''}}{{_global.markupCompileError?.code ? (' · ' + _global.markupCompileError.code) : ''}}
+            </button>
+            <div data-if="{{!((_global.markupCompileError?.line ?? 0) > 0)}}" class="font-mono text-xs mt-1 break-all">{{_global.markupCompileError?.message ?? ''}}{{_global.markupCompileError?.code ? (' · ' + _global.markupCompileError.code) : ''}}</div>
           </div>
           <div data-ref="markup_warning_panel" data-if="{{(_global.markupWarnings?.length ?? 0) > 0}}" class="mx-4 mt-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm">
             <div class="font-medium flex-center gap-2">
               <icon name="fa-solid fa-triangle-exclamation" class="text-base"/>
               <span>$t:admin.templates.layout_edit.markup_warning_title|count={{_global.markupWarnings?.length ?? 0}}</span>
             </div>
-            <div data-each="warning, warningIdx in {{_global.markupWarnings ?? []}}" class="font-mono text-xs mt-1 break-all">{{warning.line ?? 0}}:{{warning.column ?? 0}} · {{warning.message ?? ''}} · {{warning.code ?? ''}}</div>
+            <div data-each="warning, warningIdx in {{_global.markupWarnings ?? []}}" class="mt-1">
+              <!-- 줄이 있는 경고는 누르면 HTML 탭으로 돌아가 그 줄·칸으로 커서를 옮긴다 — 같은 항목을 다시 눌러도 움직이게 nonce 를 바꾼다(7.1.0 P16). -->
+              <button data-if="{{(warning.line ?? 0) > 0}}" type="button" class="block w-full text-left font-mono text-xs break-all underline decoration-dotted hover:decoration-solid" title="$t:admin.templates.layout_edit.go_to_line|line={{warning.line ?? 0}}">
+                <on type="click">
+                  <set-state target="global" editorFormat="markup" editorRevealAt="{{({line: warning.line, column: warning.column || 1, nonce: Date.now()})}}"/>
+                </on>
+                {{warning.line + ':' + (warning.column ?? 0) + ' · '}}{{warning.message ?? ''}}{{warning.code ? (' · ' + warning.code) : ''}}
+              </button>
+              <div data-if="{{!((warning.line ?? 0) > 0)}}" class="font-mono text-xs break-all">{{warning.message ?? ''}}{{warning.code ? (' · ' + warning.code) : ''}}</div>
+            </div>
           </div>
-          <div class="p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+          <div id="code_editor_inline_notice" class="p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}">
             <div class="flex-center gap-2 text-label-subtle">
               <icon name="fa-solid fa-circle-info" class="text-base"/>
               <span>$t:admin.templates.layout_edit.inlined_notice</span>

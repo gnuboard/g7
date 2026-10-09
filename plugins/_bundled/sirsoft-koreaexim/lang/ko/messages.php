@@ -33,4 +33,14 @@ return ['RunStatus' => ['success' => '성공',
     'cooldown' => '60초 뒤 다시 시도하세요. 수동 실행은 하루 20회까지 가능합니다.',
     'cooldown_test' => '60초 뒤 다시 시도하세요. 연결 테스트는 하루 5회까지 가능합니다.',
     'busy' => '다른 환율 갱신이 진행 중입니다.',
-    'pruned' => ':count개 이력을 정리했습니다.'];
+    'pruned' => ':count개 이력을 정리했습니다.',
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'status_label' => '실패 유형',
+            'message' => '인증키를 제외한 상세 실패 사유',
+            'search_date' => '한국시간 기준 조회일',
+            'settings_url' => '환율 플러그인 설정 화면 주소',
+        ],
+    ],
+];

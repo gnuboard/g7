@@ -178,6 +178,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 결과는 탭의 상태 줄이 코어 상태 API(`privacyManualRuns` 데이터 소스)로 보여 주고, 진행 중이면 3초마다 다시 받습니다.
 실행 권한은 `runPermissions()` — `sirsoft-ecommerce.settings.update` + `sirsoft-ecommerce.orders.update`, 방식이
 `delete` 면 `sirsoft-ecommerce.orders.delete` 까지(전체 범위). 계약은 코어 가이드 「관리자 직권 실행」 절 참조.
+확인 창의 실행 버튼은 `lockRepeatClick` 으로 첫 클릭 즉시 잠급니다 — 빠른 두 번째 클릭이 접수를 한 번 더 넣지 않도록(코어 확인 창과 같은 규칙).
 
 - **「종결」**: 주문 상태 구매확정·취소 + 진행 중 환불·교환·반품 없음(완료·거절·철회가 아닌 상태 — 교환·반품은
   주문 상태를 바꾸지 않고 주문 곁에서 진행되므로 신청서 상태로 봅니다). 종결 시각은 `confirmed_at`/`cancelled_at` 과

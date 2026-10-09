@@ -793,20 +793,40 @@ describe('LayoutEditorChrome — 커스텀 자산 창의 미저장 보호', () =
    * @effects custom_asset_editor_guards_unsaved_text_on_close
    */
   it('[case:wysiwyg-4] 본문을 쓰다 Esc 를 누르면 버릴지 묻고, 취소하면 창과 본문이 남는다', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    // 확인은 편집기 대화상자(engine-v1.78.7) — 브라우저 기본 confirm 은 부르지 않는다.
+    const confirmSpy = vi.spyOn(window, 'confirm');
     const content = await openFromChromeWithUnsavedText();
 
     fireEvent.keyDown(content, { key: 'Escape' });
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    await screen.findByRole('alertdialog');
+    fireEvent.click(screen.getByTestId('g7le-dialog-cancel'));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body{}');
 
-    confirmSpy.mockReturnValue(true);
     fireEvent.keyDown(screen.getByTestId('g7le-custom-assets-content'), { key: 'Escape' });
+    await screen.findByRole('alertdialog');
+    fireEvent.click(screen.getByTestId('g7le-dialog-confirm'));
 
     await waitFor(() => {
       expect(screen.queryByTestId('g7le-custom-assets-content')).toBeNull();
     });
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  /**
+   * @scenario manage_actor=with_permission, manage_action=save
+   * @effects custom_asset_editor_guards_unsaved_text_on_close
+   */
+  it('버릴지 묻는 대화상자에서 Esc 는 취소다 — 대화상자만 닫히고 자산 창과 본문은 남는다', async () => {
+    const content = await openFromChromeWithUnsavedText();
+
+    fireEvent.keyDown(content, { key: 'Escape' });
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body{}');
   });
 
   /**
@@ -814,18 +834,20 @@ describe('LayoutEditorChrome — 커스텀 자산 창의 미저장 보호', () =
    * @effects custom_asset_editor_guards_unsaved_text_on_close
    */
   it('저장하지 않은 본문이 있을 때 백드롭을 누르면 Esc 와 같이 버릴지 묻는다', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     await openFromChromeWithUnsavedText();
 
     const backdrop = document.querySelector('.g7le-modal-backdrop') as HTMLElement;
     expect(backdrop).toBeTruthy();
     fireEvent.click(backdrop);
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    await screen.findByRole('alertdialog');
+    fireEvent.click(screen.getByTestId('g7le-dialog-cancel'));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('body{}');
 
-    confirmSpy.mockReturnValue(true);
     fireEvent.click(document.querySelector('.g7le-modal-backdrop') as HTMLElement);
+    await screen.findByRole('alertdialog');
+    fireEvent.click(screen.getByTestId('g7le-dialog-confirm'));
 
     await waitFor(() => {
       expect(screen.queryByTestId('g7le-custom-assets-content')).toBeNull();

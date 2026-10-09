@@ -225,6 +225,7 @@
                     ],
                     "props": {
                         "type": "button",
+                        "lockRepeatClick": true,
                         "className": "btn btn-danger flex-center gap-2",
                         "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
                     },

@@ -23,6 +23,7 @@ import { useTranslation } from '../TranslationContext';
 import { LayoutEditorProvider, useLayoutEditor } from './LayoutEditorContext';
 import { LayoutDocumentProvider } from './LayoutDocumentContext';
 import { EditorModalProvider, EditorModalRoot, useEditorModal } from './EditorModalContext';
+import { useEditorDialog } from './components/EditorDialog';
 import { EditorToolbar, type EditorTemplateOption } from './components/EditorToolbar';
 import { LayoutAttachmentManager } from './components/property-controls/LayoutAttachmentManager';
 import { CustomTranslationManager } from './components/property-controls/CustomTranslationManager';
@@ -185,6 +186,20 @@ function LayoutEditorChromeBody({
   const { state, dispatch } = useLayoutEditor();
   const { t } = useTranslation();
   const modal = useEditorModal();
+  // 확인 대화상자 — 브라우저 기본 confirm 대신 편집기 모달 스택 위에 띄운다(engine-v1.78.7).
+  const dialog = useEditorDialog(t);
+  /** 저장하지 않은 변경을 버리고 떠날지 묻는다 — 나가기·템플릿 전환·자산 토글·경로 이동 공통 */
+  const confirmDiscardChanges = useCallback(
+    (): Promise<boolean> =>
+      dialog.confirm({
+        title: t('layout_editor.chrome.dirty_guard.title'),
+        message: t('layout_editor.chrome.dirty_guard.message'),
+        confirmLabel: t('layout_editor.chrome.dirty_guard.discard'),
+        cancelLabel: t('layout_editor.chrome.dirty_guard.stay'),
+        danger: true,
+      }),
+    [dialog, t],
+  );
 
   // 단일 useLayoutDocument 인스턴스 — Context 로 PreviewCanvas/Overlay 들에 공급
   const layoutDocument = useLayoutDocument();
@@ -398,6 +413,8 @@ function LayoutEditorChromeBody({
   // 풀려 편집 대상이 캔버스에서 사라진다. returnRoute.path 는 route/base/modal 모드의
   // 인코딩을 그대로 담고 있어 deriveCurrentScope 가 그대로 해석한다.
   const iterationReturnPath = state.returnRoute?.path ?? null;
+  // 창 편집 모드의 호스트 레이아웃 — reducer 가 창 선택 때 selectedRoute.layoutName 에 담는다.
+  const modalHostLayoutName = editMode === 'modal' ? state.selectedRoute?.layoutName ?? null : null;
   const iterationHostRoutePath = useMemo<string | null>(() => {
     if (editMode !== 'iteration_item') return null;
     return iterationReturnPath;
@@ -426,7 +443,8 @@ function LayoutEditorChromeBody({
       selectedRoutePath,
       extensionHostRoutePath ?? iterationHostRoutePath,
     );
-    const items = matchStateItems(editorSpec?.states?.groups, scope);
+    // 창 편집이면 창을 연 화면(호스트 레이아웃)의 주인 묶음을 우선한다(engine-v1.78.3 — 같은 창 id 의 다른 확장 표본 혼입 차단).
+    const items = matchStateItems(editorSpec?.states?.groups, scope, editMode === 'modal' ? modalHostLayoutName : null);
     dispatch({
       type: 'SET_AVAILABLE_STATES',
       states: items,
@@ -442,6 +460,7 @@ function LayoutEditorChromeBody({
     selectedRoutePath,
     extensionHostRoutePath,
     iterationHostRoutePath,
+    modalHostLayoutName,
     dispatch,
   ]);
 
@@ -489,24 +508,18 @@ function LayoutEditorChromeBody({
 
   // 링크 어포던스 클릭 → SELECT_ROUTE + 트리에서 layoutName 보강
   const handleNavigateToDestination = useCallback(
-    (destinationPath: string): void => {
+    async (destinationPath: string): Promise<void> => {
       const stripped = destinationPath.split('?')[0]?.split('#')[0] ?? destinationPath;
       const node = findRouteNodeByPath(state.routeTree, stripped);
       if (!node) return;
-      // dirty 가드 — 변경 사항이 있으면 사용자에게 확인 (단순 confirm 으로 1차)
-      if (activeDocument.isDirty) {
-        const proceed =
-          typeof window !== 'undefined'
-            ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-            : true;
-        if (!proceed) return;
-      }
+      // dirty 가드 — 변경 사항이 있으면 사용자에게 확인
+      if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
       dispatch({
         type: 'SELECT_ROUTE',
         route: { path: node.path, layoutName: node.layoutName },
       });
     },
-    [state.routeTree, activeDocument.isDirty, dispatch]
+    [state.routeTree, activeDocument.isDirty, dispatch, confirmDiscardChanges]
   );
 
   // 세션 누적 path 추적 — save 가드의 sessionAddedPaths 로 사용
@@ -545,41 +558,29 @@ function LayoutEditorChromeBody({
   // 편집기는 전체화면 오버레이로 React Router 컨텍스트 밖이라 SPA navigate 가
   // 동작하지 않는다(라우트 미매칭 → URL 미변경). 실제 페이지 이동을 일으키는
   // openWindow + target:'_self'(window.location.assign) 로 처리한다.
-  const handleExit = useCallback(() => {
-    if (activeDocument.isDirty) {
-      const proceed =
-        typeof window !== 'undefined'
-          ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-          : true;
-      if (!proceed) return;
-    }
+  const handleExit = useCallback(async () => {
+    if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
     // 편집 대상이 admin 템플릿이면 admin 탭, user 템플릿이면 user 탭으로 복귀.
     (window as any).G7Core?.dispatch?.({
       handler: 'openWindow',
       params: { path: `/admin/templates/${templateType}`, target: '_self' },
     });
-  }, [activeDocument.isDirty, t, templateType]);
+  }, [activeDocument.isDirty, confirmDiscardChanges, templateType]);
 
   // 템플릿 전환 — 상단 툴바 드롭다운에서 다른 템플릿을 고르면 그 템플릿의 편집기로 이동.
   // 나가기와 동일하게 dirty 면 확인 후 이탈한다. 편집기는 React Router 밖
   // 전체화면 오버레이라 openWindow + target:'_self'(window.location.assign)로 실제 이동한다.
   const handleSwitchTemplate = useCallback(
-    (nextIdentifier: string) => {
+    async (nextIdentifier: string) => {
       if (!nextIdentifier || nextIdentifier === templateIdentifier) return;
-      if (activeDocument.isDirty) {
-        const proceed =
-          typeof window !== 'undefined'
-            ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-            : true;
-        if (!proceed) return;
-      }
+      if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
       const path = buildEditorUrl(nextIdentifier);
       (window as any).G7Core?.dispatch?.({
         handler: 'openWindow',
         params: { path, target: '_self' },
       });
     },
-    [templateIdentifier, activeDocument.isDirty, t],
+    [templateIdentifier, activeDocument.isDirty, confirmDiscardChanges],
   );
 
   // 커스텀 자산 관리 모달 — 운영자 CSS·JS·폰트·이미지를 화면에서 직접 넣고 고친다.
@@ -626,12 +627,9 @@ function LayoutEditorChromeBody({
     (!!(window as any).G7Config?.customAssetsDisabled ||
       new URLSearchParams(window.location.search).get('custom') === 'off');
 
-  const handleToggleCustomAssets = useCallback(() => {
+  const handleToggleCustomAssets = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    if (activeDocument.isDirty) {
-      const proceed = window.confirm(t('layout_editor.chrome.dirty_guard.message'));
-      if (!proceed) return;
-    }
+    if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
 
     const url = new URL(window.location.href);
 
@@ -653,7 +651,7 @@ function LayoutEditorChromeBody({
       handler: 'openWindow',
       params: { path: `${url.pathname}${url.search}${url.hash}`, target: '_self' },
     });
-  }, [activeDocument.isDirty, customAssetsDisabled, t]);
+  }, [activeDocument.isDirty, customAssetsDisabled, confirmDiscardChanges]);
 
   // 코드편집 — 기존 텍스트 레이아웃 편집기 화면을 새 창으로 연다(위지윅 편집은
   // 유지한 채 코드 편집을 별도 창에서). 본체는 별도 라우트로 이미 존재
@@ -848,15 +846,16 @@ function LayoutEditorChromeBody({
   // dirty 일 때만 활성(툴바). confirm 후 reload() — reload 가 (1) 세션 캐시 엔트리
   // 제거 + dirty 키 해제(트리 배지 사라짐), (2) reloadCounter +1(EditorCanvasOverlay
   // history baseline 재설정), (3) 서버 최신 재fetch 를 일괄 수행한다.
-  const handleReset = useCallback(() => {
+  const handleReset = useCallback(async () => {
     if (!activeDocument.isDirty) return;
-    const proceed =
-      typeof window !== 'undefined'
-        ? window.confirm(t('layout_editor.chrome.reset_guard.message'))
-        : true;
+    const proceed = await dialog.confirm({
+      title: t('layout_editor.chrome.reset_guard.title'),
+      message: t('layout_editor.chrome.reset_guard.message'),
+      danger: true,
+    });
     if (!proceed) return;
     void activeDocument.reload();
-  }, [activeDocument, t]);
+  }, [activeDocument, dialog, t]);
 
   // 저장 — 툴바 onSave 와 동일 경로(단축키 Ctrl+S 재사용). 확장 편집 모드는 활성 문서가
   // 확장 문서이므로 layout-extensions API 로 저장된다.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "레이아웃 편집기 스펙 — 인증 앱(TOTP) 플러그인 도메인 sampleData. 관리자 레이아웃 plugin_settings.g7.html 의 data_source ID 전수 스캔 기반: totpEnrollment 1종. 응답 shape 는 TotpEnrollmentController::show() (enrolled / pending / confirmed_at / backup_codes_remaining) 와 레이아웃의 fallback 블록에서 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock. 발급·확정 응답의 평문 시크릿·백업 코드는 이 파일이 릴리즈 페이로드로 배포되므로 절대 싣지 않는다 — 등록 완료 상태만 흉내 낸다.",
+  "$comment": "레이아웃 편집기 스펙 — 인증 앱(TOTP) 플러그인 도메인 sampleData. 관리자 레이아웃 plugin_settings.g7.html 의 data_source ID 전수 스캔 기반: totpEnrollment·totpSettings 2종. 응답 shape 는 TotpEnrollmentController::show() (enrolled / pending / confirmed_at / backup_codes_remaining) 와 레이아웃의 fallback 블록, 코어 PluginSettingsController::show() (설정 스키마 issuer / allow_mail_fallback) 에서 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock. 발급·확정 응답의 평문 시크릿·백업 코드는 이 파일이 릴리즈 페이로드로 배포되므로 절대 싣지 않는다 — 등록 완료 상태만 흉내 낸다.",
   "pluginId": "sirsoft-totp",
   "version": "1.0.0",
   "description": "인증 앱(TOTP) 2단계 인증 플러그인 레이아웃 편집기 샘플 데이터 (등록 상태 조회).",
@@ -12,6 +12,12 @@
           "pending": false,
           "confirmed_at": "2026-09-17T09:30:00+09:00",
           "backup_codes_remaining": 10
+        }
+      },
+      "totpSettings": {
+        "data": {
+          "issuer": "",
+          "allow_mail_fallback": true
         }
       }
     }

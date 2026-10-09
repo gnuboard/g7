@@ -340,12 +340,24 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "총 건수를 끝까지 센 경우",
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{identityLogs?.data?.pagination?.total_is_exact !== false}}",
                                                 "props": {
                                                     "className": "text-label"
                                                 },
                                                 "text": "$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}"
+                                            },
+                                            {
+                                                "comment": "총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{identityLogs?.data?.pagination?.total_is_exact === false}}",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.identity.logs.total_at_least|count={{identityLogs?.data?.pagination?.total || 0}}"
                                             }
                                         ]
                                     },

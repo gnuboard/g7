@@ -17,7 +17,7 @@
             </div>
             <div class="flex-1">
               <p class="text-sm font-semibold text-danger-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
-              <p class="text-error-soft">{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}</p>
+              <p class="text-error-soft">$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}</p>
             </div>
           </div>
         </div>

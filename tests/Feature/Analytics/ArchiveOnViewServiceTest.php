@@ -243,7 +243,7 @@ class ArchiveOnViewServiceTest extends TestCase
     public function test_locked_day_returns_without_skipped_row(): void
     {
         $this->visitsOn(AnalyticsClock::today());
-        $lock = Cache::lock('analytics:archive:hour:'.AnalyticsClock::today(), 60);
+        $lock = Cache::lock(ArchiveService::lockKey(AnalyticsClock::today()), 60);
         $this->assertTrue($lock->get());
 
         try {

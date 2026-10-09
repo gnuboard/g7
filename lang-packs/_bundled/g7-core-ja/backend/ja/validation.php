@@ -881,7 +881,7 @@ return [
         'sitemap_max_urls_per_contributor_integer' => 'クローラーあたり最大URL数は整数である必要があります。',
         'sitemap_max_urls_per_contributor_min' => 'クローラーあたり最大URL数は0以上である必要があります。',
         'sitemap_schedule_invalid' => '有効なSitemap生成周期を選択してください。',
-        'sitemap_schedule_time_invalid' => 'Sitemap生成時刻はHH:mm形式である必要があります。',
+        'sitemap_schedule_time_invalid' => 'Sitemap生成時刻は00:00〜23:59のHH:mm形式である必要があります。',
         'force_https_required' => 'HTTPS強制適用設定を選択してください。',
         'force_https_boolean' => 'HTTPS強制適用はtrue又はfalse値である必要があります。',
         'allow_internal_outbound_urls_boolean' => '内部ネットワークアドレス呼び出し許可はtrue又はfalse値である必要があります。',

@@ -190,6 +190,13 @@ export function useFileDrafts({
     return readDrafts(storageKey);
   });
 
+  /**
+   * **이 문서가 적은** 초안만 담는다.
+   *
+   * 병합으로 본 남의 초안 사본까지 여기 두면, 다른 탭이 그 초안을 지운 뒤(저장 성공·버리기) 이 탭의
+   * 다음 쓰기가 사본을 도로 적어 되살린다(실측 2026-10-06: 탭2 에서 버린 `_admin_base` 초안이 탭1 의
+   * 새로고침 직전 쓰기로 되살아나 배너에 다시 떴다). 남의 초안은 매 쓰기마다 저장소에서 새로 읽는다.
+   */
   const draftsRef = useRef<FileDraftMap>({});
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -198,7 +205,8 @@ export function useFileDrafts({
       return;
     }
 
-    draftsRef.current = readDrafts(storageKey);
+    // 진입 시점의 저장소 내용은 `pendingDrafts` 가 보여 줄 뿐 이 문서가 적은 것이 아니다.
+    draftsRef.current = {};
   }, [storageKey]);
 
   // 회원 구분 없이 남은 옛 키는 누구 것인지 가를 수 없으므로 읽지 않고 지운다.
@@ -269,7 +277,13 @@ export function useFileDrafts({
       });
 
       const trimmed = trimToLimit(merged, maxBytes);
-      draftsRef.current = trimmed;
+      const own: FileDraftMap = {};
+      for (const key of Object.keys(draftsRef.current)) {
+        if (trimmed[key]) {
+          own[key] = trimmed[key];
+        }
+      }
+      draftsRef.current = own;
 
       const payload = JSON.stringify(trimmed);
       window.localStorage.setItem(storageKey, payload);

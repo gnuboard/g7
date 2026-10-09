@@ -536,6 +536,27 @@ DB 컬럼이 늘지 않는다 — `NotificationSyncHelper` 가 저장 필드를 
 ],
 ```
 
+#### `variables` — 변수 설명은 언어 파일에서 찾는다 (7.1.0)
+
+선언의 `variables[].description` 은 한국어 한 벌이고 DB 에도 그대로 저장된다. 편집 창 「사용 가능한 변수」 가 이 문자열을 그대로 보이면 영어·일본어 화면에 한국어가 섞이므로, 정의 응답(`NotificationDefinitionResource`)은 변수 설명을 **요청 언어의 언어 파일**에서 찾아 싣는다(`NotificationDefinition::variableDescription()`). 찾는 순서:
+
+| 알림 | 1순위 | 2순위 | 없으면 |
+| --- | --- | --- | --- |
+| 확장 알림 | `{식별자}::messages.notification_variables.by_type.{type}.{키}` (그 알림에서만 뜻이 다른 변수) | `{식별자}::messages.notification_variables.common.{키}` | 선언 문자열 |
+| 코어 알림 | `notification.variables.by_type.{type}.{키}` | `notification.variables.common.{키}` | 선언 문자열 |
+| 본인인증 알림(`identity.*`) | `notification.variables.identity.{키}` (코어 공통 변수, 선언한 확장과 무관) | — | 선언 문자열 |
+
+- ko 언어 파일 값은 선언 문자열과 **글자 단위로 같게** 둔다 — 선언 설명을 바꾸면 ko·en(번들 언어팩 포함) 키도 함께 고친다. 번들 확장은 `NotificationVariableDescriptionLocaleTest` 가 선언 전수를 ko=선언·en 한글 없음·ja 팩 키 일치로 대조한다.
+- 키가 없으면 선언 문자열(대개 한국어)이 그대로 보인다 — 외부 확장도 위 경로에 ko·en 키를 두면 화면 언어로 나온다. 본인인증 알림에 공통 변수 밖의 키를 선언하면 그 키는 언어 파일 경로가 없어 선언 문자열로 보인다.
+
+```php
+// modules/_bundled/sirsoft-ecommerce/src/lang/en/messages.php
+'notification_variables' => [
+    'common' => ['order_number' => 'Order number'],
+    'by_type' => ['new_order_admin' => ['name' => 'Recipient (administrator) name']],
+],
+```
+
 ### 코어 config 블록
 
 `config/core.php`:

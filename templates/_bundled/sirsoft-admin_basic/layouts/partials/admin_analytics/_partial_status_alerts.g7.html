@@ -73,7 +73,7 @@
     <div data-ref="alert_archive_stale" data-if="{{_computed.archiveFreshness?.stale === true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled === false}}" class="alert-warning">
       <div class="flex-center gap-3 flex-wrap">
         <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
-        <p data-if="{{_computed.archiveFreshness?.last_run_at != null}}" class="text-warning-soft flex-1 min-w-0">$t:admin.analytics.alerts.archive_stale|hours={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(5, 16).replace('-', '/')}}</p>
+        <p data-if="{{_computed.archiveFreshness?.last_run_at != null}}" class="text-warning-soft flex-1 min-w-0">$t:admin.analytics.alerts.archive_stale|count={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|hours={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(5, 16).replace('-', '/')}}</p>
         <p data-if="{{_computed.archiveFreshness?.last_run_at == null}}" class="text-warning-soft flex-1 min-w-0">$t:admin.analytics.alerts.archive_never</p>
         <!-- 「지금 집계」 — 오늘치를 그 자리에서 다시 계산한다(진단 화면의 같은 버튼과 같은 API). 설정을 바꿀 수 있는 계정만
           누를 수 있다(`core.analytics.update`) — 보기 전용 계정에게는 문구만 남긴다. 끝나면 이 화면의 소스와 상태를 다시 받는다. -->

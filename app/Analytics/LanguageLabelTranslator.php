@@ -44,6 +44,25 @@ class LanguageLabelTranslator
 
         $display = Locale::getDisplayName($code, $locale);
 
-        return is_string($display) && $display !== '' ? $display : $language;
+        if (! is_string($display) || $display === '') {
+            return $language;
+        }
+
+        // 국가 부분은 국가 칸과 같은 이름을 쓴다. 국가 이름의 정본은 `config/countries.php`
+        // (`GeoLabelTranslator`)인데 intl 사전은 다른 이름을 줄 수 있어(ko: 「대한민국」 ↔ 정본 「한국」),
+        // 방문자 상세 한 화면에 같은 나라가 두 이름으로 섰다(7.1.0 실측 O-E3). intl 이 만든 문장
+        // 틀(괄호·띄어쓰기)은 그대로 두고 국가 이름만 바꾼다.
+        $region = Locale::getRegion(str_replace('-', '_', $code));
+
+        if (is_string($region) && preg_match('/^[A-Za-z]{2}$/', $region) === 1) {
+            $intlName = Locale::getDisplayRegion('-'.$region, $locale);
+            $canonical = GeoLabelTranslator::country($region, $locale);
+
+            if (is_string($intlName) && $intlName !== '' && $canonical !== '' && $intlName !== $canonical) {
+                $display = str_replace($intlName, $canonical, $display);
+            }
+        }
+
+        return $display;
     }
 }

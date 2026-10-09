@@ -148,12 +148,12 @@
               <success>
                 <set-state target="global" :isModuleUninstalling="false"/>
                 <set-state target="global" moduleUninstallBackups="{{response.data?.preserved_backups ?? []}}"/>
-                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedModule="null" :deleteModuleData="false" :moduleUninstallInfo="null"/>
                 <toast type="success" message="$t:admin.modules.uninstall_success"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <refetch-data-source dataSourceId="admin_menu"/>
                 <reload-extensions moduleInfo="{{result}}" action="remove"/>
                 <close-modal if="{{!(response.data?.preserved_backups?.length)}}"/>
+                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedModule="null" :deleteModuleData="false" :moduleUninstallInfo="null"/>
               </success>
               <fail>
                 <set-state target="global" :isModuleUninstalling="false"/>

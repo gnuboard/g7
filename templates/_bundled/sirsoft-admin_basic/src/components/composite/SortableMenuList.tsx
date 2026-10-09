@@ -362,7 +362,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     return map;
   }, [roleOptions, getMenuLabel]);
 
-  // 「역할 없음」 은 role_ids 가 정말 비었을 때만 보인다. 이름표가 아직 안 왔거나(로그인 직후 진입 등)
+  // 「역할 없음」 은 role_ids 가 정말 비었을 때만 보인다. 이름표(활성 역할 목록) 밖 ID 는 이름 없이 개수(roleCount)로만 센다.
+  // 이름표가 아직 안 왔거나(로그인 직후 진입 등)
   // 부여된 역할이 모두 이름표 밖이면 이름을 모르는 것이지 역할이 없는 것이 아니므로 배지 줄을 그리지 않는다.
   const resolveRoleNames = useCallback((item: MenuItem): string[] | undefined => {
     if (!roleNameById || !Array.isArray(item.role_ids)) return undefined;
@@ -479,6 +480,7 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     moduleName: item.module ? getMenuLabel(item.module.name) : undefined,
     hasChildren: item.children && item.children.length > 0,
     roleNames: resolveRoleNames(item),
+    roleCount: Array.isArray(item.role_ids) ? item.role_ids.length : undefined,
   });
 
   // 선택 모드에서는 자식을 모두 펼친다 — 접힌 자식은 고를 수 없다

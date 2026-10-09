@@ -698,7 +698,7 @@
                             "props": {
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
-                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
+                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|count=' + _global.modal_data.posts_count + '|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
                         },
                         {
                             "id": "delete_main_alert",

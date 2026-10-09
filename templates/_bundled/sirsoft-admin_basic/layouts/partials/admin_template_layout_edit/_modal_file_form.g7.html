@@ -81,6 +81,9 @@
               <close-modal/>
               <toast type="success" message="$t:admin.templates.layout_edit.file.renamed"/>
               <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{response.data.name}}" :markupCompileError="null" :jsonViewStale="true"/>
+              <!-- 옛 이름 탭을 거둔다 — 남기면 「없는 파일」 탭이 새 이름 탭과 나란히 남는다. 저장하지 않은 편집이 있는
+                   탭은 두어 편집분을 말없이 버리지 않는다(그 탭은 「새 이름으로 저장」 으로 살릴 수 있다). -->
+              <set-state if="{{!(_global.dirtyFileKeys ?? []).includes('layout:' + _global.fileFormTarget)}}" target="global" retiredFileKey="layout:{{_global.fileFormTarget}}"/>
               <refetch-data-source dataSourceId="layout_files"/>
               <refetch-data-source dataSourceId="current_layout"/>
             </success>

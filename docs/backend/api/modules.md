@@ -183,6 +183,14 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+**업데이트가 있는 행에만 실리는 필드** — 실측 시점에 업데이트가 없으면 위 생성 표에 나타나지 않아 여기 따로 둔다(7.1.0).
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
+| required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
+| current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+
 **설명** 설치된 모듈과 미설치 모듈을 모두 포함한 전체 모듈 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용되며, `with[]` 에 `custom_menus` 를 지정하면 커스텀 메뉴 데이터를 함께 포함합니다. `core.modules.read` 또는 `core.menus.read` 권한 중 하나가 필요하고, 응답의 `abilities` 는 현재 사용자의 수행 가능 작업 맵을 담습니다. 관리자 모듈 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
 
 
@@ -449,7 +457,7 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 
 <!-- @generated:end -->
 
-**설명** 활성 모듈을 비활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 이 모듈에 의존하는 템플릿·모듈·플러그인이 있으면 409 응답으로 `dependent_templates`·`dependent_modules`·`dependent_plugins` 목록과 함께 경고를 반환합니다. 의존 관계 확인 후 `force: true` 로 강제 비활성화할 수 있습니다.
+**설명** 활성 모듈을 비활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 이 모듈에 의존하는 템플릿·모듈·플러그인이 있으면 409 응답으로 `dependent_templates`·`dependent_modules`·`dependent_plugins` 목록과 함께 경고를 반환합니다(모듈·플러그인 항목은 `identifier`·`name`·`version` — 경고 창이 「v{버전}」 배지로 보인다). 의존 관계 확인 후 `force: true` 로 강제 비활성화할 수 있습니다.
 
 
 ### POST /api/admin/modules/install
@@ -517,6 +525,7 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 필드 + `langua
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치)에서 실패한 항목. 각 항목: `identifier`, `reason`. 실패 없으면 빈 배열 |
+| language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 
 **응답 예시**
 
@@ -569,7 +578,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** `_pending`·`_bundled` 대기소에 있는 모듈을 활성 디렉토리로 설치합니다. `core.modules.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 성공 시 201 상태로 반환하고, 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담깁니다.
+**설명** `_pending`·`_bundled` 대기소에 있는 모듈을 활성 디렉토리로 설치합니다. `core.modules.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 성공 시 201 상태로 반환하고, 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담깁니다. 설치 직후 모듈은 비활성이라 그 모듈 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 모듈을 켤 때 함께 켜집니다.
 
 
 ### POST /api/admin/modules/install-from-file
@@ -1698,7 +1707,8 @@ _단건 응답: `data` 객체의 필드 (`target` + `dependencies[]` + `language
 | language_packs[].locale_native_name | string\|null | `日本語` | 현지 표기 언어명 |
 | language_packs[].locale_name | string\|null | `일본어` | 언어명 |
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
-| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장용이면 null) |
+| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장용이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
+| language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
 | language_packs[].available | boolean | `true` | 선택 가능 여부 (항상 true — 미설치 항목만 수집) |
 | language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
 

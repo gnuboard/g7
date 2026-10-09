@@ -337,6 +337,7 @@
     "warning": "This action cannot be undone. Existing settings of the target boards will be overwritten.",
     "confirm": "Save & Apply",
     "success": "Settings applied to {{count}} boards.",
+    "success_one": "Settings applied to {{count}} board.",
     "error": "Bulk apply failed.",
     "selected_fields": "Items to Apply",
     "selected_boards": "Boards to Apply",
@@ -410,6 +411,7 @@
     "no_template_for_channel": "No template for this channel.",
     "body_preview": "Body Preview",
     "total_count": "Total {{count}} items",
+    "total_count_one": "Total {{count}} item",
     "per_page_label": "Per page",
     "empty_message": "No notification settings found.",
     "types": {
@@ -512,7 +514,8 @@
       "icon_upload_failed": "Failed to upload the icon",
       "icon_delete_failed": "Failed to delete the icon"
     },
-    "delete_blocked_suffix": " reaction(s) use this type, so it cannot be deleted — you can turn it off instead"
+    "delete_blocked_suffix": " reactions use this type, so it cannot be deleted — you can turn it off instead",
+    "delete_blocked_suffix_one": " reaction uses this type, so it cannot be deleted — you can turn it off instead"
   },
   "privacy_retention": {
     "title": "Privacy Retention",
@@ -520,6 +523,7 @@
     "enabled": "Automatic retention processing",
     "enabled_hint": "When on, the core privacy retention job (runs daily) processes board data by the two rules below. Processed data cannot be restored.",
     "target_count": "{{count}} targets",
+    "target_count_one": "{{count}} target",
     "ip_retention_days": "Author IP retention period (days)",
     "ip_retention_days_hint": "Erases the author IP of every post and comment, including members' posts, once this many days have passed since writing. Access records must be kept for at least 1 year (2 years for large operators), so do not set a shorter period.",
     "guest_retention_days": "Guest author information retention period (days)",
@@ -537,6 +541,7 @@
       "row_ip": "Author IPs (posts and comments)",
       "row_guest": "Guest author information (posts and comments)",
       "count": "{{count}} targets",
+      "count_one": "{{count}} target",
       "view": "View targets",
       "title_ip": "Author IPs to be erased (posts and comments)",
       "title_guest": "Guest author information to be processed (posts and comments)",
@@ -583,6 +588,7 @@
     "target_all": "All boards",
     "target_selected": "Selected boards",
     "boards_count": "{{count}} boards",
+    "boards_count_one": "{{count}} board",
     "type_label": "Type",
     "type_manager": "Manager",
     "type_step": "Staff",
@@ -598,6 +604,7 @@
     "confirm_remove_manager": "Remove the selected members from board managers.",
     "confirm_remove_step": "Remove the selected members from board staff.",
     "result_summary": "{{updated}} boards changed, {{skipped}} skipped",
+    "result_summary_one": "{{updated}} board changed, {{skipped}} skipped",
     "reason_last_manager": "Would leave no manager",
     "reason_scope": "Outside your scope",
     "failed": "Failed to assign board managers/staff in bulk."

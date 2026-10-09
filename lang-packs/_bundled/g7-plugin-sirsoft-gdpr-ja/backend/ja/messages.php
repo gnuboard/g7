@@ -33,7 +33,7 @@ return [
         'granted_again' => '同意が更新されました。',
         'rejected_saved' => '同意しないで続行します。選択項目は使用されません。',
         'revoked' => '同意が取り消されました。',
-        'renew_all_success' => 'アクティブな項目 {renewed} 個を新しいポリシーバージョンに更新しました。',
+        'renew_all_success' => 'アクティブな項目 :renewed 個を新しいポリシーバージョンに更新しました。',
         'granting' => '同意中...',
         'revoking' => '取り消し中...',
         'renewing' => '更新中...',
@@ -351,5 +351,19 @@ return [
         'too_long_cookie' => 'Cookie — 項目は128文字を超えることはできません。',
         'must_be_array' => 'ストレージ別の項目リストは配列である必要があります。',
         'invalid_scope' => '不明なストレージの区分です: :scope (ブラウザストレージ·セッションストレージ·Cookie のみ使用できます)',
+    ],
+    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
+    'notification_variables' => [
+        'common' => [
+            'recipient_name' => '受信者名',
+            'app_name' => 'サイト名',
+            'introduction' => '運営者の前書き',
+            'collection_summary' => '収集項目の要約',
+            'purpose' => '利用目的',
+            'retention' => '保有期間',
+            'privacy_policy_url' => 'プライバシーポリシーURL',
+            'privacy_policy_link' => 'プライバシーポリシーのリンク行（アドレスがなければ空）',
+            'notice_sections' => '拡張機能が追加した処理内容',
+        ],
     ],
 ];

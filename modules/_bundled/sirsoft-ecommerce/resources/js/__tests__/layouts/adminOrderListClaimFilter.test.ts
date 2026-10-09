@@ -97,11 +97,15 @@ const claimRow = collect(filterSection, (n) => n.id === 'claim_filter_row')[0];
  *   order_list_claim_requested_range_has_both_bounds
  */
 describe('클레임 기준 필터 블록 (D22)', () => {
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_axes_are_registered_in_slot_area
   it('필터 카드의 슬롯 등록 영역에 클레임 행이 있다', () => {
     expect(claimRow).toBeDefined();
     expect(claimRow.slot).toContain("includes('claim')");
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_is_visible_by_default
   it('기본으로 노출되고, 검색 편집에서 숨길 수도 있다', () => {
     // 계획서 §6-4-2 는 "기본 필터 아래에 블록으로 삽입(검색 편집에서 숨김 가능)" 이다.
     // 기본 목록에서 빠져 있으면 운영자가 검색 편집을 열어보기 전에는 이 기능이 있다는
@@ -119,6 +123,8 @@ describe('클레임 기준 필터 블록 (D22)', () => {
     expect(JSON.stringify(toggles[0].actions)).toContain("f !== 'claim'");
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_vocabulary_matches_server_gate
   it.each(Object.entries(GATE))('%s 칩 값 집합이 서버 게이트와 정확히 같다', (statePath, expected) => {
     const chips = collect(claimRow, (n: any) => n.name === 'ChipCheckbox' && String(n.id ?? '').includes(statePath));
     const values = chips.map((c) => String(c.props?.value));
@@ -126,6 +132,8 @@ describe('클레임 기준 필터 블록 (D22)', () => {
     expect(values.sort()).toEqual([...expected].sort());
   });
 
+  // @scenario claim_axis=presence
+  // @effects order_list_claim_presence_is_scalar
   it('클레임 유무는 스칼라 계약이라 한 값만 선택되고 다시 누르면 해제된다', () => {
     const chips = collect(claimRow, (n: any) => n.name === 'ChipCheckbox' && String(n.id ?? '').includes('claimPresence'));
 
@@ -138,6 +146,8 @@ describe('클레임 기준 필터 블록 (D22)', () => {
     }
   });
 
+  // @scenario claim_axis=fault_and_date
+  // @effects order_list_claim_requested_range_has_both_bounds
   it('클레임 신청일은 from ~ to 두 입력을 갖는다', () => {
     const dates = collect(claimRow, (n: any) => n.props?.type === 'date');
 
@@ -160,6 +170,8 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
   const searchQuery = (shell as any).named_actions.searchOrders.params.query;
   const state = initStateOf(shell as any).filter;
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_round_trips_through_url
   it.each(AXES)('%s 축이 네 지점 모두에 있다', (stateKey, param, isArray) => {
     const urlKey = isArray ? `${param}[]` : param;
 
@@ -169,12 +181,16 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
     expect(orders.params).toHaveProperty(param);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_search_passes_changed_values
   it('검색 실행은 바뀐 값을 직접 넘긴다 (병합만으로는 새 값이 전달되지 않는다)', () => {
     for (const [stateKey] of AXES) {
       expect(JSON.stringify(searchQuery)).toContain(`_local.filter.${stateKey}`);
     }
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reset_clears_axes
   it('초기화 버튼은 클레임 축도 함께 비운다', () => {
     const reset = collect(filterSection, (n) => n.id === 'f_142_reset_button')[0];
     const cleared = reset.actions?.[0].actions.find((a: any) => a.handler === 'setState').params.filter;
@@ -184,6 +200,8 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
     }
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_preset_carries_axes
   it('프리셋은 클레임 축을 승계한다 (저장·적용 양쪽)', () => {
     const preset = collect(filterSection, (n) => n.id === 'preset_buttons_dynamic_{{presetIdx}}')[0];
     const applied = JSON.stringify(preset.actions?.[0].actions);
@@ -193,6 +211,8 @@ describe('필터 왕복 — 상태 · URL · 데이터소스 · 재진입 네 �
     }
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_dead_singular_keys_removed
   it('서버가 모르는 단수 키(claim_refund_status 등)는 어디에도 남지 않는다', () => {
     // 죽은 단수 키는 필터 섹션뿐 아니라 엑셀 다운로드·프리셋 저장 모달에도 있었다. 한 파일만
     // 훑으면 나머지 두 곳에서 되살아나도 초록이다. 또 실제 형태는 `claimRefundStatus ||` 처럼
@@ -238,6 +258,8 @@ describe('클레임 컬럼 (D22)', () => {
    * 클레임 컬럼은 다른 10개와 같은 평범한 컬럼이고, 표시 여부는 컬럼 선택 하나가 정한다.
    * 아래 케이스들은 그 단일 출처가 다시 갈라지지 않는지를 지킨다.
    */
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_display_has_single_source
   it('표시 컬럼 선택에 클레임이 있고 기본으로 표시된다', () => {
     const fields = columnSelector.props?.columns.map((c: any) => c.field);
 
@@ -245,6 +267,8 @@ describe('클레임 컬럼 (D22)', () => {
     expect(columnSelector.props?.defaultColumns).toContain('claim');
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_renders_latest_status_per_type
   it('DataGrid 에 클레임 컬럼이 있고 유형별 최신 상태 배지를 그린다', () => {
     const claimCol = grid.props?.columns.find((c: any) => c.field === 'claim');
 
@@ -253,6 +277,8 @@ describe('클레임 컬럼 (D22)', () => {
     expect(JSON.stringify(claimCol)).toContain('StatusBadge');
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_is_always_served
   it('요약 요청을 주소로 나르는 축이 화면 어디에도 없다', () => {
     // 이 축이 되살아나면 표시(브라우저 저장값)와 값 수신(주소)이 다시 두 근거를 갖는다.
     // 셸·필터 두 파일이 화면이고, `_partial_preset_section.json` 은 **어느 레이아웃도
@@ -279,6 +305,8 @@ describe('클레임 컬럼 (D22)', () => {
     ).toBe(false);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_display_has_single_source
   it('컬럼 토글은 표시 상태만 바꾼다 — 주소를 쓰지 않는다', () => {
     const action = columnSelector.actions?.find((a: any) => a.event === 'onColumnVisibilityChange');
 
@@ -288,12 +316,16 @@ describe('클레임 컬럼 (D22)', () => {
     expect(JSON.stringify(action)).not.toContain('navigate');
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_display_has_single_source
   it('컬럼 선택기는 저장 키를 유지한다 — 없으면 컬럼 선택이 새로고침마다 초기화된다', () => {
     // props.id 가 저장 키(g7_columns_{id}_{uuid})를 만든다. 이 id 가 도입된 커밋(8b36c8488)이
     // 고친 버그가 바로 "컬럼을 골라도 새로고침하면 초기화된다" 였다.
     expect(columnSelector.props?.id).toBe('admin_order_list_columns');
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_column_display_has_single_source
   it('init_actions 가 컬럼 표시를 주소 기준으로 다시 맞추지 않는다', () => {
     // 복원(localStorage)과 주소가 서로 컬럼 목록을 고쳐 쓰면 마운트 순서에 따라 결과가
     // 갈린다. 표시의 출처는 저장값 하나여야 한다.
@@ -311,6 +343,8 @@ describe('클레임 컬럼 (D22)', () => {
  * @effects order_list_claim_filter_fault_and_date_axes_are_wired
  */
 describe('클레임 기준 필터 — 귀책 · 신청일 축', () => {
+  // @scenario claim_axis=fault_and_date
+  // @effects order_list_claim_filter_fault_and_date_axes_are_wired
   it('귀책 유형 칩이 서버 어휘 3종을 그대로 그린다', () => {
     const chips = collect(
       filterSection,
@@ -326,6 +360,8 @@ describe('클레임 기준 필터 — 귀책 · 신청일 축', () => {
     ].sort());
   });
 
+  // @scenario claim_axis=fault_and_date
+  // @effects order_list_claim_filter_fault_and_date_axes_are_wired
   it('신청일 범위 from/to 가 상태·데이터소스 양쪽에 배선돼 있다', () => {
     const orders = (shell as any).data_sources.find((d: any) => d.id === 'orders');
 
@@ -356,6 +392,8 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
     ['_modal_preset_save.json', presetSaveModal],
   ];
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
   it('검사할 모달 파셜이 파생된다 (파생 자체의 건전성)', () => {
     expect(MODAL_PARTIALS.length).toBeGreaterThanOrEqual(2);
   });
@@ -382,6 +420,8 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
     return written;
   };
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
   it.each(MODAL_PARTIALS)('%s 은 자기가 쓰지 않은 로컬 키를 읽지 않는다', (_name, partial) => {
     const text = JSON.stringify(partial);
     const reads = new Set(Array.from(text.matchAll(/_local\.([A-Za-z_][A-Za-z0-9_]*)/g)).map((m) => m[1]));
@@ -394,6 +434,8 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
     ).toEqual([]);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
   it('엑셀 모달을 여는 지점이 대상·필터를 _global 브리지에 싣는다', () => {
     const text = JSON.stringify(datagrid);
 
@@ -408,6 +450,8 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
   // 읽었는데, 그것은 별도 컨텍스트라 도달하지 않을 뿐 아니라 경로 자체가 형제 셀
   // (`orders?.data?.pagination?.total`)과 달라 도달해도 값이 없었다. 두 겹으로 틀린 채
   // 표현식은 유효해서 "검색결과 (0건)" 으로만 나타났다.
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
   it.each(MODAL_PARTIALS)('%s 은 페이지 데이터소스를 직접 읽지 않는다', (_name, partial) => {
     const dataSourceIds = ((shell as any).data_sources ?? []).map((d: any) => d.id);
     const text = JSON.stringify(partial);
@@ -428,6 +472,8 @@ describe('모달 파셜 — 페이지 로컬 상태를 직접 읽지 않는다 (
     ).toEqual([]);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
   it('엑셀 모달이 싣는 필터 축이 목록 데이터소스의 클레임 축을 모두 덮는다', () => {
     const orders = (shell as any).data_sources.find((d: any) => d.id === 'orders');
     const claimParams = Object.keys(orders.params).filter((k) => k.startsWith('claim_'));
@@ -481,6 +527,11 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
   // 주소 왕복에서 빠졌다는 뜻이므로, 여기서 red 로 드러나야 한다.
   const UI_ONLY_KEYS = ['dateQuick'];
 
+  // 프리셋에 담지 않는 조건 축. `dateBasis` 는 대시보드 「오늘」 배지로 들어왔을 때만 서는 날짜 기준(사이트 하루)이다 —
+  // 프리셋은 운영자가 고른 조건이라 보는 사람의 하루가 맞고, 적용 시드는 이 축을 비워 되돌린다(아래 「화면 상태로
+  // 되돌린다」 검사가 시드에 있는지 본다). 저장 열거·적용 이동 query 에는 일부러 없다.
+  const NON_PRESET_KEYS = ['dateBasis'];
+
   const saveCall = collect(
     presetSaveModal,
     (n: any) => n.handler === 'apiCall' && n.params?.body?.conditions
@@ -493,6 +544,8 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
   const appliedQuery: Record<string, unknown> =
     (collect(applyButton, (n: any) => n.handler === 'navigate' && n.params?.query?.preset_id)[0] as any)?.params?.query ?? {};
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_preset_carries_axes
   it('판정 기준 두 정본과 대조 대상 세 출처를 모두 읽었다', () => {
     expect(conditionKeys.length, 'state.filter 를 읽지 못했다').toBeGreaterThanOrEqual(28);
     expect(stateToUrl.size, 'searchOrders 의 상태 → URL 대응을 읽지 못했다').toBeGreaterThanOrEqual(28);
@@ -501,6 +554,8 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
     expect(Object.keys(appliedQuery).length, '프리셋 적용의 이동 query 를 읽지 못했다').toBeGreaterThanOrEqual(28);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_round_trips_through_url
   it('주소에 실리지 않는 조건 축은 선언된 것뿐이다', () => {
     const unmapped = conditionKeys.filter((k) => !stateToUrl.has(k)).sort();
 
@@ -510,8 +565,13 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
     ).toEqual([...UI_ONLY_KEYS].sort());
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_preset_carries_axes
   it('프리셋 저장이 조건 축을 하나도 빠뜨리지 않는다', () => {
-    const missing = conditionKeys.filter((k) => !(k in savedConditions)).sort();
+    const missing = conditionKeys
+      .filter((k) => !NON_PRESET_KEYS.includes(k))
+      .filter((k) => !(k in savedConditions))
+      .sort();
 
     expect(
       missing,
@@ -519,6 +579,8 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
     ).toEqual([]);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_preset_carries_axes
   it('프리셋 적용이 조건 축을 하나도 빠뜨리지 않고 화면 상태로 되돌린다', () => {
     const missing = conditionKeys.filter((k) => !(k in appliedSeed)).sort();
 
@@ -528,9 +590,12 @@ describe('프리셋 3출처는 필터 상태의 전 축을 나른다', () => {
     ).toEqual([]);
   });
 
+  // @scenario claim_axis=type_status
+  // @effects order_list_claim_filter_preset_carries_axes
   it('프리셋 적용 이동이 조건 축을 하나도 빠뜨리지 않고 주소에 싣는다', () => {
     const missing = conditionKeys
       .filter((k) => stateToUrl.has(k))
+      .filter((k) => !NON_PRESET_KEYS.includes(k))
       .filter((k) => !(stateToUrl.get(k)! in appliedQuery))
       .sort();
 

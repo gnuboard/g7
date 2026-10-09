@@ -15,5 +15,8 @@
   "upload_response_invalid": "アップロード応答を解釈できませんでした。",
   "drag_to_reorder": "ドラッグして順序変更",
   "primary_image": "代表画像",
-  "set_as_primary": "代表画像として設定"
+  "set_as_primary": "代表画像として設定",
+  "empty_file": "[{{name}}] 空のファイル（0バイト）はアップロードできません。",
+  "invalid_file_type": "許可されていないファイル形式です。",
+  "delete_failed": "ファイルの削除に失敗しました。"
 }

@@ -376,11 +376,18 @@ class UserController extends AdminBaseController
             $validated = $request->validated();
             $result = $this->userService->bulkUpdateRoles($validated['uuids'], $validated['role_ids'], $validated['mode']);
 
+            // 이미 원하는 상태라 바뀌지 않은 회원이 있으면 그 수까지 말한다 — 없으면 종전 문구.
+            $hasUnchanged = ($result['unchanged_count'] ?? 0) > 0;
+
             return $this->success(
-                'user.bulk_roles_updated',
+                $hasUnchanged ? 'user.bulk_roles_updated_with_unchanged' : 'user.bulk_roles_updated',
                 $result,
                 200,
-                ['count' => $result['updated_count'], 'skipped' => $result['skipped_count']]
+                [
+                    'count' => $result['updated_count'],
+                    'skipped' => $result['skipped_count'],
+                    'unchanged' => $result['unchanged_count'] ?? 0,
+                ]
             );
         } catch (PermissionEscalationException $e) {
             // 상한 밖 역할 — 요청 전체 거부 (단건 수정과 같은 403)

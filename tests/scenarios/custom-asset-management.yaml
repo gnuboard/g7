@@ -51,6 +51,8 @@ effects:
   - custom_assets_disabled_by_request_parameter
   - custom_asset_manage_all_extension_types_parity
   - custom_asset_published_for_all_extension_types
+  # 마지막 파일을 지우면 빈 폴더도 함께 정리한다(7.1.0 잔여 관측 R-11)
+  - custom_asset_removal_prunes_emptied_folders
 
 test_files:
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php

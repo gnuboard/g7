@@ -123,6 +123,28 @@ class MenuBulkRolesTest extends TestCase
     }
 
     /**
+     * 영문 결과 문구는 메뉴 1개만 바뀌면 단수다 — 「1 menus」·「1 menu(s)」 가 아니라 「1 menu」 (2026-10-08 결정: 1개면 단수·여러 개면 복수).
+     *
+     * @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=top_level
+     *
+     * @effects english_result_message_follows_menu_count
+     *
+     * @return void 반환값 없음
+     */
+    public function test_english_success_message_reads_naturally_for_one_menu(): void
+    {
+        $actor = $this->actor('super_admin');
+        $actor->forceFill(['language' => 'en'])->save();
+        $role = $this->roleWith([]);
+        $menu = $this->menu();
+
+        $this->bulk($actor->fresh(), [$menu->id], [$role->id], 'add')
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 1)
+            ->assertJsonPath('message', 'Updated the roles of 1 menu.');
+    }
+
+    /**
      * 관리 목록은 행마다 부여된 역할을 ID 로 싣는다 — 일괄로 자식에 더한 역할이 부모·자식 행 모두에 보이고,
      * 하위 메뉴의 역할 객체(roles)는 #76 정리대로 여전히 싣지 않는다.
      *
@@ -185,6 +207,44 @@ class MenuBulkRolesTest extends TestCase
         sort($fired);
         $this->assertSame([$parent->id, $c1->id, $c2->id], $fired);
         $this->assertSame([$parent->id, $c1->id, $c2->id], $this->menuIdsOf($role));
+    }
+
+    /**
+     * 확장 개발자용 일괄 훅이 요청 앞뒤로 한 번씩 발화하고, 뒤 훅은 적용 결과(자동 포함 부모)를 받는다.
+     *
+     * @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=child_only
+     *
+     * @effects parent_auto_included
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_hooks_fire_once_around_the_request(): void
+    {
+        $actor = $this->actor('super_admin');
+        $role = $this->roleWith([]);
+        $parent = $this->menu();
+        $child = $this->menu(['parent_id' => $parent->id]);
+
+        $calls = [];
+        $before = function ($menuIds, $roleIds, $mode) use (&$calls) {
+            $calls[] = ['before', $menuIds, $roleIds, $mode];
+        };
+        $after = function ($menuIds, $roleIds, $mode, $result) use (&$calls) {
+            $calls[] = ['after', $menuIds, $roleIds, $mode, $result['auto_included_parent_ids']];
+        };
+        HookManager::addAction('core.menu.before_bulk_update_roles', $before);
+        HookManager::addAction('core.menu.after_bulk_update_roles', $after);
+        try {
+            $this->bulk($actor, [$child->id], [$role->id], 'add')->assertOk();
+        } finally {
+            HookManager::removeAction('core.menu.before_bulk_update_roles', $before);
+            HookManager::removeAction('core.menu.after_bulk_update_roles', $after);
+        }
+
+        $this->assertSame([
+            ['before', [$child->id], [$role->id], 'add'],
+            ['after', [$child->id], [$role->id], 'add', [$parent->id]],
+        ], $calls);
     }
 
     /**

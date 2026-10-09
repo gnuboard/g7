@@ -1471,6 +1471,9 @@
     "version_restore_confirm": "版を戻す確認",
     "version_preview": "版のプレビュー",
     "modal_filled": "ウィンドウの内容を表示",
+    "uninstall_done": "削除完了",
+    "read_normal": "通常の投稿",
+    "attachments_replies_open": "添付・返信を展開",
     "screen_filled": "画面の状態を表示"
   },
   "cell_border": {

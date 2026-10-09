@@ -63,10 +63,12 @@ describe('확장 목록 — 페이지네이션 바인딩 경로', () => {
  * @effects pager_reads_pagination_slot_not_flat_path, total_summary_reads_same_slot_as_pager, fallback_shape_matches_response_shape
  */
 describe('관리자 목록 — 페이지네이션 바인딩 경로(확장 목록 외)', () => {
+  // 이력 창은 창 데이터소스를 initGlobal(`_global.scheduleHistory` = 응답 data)로 받는다 — 창 데이터소스는
+  // id 로 화면에 실리지 않아 `schedule_history?.data…` 로 읽으면 이력이 늘 비어 보였다(7.1.0 J D-J2).
   const cases = [
-    { name: '예약 작업 목록', layout: scheduleTab, source: 'schedules' },
-    { name: '예약 작업 이력 창', layout: scheduleHistory, source: 'schedule_history' },
-    { name: '언어팩 목록', layout: languagePackContent, source: 'language_packs' },
+    { name: '예약 작업 목록', layout: scheduleTab, source: 'schedules', pager: 'schedules?.data?.pagination?.current_page' },
+    { name: '예약 작업 이력 창', layout: scheduleHistory, source: 'schedule_history', pager: '_global.scheduleHistory?.pagination?.current_page' },
+    { name: '언어팩 목록', layout: languagePackContent, source: 'language_packs', pager: 'language_packs?.data?.pagination?.current_page' },
   ];
 
   // @scenario envelope_slot=flat, surface=schedule_list, consumer=pager_buttons, position=first
@@ -84,8 +86,8 @@ describe('관리자 목록 — 페이지네이션 바인딩 경로(확장 목록
 
   // @scenario envelope_slot=pagination, surface=schedule_history_modal, consumer=pager_buttons, position=first
   // @effects pager_reads_pagination_slot_not_flat_path
-  it.each(cases)('$name 은 pagination 하위에서 쪽 번호를 읽는다', ({ layout, source }) => {
-    expect(JSON.stringify(layout)).toContain(`${source}?.data?.pagination?.current_page`);
+  it.each(cases)('$name 은 pagination 하위에서 쪽 번호를 읽는다', ({ layout, pager }) => {
+    expect(JSON.stringify(layout)).toContain(pager);
   });
 
   // @scenario envelope_slot=pagination, surface=language_pack_list, consumer=total_summary_line, position=last

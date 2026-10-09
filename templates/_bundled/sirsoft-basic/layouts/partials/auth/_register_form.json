@@ -508,7 +508,7 @@
             "name": "Div"
         },
         {
-            "comment": "약관 동의",
+            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6).",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -532,13 +532,14 @@
                                     "props": {
                                         "name": "agree_terms",
                                         "value": "1",
+                                        "aria-label": "$t:auth.agree_terms_label",
                                         "required": true,
                                         "disabled": "{{_local?.isRegistering}}"
                                     }
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Div",
                                     "props": {
                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                     },
@@ -609,13 +610,14 @@
                                     "props": {
                                         "name": "agree_privacy",
                                         "value": "1",
+                                        "aria-label": "$t:auth.agree_privacy_label",
                                         "required": true,
                                         "disabled": "{{_local?.isRegistering}}"
                                     }
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Div",
                                     "props": {
                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                     },

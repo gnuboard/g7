@@ -96,7 +96,7 @@
                                             "props": {
                                                 "className": "text-body"
                                             },
-                                            "text": "{{template.name}}"
+                                            "text": "{{template.name || template.identifier}}"
                                         },
                                         {
                                             "type": "basic",
@@ -157,7 +157,7 @@
                                             "props": {
                                                 "className": "text-body"
                                             },
-                                            "text": "{{module.name}}"
+                                            "text": "{{module.name || module.identifier}}"
                                         },
                                         {
                                             "type": "basic",
@@ -218,7 +218,7 @@
                                             "props": {
                                                 "className": "text-body"
                                             },
-                                            "text": "{{plugin.name}}"
+                                            "text": "{{plugin.name || plugin.identifier}}"
                                         },
                                         {
                                             "type": "basic",

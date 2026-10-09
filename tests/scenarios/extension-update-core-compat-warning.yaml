@@ -1,0 +1,44 @@
+feature: 확장 업데이트 창의 코어 호환 경고·강제 업데이트가 실제 목록에서 동작한다 (F-D4)
+
+description: |
+  업데이트 창은 목록 행의 `is_compatible`·`required_core_version`·`current_core_version` 으로 코어 호환 경고와
+  「경고를 무시하고 강제 업데이트」 체크를 띄운다. 목록 응답이 이 셋을 싣지 않아 새 버전이 코어를 만족하지 않아도
+  경고 없이 업데이트를 눌러 서버 422 로 끝났고, 거꾸로 `is_compatible:false` 가 오면 목록의 업데이트 버튼이 잠겨
+  창에 들어갈 수 없었다.
+
+  결정(경고 살리기): 목록 응답에 업데이트 대상 버전의 코어 호환 정보를 싣는다(업데이트가 있을 때만, 단건
+  업데이트 확인과 같은 규칙). 창에서 경고와 강제 업데이트 체크가 보인다. 목록 버튼은 잠그지 않는다.
+  창을 열 때 직전 확장에서 켠 강제 체크를 거짓으로 되돌린다(다른 확장에 force 가 새지 않게).
+
+  축 값(defect)별 결함:
+    - extension_update_core_compat_unreachable: 목록 행에 업데이트 대상 호환 정보가 없어 경고가 뜨지 않았다
+    - extension_update_button_locked_when_incompatible: is_compatible:false 면 업데이트 버튼이 잠겨 창에 못 들어갔다
+    - extension_update_force_flag_leaks: 강제 체크 값이 창을 다시 열어도 남아 다른 확장 업데이트에 force 로 실렸다
+
+axes:
+  # 결함(defect)×확장 유형×업데이트 출처의 곱은 테스트가 실제로 재는 조합보다 넓다 — 재는 사례를 한 축으로 열거한다.
+  case:
+    - list_row_module_bundled_incompatible
+    - list_row_module_without_update
+    - list_row_plugin_github_source
+    - list_row_plugin_bundled_incompatible
+    - list_row_template_bundled_incompatible
+    - list_button_module_plugin_not_locked
+    - list_button_template_not_locked
+    - list_button_permission_lock_kept
+    - modal_warning_and_force_checkbox
+    - modal_force_flag_reset_on_open
+
+effects:
+  - extension_list_row_exposes_update_compatibility
+  - extension_update_button_not_locked_by_core_compat
+  - extension_update_modal_warns_and_offers_force
+  - extension_update_force_flag_reset_on_open
+
+notes:
+  - update_source=none 은 업데이트가 없는 행 — 호환 정보를 싣지 않는다(설치본 판정은 core_compatible).
+  - github 출처는 원격 매니페스트를 받지 않으므로 단건 확인과 같이 활성 매니페스트의 요구 버전으로 판정한다(정확한 판정은 스테이징 단계).
+
+test_files:
+  - tests/Feature/Extension/ExtensionListUpdateCompatibilityTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-core-compat.test.tsx

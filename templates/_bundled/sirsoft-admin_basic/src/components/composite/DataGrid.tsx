@@ -1135,6 +1135,21 @@ export const DataGrid: React.FC<DataGridProps> = ({
   );
 
   /**
+   * 행 선택 체크박스의 접근 가능한 이름을 만듭니다.
+   *
+   * 첫 표시 열의 값이 글자면 「{값} 선택」, 아니면 「행 선택」. 이름이 없어 화면 읽기 프로그램에
+   * 「체크박스」 만 읽히던 것을 고친다(7.1.0 영역 J D-J5, O-CF5).
+   */
+  const getRowSelectLabel = (row: any): string => {
+    const first = displayColumns[0];
+    const value = first ? row?.[first.field] : undefined;
+    if ((typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '') {
+      return t('common.select_item', { name: String(value) });
+    }
+    return t('common.select_row');
+  };
+
+  /**
    * 행 데이터 기반으로 rowActions의 disabled 상태를 결정합니다.
    * disabledField가 지정된 경우 해당 경로의 값이 falsy면 disabled 처리합니다.
    */
@@ -1255,7 +1270,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             <Button
               onClick={() => handleExpandToggle(rowId)}
               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors mr-2"
-              aria-label={expanded ? 'Collapse card' : 'Expand card'}
+              aria-label={expanded ? t('common.collapse') : t('common.expand')}
             >
               <Icon
                 name={expanded ? expandIconExpanded : expandIconCollapsed}
@@ -1269,6 +1284,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               checked={selectedIds.includes(row[idField])}
               disabled={!isRowSelectable(row)}
               onChange={() => handleSelectRow(row[idField])}
+              aria-label={getRowSelectLabel(row)}
               className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
             />
           )}
@@ -1353,6 +1369,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Checkbox
                           checked={visibleColumns.includes(col.field)}
                           disabled={col.required}
+                          aria-label={typeof col.header === 'string' ? col.header : undefined}
                           onChange={() => {}}
                           className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                         />
@@ -1473,6 +1490,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       <Checkbox
                         checked={visibleColumns.includes(col.field)}
                         disabled={col.required}
+                        aria-label={typeof col.header === 'string' ? col.header : undefined}
                         onChange={() => {}}
                         className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                       />
@@ -1523,6 +1541,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       }
                     }}
                     onChange={handleSelectAll}
+                    aria-label={t('common.select_all')}
                     className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                   />
                 </Th>
@@ -1584,7 +1603,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             <Button
                               onClick={() => handleExpandToggle(rowId)}
                               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                              aria-label={expanded ? 'Collapse row' : 'Expand row'}
+                              aria-label={expanded ? t('common.collapse') : t('common.expand')}
                             >
                               <Icon
                                 name={expanded ? expandIconExpanded : expandIconCollapsed}
@@ -1602,6 +1621,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             checked={selectedIds.includes(row[idField])}
                             disabled={!isRowSelectable(row)}
                             onChange={() => handleSelectRow(row[idField])}
+                            aria-label={getRowSelectLabel(row)}
                             className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                           />
                         </Td>

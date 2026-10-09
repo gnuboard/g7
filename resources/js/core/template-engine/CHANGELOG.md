@@ -5,6 +5,78 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.78.8] - 2026-10-09
+
+### Added
+
+- 레이아웃 편집기 [동작] 탭에서 값을 그대로 넘기는 부품(`rawValueEvents` 표식)의 칸 위에 「바뀐 값은 동작 값 칸에서 `{{$args[0]}}` 로 읽는다(`$event.target.value` 는 비어 있다)」 안내를 보입니다. 값이 첫 인자가 아닌 부품은 역량의 새 표식 `rawValueArgIndex`(칸 이름 → `$args` 위치)로 위치를 알립니다 — FilterGroup 은 `onChange(filterId, value)` 라 `{{$args[1]}}`. 문구는 `layout_editor.action.raw_value_hint`(ko/en/ja) (property-controls/ActionRecipeEditor.tsx, spec/specTypes.ts `rawValueArgIndex`, 회귀: `ActionRecipeEditor.rawValueHint.test.tsx`·`rawValueEventsMarked.test.ts`)
+
+### Fixed
+
+- 레이아웃 편집기 버전 기록 창의 문자 수 변화가 1 이어도 「(+1 chars)」로 나오던 문제. 부호가 붙은 글자(`+1`)는 수가 아니라 복수형을 고르지 못했습니다 — 절댓값을 `count` 로도 넘기고 en 사전에 `_one` 을 더했습니다. 같은 묶음에서 코어 편집기 en 사전의 「{count} unsaved edit(s)」 같은 `(s)` 표기 5곳을 복수형 기본 키와 단수형 `_one` 으로 나누고, `{count} lines`·`{count} cells` 등 5곳에 `_one` 을 더했습니다 (VersionHistoryModal.tsx, 회귀: `i18n/pluralDictionary.test.ts`)
+
+## [engine-v1.78.7] - 2026-10-09
+
+### Added
+
+- 레이아웃 편집기 [동작] 탭에서 한 이벤트 칸에 기다렸다 실행하는 동작(debounce)과 바로 실행하는 동작이 섞이면 그 칸에 경고를 띄웁니다. 런타임은 바로 실행하는 동작을 돌리기 전에 대기 중인 디바운스를 모두 즉시 실행하므로(저장 직전 최신 입력 반영, engine-v1.20.0) 섞어 두면 디바운스 동작도 매 입력 실행됩니다 — 실행 의미는 바꾸지 않고 알리기만 합니다. 묶음 판정은 런타임과 같은 순서(`event` → `type`)입니다. 코드 편집기 검사에도 같은 경고(`mixed_debounce_flushed`)가 붙습니다 (property-controls/ActionRecipeEditor.tsx `hasMixedDebounce`, 회귀: `ActionRecipeEditor.mixedDebounce.test.tsx`)
+- 편집기 확인·입력 대화상자 `useEditorDialog(t)` — `confirm({title, message, confirmLabel, cancelLabel, danger})`·`prompt({…, defaultValue})` 가 편집기 모달 스택 위에 role=alertdialog 창을 띄우고 약속(Promise)으로 답합니다. 이름=제목·설명=본문, 처음 초점(입력칸 / 위험 확인은 [취소] / 그 밖 [확인]), Tab 가두기, Esc·백드롭·[취소]=취소, 닫히면 연 요소로 초점 복귀. Provider 없이 단독 렌더되면 브라우저 기본 대화상자로 대체합니다. 모달 옵션에 `role`·`ariaDescribedBy` 추가, Provider 밖에서도 부를 수 있는 `useOptionalEditorModal()` (components/EditorDialog.tsx, EditorModalContext.tsx, 회귀: `EditorDialog.test.tsx`)
+- 부품 역량 스펙 `rawValueEvents` — `events` 중 부품이 DOM 이벤트·`{ target }` 대신 값을 그대로 넘기는 칸 표식 (spec/specTypes.ts)
+
+### Changed
+
+- 레이아웃 편집기의 나가기·템플릿 전환·커스텀 자산 적용 토글·링크 경로 이동·초기화, 커스텀 자산 창의 미저장 버리기·삭제·이름변경, 버전 복원, 다국어 키 삭제(1건·일괄), 첨부 이미지 삭제가 브라우저 기본 `window.confirm`/`window.prompt` 대신 편집기 대화상자를 씁니다(11곳). 단추 이름이 동작을 말하고(「변경 사항 버리기」/「편집 계속」·「삭제」·「이름변경」·「복원」) 위험한 확인은 처음 초점이 [취소]입니다. 호출 쪽 처리기는 비동기가 되었고, 커스텀 자산 창의 Esc 는 대화상자가 떠 있으면 대화상자만 닫습니다 (LayoutEditorChrome.tsx, CustomAssetsModal.tsx, VersionHistoryModal.tsx, CustomTranslationManager.tsx, LayoutAttachmentManager.tsx, 회귀: `EditorDialog.test.tsx` 「편집기 소스에 window.confirm/prompt 0」·`CustomAssetsModal.test.tsx`)
+
+### Fixed
+
+- 레이아웃 편집기 [동작] 탭에서 값을 그대로 넘기는 부품(SearchableDropdown·TagSelect·IconSelect·FilterGroup·QuantitySelector·RichTextEditor)의 「값이 바뀌면」 칸에 붙인 동작이 저장은 되는데 실행되지 않던 문제. 탭이 그 칸을 `type: "change"` 로 적었고, 런타임 `type` 경로는 첫 인자가 DOM 이벤트·`{ target }` 일 때만 실행합니다. 역량 스펙에 `rawValueEvents: ["onChange"]` 표식이 있는 부품만 `event: "onChange"` 로 적어 `onChange(값)` 호출로 실행됩니다 — 표식은 onChange 를 사용자 조작 때만 부르는 부품에만 달았습니다(마운트·리렌더 때도 부르는 부품에 달면 그때마다 동작이 실행되기 때문). `{ target: { value } }` 로 부르는 PermissionTree·관리자 FileInput 은 종전 `type` 이 실행되므로 표식이 없습니다. 7.1.0 이전부터의 한계 (ActionRecipeEditor.tsx `eventKeysFor`, 회귀: `ActionRecipeEditor.runtimeEventForm.test.tsx`·`rawValueEventsMarked.test.ts`)
+- 영어 화면에서 개수가 1이어도 「1 posts」「Total 1 items」처럼 복수형 문구가 나오던 문제. 번역 엔진에 복수형 선택이 없어 사전 문구 하나를 모든 수에 썼습니다. `$t:키|count=N`(·`G7Core.t(키, { count })`)의 `count` 가 숫자 표기이면 문구를 꺼낸 사전 로케일의 CLDR 범주(`Intl.PluralRules`)로 `키_{zero|one|two|few|many}` 를 먼저 찾고, 없거나 범주가 other 면 기본 키(= other 꼴)를 씁니다. 현재 로케일 사전에 기본 키가 있으면 그 사전 안에서만 고르고, 폴백(en) 사전으로 넘어가면 en 범주로 다시 고릅니다. `count` 가 없거나 수가 아니면(빈 값·`1,000`) 종전과 같습니다. 봇(SEO) 화면 평가기도 같은 규칙(ExpressionEvaluator `pluralVariant`). 7.0.x 부터의 한계이며 en 사전 72곳에 `_one` 변형을 더했습니다(ko·ja 는 범주가 other 뿐이라 그대로) (TranslationEngine.ts `getTranslation`·`lookupWithPlural`·`pluralCount`·`pluralCategory`, 회귀: `TranslationEngine.plural.test.ts`·`ExpressionEvaluatorTest` 복수형 2건)
+
+## [engine-v1.78.6] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기 번들을 받지 못했을 때 뜨는 오류 화면의 제목(「레이아웃 편집기 로드 실패」)과 안내(「편집기를 불러오지 못했습니다 …」·「… 초기화하지 못했습니다 …」)가 화면 언어와 무관하게 한국어였던 문제(영어 화면에서도 버튼만 「Reload」). 문구를 엔진 공통 오류 화면과 같은 방식으로 번역 키(`core.errors.layout_editor_*`)가 풀리면 그 값을, 못 풀면 엔진 내장 문구를 `<html lang>` 으로 고릅니다 (template-engine.ts `loadLayoutEditorBundle`·편집기 진입 분기, ErrorDisplay.ts 내장 문구, 회귀: `loadLayoutEditorBundle.test.ts`·`ErrorDisplay.locale.test.ts`)
+
+## [engine-v1.78.5] - 2026-10-09
+
+### Fixed
+
+- 권한이 좁은 운영자가 관리자 화면을 열면 화면 공통 데이터소스(알림·대시보드 위젯 등) 여러 개가 403 으로 실패하면서 시스템 기본 처리가 같은 「해당 권한이 없습니다.」 토스트를 한 화면에 13장까지 쌓던 문제. 같은 종류·같은 문구의 토스트가 3초 안에 이미 쌓였으면 새로 쌓지 않습니다. 문구가 다르거나 시간이 지나면 종전대로 쌓입니다 (ActionDispatcher.ts `handleToast`·`TOAST_DEDUPE_WINDOW_MS`, 회귀: `ActionDispatcher.toastDedupe.test.ts`)
+- 권한 없는 화면·없는 화면을 열 때 뜨는 엔진 공통 오류 화면의 제목(「페이지 로딩 실패」·「초기화 실패」)과 「새로고침」 버튼이 화면 언어와 무관하게 한국어였고, 본문이 개발자용 원문(「Failed to fetch layout: 403 Forbidden」)이던 문제. 레이아웃 403·404 는 사람이 읽는 안내(「이 화면을 볼 권한이 없습니다.」)를 싣고, 문구는 번역 키(`core.errors.*`)가 풀리면 그 값을, 못 풀면(번역 파일 실패가 원인일 수 있다) 엔진 내장 문구를 `<html lang>` 으로 고릅니다. 서버가 준 사유(필요 권한)는 상세 줄에 그대로 남고, 아이콘은 꾸밈으로 숨깁니다 (ErrorDisplay.ts `text`, TemplateApp.ts 오류 화면, 회귀: `ErrorDisplay.locale.test.ts`)
+
+## [engine-v1.78.4] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기 요소 속성 창 [동작] 탭이 `event` 로 적힌 동작을 그 이벤트 칸에 보여 주지 않던 문제. 탭은 동작의 `type` 만 보고 이벤트를 나눴는데, 런타임은 `event` 를 먼저 보고 `type` 은 그다음에 본다. 그래서 기본 제공 화면이 쓰는 `event: "onSearch"`(활동 로그 행위자 검색 등)·`event: "onChange"`·`event: "onPageChange"`·`event: "onItemClick"` 동작이 탭에서 빠졌고(「검색어를 입력하면」이 빈 칸으로 보임), `type` 이 없는 `event` 동작은 「클릭하면」 칸에 잘못 섞였습니다. 탭이 런타임과 같은 순서(`event` → `type` → 둘 다 없으면 클릭)로 나누고, 이미 `event` 로 적힌 동작에는 `type` 을 덧붙이지 않습니다. 7.1.0 개발 중 결함이며 릴리스에는 포함되지 않았습니다 (property-controls/ActionRecipeEditor.tsx `belongsToEvent`, 회귀: `ActionRecipeEditor.test.tsx`)
+- [동작] 탭에서 「검색어를 입력하면」 같은 컴포넌트 콜백 칸에 붙인 동작이 저장은 되는데 화면에서 실행되지 않던 문제. 탭이 새 동작을 `type: "search"` 로 적었고, 런타임의 `type` 경로는 콜백 첫 인자가 DOM 이벤트나 `{ target }` 모양일 때만 실행하므로 검색어(문자열)·페이지 번호처럼 값을 그대로 넘기는 콜백에서는 아무 일도 일어나지 않았습니다(예외·경고 없음). DOM 이벤트로 매핑되지 않는 칸(`onSearch`·`onPageChange`·`onItemClick`·`onTabChange` 등)의 새 동작은 기본 제공 화면과 같은 `event` 표기로 적어 `$args` 와 함께 실행됩니다. 클릭·값 바뀜 같은 DOM 이벤트 칸은 종전대로 `type` 입니다 (ActionRecipeEditor.tsx `eventKeysFor`, 회귀: `ActionRecipeEditor.runtimeEventForm.test.tsx` — 편집기 출력을 실제 `ActionDispatcher.bindActionsToProps` 에 묶어 원시값 콜백 호출)
+
+## [engine-v1.78.3] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기에서 콘텐츠 언어를 바꿔도 식으로 고르는 문구(`{{조건 ? '$t:a' : '$t:b'}}` — 창 아래 [삭제] 버튼, 상태 배지 「현재 활성」 등)만 표본 언어(한국어)로 남던 문제. 편집 대상 표본 전역(`sampleGlobal`)의 `$locale` 이 미리보기 렌더 맥락 최상위로 올라가, 편집 모드의 `$locale` 자동 주입(콘텐츠 언어)을 막았습니다. 미리보기의 `$locale` 은 이제 콘텐츠 언어입니다 (sample-data/dollarGlobals.ts `previewDollarGlobals`, PreviewCanvas.tsx, 회귀: `previewDollarGlobals.test.ts`)
+- 같은 창 id(`delete_confirm_modal`·`privacy_run_modal`·`identity_policy_form_modal` 등)를 여러 확장이 따로 쓰면, 창 편집의 「화면 상태」 고르개에 다른 확장의 창 상태가 같은 이름으로 겹쳐 보이고 먼저 병합된 확장의 표본이 이 화면의 창에 적용되던 문제. 로더가 상태 묶음마다 출처(`__source`)를 남기고, 창 편집은 창을 연 화면(호스트 레이아웃)의 주인 확장 묶음을 우선합니다 — 확장 레이아웃(`{확장}.{이름}`)은 그 확장 묶음, 템플릿 레이아웃은 템플릿 묶음. 주인이 낸 묶음이 없으면 종전처럼 매칭된 묶음을 모두 씁니다 (editorSpecLoader.ts `mergeStates`, utils/matchStateScope.ts `matchStateItems` 의 `hostLayoutName`, LayoutEditorChrome.tsx, 회귀: `matchStateScope.test.ts`·`editorSpecLoader.stateSource.test.ts`)
+- 속성 편집 창의 접근 가능한 이름(aria-label)이 「속성 편집: {name}」 자리표시 원문이던 문제. 창을 여는 쪽이 이름 인자 없이 번역 키를 풀었습니다. 제목과 같은 요소 이름(편집 역량 이름 → 컴포넌트 이름 → 「요소」)을 끼웁니다 (utils/propertyModalAriaLabel.ts, EditorCanvasOverlay.tsx, 회귀: `propertyModalAriaLabel.test.ts`)
+
+## [engine-v1.78.2] - 2026-10-09
+
+### Fixed
+
+- 토큰이 만료된 채 비회원도 쓸 수 있는 화면(게시판 글쓰기 등)을 열면, 로그인 화면으로 옮겨지기 직전 「요청을 보내지 못했습니다. 네트워크 연결을 확인…」 토스트가 뜨던 문제. 시스템 기본 401 처리(`navigate {{auth.loginPath}}`)의 `auth` 를 싣는 실행 문맥이 없어 경로가 빈 값으로 풀렸고, 빈 경로 이동의 TypeError 가 「네트워크 실패」 로 분류돼 기본 오류 토스트가 네트워크 안내를 띄웠습니다. 오류 처리 문맥에 `auth.loginPath`(템플릿의 로그인 화면 + 현재 주소를 복귀 경로로)를 싣고, 빈 경로 이동은 건너뜁니다 (ActionDispatcher.ts `setLoginPathResolver`·`buildErrorAuthContext`, TemplateApp.ts `bindLoginPathResolver`, 회귀: `ActionDispatcher.defaultUnauthorizedHandler.test.ts`)
+- 세션 만료로 로그인 화면으로 옮기는 중(ApiClient 401 → `window.location.href`)에도 같은 401 로 실패한 데이터 소스·액션의 오류 처리가 떠날 화면에서 돌던 문제. 이동을 시작하기 직전에 이탈 가드를 켜(`markDocumentLeaving`) 오류 처리(토스트·이동)를 건너뜁니다 (networkResilience.ts, ErrorHandlingResolver.ts `execute`, ActionDispatcher.ts 오류 경로)
+
+## [engine-v1.78.1] - 2026-10-09
+
+### Fixed
+
+- 세션이 끊긴 채 로그인 화면 자체(`/login`, `/admin/login`)를 열면 데이터 소스 401 이 로그인 이동을 일으키면서 로그인 화면 자신을 복귀 경로(`?redirect=/login`)로 실어, 로그인(비밀번호 변경 단계 포함)을 마친 뒤 다시 로그인 폼에 떨어지던 문제. 로그인·가입·비밀번호 찾기·재설정 화면은 복귀 경로로 싣지 않고, 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣습니다 (AuthManager.ts `getLoginRedirectUrl`, 회귀: `AuthManager.test.ts`)
+- 언어를 바꾸거나 저장해 둔 언어로 시작해도 `<html lang>` 이 서버가 처음 찍은 언어로 남던 문제. 시작할 때와 `changeLocale()` 때 앱 로케일로 맞춥니다(밑줄 로케일은 하이픈으로) (TemplateApp.ts `syncDocumentLang`, 회귀: `TemplateApp.documentLang.test.ts`)
+
+### Added
+
+- `AuthConfig.guestOnlyPaths` — 로그인 이동 시 복귀 경로로 싣지 않을 로그인 전용 화면 경로. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이며 `loginPath` 는 항상 포함됩니다. 다른 경로를 쓰는 템플릿은 `AuthManager.updateConfig(type, { guestOnlyPaths })` 로 바꿉니다 (AuthManager.ts)
 ## [engine-v1.78.0] - 2026-10-06
 
 ### Added

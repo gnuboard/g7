@@ -44,6 +44,7 @@
 | `core.identity.registered_providers` | filter | `RegisterTotpProviderListener` | `register` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `CleanTotpCredentialOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanTotpCredentialOnUserDelete` | `handle` | 50 |
+| `core.user.filter_resource_data` | filter | `UserTotpEnrollmentInfoListener` | `injectEnrollmentStatus` | 40 |
 | `sirsoft-totp.credential.admin_reset` | action (미선언) | `TotpAdminResetActivityLogListener` | `handle` | 50 |
 <!-- @generated:hooks-subscribed END -->
 
@@ -89,10 +90,11 @@
 | `ExtendLoginPurposeChannels` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExtendLoginPurposeChannels.php` |
 | `RegisterTotpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTotpProviderListener.php` |
 | `TotpAdminResetActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/TotpAdminResetActivityLogListener.php` |
+| `UserTotpEnrollmentInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserTotpEnrollmentInfoListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-리스너 4개는 전부 `plugin.php` 의 `getHookListeners()` 에 명시 등록되어 있습니다. 자동
+리스너 6개는 전부 `plugin.php` 의 `getHookListeners()` 에 명시 등록되어 있습니다. 자동
 스캔에 맡기지 않으므로 목록 자체가 "이 플러그인이 코어의 어디에 손을 대는가" 의 SSoT 입니다.
 
 두 부류로 갈립니다.
@@ -117,6 +119,12 @@
 `totp_credentials.user_id` 에 CASCADE 를 걸지 않고 이 두 리스너가 명시 삭제하는 것은
 database-guide 규정입니다. 자격증명 파기 경로를 새로 만든다면 CASCADE 를 추가하는 대신
 리스너를 늘리세요.
+
+**응답 병합 리스너** (`UserTotpEnrollmentInfoListener`) — `core.user.filter_resource_data` 필터로 관리자 회원 상세
+응답에 `totp_enrollment {enrolled, enrolled_at}` 를 싣습니다. 회원 상세 「인증 앱」 카드가 이 값으로 등록됨/미등록을
+보이고 등록된 회원에게만 [강제 해제] 를 냅니다. **관리자 컨트롤러 요청이면서 요청자가 해제 권한
+(`sirsoft-totp.credentials.delete`)을 가진 경우에만** 싣습니다 — 해제 라우트와 같은 경계입니다. 「등록됨」은 확인까지
+마친 등록(`confirmed_at`)만이며, 조회가 실패하면 값을 싣지 않습니다(카드는 「권한 없음」 안내로 떨어지고 단추를 내지 않음).
 <!-- @intent END -->
 
 ## 레이아웃 확장

@@ -44,6 +44,11 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 설정 읽기·수정 권한을 가진 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -137,6 +142,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * 모든 카테고리의 조회 결과가 전체 설정 조회와 일치합니다.
      *
      * @effects settings_all_categories_match_full_response
+     *
+     * @return void 반환값 없음
      */
     public function test_category_settings_match_full_settings_for_every_category(): void
     {
@@ -152,6 +159,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * 카테고리 조회와 개별 설정 메서드도 사유의 실제 저장소인 DB를 사용합니다.
      *
      * @effects settings_single_catalog_writes_database_and_reads_same_catalog
+     *
+     * @return void 반환값 없음
      */
     public function test_single_catalog_setting_uses_database_and_category_reads_it(): void
     {
@@ -183,6 +192,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * 개별 저장이 숫자 문자열 정규화와 상태 허용값 검증을 우회하지 않습니다.
      *
      * @effects settings_single_value_normalizes_and_rejects_invalid_status
+     *
+     * @return void 반환값 없음
      */
     public function test_single_setting_normalizes_numeric_values_and_validates_statuses(): void
     {
@@ -203,6 +214,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_policy_scalars_persist
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function claim_policy_scalars_are_saved_and_read_back(): void
@@ -239,6 +252,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_numeric_axes_stored_as_integers
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function numeric_axes_are_stored_as_integers_not_strings(): void
@@ -274,6 +289,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_reaches_user_catalog_of_its_own_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saved_reason_reaches_the_user_catalog_of_its_own_type(): void
@@ -322,6 +339,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_label_follows_viewer_locale
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function reason_label_follows_viewer_locale_and_falls_back_to_ko(): void
@@ -372,6 +391,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_charge_payment_methods_accept_extension_ids
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_methods_are_accepted_as_claim_charge_methods(): void
@@ -418,6 +439,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario gate_case=save_records_decision_history
      *
      * @effects auto_approve_save_records_operator_decision_history
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_the_auto_approve_list_records_the_operator_decision_history(): void
@@ -468,6 +491,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_charge_payment_methods_accept_extension_ids
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unregistered_payment_method_ids_are_still_rejected(): void
@@ -491,6 +516,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_policy_scalars_persist
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function claim_policy_payload_differs_from_defaults_on_every_axis(): void
@@ -514,7 +541,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     /**
      * 어휘·범위를 벗어난 값은 422 로 거절된다.
      *
-     * @return array<string, array{array<string, mixed>, string}>
+     * @return array<string, array{array<string, mixed>, string}> 데이터 이름 => [기본 페이로드에 덮어쓸 정책 값, 422 오류가 나야 하는 필드 키]
      */
     public static function invalidPolicyProvider(): array
     {
@@ -578,6 +605,10 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_invalid_vocabulary_rejected, auto_approve_refund_statuses_rejects_unknown_values
+     *
+     * @param  array<string, mixed>  $override  기본 페이로드에 덮어쓸 정책 값
+     * @param  string  $errorKey  422 오류가 나야 하는 필드 키
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('invalidPolicyProvider')]
@@ -600,6 +631,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_policy_limits_come_from_server
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_response_carries_claim_limit_bounds(): void
@@ -629,6 +662,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_completion_defaults_reject_partial_map
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function partial_completion_defaults_map_is_rejected(): void
@@ -654,6 +689,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_visibility_flags_reject_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function null_visibility_flags_on_a_reason_are_rejected(): void
@@ -678,6 +715,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_code_format_unified_with_detail_path, settings_claim_reason_existing_code_is_exempt_from_format
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function reason_code_format_is_strict_for_new_codes_but_exempts_stored_ones(): void
@@ -719,6 +758,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_response_carries_three_catalogs
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_response_carries_all_three_reason_catalogs(): void
@@ -756,6 +797,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_save_syncs_each_catalog_to_its_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_the_claim_tab_syncs_each_catalog_to_its_own_type(): void
@@ -790,6 +833,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_name_requires_current_locale
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function reason_name_requires_the_current_locale(): void
@@ -818,6 +863,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_invalid_vocabulary_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function duplicate_reason_codes_are_rejected_per_catalog(): void
@@ -841,6 +888,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_same_reason_code_is_allowed_across_different_types(): void
@@ -865,6 +914,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage, settings_claim_delete_guard_precedes_the_write
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_counts_usage_for_the_reason_own_type(): void
@@ -899,7 +950,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', ['id' => $reason->id]);
 
@@ -913,6 +964,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_removes_a_reason_that_nothing_uses(): void
@@ -944,6 +997,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_counts_usage_for_the_return_type(): void
@@ -966,7 +1021,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['return_reasons' => [], 'return_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', ['id' => $reason->id]);
     }
@@ -977,6 +1032,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_code_change_blocked_while_in_use
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_save_cannot_change_the_code_of_a_return_reason_in_use(): void
@@ -1011,7 +1068,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', [
             'id' => $reason->id,
@@ -1031,6 +1088,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_counts_refund_usage_from_the_cancel_table(): void
@@ -1062,7 +1121,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => [], 'refund_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', ['id' => $reason->id]);
     }
@@ -1073,6 +1132,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_counts_refund_usage_from_the_refund_table(): void
@@ -1104,7 +1165,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ->putJson($this->apiBase, ['_tab' => 'claim', 'claim' => ['refund_reasons' => [], 'refund_reasons_deleted' => [$reason->id]]])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', ['id' => $reason->id]);
     }
@@ -1120,6 +1181,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_delete_guard_counts_own_type_usage
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_delete_path_ignores_refunds_sourced_from_another_catalog(): void
@@ -1159,6 +1222,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_code_change_blocked_while_in_use
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_save_cannot_change_the_code_of_a_refund_reason_in_use(): void
@@ -1201,7 +1266,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', [
             'id' => $reason->id,
@@ -1221,6 +1286,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_code_change_blocked_while_in_use, settings_claim_delete_guard_precedes_the_write
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_save_cannot_change_the_code_of_a_reason_in_use(): void
@@ -1260,7 +1327,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
             ])
             ->assertStatus(400)
             // 상태코드만 보면 다른 사유의 400 도 통과한다 — 어느 가드가 걸렸는지 전용 키로 고정한다.
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
 
         $this->assertDatabaseHas('ecommerce_claim_reasons', [
             'id' => $reason->id,
@@ -1285,6 +1352,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_remains_editable_except_code_and_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function settings_save_can_still_edit_other_fields_of_a_reason_in_use(): void
@@ -1332,6 +1401,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_save_of_one_catalog_keeps_others
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_one_catalog_does_not_touch_the_others(): void
@@ -1371,6 +1442,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_catalog_only_save_keeps_scalars
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_only_a_catalog_keeps_the_saved_policy_scalars(): void
@@ -1410,6 +1483,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_requires_update_permission
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function claim_settings_require_update_permission(): void
@@ -1432,6 +1507,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_name_required_locale_is_current_locale
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function existing_reason_without_current_locale_name_does_not_block_the_tab(): void
@@ -1482,6 +1559,9 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_visibility_flags_reject_null
+     *
+     * @param  string  $flag  사유 행에서 빼 보는 노출 여부 플래그 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('visibilityFlagProvider')]
     #[Test]
@@ -1500,7 +1580,9 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 사유 행에서 빼 볼 노출 여부 플래그 목록입니다.
+     *
+     * @return array<string, array{0: string}> 데이터 이름 => [플래그 이름]
      */
     public static function visibilityFlagProvider(): array
     {
@@ -1516,6 +1598,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_visibility_flags_reject_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function null_user_selectable_flag_on_a_reason_is_rejected(): void
@@ -1530,9 +1614,13 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
+     * 실재하지 않는 사유 id 로는 기존 행의 이름 필수 면제를 빌릴 수 없다(이름 없는 사유가 새로 생기지 않는다).
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_unknown_id_is_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unknown_reason_id_cannot_borrow_the_existing_row_name_exemption(): void
@@ -1554,9 +1642,13 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
+     * 다른 유형의 사유 id 를 실은 페이로드는 거절한다.
+     *
      * @scenario reason_type=return
      *
      * @effects settings_claim_reason_unknown_id_is_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function reason_id_of_another_type_is_rejected(): void
@@ -1576,9 +1668,13 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
+     * 기존 사유끼리 코드를 맞바꾸는 저장은 설정 파일을 쓰기 전에 전용 문구로 거절한다.
+     *
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_code_swap_is_rejected_before_the_write, settings_claim_delete_guard_precedes_the_write
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function swapping_codes_between_existing_reasons_is_rejected_before_the_file_write(): void
@@ -1632,6 +1728,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_code_takeover_from_a_deleted_row_is_allowed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function taking_over_the_code_of_a_reason_deleted_in_the_same_save_is_allowed(): void
@@ -1664,6 +1762,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_code_swap_is_rejected_before_the_write
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function new_reason_taking_the_current_code_of_a_reason_being_renamed_is_rejected(): void
@@ -1713,6 +1813,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_code_swap_is_rejected_before_the_write
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function code_swap_detection_ignores_letter_case_of_stored_codes(): void
@@ -1762,6 +1864,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_completion_defaults_reject_partial_map
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function empty_completion_defaults_map_is_rejected(): void
@@ -1788,6 +1892,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * 살아남고 미사용 잔여는 계속 걷히는지 두 축을 함께 단언한다.
      *
      * @effects settings_claim_seeder_preserves_used_and_removes_unused_reasons
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_seeder_stale_cleanup_keeps_reasons_that_claims_still_reference(): void
@@ -1840,6 +1946,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects instant_cancel_statuses_accepts_pending_states
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function claim_auto_advance_status_list_accepts_pending_payment_states(): void
@@ -1865,6 +1973,8 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects instant_cancel_statuses_default_includes_pending_states
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function claim_default_auto_advance_status_list_includes_pending_payment_states(): void

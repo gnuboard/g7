@@ -143,11 +143,11 @@
             <api-call :auth_required="true" target="/api/admin/templates/{{_global.selectedTemplate.identifier}}/update" method="POST">
               <success>
                 <set-state target="global" :isTemplateUpdating="false"/>
-                <set-state target="global" :selectedTemplate="null" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.templates.update_success'}}"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <close-modal/>
+                <set-state target="global" :selectedTemplate="null" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
               </success>
               <fail>
                 <!-- 409 = 같은 템플릿의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고

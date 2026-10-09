@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Privacy\Contracts\PrivacyManualRunnerInterface;
 use App\Privacy\Contracts\PrivacyManualRunReadableInterface;
 use App\Privacy\Contracts\PrivacyManualRunRequiresEnabledInterface;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -53,6 +54,17 @@ class PrivacyManualRunService
 
     /** 종료(완료·실패) 훅 */
     public const FINISHED_HOOK = 'core.privacy.manual_run_finished';
+
+    /**
+     * @var array<int, string> 코어가 붙이는 실패 사유 — 문장이 아니라 번역 키로 저장하고, 화면에 내보낼 때
+     *                         보는 관리자의 언어로 푼다({@see displayError()}). 큐 작업은 요청 언어 없이 돌므로
+     *                         문장으로 저장하면 사이트 기본 언어로 굳어 다른 언어 화면에도 그 언어로 보인다.
+     */
+    public const SYSTEM_ERROR_KEYS = [
+        'extensions.errors.internal_error',
+        'privacy.manual_run.target_missing',
+        'privacy.manual_run.stale',
+    ];
 
     /**
      * @param  PrivacyManualRunRegistry  $registry  직권 실행 대상 수집기
@@ -178,7 +190,7 @@ class PrivacyManualRunService
             // 접수 후 확장이 비활성화됐거나 핸들러 등록이 빠졌다 — 실행할 수 없으니 사유를 남기고 닫는다.
             $this->finish($run, null, [
                 'status' => PrivacyManualRunStatus::Failed->value,
-                'error' => __('privacy.manual_run.target_missing'),
+                'error' => 'privacy.manual_run.target_missing',
                 'finished_at' => now(),
             ], PrivacyManualRunStatus::Queued->value);
 
@@ -219,7 +231,7 @@ class PrivacyManualRunService
 
                 $this->finish($run, $runner, [
                     'status' => PrivacyManualRunStatus::Failed->value,
-                    'error' => mb_substr($e->getMessage(), 0, 2000),
+                    'error' => self::failureReason($e, ['run_id' => $run->id, 'target' => $run->target]),
                     'finished_at' => now(),
                 ]);
             }
@@ -228,6 +240,46 @@ class PrivacyManualRunService
         }
 
         return 'done';
+    }
+
+    /**
+     * 예외에서 기록에 남길 실패 사유를 고릅니다.
+     *
+     * 실패 사유는 카드·상태 API·활동 로그에 그대로 보인다 — 운영 모드에서 DB·PHP 내부 예외의 원문(SQL·DB 호스트·
+     * 서버 경로)은 일반 문구의 번역 키로 바꾸고 원문은 서버 로그에 남긴다(#736 H 영역 실측). 확장이 일부러 던진
+     * 사용자용 사유와 디버그 모드의 원문은 그대로 남긴다.
+     *
+     * @param  Throwable  $e  처리 중 잡은 예외
+     * @param  array<string, mixed>  $context  서버 로그에 함께 남길 맥락
+     * @return string 기록할 실패 사유(문장 또는 {@see SYSTEM_ERROR_KEYS} 의 키)
+     */
+    public static function failureReason(Throwable $e, array $context = []): string
+    {
+        $reason = SafeExceptionMessage::for($e, $context);
+
+        if (SafeExceptionMessage::isInternal($e) && ! config('app.debug')) {
+            return 'extensions.errors.internal_error';
+        }
+
+        return mb_substr($reason, 0, 2000);
+    }
+
+    /**
+     * 기록의 실패 사유를 화면에 보일 문장으로 풉니다.
+     *
+     * 코어가 붙인 사유({@see SYSTEM_ERROR_KEYS})는 지금 요청의 언어로 번역하고, 그 밖의 사유(확장이 알린 문장,
+     * 이 변경 전에 문장으로 저장된 기록)는 그대로 돌려준다.
+     *
+     * @param  string|null  $error  저장된 실패 사유
+     * @return string|null 화면에 보일 실패 사유
+     */
+    public static function displayError(?string $error): ?string
+    {
+        if ($error === null || ! in_array($error, self::SYSTEM_ERROR_KEYS, true)) {
+            return $error;
+        }
+
+        return __($error, ['minutes' => self::STALE_AFTER_MINUTES]);
     }
 
     /**
@@ -328,7 +380,7 @@ class PrivacyManualRunService
     {
         $this->finish($run, $this->registry->runner($run->target), [
             'status' => PrivacyManualRunStatus::Failed->value,
-            'error' => __('privacy.manual_run.stale', ['minutes' => self::STALE_AFTER_MINUTES]),
+            'error' => 'privacy.manual_run.stale',
             'finished_at' => now(),
         ], $run->status->value);
     }

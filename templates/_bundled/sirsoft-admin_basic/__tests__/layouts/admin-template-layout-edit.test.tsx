@@ -430,6 +430,25 @@ describe('좌측 파일 트리', () => {
     expect(String(props.pendingFolders)).toContain('pendingFolders');
   });
 
+  /**
+   * 내용 검색은 타이핑이 멎은 뒤 한 번만 서버에 묻는다 — 디바운스는 이벤트의 **최상위 액션**에 걸려야 한다.
+   *
+   * 엔진은 이벤트에 직접 달린 액션의 `debounce` 만 읽는다. `<conditions>` 의 `<when>` 안 액션에 건
+   * `:debounce="600"` 은 무시돼, 실측 2026-10-06(7.1.0 전수 실측 I1)에서 「notification_center_mobile」 을
+   * 치자 글자마다 `layouts/search` 가 25건 나갔고, 공유 서버가 밀려 뒤쪽 19건이 30초 제한으로 끊긴 채
+   * 앞선 「notific」 결과(509건)가 최종 결과처럼 남았다.
+   *
+   * @effects code_editor_content_search_is_debounced
+   */
+  it('내용 검색 재조회는 최상위 액션에 디바운스가 걸린다', () => {
+    const tree = findComponent(layoutEditJson, (n) => n.name === 'FileTreePicker');
+    const searchActions = asArray(tree.actions).filter((a: any) => a?.event === 'onSearch');
+    const contentSearch = searchActions.find((a: any) => JSON.stringify(a).includes('layout_search'));
+
+    expect(contentSearch, '내용 검색 액션이 있어야 한다').toBeTruthy();
+    expect(Number(contentSearch.debounce)).toBeGreaterThanOrEqual(300);
+  });
+
   /** @effects code_editor_tree_hides_actions_without_permission */
   it('편집 권한이 없으면 파일 조작을 내보내지 않는다', () => {
     const props = findComponent(layoutEditJson, (n) => n.name === 'FileTreePicker').props;
@@ -892,6 +911,31 @@ describe('admin_template_layout_edit — 없는 파일 살리기의 마무리', 
     expect(handsBack?.if).toBe('{{!!_global.fileFormRescueFrom}}');
     expect(handsBack?.params?.retiredFileKey).toBe('{{_global.fileFormRescueFrom}}');
     expect(handsBack?.params?.fileFormRescueFrom).toBeNull();
+  });
+
+  /**
+   * 이름을 바꾼 뒤 옛 이름의 탭이 「없는 파일」 로 남지 않는다 — 깨끗한 탭이면 이름변경 성공이 옛 키를
+   * `retiredKey` 로 넘겨 거둔다. 저장하지 않은 편집이 있는 탭은 거두지 않는다(편집분을 말없이 버리지 않게).
+   *
+   * 실측 2026-10-06(7.1.0 전수 실측 I1): `qa736_i1/probe_d` → `probe_e` 이름변경 뒤 탭 줄에
+   * 「없는 파일 qa736_i1/probe_d」 탭이 새 이름 탭과 나란히 남았다.
+   *
+   * @scenario branch=layout, buffer_state=clean, leave=file_switch
+   * @effects code_workspace_retires_renamed_file_tab
+   */
+  it('이름변경 성공이 깨끗한 옛 탭 키를 retiredKey 로 넘기고, 시작할 때 앞선 알림을 비운다', () => {
+    const onRename = collect(layoutEditJson, (n) => n.event === 'onRename')[0];
+    const opens = collect(onRename, (n) => n.handler === 'setState' && n.params?.fileFormMode === 'rename')[0];
+    expect(opens?.params?.retiredFileKey).toBeNull();
+
+    const renameButton = collect(fileFormModalJson, (n) => n.props?.['data-testid'] === 'file-form-submit-rename')[0];
+    const retires = collect(renameButton, (n) => n.handler === 'setState' && n.params?.retiredFileKey !== undefined)[0];
+    expect(retires?.params?.retiredFileKey).toBe("layout:{{_global.fileFormTarget}}");
+
+    const evaluate = (expr: string, context: Record<string, unknown>): unknown =>
+      dataBindingEngine.evaluateExpression(String(expr).trim().replace(/^\{\{|\}\}$/g, ''), context);
+    expect(evaluate(retires.if, { _global: { fileFormTarget: 'a/b', dirtyFileKeys: [] } })).toBeTruthy();
+    expect(evaluate(retires.if, { _global: { fileFormTarget: 'a/b', dirtyFileKeys: ['layout:a/b'] } })).toBeFalsy();
   });
 });
 

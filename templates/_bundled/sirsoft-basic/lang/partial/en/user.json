@@ -13,6 +13,7 @@
         "recent_posts": "Recent Posts",
         "posts_suffix": "'s Posts",
         "total_posts": "Total {{count}} posts",
+        "total_posts_one": "Total {{count}} post",
         "no_posts": "No posts yet.",
         "view_all": "View All",
         "back_to_profile": "Profile",

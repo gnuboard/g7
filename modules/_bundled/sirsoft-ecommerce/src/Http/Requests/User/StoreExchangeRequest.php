@@ -42,7 +42,7 @@ class StoreExchangeRequest extends FormRequest
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
-     * @return bool
+     * @return bool 요청 허용 여부
      */
     public function authorize(): bool
     {
@@ -123,7 +123,7 @@ class StoreExchangeRequest extends FormRequest
             'charge_method.in' => __('sirsoft-ecommerce::validation.claims.charge_method.in'),
             'payment_method.in' => __('sirsoft-ecommerce::validation.claims.payment_method.in'),
             'image_ids.array' => __('sirsoft-ecommerce::validation.claims.image_ids.array'),
-            'image_ids.max' => __('sirsoft-ecommerce::validation.claims.image_ids.max'),
+            'image_ids.max' => trans_choice('sirsoft-ecommerce::validation.claims.image_ids.max', $maxImages = $this->maxImages(), ['max' => $maxImages]),
             'image_ids.*.integer' => __('sirsoft-ecommerce::validation.claims.image_ids.integer'),
             'redelivery_address.array' => __('sirsoft-ecommerce::validation.claims.redelivery_address.array'),
             'redelivery_address.country_code.size' => __('sirsoft-ecommerce::validation.claims.redelivery_address.country_code_size'),

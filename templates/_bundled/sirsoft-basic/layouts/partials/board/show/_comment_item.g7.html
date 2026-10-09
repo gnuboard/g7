@@ -19,7 +19,7 @@
         <!-- 더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김 -->
         <div data-if="{{!comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; ((comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author) || (post?.data?.abilities?.can_write_comments &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at))}}" class="relative">
           <!-- 더보기 버튼 (⋮) -->
-          <button class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer">
+          <button type="button" aria-label="$t:common.more" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer">
             <on type="click">
               <set-state target="local" commentDropdownId="{{_local.commentDropdownId === comment?.id ? null : comment?.id}}"/>
             </on>

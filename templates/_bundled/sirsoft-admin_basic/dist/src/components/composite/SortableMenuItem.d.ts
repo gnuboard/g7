@@ -11,6 +11,12 @@ export interface MenuItemData {
     hasChildren?: boolean;
     /** 부여된 역할 이름 — undefined 면 배지 줄을 그리지 않는다, 빈 배열이면 「역할 없음」 */
     roleNames?: string[];
+    /**
+     * 부여된 역할 수(role_ids 길이). 이름표(활성 역할 목록) 밖 역할 — 비활성 역할이나 역할 관리 권한이
+     * 없어 이름을 받지 못한 역할 — 도 접근을 주므로, 이름을 몰라도 「외 n개」·title 의 개수에는 센다.
+     * 주지 않으면 roleNames 길이를 쓴다.
+     */
+    roleCount?: number;
 }
 export interface SortableMenuItemProps {
     item: MenuItemData;

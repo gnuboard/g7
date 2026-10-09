@@ -5,6 +5,8 @@
     "template": "템플릿"
   },
   "alerts": {
+    "language_pack_install_failed": "함께 고른 언어팩을 설치하지 못했습니다({{names}}): {{reason}}",
+    "language_pack_awaiting_host": "함께 고른 언어팩({{names}})은 이 확장이 꺼져 있어 꺼진 채 설치했습니다. 확장을 켜면 함께 켜집니다.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" 자동 비활성화됨",
     "incompatible_message": "필요 버전: {{required}}, 현재 설치됨: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" 다시 호환 가능",
@@ -30,7 +32,7 @@
   },
   "update_modal": {
     "compat_warning_title": "코어 버전 호환성 경고",
-    "compat_warning_message": "이 {{type}} 은(는) 코어 {{required}} 이상이 필요합니다. (현재: {{installed}})",
+    "compat_warning_message": "이 {{type}}에 필요한 코어 버전: {{required}} (현재: {{installed}})",
     "compat_guide_link": "코어 업그레이드 가이드 보기",
     "force_label": "경고를 무시하고 강제 업데이트 (권장하지 않음)",
     "rebuild_search_index_title": "검색 인덱스",

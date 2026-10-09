@@ -5,8 +5,8 @@
 ```text
 1. 코어와 설치된 확장(설치본)의 lang/{ko,en}/ 는 가상 보호 행으로 자동 노출 (DB 없이 항상 active+protected, 수정 불가) — 미설치 번들 확장은 노출 안 됨
 2. lang-packs/_bundled/ 패키지(ja, fr 등)는 비보호 — 사용자가 install/uninstall/update/activate/deactivate 자유
-3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약)
-4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의
+3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약). 설치는 호스트가 설치돼 있으면 꺼져 있어도 허용(꺼진 채 설치)
+4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의. 호스트가 꺼진 동안 켜 달라는 요청으로 설치된 팩은 호스트를 켤 때 함께 켜짐
 5. 업데이트 우선순위: GitHub 1순위 + bundled 폴백 (force 시 bundled 우선) — 모듈/플러그인 패턴 동일
 ```
 
@@ -185,6 +185,14 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 - `frontend/partial/{locale}/*.json` — 템플릿/모듈 partial 페이로드
 - `seed/{entity}.json` — 다국어 시드 (NotificationDefinition — 본인인증 알림 포함, Permission, Role, Menu 등)
 
+### 국가 이름 (코어 언어팩 `backend/{locale}/countries.php`)
+
+회원 정보·방문자 통계의 국가 이름은 저장값이 ISO alpha-2 코드(`KR`)이고 화면에서 이름을 붙입니다. 코어는 내장 로케일(ko·en) 이름만 `config/countries.php` 의 `localized_names` 에 두고, **그 밖의 로케일은 코어 언어팩이 채웁니다** — `backend/{locale}/countries.php` 가 `['KR' => '韓国', 'US' => 'アメリカ', …]` 처럼 코드를 키로 이름을 돌려주면 번역 키 `countries.{코드}` 로 올라옵니다.
+
+해석 순서는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}` → (방문자 통계만) intl 지역 표기 → 기본 폴백 로케일의 설정 이름 → 코드. 이 파일이 없는 로케일은 회원 화면 국가 이름이 기본 폴백 로케일(ko)로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
+
+이 파일은 **코어 `lang/ko` 에 짝이 없는 언어팩 전용 파일**입니다(내장 로케일의 정본이 번역 파일이 아니라 설정이므로 lang/ko/countries.php 를 만들지 않습니다). 그래서 다른 백엔드 파일처럼 `lang/ko/{파일}` 과 키를 대조하지 않고, 키(국가 코드)가 `config/countries.php` 의 `localized_names.ko` 국가 코드를 빠짐없이 덮는지로 확인합니다. 설정에 국가를 추가하면 번들 언어팩의 이 파일에도 같은 코드를 더합니다.
+
 ### 들여쓰기 규칙
 
 - `language-pack.json` (매니페스트) — **4-space** (모듈/플러그인/템플릿 매니페스트와 일관)
@@ -208,10 +216,10 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 2. `LanguagePackManifestValidator` → manifest 구조 검증
 3. 보안 검사: `backend/` 외 PHP 파일 차단, `eval`/`include` 패턴 차단
 4. 의존성 검사: `depends_on_core_locale=true` 면 코어 언어팩 active 여부 확인
-5. 대상 확장 존재 확인 (modules/plugins/templates 테이블)
+5. 대상 확장 존재 확인 (modules/plugins/templates 테이블) — 미설치·버전 미달은 거부, 설치돼 있으나 꺼진 대상은 허용
 6. 다운그레이드 차단 (version_compare)
 7. `_pending` → `lang-packs/{identifier}/` 이동
-8. DB 레코드 생성/업데이트, 슬롯이 비어있으면 자동 active 승격
+8. DB 레코드 생성/업데이트, 슬롯이 비어있으면 자동 active 승격. 대상 확장이 꺼져 있으면 꺼진 채(installed) 두고, 켜 달라는 요청이었으면 「대상 켜짐 대기」로 표시 — 아래 「꺼진 확장의 언어팩」
 9. `HookManager::doAction('core.language_packs.after_activate', $pack)` → `SyncDatabaseTranslations` 리스너가 DB JSON 컬럼 갱신
 
 ### 웹 인스톨러 (`public/install/`) 동반 설치
@@ -239,7 +247,7 @@ php artisan language-pack:provision --scope=core     # 스코프 한정
 
 - 대상 로케일 기본값은 `config('app.supported_locales')` 에서 base locale(ko/en)을 뺀 집합입니다. 즉 "사이트가 쓰겠다고 선언한 로케일" 만 채웁니다(불필요한 로케일 대량 설치 없음).
 - 미설치 번들 팩(신규 설치)과 설치본 파일이 사라진 드리프트 팩(복구)을 함께 대상으로 삼습니다. 정상 설치된 팩은 어느 쪽에도 해당하지 않아 재실행해도 신규 설치가 0 건으로 수렴합니다(완전 멱등). fresh install · 복구 · 시더가 공유하는 단일 프로비저닝 경로입니다.
-- 대상 확장 미설치/미활성 등 설치 차단 사유가 있는 팩은 건너뛰고 경고만 남깁니다(best-effort).
+- 대상 확장 미설치·버전 미달 등 설치 차단 사유가 있는 팩은 건너뛰고 경고만 남깁니다(best-effort). 대상 확장이 설치돼 있으나 꺼진 팩은 꺼진 채 설치되고 그 확장을 켤 때 함께 켜집니다.
 
 ### 미설치·드리프트 발견
 
@@ -574,16 +582,32 @@ php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --sour
 
 ## 의존성 검증 — 설치 차단 사유 (UI 인라인 안내)
 
-미설치 번들 행과 설치 모달은 다음 4가지 사유로 설치 차단을 표시한다 (`LanguagePackService::resolveInstallBlockedReason()` 가 단일 SSoT). 모듈/플러그인 시스템과 동일 강도.
+미설치 번들 행과 설치 모달은 다음 3가지 사유로 설치 차단을 표시한다 (`LanguagePackService::resolveInstallBlockedReason()` 가 단일 SSoT).
 
 | 사유 키 | 발생 조건 |
 | ------- | --------- |
 | `core_locale_missing` | scope ≠ core + 코어 동일 locale 팩 미활성 |
 | `target_not_installed` | 대상 모듈/플러그인/템플릿이 DB 에 없음 |
-| `target_inactive` | 대상은 설치되었지만 status ≠ active |
 | `target_version_too_old` | manifest `requires.target_version` 미충족 |
 
 `LanguagePackResource::resourceMeta()` 가 차단 사유 존재 시 `abilities.can_install` 을 false 로 강제 — UI 행/모달 버튼이 권한과 무관하게 disabled.
+
+대상이 설치돼 있으나 꺼진 경우(`target_inactive`)는 **설치 차단 사유가 아니다** — 행의 `install_notice` 로 실려 설치 창이 「꺼진 채
+설치되고, 그 확장을 켠 뒤 켤 수 있다」 안내만 보이고 설치 버튼은 잠그지 않는다(`resolveInstallNotice()`). 언어팩을 **켜는 것**은
+여전히 대상이 켜져 있어야 한다(`activate()` 가 `target_inactive` 로 거부).
+
+### 꺼진 확장의 언어팩 — 꺼진 채 설치하고 확장을 켤 때 함께 켠다
+
+확장은 설치 직후 비활성이라, 확장 설치 창에서 함께 고른 그 확장 자신의 언어팩(예: Hello 모듈의 일본어 팩)은 설치 시점에 켤 수 없다.
+이 팩은 꺼진 채(`installed`) 설치되고 `deactivated_reason = awaiting_host`(「대상 켜짐 대기」)로 표시되며, 그 확장을 켤 때
+(`core.{modules,plugins,templates}.after_activate`) 함께 켜진다. 설치 응답은 이런 팩을 실패(`language_pack_failures`)가 아니라
+`language_packs_awaiting_host` 로 돌려주고, 설치 창은 「확장을 켜면 함께 켜집니다」 안내를 띄운다.
+
+- 대기 표시는 **켜 달라는 요청으로 설치한 팩**에만 붙는다(설치 창 함께 설치·`language-pack:install`·`language-pack:provision`).
+  언어팩 관리 화면의 개별 설치는 원래 켜지 않고 설치하므로 대기 표시가 없고, 확장을 켜도 그대로다 — 목록 스위치로 켠다.
+- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(「언어팩 다시 켜기」 창이 따로 묻는다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
+  확장을 켜도 건드리지 않는다.
+- 설치되지 않은 확장의 언어팩은 종전처럼 설치할 수 없다.
 
 ## is_protected 정책 (모듈/플러그인/템플릿과 일관)
 

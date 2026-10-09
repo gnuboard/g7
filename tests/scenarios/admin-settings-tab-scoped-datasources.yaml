@@ -20,3 +20,4 @@ effects:
   - tab_scoped_source_gate_references_owner_tabs
   - tab_scoped_sources_not_disabled
   - tab_switch_navigates_with_replace
+  - unknown_tab_key_falls_back_to_general   # 탭 목록에 없는 ?tab= 키는 진입 때 기본 탭으로 바꿔 연다(빈 본문 방지, 7.1.0 실측 O-6)

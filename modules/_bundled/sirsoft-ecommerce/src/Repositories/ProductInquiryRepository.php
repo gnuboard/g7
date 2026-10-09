@@ -10,7 +10,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 
@@ -143,13 +142,9 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             $query->where('is_answered', (bool) $filters['is_answered']);
         }
 
-        // 기간 필터 — whereDate 는 컬럼에 함수를 씌워 인덱스를 무력화하므로 범위 조건으로 준다
-        if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
-        }
-        if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
-        }
+        // 기간 필터 — whereDate 는 컬럼에 함수를 씌워 인덱스를 무력화하므로 범위 조건으로 준다.
+        // 작성일은 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['date_from'] ?? null, $filters['date_to'] ?? null);
 
         // 지연 조인: 전역 문의 목록은 무제한 성장하고 content(text)가 있어
         // OFFSET 이 훑는 구간에서 넓은 컬럼까지 읽힌다. inner 는 id 만 훑는다.
@@ -292,7 +287,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             $query->where("{$table}.is_answered", (bool) $filters['is_answered']);
         }
 
-        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyViewerDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
         $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
 
         $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';

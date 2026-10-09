@@ -328,7 +328,9 @@
         </div>
       </div>
       <div data-ref="list_toolbar" class="flex-between mb-4">
-        <span data-ref="total_count" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
+        <!-- 총 건수를 끝까지 센 경우 / 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
+        <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
+        <span data-ref="total_count_at_least" data-if="{{users?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
           <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
@@ -517,7 +519,7 @@
                     <query/>
                   </navigate>
                   <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
-                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -560,7 +562,7 @@
                     <query/>
                   </navigate>
                   <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
-                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -662,7 +664,7 @@
                     <query/>
                   </navigate>
                   <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
-                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -705,7 +707,7 @@
                     <query/>
                   </navigate>
                   <!-- 탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다. -->
-                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>

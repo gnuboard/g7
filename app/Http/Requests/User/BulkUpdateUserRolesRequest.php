@@ -29,7 +29,7 @@ class BulkUpdateUserRolesRequest extends FormRequest
     /**
      * 검증 규칙을 정의합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -48,21 +48,21 @@ class BulkUpdateUserRolesRequest extends FormRequest
     /**
      * 검증 오류 메시지를 정의합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 규칙별 오류 메시지
      */
     public function messages(): array
     {
         return [
             'uuids.required' => __('validation.required', ['attribute' => __('validation.attributes.uuids')]),
             'uuids.array' => __('validation.array', ['attribute' => __('validation.attributes.uuids')]),
-            'uuids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.uuids'), 'min' => 1]),
-            'uuids.max' => __('validation.max.array', ['attribute' => __('validation.attributes.uuids'), 'max' => 500]),
+            'uuids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.uuids'), 'min' => 1]),
+            'uuids.max' => trans_choice('validation.max.array', 500, ['attribute' => __('validation.attributes.uuids'), 'max' => 500]),
             'uuids.*.required' => __('validation.required', ['attribute' => __('validation.attributes.user_id')]),
             'uuids.*.uuid' => __('validation.uuid', ['attribute' => __('validation.attributes.user_id')]),
             'uuids.*.exists' => __('validation.exists', ['attribute' => __('validation.attributes.user_id')]),
             'role_ids.required' => __('validation.required', ['attribute' => __('validation.attributes.role_ids')]),
             'role_ids.array' => __('validation.array', ['attribute' => __('validation.attributes.role_ids')]),
-            'role_ids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.role_ids'), 'min' => 1]),
+            'role_ids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.role_ids'), 'min' => 1]),
             'role_ids.*.integer' => __('validation.menu.roles.integer'),
             'role_ids.*.exists' => __('validation.menu.roles.exists'),
             'mode.required' => __('validation.required', ['attribute' => __('validation.attributes.mode')]),
@@ -73,7 +73,7 @@ class BulkUpdateUserRolesRequest extends FormRequest
     /**
      * 검증 속성명을 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 필드별 표시명
      */
     public function attributes(): array
     {

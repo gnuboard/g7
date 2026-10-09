@@ -54,7 +54,8 @@
     "default_set": "Default board type has been set.",
     "not_found": "Board type not found.",
     "in_use": "Cannot delete a board type that is in use.",
-    "delete_in_use": "Cannot delete this board type. It is used by :count board(s)."
+    "delete_in_use": "Cannot delete this board type. It is used by :count boards.",
+    "delete_in_use_one": "Cannot delete this board type. It is used by :count board."
   },
   "settings": {
     "fetch_success": "Settings loaded successfully.",
@@ -63,6 +64,7 @@
     "save_failed": "Failed to save settings.",
     "save_error": "An error occurred while saving settings.",
     "bulk_apply_success": "Settings applied to :count boards.",
+    "bulk_apply_success_one": "Settings applied to :count board.",
     "bulk_apply_failed": "Failed to bulk apply settings.",
     "clear_cache_success": "Settings cache cleared successfully.",
     "clear_cache_error": "An error occurred while clearing settings cache."

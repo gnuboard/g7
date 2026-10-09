@@ -287,7 +287,12 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit)"
+                            "text": "({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myComments?.data?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": ")"
                         }
                     ]
                 },

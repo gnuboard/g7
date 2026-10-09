@@ -692,12 +692,23 @@
                                                                 "text": "{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}"
                                                             },
                                                             {
+                                                                "comment": "배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은\n                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측 O-E8).\n                     서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다.",
                                                                 "type": "composite",
                                                                 "name": "Badge",
-                                                                "if": "{{(analytics_visitor?.data?.ip_mask_octets ?? 0) > 0}}",
+                                                                "if": "{{(analytics_visitor?.data?.ip_mask_octets ?? 0) > 0 && (analytics_visitor?.data?.visits ?? [])[0]?.ip_masked !== false}}",
                                                                 "props": {
                                                                     "color": "gray",
-                                                                    "text": "$t:admin.analytics.visitor_detail.card.ip_masked|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}",
+                                                                    "text": "$t:admin.analytics.visitor_detail.card.ip_masked|count={{analytics_visitor?.data?.ip_mask_octets ?? 0}}|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}",
+                                                                    "size": "sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "Badge",
+                                                                "if": "{{(analytics_visitor?.data?.visits ?? [])[0]?.ip_masked === false}}",
+                                                                "props": {
+                                                                    "color": "yellow",
+                                                                    "text": "$t:admin.analytics.common.ip_not_masked",
                                                                     "size": "sm"
                                                                 }
                                                             }
@@ -841,7 +852,7 @@
                                                                 "props": {
                                                                     "className": "text-label-subtle"
                                                                 },
-                                                                "text": "· $t:defer:admin.analytics.visitor_detail.visit_summary|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}"
+                                                                "text": "· $t:defer:admin.analytics.visitor_detail.visit_summary|count={{visit.pageviews ?? 0}}|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}"
                                                             },
                                                             {
                                                                 "type": "composite",
@@ -937,11 +948,30 @@
                                                                     },
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Span",
+                                                                        "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-body break-all"
+                                                                            "className": "flex-center flex-wrap gap-1"
                                                                         },
-                                                                        "text": "{{visit.ip ?? '-'}}"
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-body break-all"
+                                                                                },
+                                                                                "text": "{{visit.ip ?? '-'}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "composite",
+                                                                                "name": "Badge",
+                                                                                "if": "{{visit.ip_masked === false}}",
+                                                                                "props": {
+                                                                                    "color": "yellow",
+                                                                                    "text": "$t:admin.analytics.common.ip_not_masked",
+                                                                                    "size": "sm"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             },

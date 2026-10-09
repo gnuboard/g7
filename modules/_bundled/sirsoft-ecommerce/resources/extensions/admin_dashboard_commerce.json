@@ -1,5 +1,5 @@
 {
-    "comment": "관리자 대시보드의 이커머스 구역 — 오늘 주문 상태 배지 줄 · 판매 추세 그래프 · 최근 리뷰 ·\n  미답변 문의 넷을 한 덩어리로 얹는다. 관리자 템플릿이 연 확장 지점에 붙으므로 호스트는 이 내용을\n  모르고, `priority` 100 이 다른 모듈 구역과의 세로 순서를 정한다.\n  **네 데이터소스가 모두 독립**이라 하나가 느리거나 실패해도 나머지는 그린다 — 그래서 카드마다\n  `blur-until-loaded` 를 따로 걸고 데이터소스마다 `fallback` 을 둔다(응답이 없어도 0/빈 배열로\n  화면이 성립한다).\n  배지는 각각 해당 상태로 필터가 걸린 오늘자 주문 목록으로 이동한다. 다만 마지막 반품 배지만\n  상태 조건 없이 날짜만 걸고 넘어간다 — 숫자는 반품 건수인데 목록은 오늘 주문 전체가 나온다.",
+    "comment": "관리자 대시보드의 이커머스 구역 — 오늘 주문 상태 배지 줄 · 판매 추세 그래프 · 최근 리뷰 ·\n  미답변 문의 넷을 한 덩어리로 얹는다. 관리자 템플릿이 연 확장 지점에 붙으므로 호스트는 이 내용을\n  모르고, `priority` 100 이 다른 모듈 구역과의 세로 순서를 정한다.\n  **네 데이터소스가 모두 독립**이라 하나가 느리거나 실패해도 나머지는 그린다 — 그래서 카드마다\n  `blur-until-loaded` 를 따로 걸고 데이터소스마다 `fallback` 을 둔다(응답이 없어도 0/빈 배열로\n  화면이 성립한다).\n  배지는 각각 해당 상태로 필터가 걸린 오늘자 주문 목록으로 이동한다(반품 배지는 반품 완료 조건\n  `claim_return_statuses[]=completed`). 배지 숫자는 서버가 이 링크와 같은 목록 조건으로 센 주문 수다\n  (`EcommerceDashboardService::BADGE_LIST_FILTERS` — 링크 조건을 바꾸면 그 표도 같이 바꾼다. PHPUnit\n  `DashboardBadgeOrderCountTest` 가 이 링크를 읽어 서버 표와 같은지 잠근다).\n  링크의 「오늘」은 배지가 센 하루와 같은 사이트 표준시의 날짜다(UTC 날짜를 실으면 한국 오전 9시 전에 어제 목록이 열렸다).\n  `date_basis=site` 는 목록에 그 날짜를 사이트 표준시의 하루로 거르라고 알린다 — 목록은 원래 보는 사람의 하루로 거르므로,\n  빼면 계정 시간대가 사이트와 다른 관리자에게 배지 1건 → 목록 0건이 된다.",
     "extension_point": "admin_dashboard_commerce",
     "mode": "append",
     "priority": 100,
@@ -126,7 +126,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=pending_payment&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=pending_payment&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -144,7 +144,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=payment_complete&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=payment_complete&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -162,7 +162,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=preparing&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=preparing&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -180,7 +180,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=shipping_ready&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=shipping_ready&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -198,7 +198,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=shipping&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=shipping&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -216,7 +216,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=cancelled&date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?order_status[]=cancelled&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],
@@ -234,7 +234,7 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/orders?date_type=ordered_at&start_date={{new Date().toISOString().slice(0, 10)}}&end_date={{new Date().toISOString().slice(0, 10)}}"
+                                                "path": "/admin/ecommerce/orders?claim_return_statuses[]=completed&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
                                             }
                                         }
                                     ],

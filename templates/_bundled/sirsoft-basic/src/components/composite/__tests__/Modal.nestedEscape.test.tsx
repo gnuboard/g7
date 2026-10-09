@@ -36,6 +36,29 @@ describe('[case:components-misc-nested-modal-escape-closes-all] sirsoft-basic Mo
   });
 
   /**
+   * 겹친 창이 같은 제목 id(`modal-title`)를 써서 위 창의 접근 가능한 이름이 아래 창 제목으로 읽혔다
+   * (#736 F 영역 실측 — 관리자 템플릿에서 측정, 같은 구현을 쓰는 이 템플릿도 함께 고친다).
+   *
+   * @scenario stack=two_open, top_escape=enabled
+   * @effects stacked_dialogs_label_with_own_title
+   */
+  it('겹친 창은 각자 자기 제목으로 이름이 붙는다(제목 id 가 겹치지 않는다)', () => {
+    render(<Pair onOuter={vi.fn()} onInner={vi.fn()} />);
+
+    const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
+    expect(dialogs).toHaveLength(2);
+    const ids = dialogs.map((d) => d.getAttribute('aria-labelledby'));
+    expect(new Set(ids).size).toBe(2);
+    const names = dialogs.map((d) => {
+      const id = d.getAttribute('aria-labelledby') ?? '';
+      const label = document.getElementById(id);
+      expect(d.contains(label)).toBe(true);
+      return label?.textContent;
+    });
+    expect(names).toEqual(['바깥 창', '안쪽 창']);
+  });
+
+  /**
    * @scenario stack=two_open, top_escape=enabled
    * @effects escape_reaches_next_after_top_closes
    */

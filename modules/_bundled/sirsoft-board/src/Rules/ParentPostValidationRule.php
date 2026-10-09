@@ -36,6 +36,7 @@ class ParentPostValidationRule implements ValidationRule
      * @param  string  $attribute  속성명
      * @param  mixed  $value  검증할 값 (parent_id)
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -102,7 +103,7 @@ class ParentPostValidationRule implements ValidationRule
 
         // 4. 답글 깊이 제한 검증
         if ($parentPost->depth + 1 > $board->max_reply_depth) {
-            $fail(__('sirsoft-board::validation.post.parent_id.depth_exceeded', ['max' => $board->max_reply_depth]));
+            $fail(trans_choice('sirsoft-board::validation.post.parent_id.depth_exceeded', (int) $board->max_reply_depth, ['max' => $board->max_reply_depth]));
         }
     }
 }

@@ -1,0 +1,53 @@
+feature: 레이아웃 편집기 [동작] 탭 — 이벤트 칸 읽기·쓰기와 런타임 실행 형태
+
+description: |
+  [동작] 탭은 부품 역량(capability.events)마다 칸을 그리고, 노드 최상위 `actions` 를 칸별로 나눠 읽고 쓴다.
+  런타임(`ActionDispatcher.bindActionsToProps`)은 액션의 `event` 를 먼저 보고(DOM 이름은 `onClick` 처럼 정규화),
+  없을 때 `type`, 둘 다 없으면 클릭으로 묶는다. 탭이 같은 순서로 나눠야 기본 제공 화면의 `event` 표기 동작이
+  제 칸에 보인다(7.1.0 영역 I2 후속 D-I2F-01).
+
+  새로 붙이는 동작의 표기는 런타임이 실제로 실행하는 형태여야 한다. `type` 경로는 콜백 첫 인자가 DOM 이벤트·
+  `{ target }` 모양일 때만 실행하므로, 값을 그대로 넘기는 부품 콜백 칸(onSearch·onPageChange·onItemClick 등)은
+  `event` 로 적는다. DOM 이벤트 칸(onClick·onChange 등)은 종전 `type` 그대로다(D-I2F-02, 사례 26).
+
+  축 event_notation 은 칸이 다루는 액션 표기다 — type(DOM 이벤트 이름), event(prop 이름), legacy_props
+  (과거 `props.actions`/`props.events` 위치).
+
+axes:
+  event_notation: [type, event, legacy_props]
+
+effects:
+  - action_picker_exposes_core_recipes
+  - action_card_shows_friendly_summary_and_source_badge
+  - action_reorder_is_drag_only
+  - advanced_action_preserved_without_edit
+  - event_slots_follow_capability
+  - actions_stored_top_level_with_event_key
+  - nested_action_list_is_recursive
+  - binding_candidates_reach_action_params
+  - slot_reads_only_its_event
+  - slot_write_preserves_other_events
+  - non_dom_slot_writes_event_notation
+  - dom_slot_keeps_type_notation
+  - editor_output_runs_on_runtime_binding
+  - raw_value_slot_writes_event_notation
+  - mixed_debounce_slot_warns
+  - raw_value_slot_shows_args_hint
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/ActionRecipeEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/ActionRecipeEditor.runtimeEventForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/rawValueEventsMarked.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/ActionRecipeEditor.mixedDebounce.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/ActionRecipeEditor.rawValueHint.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/RichTextEditor.onChange.test.tsx
+  - tests/Playwright/specs/layout-editor/editor-dialogs-and-action-tab.spec.ts
+
+notes: |
+  런타임 실행 형태는 편집기 출력을 실제 ActionDispatcher 에 묶어 원시값 콜백(onSearch('qa736')·onPageChange(2))과
+  DOM change 로 확인한다(runtimeEventForm). 원시값 onChange 를 넘기는 부품의 「값이 바뀌면」 칸은 부품 역량의
+  `rawValueEvents` 표식이 있을 때만 `event` 로 적는다(engine-v1.78.7, 7.1.0 O-I2F-4). 표식은 onChange 를 사용자
+  조작 때만 부르는 부품에만 단다 — 마운트·리렌더 호출이 있으면 사례 26 위험(rawValueEventsMarked 가 표식 목록과
+  부품 소스의 useEffect 안 호출 0 을 잠근다).
+  원시값 콜백 칸에는 「바뀐 값은 {{$args[N]}} 로 읽는다」 안내를 보인다 — N 은 역량 `rawValueArgIndex`(없으면 0, FilterGroup 은 1)
+  (engine-v1.78.8, 7.1.0 R-A 결정).

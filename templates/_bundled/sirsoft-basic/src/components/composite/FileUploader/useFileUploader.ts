@@ -251,12 +251,19 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       // 개수 상한 초과분은 조용히 절단하지 않고 안내 (개수 초과 silent 무시 방지)
       if (selectedFiles.length > remainingSlots) {
         const overflow = Array.from(selectedFiles).slice(remainingSlots);
-        const message = t('attachment.upload_limit_exceeded', { max: maxFiles });
+        const message = t('attachment.upload_limit_exceeded', { max: maxFiles, count: maxFiles });
         // 잘린 첫 파일을 대표로 콜백에 전달 (없으면 무시)
         onUploadError?.(message, overflow[0] ?? selectedFiles[0]);
       }
 
       for (const file of filesToAdd) {
+        // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다.
+        // 종전에는 목록에 「0.00 B」 로 올라가 제출 때에야 거부됐다(7.1.0 N O-N7).
+        if (file.size === 0) {
+          onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
+          continue;
+        }
+
         // 크기 검증 — 호출부가 상한을 선언했을 때만 돈다. 미선언이면 컴포지트가 조용히
         // 걸러 내지 않고 파일을 그대로 넘겨, 호출부 핸들러가 자기 기준(서버 설정)으로
         // 판정하고 그 자리에서 문구를 띄운다(S2-D10 · SA-D5).

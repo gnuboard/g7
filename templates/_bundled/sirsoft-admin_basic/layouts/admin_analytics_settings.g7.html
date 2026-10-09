@@ -230,7 +230,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.collection.enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.enabled_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.enabled" ariaLabel="$t:admin.analytics.settings.collection.enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div class="admin-card space-y-4">
@@ -261,19 +261,19 @@
                 <span class="form-label-block">$t:admin.analytics.settings.collection.site_search</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.site_search_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.site_search_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.site_search_enabled" ariaLabel="$t:admin.analytics.settings.collection.site_search" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.collection.track_downloads</span>
               </div>
-              <toggle data-type="composite" name="settings.track_downloads" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.track_downloads" ariaLabel="$t:admin.analytics.settings.collection.track_downloads" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.collection.track_outlinks</span>
               </div>
-              <toggle data-type="composite" name="settings.track_outlinks" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.track_outlinks" ariaLabel="$t:admin.analytics.settings.collection.track_outlinks" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div data-ref="field_download_extensions">
               <label class="form-label">$t:admin.analytics.settings.collection.download_extensions</label>
@@ -284,7 +284,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.collection.public_summary</span>
                 <span class="form-hint">$t:admin.analytics.settings.collection.public_summary_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.public_summary_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.public_summary_enabled" ariaLabel="$t:admin.analytics.settings.collection.public_summary" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div data-ref="opt_out_card" class="admin-card">
@@ -403,7 +403,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.respect_dnt</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.respect_dnt_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.respect_dnt" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.respect_dnt" ariaLabel="$t:admin.analytics.settings.privacy.respect_dnt" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-ref="field_ip_mask">
@@ -441,14 +441,14 @@
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.geo_before_mask</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.geo_before_mask_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.geo_before_mask" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.geo_before_mask" ariaLabel="$t:admin.analytics.settings.privacy.geo_before_mask" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.privacy.pseudonymize_user_id</span>
                 <span class="form-hint">$t:admin.analytics.settings.privacy.pseudonymize_user_id_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.pseudonymize_user_id" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.pseudonymize_user_id" ariaLabel="$t:admin.analytics.settings.privacy.pseudonymize_user_id" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
         </div>
@@ -459,27 +459,27 @@
                 <span class="form-label-block">$t:admin.analytics.settings.bots.bot_detector_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.bot_detector_enabled_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.bot_detector_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.bot_detector_enabled" ariaLabel="$t:admin.analytics.settings.bots.bot_detector_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.bot_tracking_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.bot_tracking_enabled_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.bot_tracking_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.bot_tracking_enabled" ariaLabel="$t:admin.analytics.settings.bots.bot_tracking_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.block_headless</span>
               </div>
-              <toggle data-type="composite" name="settings.block_headless" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.block_headless" ariaLabel="$t:admin.analytics.settings.bots.block_headless" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.bots.exclude_prefetch</span>
                 <span class="form-hint">$t:admin.analytics.settings.bots.exclude_prefetch_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.exclude_prefetch" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.exclude_prefetch" ariaLabel="$t:admin.analytics.settings.bots.exclude_prefetch" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div class="admin-card space-y-4">
@@ -526,7 +526,7 @@
                   <icon data-if="{{_local.cloudRefreshing}}" name="spinner" :spin="true" class="text-sm"/>
                   <span>$t:admin.analytics.settings.bots.cloud_ranges_refresh</span>
                 </button>
-                <toggle data-type="composite" name="settings.block_cloud_ip_ranges" size="md" disabled="{{_computed.isReadOnly}}"/>
+                <toggle data-type="composite" name="settings.block_cloud_ip_ranges" ariaLabel="$t:admin.analytics.settings.bots.block_cloud_ip_ranges" size="md" disabled="{{_computed.isReadOnly}}"/>
               </div>
             </div>
             <!-- GeoIP 상태는 조회 권한 API 에서 온다 — 조회 권한이 없는 계정(설정 전용)에서는 403 이라 fallback 이
@@ -623,7 +623,7 @@
                 <span class="form-label-block">$t:admin.analytics.settings.retention.archive_on_view_enabled</span>
                 <span class="form-hint">$t:admin.analytics.settings.retention.archive_on_view_enabled_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.archive_on_view_enabled" ariaLabel="$t:admin.analytics.settings.retention.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div data-ref="field_archive_on_view_max_visits">
@@ -697,14 +697,14 @@
                 <span class="form-label-block">$t:admin.analytics.settings.reports.weekly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.weekly_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.report_weekly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.report_weekly_enabled" ariaLabel="$t:admin.analytics.settings.reports.weekly" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
             <div class="flex-between">
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.reports.monthly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.monthly_hint</span>
               </div>
-              <toggle data-type="composite" name="settings.report_monthly_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="settings.report_monthly_enabled" ariaLabel="$t:admin.analytics.settings.reports.monthly" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <include src="partials/admin_analytics/_partial_notification_definitions.g7.html"/>

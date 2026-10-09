@@ -12,7 +12,7 @@
             <icon name="star" size="sm" class="{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"/>
           </span>
         </div>
-        <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.product.rating_out_of_5|total={{reviews.data?.total_count ?? 0}}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.product.rating_out_of_5|count={{reviews.data?.total_count ?? 0}}|total={{reviews.data?.total_count ?? 0}}</span>
       </div>
       <!-- 구분선 -->
       <div class="w-px h-16 bg-gray-200 dark:bg-gray-600 shrink-0"/>

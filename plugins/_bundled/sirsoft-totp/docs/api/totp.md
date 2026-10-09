@@ -472,7 +472,7 @@ Authorization: Bearer {token}
 | 필드 | 타입 | 예시 | 설명 |
 | --- | --- | --- | --- |
 | `user_id` | integer | `1024` | 대상 회원 ID |
-| `removed` | boolean | `true` | 실제로 지운 자격증명이 있었는지. 등록이 없던 회원이면 `false` 이며 이때도 200 이다 |
+| `removed` | boolean | `true` | 실제로 지운 자격증명이 있었는지. 등록이 없던 회원이면 `false` 이며 이때도 200 이다 — 다만 `message` 는 「해제할 것이 없음」 으로 달라진다. 회원 상세 카드는 관리자 회원 상세 응답의 `totp_enrollment.enrolled`(해제 권한자에게만 실림)로 등록 여부를 보이고 미등록 회원에게는 이 단추를 내지 않는다 |
 
 이 응답에는 시크릿·백업 코드 계열 값이 전혀 실리지 않습니다. 관리자는 회원의 인증 수단을
 **없앨** 수 있을 뿐 볼 수는 없습니다.
@@ -494,7 +494,7 @@ Authorization: Bearer {token}
 ```json
 {
   "success": true,
-  "message": "이 회원의 인증 앱 등록을 해제했습니다.",
+  "message": "이 회원은 등록한 인증 앱이 없어 해제할 것이 없습니다.",
   "data": { "user_id": 1024, "removed": false }
 }
 ```

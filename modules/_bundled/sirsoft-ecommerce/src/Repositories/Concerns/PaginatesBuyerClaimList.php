@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Concerns;
 
-use Carbon\Carbon;
+use App\Repositories\Concerns\FiltersByDateRange;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -17,10 +17,13 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * 기간 필터가 `whereDate` 가 아니라 범위 조건인 이유는 형제 트레이트와 같다 — 컬럼에
  * DATE() 를 씌우면 `created_at` 인덱스를 못 쓴다. 종료일은 그날 23:59:59.999999 까지
- * 포함해야 `whereDate` 와 같은 경계를 갖는다.
+ * 포함해야 `whereDate` 와 같은 경계를 갖는다. 하루는 보는 사람의 시간대 하루다 — 목록이
+ * 신청일을 그 시간대로 그린다.
  */
 trait PaginatesBuyerClaimList
 {
+    use FiltersByDateRange;
+
     /**
      * 구매자 목록의 기준 쿼리를 반환합니다. (관계 · 유형 고유 스코프)
      *
@@ -117,12 +120,7 @@ trait PaginatesBuyerClaimList
             $query->where($this->buyerClaimStatusColumn(), $filters['status']);
         }
 
-        if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
-        }
-
-        if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
-        }
+        // 신청일은 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['from'] ?? null, $filters['to'] ?? null);
     }
 }

@@ -32,6 +32,8 @@
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.list_validation_rules`).
+
 **요청 예시**
 
 ```http

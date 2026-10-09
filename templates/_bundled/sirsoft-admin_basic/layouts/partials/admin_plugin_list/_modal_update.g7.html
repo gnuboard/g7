@@ -84,22 +84,6 @@
       </div>
       <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.plugins.modals.layout_strategy_title</div>
-        <!-- 검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다. -->
-        <div data-ref="plugin_rebuild_search_index" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:extensions.update_modal.rebuild_search_index_title</div>
-          <label class="flex items-start gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked="{{_global.pluginRebuildSearchIndex === true}}" class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400">
-              <on type="change">
-                <!-- 검색 인덱스 재생성 여부. 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제하며, 모듈 창과 다른 전역 키를 쓰는 것은 한쪽 체크가 다른 쪽으로 옮지 않게 하기 위해서다 -->
-                <set-state target="global" pluginRebuildSearchIndex="{{!_global.pluginRebuildSearchIndex}}"/>
-              </on>
-            </input>
-            <div>
-              <div class="text-sm text-gray-700 dark:text-gray-300">$t:extensions.update_modal.rebuild_search_index_label</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:extensions.update_modal.rebuild_search_index_desc</div>
-            </div>
-          </label>
-        </div>
         <div data-if="{{_global.hasModifiedPluginLayouts}}" class="mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400">$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}</div>
         <div data-if="{{_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400" role="alert">$t:admin.plugins.modals.modified_layouts_check_failed</div>
         <div data-if="{{!_global.hasModifiedPluginLayouts &amp;&amp; !_global.modifiedPluginLayoutsCheckFailed}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.plugins.modals.no_modified_layouts</div>
@@ -144,6 +128,22 @@
           </div>
         </div>
       </div>
+      <!-- 검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다. -->
+      <div data-ref="plugin_rebuild_search_index" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:extensions.update_modal.rebuild_search_index_title</div>
+        <label class="flex items-start gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked="{{_global.pluginRebuildSearchIndex === true}}" class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <on type="change">
+              <!-- 검색 인덱스 재생성 여부. 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제하며, 모듈 창과 다른 전역 키를 쓰는 것은 한쪽 체크가 다른 쪽으로 옮지 않게 하기 위해서다 -->
+              <set-state target="global" pluginRebuildSearchIndex="{{!_global.pluginRebuildSearchIndex}}"/>
+            </on>
+          </input>
+          <div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">$t:extensions.update_modal.rebuild_search_index_label</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:extensions.update_modal.rebuild_search_index_desc</div>
+          </div>
+        </label>
+      </div>
     </div>
     <div class="modal-footer-buttons">
       <button class="btn btn-secondary" disabled="{{_global.isPluginUpdating}}" type="button">
@@ -160,11 +160,11 @@
             <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update" method="POST">
               <success>
                 <set-state target="global" :isPluginUpdating="false"/>
-                <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.plugins.update_success'}}"/>
                 <refetch-data-source dataSourceId="plugins"/>
                 <close-modal/>
+                <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
               </success>
               <fail>
                 <!-- 409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고

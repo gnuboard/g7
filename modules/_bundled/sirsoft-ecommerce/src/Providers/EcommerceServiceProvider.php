@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyOverdueCollectionsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedMemberData;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedOrderRetention;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedSiteDayOrders;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
@@ -255,6 +256,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
         PlaywrightSeedMemberData::class,
         PlaywrightSeedOrderRetention::class,
+        PlaywrightSeedSiteDayOrders::class,
         PruneExpiredCartsCommand::class,
         PruneExpiredTempOrdersCommand::class,
         PrunePendingClaimImagesCommand::class,
@@ -351,7 +353,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
                     'auth.too_many_attempts',
                     429,
                     null,
-                    ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
+                    // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
                 )->withHeaders($headers)));
         }
     }

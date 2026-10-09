@@ -96,13 +96,13 @@
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0}}",
-                                                            "text": "{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete').replace('{count}', _global.selectedCategory?.children_count ?? 0)}}"
+                                                            "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete|count={{_global.selectedCategory?.children_count ?? 0}}"
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "if": "{{(_global.selectedCategory?.products_count ?? 0) > 0}}",
-                                                            "text": "{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete').replace('{count}', _global.selectedCategory?.products_count ?? 0)}}"
+                                                            "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete|count={{_global.selectedCategory?.products_count ?? 0}}"
                                                         }
                                                     ]
                                                 }

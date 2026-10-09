@@ -13,7 +13,7 @@ import { CodeWorkspace } from '../CodeWorkspace';
 
 // Monaco 대역 — 글자 크기만 드러내면 충분하다
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, options }: any) => (
+  default: ({ defaultValue: value, options }: any) => (
     <textarea data-testid="editor-textarea" data-font-size={String(options?.fontSize ?? '')} value={value ?? ''} readOnly />
   ),
   DiffEditor: () => <div data-testid="diff-editor" />,

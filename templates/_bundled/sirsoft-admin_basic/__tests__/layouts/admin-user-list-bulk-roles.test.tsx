@@ -22,6 +22,7 @@ const listLayout = read('../../layouts/admin_user_list.json');
 const modalPartial = read('../../layouts/partials/admin_user_list/_modal_bulk_roles.json');
 const adminKo = read('../../lang/partial/ko/admin.json');
 const adminEn = read('../../lang/partial/en/admin.json');
+const adminJa = read('../../../../../lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/admin.json');
 
 const SELECTED = ['uuid-u1', 'uuid-u2', 'uuid-u3'];
 const USERS = [
@@ -245,7 +246,8 @@ describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
     const close = collect(success, (n) => n.handler === 'closeModal')[0];
     const write = collect(success, (n) => n.handler === 'setState')[0];
 
-    expect(close.if).toBe('{{(response.data?.skipped_count ?? 0) === 0}}');
+    // 제외도, 이미 반영되어 변경 없는 회원도 없을 때만 닫는다 — 둘 중 하나라도 있으면 결과 카드로 말한다.
+    expect(close.if).toBe('{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}');
     expect(write.params.selectedIds_admin_users).toEqual([]);
     expect(write.params.userBulkRoleResult).toBe('{{response.data}}');
     expect(collect(success, (n) => n.handler === 'refetchDataSource')[0].params.dataSourceId).toBe('users');
@@ -333,5 +335,83 @@ describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
     expect(adminKo.users.bulk_roles.hint).not.toContain('고를 수 없습니다');
     expect(adminKo.users.bulk_roles.hint).toContain('거부');
     expect(adminEn.users.bulk_roles.hint).toContain('rejected');
+  });
+
+  // 라이브 실측(O-C3): 4명을 골라 역할을 추가했는데 결과가 「2명 변경, 1명 제외」 — 이미 그 역할을 가진 1명이 어디에도 안 잡혔다.
+  // @scenario mode=add, target=normal, role=within_ceiling
+  // @effects unchanged_reported
+  it('이미 반영되어 변경 없는 회원은 결과 요약에 수가 실리고 「이미 반영」 사유 행으로 보인다 (ko·en·ja 키)', async () => {
+    testUtils = createLayoutTest(buildLayout({
+      userBulkRoleMode: 'add',
+      selectedIds_admin_users: [],
+      userBulkRoleResult: {
+        updated_count: 1,
+        skipped_count: 1,
+        skipped: [{ uuid: 'uuid-u1', reason: 'grade' }],
+        unchanged_count: 1,
+        unchanged: [{ uuid: 'uuid-u3', reason: 'already_assigned' }],
+      },
+    }), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
+    testUtils.mockApi('users', { response: { success: true, data: { data: USERS } } });
+
+    await testUtils.render();
+
+    const result = await screen.findByTestId('bulk_roles_result');
+    expect(result.textContent).toContain(adminKo.users.bulk_roles.result_unchanged.replace('{{unchanged}}', '1'));
+    const unchanged = await screen.findByTestId('bulk_roles_unchanged');
+    expect(unchanged.textContent).toContain('회원 셋');
+    expect(unchanged.textContent).toContain(adminKo.users.bulk_roles.reason_already_assigned);
+
+    for (const pack of [adminKo, adminEn, adminJa]) {
+      expect(pack.users.bulk_roles.result_unchanged).toContain('{{unchanged}}');
+      expect(pack.users.bulk_roles.reason_already_assigned).toBeTruthy();
+      expect(pack.users.bulk_roles.reason_not_assigned).toBeTruthy();
+    }
+  });
+
+  // @scenario mode=add, target=normal, role=within_ceiling
+  // @effects unchanged_reported
+  it('변경 없는 회원이 0명이면 요약 줄·행을 그리지 않는다', async () => {
+    testUtils = createLayoutTest(buildLayout({
+      userBulkRoleMode: 'add',
+      selectedIds_admin_users: [],
+      userBulkRoleResult: { updated_count: 1, skipped_count: 1, skipped: [{ uuid: 'uuid-u1', reason: 'grade' }], unchanged_count: 0, unchanged: [] },
+    }), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
+    testUtils.mockApi('users', { response: { success: true, data: { data: USERS } } });
+
+    await testUtils.render();
+
+    await screen.findByTestId('bulk_roles_result');
+    expect(screen.queryByTestId('bulk_roles_unchanged')).toBeNull();
+  });
+
+  // 라이브 실측(O-C6): 제거 창 안내에 「역할이 남지 않는 회원은 건너뜀」 이 없어 결과 창에서야 알았다.
+  // @scenario mode=remove, target=normal, role=within_ceiling
+  // @effects last_role_skipped
+  it('제거 모드에만 「역할이 하나도 남지 않는 회원은 건너뜀」 안내가 보인다 (ko·en·ja)', async () => {
+    for (const mode of ['remove', 'add'] as const) {
+      testUtils = createLayoutTest(buildLayout({
+        userBulkRoleMode: mode,
+        selectedIds_admin_users: SELECTED,
+      }), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
+      testUtils.mockApi('users', { response: { success: true, data: { data: USERS } } });
+
+      await testUtils.render();
+      await screen.findByTestId('bulk_roles_hint');
+
+      const removeHint = screen.queryByTestId('bulk_roles_remove_hint');
+      if (mode === 'remove') {
+        expect(removeHint?.textContent).toBe(adminKo.users.bulk_roles.remove_hint);
+      } else {
+        expect(removeHint).toBeNull();
+      }
+
+      testUtils.cleanup();
+      testUtils = undefined;
+    }
+
+    expect(adminKo.users.bulk_roles.remove_hint).toContain('역할이 하나도 남지 않');
+    expect(adminEn.users.bulk_roles.remove_hint).toMatch(/no role/i);
+    expect(adminJa.users.bulk_roles.remove_hint).toBeTruthy();
   });
 });

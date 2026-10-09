@@ -1022,6 +1022,8 @@
     "gdpr_cookie_banner_visible": "Cookie banner visible",
     "identity_challenge_inicis": "Identity verification modal (Inicis)",
     "modal_filled": "Modal content filled",
+    "replies_expanded": "Replies expanded",
+    "validation_failed": "Validation failed",
     "screen_filled": "Screen state filled",
     "two_factor_challenge": "Two-factor challenge",
     "comment_editing": "Comment being edited"

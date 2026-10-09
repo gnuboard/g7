@@ -21,6 +21,7 @@ return [
         'invalid_type' => '無効な拡張タイプです。',
         'not_auto_deactivated' => 'この拡張はコアバージョン互換性の問題により自動無効化された状態ではありません。',
         'hidden_extension' => '内部用(非表示)拡張はユーザーに非公開です。',
+        'internal_error' => 'サーバー内部エラーが発生しました。詳細はサーバーログを確認してください。',
     ],
     'warnings' => [
         'auto_deactivated' => ':type ":identifier"がコアバージョン互換性の問題により自動無効化されました。',
@@ -182,6 +183,11 @@ return [
         'summary' => 'レイアウト: 新バージョンの変更 :applied 箇所を自動反映し、運営者の修正と重なった :conflicts 箇所は運営者の内容を維持しました。',
         'no_base' => '(比較基準のない :count 個の画面はそのまま維持)',
         'skipped' => '(運営者が削除した画面 :deleted 個・名前が重なる画面 :collided 個はスキップ)',
+        'counted' => [
+            'changes' => ':count 箇所',
+            'places' => ':count 箇所',
+            'screens' => ':count 個',
+        ],
         'fragment_label' => '拡張フラグメント :target (:key)',
         'mode' => [
             'overwrite' => 'すべて置き換え',

@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
 use App\Support\Query\BoundedCount;
@@ -37,6 +39,7 @@ use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 class PostRepository implements PostRepositoryInterface
 {
     use ChecksBoardPermission;
+    use FiltersByDateRange;
     use FormatsBoardDate;
     use PaginatesWithDeferredJoin;
 
@@ -170,16 +173,14 @@ class PostRepository implements PostRepositoryInterface
             $query->where('user_id', $filters['user_id']);
         }
 
-        // 작성일 필터 (시작일~종료일, 시작일~, ~종료일 모두 가능)
-        if (! empty($filters['created_at_from']) && $filters['created_at_from'] !== '') {
-            // 시작일 00:00:00부터 검색
-            $query->where('created_at', '>=', $filters['created_at_from'].' 00:00:00');
-        }
-
-        if (! empty($filters['created_at_to']) && $filters['created_at_to'] !== '') {
-            // 종료일 23:59:59까지 검색
-            $query->where('created_at', '<=', $filters['created_at_to'].' 23:59:59');
-        }
+        // 작성일 필터 (시작일~종료일, 시작일~, ~종료일 모두 가능). 목록은 작성일을 보는 사람의
+        // 시간대로 그리므로 그 시간대의 하루로 자른다(UTC 하루면 한국 시간 새벽 글이 전날로 빠진다).
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'created_at',
+            $filters['created_at_from'] ?? null,
+            $filters['created_at_to'] ?? null
+        );
     }
 
     /**
@@ -2103,13 +2104,18 @@ class PostRepository implements PostRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 게시글 수를 조회합니다 (대시보드 집계용).
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다 — 집계 표(board_stats)는 모든 운영자가 함께 보는
+     * 하루 1행이라 보는 사람마다 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이 전날로
+     * 묶인다(7.1.0 O-CF3).
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 게시글 수
      */
     public function countCreatedOnDate(string $date): int
     {
-        $start = CarbonImmutable::parse($date)->startOfDay();
-        $end = $start->addDay();
+        $siteDay = CarbonImmutable::parse($date, TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
+        $start = $siteDay->utc();
+        $end = $siteDay->addDay()->utc();
 
         return Post::query()
             ->whereNull('deleted_at')

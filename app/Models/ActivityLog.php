@@ -57,7 +57,7 @@ class ActivityLog extends Model
     /**
      * 속성 캐스팅
      *
-     * @return array<string, string>
+     * @return array<string, string> 속성별 캐스트 타입
      */
     protected function casts(): array
     {
@@ -89,7 +89,7 @@ class ActivityLog extends Model
     /**
      * 대상 모델 관계 (Polymorphic)
      *
-     * @return MorphTo
+     * @return MorphTo 활동 대상 모델 다형 관계
      */
     public function loggable(): MorphTo
     {
@@ -99,7 +99,7 @@ class ActivityLog extends Model
     /**
      * 사용자 관계
      *
-     * @return BelongsTo
+     * @return BelongsTo 행위자 사용자 관계
      */
     public function user(): BelongsTo
     {
@@ -113,7 +113,7 @@ class ActivityLog extends Model
      * 'core.activity_log.filter_description_params' 필터 훅을 통해
      * 모듈이 properties의 ID를 엔티티 이름으로 변환할 수 있습니다.
      *
-     * @return string
+     * @return string 현재 로케일로 번역한 설명 (description_key 가 없으면 빈 문자열)
      */
     public function getLocalizedDescriptionAttribute(): string
     {
@@ -142,13 +142,25 @@ class ActivityLog extends Model
             return $value;
         }, $params);
 
-        return __($this->description_key, $params);
+        // 문구가 `단수|복수` 로 바뀌기 전에 저장된 행은 수를 `count` 없이 다른 이름(`attempts`·`days` 등)으로만
+        // 담았다 — 그대로 두면 두 문장이 이어져 나오므로, 처음 나오는 수 치환값으로 고른다.
+        if (! isset($params['count']) && str_contains((string) __($this->description_key), '|')) {
+            foreach ($params as $value) {
+                if (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value))) {
+                    $params['count'] = $value;
+                    break;
+                }
+            }
+        }
+
+        // 저장된 `count` 가 있으면 `단수|복수` 문구를 그 수로 고른다 (예: 「1 item」/「3 items」).
+        return trans_count($this->description_key, $params);
     }
 
     /**
      * 로그 유형 라벨을 반환합니다.
      *
-     * @return string
+     * @return string 현재 로케일의 로그 유형 라벨
      */
     public function getLogTypeLabelAttribute(): string
     {
@@ -168,7 +180,7 @@ class ActivityLog extends Model
      *   1) loggable_type FQCN (가장 정확)
      *   2) properties.extension_origin (loggable 없는 케이스 — 호출 시점 trait 자동 주입)
      *
-     * @return string
+     * @return string 현재 로케일의 액션 라벨
      */
     public function getActionLabelAttribute(): string
     {
@@ -274,7 +286,7 @@ class ActivityLog extends Model
      * FQCN에서 클래스명만 추출합니다.
      * 예: 'Modules\Sirsoft\Ecommerce\Models\Product' → 'Product'
      *
-     * @return string|null
+     * @return string|null 클래스 짧은 이름 (대상 타입이 없으면 null)
      */
     public function getLoggableTypeDisplayAttribute(): ?string
     {

@@ -444,10 +444,10 @@ class UserRepository implements UserRepositoryInterface
         if (filter_var($filters['never_logged_in'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
             $query->whereNull('last_login_at');
         } else {
-            $this->applyDateRangeFilter($query, 'last_login_at', $filters['last_login_start'] ?? null, $filters['last_login_end'] ?? null);
+            $this->applyViewerDateRangeFilter($query, 'last_login_at', $filters['last_login_start'] ?? null, $filters['last_login_end'] ?? null);
         }
 
-        $this->applyDateRangeFilter($query, 'dormant_at', $filters['dormant_start'] ?? null, $filters['dormant_end'] ?? null);
+        $this->applyViewerDateRangeFilter($query, 'dormant_at', $filters['dormant_start'] ?? null, $filters['dormant_end'] ?? null);
 
         $changedColumn = match ($filters['status_changed_type'] ?? null) {
             'withdrawn' => 'withdrawn_at',
@@ -466,7 +466,7 @@ class UserRepository implements UserRepositoryInterface
         if (empty($start) && empty($end)) {
             $query->whereNotNull($changedColumn);
         } else {
-            $this->applyDateRangeFilter($query, $changedColumn, $start, $end);
+            $this->applyViewerDateRangeFilter($query, $changedColumn, $start, $end);
         }
     }
 
@@ -536,7 +536,7 @@ class UserRepository implements UserRepositoryInterface
     private function applyDateFilters(Builder $query, array $filters): void
     {
         // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
-        $this->applyDateRangeFilter(
+        $this->applyViewerDateRangeFilter(
             $query,
             'created_at',
             $filters['start_date'] ?? null,
@@ -571,8 +571,10 @@ class UserRepository implements UserRepositoryInterface
     {
         $base = fn (): Builder => $applyPermissionScope ? $this->scopedUserQuery() : User::query();
 
+        // 「오늘 가입」은 보는 사람의 오늘이다 — 목록이 가입일을 보는 사람의 시간대로 그리므로
+        // UTC 오늘로 세면 한국 시간 새벽 가입자가 어제로 빠진다.
         $today = $base();
-        $this->applyDayFilter($today, 'created_at', today());
+        $this->applyViewerTodayFilter($today, 'created_at');
 
         return [
             'total_users' => $base()->count(),
@@ -591,11 +593,14 @@ class UserRepository implements UserRepositoryInterface
      */
     public function searchByKeyword(string $keyword): Collection
     {
+        // 목록 검색과 같이 `%`·`_` 는 글자 그대로 찾는다 — 그대로 두면 `%` 한 글자가 범위 안 전체 회원을 돌려준다.
+        $contains = '%'.KeywordSearch::escapeLikeWildcards($keyword).'%';
+
         return $this->scopedUserQuery()
-            ->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('nickname', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
+            ->where(function ($q) use ($contains) {
+                $q->where('name', 'like', $contains)
+                    ->orWhere('nickname', 'like', $contains)
+                    ->orWhere('email', 'like', $contains);
             })
             ->get();
     }

@@ -113,7 +113,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
             {t('attachment.drop_or_click')}
           </P>
           <P className={`${dims.hint} text-gray-500 dark:text-gray-500`}>
-            {t('attachment.upload_limit', { maxFiles, maxSize })}
+            {t('attachment.upload_limit', { maxFiles, maxSize, count: maxFiles })}
             {accept && ` (${accept})`}
           </P>
         </Div>

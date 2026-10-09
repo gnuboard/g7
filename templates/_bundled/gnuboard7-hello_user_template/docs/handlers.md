@@ -18,7 +18,7 @@ _등록하는 액션 핸들러가 없습니다._
 갖는 것이 그 예입니다.
 
 핸들러를 도입할 때는 핸들러 맵을 만들어 `src/index.ts` 에서 `window.G7TemplateHandlers =
-handlerMap` 으로 노출합니다(`sirsoft-basic/src/index.ts` 참고). 맵의 키가 레이아웃에서 부르는
+handlerMap` 으로 노출합니다(`templates/_bundled/sirsoft-basic/src/index.ts` 참고). 맵의 키가 레이아웃에서 부르는
 이름이며, `sirsoft-basic` 은 `'sirsoft-basic.addSelectedItemIfComplete'` 처럼 템플릿 식별자를
 앞에 붙입니다. 코어 `TemplateApp` 은 부팅 때(초기 라우트 처리 전) 이 맵을 `ActionDispatcher` 에
 등록하고, 로케일을 바꿔 디스패처를 새로 만든 뒤에도 같은 맵을 다시 등록합니다

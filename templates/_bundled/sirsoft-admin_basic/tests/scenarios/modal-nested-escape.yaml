@@ -14,6 +14,7 @@ effects:
   - escape_reaches_next_after_top_closes
   - escape_disabled_top_shields_lower
   - lower_rerender_keeps_order
+  - stacked_dialogs_label_with_own_title
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.nestedEscape.test.tsx

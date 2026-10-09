@@ -55,7 +55,7 @@ class UploadAttachmentRequest extends FormRequest
         }
 
         // 게시판 값이 비어 있으면(null 또는 []) 모듈 기본값으로 폴백한다.
-        // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
+        // 빈 배열을 그대로 쓰면 'extensions:' 빈 규칙이 되어 전 파일이 거부된다.
         $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
 
         // 게시판 설정을 기반으로 한 검증 규칙 — 용량도 게시글 저장 검증(StorePostRequest)과 같은 폴백 체인을 쓴다
@@ -66,10 +66,9 @@ class UploadAttachmentRequest extends FormRequest
             $defaults['allowed_extensions'] ?? null
         );
 
-        $mimes = implode(',', $allowedExtensions);
-
+        // 이름 확장자와 내용 추론 확장자가 모두 허용 목록에 들어야 통과 (코어 첨부와 같은 기준)
         $rules = [
-            'file' => ['required', 'file', 'max:'.$maxSizeKB, 'mimes:'.$mimes],
+            'file' => ['required', 'file', 'max:'.$maxSizeKB, ...$this->attachmentFileTypeRules($allowedExtensions)],
             'post_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
             'temp_key' => $this->tempKeyRules(),
@@ -98,7 +97,7 @@ class UploadAttachmentRequest extends FormRequest
             'file.required' => __('sirsoft-board::validation.attachment.file_required'),
             'file.file' => __('sirsoft-board::validation.attachment.file_invalid'),
             'file.max' => __('sirsoft-board::validation.attachment.file_max', ['max' => $maxSizeMB]),
-            'file.mimes' => __('sirsoft-board::validation.attachment.file_mimes'),
+            'file.extensions' => __('sirsoft-board::validation.attachment.file_mimes'),
             'post_id.required' => __('sirsoft-board::validation.attachment.post_id_required'),
             'post_id.integer' => __('sirsoft-board::validation.attachment.post_id_invalid'),
         ];

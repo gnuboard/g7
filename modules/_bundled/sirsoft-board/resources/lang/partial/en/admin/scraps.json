@@ -56,7 +56,8 @@
     "delete_confirm": "It will disappear from the member's scrap list. The post itself is not deleted.",
     "delete_editor_label": "Scrap delete confirmation",
     "bulk_delete_title": "Delete the selected scraps?",
-    "bulk_delete_confirm": "Delete {{count}} selected scrap(s)? They will disappear from the members' scrap lists.",
+    "bulk_delete_confirm": "Delete {{count}} selected scraps? They will disappear from the members' scrap lists.",
+    "bulk_delete_confirm_one": "Delete {{count}} selected scrap? It will disappear from the member's scrap list.",
     "bulk_delete_editor_label": "Scrap bulk delete confirmation",
     "processing": "Processing..."
   },

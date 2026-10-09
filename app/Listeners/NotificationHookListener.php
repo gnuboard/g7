@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
@@ -358,7 +359,10 @@ class NotificationHookListener implements HookListenerInterface
                 'recipient_identifier' => '',
                 'error_message' => __(
                     'notification.skipped.'.$this->resolveNoRecipientReason($recipientRules, $context),
-                    ['rules' => $this->summarizeRecipientRules($recipientRules)]
+                    [
+                        'rules' => $this->summarizeRecipientRules($recipientRules),
+                        'rule_names' => $this->describeRecipientRules($definition, $recipientRules),
+                    ]
                 ),
                 'source' => 'notification',
                 'sent_at' => now(),
@@ -436,11 +440,91 @@ class NotificationHookListener implements HookListenerInterface
                 continue;
             }
 
-            $summary[] = is_array($value)
+            if ($type === 'related_user') {
+                $relation = (string) ($rule['relation'] ?? '');
+                $value = $relation === '' ? null : $relation;
+            }
+
+            $line = is_array($value)
                 ? $type.':'.implode('|', array_map('strval', $value))
                 : ($value === null || $value === '' ? $type : $type.':'.$value);
+
+            $summary[] = empty($rule['exclude_trigger_user']) ? $line : $line.'+exclude_trigger_user';
         }
 
         return implode(', ', $summary);
+    }
+
+    /**
+     * 수신자 규칙을 운영자가 읽을 말로 적습니다 (개인정보는 싣지 않는다).
+     *
+     * 규칙 코드(`related_user`)만으로는 어떤 관계인지·이벤트 유발자를 뺐는지 알 수 없어, 자기 글에
+     * 자기가 댓글을 달아 0명이 된 경우처럼 원인이 「유발자 제외」 인 건너뜀을 읽지 못한다.
+     *
+     * @param  NotificationDefinition  $definition  알림 정의 (관계 이름 출처)
+     * @param  array  $recipientRules  수신자 규칙 배열
+     * @return string 예: `관련 사용자(게시글 작성자) — 이벤트 유발자 제외`
+     */
+    private function describeRecipientRules(NotificationDefinition $definition, array $recipientRules): string
+    {
+        if (empty($recipientRules)) {
+            return __('notification.recipient_rules.legacy');
+        }
+
+        $names = [];
+        foreach ($recipientRules as $rule) {
+            $type = (string) ($rule['type'] ?? '');
+            $value = $rule['value'] ?? null;
+
+            $name = match ($type) {
+                'trigger_user' => __('notification.recipient_rules.trigger_user'),
+                'related_user' => __('notification.recipient_rules.related_user', [
+                    'relation' => $definition->relationLabel((string) ($rule['relation'] ?? '')),
+                ]),
+                'role' => __('notification.recipient_rules.role', [
+                    'roles' => $this->describeRoles(array_map('strval', is_array($value) ? $value : [$value])),
+                ]),
+                'specific_users' => __('notification.recipient_rules.specific_users', [
+                    'count' => is_array($value) ? count($value) : 0,
+                ]),
+                default => $type,
+            };
+
+            $names[] = empty($rule['exclude_trigger_user'])
+                ? $name
+                : __('notification.recipient_rules.exclude_trigger_user', ['rule' => $name]);
+        }
+
+        return implode(' / ', $names);
+    }
+
+    /**
+     * 역할 식별자를 운영자가 아는 역할 이름으로 바꿉니다 — 지워진 역할은 식별자를 그대로 둡니다.
+     *
+     * 식별자(`admin`)는 규칙 코드에 그대로 남으므로 사람용 이름에는 역할 관리 화면과 같은 이름을 쓴다.
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return string 쉼표로 이은 역할 이름
+     */
+    private function describeRoles(array $identifiers): string
+    {
+        $identifiers = array_values(array_filter($identifiers, fn (string $id) => $id !== ''));
+        if ($identifiers === []) {
+            return '';
+        }
+
+        try {
+            $names = app(RoleRepositoryInterface::class)->getByIdentifiers($identifiers)
+                ->mapWithKeys(fn ($role) => [$role->identifier => $role->getLocalizedName()])
+                ->all();
+        } catch (\Throwable) {
+            // 사유 문장은 부가 정보다 — 이름 조회가 실패해도 건너뜀 기록 자체는 남겨야 한다.
+            $names = [];
+        }
+
+        return implode(', ', array_map(
+            fn (string $id) => ($names[$id] ?? '') !== '' ? $names[$id] : $id,
+            $identifiers,
+        ));
     }
 }

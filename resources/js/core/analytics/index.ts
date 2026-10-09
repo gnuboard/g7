@@ -62,8 +62,8 @@ export function createTracker(options: TrackerOptions): TrackerHandle | null {
  * 모든 메서드가 값을 돌려주지 않고 예외를 삼킵니다 — 확장이 통계 호출 때문에
  * 깨지지 않게 하기 위함입니다.
  *
- * - `trackEvent(name, attrs)` 의 이름·속성은 서버에 저장되지 않습니다(방문 타임라인에 화면 주소로
- *   액션 한 줄만 남음). 세야 하는 행동은 `trackGoal`, 가르는 값은 `setDimension` 을 씁니다.
+ * - `trackEvent(name, attrs)` 의 이름은 저장·집계되고(타임라인 한 줄 + 「이벤트」 리포트) 속성은
+ *   저장되지 않습니다. 정해진 뜻으로 셀 행동은 `trackGoal`, 가르는 값은 `setDimension` 을 씁니다.
  * - `isOptedOut()` 은 수집 제외 쿠키가 **결정 사유일 때만** true 입니다. 판정 순서상 앞선 사유
  *   (수집 꺼짐·미리 그리기·추적 거부)가 먼저 걸리면 쿠키가 있어도 false 입니다.
  *

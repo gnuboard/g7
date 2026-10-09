@@ -44,7 +44,7 @@
             <icon name="external-link" size="sm"/>
             <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
           </a>
-          <button data-ref="refresh_button" class="btn-icon">
+          <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">

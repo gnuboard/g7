@@ -1291,7 +1291,7 @@ class UserClaimApiTest extends ModuleTestCase
             'add_image_ids' => $added->pluck('id')->map('intval')->all(),
             'remove_image_ids' => [(int) $existing->first()->id],
         ])->assertStatus(422)
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', ['max' => 5]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', ['max' => 5, 'count' => 5]));
 
         $fresh = $return->fresh();
         $this->assertSame('changed_mind', $fresh->reason_code, '거절된 수정이 사유를 바꿔 놓으면 안 됩니다.');
@@ -1836,7 +1836,8 @@ class UserClaimApiTest extends ModuleTestCase
             'items' => $this->items($order, 1), 'reason_code' => 'changed_mind',
             'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id,
         ]);
-        $today = now()->toDateString();
+        // 날짜 칸은 보는 사람(회원)의 시간대 하루로 해석된다 — 회원 시간대의 오늘로 보낸다.
+        $today = now($this->user->timezone ?: config('app.default_user_timezone'))->toDateString();
 
         // 시각이 붙어 있어도 그날 전체를 덮는다 — 오늘 접수한 신청서가 결과에 남아야 한다.
         $this->actingAs($this->user)->getJson($this->base()."/claims?type=return&to={$today}%2000%3A00%3A00")

@@ -81,7 +81,7 @@
                                                     "props": {
                                                         "className": "text-error-soft"
                                                     },
-                                                    "text": "{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}"
+                                                    "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}"
                                                 }
                                             ]
                                         }

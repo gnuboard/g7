@@ -20,7 +20,7 @@
     <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
       <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('status')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('status')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status">
           <on type="change">
             <!-- 계정 상태 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 브라우저에 남긴다 — 여기서는 상태만 바꾸고 저장은 필터 표시 선택기가 한다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
@@ -50,7 +50,7 @@
       </div>
       <div data-ref="role_filter_row" data-slot="{{(_local.visibleFilters || []).includes('role') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('role')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('role')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.role">
           <on type="change">
             <!-- 권한 그룹 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('role') ? (_local.visibleFilters || []).filter(f => f !== 'role') : [...(_local.visibleFilters || []), 'role']}}"/>
@@ -74,7 +74,7 @@
       </div>
       <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.created_at">
           <on type="change">
             <!-- 가입일 필터 노출 스위치. 빠른 기간 버튼이 붙어 자리를 많이 먹는다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
@@ -99,7 +99,7 @@
             </input>
           </div>
           <div class="flex-center flex-wrap gap-1">
-            <div class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 가입일 빠른 기간 여섯. 핸들러가 시작·종료일을 날짜 형식으로 계산해 돌려주고 $prev 로 받아 담는다 — 날짜 칸은 시각이 붙은 값을 받지 못한다. 오늘. -->
                 <sequence>
@@ -108,8 +108,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.today
-            </div>
-            <div class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
                 <sequence>
@@ -118,8 +118,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.week
-            </div>
-            <div class="{{_local.filter.createdDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1개월. -->
                 <sequence>
@@ -128,8 +128,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.month
-            </div>
-            <div class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 3개월. -->
                 <sequence>
@@ -138,8 +138,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.3months
-            </div>
-            <div class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 6개월. -->
                 <sequence>
@@ -148,8 +148,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.6months
-            </div>
-            <div class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1년. -->
                 <sequence>
@@ -158,13 +158,13 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.1year
-            </div>
+            </button>
           </div>
         </div>
       </div>
       <div data-ref="last_login_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastLoginAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lastLoginAt')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lastLoginAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.last_login">
           <on type="change">
             <!-- 최근 로그인 필터 노출 스위치. 휴면 전 안내 대상을 찾을 때 기본으로 올려 두는 일이 많다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastLoginAt') ? (_local.visibleFilters || []).filter(f => f !== 'lastLoginAt') : [...(_local.visibleFilters || []), 'lastLoginAt']}}"/>
@@ -189,7 +189,7 @@
             </input>
           </div>
           <div class="flex-center flex-wrap gap-1">
-            <div class="{{_local.filter.lastLoginDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 최근 로그인 빠른 기간 여섯 — 가입일과 같은 방식이다. 누르면 「로그인 이력 없음」 을 끈다. 오늘. -->
                 <sequence>
@@ -198,8 +198,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.today
-            </div>
-            <div class="{{_local.filter.lastLoginDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1주일. -->
                 <sequence>
@@ -208,8 +208,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.week
-            </div>
-            <div class="{{_local.filter.lastLoginDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1개월. -->
                 <sequence>
@@ -218,8 +218,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.month
-            </div>
-            <div class="{{_local.filter.lastLoginDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 3개월. -->
                 <sequence>
@@ -228,8 +228,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.3months
-            </div>
-            <div class="{{_local.filter.lastLoginDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 6개월. -->
                 <sequence>
@@ -238,8 +238,8 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.6months
-            </div>
-            <div class="{{_local.filter.lastLoginDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
               <on type="click">
                 <!-- 1년. -->
                 <sequence>
@@ -248,7 +248,7 @@
                 </sequence>
               </on>
               $t:admin.users.filter.date_quick.1year
-            </div>
+            </button>
           </div>
           <label class="flex-center gap-1 cursor-pointer">
             <input type="checkbox" name="neverLoggedIn" class="checkbox" checked="{{!!_local.filter.neverLoggedIn}}">
@@ -263,7 +263,7 @@
       </div>
       <div data-ref="admin_scope_filter_row" data-slot="{{(_local.visibleFilters || []).includes('adminScope') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('adminScope')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('adminScope')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.admin_scope">
           <on type="change">
             <!-- 관리자 여부 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('adminScope') ? (_local.visibleFilters || []).filter(f => f !== 'adminScope') : [...(_local.visibleFilters || []), 'adminScope']}}"/>
@@ -302,7 +302,7 @@
       </div>
       <div data-ref="lock_state_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lockState') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lockState')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lockState')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.lock_state">
           <on type="change">
             <!-- 계정 잠금 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lockState') ? (_local.visibleFilters || []).filter(f => f !== 'lockState') : [...(_local.visibleFilters || []), 'lockState']}}"/>
@@ -341,7 +341,7 @@
       </div>
       <div data-ref="dormant_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dormantAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('dormantAt')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('dormantAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.dormant_at">
           <on type="change">
             <!-- 휴면 전환일 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dormantAt') ? (_local.visibleFilters || []).filter(f => f !== 'dormantAt') : [...(_local.visibleFilters || []), 'dormantAt']}}"/>
@@ -367,7 +367,7 @@
       </div>
       <div data-ref="status_changed_filter_row" data-slot="{{(_local.visibleFilters || []).includes('statusChangedAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('statusChangedAt')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('statusChangedAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status_changed">
           <on type="change">
             <!-- 상태 변경일 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('statusChangedAt') ? (_local.visibleFilters || []).filter(f => f !== 'statusChangedAt') : [...(_local.visibleFilters || []), 'statusChangedAt']}}"/>
@@ -406,7 +406,7 @@
       </div>
       <div data-ref="language_filter_row" data-slot="{{(_local.visibleFilters || []).includes('language') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('language')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('language')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.language">
           <on type="change">
             <!-- 언어 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('language') ? (_local.visibleFilters || []).filter(f => f !== 'language') : [...(_local.visibleFilters || []), 'language']}}"/>
@@ -424,7 +424,7 @@
       </div>
       <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.country">
           <on type="change">
             <!-- 국가 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
@@ -438,7 +438,7 @@
               <set-state target="_local" filter.country="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.country}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 국가 지우기. -->
               <set-state target="_local" filter.country=""/>
@@ -449,7 +449,7 @@
       </div>
       <div data-ref="email_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('emailVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('emailVerified')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('emailVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.email_verified">
           <on type="change">
             <!-- 이메일 인증 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('emailVerified') ? (_local.visibleFilters || []).filter(f => f !== 'emailVerified') : [...(_local.visibleFilters || []), 'emailVerified']}}"/>
@@ -488,7 +488,7 @@
       </div>
       <div data-ref="identity_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('identityVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('identityVerified')}}">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('identityVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.identity_verified">
           <on type="change">
             <!-- 본인인증 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('identityVerified') ? (_local.visibleFilters || []).filter(f => f !== 'identityVerified') : [...(_local.visibleFilters || []), 'identityVerified']}}"/>

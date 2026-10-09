@@ -18,17 +18,33 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 주문 Repository 테스트
+ *
+ * 시나리오 SSoT: tests/scenarios/order-repository.yaml
  */
 class OrderRepositoryTest extends ModuleTestCase
 {
     protected OrderRepository $repository;
 
+    /**
+     * 테스트 대상 저장소를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->repository = new OrderRepository(new Order);
     }
 
+    /**
+     * ID 로 주문을 찾는다.
+     *
+     * @scenario case=find
+     *
+     * @effects order_repository_finds_order_by_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_returns_order(): void
     {
         $order = OrderFactory::new()->create();
@@ -39,6 +55,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals($order->id, $found->id);
     }
 
+    /**
+     * 없는 ID 는 null 을 돌려준다.
+     *
+     * @scenario case=find
+     *
+     * @effects order_repository_returns_null_for_missing_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_returns_null_for_non_existent_id(): void
     {
         $found = $this->repository->find(99999);
@@ -46,6 +71,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertNull($found);
     }
 
+    /**
+     * 관계 포함 조회는 옵션·배송지·결제·배송 관계를 함께 싣는다.
+     *
+     * @scenario case=find
+     *
+     * @effects order_repository_loads_detail_relations
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_with_relations_loads_all_relations(): void
     {
         $order = OrderFactory::new()->create();
@@ -63,6 +97,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertTrue($found->relationLoaded('shippings'));
     }
 
+    /**
+     * 주문번호로 주문을 찾는다.
+     *
+     * @scenario case=find
+     *
+     * @effects order_repository_finds_order_by_number
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_by_order_number_returns_order(): void
     {
         $order = OrderFactory::new()->create(['order_number' => 'TEST-ORD-001']);
@@ -73,6 +116,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals('TEST-ORD-001', $found->order_number);
     }
 
+    /**
+     * 없는 주문번호는 null 을 돌려준다.
+     *
+     * @scenario case=find
+     *
+     * @effects order_repository_returns_null_for_missing_number
+     *
+     * @return void 반환값 없음
+     */
     public function test_find_by_order_number_returns_null_for_non_existent(): void
     {
         $found = $this->repository->findByOrderNumber('NON-EXISTENT');
@@ -80,6 +132,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertNull($found);
     }
 
+    /**
+     * 목록 조회는 페이지 단위로 돌려준다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_paginates
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_with_filters_returns_paginated_results(): void
     {
         OrderFactory::new()->count(15)->create();
@@ -90,6 +151,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(15, $result->total());
     }
 
+    /**
+     * 주문상태 하나로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_order_status(): void
     {
         OrderFactory::new()->count(3)->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT->value]);
@@ -102,6 +172,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(3, $result->total());
     }
 
+    /**
+     * 주문상태 여러 개로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_multiple_order_status(): void
     {
         OrderFactory::new()->count(3)->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT->value]);
@@ -118,21 +197,42 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(5, $result->total());
     }
 
+    /**
+     * 주문일 기간 필터는 보는 사람의 시간대 하루로 자른다 — 그 시간대의 오늘까지 넣으면 오늘 주문이 포함된다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_date_range_uses_viewer_day
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_date_range(): void
     {
         OrderFactory::new()->create(['ordered_at' => now()->subDays(10)]);
         OrderFactory::new()->create(['ordered_at' => now()->subDays(5)]);
         OrderFactory::new()->create(['ordered_at' => now()]);
 
+        // 날짜 칸은 보는 사람의 시간대 하루로 해석된다 — 그 시간대의 오늘로 보낸다
+        // (UTC 날짜를 보내면 한국 시간 자정~오전 9시에 오늘 주문이 빠진다).
+        $viewerNow = now(config('app.default_user_timezone'));
         $result = $this->repository->getListWithFilters([
             'date_type' => 'ordered_at',
-            'start_date' => now()->subDays(7)->toDateString(),
-            'end_date' => now()->toDateString(),
+            'start_date' => $viewerNow->copy()->subDays(7)->toDateString(),
+            'end_date' => $viewerNow->toDateString(),
         ]);
 
         $this->assertEquals(2, $result->total());
     }
 
+    /**
+     * 주문번호 검색어로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_keyword
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_search_keyword(): void
     {
         $order = OrderFactory::new()->create(['order_number' => 'SEARCH-TEST-001']);
@@ -147,6 +247,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals($order->id, $result->items()[0]->id);
     }
 
+    /**
+     * 결제금액 범위로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_amount_range
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_price_range(): void
     {
         OrderFactory::new()->create(['total_amount' => 10000]);
@@ -161,6 +270,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(1, $result->total());
     }
 
+    /**
+     * 배송방법으로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_shipping_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_shipping_type(): void
     {
         $order1 = OrderFactory::new()->create();
@@ -184,6 +302,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(2, $result->total());
     }
 
+    /**
+     * 배송 국가로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_country
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_country_codes(): void
     {
         $order1 = OrderFactory::new()->create();
@@ -207,6 +334,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(2, $result->total());
     }
 
+    /**
+     * 주문 기기로 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_device
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_order_device(): void
     {
         OrderFactory::new()->count(3)->create([
@@ -223,6 +359,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(2, $result->total());
     }
 
+    /**
+     * 지정한 열로 정렬한다.
+     *
+     * @scenario case=list_sort
+     *
+     * @effects order_list_sorts_by_allowed_column
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_sorts_by_field(): void
     {
         $order1 = OrderFactory::new()->create(['total_amount' => 30000]);
@@ -240,6 +385,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals($order1->id, $items[2]->id);
     }
 
+    /**
+     * 주문을 새로 만든다.
+     *
+     * @scenario case=write
+     *
+     * @effects order_repository_creates_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_creates_new_order(): void
     {
         $data = [
@@ -260,6 +414,15 @@ class OrderRepositoryTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 주문을 고친다.
+     *
+     * @scenario case=write
+     *
+     * @effects order_repository_updates_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_updates_order(): void
     {
         $order = OrderFactory::new()->create(['admin_memo' => '기존 메모']);
@@ -275,6 +438,15 @@ class OrderRepositoryTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 주문 삭제는 소프트 삭제다.
+     *
+     * @scenario case=write
+     *
+     * @effects order_repository_soft_deletes_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_soft_deletes_order(): void
     {
         $order = OrderFactory::new()->create();
@@ -285,6 +457,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_orders', ['id' => $order->id]);
     }
 
+    /**
+     * 여러 주문의 상태를 한 번에 바꾼다.
+     *
+     * @scenario case=bulk
+     *
+     * @effects order_bulk_status_updates_all_targets
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_status_updates_multiple_orders(): void
     {
         $orders = OrderFactory::new()->count(3)->create([
@@ -306,6 +487,15 @@ class OrderRepositoryTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 옵션 상태 일괄 변경은 진행 중인 옵션만 맞춘다.
+     *
+     * @scenario case=bulk
+     *
+     * @effects order_bulk_option_status_skips_closed_options
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_option_status_syncs_active_options_only(): void
     {
         $order = OrderFactory::new()->create([
@@ -329,6 +519,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::CANCELLED, $cancelled->fresh()->option_status);
     }
 
+    /**
+     * 주문 통계가 상태별 건수를 바르게 센다.
+     *
+     * @scenario case=statistics
+     *
+     * @effects order_statistics_counts_by_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_statistics_returns_correct_counts(): void
     {
         OrderFactory::new()->count(3)->create([
@@ -349,6 +548,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertArrayHasKey('monthly_revenue', $stats);
     }
 
+    /**
+     * 엑셀 내려받기 조회는 컬렉션을 돌려준다.
+     *
+     * @scenario case=export
+     *
+     * @effects order_export_returns_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_for_export_returns_collection(): void
     {
         OrderFactory::new()->count(5)->create();
@@ -358,6 +566,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertCount(5, $result);
     }
 
+    /**
+     * 엑셀 내려받기는 고른 ID 만 싣는다.
+     *
+     * @scenario case=export
+     *
+     * @effects order_export_limits_to_selected_ids
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_for_export_with_specific_ids(): void
     {
         $orders = OrderFactory::new()->count(5)->create();
@@ -368,6 +585,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertCount(2, $result);
     }
 
+    /**
+     * 있는 주문번호는 true 다.
+     *
+     * @scenario case=exists
+     *
+     * @effects order_number_existence_check
+     *
+     * @return void 반환값 없음
+     */
     public function test_exists_by_order_number_returns_true_for_existing(): void
     {
         OrderFactory::new()->create(['order_number' => 'TEST-ORD-EXISTS']);
@@ -377,6 +603,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 없는 주문번호는 false 다.
+     *
+     * @scenario case=exists
+     *
+     * @effects order_number_existence_check
+     *
+     * @return void 반환값 없음
+     */
     public function test_exists_by_order_number_returns_false_for_non_existing(): void
     {
         $result = $this->repository->existsByOrderNumber('NON-EXISTENT-ORDER');
@@ -384,6 +619,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertFalse($result);
     }
 
+    /**
+     * 주문이 있는 회원은 true 다.
+     *
+     * @scenario case=exists
+     *
+     * @effects user_order_existence_check
+     *
+     * @return void 반환값 없음
+     */
     public function test_has_order_by_user_returns_true_for_user_with_orders(): void
     {
         $user = User::factory()->create();
@@ -394,6 +638,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 주문이 없는 회원은 false 다.
+     *
+     * @scenario case=exists
+     *
+     * @effects user_order_existence_check
+     *
+     * @return void 반환값 없음
+     */
     public function test_has_order_by_user_returns_false_for_user_without_orders(): void
     {
         $user = User::factory()->create();
@@ -403,6 +656,15 @@ class OrderRepositoryTest extends ModuleTestCase
         $this->assertFalse($result);
     }
 
+    /**
+     * 주문자 UUID 로 그 회원 주문만 거른다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_orderer_uuid
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_filters_by_orderer_uuid(): void
     {
         $user = User::factory()->create();
@@ -434,6 +696,15 @@ class OrderRepositoryTest extends ModuleTestCase
         });
     }
 
+    /**
+     * 없는 주문자 UUID 는 빈 목록이다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects order_list_filters_by_orderer_uuid
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_with_nonexistent_orderer_uuid_returns_empty(): void
     {
         OrderFactory::new()->create([
@@ -453,6 +724,12 @@ class OrderRepositoryTest extends ModuleTestCase
 
     /**
      * getUserStatistics 의 상품준비중(preparing) 카운터는 PREPARING + SHIPPING_READY 를 합산한다.
+     *
+     * @scenario case=user_statistics
+     *
+     * @effects user_statistics_preparing_includes_shipping_ready
+     *
+     * @return void 반환값 없음
      */
     public function test_user_statistics_preparing_sums_preparing_and_shipping_ready(): void
     {
@@ -468,6 +745,12 @@ class OrderRepositoryTest extends ModuleTestCase
     /**
      * 부분취소는 별도 order_status 가 아니므로 통계에 partial_cancelled 키가 없고,
      * 부분취소된 주문은 잔여 옵션 기준 진행 상태(예: payment_complete) 카운터에 집계된다 (partial_cancelled 제거).
+     *
+     * @scenario case=user_statistics
+     *
+     * @effects user_statistics_has_no_partial_cancelled_key
+     *
+     * @return void 반환값 없음
      */
     public function test_user_statistics_has_no_partial_cancelled_key(): void
     {
@@ -483,6 +766,12 @@ class OrderRepositoryTest extends ModuleTestCase
 
     /**
      * 주문대기(pending_order)는 통계에서 숨김 유지된다 (정책 확정, listHiddenValues).
+     *
+     * @scenario case=user_statistics
+     *
+     * @effects user_statistics_hides_pending_order
+     *
+     * @return void 반환값 없음
      */
     public function test_user_statistics_hides_pending_order(): void
     {
@@ -500,6 +789,12 @@ class OrderRepositoryTest extends ModuleTestCase
      * 상품준비중(preparing) 필터로 조회하면 PREPARING + SHIPPING_READY 가 함께 조회된다.
      *
      * 카운터(합산)와 필터 결과 수가 일치하도록 그룹 SSoT 로 확장된다.
+     *
+     * @scenario case=list_filter
+     *
+     * @effects preparing_filter_expands_to_group
+     *
+     * @return void 반환값 없음
      */
     public function test_preparing_filter_expands_to_preparing_and_shipping_ready(): void
     {
@@ -517,6 +812,12 @@ class OrderRepositoryTest extends ModuleTestCase
 
     /**
      * 일반 상태 값 필터는 그룹 확장의 영향을 받지 않는다(멱등).
+     *
+     * @scenario case=list_filter
+     *
+     * @effects plain_status_filter_is_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_non_group_status_filter_is_unaffected(): void
     {
@@ -533,6 +834,12 @@ class OrderRepositoryTest extends ModuleTestCase
     /**
      * 입금 기한이 만료된 VBANK/DBANK 결제대기 주문만 조회되고
      * BANK(계좌이체)는 제외되는지 검증한다 (주문 442 누락 회귀 차단).
+     *
+     * @scenario case=expiry
+     *
+     * @effects expired_pending_payment_matches_vbank_dbank_only
+     *
+     * @return void 반환값 없음
      */
     public function test_get_expired_pending_payment_orders_matches_vbank_and_dbank_only(): void
     {

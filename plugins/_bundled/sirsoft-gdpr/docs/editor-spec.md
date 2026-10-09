@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 15 · 페이지 상태 7
+> 단일 파일 · 프리뷰 샘플 15 · 페이지 상태 11
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -28,7 +28,7 @@ GDPR 플러그인은 관리자 설정·동의 이력 화면과 **사용자 화�
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 15 | `editor-spec.json (인라인)` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 7 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 11 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -62,7 +62,7 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 15 | `gdprSettings` · `gdprPolicyVersionCurrent` · `gdprPolicyVersionHistory` · `gdprPolicyVersionSnapshot` · `gdprConsentLog` · `gdprPublicSettings` · `gdprMyConsent` · `gdprMeConsents` · `gdprMyConsents` · `gdprNoticeLog` · `gdprNotificationChannels` · `gdprNotificationDefinitions` … 외 3개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 7 | `*/admin/plugins/sirsoft-gdpr/consent-log` · `_user_base` · `*/admin/plugins/sirsoft-gdpr/settings` · `*/admin/plugins/sirsoft-gdpr/consent-log` · `policy_version_snapshot_modal` · `modal_gdpr_notification_template_edit` · `modal_gdpr_notification_definition_preview` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 11 | `*/admin/plugins/sirsoft-gdpr/consent-log` · `_user_base` · `*/admin/plugins/sirsoft-gdpr/settings` · `*/admin/plugins/sirsoft-gdpr/consent-log` · `policy_version_snapshot_modal` · `modal_gdpr_notification_template_edit` · `modal_gdpr_notification_definition_preview` · `privacy_run_modal` · `privacy_targets_modal` · `grant_confirm_modal` · `revoke_confirm_modal` |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

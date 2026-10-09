@@ -544,7 +544,9 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "menu_toggle_btn"
+                                                "className": "menu_toggle_btn",
+                                                "aria-label": "{{_global.sidebarCollapsed ? '$t:common.expand_sidebar' : '$t:common.collapse_sidebar'}}",
+                                                "aria-expanded": "{{!_global.sidebarCollapsed}}"
                                             },
                                             "children": [
                                                 {
@@ -1011,7 +1013,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "flex-center btn-icon"
+                                                "type": "button",
+                                                "className": "flex-center btn-icon",
+                                                "aria-label": "{{_global.sidebarOpen ? '$t:common.collapse_sidebar' : '$t:common.expand_sidebar'}}",
+                                                "aria-expanded": "{{!!_global.sidebarOpen}}"
                                             },
                                             "children": [
                                                 {

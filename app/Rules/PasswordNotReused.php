@@ -44,7 +44,7 @@ class PasswordNotReused implements ValidationRule
         $count = PasswordPolicy::clampedSetting('password_reuse_count', 3);
 
         if ($this->matchesRecent($value, $count)) {
-            $fail(__('validation.password_policy.reused', ['count' => $count]));
+            $fail(trans_choice('validation.password_policy.reused', $count));
         }
     }
 

@@ -31,7 +31,7 @@ class BulkUpdateMenuRolesRequest extends FormRequest
     /**
      * 검증 규칙을 정의합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -50,20 +50,20 @@ class BulkUpdateMenuRolesRequest extends FormRequest
     /**
      * 검증 오류 메시지를 정의합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 규칙별 오류 메시지
      */
     public function messages(): array
     {
         return [
             'menu_ids.required' => __('validation.required', ['attribute' => __('validation.attributes.menu_ids')]),
             'menu_ids.array' => __('validation.array', ['attribute' => __('validation.attributes.menu_ids')]),
-            'menu_ids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.menu_ids'), 'min' => 1]),
-            'menu_ids.max' => __('validation.max.array', ['attribute' => __('validation.attributes.menu_ids'), 'max' => 500]),
+            'menu_ids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.menu_ids'), 'min' => 1]),
+            'menu_ids.max' => trans_choice('validation.max.array', 500, ['attribute' => __('validation.attributes.menu_ids'), 'max' => 500]),
             'menu_ids.*.integer' => __('validation.role.menu_ids.integer'),
             'menu_ids.*.exists' => __('validation.role.menu_ids.exists'),
             'role_ids.required' => __('validation.required', ['attribute' => __('validation.attributes.role_ids')]),
             'role_ids.array' => __('validation.array', ['attribute' => __('validation.attributes.role_ids')]),
-            'role_ids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.role_ids'), 'min' => 1]),
+            'role_ids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.role_ids'), 'min' => 1]),
             'role_ids.*.integer' => __('validation.menu.roles.integer'),
             'role_ids.*.exists' => __('validation.menu.roles.exists'),
             'mode.required' => __('validation.required', ['attribute' => __('validation.attributes.mode')]),
@@ -74,7 +74,7 @@ class BulkUpdateMenuRolesRequest extends FormRequest
     /**
      * 검증 속성명을 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 필드별 표시명
      */
     public function attributes(): array
     {

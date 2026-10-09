@@ -276,7 +276,8 @@ class ReactionRepository implements ReactionRepositoryInterface
 
         $this->applyTargetTypeFilter($query, $filters['target_type'] ?? null, $table);
 
-        $this->applyDateRangeFilter(
+        // 목록은 반응일을 보는 사람의 시간대로 그린다 — 같은 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
             $query,
             "{$table}.created_at",
             $filters['reacted_at_from'] ?? null,

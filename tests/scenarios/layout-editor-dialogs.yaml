@@ -1,0 +1,29 @@
+feature: 레이아웃 편집기 확인·입력 대화상자 — 브라우저 기본 confirm/prompt 대신 편집기 모달
+
+description: |
+  편집기의 나가기·템플릿 전환·자산 적용 토글·화면 경로 이동·초기화·커스텀 자산 버리기/삭제/이름변경·버전 복원·
+  번역 키 삭제·첨부 이미지 삭제가 브라우저 기본 `window.confirm`/`window.prompt` 를 썼다(7.1.0 P18, 11개 호출).
+  편집기 모달 스택 위의 대화상자(EditorDialog, engine-v1.78.7)로 바꾼다 — role=alertdialog, 이름=제목,
+  설명=본문, 처음 초점(입력칸/위험 확인은 [취소]/그 밖 [확인]), Tab 가두기, Esc·백드롭·[취소]=취소,
+  닫히면 연 요소로 초점 복귀. Provider 없는 단독 렌더는 종전 브라우저 대화상자로 대체한다.
+
+  축 dialog_kind 는 대화상자 종류다 — 확인(confirm, true/false), 입력(prompt, 문자열/null).
+
+axes:
+  dialog_kind: [confirm, prompt]
+
+effects:
+  - dialog_replaces_native_confirm_and_prompt
+  - dialog_exposes_name_and_description
+  - dialog_initial_focus_follows_kind
+  - dialog_cancel_paths_resolve_cancel
+  - dialog_returns_focus_to_opener
+  - dialog_traps_tab_focus
+  - editor_sources_have_no_native_dialog_calls
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorDialog.test.tsx
+  - tests/Playwright/specs/layout-editor/editor-dialogs-and-action-tab.spec.ts
+
+notes: |
+  커스텀 자산 창의 미저장 확인(Esc·백드롭)은 custom-assets 매니페스트(CustomAssetsModal.test.tsx)가 대화상자 조작으로 잠근다.

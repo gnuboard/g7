@@ -439,7 +439,7 @@ class TempOrderService
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
      * @param  ShippingAddress|null  $shippingAddress  배송 주소 (null이면 저장된 주소 사용)
-     * @return array{temp_order: TempOrder, calculation: OrderCalculationResult}|null
+     * @return array{temp_order: TempOrder, calculation: OrderCalculationResult}|null 임시 주문과 재계산 결과 (임시 주문이 없으면 null)
      */
     public function getTempOrderWithCalculation(
         ?int $userId,
@@ -619,7 +619,7 @@ class TempOrderService
      * 장바구니 아이템을 CalculationItem 배열로 변환
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션
-     * @return CalculationItem[]
+     * @return CalculationItem[] 계산용 아이템 목록
      */
     protected function convertCartItemsToCalculationItems(Collection $cartItems): array
     {
@@ -756,8 +756,9 @@ class TempOrderService
         // 판정·안내 문구 모두 원장 기준으로 통일(getBalance 캐시 지연으로 인한 어긋남 제거).
         if (! $this->userMileageService->canUse($userId, $usePoints)) {
             throw new MileageValidationException(
-                __('sirsoft-ecommerce::exceptions.mileage.use_exceeds_balance', [
-                    'amount' => $this->userMileageService->availableBalance($userId),
+                trans_count('sirsoft-ecommerce::exceptions.mileage.use_exceeds_balance', [
+                    'amount' => $balance = $this->userMileageService->availableBalance($userId),
+                    'count' => $balance,
                 ])
             );
         }

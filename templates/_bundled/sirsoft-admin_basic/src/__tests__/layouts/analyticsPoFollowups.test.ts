@@ -144,6 +144,18 @@ describe('③ 봇 최근 요청은 통째로 펼치지 않는다', () => {
   });
 
   // @scenario screen=bots, state=normal, viewport=1440, locale=ko
+  // @effects bot_recent_hits_carry_a_unique_row_id
+  it('최근 요청 표의 행 식별자는 겹치지 않는 id 다', () => {
+    // 시각(occurred_at)을 행 식별자로 쓰면 같은 초에 들어온 두 요청이 같은 줄로 취급돼, 쪽을 넘겨도
+    // 앞 쪽 줄이 지워지지 않고 남았다(한 쪽 12줄 — 7.1.0 실측 E-D3).
+    const layout = loadLayout('admin_analytics_bots.json');
+    const grid = nodeById(layout, 'recent_hits_grid');
+    const props = (grid as any).props ?? grid;
+
+    expect(props.idField, '서버가 싣는 봇 요청 행 번호').toBe('id');
+  });
+
+  // @scenario screen=bots, state=normal, viewport=1440, locale=ko
   // @effects stat_cards_never_total_a_paged_list
   it('통계 화면의 KPI 는 쪽으로 잘린 목록을 더하거나 세지 않는다', () => {
     // 봇 「봇 요청」·「봇 종류」가 목록 한 쪽(25행)을 더하고 세어, 봇 종류가 한 쪽보다 많은 기간에는
@@ -320,6 +332,34 @@ describe('⑥ 전체 유입 주소를 볼 길이 있다', () => {
   });
 });
 
+describe('⑨ 신규·재방문 카드는 기록 없음과 구분 불가를 가른다', () => {
+  // 방문이 0건인 기간도 점의 신규·재방문이 null 이라, 카드가 「—」와 「익명 모드에서는 신규·재방문을 구분할 수
+  // 없습니다」를 띄웠다 — 익명 모드가 아닌데 익명 모드 탓으로 읽힌다(7.1.0 실측 E-D9, 09-27 하루 조회).
+  // 기록이 없으면 0 · 0 이고, 방문이 있는데 가를 수 없을 때만 구분 불가를 말한다.
+  // @scenario screen=overview, state=empty, viewport=1440, locale=ko
+  // @effects new_returning_card_separates_no_visits_from_indistinguishable
+  it('방문 0건 기간은 0 · 0, 방문이 있는데 모두 null 이면 — 와 구분 불가 안내', () => {
+    const layout = loadLayout('admin_analytics_overview.json');
+    const card = nodeById(layout, 'quality_new_returning') as any;
+    expect(card, '신규·재방문 카드').toBeTruthy();
+    const value = card.children.find((c: any) => c.name === 'H3').text as string;
+    const hint = card.children.find((c: any) => c.text === '$t:admin.analytics.overview.new_returning_unavailable') as any;
+    expect(hint?.if, '구분 불가 안내의 조건').toBeTruthy();
+
+    const ctx = (points: unknown[]) => ({ analytics_overview: { data: { series: { points } } } });
+    const none = ctx([{ ts: '2026-09-27', visits: 0, new_visitors: null, returning_visitors: null }]);
+    const anonymous = ctx([{ ts: '2026-09-27', visits: 3, new_visitors: null, returning_visitors: null }]);
+    const split = ctx([{ ts: '2026-09-27', visits: 3, new_visitors: 1, returning_visitors: 2 }]);
+
+    expect(evaluateSafeExpression(unwrap(value), none)).toBe('0 · 0');
+    expect(evaluateSafeExpression(unwrap(hint.if), none), '기록이 없으면 구분 불가 안내를 띄우지 않는다').toBe(false);
+    expect(evaluateSafeExpression(unwrap(value), anonymous)).toBe('—');
+    expect(evaluateSafeExpression(unwrap(hint.if), anonymous)).toBe(true);
+    expect(evaluateSafeExpression(unwrap(value), split)).toBe('1 · 2');
+    expect(evaluateSafeExpression(unwrap(hint.if), split)).toBe(false);
+  });
+});
+
 describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
   // @scenario screen=visitors, state=normal, viewport=1440, locale=ko
   // @effects visitor_list_shows_members_by_name_with_an_actor_menu
@@ -352,6 +392,47 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
 
     expect(menuJson).toContain("'#' + String(row.user_id ?? '')");
     expect(menuJson).not.toContain('"q":"{{String(row.user_id ?? \'\')}}"');
+  });
+
+  // 표 셀(cellChildren)은 `{row, value}` 에 데이터소스만 얹어 그린다 — `_computed` 는 빈 객체다
+  // (G7Core.renderItemChildren: 「_computed 는 itemContext 에서 전달받거나 비어 있음」). 셀의 조건이
+  // `_computed.canReadUsers` 를 읽으면 늘 거짓이라, 실시간 화면의 회원 이름이 회원 조회 권한이 있어도
+  // 링크가 되지 않았다(7.1.0 실측 E-D4). 클릭 때 도는 액션은 별도 문맥이라 대상이 아니다.
+  // 모집단은 통계 레이아웃·조각 전부다.
+  // @scenario screen=realtime, state=normal, viewport=1440, locale=ko
+  // @effects table_cells_do_not_read_computed_values
+  it('통계 표의 셀 조건·값은 _computed 를 읽지 않는다', () => {
+    const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
+    const files = [
+      ...fs.readdirSync(layoutsDir).filter((f) => f.startsWith('admin_analytics_') && f.endsWith('.json')),
+      ...fs.readdirSync(path.join(layoutsDir, 'partials/admin_analytics')).filter((f) => f.endsWith('.json')).map((f) => `partials/admin_analytics/${f}`),
+    ];
+    const offenders: string[] = [];
+    let cellCount = 0;
+
+    const walk = (node: unknown, file: string, inCell: boolean): void => {
+      if (Array.isArray(node)) {
+        node.forEach((n) => walk(n, file, inCell));
+        return;
+      }
+      if (node && typeof node === 'object') {
+        for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+          if (key === 'actions') continue; // 클릭 때 도는 액션은 액션 문맥(_computed 포함)으로 평가된다
+          if (key === 'comment') continue; // 마크업 주석은 평가되지 않는다
+          if (key === 'cellChildren') cellCount += 1;
+          walk(value, file, inCell || key === 'cellChildren');
+        }
+        return;
+      }
+      if (inCell && typeof node === 'string' && node.includes('_computed')) {
+        offenders.push(`${file}: ${node.slice(0, 80)}`);
+      }
+    };
+
+    for (const f of files) walk(loadLayout(f), f, false);
+
+    expect(cellCount, '셀 모집단이 비면 아무것도 재지 않는다').toBeGreaterThan(5);
+    expect(offenders).toEqual([]);
   });
 
   // @scenario screen=visitors, state=normal, viewport=1440, locale=en

@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 42 · 액션 레시피 20
+> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 44 · 액션 레시피 20
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -39,7 +39,7 @@
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `editor-spec/sampleData.json` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `editor-spec/sampleData.json` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 7 | `editor-spec/sampleGlobal.json` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 42 | `editor-spec/states.json` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 44 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 7 | `editor-spec/stateLabels.json` |
 | `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 20 | `editor-spec/actionRecipes.json` |
 | `conditionRecipes.operators` | 조건 표현식에 쓸 수 있는 연산자 | 37 | `editor-spec/conditionRecipes.json` |
@@ -87,7 +87,7 @@
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `scrap` · `user` · `userNotifications` · `searchResults` · `profile` · `userProfile` · `addresses` · `userAddresses` · `boardList` · `boards` · `home_boards` · `cart` … 외 54개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `/api/modules/sirsoft-page/pages/*` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 42 | `/login` · `/search` · `/mypage/notifications` · `/mypage/profile/edit` · `/forgot-password` · `/reset-password` · `/identity/challenge` · `/mypage/change-password` · `/mypage/wishlist` · `/mypage/addresses` · `/users/:userId` · `/users/:userId/posts` … 외 30개 |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 44 | `/login` · `/search` · `/mypage/notifications` · `/mypage/profile/edit` · `/forgot-password` · `/reset-password` · `/identity/challenge` · `/mypage/change-password` · `/mypage/wishlist` · `/mypage/addresses` · `/users/:userId` · `/users/:userId/posts` … 외 32개 |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

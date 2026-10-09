@@ -68,7 +68,7 @@
           <h1 class="page-title">$t:admin.notification_log.page_title</h1>
           <p class="text-label-subtle mt-1">$t:admin.notification_log.page_description</p>
         </div>
-        <button data-ref="refresh_button" type="button" class="btn-icon">
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
           <on type="click">
             <!-- 새로고침 겸 조건 초기화 — 채널 탭까지 포함해 걸어 둔 조건이 전부 떨어진다. -->
             <navigate path="/admin/notification-logs" :mergeQuery="true">
@@ -88,7 +88,10 @@
       <div data-ref="data_table_section" class="mt-6">
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <div class="flex-center gap-3">
-            <span class="text-label">$t:admin.notification_log.total_count|count={{notificationLogs?.data?.pagination?.total || 0}}</span>
+            <!-- 총 건수를 끝까지 센 경우 -->
+            <span data-if="{{notificationLogs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.notification_log.total_count|count={{notificationLogs?.data?.pagination?.total || 0}}</span>
+            <!-- 총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
+            <span data-if="{{notificationLogs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.notification_log.total_at_least|count={{notificationLogs?.data?.pagination?.total || 0}}</span>
           </div>
           <div class="flex-center gap-3">
             <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'sent_at_desc'}}">

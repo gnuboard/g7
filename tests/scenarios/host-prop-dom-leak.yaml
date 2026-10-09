@@ -39,6 +39,10 @@ effects:
   - icon_not_autobound
   - unmarked_component_still_autobinds
   - address_search_still_works
+  # 게시글 본문 표시 영역(extension_point 호스트)에 content·isHtml 페이로드가 속성으로 남지 않고, 본문은 그대로 그려진다.
+  - html_content_host_clean
+  # 글 편집기 영역 호스트를 정리해도 편집기가 뜨고 입력이 폼 상태(form.content)에 반영된다.
+  - html_editor_host_clean
 
 test_files:
   - resources/js/core/template-engine/__tests__/DynamicRenderer.hostPropLeak.test.tsx

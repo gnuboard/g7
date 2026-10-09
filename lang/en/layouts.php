@@ -19,8 +19,8 @@ return [
         'delete_blocked_source_type' => 'This layout is provided by the :source ":identifier" and cannot be deleted. Deactivate or remove that extension instead.',
         'rename_blocked_source_type' => 'This layout is provided by the :source ":identifier" and cannot be renamed.',
 
-        'delete_blocked_by_reference' => ':count layout(s) reference this file, so it cannot be deleted. Clear those references first.',
-        'rename_blocked_by_reference' => ':count layout(s) reference this file, so it cannot be renamed. Clear those references first.',
+        'delete_blocked_by_reference' => ':count layout references this file, so it cannot be deleted. Clear that reference first.|:count layouts reference this file, so it cannot be deleted. Clear those references first.',
+        'rename_blocked_by_reference' => ':count layout references this file, so it cannot be renamed. Clear that reference first.|:count layouts reference this file, so it cannot be renamed. Clear those references first.',
 
         'delete_requires_confirmation' => 'This layout is wired to the :route screen. Deleting it will make that screen unreachable.',
     ],

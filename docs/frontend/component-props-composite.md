@@ -468,6 +468,7 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 | `value` | boolean | - | 체크 상태 (`checked`의 대체) |
 | `size` | string | `'md'` | 크기: `'sm'` \| `'md'` \| `'lg'` |
 | `label` | string | - | 라벨 텍스트 |
+| `ariaLabel` | string | - | 보이는 라벨 없이 스위치에만 붙이는 접근 가능한 이름. 라벨이 스위치 밖(표 열 머리글·행 제목)에 있을 때 쓴다. 없으면 `label` → 곁 제목(`aria-labelledby` 자동 연결) → `name` 순 |
 | `description` | string | - | 설명 텍스트 (라벨 아래 작은 글씨) |
 | `disabled` | boolean | `false` | 비활성화 |
 | `name` | string | - | 폼 필드 이름 |

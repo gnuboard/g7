@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\IpAddress;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\CollectFailureIndexRequest;
@@ -63,14 +64,18 @@ class DiagnosticsController extends AdminBaseController
         // 주소는 현재 접속자 화면과 같은 경계로 가린다 — 가림 0 옥텟(기본값)이면 원래 주소라,
         // 조회 권한만으로 보이면 방문자 주소를 보는 우회로가 된다.
         $includeIp = (bool) $request->user()?->hasPermission('core.analytics.privacy');
+        $maskOctets = AnalyticsConfig::fromSettings()->ipMaskOctets;
 
         return $this->success('analytics.collect_failures.fetch_success', [
-            'data' => array_map(static function ($failure) use ($includeIp): array {
+            'data' => array_map(static function ($failure) use ($includeIp, $maskOctets): array {
                 $row = $failure->toArray();
 
                 if (! $includeIp) {
                     $row['ip'] = null;
                 }
+
+                // 그 주소가 지금 설정대로 가려진 값인지 — 설정 전에 남은 행은 원래 주소다(7.1.0 실측 O-E8).
+                $row['ip_masked'] = IpAddress::isMaskedBy(is_string($row['ip'] ?? null) ? $row['ip'] : null, $maskOctets);
 
                 // 실패 시각도 같은 화면의 다른 시각과 같은 기준이어야 한다(#682 S3 라운드 6).
                 if (isset($row['occurred_at'])) {

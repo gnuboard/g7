@@ -33,4 +33,14 @@ return ['RunStatus' => ['success' => 'Success',
     'cooldown' => 'Wait 60 seconds. Manual runs are limited to 20 per day.',
     'cooldown_test' => 'Wait 60 seconds. Connection tests are limited to 5 per day.',
     'busy' => 'Another exchange rate update is running.',
-    'pruned' => 'Pruned :count runs.'];
+    'pruned' => 'Pruned :count run.|Pruned :count runs.',
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'status_label' => 'Failure type',
+            'message' => 'Detailed failure reason (excluding the API key)',
+            'search_date' => 'Lookup date (Korea time)',
+            'settings_url' => 'Exchange rate plugin settings page URL',
+        ],
+    ],
+];

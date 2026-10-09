@@ -23,6 +23,7 @@ use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
+use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
@@ -71,12 +72,14 @@ class ModuleManager implements ModuleManagerInterface
 {
     use ResolvesExtensionIcons;
     use ResolvesExtensionSharedRecords;
+    use ResolvesUpdateCoreCompatibility;
     use Traits\CachesModuleStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\RefreshesLayoutExtensions;
+    use Traits\ReloadsChangedExtensionClass;
     use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesPermissionStructure;
@@ -229,10 +232,17 @@ class ModuleManager implements ModuleManagerInterface
                 // (_bundled에서 이미 로드된 경우 중복 선언 방지)
                 if (! class_exists($moduleClass, false)) {
                     require_once $moduleFile;
+                    $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile);
                 }
 
                 if (class_exists($moduleClass)) {
-                    $module = new $moduleClass;
+                    // 같은 프로세스에서 진입 파일이 바뀌었으면(업데이트 직후) 새 정의로 만든다 — 구버전 인스턴스의
+                    // getHookListeners() 로 훅 캐시를 구우면 새 리스너가 빠진다(mem:hook-cache-misses-last-updated-extension).
+                    $module = $this->instantiateCurrentExtensionClass(
+                        $moduleClass,
+                        $moduleFile,
+                        fn () => $this->evalFreshModule($moduleFile, $moduleClass, $directory)
+                    );
                     if ($module instanceof ModuleInterface) {
                         $this->modules[$moduleName] = $module;
 
@@ -895,15 +905,18 @@ class ModuleManager implements ModuleManagerInterface
                     ];
                 })->toArray(),
                 'dependent_modules' => $dependentModules->map(function (Module $module) {
+                    // 경고 창이 의존 확장마다 「v{버전}」 배지를 그린다 — 버전이 없으면 「v」 만 남는다.
                     return [
                         'identifier' => $module->identifier,
                         'name' => $module->getLocalizedName(),
+                        'version' => $module->version,
                     ];
                 })->toArray(),
                 'dependent_plugins' => $dependentPlugins->map(function (Plugin $plugin) {
                     return [
                         'identifier' => $plugin->identifier,
                         'name' => $plugin->getLocalizedName(),
+                        'version' => $plugin->version,
                     ];
                 })->toArray(),
                 'message' => __('modules.warnings.has_dependents'),
@@ -1018,8 +1031,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  bool  $deleteData  모듈 데이터(테이블) 삭제 여부
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
-     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
-     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
      *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @return bool 제거 성공 여부
      *
@@ -1400,6 +1412,12 @@ class ModuleManager implements ModuleManagerInterface
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
                     'update_source' => $record->update_source ?? null,
+                    // 업데이트 대상 버전의 코어 호환 — 업데이트 창의 경고·강제 업데이트 체크가 읽는다(업데이트가 있을 때만).
+                    ...($updateAvailable ? $this->buildUpdateCompatibilityFields($this->resolveUpdateTargetRequiredCoreVersion(
+                        $record->update_source ?? null,
+                        $this->findBundledModuleManifest($identifier),
+                        $module->getRequiredCoreVersion()
+                    )) : []),
                     'github_url' => $module->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
                     'hidden' => $module->isHidden(),
@@ -2579,7 +2597,7 @@ class ModuleManager implements ModuleManagerInterface
      *
      * _bundled 에 module.php 가 부재한 외부 설치 모듈(GitHub 직접 설치 등) 은 skip.
      *
-     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>}
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>} 동기화 결과 — 성공·건너뜀 식별자와 실패 사유
      *
      * @since 7.0.0-beta.4
      */
@@ -2844,9 +2862,9 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
      *
-     * @param  string  $sourceType
-     * @param  string  $sourceIdentifier
-     * @return bool
+     * @param  string  $sourceType  정책 등록 주체 유형
+     * @param  string  $sourceIdentifier  정책 등록 주체 식별자
+     * @return bool 기존 정책이 있으면 true
      */
     protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
     {
@@ -2863,9 +2881,9 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 해당 source 가 기존에 등록한 알림 정의가 있는지 확인합니다 (데이터 손실 방어용).
      *
-     * @param  string  $extensionType
-     * @param  string  $extensionIdentifier
-     * @return bool
+     * @param  string  $extensionType  확장 유형
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @return bool 기존 알림 정의가 있으면 true
      */
     protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
@@ -2882,8 +2900,8 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 해당 모듈이 기존에 등록한 메뉴가 있는지 확인합니다 (데이터 손실 방어용).
      *
-     * @param  string  $moduleIdentifier
-     * @return bool
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return bool 기존 메뉴가 있으면 true
      */
     protected function hasExistingModuleMenus(string $moduleIdentifier): bool
     {
@@ -2903,7 +2921,7 @@ class ModuleManager implements ModuleManagerInterface
      * `$module` 에서 현재 정의된 식별자/slug 를 수집하여 helper 의 `cleanupStale*` 호출.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
      *
-     * @param  ModuleInterface  $module
+     * @param  ModuleInterface  $module  정의를 읽을 모듈 인스턴스
      * @return void 반환값 없음
      */
     protected function cleanupStaleModuleEntries(ModuleInterface $module): void
@@ -4005,7 +4023,7 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $moduleName  모듈명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  bool  $force
+     * @param  bool  $force  이미 활성 디렉터리에 있어도 덮어쓸지 여부
      * @return void 반환값 없음
      */
     protected function copyFromPendingOrBundled(string $moduleName, ?\Closure $onProgress = null, bool $force = false): void
@@ -4062,9 +4080,13 @@ class ModuleManager implements ModuleManagerInterface
             // 클래스가 이미 메모리에 있는 경우: 새 파일을 임시 클래스명으로 eval 로드
             // PHP는 동일 프로세스에서 클래스 재정의 불가 → 클래스명을 변경하여 우회
             $module = $this->evalFreshModule($moduleFile, $moduleClass, $moduleDir);
+            if ($module !== null) {
+                $this->rememberFreshExtensionInstance($moduleClass, $moduleFile, $module);
+            }
         } else {
             // 최초 로드 (클래스가 아직 없는 경우)
             require_once $moduleFile;
+            $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile);
 
             if (class_exists($moduleClass)) {
                 $module = new $moduleClass;
@@ -4149,7 +4171,7 @@ class ModuleManager implements ModuleManagerInterface
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  모듈 식별자
-     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
+     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
      */
     public function checkModuleUpdate(string $identifier): array
     {
@@ -4195,7 +4217,7 @@ class ModuleManager implements ModuleManagerInterface
         // 2. _bundled에서 업데이트 확인
         if (isset($this->bundledModules[$identifier])) {
             $bundledVersion = $this->bundledModules[$identifier]['version'] ?? null;
-            $bundledRequired = $this->bundledModules[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+            $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $this->bundledModules[$identifier], $activeRequiredCoreVersion);
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                 return $this->buildModuleUpdateResponse(
                     true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
@@ -4205,7 +4227,7 @@ class ModuleManager implements ModuleManagerInterface
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->modulesPath, 'module.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
-                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
+                $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $bundledMeta[$identifier], $activeRequiredCoreVersion);
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
                     return $this->buildModuleUpdateResponse(
                         true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
@@ -4228,7 +4250,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string|null  $latestVersion  최신 버전
      * @param  string|null  $currentVersion  현재 설치된 버전
      * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약
-     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string} 업데이트 확인 응답(코어 호환 필드 포함)
      */
     protected function buildModuleUpdateResponse(
         bool $updateAvailable,
@@ -4242,16 +4264,14 @@ class ModuleManager implements ModuleManagerInterface
             'update_source' => $updateSource,
             'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
-            'required_core_version' => $requiredCoreVersion,
-            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
-            'current_core_version' => CoreVersionChecker::getCoreVersion(),
+            ...$this->buildUpdateCompatibilityFields($requiredCoreVersion),
         ];
     }
 
     /**
      * 설치된 모든 모듈의 업데이트를 확인하고 DB를 갱신합니다.
      *
-     * @return array{updated_count: int, details: array}
+     * @return array{updated_count: int, details: array} 갱신 건수와 모듈별 결과
      */
     public function checkAllModulesForUpdates(): array
     {
@@ -4456,7 +4476,7 @@ class ModuleManager implements ModuleManagerInterface
      * "보존될 레이아웃 목록" 을 미리 보여주기 위해 사용됩니다.
      *
      * @param  string  $identifier  모듈 식별자
-     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array} 수정한 레이아웃 존재 여부·개수·목록
      */
     public function hasModifiedLayouts(string $identifier): array
     {
@@ -4481,7 +4501,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
      * @param  string|null  $sourceOverride  업데이트 소스 강제 지정 (auto|bundled|github)
      * @param  string|null  $zipPath  사전 다운로드된 zip 파일 경로
-     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
+     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string} 업데이트 결과(성공 여부·이전/이후 버전·메시지)
      *
      * @throws \RuntimeException 업데이트 실패 시
      * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
@@ -4952,6 +4972,23 @@ class ModuleManager implements ModuleManagerInterface
     }
 
     /**
+     * 같은 식별자의 _bundled module 매니페스트를 반환합니다 (업데이트 대상 코어 호환 판정용).
+     *
+     * @param  string  $identifier  module 식별자
+     * @return array<string, mixed>|null _bundled 매니페스트 또는 null
+     */
+    private function findBundledModuleManifest(string $identifier): ?array
+    {
+        if (isset($this->bundledModules[$identifier])) {
+            return $this->bundledModules[$identifier];
+        }
+
+        $meta = ExtensionPendingHelper::loadBundledExtensions($this->modulesPath, 'module.json');
+
+        return $meta[$identifier] ?? null;
+    }
+
+    /**
      * VendorResolver 경유로 vendor/ 를 구성합니다 (composer 또는 bundled).
      *
      * @param  string  $identifier  모듈 식별자
@@ -4960,7 +4997,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $operation  'install' | 'update'
      * @param  VendorMode|null  $previousMode  이전 설치 모드 (update 시 상속용)
      * @param  \Closure|null  $onProgress  진행 콜백
-     * @return VendorInstallResult
+     * @return VendorInstallResult vendor 구성 결과
      *
      * @throws VendorInstallException
      */
@@ -5011,8 +5048,8 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * DB에 기록된 이전 vendor 설치 모드를 조회합니다 (update 시 상속용).
      *
-     * @param  string  $identifier
-     * @return ?VendorMode
+     * @param  string  $identifier  모듈 식별자
+     * @return ?VendorMode 이전 설치 모드 (기록이 없으면 null)
      */
     private function getPreviousVendorMode(string $identifier): ?VendorMode
     {

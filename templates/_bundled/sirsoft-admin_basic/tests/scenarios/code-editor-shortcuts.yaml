@@ -43,6 +43,16 @@ effects:
   - code_workspace_dispatches_every_ssot_action        # SSoT 배열에서 파생한 모집단으로 액션 전건 발화 (§9.2 "SSoT 14종 매칭")
   - code_editor_fallback_textarea_follows_word_wrap    # Monaco 실패 시 textarea 폴백도 wrap 토글을 따른다 (§9.2)
   - code_workspace_ctrl_plus_minus_adjusts_font_size   # Ctrl+= / Ctrl+- 로 12~20px 조절 + 기억 (§7.6)
+  - code_shortcuts_format_per_platform                 # `mod` 표기를 플랫폼별(Ctrl / ⌘)로 바꾼다
+  - code_workspace_question_mark_opens_help            # 입력 자리 밖에서 `?` 는 도움말을 연다
+  - code_workspace_tab_navigation_shortcuts_cycle      # Ctrl+Alt+←/→ 가 이웃 탭으로 전환을 요청한다
+  - code_workspace_escape_defers_to_open_dialog        # 레이아웃이 소유한 창이 열려 있으면 Esc 는 그 창에 양보한다
+  # --- 편집기 표시 옵션 (CodeEditor.wordWrap.test.tsx) — 단축키가 바꾸는 값을 편집기가 받는 쪽
+  - code_editor_word_wrap_defaults_to_off              # 줄바꿈 기본값은 끔
+  - code_editor_word_wrap_maps_to_monaco_option        # wordWrap 이 Monaco 옵션으로 전달된다
+  - code_editor_font_size_is_configurable              # 글자 크기를 prop 으로 바꿀 수 있다
+  - code_editor_auto_theme_follows_dark_class          # auto 테마는 처음 뜰 때부터 문서 dark 클래스를 따른다
+  - code_editor_auto_theme_reacts_without_rerender     # 테마 토글을 관측해 다시 그리지 않아도 따라간다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.shortcuts.test.tsx

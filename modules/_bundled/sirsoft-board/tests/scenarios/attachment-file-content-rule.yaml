@@ -1,0 +1,22 @@
+feature: 게시판 첨부 업로드의 파일 형식 검증을 코어 첨부 기준(이름 + 내용)에 맞춤
+
+description: |
+  게시판 첨부·게시글 파일 검증이 Laravel `mimes:` 만 걸어 내용 추론 확장자만 보고 이름 확장자는 보지 않았다.
+  허용 확장자에 md·csv 를 넣어도 내용 추론이 txt 라 거부되고, 허용하지 않은 이름(html)이라도 내용이 PNG 면 올라갔으며,
+  0바이트 파일은 빈 파일 안내 대신 형식 오류로 거부됐다. 코어 `extensions:` + `AttachmentFileContent` 를 함께 건다.
+
+# axis 의미: 갈라지는 축은 «올리는 파일의 이름·내용 조합» 하나다. 게시글 저장(files[])은 단건 업로드와
+# 같은 규칙 조립 함수를 쓰므로 별도 축이 아니라 한 케이스(post_files)로 함께 잠근다.
+axes:
+  case: [svg_as_png, empty, plain_text, png_as_html, png, post_files]
+
+effects:
+  - disguised_svg_rejected_with_content_message
+  - empty_file_rejected_with_empty_message
+  - plain_text_formats_allowed_when_listed
+  - unlisted_name_extension_rejected
+  - regular_image_still_accepted
+  - post_files_follow_same_rule
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/AttachmentFileContentValidationTest.php

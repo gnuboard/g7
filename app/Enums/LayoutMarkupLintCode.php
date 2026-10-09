@@ -112,6 +112,25 @@ enum LayoutMarkupLintCode: string
     case TemplateComponentKept = 'template_component_kept';
 
     /**
+     * 진입점이 아닌 액션(`<when>`·`<case>`·`<sequence>`·`onSuccess` 등 다른 액션 안쪽)에 `debounce` 를 적음.
+     *
+     * 엔진은 이벤트에 바로 묶인 진입점 액션의 debounce 만 적용한다(ActionDispatcher::bindActionsToProps).
+     * 안쪽 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없어 매 이벤트 즉시 실행된다 —
+     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측 D-I1-8). 감싸는 진입점
+     * (`<conditions :debounce>`·`<sequence :debounce>`)에 달아야 한다.
+     */
+    case NestedActionDebounceIgnored = 'nested_action_debounce_ignored';
+
+    /**
+     * 같은 부품·같은 이벤트에 디바운스 동작과 바로 실행하는 동작을 함께 적음.
+     *
+     * 엔진은 바로 실행하는 동작을 돌리기 전에 대기 중인 디바운스를 모두 즉시 실행한다(저장 직전 최신 입력
+     * 반영 — ActionDispatcher::bindActionsToProps 의 flushPendingDebounceTimers). 그래서 디바운스 동작도 매
+     * 입력 실행된다. 동작은 그대로 두고 알린다(7.1.0 P13 결정 — 편집기 경고).
+     */
+    case MixedDebounceFlushed = 'mixed_debounce_flushed';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

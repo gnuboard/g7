@@ -43,9 +43,9 @@
     <div data-ref="page_list_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-page.admin.page.title" description="$t:sirsoft-page.admin.page.description">
-        <button data-ref="refresh_button" class="btn-icon">
+        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
           <on type="click">
-            <!-- 새로고침 — query 를 합치지 않고 비운 주소로 이동해 검색·필터를 초기 상태로 되돌린다 -->
+            <!-- 새로고침 — 보고 있던 목록을 그대로 다시 부른다(`mergeQuery=true` 라 페이지·검색·필터를 유지한다) -->
             <navigate path="/admin/pages" :mergeQuery="true">
               <query/>
             </navigate>

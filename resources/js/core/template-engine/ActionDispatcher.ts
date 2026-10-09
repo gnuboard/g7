@@ -34,7 +34,7 @@ import { addMissingLeafKeys } from './helpers/StateMerge';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { resolveSafeNavPath, isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
 import {
@@ -45,6 +45,12 @@ import {
 } from './helpers/expressionData';
 
 const logger = createLogger('ActionDispatcher');
+
+/**
+ * 같은 종류·같은 문구 토스트를 겹쳐 쌓지 않는 시간(ms) — engine-v1.78.5.
+ * 화면 공통 데이터소스 여러 개가 한꺼번에 같은 오류로 실패할 때 한 장만 띄운다.
+ */
+const TOAST_DEDUPE_WINDOW_MS = 3000;
 
 /**
  * 스크립트 로드가 미뤄졌음을 표시하는 코어 속성.
@@ -611,6 +617,13 @@ export class ActionDispatcher {
   /** 기본 컨텍스트 */
   private defaultContext: Partial<ActionContext>;
 
+  /**
+   * 기본 401 처리(`navigate {{auth.loginPath}}`)가 쓸 로그인 경로를 만드는 함수 (engine-v1.78.2)
+   *
+   * 템플릿 앱이 자기 인증 종류(관리자/사용자)와 현재 주소로 복귀 경로가 실린 로그인 주소를 돌려주도록 주입한다.
+   */
+  private loginPathResolver?: () => string;
+
   /** 전역 상태 업데이트 함수 (engine-v1.42.0: render 옵션 추가) */
   private globalStateUpdater?: (updates: any, options?: { render?: boolean }) => void;
 
@@ -935,10 +948,11 @@ export class ActionDispatcher {
         actions: handler.actions, // sequence 핸들러용 actions 배열 전달
       };
 
-      // 에러 컨텍스트를 data에 포함
+      // 에러 컨텍스트를 data에 포함 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
       const context: Partial<ActionContext> = {
         data: {
           ...this.defaultContext.data,
+          auth: this.buildErrorAuthContext(),
           error: errorContext.error,
         },
       };
@@ -2525,7 +2539,13 @@ export class ActionDispatcher {
         case 'navigate':
           // navigate 액션의 경우 params.path를 우선적으로 사용 (동적 바인딩 지원)
           const navigatePath = resolvedParams.path || resolvedTarget;
-          result = await this.handleNavigate(navigatePath!, resolvedParams, context);
+          // 빈 경로는 건너뛴다 — 그대로 넘기면 경로 처리에서 TypeError 가 나고, 그 TypeError 가
+          // 「네트워크 실패」 로 분류돼 엉뚱한 토스트가 뜬다(engine-v1.78.2, O-F1).
+          if (typeof navigatePath !== 'string' || navigatePath.trim() === '') {
+            logger.warn('navigate skipped — empty path', { params: action.params, target: action.target });
+            break;
+          }
+          result = await this.handleNavigate(navigatePath, resolvedParams, context);
           break;
 
         case 'navigateBack':
@@ -2894,6 +2914,13 @@ export class ActionDispatcher {
       // 2. action.onError
       // 3. 레이아웃/템플릿/시스템 기본값 (ErrorHandlingResolver)
 
+      // 떠나는 문서(세션 만료로 로그인 화면으로 옮기는 중 등)의 실패는 오류 처리를 돌리지 않는다 —
+      // 떠날 화면에 토스트가 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2, O-F1).
+      if (isDocumentUnloading()) {
+        logger.log(`Document is leaving — error handling skipped for ${action.handler}`);
+        return { success: false, error: actionError };
+      }
+
       // ErrorHandlingResolver를 통해 핸들러 결정
       const resolver = getErrorHandlingResolver();
       const result = resolver.resolve(errorStatus, {
@@ -2922,10 +2949,11 @@ export class ActionDispatcher {
           );
         }
 
-        // 핸들러가 결정되면 실행
+        // 핸들러가 결정되면 실행 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
         const errorContext = {
           ...context,
           data: {
+            auth: this.buildErrorAuthContext(),
             ...context.data,
             error: errorContextData,
           },
@@ -5665,6 +5693,23 @@ export class ActionDispatcher {
       const currentState = G7Core?.state?.get();
       const currentToasts = currentState?.toasts || [];
 
+      // 같은 종류·같은 문구의 토스트가 잠깐 안에 이미 쌓였으면 새로 쌓지 않는다(engine-v1.78.5).
+      // 권한이 좁은 운영자의 화면 공통 데이터소스 403 이 시스템 기본 처리로 같은 「해당 권한이 없습니다.」 를
+      // 한 화면에 13장 쌓았다(7.1.0 영역 J O-D3). 시간이 지나면(사용자가 다시 누른 저장 실패 등) 다시 쌓인다.
+      const now = Date.now();
+      const duplicate = currentToasts.some(
+        (t: { type?: string; message?: unknown; createdAt?: number }) =>
+          t.type === type &&
+          t.message === resolvedMessage &&
+          typeof t.createdAt === 'number' &&
+          now - t.createdAt < TOAST_DEDUPE_WINDOW_MS
+      );
+      if (duplicate) {
+        logger.log(`[Toast] 같은 토스트가 이미 떠 있어 겹쳐 쌓지 않음: ${String(resolvedMessage)}`);
+        return;
+      }
+      (newToast as Record<string, unknown>).createdAt = now;
+
       // 기존 toasts 배열에 새 토스트 추가
       const newToasts = [...currentToasts, newToast];
 
@@ -7615,6 +7660,38 @@ export class ActionDispatcher {
     this.defaultContext = {
       ...this.defaultContext,
       ...context,
+    };
+  }
+
+  /**
+   * 오류 처리 문맥의 `auth.loginPath` 를 만드는 함수를 설정합니다.
+   *
+   * 시스템 기본 401 처리는 `{{auth.loginPath}}` 로 이동한다. 이 값을 싣는 곳이 없으면 경로가 빈 값으로 풀려
+   * 이동이 실패하고, 그 실패가 「네트워크 실패」 토스트로 바뀌어 보였다(7.1.0 O-F1).
+   *
+   * @param resolver 로그인 주소(복귀 경로 포함)를 돌려주는 함수
+   * @since engine-v1.78.2
+   */
+  setLoginPathResolver(resolver: () => string): void {
+    this.loginPathResolver = resolver;
+  }
+
+  /**
+   * 오류 처리 문맥에 실을 인증 정보(`auth`)를 만듭니다.
+   *
+   * @return 로그인 경로를 담은 객체
+   * @since engine-v1.78.2
+   */
+  private buildErrorAuthContext(): { loginPath: string } {
+    let loginPath: string | undefined;
+    try {
+      loginPath = this.loginPathResolver?.();
+    } catch (error) {
+      logger.warn('loginPathResolver failed — falling back to the user login path', error);
+    }
+
+    return {
+      loginPath: loginPath || AuthManager.getInstance().getConfig?.('user')?.loginPath || '/login',
     };
   }
 

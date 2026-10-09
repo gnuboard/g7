@@ -47,6 +47,12 @@ exclusions:
   - { state: geoip_off, screen: settings, reason: "GeoIP 꺼짐은 지역·봇 설정 힌트로만 드러난다 — 화면 상태가 아니다" }
 
 effects:
+  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E2·E5·E6·E8·E10
+  - skipped_run_shows_its_reason
+  - each_address_row_says_whether_it_is_masked
+  - bot_recent_hits_follow_the_selected_period
+  - keyboard_date_entry_leaves_one_history_entry
+  - analytics_switches_have_readable_names
   # 집계 신선도 — 기간 줄 「마지막 집계」·상단 신선도 경고·「지금 집계」
   - freshness_line_follows_scheduler_and_on_view
   - freshness_line_hidden_without_archive
@@ -169,6 +175,7 @@ effects:
   - line_chart_applies_id_and_class
   - line_chart_follows_dark_mode
   - period_presets_match_server_rules
+  - period_presets_use_site_timezone
   - period_last_month_never_overflows
   - period_presets_handle_leap_years
   - period_unknown_preset_falls_back_to_7d
@@ -196,6 +203,7 @@ effects:
   - beacon_reaches_the_overview_after_archive
   - every_analytics_screen_has_fallback_and_blur
   - every_analytics_screen_surfaces_the_site_timezone_notice
+  - site_timezone_notice_names_the_account_timezone
   - site_timezone_badge_shows_only_when_the_viewer_timezone_differs
   # 권한 교차 — 화면이 자기 권한 밖의 API 를 부르지 않는가 (S3 라운드 2)
   - every_analytics_screen_only_calls_its_own_permission
@@ -212,6 +220,9 @@ effects:
   - period_bar_navigations_are_pushed_so_back_returns_to_the_previous_period
   - icon_size_utilities_set_the_glyph_size_not_just_the_box
   - bot_recent_hits_are_paged_inside_the_card
+  - bot_recent_hits_carry_a_unique_row_id
+  - table_cells_do_not_read_computed_values
+  - new_returning_card_separates_no_visits_from_indistinguishable
   - privacy_mode_cards_carry_distinct_decorative_icons
   - every_core_notification_type_has_a_localized_name
   - visitor_detail_screen_shows_the_full_referrer_url
@@ -251,6 +262,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsScreenPermissions.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPatterns.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPoFollowups.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsObservationFollowups.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFilterReset.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsOverview.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsReports.test.tsx

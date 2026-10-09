@@ -58,12 +58,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "패턴 — 입력마다 전역 창 상태에만 담는다(부모 폼은 「적용」 때 한 번 고친다)",
+                                    "comment": "패턴 — 입력마다 전역 창 상태에만 담는다(부모 폼은 「적용」 때 한 번 고친다). 고치기 시작하면 지난 「적용」의 빈 칸 안내는 지운다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "ip_restriction_rule_form_modal.form.pattern": "{{$event.target.value}}"
+                                        "ip_restriction_rule_form_modal.form.pattern": "{{$event.target.value}}",
+                                        "ip_restriction_rule_form_modal.error": null
                                     }
                                 }
                             ],
@@ -103,12 +104,13 @@
                             "name": "TagInput",
                             "actions": [
                                 {
-                                    "comment": "허용 IP — 태그 입력이 준 배열을 통째로 담는다",
+                                    "comment": "허용 IP — 태그 입력이 준 배열을 통째로 담는다. 고치면 지난 「적용」의 빈 칸 안내는 지운다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "ip_restriction_rule_form_modal.form.ips": "{{$event.target.value}}"
+                                        "ip_restriction_rule_form_modal.form.ips": "{{$event.target.value}}",
+                                        "ip_restriction_rule_form_modal.error": null
                                     }
                                 }
                             ],

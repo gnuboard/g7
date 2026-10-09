@@ -175,6 +175,18 @@
     "name": "通知削除",
     "description": "本人の通知を削除できます。"
   },
+  "core.profile": {
+    "name": "マイ情報 (ユーザー)",
+    "description": "ユーザー画面で本人情報を閲覧・編集する権限"
+  },
+  "core.profile.read": {
+    "name": "マイ情報閲覧",
+    "description": "本人情報とアクティビティ履歴を閲覧できます。アカウントが無効・ブロックなど正常な状態でなくても、本人情報の閲覧はこの権限で許可されます。"
+  },
+  "core.profile.update": {
+    "name": "マイ情報編集",
+    "description": "本人情報を編集できます。"
+  },
   "core.identity": {
     "name": "本人認証 (ユーザー)",
     "description": "ログインユーザーの本人認証チャレンジ要求/検証/キャンセル権限"

@@ -83,9 +83,11 @@ class PrivacyRetentionListener implements HookListenerInterface
         $body = __('sirsoft-ecommerce::messages.privacy_retention.notice_section.body', [], $locale);
 
         if ($handler->isEnabled()) {
-            $body .= "\n".__(
+            $years = (int) $handler->retentionYears();
+            $body .= "\n".trans_choice(
                 'sirsoft-ecommerce::messages.privacy_retention.notice_section.after_'.$handler->mode(),
-                ['years' => $handler->retentionYears()],
+                $years,
+                ['years' => $years],
                 $locale,
             );
         }

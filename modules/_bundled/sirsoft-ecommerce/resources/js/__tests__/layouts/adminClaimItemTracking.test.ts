@@ -364,7 +364,7 @@ describe('상세 헤더 — 선교환 지연 배너 · 진행 방식 줄', () =>
 
     expect(banner.if).toBe('{{claim?.data?.claim?.is_collection_overdue === true}}');
     expect(banner.text).toBe(
-      "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}",
+      "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|count={{claim?.data?.claim?.collection_overdue_days ?? 0}}|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}",
     );
   });
 

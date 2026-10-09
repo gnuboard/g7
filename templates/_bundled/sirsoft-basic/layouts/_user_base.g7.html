@@ -124,6 +124,15 @@
   <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
   <page-transition-indicator data-type="composite" data-ref="page_transition_indicator"/>
   <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <on type="keydown" key="Escape">
+      <!-- 모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.
+           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6. -->
+      <conditions>
+        <when if="{{_global.mobileMenuOpen}}">
+          <set-state target="global" :mobileMenuOpen="false"/>
+        </when>
+      </conditions>
+    </on>
     <!-- === Extension Point: 모든 사용자 페이지에서 플러그인이 전역 오버레이 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->
     <extension-point name="user_global_overlay" data-ref="user_global_overlay_slot">
       <default/>
@@ -239,29 +248,23 @@
           </on>
         </notification-center>
         <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니) -->
-        <button data-ref="mobile_cart_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
+        <button data-ref="mobile_cart_btn" type="button" aria-label="$t:shop.cart.title" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
           <on type="click">
             <navigate path="{{_global.shopBase}}/cart"/>
           </on>
           <icon name="shopping-cart" size="md"/>
-          <!-- 세 자리(99+)일 때만 9px — 12px 은 20px 원을 넘친다(7.1.0 출시 전 점검 실측) -->
-          <span data-if="{{_global.cartCount > 0}}">
-            <class-map base="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white font-bold rounded-full flex items-center justify-center" key="{{_global.cartCount > 99 ? 'triple' : 'short'}}" default="text-xs">
-              <variant when="triple">text-[9px]</variant>
-              <variant when="short">text-xs</variant>
-            </class-map>
-            {{_global.cartCount > 99 ? '99+' : _global.cartCount}}
-          </span>
+          <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
+          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </button>
         <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼 -->
-        <button data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <button type="button" aria-label="{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <navigate path="{{_global.currentUser ? '/mypage' : '/login'}}"/>
           </on>
           <icon name="user" size="md"/>
         </button>
         <!-- 햄버거 메뉴 버튼 -->
-        <button data-ref="mobile_menu_toggle" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button type="button" aria-label="$t:user.menu" aria-expanded="{{!!_global.mobileMenuOpen}}" data-ref="mobile_menu_toggle" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
             <set-state target="global" mobileMenuOpen="{{!_global.mobileMenuOpen}}"/>
           </on>
@@ -269,13 +272,15 @@
         </button>
       </div>
     </div>
-    <!-- === 모바일 사이드 메뉴 (MobileNav 드로어) === -->
+    <!-- === 모바일 사이드 메뉴 (MobileNav 드로어) ===
+         닫힌 서랍은 화면 밖으로 밀기만 하면 Tab·화면 읽기가 그 안으로 들어간다 — invisible 로 숨기고,
+         밀려 나가는 움직임이 끝난 뒤 숨도록 visibility 도 전환에 넣는다(transition-all). -->
     <div data-ref="mobile_nav_drawer" class="hidden">
-      <responsive on="portable" class="{{_global.mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-transform duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"/>
+      <responsive on="portable" class="{{_global.mobileMenuOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-all duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"/>
       <!-- 드로어 헤더 - 닫기 버튼 -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <span class="font-semibold text-gray-900 dark:text-white">$t:user.menu</span>
-        <button class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button type="button" aria-label="$t:common.close" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
             <!-- 드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다. -->
             <set-state target="global" :mobileMenuOpen="false"/>

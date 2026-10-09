@@ -69,7 +69,7 @@ return [
         // Report management (Admin)
         'report_create' => 'Report created (ID: :report_id)',
         'report_update_status' => 'Report status changed (ID: :report_id)',
-        'report_bulk_update_status' => 'Report statuses bulk changed (:count items)',
+        'report_bulk_update_status' => 'Report statuses bulk changed (:count item)|Report statuses bulk changed (:count items)',
         'report_delete' => 'Report deleted (ID: :report_id)',
         'report_restore_content' => 'Report content restored (ID: :report_id)',
         'report_blind_content' => 'Report content blinded (ID: :report_id)',

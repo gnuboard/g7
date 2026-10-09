@@ -179,7 +179,11 @@
                    — 서버가 내려준 마스킹 옥텟 수를 배지로 함께 보인다(§4.10 「IP(마스킹 표시)」). -->
               <div class="flex-center gap-2">
                 <span class="text-body font-mono">{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}</span>
-                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
+                <!-- 배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은
+                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측 O-E8).
+                     서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다. -->
+                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0 &amp;&amp; (analytics_visitor?.data?.visits ?? [])[0]?.ip_masked !== false}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|count={{analytics_visitor?.data?.ip_mask_octets ?? 0}}|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
+                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.visits ?? [])[0]?.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
               </div>
             </div>
             <div class="flex-between gap-3">
@@ -205,7 +209,7 @@
                    해소되지 않고 키가 그대로 보인다(브라우저 실측 M12). 앞에 고정 글자가 하나라도 있으면 해소된다. -->
               <div class="flex-center gap-3 flex-wrap">
                 <span class="text-heading">{{visit.first_action_at | datetime | default('-')}}</span>
-                <span class="text-label-subtle">· $t:defer:admin.analytics.visitor_detail.visit_summary|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}</span>
+                <span class="text-label-subtle">· $t:defer:admin.analytics.visitor_detail.visit_summary|count={{visit.pageviews ?? 0}}|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}</span>
                 <badge data-type="composite" data-if="{{!!visit.referrer_name}}" color="gray" text="{{visit.referrer_name}}" size="sm"/>
                 <!-- 미룬 번역 토큰이 값의 **전부**이면 반복 서브트리에서 풀리지 않아 키가 그대로 보인다
                   (#682 S3 라운드 8 실측: 전환이 든 방문에서 `$t:defer:…conversions_badge|count=1` 노출).
@@ -219,7 +223,7 @@
               <!-- 이 방문의 부수정보 — 원장이 아는 환경·지역·언어·유입 값 전부(#682 S4 라운드 8). -->
               <div data-ref="visit_info_{{$idx}}" class="kv-list-2 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700">
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.type</span><span class="text-body break-all">{{$t('admin.analytics.visitors.types.' + (visit.visitor_type ?? 'guest'))}}</span></div>
-                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.ip</span><span class="text-body break-all">{{visit.ip ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.ip</span><div class="flex-center flex-wrap gap-1"><span class="text-body break-all">{{visit.ip ?? '-'}}</span><badge data-type="composite" data-if="{{visit.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/></div></div>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.last_action</span><span class="text-body break-all">{{visit.last_action_at | datetime | default('-')}}</span></div>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.source</span><span class="text-body break-all">{{visit.source === 'server' ? $t('admin.analytics.visitor_detail.visit_info.source_server') : (visit.source === 'beacon' ? $t('admin.analytics.visitor_detail.visit_info.source_beacon') : '-')}}</span></div>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.device</span><span class="text-body break-all">{{visit.device_type_label ?? visit.device_type ?? '-'}}</span></div>

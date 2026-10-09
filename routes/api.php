@@ -349,8 +349,12 @@ Route::prefix('auth')->group(function () {
     Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])->name('api.auth.validate-reset-token');
 
     // 일반 사용자 인증 (인증 필요 - 공용 경로)
+    // 본인 정보 조회(헤더·라우트 인증 판정이 부른다)는 비활성 상태 회원이라도 역할의 내 정보 조회 권한으로 허용한다
+    // — 마이페이지가 계정 상태 배지·안내를 그릴 수 있어야 한다(결정 2026-10-07). 쓰기는 상태로 막는다.
+    Route::get('user', [UserAuthController::class, 'user'])
+        ->middleware(['auth:sanctum', 'check.user_status:core.profile.read'])
+        ->name('api.auth.user');
     Route::middleware(['auth:sanctum', 'check.user_status'])->group(function () {
-        Route::get('user', [UserAuthController::class, 'user'])->name('api.auth.user');
         Route::post('logout', [UserAuthController::class, 'logout'])->middleware('start.api.session')->name('api.auth.logout');
     });
 
@@ -437,8 +441,12 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
 });
 
 // 마이페이지 API (/api/me) - 프로필 관리용 단축 엔드포인트
+// 본인 정보 조회만 비활성 상태 회원에게도 역할의 내 정보 조회 권한(core.profile.read)으로 연다 — 계정 상태 배지·안내를
+// 마이페이지에 그리기 위함(결정 2026-10-07). 미들웨어 순서는 아래 묶음과 같게 둔다.
+Route::get('me', [UserProfileController::class, 'show'])
+    ->middleware(['auth:sanctum', 'check.user_status:core.profile.read', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])
+    ->name('api.me.show');
 Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
-    Route::get('/', [UserProfileController::class, 'show'])->name('api.me.show');
     Route::put('/', [UserProfileController::class, 'update'])->name('api.me.update');
     Route::delete('/', [UserProfileController::class, 'destroy'])->name('api.me.destroy');
     Route::post('avatar', [UserProfileController::class, 'uploadAvatar'])->name('api.me.avatar.upload');
@@ -776,7 +784,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('menus')->group(function () {
         Route::get('/', [AdminMenuController::class, 'index'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.index');
         Route::get('hierarchy', [AdminMenuController::class, 'hierarchy'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.hierarchy');
-        Route::get('active', [AdminMenuController::class, 'active'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.active');
+        // 사이드바 = 「내가 접근 가능한 메뉴」 조회. 메뉴 관리 권한(core.menus.read)을 요구하지 않고
+        // 그룹의 admin 미들웨어만 둔다 — 응답은 컨트롤러가 내 역할에 지정된 메뉴로 좁힌다(roles/active 와 같은 구조).
+        Route::get('active', [AdminMenuController::class, 'active'])->name('api.admin.menus.active');
         Route::post('/', [AdminMenuController::class, 'store'])->middleware('permission:admin,core.menus.create')->name('api.admin.menus.store');
         Route::put('order', [AdminMenuController::class, 'updateOrder'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update-order');
         Route::patch('bulk-roles', [AdminMenuController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.bulk-roles');

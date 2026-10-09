@@ -816,4 +816,47 @@ class VisitorControllerTest extends AnalyticsApiTestCase
 
         $this->assertStringContainsString('2026-09-01_2026-09-10', (string) $disposition);
     }
+
+    /**
+     * 방문자 활동 CSV 의 시각 열이 사이트 표준시인지 확인합니다.
+     *
+     * 파일 이름의 기간은 사이트 날짜인데 시각 열만 UTC 로 나가, 서울 사이트에서 10-06 아침 방문이
+     * 「…-2026-10-06_2026-10-06.csv」 안에 `2026-10-05T21:…` 로 찍혔다 — 화면(06:14)과도, 파일 이름과도
+     * 다른 하루다(7.1.0 실측 O-E4). 목록 CSV 의 날짜 열도 사이트 날짜다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid, format=csv
+     *
+     * @effects visitor_csv_times_use_the_site_timezone
+     */
+    public function test_the_detail_csv_times_use_the_site_timezone(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        Carbon::setTestNow(Carbon::parse('2026-10-05 21:30:00', 'UTC'));
+
+        try {
+            $key = str_repeat('8', 32);
+            $this->visit([
+                'visitor_key' => $key,
+                'visit_date' => '2026-10-06',
+                'first_action_at' => Carbon::parse('2026-10-05 21:14:25', 'UTC'),
+                'last_action_at' => Carbon::parse('2026-10-05 21:20:00', 'UTC'),
+            ]);
+
+            $body = $this->actingAs($this->privacyAdmin())
+                ->get('/api/admin/analytics/visitors/'.$key.'?format=csv&from=2026-10-06&to=2026-10-06')
+                ->assertOk()
+                ->streamedContent();
+
+            $lines = explode("\r\n", trim(substr($body, strlen(CsvExporter::BOM))));
+            $cells = str_getcsv($lines[1]);
+
+            $this->assertSame('2026-10-06 06:14:25', $cells[1], 'first_action_at 은 사이트 표준시');
+            $this->assertSame('2026-10-06 06:20:00', $cells[2], 'last_action_at 은 사이트 표준시');
+            $this->assertStringStartsWith('2026-10-06 ', (string) $cells[13], '액션 시각도 사이트 표준시');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

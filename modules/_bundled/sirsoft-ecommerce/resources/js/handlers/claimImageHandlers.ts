@@ -192,7 +192,7 @@ export async function uploadPendingClaimFiles(
 
     if (countExceeded) {
         G7Core.toast?.warning?.(
-            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과한 파일은 제외했습니다.', { max: Number(settings.max_images ?? 0) })
+            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과한 파일은 제외했습니다.', { max: Number(settings.max_images ?? 0), count: Number(settings.max_images ?? 0) })
         );
     }
 
@@ -244,7 +244,7 @@ export async function uploadPendingClaimFiles(
         const summary = claimText(
             'sirsoft-ecommerce.user.claim.image.upload_partial_failed',
             `사진 ${accepted.length}장 중 ${failed}장을 올리지 못했습니다.`,
-            { failed, total: accepted.length },
+            { failed, total: accepted.length, count: accepted.length },
         );
 
         G7Core.toast?.error?.(firstFailureMessage ? `${summary} (${firstFailureMessage})` : summary);
@@ -312,7 +312,7 @@ export function setClaimImageFilesHandler(
 
     if (countExceeded) {
         G7Core.toast?.warning?.(
-            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과했습니다.', { max: Number(settings.max_images ?? 0) })
+            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과했습니다.', { max: Number(settings.max_images ?? 0), count: Number(settings.max_images ?? 0) })
         );
     }
 

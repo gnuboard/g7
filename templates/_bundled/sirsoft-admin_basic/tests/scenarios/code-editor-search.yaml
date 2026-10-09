@@ -3,7 +3,7 @@ feature: 코드 편집기의 파일명·내용 검색
 description: |
   코드 편집기에 파일 검색이 **0건**이었다(#476). 144개 평면 목록을 눈으로 훑는 수밖에 없었다.
 
-  검색 범위는 파일명과 **전체 파일 내용** 둘 다다(PO 결정 D-7). 두 범위의 비용이 크게 달라 경로를
+  검색 범위는 파일명과 **전체 파일 내용** 둘 다다(결정 D-7). 두 범위의 비용이 크게 달라 경로를
   나눈다 — 파일명은 트리가 이름을 모두 들고 있으므로 **왕복 0회**로 즉시 거르고, 내용은 서버만
   할 수 있는 일이라 한 번 부른다.
 
@@ -39,11 +39,13 @@ effects:
   - custom_asset_editor_filters_by_name                     # 커스텀 자산 모달도 같은 규약
   - custom_asset_editor_searches_open_buffers_locally       # 열린 파일의 미저장 본문은 클라이언트가 찾는다 (§4.7)
   - layout_search_name_scope_includes_extension_fragments   # scope=name 에서도 확장 조각이 라벨로 잡힌다 (§5.2 «같은 방식으로 포함»)
+  - code_editor_content_search_is_debounced                 # 내용 검색 재조회는 이벤트 최상위 액션에 디바운스 — 글자마다 서버를 부르지 않는다
 
 test_files:
   - tests/Feature/Api/Admin/LayoutSearchTest.php
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTree.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/CustomAssetsModal.test.tsx
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-search.spec.ts
 

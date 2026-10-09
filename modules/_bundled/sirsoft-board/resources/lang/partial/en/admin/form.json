@@ -86,7 +86,8 @@
     },
     "max_file_count": {
       "label": "Maximum File Count",
-      "hint": "Up to {{max}} files can be uploaded"
+      "hint": "Up to {{max}} files can be uploaded",
+      "hint_one": "Up to {{max}} file can be uploaded"
     },
     "max_file_size": {
       "label": "Maximum File Size (MB)",
@@ -180,10 +181,12 @@
     "confirm_add": "Add",
     "select": "Select",
     "change": "Change",
-    "users_found": "Found {{count}} user(s)",
+    "users_found": "Found {{count}} users",
+    "users_found_one": "Found {{count}} user",
     "no_users_found_search": "No users found",
     "user_search_failed": "Failed to search users",
-    "users_found_with_limit": "Found {{count}} user(s) (max 20 displayed)",
+    "users_found_with_limit": "Found {{count}} users (max 20 displayed)",
+    "users_found_with_limit_one": "Found {{count}} user (max 20 displayed)",
     "user_added": "{{name}} has been added",
     "no_search_results": "No search results",
     "selected_managers": "Selected Managers",
@@ -208,7 +211,9 @@
     "role_restricted": "Role Restricted",
     "select_roles_hint": "Select roles to allow access. (required)",
     "admin_count": "{{count}} permissions",
+    "admin_count_one": "{{count}} permission",
     "user_count": "{{count}} permissions",
+    "user_count_one": "{{count}} permission",
     "error_title": "Permission Configuration Error",
     "error_description": "Please select at least one role for each permission.",
     "error_roles_required": "Please select roles.",

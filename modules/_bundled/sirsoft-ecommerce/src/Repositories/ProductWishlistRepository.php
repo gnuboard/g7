@@ -131,7 +131,7 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
         $query = $this->model->newQuery();
 
         $this->applyAdminMemberFilter($query, $table, $filters);
-        $this->applyDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+        $this->applyViewerDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);
         $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'member'), $filters['search_keyword'] ?? null);
 
         $direction = ($filters['sort'] ?? 'created_at_desc') === 'created_at_asc' ? 'asc' : 'desc';

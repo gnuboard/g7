@@ -67,12 +67,14 @@
         "bulk_delete": {
             "title": "Delete Templates",
             "message": "Are you sure you want to delete {{count}} templates?",
+            "message_one": "Are you sure you want to delete {{count}} template?",
             "warning": "This action cannot be undone.",
             "confirm": "Delete"
         },
         "bulk_toggle": {
             "title": "Change Status",
             "message": "Are you sure you want to change the status of {{count}} templates?",
+            "message_one": "Are you sure you want to change the status of {{count}} template?",
             "confirm": "Change"
         },
         "import": {

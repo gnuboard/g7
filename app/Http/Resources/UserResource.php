@@ -34,9 +34,7 @@ class UserResource extends BaseApiResource
             'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
-            'language_label' => $this->getValue('language')
-                ? __('user.language.'.$this->getValue('language'))
-                : null,
+            'language_label' => $this->languageLabel($this->getValue('language')),
             'country' => $this->getValue('country'),
             // 상세·수정 폼·마이페이지가 국가를 이름으로 보인다 — 코드만 실으면 「US」 가 그대로 보인다 (#705).
             'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,
@@ -359,7 +357,7 @@ class UserResource extends BaseApiResource
             'nickname' => $this->getValue('nickname'),
             'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'language' => $language,
-            'language_label' => $language ? __('user.language.'.$language) : null,
+            'language_label' => $this->languageLabel($language),
             'country' => $countryCode,
             'country_flag' => $countryCode ? $this->getCountryFlag($countryCode) : null,
             'country_name' => $countryCode ? $this->getCountryName($countryCode) : null,
@@ -392,6 +390,26 @@ class UserResource extends BaseApiResource
     }
 
     /**
+     * 언어 코드를 사람이 읽는 언어 이름으로 바꿉니다 — 이름 번역이 없는 언어는 코드를 그대로 돌려줍니다.
+     *
+     * 번역 키(`user.language.{code}`)가 없을 때 키 원문(「user.language.ja」)이 화면에 나가지 않게 한다.
+     *
+     * @param  string|null  $language  언어 코드
+     * @return string|null 언어 이름 (코드가 없으면 null)
+     */
+    private function languageLabel(?string $language): ?string
+    {
+        if ($language === null || $language === '') {
+            return null;
+        }
+
+        $key = 'user.language.'.$language;
+        $label = __($key);
+
+        return is_string($label) && $label !== $key ? $label : $language;
+    }
+
+    /**
      * 프로필용 안전한 형태의 배열을 반환합니다 (민감한 정보 제외).
      *
      * 주의: 이 메서드는 toArray() 외부에서 수동 호출되므로
@@ -411,6 +429,8 @@ class UserResource extends BaseApiResource
             'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
+            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 N O-N7).
+            'language_label' => $this->languageLabel($this->getValue('language')),
             'timezone' => $this->getValue('timezone'),
             'country' => $this->getValue('country'),
             'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,

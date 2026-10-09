@@ -243,7 +243,7 @@
                             "props": {
                                 "className": "text-primary text-sm"
                             },
-                            "text": "{{dep.name ?? dep.identifier}} ({{dep.identifier}})"
+                            "text": "{{dep.name || dep.identifier}} ({{dep.identifier}})"
                         },
                         {
                             "type": "basic",
@@ -377,11 +377,11 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{lp.depends_on_extension}}",
+                            "if": "{{(lp.depends_on_extension ?? lp.target_identifier) && (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}",
                             "props": {
                                 "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                             },
-                            "text": "$t:admin.modules.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}"
+                            "text": "$t:admin.modules.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}"
                         }
                     ]
                 }
@@ -456,17 +456,28 @@
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedModule": null
-                                            }
-                                        },
-                                        {
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
                                                 "message": "$t:admin.modules.install_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures).",
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.language_pack_failures ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "warning",
+                                                "message": "$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f => f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host).",
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"
                                             }
                                         },
                                         {
@@ -486,6 +497,13 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedModule": null
+                                            }
                                         }
                                     ],
                                     "onError": [

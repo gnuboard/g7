@@ -32,6 +32,7 @@
 | date_type | query | string | 아니오 | — | 기간 필터 기준 일자 종류 (ordered_at 주문일 / paid_at 결제일 / confirmed_at 구매확정일 / delivered_at 배송완료일 / cancelled_at 취소일) |
 | start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
 | end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| date_basis | query | string | 아니오 | `site` | 시작·종료일을 어느 시간대의 하루로 풀지. 없으면 보는 사람(로그인 계정)의 하루, `site` 면 사이트 기본 시간대의 하루 — 대시보드 「오늘」 배지 링크가 배지가 센 하루와 같은 범위로 목록을 열 때 싣는다. 그 밖의 값은 422 |
 | order_status | query | array | 아니오 | — | 주문상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 상태의 주문만 조회) |
 | option_status | query | array | 아니오 | — | 주문옵션 상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 옵션 상태를 가진 주문만 조회) |
 | shipping_type | query | array | 아니오 | — | 배송유형 다중 선택 필터 (ShippingType 코드 배열) |

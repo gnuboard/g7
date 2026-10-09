@@ -23,8 +23,8 @@
         <label class="form-label">$t:admin.settings.security.ip_restriction.modal.pattern</label>
         <input data-ref="ip_rule_pattern_input" type="text" value="{{_global.ip_restriction_rule_form_modal?.form?.pattern ?? ''}}" placeholder="$t:admin.settings.security.ip_restriction.modal.pattern_placeholder" :maxLength="255" class="font-mono">
           <on type="change">
-            <!-- 패턴 — 입력마다 전역 창 상태에만 담는다(부모 폼은 「적용」 때 한 번 고친다) -->
-            <set-state target="global" ip_restriction_rule_form_modal.form.pattern="{{$event.target.value}}"/>
+            <!-- 패턴 — 입력마다 전역 창 상태에만 담는다(부모 폼은 「적용」 때 한 번 고친다). 고치기 시작하면 지난 「적용」의 빈 칸 안내는 지운다 -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.pattern="{{$event.target.value}}" :ip_restriction_rule_form_modal.error="null"/>
           </on>
         </input>
         <p class="form-hint">$t:admin.settings.security.ip_restriction.modal.pattern_hint</p>
@@ -33,8 +33,8 @@
         <label class="form-label">$t:admin.settings.security.ip_restriction.modal.ips</label>
         <tag-input data-type="composite" data-ref="ip_rule_ips_input" value="{{_global.ip_restriction_rule_form_modal?.form?.ips ?? []}}" :creatable="true" placeholder="$t:admin.settings.security.ip_restriction.ip_placeholder" class="w-full" defaultVariant="blue">
           <on type="change">
-            <!-- 허용 IP — 태그 입력이 준 배열을 통째로 담는다 -->
-            <set-state target="global" ip_restriction_rule_form_modal.form.ips="{{$event.target.value}}"/>
+            <!-- 허용 IP — 태그 입력이 준 배열을 통째로 담는다. 고치면 지난 「적용」의 빈 칸 안내는 지운다 -->
+            <set-state target="global" ip_restriction_rule_form_modal.form.ips="{{$event.target.value}}" :ip_restriction_rule_form_modal.error="null"/>
           </on>
         </tag-input>
       </div>

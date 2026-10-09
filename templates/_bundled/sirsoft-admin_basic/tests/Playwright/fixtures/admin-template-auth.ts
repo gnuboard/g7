@@ -30,7 +30,7 @@ export const test = base.extend<AdminTemplateAuthFixtures>({
     await use(issueToken('core.dashboard.read'));
   },
   userManageToken: async ({}, use) => {
-    await use(issueToken('core.users.read', 'core.users.write'));
+    await use(issueToken('core.users.read', 'core.users.create', 'core.users.update'));
   },
   templateReadToken: async ({}, use) => {
     await use(issueToken('core.templates.read'));

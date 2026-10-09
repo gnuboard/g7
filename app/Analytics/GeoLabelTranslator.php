@@ -2,6 +2,7 @@
 
 namespace App\Analytics;
 
+use App\Support\CountryName;
 use Locale;
 
 /**
@@ -31,10 +32,11 @@ class GeoLabelTranslator
         $code = strtoupper(trim($code));
         $locale ??= app()->getLocale();
 
-        $configured = config('countries.localized_names.'.$locale.'.'.$code);
+        // 코어 설정(ko·en) → 언어팩 번역(`countries.{코드}`) 순 — 회원 화면의 국가 이름과 같은 해석이다.
+        $named = CountryName::resolveOrNull($code, $locale);
 
-        if (is_string($configured) && $configured !== '') {
-            return $configured;
+        if ($named !== null) {
+            return $named;
         }
 
         if (class_exists(Locale::class)) {

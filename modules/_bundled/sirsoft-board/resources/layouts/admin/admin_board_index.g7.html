@@ -182,7 +182,7 @@
     <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.modals.delete.title" size="sm">
       <div data-ref="delete_warning" class="row-stack">
         <p data-ref="delete_board_name" class="text-primary font-semibold text-lg">$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}</p>
-        <p data-ref="delete_posts_info" class="text-gray-700 dark:text-gray-300">{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}</p>
+        <p data-ref="delete_posts_info" class="text-gray-700 dark:text-gray-300">{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|count=' + _global.modal_data.posts_count + '|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}</p>
         <alert data-type="composite" data-ref="delete_main_alert" type="{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}" message="{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"/>
         <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
       </div>

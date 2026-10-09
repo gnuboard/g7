@@ -264,6 +264,26 @@ function collectStateIterationPaths(node: Json): Array<{ scope: string; segs: st
   return out;
 }
 
+/** 값이 차면 입력 본문을 감추는 「완료 분기」 키 — `if: "{{!_global.K…}}"`·`"{{!(_global.K?.length)}}"` 로 본문을 거는 키. */
+function collectCompletionBranchKeys(node: Json): Set<string> {
+  const keys = new Set<string>();
+  const visit = (n: Json): void => {
+    if (Array.isArray(n)) {
+      n.forEach(visit);
+      return;
+    }
+    if (!isPlainObject(n)) return;
+    if (typeof n.if === 'string') {
+      // `!(_global.K?.length)`(괄호로 감싼 목록 길이 부정)과 `!_global.K`(값 자체 부정)만 — `!_global.K?.length` 는
+      // 「목록이 비면 빈 상태 문구」 분기라 완료 분기가 아니다.
+      for (const m of n.if.matchAll(/!\(\s*_global\.([A-Za-z_]\w*)\?\.length\s*\)|!_global\.([A-Za-z_]\w*)(?![\w.?])/g)) keys.add(m[1] ?? m[2]);
+    }
+    Object.values(n).forEach(visit);
+  };
+  visit(node);
+  return keys;
+}
+
 /** 판정 5 위반 — 「채움」 창 표본이 창이 도는 상태 목록을 하나도 채우지 않아 목록 없이(또는 빈 목록 문구로) 그려지는 자리. */
 export function findFilledModalsWithoutListItems(ext: ExtInput, otherDocs: Json[] = []): string[] {
   const offenders: string[] = [];
@@ -271,7 +291,10 @@ export function findFilledModalsWithoutListItems(ext: ExtInput, otherDocs: Json[
     if (group?.scope?.kind !== 'modal' || typeof group.scope.match !== 'string') continue;
     const modal = findNodeById(ext.docs, group.scope.match) ?? findNodeById(otherDocs, group.scope.match);
     if (!modal) continue;
-    const paths = collectStateIterationPaths(modal);
+    // 「완료 뒤」 목록(그 값이 차면 입력 본문을 감추는 키 — `{{!_global.K}}`·`{{!(_global.K?.length)}}`)은 「채움」(입력 모습)에서
+    // 비어 있는 것이 맞다. 7.1.0 실측(영역 I2): 템플릿 제거 창이 보존 사본 목록을 채워 늘 「제거 완료」 모습으로 열렸다.
+    const completionKeys = collectCompletionBranchKeys(modal);
+    const paths = collectStateIterationPaths(modal).filter(({ scope, segs }) => !(scope === 'global' && completionKeys.has(segs[0])));
     if (!paths.length) continue;
     for (const item of group.items ?? []) {
       if (!/filled/.test(String(item?.id ?? ''))) continue;

@@ -39,6 +39,9 @@ class InstallModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -49,6 +52,8 @@ class InstallModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -119,9 +124,9 @@ class InstallModuleCommand extends Command
                 $this->info('✅ '.__('modules.commands.install.success', ['module' => $identifier]));
                 $this->info('   - '.__('modules.commands.install.vendor', ['vendor' => $module->vendor]));
                 $this->info('   - '.__('modules.commands.install.version', ['version' => $module->version]));
-                $this->info('   - '.__('modules.commands.install.roles_created', ['count' => $rolesCount]));
-                $this->info('   - '.__('modules.commands.install.permissions_created', ['count' => $permissionsCount]));
-                $this->info('   - '.__('modules.commands.install.menus_created', ['count' => $menusCount]));
+                $this->info('   - '.trans_choice('modules.commands.install.roles_created', $rolesCount));
+                $this->info('   - '.trans_choice('modules.commands.install.permissions_created', $permissionsCount));
+                $this->info('   - '.trans_choice('modules.commands.install.menus_created', $menusCount));
 
                 Log::info(__('modules.commands.install.success', ['module' => $identifier]));
 

@@ -5,6 +5,8 @@
     "template": "テンプレート"
   },
   "alerts": {
+    "language_pack_install_failed": "一緒に選択した言語パックをインストールできませんでした（{{names}}）：{{reason}}",
+    "language_pack_awaiting_host": "一緒に選択した言語パック（{{names}}）は、この拡張機能がまだ無効のため無効の状態でインストールしました。拡張機能を有効にすると一緒に有効になります。",
     "incompatible_deactivated": "{{type}} \"{{name}}\" が自動的に無効化されました",
     "incompatible_message": "必要なバージョン: {{required}}、現在インストール済み: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" が再び互換性を備えています",
@@ -30,7 +32,7 @@
   },
   "update_modal": {
     "compat_warning_title": "コアバージョン互換性警告",
-    "compat_warning_message": "この{{type}}はコア {{required}} 以上が必要です。(現在: {{installed}})",
+    "compat_warning_message": "この{{type}}に必要なコアバージョン: {{required}}(現在: {{installed}})",
     "compat_guide_link": "コアアップグレードガイドを表示",
     "force_label": "警告を無視して強制アップデート (推奨されません)",
     "rebuild_search_index_title": "検索インデックス",

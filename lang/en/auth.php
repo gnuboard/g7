@@ -49,9 +49,9 @@ return [
     'account_withdrawn' => 'This account has been withdrawn.',
     'account_pending_verification' => 'Identity verification is not complete. Please complete the email verification.',
     'account_dormant' => 'This account is dormant after a long period of inactivity. Verify your identity to use it again.',
-    'account_locked' => 'Too many failed login attempts. Your account is locked for :minutes minute(s). Resetting your password unlocks it right away.',
+    'account_locked' => 'Too many failed login attempts. Your account is locked for :minutes minute. Resetting your password unlocks it right away.|Too many failed login attempts. Your account is locked for :minutes minutes. Resetting your password unlocks it right away.',
     'account_locked_permanently' => 'Too many failed login attempts. Your account has been locked. Reset your password or contact an administrator.',
-    'too_many_attempts' => 'Too many requests. Please try again in :seconds second(s).',
+    'too_many_attempts' => 'Too many requests. Please try again in :seconds second.|Too many requests. Please try again in :seconds seconds.',
     'account_unlocked' => 'The account lock has been released.',
 
     // Password reset

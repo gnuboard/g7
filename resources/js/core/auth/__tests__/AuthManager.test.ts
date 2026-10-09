@@ -223,6 +223,68 @@ describe('AuthManager', () => {
 
       expect(url).toBe('/login?redirect=%2Fprofile');
     });
+
+    /**
+     * 세션이 끊긴 채 로그인 화면 자신을 열면 데이터소스 401 → 로그인 이동이 일어난다.
+     * 이때 로그인 화면을 복귀 경로로 실으면 로그인을 마친 뒤 다시 로그인 폼에 떨어진다.
+     *
+     * @effects auth_manager_redirect_skips_guest_only_pages
+     */
+    it.each([
+      ['user', '/login', '/login?reason=session_expired'],
+      ['user', '/login/', '/login?reason=session_expired'],
+      ['user', '/register', '/login?reason=session_expired'],
+      ['user', '/forgot-password', '/login?reason=session_expired'],
+      ['user', '/reset-password?token=abc&email=a%40b.c', '/login?reason=session_expired'],
+      ['admin', '/admin/login', '/admin/login?reason=session_expired'],
+      ['admin', '/admin/forgot-password', '/admin/login?reason=session_expired'],
+      ['admin', '/admin/reset-password?token=abc', '/admin/login?reason=session_expired'],
+    ] as Array<[AuthType, string, string]>)(
+      '%s 로그인 전용 화면(%s)은 복귀 경로로 싣지 않아야 합니다',
+      (type, returnUrl, expected) => {
+        expect(authManager.getLoginRedirectUrl(type, returnUrl, 'session_expired')).toBe(expected);
+      }
+    );
+
+    /** @effects auth_manager_redirect_skips_guest_only_pages */
+    it('로그인 전용 화면이고 사유도 없으면 쿼리 없이 로그인 경로만 돌려야 합니다', () => {
+      expect(authManager.getLoginRedirectUrl('user', '/login')).toBe('/login');
+      expect(authManager.getLoginRedirectUrl('admin', '/admin/login')).toBe('/admin/login');
+    });
+
+    /** @effects auth_manager_redirect_skips_guest_only_pages */
+    it('로그인 화면이 이미 복귀 경로를 갖고 있으면 그 복귀 경로를 이어서 실어야 합니다', () => {
+      expect(
+        authManager.getLoginRedirectUrl('user', '/login?redirect=%2Fmypage%3Ftab%3D1', 'session_expired')
+      ).toBe('/login?redirect=%2Fmypage%3Ftab%3D1&reason=session_expired');
+      expect(
+        authManager.getLoginRedirectUrl('admin', '/admin/login?redirect=%2Fadmin%2Fusers&reason=session_expired', 'session_expired')
+      ).toBe('/admin/login?redirect=%2Fadmin%2Fusers&reason=session_expired');
+    });
+
+    /** @effects auth_manager_redirect_skips_guest_only_pages */
+    it('이어 싣는 복귀 경로도 로그인 전용 화면이면 버려야 합니다', () => {
+      expect(
+        authManager.getLoginRedirectUrl('user', '/login?redirect=%2Flogin', 'session_expired')
+      ).toBe('/login?reason=session_expired');
+    });
+
+    /** @effects auth_manager_redirect_skips_guest_only_pages */
+    it('이름만 비슷한 일반 화면은 그대로 복귀 경로로 실어야 합니다', () => {
+      expect(authManager.getLoginRedirectUrl('user', '/login-help')).toBe('/login?redirect=%2Flogin-help');
+      expect(authManager.getLoginRedirectUrl('user', '/board/login')).toBe('/login?redirect=%2Fboard%2Flogin');
+      expect(authManager.getLoginRedirectUrl('admin', '/admin/users')).toBe('/admin/login?redirect=%2Fadmin%2Fusers');
+    });
+
+    /** @effects auth_manager_redirect_skips_guest_only_pages */
+    it('updateConfig 로 바꾼 로그인 경로도 로그인 전용 화면으로 취급해야 합니다', () => {
+      authManager.updateConfig('user', { loginPath: '/account/signin' });
+
+      expect(authManager.getLoginRedirectUrl('user', '/account/signin', 'session_expired')).toBe(
+        '/account/signin?reason=session_expired'
+      );
+      expect(authManager.getLoginRedirectUrl('user', '/mypage')).toBe('/account/signin?redirect=%2Fmypage');
+    });
   });
 
   describe('getRedirectUrl', () => {

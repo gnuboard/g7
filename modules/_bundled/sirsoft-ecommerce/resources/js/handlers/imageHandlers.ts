@@ -65,7 +65,7 @@ export async function uploadImagesHandler(
 
     if (files.length > maxAllowed) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('sirsoft-ecommerce.admin.product.images.messages.max_count', { max: maxAllowed })
+            G7Core.t?.('sirsoft-ecommerce.admin.product.images.messages.max_count', { max: maxAllowed, count: maxAllowed })
             ?? `You can add up to ${maxAllowed} images.`
         );
     }

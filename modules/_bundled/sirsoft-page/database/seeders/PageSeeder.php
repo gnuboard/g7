@@ -39,7 +39,7 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
     }
 
     /**
-     * 언어팩 시드 파일명(`seed/pages.json`)의 entity 이름을 반환합니다.
+     * 언어팩 시드 파일명(seed/pages.json)의 entity 이름을 반환합니다.
      *
      * @return string entity 이름
      */

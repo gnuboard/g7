@@ -118,6 +118,7 @@
       "valid_to_desc": "Valid Date (Latest)"
     },
     "per_page": "{{count}} items",
+    "per_page_one": "{{count}} item",
     "columns": {
       "checkbox": "Select",
       "target_type": "Target Type",
@@ -141,7 +142,8 @@
   "modal": {
     "status_change": {
       "title": "Change issue status?",
-      "message": "The issue status of {{count}} selected coupons will be changed to {{status}}."
+      "message": "The issue status of {{count}} selected coupons will be changed to {{status}}.",
+      "message_one": "The issue status of {{count}} selected coupon will be changed to {{status}}."
     },
     "delete": {
       "title": "Delete coupon?",
@@ -152,6 +154,7 @@
     "issue_history": {
       "title": "Coupon Issue History",
       "subtitle": "Total {{count}} issue records",
+      "subtitle_one": "Total {{count}} issue record",
       "total": "Total {{count}}",
       "empty": "No issue history.",
       "description": "List of users who received this coupon. (Total: 12)",
@@ -190,7 +193,8 @@
       "search_failed": "Member search failed.",
       "add": "Add",
       "added": "Added",
-      "selected": "{{count}} member(s) selected",
+      "selected": "{{count}} members selected",
+      "selected_one": "{{count}} member selected",
       "issue_btn": "Issue",
       "issue_failed": "Failed to issue the coupon."
     }

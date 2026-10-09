@@ -25,10 +25,10 @@
             <api-call :auth_required="true" target="/api/admin/templates/refresh-layouts" method="POST">
               <success>
                 <set-state target="global" :isTemplateRefreshingLayouts="false"/>
-                <set-state target="global" :selectedTemplate="null"/>
                 <toast type="success" message="$t:admin.templates.refresh_layouts_success"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <close-modal/>
+                <set-state target="global" :selectedTemplate="null"/>
               </success>
               <fail>
                 <set-state target="global" :isTemplateRefreshingLayouts="false"/>

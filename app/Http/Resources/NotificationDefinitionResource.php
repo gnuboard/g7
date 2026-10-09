@@ -7,6 +7,7 @@ use App\Models\NotificationDefinition;
 use App\Notifications\Identity\IdentityNotificationType;
 use App\Services\NotificationDefinitionService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class NotificationDefinitionResource extends BaseApiResource
 {
@@ -35,10 +36,17 @@ class NotificationDefinitionResource extends BaseApiResource
         $abilities = parent::resolveAbilities($request);
 
         if (array_key_exists('can_delete', $abilities)) {
+            // 목록(NotificationDefinitionCollection)은 컬렉션이 이미 이 리소스로 감싼 항목을 다시 감싸므로
+            // 모델까지 벗겨서 판정한다 — 감싼 채로 보면 모델 검사가 거짓이 되어 목록 행만 [삭제] 가 사라진다.
+            $definition = $this->resource;
+            while ($definition instanceof JsonResource) {
+                $definition = $definition->resource;
+            }
+
             // 삭제 API 와 같은 판정을 쓴다 — 선언 정의는 문구를 고쳐 「기본」 이 풀려도 지울 수 없다(운영자 추가 정의만).
             $abilities['can_delete'] = $abilities['can_delete']
-                && $this->resource instanceof NotificationDefinition
-                && app(NotificationDefinitionService::class)->isDeletable($this->resource);
+                && $definition instanceof NotificationDefinition
+                && app(NotificationDefinitionService::class)->isDeletable($definition);
         }
 
         return $abilities;
@@ -68,7 +76,9 @@ class NotificationDefinitionResource extends BaseApiResource
             'policy_key' => $this->resolvePolicyKey(),
             'name' => $this->getValue('name'),
             'description' => $this->getValue('description'),
-            'variables' => $this->getValue('variables'),
+            // 변수 설명은 선언이 한국어 문자열이라 요청 언어로 바꿔 싣는다 — 그대로 실으면 영어·일본어 화면의
+            // 편집 창 「사용 가능한 변수」 가 한국어였다(7.1.0 실측 QE-O4).
+            'variables' => $this->definitionModel()->localizedVariables((array) ($this->getValue('variables') ?? [])),
             'channels' => $this->getValue('channels'),
             'hooks' => $this->getValue('hooks'),
             // 「관련 사용자」 선택지의 출처. 비면 화면이 그 타입을 감춘다.
@@ -105,23 +115,42 @@ class NotificationDefinitionResource extends BaseApiResource
      */
     private function relationLabels(array $relations): array
     {
-        $identifier = (string) ($this->getValue('extension_identifier') ?? '');
-        $labels = [];
+        $definition = $this->definitionModel();
 
+        $labels = [];
         foreach ($relations as $relation) {
             if (! is_string($relation) || $relation === '') {
                 continue;
             }
 
-            $key = ($identifier === '' || $identifier === 'core')
-                ? 'notification.relations.'.$relation
-                : $identifier.'::messages.notification_relations.'.$relation;
-            $label = __($key);
-
-            $labels[$relation] = is_string($label) && $label !== $key ? $label : $relation;
+            $labels[$relation] = $definition->relationLabel($relation);
         }
 
         return $labels;
+    }
+
+    /**
+     * 감싼 알림 정의 모델을 꺼냅니다.
+     *
+     * 목록은 이 리소스로 감싼 항목을 다시 감싸므로 모델까지 벗긴다(resolveAbilities 와 같은 이유).
+     * 배열로 감싼 경우에는 언어 파일 조회에 필요한 칸(type·확장 식별자)만 담은 모델을 만든다.
+     *
+     * @return NotificationDefinition 알림 정의 모델
+     */
+    private function definitionModel(): NotificationDefinition
+    {
+        $definition = $this->resource;
+        while ($definition instanceof JsonResource) {
+            $definition = $definition->resource;
+        }
+        if ($definition instanceof NotificationDefinition) {
+            return $definition;
+        }
+
+        return new NotificationDefinition([
+            'type' => (string) ($this->getValue('type') ?? ''),
+            'extension_identifier' => (string) ($this->getValue('extension_identifier') ?? ''),
+        ]);
     }
 
     /**

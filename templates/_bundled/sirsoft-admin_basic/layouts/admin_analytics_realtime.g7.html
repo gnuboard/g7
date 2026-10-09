@@ -55,7 +55,6 @@
       </on-code>
     </error-handling>
   </data-source>
-  <computed name="canReadUsers">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
   </permissions>
@@ -167,9 +166,10 @@
                   <span data-if="{{!!row.ip}}" class="text-hint font-mono block">{{row.ip}}</span>
                   <!-- 지금 보고 있는 사람이 회원이면 그 자리에서 회원 화면으로 건너뛴다(§4.10 「프로필 링크」).
                        목록 화면과 같은 규율 — 목적지(/admin/users/{uuid})는 core.users.read 를 요구하므로
-                       그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다. -->
-                  <span data-if="{{!!row.user?.name &amp;&amp; !_computed.canReadUsers}}" class="text-hint block">{{row.user.name}}</span>
-                  <button data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; _computed.canReadUsers}}" type="button" class="text-hint underline block text-left">
+                       그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.
+                       표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
+                  <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
+                  <button data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" type="button" class="text-hint underline block text-left">
                     <on type="click">
                       <open-window path="/admin/users/{{row.user.uuid}}"/>
                     </on>

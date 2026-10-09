@@ -77,6 +77,42 @@ describe('번들 정적 이미지 경로 실재', () => {
   });
 
   // @scenario source=bundled
+  // @effects editor_sample_images_do_not_point_to_absent_server_files
+  it('편집기 표본의 그림 칸이 표본용으로 실재하지 않는 서버 파일(첨부 미리보기·storage)을 가리키지 않는다', () => {
+    // 7.1.0 실측(영역 I2): 게시판 글 상세 첨부 미리보기(`/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview`)와
+    // 페이지 첨부(`/storage/pages/b7e2d4/thumb_…png`)가 편집기에서 깨진 그림으로 그려졌다. 표본의 그림 칸은 인라인 그림을 쓴다.
+    // 확장 아이콘(`/api/extensions/{type}/{id}/icon`)처럼 서버가 늘 내어 주는 주소는 허용한다.
+    const files: string[] = [];
+    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), files);
+    const specFiles = files.filter((f) => f.split(sep).includes('editor-spec') || f.endsWith(`${sep}editor-spec.json`));
+    expect(specFiles.length).toBeGreaterThan(5);
+
+    const IMAGE_KEY = /(thumb|image|img|avatar|photo|preview_url|cover|banner)/i;
+    const offenders: string[] = [];
+    const visit = (node: unknown, file: string): void => {
+      if (Array.isArray(node)) {
+        node.forEach((child) => visit(child, file));
+        return;
+      }
+      if (!node || typeof node !== 'object') return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        // 그림 칸 이름이거나, 이름과 무관하게 확장의 이미지 서빙 경로(`/api/plugins/{id}/images/…` — CKEditor 업로드 목록은
+        // download_url 을 썸네일 src 로 쓴다)를 가리키면 본다.
+        const imageKeyServerPath = IMAGE_KEY.test(key) && /^\/(api\/(modules|plugins)\/|storage\/)/.test(String(value));
+        const extensionImagePath = /^\/api\/(modules|plugins)\/[^/]+\/images\//.test(String(value));
+        if (typeof value === 'string' && (imageKeyServerPath || extensionImagePath)) {
+          offenders.push(`${relative(ROOT, file).split(sep).join('/')}: ${key}=${value}`);
+        } else {
+          visit(value, file);
+        }
+      }
+    };
+    for (const file of specFiles) visit(JSON.parse(readFileSync(file, 'utf-8')), file);
+
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
+  // @scenario source=bundled
   // @effects missing_thumbnail_falls_back_to_icon
   it('썸네일이 없으면 상품 폼 복사 원본 칸과 주문 완료 화면이 아이콘 상자를 보인다', () => {
     const screens = [

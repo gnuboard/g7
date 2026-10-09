@@ -49,6 +49,7 @@ class BulkUpdateOrdersRequest extends FormRequest
      * 추가 검증 로직
      *
      * @param  Validator  $validator
+     * @return void 반환값 없음
      */
     public function withValidator($validator): void
     {
@@ -95,7 +96,7 @@ class BulkUpdateOrdersRequest extends FormRequest
                         }
                     }
                     if (! empty($invalid)) {
-                        $validator->errors()->add('order_status', __('sirsoft-ecommerce::validation.orders.status_transition.bulk_invalid', [
+                        $validator->errors()->add('order_status', trans_count('sirsoft-ecommerce::validation.orders.status_transition.bulk_invalid', [
                             'count' => count($invalid),
                             'to' => $target->label(),
                             'from' => implode(', ', array_values(array_unique($invalid))),

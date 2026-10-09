@@ -26,11 +26,11 @@
             <api-call :auth_required="true" target="/api/admin/templates/deactivate" method="POST">
               <success>
                 <set-state target="global" :isTemplateDeactivating="false"/>
-                <set-state target="global" :selectedTemplate="null"/>
                 <toast type="success" message="$t:admin.templates.deactivate_success"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
                 <close-modal/>
+                <set-state target="global" :selectedTemplate="null"/>
               </success>
               <fail>
                 <set-state target="global" :isTemplateDeactivating="false"/>

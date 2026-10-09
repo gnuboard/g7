@@ -34,17 +34,25 @@ describe('FileTreePicker — 오버레이 규격', () => {
     // 진입 애니메이션은 `main.css` 의 키프레임(200ms)과 이 클래스명으로 짝을 이룬다.
     expect(overlay.className).toContain('g7le-drawer-enter');
     expect(overlay.className).not.toContain('g7le-sheet-enter');
+    // 관리자 모바일 헤더(h-16, z-50) 아래에서 시작한다 — top:0 이면 서랍 머리(제목·검색칸)가 헤더에 가려
+    // 검색칸 가운데를 눌러도 헤더가 받는다(실측 2026-10-06, 7.1.0 전수 실측 I1: 900px 에서 elementFromPoint=헤더).
+    expect(overlay.className).toContain('top-16');
+    expect(overlay.className).not.toContain('inset-y-0');
   });
 
   /** @effects file_tree_picker_sheet_covers_the_viewport */
-  it('시트는 화면 전체를 덮고 아래에서 올라온다', () => {
+  it('시트는 헤더 아래 화면 전체를 덮고 아래에서 올라온다', () => {
     render(<FileTreePicker mode="sheet" nodes={NODES} selectedKey="layout:admin_dashboard" />);
 
     fireEvent.click(screen.getByTestId('file-tree-picker-open'));
 
     const overlay = screen.getByTestId('file-tree-overlay');
 
-    expect(overlay.className).toContain('inset-0');
+    // 헤더 아래부터 화면 끝까지 덮는다 — `inset-0` 이면 시트 머리(검색칸)가 모바일 헤더에 가린다(위 서랍과 같은 이유).
+    expect(overlay.className).toContain('inset-x-0');
+    expect(overlay.className).toContain('top-16');
+    expect(overlay.className).toContain('bottom-0');
+    expect(overlay.className).not.toMatch(/(^|\s)inset-0(\s|$)/);
     expect(overlay.className).toContain('z-40');
     expect(overlay.className).toContain('g7le-sheet-enter');
   });

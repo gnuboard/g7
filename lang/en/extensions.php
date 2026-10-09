@@ -22,6 +22,7 @@ return [
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',
+        'internal_error' => 'An internal server error occurred. Check the server log for details.',
     ],
 
     'warnings' => [
@@ -193,9 +194,15 @@ return [
     // Layout three-way merge results of extension update/activation (#727)
     'layout_sync' => [
         'message' => ':message :summary',
-        'summary' => 'Layouts: applied :applied new-version change(s) automatically; kept the operator version at :conflicts place(s) that overlapped operator edits.',
-        'no_base' => '(:count screen(s) without a comparison base were kept as is)',
-        'skipped' => '(skipped :deleted screen(s) deleted by the operator and :collided screen(s) with a colliding name)',
+        'summary' => 'Layouts: applied :applied_changes automatically; kept the operator version at :conflict_places that overlapped operator edits.',
+        'no_base' => '(:count screen without a comparison base was kept as is)|(:count screens without a comparison base were kept as is)',
+        'skipped' => '(skipped :deleted_screens deleted by the operator and :collided_screens with a colliding name)',
+        // 두 수가 한 문장에 들어가는 요약의 수+명사 — 수마다 단·복수를 따로 고른다.
+        'counted' => [
+            'changes' => ':count new-version change|:count new-version changes',
+            'places' => ':count place|:count places',
+            'screens' => ':count screen|:count screens',
+        ],
         'fragment_label' => 'Extension fragment :target (:key)',
         'mode' => [
             'overwrite' => 'Overwrite All',

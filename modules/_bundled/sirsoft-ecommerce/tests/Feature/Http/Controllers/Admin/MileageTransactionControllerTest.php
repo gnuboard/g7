@@ -215,8 +215,10 @@ class MileageTransactionControllerTest extends ModuleTestCase
         $old->forceFill(['created_at' => now()->subDays(40)])->save();
         $this->makeTx($this->memberUser->id, MileageTransactionTypeEnum::ADMIN_EARN, 2000); // 오늘
 
-        $from = now()->subDays(7)->toDateString();
-        $to = now()->toDateString();
+        // 날짜 칸은 보는 사람(운영자)의 시간대 하루로 해석된다 — 운영자 시간대의 오늘로 보낸다.
+        $viewerNow = now($this->adminUser->timezone ?: config('app.default_user_timezone'));
+        $from = $viewerNow->copy()->subDays(7)->toDateString();
+        $to = $viewerNow->toDateString();
 
         $this->actingAs($this->adminUser)
             ->getJson($this->apiBase."?start_date={$from}&end_date={$to}")

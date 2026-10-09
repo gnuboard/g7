@@ -407,6 +407,7 @@ AuthManager.refreshToken()
 | 카테고리 | expose | 사유 |
 |----------|--------|------|
 | `security` | `true` + `fields` 10키 | 비밀번호 작성·재사용 규칙 10키(`password_min_length`·`require_password_special_char`·`password_require_char_types`·`password_block_*`·`password_*_chars_length`·`password_reuse_*`)만 노출 — 가입·변경·재설정 화면이 실제 정책대로 안내하기 위함. 로그인 시도 제한·잠금·비밀번호 만료·IP 제한·2단계 인증·토큰 키는 `fields` 에 선언하지 않아 내보내지 않는다(공격자 정보 제공 위험) |
+| `general` | `true` + `fields` | `site_url`·`admin_email`·`language` 는 필드 `expose: false`(프론트 미참조). `timezone` 은 노출한다 — 관리자 화면의 빠른 기간 버튼·통계 기간이 「오늘」을 계정 시간대(회원 시간대 → 없으면 이 값)·사이트 표준시로 정하는 데 쓴다(민감 정보 아님). 값은 저장된 설정값이라 `.env` 우선 모드(`G7_ENV_PRIORITY`)로 시간대가 잠긴 설치에서는 서버가 쓰는 유효값과 다를 수 있다 |
 | `mail` | `false` | SMTP password, API secret 포함 |
 | `seo` | `false` | 프론트엔드 미참조 (관리자 환경설정은 API 데이터 기반) |
 | `drivers` | `false` | S3 secret, Redis password 등 인프라 자격증명 포함 |

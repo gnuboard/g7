@@ -50,6 +50,42 @@ class OverviewControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 오늘 숫자가 일 집계와 같은 정의(방문자 유형별 순방문자의 합)로 세어지는지 확인합니다.
+     *
+     * 같은 방문자 키가 하루 안에 게스트로 들어왔다가 로그인해 회원 방문이 되면, 일 집계는
+     * 유형별 행마다 그 사람을 하나씩 센다(게스트 1 + 회원 1). 오늘만 유형을 가로질러
+     * 하나로 세면 같은 날의 「오늘 2」와 「최대 3 (오늘 날짜)」가 함께 보이고, 자정이 지나면
+     * 어제 숫자가 오늘 보던 값과 달라진다(7.1.0 실측 E-D2).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=overview, role=read, period=valid
+     *
+     * @effects today_uses_the_same_per_visitor_type_definition_as_the_daily_archive
+     */
+    public function test_today_counts_visitors_per_visitor_type_like_the_daily_archive(): void
+    {
+        $today = AnalyticsClock::today();
+        $key = str_repeat('c', 32);
+
+        $this->visit(['visitor_key' => $key, 'visitor_type' => 'guest', 'visit_date' => $today]);
+        $this->visit(['visitor_key' => $key, 'visitor_type' => 'member', 'visit_date' => $today]);
+        $this->visit(['visitor_key' => str_repeat('d', 32), 'visitor_type' => 'guest', 'visit_date' => $today]);
+        // 오늘치 일 집계 행(화면 열 때 집계가 쓰는 값) — 유형별 순방문자: 게스트 2, 회원 1.
+        $this->daily($today, ['visitor_type' => 'guest', 'visitors' => 2, 'is_final' => false]);
+        $this->daily($today, ['visitor_type' => 'member', 'visitors' => 1, 'is_final' => false]);
+
+        $kpi = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/overview')
+            ->assertOk()
+            ->json('data.kpi');
+
+        $this->assertSame(3, $kpi['today'], '오늘도 일 집계처럼 유형별 순방문자를 더한다');
+        $this->assertSame(3, $kpi['max']['value']);
+        $this->assertSame($today, $kpi['max']['date']);
+        $this->assertSame(3, $kpi['total']);
+    }
+
+    /**
      * 어제가 0 이면 증감률이 비는지 확인합니다.
      *
      * @return void 없음

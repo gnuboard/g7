@@ -12,7 +12,7 @@ return [
     'template_dist_directory_not_found' => 'テンプレートdistディレクトリが見つかりません: :path',
     'template_not_found' => 'テンプレートが見つかりません: :identifier',
     'template_not_active' => 'テンプレートが有効化されていません: :identifier (ステータス: :status)',
-    'concurrent_modification' => '別のユーザーが先に保存しました。 (リソース: :resource、現在のバージョン: :current、送信されたバージョン: :expected)',
+    'concurrent_modification' => '別のユーザーが先に保存しました。 (現在のバージョン: :current、送信されたバージョン: :expected)',
     'layout' => [
         'duplicate_data_source_id' => 'data_sources IDが重複しています: :id',
         'duplicate_data_source_id_in_file' => 'レイアウトファイル内のdata_sources IDが重複しています: :ids (ファイル: :file)',
@@ -197,6 +197,8 @@ return [
         'component_type_mismatch' => ':component の種類を :written と記述しましたが、:template テンプレートでは :declared として宣言されています — data-type を確認してください(省略すると basic)。',
         'extension_component_not_installed' => 'インストール済みのどの拡張機能にも存在しないコンポーネントです: :name — :extension 拡張機能が削除されたか、名前が誤っている可能性があります。保存はできますが、その拡張機能がないと画面に表示されません。',
         'template_component_kept' => 'このテンプレートのコンポーネント一覧にないコンポーネントです: :name — 保存済みの内容にすでにあったため保存はできますが、このテンプレートでは画面に表示されない場合があります。',
+        'nested_action_debounce_ignored' => ':handler アクションに指定した debounce は適用されません — 条件・順序・結果処理の内側のアクションはイベントごとにすぐ実行されます。外側のアクション(<conditions :debounce>・<sequence :debounce>)に指定してください。',
+        'mixed_debounce_flushed' => ':name の :event に debounce を指定したアクションとすぐ実行するアクションが混在しています — すぐ実行するアクションが動くたびに待機中の debounce アクションも即時実行され、入力のたびに実行されます。待たせるには、このイベントのアクションをすべて debounce に揃えてください。',
     ],
     'storage' => [
         'unsafe_path' => '許可されていない保存パスです。',

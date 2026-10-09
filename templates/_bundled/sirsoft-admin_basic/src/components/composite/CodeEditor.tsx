@@ -547,7 +547,44 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     [readOnly, fontSize, wordWrap]
   );
 
+  /**
+   * 내가 올렸는데 아직 `value` 로 돌아오지 않은 값들 — 모델 키별로 둔다.
+   *
+   * 편집기는 제어 컴포넌트라 친 글자가 `onChange` → 부모 상태 → `value` 로 한 바퀴 돈다. 그 사이에
+   * 다음 글자가 들어오면 돌아온 `value` 는 **한두 글자 전의 내 값**인데, 라이브러리는 모델과 다르다는
+   * 이유로 그 값을 통째로 밀어 넣어 마지막 글자가 사라지고 커서가 문서 끝으로 튄다
+   * (실측 2026-10-06: 「9876」 을 연달아 치면 「7」 이 사라지고 「6」 이 문서 끝에 찍혔다).
+   * 렌더 시점에 거르는 것으로는 모자란다 — 라이브러리는 값을 **effect 에서** 밀어 넣으므로 커밋과
+   * effect 사이에 들어온 글자에도 같은 일이 생긴다(실측: 렌더 시점 비교만 넣은 판에서 그대로 재현).
+   * 그래서 `value` 를 라이브러리에 넘기지 않고(`defaultValue` 로 새 모델만 채운다) 아래 effect 가
+   * **그 순간의 모델**과 비교해 바깥에서 온 값만 넣는다. 돌아온 값이 이 목록에 있으면 늦게 온 메아리라
+   * 모델을 그대로 두고, `value` 가 모델을 따라잡는 순간 목록을 비우므로 그 뒤 바깥에서 오는 값
+   * (서버 본문·초안 복원·되돌리기)은 언제나 적용된다.
+   */
+  const pendingEchoesRef = useRef<{ key: string | undefined; values: string[] }>({ key: modelKey, values: [] });
+
+  if (pendingEchoesRef.current.key !== modelKey) {
+    pendingEchoesRef.current = { key: modelKey, values: [] };
+  }
+
+  /** 바깥 값을 모델에 넣는 중 — 그 변경은 사람이 친 것이 아니므로 위로 올리지 않는다. */
+  const applyingExternalRef = useRef(false);
+
   const handleChange = useCallback((next: string | undefined) => {
+    if (applyingExternalRef.current) {
+      return;
+    }
+
+    if (next !== undefined) {
+      const pending = pendingEchoesRef.current.values;
+      pending.push(next);
+
+      // 메아리는 한 바퀴 안에 돌아온다 — 오래된 것까지 쥐고 있을 이유가 없다.
+      if (pending.length > 50) {
+        pending.splice(0, pending.length - 50);
+      }
+    }
+
     if (onChangeRef.current && next !== undefined) {
       // 엔진의 isCustomComponentEvent 경로로 처리되도록 { target: { value } } 패턴 사용
       onChangeRef.current({ target: { value: next } });
@@ -642,6 +679,50 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   useEffect(() => {
     editorRef.current?.updateOptions(editorOptions);
   }, [editorOptions, editorReady]);
+
+  // 받은 값을 모델에 반영한다 — 늦게 돌아온 내 값(메아리)은 거르고 바깥에서 온 값만 넣는다.
+  // 파일 전환(`modelKey`) 때는 라이브러리가 먼저 그 파일 모델로 갈아 끼운 뒤(자식 effect) 여기서 비교한다.
+  useEffect(() => {
+    const editor = editorRef.current;
+    const model = editor?.getModel?.();
+
+    if (
+      !editor ||
+      !model ||
+      typeof value !== 'string' ||
+      typeof model.getValue !== 'function' ||
+      typeof editor.executeEdits !== 'function'
+    ) {
+      return;
+    }
+
+    const pending = pendingEchoesRef.current;
+
+    if (model.getValue() === value) {
+      pending.values = [];
+
+      return;
+    }
+
+    if (pending.values.includes(value)) {
+      return;
+    }
+
+    applyingExternalRef.current = true;
+
+    try {
+      if (readOnly) {
+        editor.setValue(value);
+      } else {
+        editor.executeEdits('', [{ range: model.getFullModelRange(), text: value, forceMoveMarkers: true }]);
+        editor.pushUndoStop();
+      }
+    } finally {
+      applyingExternalRef.current = false;
+    }
+
+    pending.values = [];
+  }, [value, modelKey, editorReady, readOnly]);
 
   // `theme="auto"` — 사용자가 라이트/다크를 바꾸면 편집기도 따라간다. 엔진이 루트의 `dark`
   // 클래스를 토글하므로 그 한 지점만 지켜본다.
@@ -818,7 +899,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       <Editor
         height={height}
         language={language}
-        value={value}
+        // `value` 는 넘기지 않는다 — 모델 반영은 위의 메아리 거르는 effect 가 맡는다.
+        // `defaultValue` 는 파일(`path`)마다 새 모델을 만들 때의 첫 내용이다.
+        defaultValue={value}
         // 파일마다 다른 `path` 를 주면 라이브러리가 모델을 그 키로 캐시하고 뷰 상태(커서·스크롤)까지
         // 함께 보존한다. 같은 파일로 돌아오면 편집하던 자리 그대로다.
         {...(modelKey ? { path: `g7://${modelKey}` } : {})}

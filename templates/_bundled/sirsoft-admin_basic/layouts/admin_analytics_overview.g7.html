@@ -187,6 +187,7 @@
         <stat-card data-type="composite" data-ref="quality_pages" value="{{(function(pts) { const v = pts.reduce((s, p) => s + (p.visits ?? 0), 0); const pv = pts.reduce((s, p) => s + (p.pageviews ?? 0), 0); return v > 0 ? (Math.round(pv / v * 10) / 10) : 0; })(analytics_overview?.data?.series?.points ?? [])}}" label="$t:admin.analytics.overview.quality.pages_per_visit" iconName="file-lines"/>
         <!-- 신규·재방문 — 선택 기간 점의 합. 익명 모드처럼 쿠키가 없어 가를 수 없는 칸은 서버가 null 로 주고, 기간 전체가
           null 이면 숫자 대신 「—」와 「구분할 수 없습니다」를 보인다(0 으로 적으면 「신규 0명」이라는 거짓이 된다).
+          방문이 아예 없는 기간도 점이 null 이므로, 방문이 있을 때만 「—」·구분 불가를 말하고 기록이 없으면 0 · 0 이다(7.1.0 실측 E-D9).
           비율 막대를 넣으려고 StatCard 대신 직접 만들지만, 틀(카드·아이콘·큰 수치·라벨)은 옆 세 카드와 같은 클래스를 써서
           한 줄 안에서 높이·여백·그림자가 어긋나지 않게 한다. 큰 수치는 「신규 · 재방문」 순서의 두 숫자, 막대는 신규 비율. -->
         <div data-ref="quality_new_returning" class="stat-card">
@@ -195,14 +196,14 @@
               <icon name="users" class="icon-lg"/>
             </div>
           </div>
-          <h3 class="stats-value-lg">{{(analytics_overview?.data?.series?.points ?? []).some(p =&gt; p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) =&gt; s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) =&gt; s + (p.returning_visitors ?? 0), 0)).toLocaleString() : '—'}}</h3>
+          <h3 class="stats-value-lg">{{(analytics_overview?.data?.series?.points ?? []).some(p =&gt; p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) =&gt; s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) =&gt; s + (p.returning_visitors ?? 0), 0)).toLocaleString() : ((analytics_overview?.data?.series?.points ?? []).some(p =&gt; (p.visits ?? 0) &gt; 0) ? '—' : '0 · 0')}}</h3>
           <p class="stats-label">$t:admin.analytics.overview.quality.new_returning</p>
           <div data-if="{{(analytics_overview?.data?.series?.points ?? []).some(p =&gt; p.new_visitors != null || p.returning_visitors != null)}}" class="stats-sublabel">
             <div class="h-2 w-full rounded bg-rose-200 dark:bg-rose-900 overflow-hidden">
               <div class="h-2 bg-emerald-500 dark:bg-emerald-400" style="{{'width: ' + (function(pts) { const n = pts.reduce((s, p) =&gt; s + (p.new_visitors ?? 0), 0); const r = pts.reduce((s, p) =&gt; s + (p.returning_visitors ?? 0), 0); return n + r &gt; 0 ? Math.round(n / (n + r) * 100) : 0; })(analytics_overview?.data?.series?.points ?? []) + '%'}}"/>
             </div>
           </div>
-          <p data-if="{{!(analytics_overview?.data?.series?.points ?? []).some(p =&gt; p.new_visitors != null || p.returning_visitors != null)}}" class="stats-sublabel text-hint text-xs">$t:admin.analytics.overview.new_returning_unavailable</p>
+          <p data-if="{{(analytics_overview?.data?.series?.points ?? []).some(p =&gt; (p.visits ?? 0) &gt; 0) &amp;&amp; !(analytics_overview?.data?.series?.points ?? []).some(p =&gt; p.new_visitors != null || p.returning_visitors != null)}}" class="stats-sublabel text-hint text-xs">$t:admin.analytics.overview.new_returning_unavailable</p>
         </div>
       </div>
       <div data-ref="top_lists" data-if="{{analytics_overview?.unavailable !== true}}" class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">

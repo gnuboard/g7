@@ -10,7 +10,7 @@ return [
         'granted_again' => '동의가 갱신되었습니다.',
         'rejected_saved' => '동의하지 않고 계속합니다. 선택 항목은 사용되지 않습니다.',
         'revoked' => '동의가 철회되었습니다.',
-        'renew_all_success' => '활성 항목 {renewed} 개를 새 정책 버전으로 갱신했습니다.',
+        'renew_all_success' => '활성 항목 :renewed 개를 새 정책 버전으로 갱신했습니다.',
         'granting' => '동의 중...',
         'revoking' => '철회 중...',
         'renewing' => '갱신 중...',
@@ -331,5 +331,19 @@ return [
         'preferences_description' => '카테고리별 쿠키 사용을 개별 동의/철회할 수 있습니다. 필수 카테고리는 끌 수 없습니다.',
         'category_required_badge' => '필수',
         'view_policy_label' => '변경된 정책 본문 보기',
+    ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'recipient_name' => '수신자 이름',
+            'app_name' => '사이트명',
+            'introduction' => '운영자 서문',
+            'collection_summary' => '수집 항목 요약',
+            'purpose' => '이용 목적',
+            'retention' => '보유 기간',
+            'privacy_policy_url' => '개인정보처리방침 URL',
+            'privacy_policy_link' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)',
+            'notice_sections' => '확장이 기여한 처리 내역',
+        ],
     ],
 ];

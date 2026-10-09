@@ -6,6 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { addCalendarDays, calendarDateIn, formatCalendarDate, resolveAccountTimezone } from '../utils/timezoneDate';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Misc')) ?? {
@@ -681,36 +682,21 @@ export function setLabelDatePresetHandler(
         return;
     }
 
-    const today = new Date();
-    const formatDate = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    const startDate = formatDate(today);
+    // 시작일은 계정 시간대(회원 → 사이트 기본)의 오늘 — 관리자 화면은 그 관리자의 시간대로 날짜를 보인다.
+    const today = calendarDateIn(new Date(), resolveAccountTimezone());
+    const startDate = formatCalendarDate(today);
     let endDate: string | null = null;
 
     switch (preset) {
-        case '7d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 7);
-            endDate = formatDate(end);
+        case '7d':
+            endDate = addCalendarDays(today, 7);
             break;
-        }
-        case '14d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 14);
-            endDate = formatDate(end);
+        case '14d':
+            endDate = addCalendarDays(today, 14);
             break;
-        }
-        case '30d': {
-            const end = new Date(today);
-            end.setDate(end.getDate() + 30);
-            endDate = formatDate(end);
+        case '30d':
+            endDate = addCalendarDays(today, 30);
             break;
-        }
         case 'permanent':
             endDate = null;
             break;

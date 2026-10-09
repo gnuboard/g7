@@ -109,14 +109,20 @@ class ReportService
      * 최근 봇 요청을 조회합니다.
      *
      * 집계는 「어느 봇이 얼마나」까지만 답한다. 어떤 주소를 언제 긁어 갔는지는
-     * 원장에만 있어, 봇 화면이 집계 표 아래에 이 목록을 함께 깐다.
+     * 원장에만 있어, 봇 화면이 집계 표 아래에 이 목록을 함께 깐다. 화면의 다른 숫자(봇 요청·봇 종류·
+     * 봇별 집계)처럼 고른 기간을 따른다 — 기간과 무관한 최신 50건이면 어제 하루를 골라도 오늘 요청이
+     * 섞여 「그 기간에 무엇을 긁어 갔는지」를 답하지 못한다(7.1.0 실측 O-E10).
      *
-     * @return array<int, array<string, mixed>> 최근 봇 요청 목록
+     * @param  string|null  $from  시작일 (Y-m-d, 사이트 표준시)
+     * @param  string|null  $to  종료일 (Y-m-d, 사이트 표준시)
+     * @return array<int, array<string, mixed>> 그 기간의 최근 봇 요청 목록 (최신순)
      */
-    public function recentBotHits(): array
+    public function recentBotHits(?string $from = null, ?string $to = null): array
     {
-        return $this->botHits->recent(self::RECENT_BOT_HITS)
+        return $this->botHits->recent(self::RECENT_BOT_HITS, $from, $to)
             ->map(fn ($hit): array => [
+                // 화면 표의 행 식별자 — 같은 초에 들어온 요청은 시각이 겹친다.
+                'id' => (int) $hit->id,
                 'bot_name' => $hit->bot_name,
                 'url' => $hit->url,
                 'ip' => $hit->ip !== null ? (string) $hit->ip : null,
@@ -450,7 +456,7 @@ class ReportService
 
         return match (true) {
             $upper === null => __('analytics.bucket.pages_over', ['from' => $lower], $locale),
-            $lower === $upper => __('analytics.bucket.pages_one', ['n' => $lower], $locale),
+            $lower === $upper => trans_choice('analytics.bucket.pages_one', $lower, ['n' => $lower], $locale),
             default => __('analytics.bucket.pages_range', ['from' => $lower, 'to' => $upper], $locale),
         };
     }

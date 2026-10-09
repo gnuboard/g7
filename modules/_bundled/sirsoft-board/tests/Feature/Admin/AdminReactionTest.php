@@ -69,13 +69,13 @@ class AdminReactionTest extends BoardTestCase
 
     /**
      * 반응 행을 직접 만듭니다.
-     * @param $userId 회원 ID
-     * @param $targetType 대상 유형
-     * @param $targetId 대상 ID
-     * @param $typeId 유형 ID
-     * @param $boardId 게시판 ID
      *
-     * @return int 정수 식별자
+     * @param  int  $userId  회원 ID
+     * @param  string  $targetType  대상 유형
+     * @param  int  $targetId  대상 ID
+     * @param  int  $typeId  유형 ID
+     * @param  int|null  $boardId  게시판 ID
+     * @return int 만든 반응 행 ID
      */
     private function seedReaction(int $userId, string $targetType, int $targetId, int $typeId, ?int $boardId = null): int
     {
@@ -164,9 +164,11 @@ class AdminReactionTest extends BoardTestCase
         $act('?reaction_type_id='.$this->likeId)->assertOk()->assertJsonCount(1, 'data.data');
         $act('?target_type=comment')->assertOk()->assertJsonCount(1, 'data.data');
 
-        $today = now()->format('Y-m-d');
+        // 날짜 칸은 보는 사람(운영자)의 시간대 하루로 해석된다 — 운영자 시간대의 오늘로 보낸다.
+        $viewerNow = now($this->admin->timezone ?: config('app.default_user_timezone'));
+        $today = $viewerNow->format('Y-m-d');
         $act('?reacted_at_from='.$today.'&reacted_at_to='.$today)->assertOk()->assertJsonCount(2, 'data.data');
-        $act('?reacted_at_from='.now()->addDays(2)->format('Y-m-d'))->assertOk()->assertJsonCount(0, 'data.data');
+        $act('?reacted_at_from='.$viewerNow->copy()->addDays(2)->format('Y-m-d'))->assertOk()->assertJsonCount(0, 'data.data');
     }
 
     /**

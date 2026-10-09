@@ -1,5 +1,5 @@
 {
-    "comment": "메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.\n  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다.",
+    "comment": "메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.\n  메일 본문 템플릿은 이 탭이 아니라 알림 정의 탭(`_tab_notification_definitions`)이 다룬다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 메일 탭 콘텐츠"

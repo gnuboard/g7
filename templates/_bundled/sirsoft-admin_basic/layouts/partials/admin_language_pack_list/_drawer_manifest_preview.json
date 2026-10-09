@@ -157,6 +157,90 @@
                     ]
                 },
                 {
+                    "comment": "아이콘 규격 검사 결과 — 모듈·플러그인·템플릿 서랍과 같은 자리. 서버가 `icon` 을 실어 주는데 이 서랍만\n           그리지 않아 언어팩 아이콘 경고가 보이지 않았다(#736 F 실측). 규격 위반은 설치를 막지 않는다.",
+                    "id": "language_pack_preview_icon",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.languagePackPreviewResult?.icon}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm flex items-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "language",
+                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.languagePackPreviewResult?.icon?.present && _global.languagePackPreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-success-soft"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_present|path={{_global.languagePackPreviewResult?.icon?.path ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.languagePackPreviewResult?.icon?.present && !_global.languagePackPreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_invalid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.languagePackPreviewResult?.icon?.present}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_missing"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.languagePackPreviewResult?.icon?.warnings",
+                                        "item_var": "w"
+                                    },
+                                    "props": {
+                                        "className": "text-label-subtle text-xs mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "text": "• {{w.message}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.languagePackPreviewResult?.validation?.is_valid === true}}",

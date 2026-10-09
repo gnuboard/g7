@@ -47,6 +47,9 @@ class OrderListRequest extends FormRequest
             'date_type' => ['nullable', Rule::in(OrderDateTypeEnum::values())],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            // 날짜를 어느 시간대의 하루로 풀지 — 없으면 보는 사람의 하루. 대시보드 「오늘」 배지 링크만 site 를 실어
+            // 배지가 센 하루(사이트 표준시)와 같은 범위로 연다
+            'date_basis' => ['nullable', Rule::in(['site'])],
 
             // 주문상태 (다중선택)
             'order_status' => ['nullable', 'array'],
@@ -149,6 +152,7 @@ class OrderListRequest extends FormRequest
             'start_date.date' => __('sirsoft-ecommerce::validation.orders.start_date.date'),
             'end_date.date' => __('sirsoft-ecommerce::validation.orders.end_date.date'),
             'end_date.after_or_equal' => __('sirsoft-ecommerce::validation.orders.end_date.after_or_equal'),
+            'date_basis.in' => __('sirsoft-ecommerce::validation.orders.date_basis.in'),
             // 주문상태
             'order_status.array' => __('sirsoft-ecommerce::validation.orders.order_status.array'),
             'order_status.*.string' => __('sirsoft-ecommerce::validation.orders.order_status.string'),

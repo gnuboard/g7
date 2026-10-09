@@ -60,6 +60,51 @@ describe('admin_user_form.json — 생성 모드 form 잔존 제거', () => {
   });
 
   /**
+   * 회귀(#736 영역 C 실측 2026-10-06): 수정 → 등록 SPA 이동에서 form 은 비워졌지만 `user` 데이터소스는
+   * 직전 회원 응답이 남아, 등록 폼의 「이메일 인증」 칸이 직전 회원의 「인증됨」 을 보였다(직접 진입은 「미인증」).
+   * 역할 칸 잠금도 직전 회원의 `can_assign_roles` 를 읽었다. 수정 모드 가드(`route?.id`) 밖에서 `user` 데이터소스를
+   * 읽는 표현식이 없어야 한다.
+   *
+   * @scenario form=user
+   * @effects create_mode_clears_previous_form
+   */
+  it('수정 모드 가드(route?.id) 밖의 표현식은 직전 회원(user 데이터소스)을 읽지 않는다', () => {
+    const isEditGuard = (s: unknown) =>
+      typeof s === 'string' && /route\?\.id/.test(s) && !/(^|[^!])!route\?\.id/.test(s);
+    const leaks: string[] = [];
+    const scanValue = (owner: string, key: string, v: unknown) => {
+      if (typeof v === 'string') {
+        if (/\buser\?\.data|\buser\.data/.test(v) && !/route\?\.id/.test(v)) leaks.push(`${owner}.${key} = ${v}`);
+        return;
+      }
+      if (v && typeof v === 'object') {
+        for (const [k, sub] of Object.entries(v)) scanValue(owner, `${key}.${k}`, sub);
+      }
+    };
+    const walk = (n: any, guarded: boolean): void => {
+      if (!n || typeof n !== 'object') return;
+      if (Array.isArray(n)) {
+        n.forEach((c) => walk(c, guarded));
+        return;
+      }
+      if (!n.type && !n.name) {
+        Object.values(n).forEach((c) => walk(c, guarded));
+        return;
+      }
+      const g = guarded || isEditGuard(n.if);
+      if (!g) {
+        for (const [k, v] of Object.entries(n)) {
+          if (k !== 'children' && k !== 'slots') scanValue(n.id ?? n.name, k, v);
+        }
+      }
+      if (n.children) walk(n.children, g);
+      if (n.slots) walk(n.slots, g);
+    };
+    walk(userForm.slots, false);
+    expect(leaks).toEqual([]);
+  });
+
+  /**
    * @scenario form=user
    * @effects create_mode_clears_previous_form
    */

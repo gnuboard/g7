@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 185개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 183개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 137개 |
+| `partials` | 135개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -144,7 +144,6 @@
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
-| `_modal_mail_template_form` | `partials` | partial | - |
 | `_modal_notification_channel_off_confirm` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
 | `_modal_notification_identity_definition_add` | `partials` | partial | - |
@@ -167,7 +166,6 @@
 | `_tab_info` | `partials` | partial | - |
 | `_tab_language_packs` | `partials` | partial | - |
 | `_tab_mail` | `partials` | partial | - |
-| `_tab_mail_templates` | `partials` | partial | - |
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
@@ -601,13 +599,11 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_identity_policies.g7.html (인증 정책)
 │           ├── _tab_identity_providers.g7.html (인증 수단)
 │           ├── _tab_language_packs.g7.html (언어팩)
-│           ├── _tab_mail_templates.g7.html (메일 템플릿)
 │           ├── _modal_notification_identity_definition_add.g7.html (알림 설정 > 본인인증 — 정책별 문구 추가)
 │           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
 │           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)
 │           ├── _modal_identity_policy_delete.g7.html
 │           ├── _modal_identity_policy_form.g7.html
-│           ├── _modal_mail_template_form.g7.html
 │           └── _modal_notification_definition_reset.g7.html
 │
 ├── 모듈 관리

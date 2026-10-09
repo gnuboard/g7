@@ -42,6 +42,13 @@ exclusions:
   - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
 
 effects:
+  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E3·E4·E5·E8·E10·E11
+  - skipped_run_carries_its_reason_in_the_viewers_language
+  - ledger_created_at_is_stamped_in_utc
+  - visitor_csv_times_use_the_site_timezone
+  - each_address_row_says_whether_it_is_masked
+  - bot_recent_hits_follow_the_selected_period
+  - country_name_is_the_same_on_every_analytics_surface
   # 화면 열 때 집계 미들웨어 · 신선도 블록
   - aggregate_routes_run_on_view_and_carry_freshness
   - ledger_routes_do_not_run_on_view
@@ -85,6 +92,7 @@ effects:
   - overview_returns_four_headline_numbers
   - bot_totals_count_the_whole_period_not_the_page
   - today_is_counted_from_the_ledger_not_the_archive
+  - today_uses_the_same_per_visitor_type_definition_as_the_daily_archive
   - total_is_the_sum_of_daily_unique_visitors
   - change_percent_is_empty_when_yesterday_was_zero
   - overview_meta_exposes_collection_and_queue_state
@@ -111,6 +119,7 @@ effects:
   - bot_reports_read_bot_typed_rows
   - bot_reports_ignore_the_human_exclude_toggle
   - bot_report_carries_recent_hits
+  - bot_recent_hits_carry_a_unique_row_id
   - csv_export_starts_with_a_byte_order_mark
   - csv_export_uses_crlf_line_endings
   - csv_export_covers_the_whole_period_not_one_page
@@ -145,6 +154,7 @@ effects:
   - subject_timeline_carries_search_result_count
   - subject_rows_carry_what_the_screen_shows
   - subject_export_filename_comes_from_the_server
+  - subject_export_filename_uses_the_site_date
   - zero_visit_lookup_still_names_the_export_file
   - pseudonymized_visits_are_found_by_member_number
   - subject_delete_leaves_aggregates_intact
@@ -183,6 +193,7 @@ effects:
   - storage_stats_flag_the_warning_threshold
   - storage_stats_list_every_analytics_table
   - storage_stats_count_the_two_ledger_tables_exactly
+  - storage_table_rows_use_the_exact_ledger_counts
   - purge_removes_ledger_and_aggregates
   - purge_fires_the_data_purged_hook
   # 클라우드 대역 갱신 (API 경로)
@@ -252,5 +263,6 @@ test_files:
   - tests/Feature/Analytics/Api/PeriodEchoPathTest.php
   - tests/Feature/Console/Analytics/ReportCommandTest.php
   - tests/Unit/Analytics/CsvExporterTest.php
+  - tests/Unit/Analytics/LanguageLabelTranslatorTest.php
 
 # 관리자 화면(14면)의 E2E 는 S3 이 소유한다 — 이 단계에는 화면이 없고 API 만 있다.

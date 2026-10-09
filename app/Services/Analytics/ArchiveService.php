@@ -18,6 +18,7 @@ use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Enums\Analytics\ArchiveSkipReason;
 use App\Enums\Analytics\StatsDimension;
 use App\Enums\Analytics\VisitorType;
 use App\Enums\Analytics\VisitSource;
@@ -124,6 +125,21 @@ class ArchiveService
     ) {}
 
     /**
+     * 한 날짜의 집계 잠금 키를 돌려줍니다.
+     *
+     * 실행 종류(시간 집계·일 집계·구간 재집계·화면 열 때 집계)를 키에 넣지 않는다 — 모두 같은 날의 일 집계
+     * 행을 지우고 다시 쓰므로, 종류별 키였을 때는 같은 날의 시간 집계와 재집계가 서로를 「다른 집계」로 보고
+     * 동시에 돌아 한쪽 결과를 덮을 수 있었다(7.1.0 전수 실측 O-EF1). 같은 날짜는 한 번에 하나만 돈다.
+     *
+     * @param  string  $date  집계 일자 (Y-m-d, 사이트 표준시 기준)
+     * @return string 잠금 키
+     */
+    public static function lockKey(string $date): string
+    {
+        return 'analytics:archive:'.$date;
+    }
+
+    /**
      * 하루치를 집계합니다.
      *
      * @param  string  $date  집계 일자 (Y-m-d, 사이트 표준시 기준)
@@ -143,7 +159,7 @@ class ArchiveService
             return null;
         }
 
-        $lock = Cache::lock('analytics:archive:'.$runType.':'.$date, self::LOCK_SECONDS);
+        $lock = Cache::lock(self::lockKey($date), self::LOCK_SECONDS);
 
         if (! $lock->get()) {
             // 화면 열 때 집계는 여러 관리자가 동시에 열면 잠금을 못 잡는 것이 정상이다 — 그때마다
@@ -152,7 +168,7 @@ class ArchiveService
                 return null;
             }
 
-            return $this->recordSkipped($runType, $date, $options, __('analytics.archive.skipped_locked'));
+            return $this->recordSkipped($runType, $date, $options, ArchiveSkipReason::Locked->label());
         }
 
         $run = isset($options['run_id']) ? $this->runs->findById((int) $options['run_id']) : null;
@@ -327,7 +343,7 @@ class ArchiveService
                     $options['run_type'] ?? ArchiveRunType::Reaggregate->value,
                     $date,
                     $options,
-                    __('analytics.archive.skipped_beyond_retention'),
+                    ArchiveSkipReason::BeyondRetention->label(),
                 );
                 $cursor->addDay();
 
@@ -343,7 +359,7 @@ class ArchiveService
                     $options['run_type'] ?? ArchiveRunType::Reaggregate->value,
                     $date,
                     $options,
-                    __('analytics.archive.skipped_finalized'),
+                    ArchiveSkipReason::Finalized->label(),
                 );
                 $cursor->addDay();
 
@@ -374,7 +390,7 @@ class ArchiveService
      * @param  Carbon  $periodEnd  구간 끝 (UTC)
      * @param  AnalyticsConfig  $config  설정
      * @param  AnalyticsArchiveRun|null  $run  진행률을 적을 실행 이력
-     * @return array{daily: DailyAccumulator, hourly: HourlyAccumulator, dimension_caps: array<string, int>, pii_dimensions: array<int, string>, processed_visits: int, processed_actions: int, chunks: int}
+     * @return array{daily: DailyAccumulator, hourly: HourlyAccumulator, dimension_caps: array<string, int>, pii_dimensions: array<int, string>, processed_visits: int, processed_actions: int, chunks: int} 일·시간 누적기와 차원 상한·PII 차원·처리량
      *                                                                                                                                                                                                       집계 재료
      */
     private function collect(

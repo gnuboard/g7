@@ -920,7 +920,7 @@
                                     "props": {
                                         "className": "form-hint"
                                     },
-                                    "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
                                 },
                                 {
                                     "type": "basic",

@@ -22,7 +22,7 @@
         <div>
           <div data-each="template in _global.affectedTemplates" class="flex-center gap-2 text-label">
             <icon name="palette" class="text-base"/>
-            <span>{{template.name}}</span>
+            <span>{{template.name || template.identifier}}</span>
             <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-500">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
           </div>
         </div>

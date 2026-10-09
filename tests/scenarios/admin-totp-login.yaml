@@ -87,6 +87,10 @@ effects:
   - admin_reset_tab_is_reachable_from_member_detail
   - admin_reset_tab_is_absent_from_member_edit
   - admin_reset_tab_is_hidden_without_the_permission
+  # 관리자 화면 초기화 — 지울 등록이 없었으면 「초기화했다」가 아니라 「없었다」고 알린다(7.1.0 잔여 관측 R-26)
+  - admin_reset_without_credential_says_nothing_to_remove
+  # 확장 관리자 API 의 강제 해제는 「관리자」 유형 로그 — IP 제한의 관리자 영역과 같은 기준(7.1.0 관측 O-B2)
+  - admin_screen_reset_is_logged_as_admin_type
 
 test_files:
   - tests/Feature/Auth/AdminTotpLoginTest.php

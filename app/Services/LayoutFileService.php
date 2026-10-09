@@ -564,7 +564,8 @@ class LayoutFileService
         if ($sourceType !== null && $sourceType !== LayoutSourceType::Template) {
             throw new LayoutFileOperationException($errorKey, [
                 'name' => (string) $layout->name,
-                'source' => $sourceType->value,
+                // 종류는 사용 언어로 싣는다 — 원값(`module`)을 그대로 넣으면 「module(sirsoft-board)이(가) …」 로 보인다.
+                'source' => __('extension_owner_type.'.$sourceType->value),
                 'identifier' => (string) ($layout->source_identifier ?? ''),
             ]);
         }

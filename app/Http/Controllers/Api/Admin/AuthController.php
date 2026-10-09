@@ -211,7 +211,7 @@ class AuthController extends AdminBaseController
         } catch (AuthorizationException $e) {
             return $this->forbidden('auth.admin_required');
         } catch (ValidationException $e) {
-            return $this->validationError($e->errors(), 'auth.password_change_invalid_challenge');
+            return $this->validationError($e->errors(), $this->authService->postponeFailureMessageKey($e));
         }
     }
 

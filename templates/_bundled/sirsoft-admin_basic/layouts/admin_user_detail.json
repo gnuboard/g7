@@ -1656,9 +1656,11 @@
                                         ]
                                     },
                                     {
+                                        "comment": "회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.\n               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다.",
                                         "id": "notifications_inbox_link",
                                         "type": "basic",
                                         "name": "Div",
+                                        "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.member-notifications.read'))}}",
                                         "props": {
                                             "className": "mt-4"
                                         },

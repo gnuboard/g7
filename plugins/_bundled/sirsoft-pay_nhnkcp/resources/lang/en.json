@@ -163,8 +163,10 @@
         "escrow_common_notify_copied": "URL copied to clipboard.",
         "health": {
             "title": "System check",
-            "error_count": "{{count}} error(s)",
-            "warning_count": "{{count}} warning(s)",
+            "error_count": "{{count}} errors",
+            "error_count_one": "{{count}} error",
+            "warning_count": "{{count}} warnings",
+            "warning_count_one": "{{count}} warning",
             "fixed_count": "{{count}} auto-fixed",
             "all_ok": "All good",
             "recheck": "Check again",

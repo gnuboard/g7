@@ -60,9 +60,9 @@
               </div>
               <div>
                 <span class="text-label-subtle">$t:admin.license.license_text</span>
-                <p class="text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <button type="button" class="block text-left text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   <on type="click">
-                    <!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. -->
+                    <!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. 버튼이어야 키보드로도 열린다(#736 F 실측). -->
                     <sequence>
                       <api-call :auth_required="true" target="/api/admin/templates/{{_global.selectedTemplate.identifier}}/license" method="GET">
                         <success>
@@ -76,7 +76,7 @@
                     </sequence>
                   </on>
                   {{_global.selectedTemplate.license || '-'}}
-                </p>
+                </button>
               </div>
             </div>
           </div>

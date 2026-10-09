@@ -15,5 +15,8 @@
   "upload_response_invalid": "업로드 응답을 해석하지 못했습니다.",
   "drag_to_reorder": "드래그하여 순서 변경",
   "primary_image": "대표 이미지",
-  "set_as_primary": "대표 이미지로 설정"
+  "set_as_primary": "대표 이미지로 설정",
+  "empty_file": "[{{name}}] 빈 파일(0바이트)은 올릴 수 없습니다.",
+  "invalid_file_type": "허용되지 않는 파일 형식입니다.",
+  "delete_failed": "파일 삭제에 실패했습니다."
 }

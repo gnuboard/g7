@@ -21,7 +21,7 @@ return [
     'privacy_manual_run_disabled' => 'This feature is turned off, so it cannot be run now. Turn it on in the settings, save, and run it again.',
 
     // Optimistic lock — concurrent save conflict
-    'concurrent_modification' => 'Another user has saved first. (resource: :resource, current version: :current, your version: :expected)',
+    'concurrent_modification' => 'Another user has saved first. (current version: :current, your version: :expected)',
 
     // Layout related exceptions
     'layout' => [
@@ -208,6 +208,8 @@ return [
         'component_type_mismatch' => ':component is written as :written but the :template template declares it as :declared — check data-type (omitted means basic).',
         'extension_component_not_installed' => 'No installed extension provides this component: :name — the :extension extension may have been removed or the name is mistyped. Saving is allowed, but it will not render unless that extension is present.',
         'template_component_kept' => 'This template does not list the component :name — it was already in the saved content, so saving is allowed, but it may not render with this template.',
+        'nested_action_debounce_ignored' => 'The debounce on the :handler action has no effect — actions nested inside conditions, sequences or result callbacks run immediately on every event. Put debounce on the enclosing outer action (<conditions :debounce>, <sequence :debounce>).',
+        'mixed_debounce_flushed' => ':event on :name mixes debounced actions with immediate ones — every time an immediate action runs, the waiting debounced actions run right away, so they run on every input. To keep the delay, debounce every action on this event.',
     ],
 
     // Settings related exceptions

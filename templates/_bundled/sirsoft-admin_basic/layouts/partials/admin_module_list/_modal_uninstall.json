@@ -816,16 +816,6 @@
                                             }
                                         },
                                         {
-                                            "handler": "setState",
-                                            "if": "{{!(response.data?.preserved_backups?.length)}}",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedModule": null,
-                                                "deleteModuleData": false,
-                                                "moduleUninstallInfo": null
-                                            }
-                                        },
-                                        {
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
@@ -854,6 +844,16 @@
                                         {
                                             "handler": "closeModal",
                                             "if": "{{!(response.data?.preserved_backups?.length)}}"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{!(response.data?.preserved_backups?.length)}}",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedModule": null,
+                                                "deleteModuleData": false,
+                                                "moduleUninstallInfo": null
+                                            }
                                         }
                                     ],
                                     "onError": [

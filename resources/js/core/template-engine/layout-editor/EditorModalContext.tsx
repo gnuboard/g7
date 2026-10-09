@@ -79,18 +79,30 @@ export interface EditorModalOptions {
    * 확인한 뒤 스스로 닫도록 할 때 쓴다 — 지정하지 않으면 종전처럼 바로 닫는다.
    */
   onRequestClose?: () => void;
+  /**
+   * 대화상자 역할. 기본 'dialog'. 확인·입력처럼 응답을 받아야 진행되는 창은 'alertdialog'.
+   * @since engine-v1.78.7
+   */
+  role?: 'dialog' | 'alertdialog';
+  /**
+   * 본문 설명 요소 id — 대화상자의 aria-describedby 로 싣는다.
+   * @since engine-v1.78.7
+   */
+  ariaDescribedBy?: string;
 }
 
 interface InternalEntry
   extends Required<
     Omit<
       EditorModalOptions,
-      'id' | 'onClose' | 'onRequestClose' | 'width' | 'height' | 'maxHeightRatio' | 'avoidRect'
+      'id' | 'onClose' | 'onRequestClose' | 'width' | 'height' | 'maxHeightRatio' | 'avoidRect' | 'role' | 'ariaDescribedBy'
     >
   > {
   id: string;
   onClose?: () => void;
   onRequestClose?: () => void;
+  role: 'dialog' | 'alertdialog';
+  ariaDescribedBy?: string;
   width: number | string;
   height: number | string;
   maxHeightRatio: number;
@@ -169,6 +181,8 @@ export function EditorModalProvider({ children, t }: EditorModalProviderProps): 
       avoidRect: options.avoidRect,
       onClose: options.onClose,
       onRequestClose: options.onRequestClose,
+      role: options.role ?? 'dialog',
+      ariaDescribedBy: options.ariaDescribedBy,
     };
     setStack((prev) => {
       // 같은 id 재오픈은 덮어쓰기 (idempotent)
@@ -279,6 +293,19 @@ export function useEditorModal(): EditorModalContextValue {
     throw new Error('useEditorModal must be used within EditorModalProvider');
   }
   return ctx;
+}
+
+/**
+ * Provider 밖에서도 부를 수 있는 모달 진입점 — 없으면 null.
+ *
+ * 편집기 대화상자(EditorDialog)처럼 Provider 없이 단독 렌더되는 부품(단위 테스트·외부 마운트)에서도
+ * 쓰이는 도우미가 쓴다. 없을 때의 대체 동작은 호출자가 정한다.
+ *
+ * @return 모달 컨텍스트 또는 null
+ * @since engine-v1.78.7
+ */
+export function useOptionalEditorModal(): EditorModalContextValue | null {
+  return useContext(EditorModalContext);
 }
 
 /**
@@ -613,9 +640,10 @@ function ModalLayer({ entry, depth, hidden, onClose }: ModalLayerProps): React.R
       <div
         ref={modalElRef}
         className="g7le-modal"
-        role="dialog"
+        role={entry.role}
         aria-modal="true"
         aria-label={entry.ariaLabel || undefined}
+        aria-describedby={entry.ariaDescribedBy || undefined}
         data-testid={`g7le-modal-${entry.id}`}
         data-positioned={positioned ? 'true' : 'false'}
         onClick={(e) => e.stopPropagation()}

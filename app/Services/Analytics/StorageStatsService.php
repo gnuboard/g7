@@ -63,13 +63,19 @@ class StorageStatsService
         $exactActions = $this->actions->countAll();
         $tables = $this->tables();
         $sizes = $this->tableStats->sizes($tables);
+        // 표별 행 수는 DB 통계 어림값이다. 이미 정확히 센 원장 두 표는 그 값을 써서, 같은 카드 위쪽의
+        // 「방문 N행」과 표의 방문 기록 줄이 다른 숫자를 보이지 않게 한다.
+        $exactRows = [
+            'analytics_visits' => $exactVisits,
+            'analytics_actions' => $exactActions,
+        ];
 
         return [
             'tables' => array_map(fn (string $table): array => [
                 'table' => $table,
                 // 표 이름만으로는 무엇이 쌓이는지 알 수 없다 — 화면 이름을 덧붙인다. 확장이 더한 표는 이름이 없어 원래 이름 그대로다.
                 'label' => CodeLabelTranslator::label('analytics.storage_table', $table),
-                'rows' => $sizes[$table]['rows'] ?? null,
+                'rows' => $exactRows[$table] ?? $sizes[$table]['rows'] ?? null,
                 'data_bytes' => $sizes[$table]['data_bytes'] ?? null,
                 'index_bytes' => $sizes[$table]['index_bytes'] ?? null,
             ], $tables),

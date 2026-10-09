@@ -494,8 +494,9 @@ class AdminClaimRequestTest extends ModuleTestCase
         ]);
 
         $rejected->assertStatus(422);
+        // 영어 문구는 `단수|복수` 꼴이라 요청 수로 고른 문장과 비교한다 (2026-10-08 결정: 1이면 단수).
         $this->assertSame(
-            __('sirsoft-ecommerce::exceptions.claim_quantity_locked', ['requested' => 2, 'available' => 1]),
+            trans_choice('sirsoft-ecommerce::exceptions.claim_quantity_locked', 2, ['requested' => 2, 'available' => 1]),
             $rejected->json('message'),
         );
         $this->assertSame(1, OrderRefund::query()->where('order_id', $order->id)->count(), '잠긴 수량을 넘는 접수가 신청서를 남겼습니다.');
@@ -508,6 +509,42 @@ class AdminClaimRequestTest extends ModuleTestCase
         ])->assertCreated();
 
         $this->assertSame(2, OrderRefund::query()->where('order_id', $order->id)->count());
+    }
+
+    /**
+     * 옛 주문 취소 경로(`/orders/{order}/cancel`)도 수량 잠금 사유를 요청 수로 고른 한 문장으로 돌려줍니다.
+     *
+     * 영어 사유 문구는 `단수|복수` 꼴이라, 키를 `__()` 로 번역하면 두 문장이 `|` 로 이어진 채
+     * `errors.detail` 에 실린다. 직권 접수 경로(`cancel-refund`)와 같은 한 문장이어야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=cancel_refund, gate_side=not_shipped
+     *
+     * @effects legacy_cancel_quantity_lock_reason_is_one_plural_form
+     */
+    public function test_legacy_cancel_route_quantity_lock_reason_is_one_plural_form(): void
+    {
+        $order = $this->paidClaimOrder(quantity: 2);
+        $option = $order->options->first();
+        $this->makeDirectRefund($order, $option, 1);
+
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $admin->forceFill(['language' => 'en'])->save();
+
+        $rejected = $this->actingAs($admin)->postJson($this->base()."/orders/{$order->id}/cancel", [
+            'type' => 'partial',
+            'reason' => 'changed_mind',
+            'items' => [['order_option_id' => $option->id, 'cancel_quantity' => 2]],
+        ]);
+
+        $rejected->assertStatus(422);
+        $detail = (string) $rejected->json('errors.detail');
+        $this->assertStringNotContainsString('|', $detail, '단수·복수 두 문장이 이어져 나왔습니다.');
+        $this->assertSame(
+            trans_choice('sirsoft-ecommerce::exceptions.claim_quantity_locked', 2, ['requested' => 2, 'available' => 1], 'en'),
+            $detail,
+        );
     }
 
     /**

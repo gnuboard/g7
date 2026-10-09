@@ -279,15 +279,6 @@
                                     },
                                     "onSuccess": [
                                         {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isForceActivating": false,
-                                                "activateWarningData": null,
-                                                "selectedTemplate": null
-                                            }
-                                        },
-                                        {
                                             "handler": "refetchDataSource",
                                             "params": {
                                                 "dataSourceId": "templates"
@@ -305,6 +296,15 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isForceActivating": false,
+                                                "activateWarningData": null,
+                                                "selectedTemplate": null
+                                            }
                                         },
                                         {
                                             "comment": "템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).\n                     강제 활성은 새로 고침을 하지 않으므로 창이 닫힐 때도 새로 고치지 않는다.",

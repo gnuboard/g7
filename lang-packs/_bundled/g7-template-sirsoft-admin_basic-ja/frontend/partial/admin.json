@@ -22,6 +22,7 @@
   "notifications_delete_all_failed": "全通知削除に失敗しました。",
   "notifications_unread_only": "未読通知のみ",
   "new_notification_received": "新しい通知が届きました",
+  "base_layout_title": "グヌボード7 管理者",
   "base_layout_description": "グヌボード7 管理者",
   "mobile_menu": "モバイルメニュー",
   "close_menu": "メニューを閉じる",
@@ -202,6 +203,7 @@
     "bulk_action_select": "一括操作を選択",
     "pagination_info": "合計{{total}}人中{{from}}-{{to}}人を表示",
     "total_count": "合計{{count}}個",
+    "total_at_least": "合計{{count}}件以上",
     "per_page": "{{count}}個",
     "sort": {
       "created_at_desc": "登録日時 最新順",
@@ -423,6 +425,7 @@
     },
     "bulk_status_change": "ステータス変更",
     "filter": {
+      "show_in_basic": "{{label}} — 基本検索に表示",
       "status": "アカウント状態",
       "role": "権限グループ",
       "created_at": "登録日",
@@ -488,7 +491,11 @@
       "reason_scope": "管理権限の範囲外",
       "reason_last_admin": "最後の管理者(本人)",
       "close": "閉じる",
-      "reason_last_role": "ロールが一つも残らない"
+      "reason_last_role": "ロールが一つも残らない",
+      "remove_hint": "削除後にロールが一つも残らない会員と、最後の管理者である自分自身の管理者ロールはスキップされます(会員は少なくとも一つのロールを持つ必要があります)。",
+      "result_unchanged": "{{unchanged}}名は反映済みのため変更なし",
+      "reason_already_assigned": "既に持っているロール",
+      "reason_not_assigned": "持っていないロール"
     }
   },
   "language_packs": {
@@ -668,14 +675,15 @@
       "update_success": "言語パックをアップデートしました。",
       "update_failed": "言語パックのアップデートに失敗しました。",
       "refresh_cache_done": "言語パックキャッシュを更新しました。",
-      "refresh_cache_failed": "キャッシュ更新に失敗しました。"
+      "refresh_cache_failed": "キャッシュ更新に失敗しました。",
+      "preview_failed": "言語パックのプレビューに失敗しました。"
     },
     "modals": {
       "install_bundled_title": "言語パックインストール",
       "install_bundled_confirm": "バンドル言語パック \"{{identifier}}\" をインストールしますか?",
       "install_bundled_core_required": "コア言語パック(locale={{locale}}) が事前に有効化されている必要があります。",
       "install_blocked_target_not_installed": "対象 {{scope}} \"{{target}}\" がインストールされていません。",
-      "install_blocked_target_inactive": "対象 {{scope}} \"{{target}}\" が無効化された状態です。まず有効化してください。",
+      "install_notice_target_inactive": "対象 {{scope}} \"{{target}}\" が無効のため、この言語パックは無効の状態でインストールされます。その拡張機能を有効にした後、一覧から有効にできます。",
       "install_blocked_target_version_too_old": "対象 {{scope}} \"{{target}}\" のバージョンが要件を満たしていません。"
     },
     "slot_conflict_modal": {
@@ -800,7 +808,7 @@
       "cascade_language_packs_hint": "バンドルで提供される言語パック候補です。チェックされた項目のみ、このインストール時に自動インストールされます。",
       "cascade_lp_depends_on": "依存: {{target}}",
       "install_title": "モジュールインストール確認",
-      "install_confirm": "{{name}}モジュールをインストールしますか？",
+      "install_confirm": "「{{name}}」をインストールしますか？",
       "install_description": "インストール後、モジュールを有効化すると機能を使用できます。",
       "vendor_mode_label": "ベンダーインストール方式",
       "vendor_mode_hint": "Composerが使用できない環境では「バンドル」を選択してください。",
@@ -808,7 +816,7 @@
       "vendor_mode_composer": "Composerを実行",
       "vendor_mode_bundled": "バンドルベンダーを使用",
       "uninstall_title": "モジュール削除確認",
-      "uninstall_confirm": "{{name}}モジュールを削除しますか？",
+      "uninstall_confirm": "「{{name}}」を削除しますか？",
       "uninstall_warning": "この操作は取り消せません。",
       "delete_data_option": "モジュールデータも一緒に削除",
       "delete_data_warning": "モジュールが作成したすべてのデータ（投稿、設定など）が一緒に削除され、削除されたデータは復元できません。",
@@ -834,7 +842,7 @@
       "manual_install_title": "モジュール手動インストール",
       "manual_install_description": "ファイルアップロードまたはGitHubリポジトリからモジュールをインストールできます。",
       "refresh_layouts_title": "レイアウト更新",
-      "refresh_layouts_confirm": "{{name}}モジュールのレイアウトを更新しますか？",
+      "refresh_layouts_confirm": "「{{name}}」のレイアウトを更新しますか？",
       "refresh_layouts_warning": "既存のレイアウトが削除され、ファイルから再度登録されます。",
       "refresh_layouts_description": "モジュールファイルに含まれるレイアウトでデータベースのレイアウトが置き換えられます。既存で編集したレイアウトの内容はすべて削除されます。",
       "deactivate_warning_title": "モジュール無効化警告",
@@ -852,7 +860,7 @@
       "force_activate_description": "強制的に有効化するとモジュールが正常に動作しない可能性があります。",
       "confirm_activate": "それでも有効化",
       "update_title": "モジュール アップデート 確認",
-      "update_confirm": "{{name}} モジュールをアップデートしますか?",
+      "update_confirm": "「{{name}}」をアップデートしますか?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHub からダウンロード",
       "update_source_pending": "待機中のパッケージからインストール",
@@ -1013,7 +1021,7 @@
       "cascade_language_packs_hint": "バンドルで提供される言語パック候補です。チェックされた項目のみ本インストールと同時に自動インストールされます。",
       "cascade_lp_depends_on": "依存：{{target}}",
       "install_title": "プラグインインストール確認",
-      "install_confirm": "{{name}} プラグインをインストールしますか？",
+      "install_confirm": "「{{name}}」をインストールしますか？",
       "install_description": "インストール後、プラグインを有効化するとその機能が利用できます。",
       "vendor_mode_label": "Vendor インストール方式",
       "vendor_mode_hint": "Composer が使用できない環境では「バンドル」を選択してください。",
@@ -1021,7 +1029,7 @@
       "vendor_mode_composer": "Composer 実行",
       "vendor_mode_bundled": "バンドル Vendor 使用",
       "uninstall_title": "プラグイン削除確認",
-      "uninstall_confirm": "{{name}} プラグインを削除しますか？",
+      "uninstall_confirm": "「{{name}}」を削除しますか？",
       "uninstall_warning": "この操作は取り消せません。",
       "delete_data_option": "プラグインデータも一緒に削除",
       "delete_data_warning": "プラグインが作成したすべてのデータ（設定、ログなど）が一緒に削除され、削除されたデータは復元できません。",
@@ -1047,7 +1055,7 @@
       "manual_install_title": "プラグイン手動インストール",
       "manual_install_description": "ファイルアップロードまたはGitHubリポジトリからプラグインをインストールできます。",
       "refresh_layouts_title": "レイアウト更新確認",
-      "refresh_layouts_confirm": "{{name}}プラグインのレイアウトを更新しますか？",
+      "refresh_layouts_confirm": "「{{name}}」のレイアウトを更新しますか？",
       "refresh_layouts_description": "プラグインのレイアウトファイルを再度読み込み、データベースに同期します。",
       "refresh_layouts_warning": "変更されたレイアウトは更新され、削除されたレイアウトはデータベースからも削除されます。",
       "deactivate_warning_title": "プラグイン無効化警告",
@@ -1064,7 +1072,7 @@
       "force_activate_description": "強制的に有効化するとプラグインが正常に動作しない可能性があります。",
       "confirm_activate": "それでも有効化",
       "update_title": "プラグイン更新確認",
-      "update_confirm": "{{name}}プラグインをアップデートしますか？",
+      "update_confirm": "「{{name}}」をアップデートしますか？",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHubからダウンロード",
       "update_source_pending": "保留中のパッケージからインストール",
@@ -1296,7 +1304,7 @@
       "delete_failed": "ロール削除に失敗しました。"
     },
     "refresh": "更新",
-    "protected_roles_hint": "コア・拡張が作成した役割(バッジ表示)は削除できず、編集・使用可否の変更はスーパー管理者のみ可能です。"
+    "protected_roles_hint": "コア・拡張が作成したロール(バッジ表示)は削除できず、編集・使用可否の変更はスーパー管理者のみ可能です。"
   },
   "schedules": {
     "page_title": "スケジュール管理",
@@ -2260,7 +2268,9 @@
         "relation_placeholder": "関係を選択してください",
         "relation_undeclared": "この通知は「{{relation}}」の関係に対応していません。一覧から選び直してください。このままでは保存できません。",
         "roles_selected_count": "{count}件のロールを選択",
-        "users_selected_count": "{count}名選択"
+        "users_selected_count": "{count}名選択",
+        "remove_selected": "選択解除: {{name}}",
+        "remove_rule": "受信者ルール{{index}}を削除"
       },
       "preview_modal": {
         "title": "通知プレビュー",
@@ -2294,7 +2304,7 @@
       "database_config": "データベース構成",
       "database_config_desc": "MySQL接続構成情報です。",
       "config_type": "構成タイプ:",
-      "write_only": "Write Only",
+      "write_only": "Write 単一",
       "read_write_split": "読み取り・書き込み分離",
       "write_db": "Write DB",
       "read_db": "Read DB",
@@ -2574,10 +2584,10 @@
       "cascade_language_packs_hint": "バンドルで提供される言語パック候補です。チェックされた項目のみ本インストールと一緒に自動インストールされます。",
       "cascade_lp_depends_on": "依存：{{target}}",
       "install_title": "テンプレートインストール確認",
-      "install_confirm": "{{name}}テンプレートをインストールしますか？",
+      "install_confirm": "「{{name}}」をインストールしますか？",
       "install_description": "インストール後に有効化すると、管理者インターフェースのデザインが変更されます。",
       "uninstall_title": "テンプレート削除確認",
-      "uninstall_confirm": "{{name}}テンプレートを削除しますか？",
+      "uninstall_confirm": "「{{name}}」を削除しますか？",
       "uninstall_warning": "この操作は元に戻せません。",
       "delete_data_option": "テンプレートデータも一緒に削除",
       "delete_data_warning": "テンプレートが作成したすべてのデータ（ユーザー定義スタイル、設定など）が一緒に削除され、削除されたデータは復元できません。",
@@ -2585,18 +2595,18 @@
       "extension_directory_section": "拡張ディレクトリ",
       "tables_total": "合計 {{size}}",
       "activate_title": "テンプレート変更確認",
-      "activate_confirm": "{{name}}テンプレートを有効化しますか？",
+      "activate_confirm": "「{{name}}」を有効化しますか？",
       "activate_description": "現在使用中のテンプレートのレイアウト設定は自動的に保存されます。後で再度有効化すると、保存されたレイアウトをそのまま使用できます。",
       "deactivate_title": "テンプレート無効化確認",
-      "deactivate_confirm": "{{name}}テンプレートを無効化しますか？",
+      "deactivate_confirm": "「{{name}}」を無効化しますか？",
       "manual_install_title": "テンプレート手動インストール",
       "manual_install_description": "ファイルアップロードまたはGitHubリポジトリからテンプレートをインストールできます。",
       "refresh_layouts_title": "レイアウト更新",
-      "refresh_layouts_confirm": "{{name}}テンプレートのレイアウトを更新しますか？",
+      "refresh_layouts_confirm": "「{{name}}」のレイアウトを更新しますか？",
       "refresh_layouts_warning": "既存レイアウトが削除され、ファイルから再度登録されます。",
       "refresh_layouts_description": "テンプレートファイルに含まれるレイアウトでデータベースのレイアウトが置き換えられます。既に編集したレイアウト内容はすべて削除されます。",
       "update_title": "テンプレートアップデート確認",
-      "update_confirm": "{{name}}テンプレートをアップデートしますか？",
+      "update_confirm": "「{{name}}」をアップデートしますか？",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHubからダウンロード",
       "update_source_pending": "保留中のパッケージからインストール",
@@ -2744,6 +2754,9 @@
       "json_stale": "コンパイルエラーのため最後に成功した内容を表示",
       "markup_error_title": "コンパイルエラー — 保存できません",
       "markup_warning_title": "警告 {{count}} 件 — 保存は可能です",
+      "go_to_line": "{{line}} 行目へ移動",
+      "info_toggle_show": "ファイル情報を表示",
+      "info_toggle_hide": "ファイル情報を隠す",
       "inlined_notice": "インストール済みのレイアウトを編集しています — 断片（<include>・<modal src>）はインライン展開された状態で、リポジトリのファイルと異なる場合があります。保存すると本文はサーバーの正規形に更新されます。",
       "download_markup": ".g7.html をダウンロード",
       "copy_markup": "コピー",
@@ -2809,6 +2822,7 @@
         "close_discard": "保存せずに閉じる",
         "close_cancel": "キャンセル",
         "close_saving": "保存中… 保存が終わるとタブが閉じます。失敗した場合はこのダイアログが残ります。",
+        "close_failed": "保存できませんでした。編集内容はそのまま残っています — エラーを直して再度保存するか、保存せずに閉じてください。",
         "restore_warning": "保存されていない編集 {{count}}件があります。バージョンを戻すと、エディタの上に競合通知が表示されます。"
       },
       "conflict": {
@@ -3026,6 +3040,7 @@
     "status_skipped": "スキップ",
     "search_placeholder": "受信者、件名検索",
     "total_count": "合計 {{count}}件",
+    "total_at_least": "合計{{count}}件以上",
     "col_channel": "チャネル",
     "col_recipient": "受信者",
     "col_sender": "送信者",
@@ -3210,6 +3225,7 @@
       "tab_all": "全認証手段",
       "refresh": "更新",
       "total_count": "合計{{count}}件",
+      "total_at_least": "合計{{count}}件以上",
       "search_type": {
         "auto": "自動",
         "user_id": "ユーザーID",
@@ -3318,7 +3334,6 @@
     "admin_settings": {
       "identity_policy_delete_modal": "本人認証ポリシー削除確認",
       "identity_policy_form_modal": "本人認証ポリシー編集",
-      "modal_mail_template_form": "メールテンプレート編集",
       "modal_notification_channel_off_confirm": "メールチャネルのオフ確認",
       "modal_notification_definition_reset": "通知定義デフォルト復元",
       "modal_notification_identity_definition_add": "本人認証ポリシー別文面を追加",
@@ -3419,6 +3434,7 @@
     "page_description": "会員が受け取った通知（受信ボックス）を確認および削除します。",
     "search_placeholder": "検索キーワードを入力してください",
     "total_count": "合計 {{count}} 件",
+    "total_at_least": "合計{{count}}件以上",
     "col_created_at": "受信日時",
     "col_member": "会員",
     "col_type": "種類",
@@ -3494,7 +3510,8 @@
       "empty_diagnostics_link": "収集診断を開く",
       "toggle_list": "リストの展開・折りたたみ",
       "site_timezone_badge": "時刻基準: サイト標準時（{timezone}）",
-      "queue_backlog_badge": "キュー待ち {count} 件"
+      "queue_backlog_badge": "キュー待ち {count} 件",
+      "ip_not_masked": "マスキング前の記録"
     },
     "period": {
       "presets": {
@@ -3535,7 +3552,7 @@
       "unit_downgraded": "時間単位の集計の保持期間外のため、日単位で表示されます。",
       "load_failed": "統計を読み込めませんでした。しばらく経ってからもう一度お試しください。",
       "load_failed_retry": "再試行",
-      "site_timezone": "この画面の時刻はサイト標準時（{timezone}）基準です — お使いの端末の時間帯とは異なります。",
+      "site_timezone": "この画面の時刻はサイト標準時（{timezone}）基準です — アカウントに設定した時間帯とは異なります。",
       "scheduler_missing": "スケジューラ(cron)が2時間以上実行されていません。画面を開いたときの集計で数値は更新されますが、昨日の確定・古いデータの整理・週次レポートメールは停止しています。",
       "scheduler_missing_link": "収集診断を開く",
       "archive_stale": "集計が{{hours}}時間停止しています(最終 {{at}})。スケジューラ(cron)を確認するか、今すぐ集計してください。",
@@ -3782,6 +3799,7 @@
       },
       "names_title": "ボット別集計",
       "recent_title": "最近のリクエスト",
+      "recent_hint": "選択した期間内のリクエストを新しい順に最大50件表示します。",
       "columns": {
         "bot": "ボット",
         "hits": "リクエスト",

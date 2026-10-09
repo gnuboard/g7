@@ -828,6 +828,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                            "aria-label": "$t:common.more_actions",
                                             "aria-haspopup": "menu",
                                             "aria-expanded": "{{!!_global.headerMoreOpen}}",
                                             "data-testid": "layout-more-menu"
@@ -1158,7 +1159,7 @@
                                         "debounce": 200
                                     },
                                     {
-                                        "comment": "내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다",
+                                        "comment": "내용 검색은 2글자 이상일 때만 서버에 묻고, 타이핑이 멎은 뒤(600ms) 한 번만 부른다.\n               디바운스는 **이 최상위 액션**에 건다 — 엔진은 이벤트에 직접 달린 액션의 debounce 만 읽어,\n               `<when>` 안 액션에 걸면 무시되고 글자마다 요청이 나간다(실측 2026-10-06: 한 단어에 25건).",
                                         "type": "search",
                                         "event": "onSearch",
                                         "handler": "conditions",
@@ -1169,11 +1170,11 @@
                                                     "handler": "refetchDataSource",
                                                     "params": {
                                                         "dataSourceId": "layout_search"
-                                                    },
-                                                    "debounce": 600
+                                                    }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "debounce": 600
                                     },
                                     {
                                         "comment": "파일 만들기 — 폴더 노드에서 열면 그 경로를 접두로 채워 폼 창을 연다",
@@ -1226,13 +1227,15 @@
                                         "handler": "sequence",
                                         "actions": [
                                             {
+                                                "comment": "앞선 거둠 알림을 비우고 시작한다 — 작업 공간은 알림 하나를 한 번만 처리하므로 같은 키가 다시 와도 새 알림으로 받게.",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
                                                     "fileFormMode": "rename",
                                                     "fileFormTarget": "{{String($args[0]).slice(7)}}",
                                                     "fileFormName": "{{String($args[0]).slice(7)}}",
-                                                    "fileFormError": null
+                                                    "fileFormError": null,
+                                                    "retiredFileKey": null
                                                 }
                                             },
                                             {
@@ -1374,6 +1377,43 @@
                                                                             "className": "px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded"
                                                                         },
                                                                         "text": "$t:admin.templates.layout_edit.extension_modified_badge"
+                                                                    },
+                                                                    {
+                                                                        "comment": "휴대폰 폭(md 미만)에서는 설명·수정일·이력 버튼·하단 안내를 접어 두어 코드 칸에 높이를 준다(7.1.0 P17,\n                       실측 390x844 에서 코드 칸 128px). 이 버튼으로 펼친다. md 이상에서는 늘 펼쳐져 있어 버튼을 숨긴다.",
+                                                                        "id": "code_editor_info_toggle",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "codeEditorInfoOpen": "{{!_global.codeEditorInfoOpen}}"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "md:hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                                            "aria-controls": "code_editor_file_desc code_editor_file_meta code_editor_inline_notice",
+                                                                            "aria-expanded": "{{_global.codeEditorInfoOpen ? 'true' : 'false'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_global.codeEditorInfoOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                                                                    "className": "text-xs"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "{{_global.codeEditorInfoOpen ? '$t:admin.templates.layout_edit.info_toggle_hide' : '$t:admin.templates.layout_edit.info_toggle_show'}}"
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             },
@@ -1384,7 +1424,8 @@
                                                                 "name": "P",
                                                                 "if": "{{_global.selectedNodeKind !== 'extension' && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
                                                                 "props": {
-                                                                    "className": "mt-1 text-label-subtle"
+                                                                    "id": "code_editor_file_desc",
+                                                                    "className": "mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}"
                                                                 },
                                                                 "text": "{{raw:current_layout?.data?.description || ''}}"
                                                             }
@@ -1394,7 +1435,8 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-3 shrink-0"
+                                                            "id": "code_editor_file_meta",
+                                                            "className": "{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden md:flex md:items-center'}} gap-3 shrink-0"
                                                         },
                                                         "children": [
                                                             {
@@ -1520,10 +1562,12 @@
                                                             }
                                                         },
                                                         "onError": {
+                                                            "comment": "실패한 본문의 경고는 알 수 없다 — 직전 성공본의 경고를 남기면 바뀐 본문의 엉뚱한 줄을 가리킨다(O-I1-11).\n                         구조화 오류가 없는 실패(보안 검사 422 등)는 줄을 모르므로 좌표 0·코드 없이 서버 문구만 싣는다.",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "markupCompileError": "{{error.errors?.compile_error ?? {code: 'request_failed', message: error.message ?? '', line: 0, column: 0}}}",
+                                                                "markupCompileError": "{{error.errors?.compile_error ?? {code: null, message: error.message ?? '', line: 0, column: 0}}}",
+                                                                "markupWarnings": [],
                                                                 "jsonViewStale": true
                                                             }
                                                         }
@@ -1852,12 +1896,37 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "줄이 있는 오류는 누르면 코드 편집기가 그 줄로 간다(7.1.0 P16 — 검사 위치를 소스 줄과 연결).",
+                                                "id": "markup_error_goto",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{(_global.markupCompileError?.line ?? 0) > 0}}",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "editorFormat": "markup",
+                                                            "editorRevealAt": "{{({line: _global.markupCompileError.line, column: _global.markupCompileError.column || 1, nonce: Date.now()})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "block w-full text-left font-mono text-xs mt-1 break-all underline decoration-dotted hover:decoration-solid",
+                                                    "title": "$t:admin.templates.layout_edit.go_to_line|line={{_global.markupCompileError?.line ?? 0}}"
+                                                },
+                                                "text": "{{_global.markupCompileError.line + ':' + (_global.markupCompileError.column ?? 0) + ' · '}}{{_global.markupCompileError?.message ?? ''}}{{_global.markupCompileError?.code ? (' · ' + _global.markupCompileError.code) : ''}}"
+                                            },
+                                            {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{!((_global.markupCompileError?.line ?? 0) > 0)}}",
                                                 "props": {
                                                     "className": "font-mono text-xs mt-1 break-all"
                                                 },
-                                                "text": "{{_global.markupCompileError?.line ?? 0}}:{{_global.markupCompileError?.column ?? 0}} · {{_global.markupCompileError?.message ?? ''}} · {{_global.markupCompileError?.code ?? ''}}"
+                                                "text": "{{_global.markupCompileError?.message ?? ''}}{{_global.markupCompileError?.code ? (' · ' + _global.markupCompileError.code) : ''}}"
                                             }
                                         ]
                                     },
@@ -1901,9 +1970,42 @@
                                                     "index_var": "warningIdx"
                                                 },
                                                 "props": {
-                                                    "className": "font-mono text-xs mt-1 break-all"
+                                                    "className": "mt-1"
                                                 },
-                                                "text": "{{warning.line ?? 0}}:{{warning.column ?? 0}} · {{warning.message ?? ''}} · {{warning.code ?? ''}}"
+                                                "children": [
+                                                    {
+                                                        "comment": "줄이 있는 경고는 누르면 HTML 탭으로 돌아가 그 줄·칸으로 커서를 옮긴다 — 같은 항목을 다시 눌러도 움직이게 nonce 를 바꾼다(7.1.0 P16).",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{(warning.line ?? 0) > 0}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "editorFormat": "markup",
+                                                                    "editorRevealAt": "{{({line: warning.line, column: warning.column || 1, nonce: Date.now()})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "block w-full text-left font-mono text-xs break-all underline decoration-dotted hover:decoration-solid",
+                                                            "title": "$t:admin.templates.layout_edit.go_to_line|line={{warning.line ?? 0}}"
+                                                        },
+                                                        "text": "{{warning.line + ':' + (warning.column ?? 0) + ' · '}}{{warning.message ?? ''}}{{warning.code ? (' · ' + warning.code) : ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!((warning.line ?? 0) > 0)}}",
+                                                        "props": {
+                                                            "className": "font-mono text-xs break-all"
+                                                        },
+                                                        "text": "{{warning.message ?? ''}}{{warning.code ? (' · ' + warning.code) : ''}}"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     },
@@ -1911,7 +2013,8 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
+                                            "id": "code_editor_inline_notice",
+                                            "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}"
                                         },
                                         "children": [
                                             {

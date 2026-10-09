@@ -162,7 +162,14 @@ class UpdateLayoutContentRequest extends FormRequest
             if (count($slotNames) === 1) {
                 $skeleton['slots'] = [$slotNames[0] => $maskedComponents];
             } elseif (count($slotNames) === 0) {
-                $skeleton['slots'] = ['content' => $maskedComponents];
+                // 물려받아 제목·초기값만 바꾸는 화면(슬롯도 컴포넌트도 없음)에 빈 `content` 슬롯을 지어 넣지 않는다.
+                // 부모가 그 슬롯을 정의하지 않으면 「부모 레이아웃에 정의되지 않은 슬롯」 으로 저장이 막히고,
+                // 정의했다면 빈 슬롯이 부모 본문을 비운다(실측 2026-10-06: `admin_language_packs` 제목 변경 422).
+                if ($maskedComponents === []) {
+                    unset($skeleton['slots']);
+                } else {
+                    $skeleton['slots'] = ['content' => $maskedComponents];
+                }
             } else {
                 $nextSlots = [];
                 foreach ($skeletonSlots as $slotName => $slotValue) {

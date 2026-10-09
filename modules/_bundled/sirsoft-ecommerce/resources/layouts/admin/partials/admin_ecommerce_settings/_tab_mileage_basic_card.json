@@ -242,7 +242,7 @@
                             "props": {
                                 "className": "text-sm text-gray-600 dark:text-gray-400"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_suffix"
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_suffix|count={{_local.form?.mileage?.earn_delay_days ?? 0}}"
                         }
                     ]
                 },

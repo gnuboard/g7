@@ -68,6 +68,7 @@
       "discount_code_name_desc": "Discount Code Name (Z-A)"
     },
     "per_page": "{{count}} items",
+    "per_page_one": "{{count}} item",
     "columns": {
       "checkbox": "Select",
       "no": "No.",
@@ -97,6 +98,7 @@
     "status_change": {
       "title": "Change Status?",
       "description": "The status of {{count}} selected discount codes will be changed to {{status}}.",
+      "description_one": "The status of {{count}} selected discount code will be changed to {{status}}.",
       "cancel": "Cancel",
       "confirm": "Confirm"
     },

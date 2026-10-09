@@ -401,7 +401,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다",
@@ -410,19 +410,20 @@
                                                     "params": {
                                                         "target": "global",
                                                         "dateQuick": "today",
-                                                        "dateFrom": "{{new Date().toISOString().slice(0, 10)}}",
-                                                        "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                        "dateFrom": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다",
@@ -431,19 +432,20 @@
                                                     "params": {
                                                         "target": "global",
                                                         "dateQuick": "3days",
-                                                        "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}",
-                                                        "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 2); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_3days"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "최근 1주 — 오늘 포함 7일이라 엿새를 뺀다",
@@ -452,40 +454,42 @@
                                                     "params": {
                                                         "target": "global",
                                                         "dateQuick": "week",
-                                                        "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}",
-                                                        "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 6); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
-                                                    "comment": "최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 브라우저가 다음 달로 넘긴다)",
+                                                    "comment": "최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 다음 달로 넘어간다). 「오늘」은 계정 시간대(회원 → 사이트 기본)의 날짜이고, 그 달력 날짜에서 UTC 셈으로 빼 브라우저 시간대가 끼지 않는다",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
                                                         "dateQuick": "month",
-                                                        "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}",
-                                                        "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 1); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_month"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "최근 3개월 — 달 셋을 뺀 같은 날짜",
@@ -494,19 +498,20 @@
                                                     "params": {
                                                         "target": "global",
                                                         "dateQuick": "3months",
-                                                        "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}",
-                                                        "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 3); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다)",
@@ -521,6 +526,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_all"

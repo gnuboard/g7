@@ -92,6 +92,7 @@ effects:
   # 열 선택기의 선택지·기본 열은 표가 실제로 그리는 열과 같다(표에 없는 「ID」 가 「필수」 로 켜져 있던 결함)
   - column_selector_matches_grid_columns
   - date_quick_uses_date_format
+  - date_quick_uses_account_timezone
   - visible_filters_restored_from_storage
   - ext_filter_channel_assembled
   - search_users_query_contract
@@ -104,3 +105,5 @@ effects:
   - admin_user_list_restored_after_back_navigation
   - admin_user_list_row_actions_unchanged
   - admin_user_list_extension_filters_sent
+  # 내 정보 응답도 언어 코드 대신 언어 이름(language_label)을 싣는다(7.1.0 잔여 관측 R-17)
+  - user_language_label_exposed_on_profile

@@ -81,12 +81,29 @@ class SafeLayoutExpressions implements ValidationRule
     private ?array $trustedHosts = null;
 
     /**
+     * 위반 메시지 → 그 위반을 낸 값(처음 하나). 소스 위치를 찾는 데 쓴다(7.1.0 P16).
+     *
+     * @var array<string, string>
+     */
+    private array $offending = [];
+
+    /**
+     * 위반 메시지별로 그 위반을 낸 값을 돌려줍니다 — 마크업 소스에서 위치를 찾는 단서.
+     *
+     * @return array<string, string> 메시지 → 값
+     */
+    public function offendingValues(): array
+    {
+        return $this->offending;
+    }
+
+    /**
      * 검증 수행
      *
      * @param  string  $attribute  검증 대상 속성명
      * @param  mixed  $value  레이아웃 JSON(배열) — 배열이 아니면 검사하지 않는다
      * @param  Closure  $fail  검증 실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -102,7 +119,7 @@ class SafeLayoutExpressions implements ValidationRule
      *
      * @param  array<mixed>  $node  현재 노드
      * @param  Closure  $fail  검증 실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     private function walk(array $node, Closure $fail): void
     {
@@ -137,7 +154,7 @@ class SafeLayoutExpressions implements ValidationRule
      *
      * @param  string  $value  검사 대상 문자열
      * @param  Closure  $fail  검증 실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     private function assertSafeExpression(string $value, Closure $fail): void
     {
@@ -147,7 +164,9 @@ class SafeLayoutExpressions implements ValidationRule
         // 토큰만 아래에서 거부한다.
         foreach (self::DANGEROUS_PATTERNS as $pattern) {
             if (preg_match($pattern, $value) === 1) {
-                $fail(__('validation.layout.dangerous_expression', ['snippet' => mb_substr($value, 0, 80)]));
+                $message = __('validation.layout.dangerous_expression', ['snippet' => mb_substr($value, 0, 80)]);
+                $this->offending[$message] ??= $value;
+                $fail($message);
 
                 return;
             }
@@ -160,7 +179,7 @@ class SafeLayoutExpressions implements ValidationRule
      * @param  array<mixed>  $list  scripts 또는 data_sources 배열
      * @param  string  $field  검사할 필드명 (src | endpoint)
      * @param  Closure  $fail  검증 실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     private function assertSameOriginList(array $list, string $field, Closure $fail): void
     {
@@ -183,7 +202,9 @@ class SafeLayoutExpressions implements ValidationRule
             // same-origin path 이거나, 확장이 선언한 신뢰 호스트면 허용. 그 외 외부 origin 차단.
             if (! $this->isSameOriginPath($url)
                 && ! TrustedScriptHosts::isTrustedUrl($url, $this->trustedHosts())) {
-                $fail(__('validation.layout.external_resource_url', ['url' => $url]));
+                $message = __('validation.layout.external_resource_url', ['url' => $url]);
+                $this->offending[$message] ??= $url;
+                $fail($message);
 
                 return;
             }

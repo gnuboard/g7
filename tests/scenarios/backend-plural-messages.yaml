@@ -1,0 +1,25 @@
+feature: 서버 영어 메시지의 단·복수 (7.1.0 결정 — `(s)` 표기 제거)
+
+description: |
+  서버가 내는 영어 메시지(API 응답 message·예외·활동 로그·콘솔 출력)는 「1 user(s)」처럼 수와 상관없이
+  `(s)` 를 붙여 왔다. 프런트 사전이 `count` 로 CLDR 범주를 고르는 것과 같게, 영어 값을 `단수|복수` 로 적고
+  수로 고른다 — 1 이면 단수, 0·2 이상·소수이면 복수. 한국어 값은 `|` 없이 그대로라 출력이 바뀌지 않는다.
+  공용 번역점(ResponseHelper·ActivityLog·LayoutSyncSummary)은 치환값의 `count` 로 고르는 `trans_count()` 를 쓴다.
+  한 문장에 독립된 수가 둘인 레이아웃 처리 요약은 「수+명사」를 수마다 따로 고른다.
+
+axes:
+  surface: [dictionary_scan, helper, dictionary, response_message, auth_lock, layout_sync, layout_validation, analytics_label]
+
+effects:
+  - no_parenthesised_plural_in_english_backend_dictionaries
+  - trans_count_picks_singular_only_for_one
+  - english_message_singular_for_one_plural_otherwise
+  - korean_message_unchanged
+  - response_message_follows_count
+  - account_locked_minute_follows_count
+  - layout_sync_summary_pluralises_each_count
+  - layout_validation_error_follows_count
+  - pages_bucket_label_follows_count
+
+test_files:
+  - tests/Unit/Lang/BackendPluralMessagesTest.php

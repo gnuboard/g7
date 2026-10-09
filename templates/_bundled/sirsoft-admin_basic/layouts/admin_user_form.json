@@ -674,7 +674,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —\n                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면\n                 채울 수 없는 칸을 요구하는 셈이 된다.",
+                                                "comment": "역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —\n                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면\n                 채울 수 없는 칸을 요구하는 셈이 된다. 잠금 판정에서 회원 응답의 `can_assign_roles` 는 수정 모드에서만\n                 읽는다 — 수정 → 등록 SPA 이동 뒤에도 `user` 데이터소스에 직전 회원 응답이 남아 있다.",
                                                 "id": "field_roles",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -726,7 +726,7 @@
                                                             "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
                                                             "className": "w-full",
                                                             "defaultVariant": "blue",
-                                                            "disabled": "{{user?.data?.abilities?.can_assign_roles !== true && roles?.data?.abilities?.can_assign_roles !== true}}"
+                                                            "disabled": "{{(!route?.id || user?.data?.abilities?.can_assign_roles !== true) && roles?.data?.abilities?.can_assign_roles !== true}}"
                                                         }
                                                     },
                                                     {
@@ -786,7 +786,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.",
+                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.\n                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,\n                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다.",
                                                 "id": "field_email_verified",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -809,7 +809,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Icon",
-                                                                "if": "{{user?.data?.email_verified_at}}",
+                                                                "if": "{{!!route?.id && user?.data?.email_verified_at}}",
                                                                 "props": {
                                                                     "name": "check-circle",
                                                                     "className": "text-base text-green-500"
@@ -821,7 +821,7 @@
                                                                 "props": {
                                                                     "className": "text-primary text-sm"
                                                                 },
-                                                                "text": "{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
+                                                                "text": "{{route?.id && user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
                                                             }
                                                         ]
                                                     }
@@ -2176,9 +2176,11 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.\n               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다.",
                                                 "id": "notifications_inbox_link",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.member-notifications.read'))}}",
                                                 "children": [
                                                     {
                                                         "type": "basic",

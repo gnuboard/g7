@@ -2108,6 +2108,7 @@
       "onChange",
       "onSearch"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",
@@ -2174,6 +2175,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",
@@ -2211,6 +2213,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "nodeEditor": {
       "kind": "array",
       "params": {
@@ -2589,6 +2592,8 @@
       "onChange",
       "onReset"
     ],
+    "rawValueEvents": ["onChange"],
+    "rawValueArgIndex": { "onChange": 1 },
     "dataProps": [
       {
         "propKey": "filters",

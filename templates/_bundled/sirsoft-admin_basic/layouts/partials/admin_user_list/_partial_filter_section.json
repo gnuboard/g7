@@ -55,7 +55,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('status')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('status')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status"
                             }
                         },
                         {
@@ -192,7 +193,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('role')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('role')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.role"
                             }
                         },
                         {
@@ -281,7 +283,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('createdAt')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('createdAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.created_at"
                             }
                         },
                         {
@@ -377,7 +380,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "가입일 빠른 기간 여섯. 핸들러가 시작·종료일을 날짜 형식으로 계산해 돌려주고 $prev 로 받아 담는다 — 날짜 칸은 시각이 붙은 값을 받지 못한다. 오늘.",
@@ -404,13 +407,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
@@ -437,13 +441,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1개월.",
@@ -470,13 +475,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.month"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3개월.",
@@ -503,13 +509,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "6개월.",
@@ -536,13 +543,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.6months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1년.",
@@ -569,6 +577,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.1year"
@@ -613,7 +622,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('lastLoginAt')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('lastLoginAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.last_login"
                             }
                         },
                         {
@@ -711,7 +721,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "최근 로그인 빠른 기간 여섯 — 가입일과 같은 방식이다. 누르면 「로그인 이력 없음」 을 끈다. 오늘.",
@@ -739,13 +749,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1주일.",
@@ -773,13 +784,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1개월.",
@@ -807,13 +819,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.month"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3개월.",
@@ -841,13 +854,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "6개월.",
@@ -875,13 +889,14 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.6months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1년.",
@@ -909,6 +924,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "{{_local.filter.lastLoginDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                             },
                                             "text": "$t:admin.users.filter.date_quick.1year"
@@ -994,7 +1010,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('adminScope')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('adminScope')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.admin_scope"
                             }
                         },
                         {
@@ -1167,7 +1184,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('lockState')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('lockState')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.lock_state"
                             }
                         },
                         {
@@ -1340,7 +1358,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('dormantAt')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('dormantAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.dormant_at"
                             }
                         },
                         {
@@ -1454,7 +1473,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('statusChangedAt')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('statusChangedAt')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status_changed"
                             }
                         },
                         {
@@ -1613,7 +1633,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('language')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('language')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.language"
                             }
                         },
                         {
@@ -1690,7 +1711,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('country')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('country')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.country"
                             }
                         },
                         {
@@ -1749,6 +1771,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
+                                        "aria-label": "$t:common.clear_selection",
+                                        "title": "$t:common.clear_selection",
                                         "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
                                     },
                                     "children": [
@@ -1800,7 +1824,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('emailVerified')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('emailVerified')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.email_verified"
                             }
                         },
                         {
@@ -1973,7 +1998,8 @@
                             "props": {
                                 "type": "checkbox",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
-                                "checked": "{{(_local.visibleFilters || []).includes('identityVerified')}}"
+                                "checked": "{{(_local.visibleFilters || []).includes('identityVerified')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.identity_verified"
                             }
                         },
                         {

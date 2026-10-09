@@ -477,7 +477,7 @@
                                 }
                             },
                             {
-                                "comment": "신규·재방문 — 선택 기간 점의 합. 익명 모드처럼 쿠키가 없어 가를 수 없는 칸은 서버가 null 로 주고, 기간 전체가\n          null 이면 숫자 대신 「—」와 「구분할 수 없습니다」를 보인다(0 으로 적으면 「신규 0명」이라는 거짓이 된다).\n          비율 막대를 넣으려고 StatCard 대신 직접 만들지만, 틀(카드·아이콘·큰 수치·라벨)은 옆 세 카드와 같은 클래스를 써서\n          한 줄 안에서 높이·여백·그림자가 어긋나지 않게 한다. 큰 수치는 「신규 · 재방문」 순서의 두 숫자, 막대는 신규 비율.",
+                                "comment": "신규·재방문 — 선택 기간 점의 합. 익명 모드처럼 쿠키가 없어 가를 수 없는 칸은 서버가 null 로 주고, 기간 전체가\n          null 이면 숫자 대신 「—」와 「구분할 수 없습니다」를 보인다(0 으로 적으면 「신규 0명」이라는 거짓이 된다).\n          방문이 아예 없는 기간도 점이 null 이므로, 방문이 있을 때만 「—」·구분 불가를 말하고 기록이 없으면 0 · 0 이다(7.1.0 실측 E-D9).\n          비율 막대를 넣으려고 StatCard 대신 직접 만들지만, 틀(카드·아이콘·큰 수치·라벨)은 옆 세 카드와 같은 클래스를 써서\n          한 줄 안에서 높이·여백·그림자가 어긋나지 않게 한다. 큰 수치는 「신규 · 재방문」 순서의 두 숫자, 막대는 신규 비율.",
                                 "id": "quality_new_returning",
                                 "type": "basic",
                                 "name": "Div",
@@ -517,7 +517,7 @@
                                         "props": {
                                             "className": "stats-value-lg"
                                         },
-                                        "text": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.returning_visitors ?? 0), 0)).toLocaleString() : '—'}}"
+                                        "text": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.returning_visitors ?? 0), 0)).toLocaleString() : ((analytics_overview?.data?.series?.points ?? []).some(p => (p.visits ?? 0) > 0) ? '—' : '0 · 0')}}"
                                     },
                                     {
                                         "type": "basic",
@@ -557,7 +557,7 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "if": "{{!(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
+                                        "if": "{{(analytics_overview?.data?.series?.points ?? []).some(p => (p.visits ?? 0) > 0) && !(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
                                         "props": {
                                             "className": "stats-sublabel text-hint text-xs"
                                         },

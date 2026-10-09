@@ -328,7 +328,7 @@
                             "props": {
                                 "className": "text-sm font-medium text-gray-900 dark:text-white"
                             },
-                            "text": "$t:sirsoft-board.admin.settings.bulk_members.result_summary|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}"
+                            "text": "$t:sirsoft-board.admin.settings.bulk_members.result_summary|count={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}"
                         },
                         {
                             "type": "basic",

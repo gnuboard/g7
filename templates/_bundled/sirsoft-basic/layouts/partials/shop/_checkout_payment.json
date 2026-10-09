@@ -325,7 +325,7 @@
                     "props": {
                         "className": "text-xs text-blue-600 dark:text-blue-400"
                     },
-                    "text": "$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
+                    "text": "$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
                 },
                 {
                     "comment": "입금자명 입력",
@@ -905,7 +905,7 @@
                     "props": {
                         "className": "text-xs text-amber-600 dark:text-amber-400 mt-3"
                     },
-                    "text": "$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
+                    "text": "$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
                 }
             ]
         }

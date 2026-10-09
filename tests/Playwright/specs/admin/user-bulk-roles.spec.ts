@@ -155,8 +155,9 @@ test.describe('회원 목록 역할 일괄 변경 (#708)', () => {
       });
       mo.observe(document.body, { subtree: true, childList: true, characterData: true });
     });
-    // 메뉴를 닫으려고 창 제목을 누른다 — 제목은 머리글 태그가 아니라 `#modal-title` 이다
-    await dialog.locator('#modal-title').click();
+    // 메뉴를 닫으려고 창 제목을 누른다 — 제목은 머리글 태그가 아니라 `.modal-title` 이다
+    // (id 는 창마다 달라 `modal-title-…` 꼴 — 겹친 창 이름 충돌 수정 #736)
+    await dialog.locator('.modal-title').click();
     await dialog.getByRole('button', { name: '적용', exact: true }).click();
     await expect(dialog).toBeHidden({ timeout: 15_000 });
     expect(await page.evaluate(() => (window as any).__zeroDescSeen)).toBe(false);

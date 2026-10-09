@@ -31,6 +31,9 @@ class UninstallPluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 관리자
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -41,6 +44,8 @@ class UninstallPluginCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -72,9 +77,9 @@ class UninstallPluginCommand extends Command
             // 확인 프롬프트 (--force 옵션이 없는 경우)
             if (! $this->option('force')) {
                 $this->warn(__('plugins.commands.uninstall.confirm_prompt', ['plugin' => $identifier]));
-                $this->line(__('plugins.commands.uninstall.confirm_details.roles', ['count' => $rolesCount]));
-                $this->line(__('plugins.commands.uninstall.confirm_details.permissions', ['count' => $permissionsCount]));
-                $this->line(__('plugins.commands.uninstall.confirm_details.layouts', ['count' => $layoutsCount]));
+                $this->line(trans_choice('plugins.commands.uninstall.confirm_details.roles', $rolesCount));
+                $this->line(trans_choice('plugins.commands.uninstall.confirm_details.permissions', $permissionsCount));
+                $this->line(trans_choice('plugins.commands.uninstall.confirm_details.layouts', $layoutsCount));
                 $this->line(__('plugins.commands.uninstall.confirm_details.data'));
                 if ($this->option('delete-data')) {
                     $this->warn('⚠️  --delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.');
@@ -107,9 +112,9 @@ class UninstallPluginCommand extends Command
 
             if ($result) {
                 $this->info('✅ '.__('plugins.commands.uninstall.success', ['plugin' => $identifier]));
-                $this->info('   - '.__('plugins.commands.uninstall.roles_deleted', ['count' => $rolesCount]));
-                $this->info('   - '.__('plugins.commands.uninstall.permissions_deleted', ['count' => $permissionsCount]));
-                $this->info('   - '.__('plugins.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+                $this->info('   - '.trans_choice('plugins.commands.uninstall.roles_deleted', $rolesCount));
+                $this->info('   - '.trans_choice('plugins.commands.uninstall.permissions_deleted', $permissionsCount));
+                $this->info('   - '.trans_choice('plugins.commands.uninstall.layouts_deleted', $layoutsCount));
 
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
                 // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.

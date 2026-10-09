@@ -1,0 +1,26 @@
+feature: 국가 이름을 언어팩이 채움 (7.1.0 전수 실측 O-C1 · 결정 P2)
+
+description: |
+  국가 이름은 `config/countries.php` 의 ko·en 두 벌뿐이라 일본어 화면의 회원 목록·상세 국가 열이 기본 폴백(ko)으로
+  떨어져 「한국」「미국」 처럼 한국어로 보였다. 결정: 언어팩이 채운다.
+
+  계약: 코어 내장 로케일(ko·en)은 설정이 정본, 그 밖의 로케일은 코어 언어팩 `backend/{locale}/countries.php`
+  (키 = ISO alpha-2 코드)가 번역 키 `countries.{코드}` 로 이름을 공급한다. 해석은 `App\Support\CountryName` 한 곳 —
+  회원 응답(`country_name`)과 방문자 통계 지역 라벨이 같은 이름을 쓴다(지역 라벨은 언어팩 다음에 intl 표기).
+  번들 `g7-core-ja` 가 설정의 국가 48개를 모두 일본어로 채운다.
+
+axes:
+  locale: [builtin, pack]
+  pack_line: [present, absent]
+
+exclusions:
+  - { locale: builtin, pack_line: present, reason: "내장 로케일은 설정이 정본이라 언어팩 줄의 유무와 무관하다 — absent 1건으로 충분" }
+
+effects:
+  - country_name_builtin_locale_uses_config
+  - country_name_pack_locale_uses_language_pack_line
+  - country_name_pack_missing_falls_back_to_fallback_locale
+  - bundled_ja_pack_names_every_configured_country
+
+test_files:
+  - tests/Unit/Support/CountryNameTest.php

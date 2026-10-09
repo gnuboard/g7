@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
@@ -888,13 +889,16 @@ class CommentRepository implements CommentRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 댓글 수를 조회합니다 (대시보드 집계용).
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0 O-CF3).
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 댓글 수
      */
     public function countCreatedOnDate(string $date): int
     {
-        $start = CarbonImmutable::parse($date)->startOfDay();
-        $end = $start->addDay();
+        $siteDay = CarbonImmutable::parse($date, TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
+        $start = $siteDay->utc();
+        $end = $siteDay->addDay()->utc();
 
         return Comment::query()
             ->whereNull('deleted_at')

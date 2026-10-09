@@ -23,21 +23,32 @@ final class LayoutSyncSummary
 
         $parts = [];
 
+        // 한 문장에 수가 둘인 요약은 수마다 「수+명사」를 따로 단·복수로 만들어 넘긴다(영어 문구가 쓴다).
+        // 한국어·일본어 문구는 종전처럼 숫자(`:applied`·`:conflicts`)를 쓴다.
         if (($layoutSync['modified_count'] ?? 0) > 0) {
+            $applied = (int) ($layoutSync['applied_count'] ?? 0);
+            $conflicts = (int) ($layoutSync['conflict_count'] ?? 0);
             $parts[] = __('extensions.layout_sync.summary', [
-                'applied' => (int) ($layoutSync['applied_count'] ?? 0),
-                'conflicts' => (int) ($layoutSync['conflict_count'] ?? 0),
+                'applied' => $applied,
+                'conflicts' => $conflicts,
+                'applied_changes' => trans_choice('extensions.layout_sync.counted.changes', $applied),
+                'conflict_places' => trans_choice('extensions.layout_sync.counted.places', $conflicts),
             ]);
         }
 
         if (($layoutSync['kept_no_base_count'] ?? 0) > 0) {
-            $parts[] = __('extensions.layout_sync.no_base', ['count' => (int) $layoutSync['kept_no_base_count']]);
+            $parts[] = trans_choice('extensions.layout_sync.no_base', (int) $layoutSync['kept_no_base_count']);
         }
 
         $deleted = (int) ($layoutSync['kept_deleted_by_operator_count'] ?? 0);
         $collided = (int) ($layoutSync['kept_name_collision_count'] ?? 0);
         if ($deleted + $collided > 0) {
-            $parts[] = __('extensions.layout_sync.skipped', ['deleted' => $deleted, 'collided' => $collided]);
+            $parts[] = __('extensions.layout_sync.skipped', [
+                'deleted' => $deleted,
+                'collided' => $collided,
+                'deleted_screens' => trans_choice('extensions.layout_sync.counted.screens', $deleted),
+                'collided_screens' => trans_choice('extensions.layout_sync.counted.screens', $collided),
+            ]);
         }
 
         return $parts === [] ? null : implode(' ', $parts);
@@ -61,6 +72,6 @@ final class LayoutSyncSummary
             return [$messageKey, $messageParams];
         }
 
-        return ['extensions.layout_sync.message', ['message' => __($messageKey, $messageParams), 'summary' => $summary]];
+        return ['extensions.layout_sync.message', ['message' => trans_count($messageKey, $messageParams), 'summary' => $summary]];
     }
 }

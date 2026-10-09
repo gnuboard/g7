@@ -143,7 +143,7 @@ interface OrderOptionRepositoryInterface
      * unit_price × (quantity − cancelled_quantity) 를 합산합니다.
      * 날짜는 주문(orders.ordered_at) 기준으로 귀속합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return float 상품 순매출 합계
      */
     public function sumNetSalesOnDate(string $date): float;
@@ -154,18 +154,18 @@ interface OrderOptionRepositoryInterface
      * 매출 반영 상태(option_status)의 주문상품만 대상으로,
      * (quantity − cancelled_quantity) 를 합산합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return int 판매 수량 합계
      */
     public function sumNetQuantityOnDate(string $date): int;
 
     /**
-     * 특정 주문일의 옵션 상태별 판매 수량을 집계합니다 (대시보드 배지).
+     * 특정 주문일의 옵션 상태별 판매 수량을 집계합니다 (일 집계의 상태별 수량 기록 — 「오늘」 배지는 주문 수를 따로 센다).
      *
      * 당일 주문(orders.ordered_at)의 모든 주문상품을 option_status 로
      * 그룹화하여 상태별 수량(quantity 합)을 반환합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return array<string, int> option_status 값 => 수량 합 매핑
      */
     public function countByOptionStatusOnDate(string $date): array;

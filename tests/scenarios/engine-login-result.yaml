@@ -24,6 +24,7 @@ effects:
   - auth_manager_session_lifecycle
   - auth_manager_token_refresh
   - auth_manager_redirect_urls
+  - auth_manager_redirect_skips_guest_only_pages   # 로그인·가입·비밀번호 찾기·재설정 화면은 복귀 경로로 싣지 않는다(engine-v1.78.1, 실측 O-1)
   - login_result_discriminates_response_forms
   - two_factor_completion_returns_login_result
   - two_factor_resend_replaces_challenge

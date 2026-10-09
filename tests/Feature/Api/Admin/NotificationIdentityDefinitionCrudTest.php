@@ -164,6 +164,34 @@ class NotificationIdentityDefinitionCrudTest extends TestCase
     }
 
     /**
+     * 목록 행에서도 운영자가 추가한 정책별 문구는 can_delete=true 다 — 화면의 [삭제] 단추는 목록 행의 값으로 그린다.
+     *
+     * 컬렉션은 항목을 이미 NotificationDefinitionResource 로 감싼 채 넘기므로, 행 판정이 감싼 리소스를
+     * 모델로 오인하지 않아야 한다(2026-10-06 실측: 상세 API 는 true, 목록 행은 false 라 [삭제] 가 안 보였다).
+     *
+     * @scenario surface=admin_api
+     *
+     * @effects list_row_operator_definition_deletable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_row_of_operator_definition_is_deletable(): void
+    {
+        $this->makeAdminPolicy('admin.list.deletable');
+        $id = $this->api()->postJson('/api/admin/notification-definitions', $this->payload('admin.list.deletable'))
+            ->assertStatus(201)->json('data.id');
+
+        $rows = collect($this->api()->getJson('/api/admin/notification-definitions?per_page=100&extension_type=core&category=identity')
+            ->assertStatus(200)->json('data.data'));
+
+        $operator = $rows->firstWhere('id', $id);
+        $this->assertNotNull($operator);
+        $this->assertTrue($operator['abilities']['can_delete'], '운영자 정책별 문구 행은 [삭제] 가 열려야 한다');
+        $rows->reject(fn ($row) => $row['id'] === $id)
+            ->each(fn ($row) => $this->assertFalse($row['abilities']['can_delete'], "선언 정의 {$row['type']} 는 삭제 불가여야 한다"));
+    }
+
+    /**
      * 분류 필터 — identity 는 본인인증만, general 은 일반 알림만, extension_type=core 는 운영자 정의까지 담는다.
      *
      * @scenario surface=admin_api

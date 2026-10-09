@@ -22,6 +22,7 @@ return [
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',
+        'internal_error' => '서버 내부 오류가 발생했습니다. 자세한 내용은 서버 로그를 확인하세요.',
     ],
 
     'warnings' => [
@@ -196,6 +197,12 @@ return [
         'summary' => '레이아웃: 새 버전 변경 :applied곳 자동 반영, 운영자 수정과 겹친 :conflicts곳은 운영자 것 유지.',
         'no_base' => '(비교 기준이 없는 :count개 화면은 통째로 유지)',
         'skipped' => '(운영자가 지운 화면 :deleted개·이름이 겹친 화면 :collided개는 건너뜀)',
+        // 영어 요약이 수마다 단·복수를 고르려고 쓰는 「수+단위」 — 한국어 요약은 숫자 자리표시자를 그대로 쓴다.
+        'counted' => [
+            'changes' => ':count곳',
+            'places' => ':count곳',
+            'screens' => ':count개',
+        ],
         'fragment_label' => '확장 조각 :target (:key)',
         'mode' => [
             'overwrite' => '모두 교체',
