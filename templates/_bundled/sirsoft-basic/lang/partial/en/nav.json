@@ -9,5 +9,7 @@
   "register": "Sign Up",
   "logout": "Logout",
   "more": "More",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "cart_with_count": "Cart ({{count}} items)",
+  "close_menu": "Close menu"
 }

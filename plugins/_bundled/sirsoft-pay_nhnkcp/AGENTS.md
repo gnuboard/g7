@@ -217,3 +217,13 @@ resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에�
 열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
 떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
 정적 검사가 대조한다.
+
+### 환경설정 화면의 안내 글자색은 플러그인 CSS 가 제공한다
+
+`resources/layouts/admin/plugin_settings` 의 경고·성공·위험·안내 글자색은 관리자 템플릿의 의미 클래스(`text-warning-soft` 등)를
+쓰지 않고 이 플러그인의 `resources/css/main.css` 가 정의한 접두 클래스(`pay-nhnkcp-tone-*`, 다크 모드 짝 포함)를 쓴다.
+템플릿이 그 클래스의 이름이나 색을 바꾸면 이 화면의 색이 따라 바뀌기 때문이다(7.1.0 때 형제 플러그인의 라이브 모드
+경고 본문이 초록으로 바뀌었다). 이 화면에만 있는 임의값 배치(`grid-cols-[…]`·`min-w-[…]` 등)는 템플릿 CSS 에 만들어지지 않으므로
+같은 파일에 접두 클래스로 둔다. 다른 결제 플러그인도 같은 이름 체계를 쓰지만 서로의 클래스를 참조하지 않는다.
+CSS 를 고친 뒤에는 `php artisan plugin:build sirsoft-pay_nhnkcp --production` → `plugin:update` 로 `dist/css/plugin.css` 를 반영한다.
+가드: `resources/js/__tests__/layouts/pluginSettingsToneClasses.test.ts`.

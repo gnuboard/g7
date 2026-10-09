@@ -47,7 +47,7 @@
 | `collection` | string | `'default'` | 컬렉션명 |
 | `maxFiles` | number | `10` | 최대 첨부 개수 |
 | `maxSize` | number | `10` | 파일당 최대 크기 (MB) |
-| `maxConcurrentUploads` | number | `3` | 동시 업로드 수 |
+| `maxConcurrentUploads` | number | `1` | 동시 업로드 수. 1 이면 고른 순서대로 하나씩 올린다. 2 이상이면 서버가 도착 순서로 번호를 매기는 경우 저장 순서가 완료 순서가 된다(화면 목록·완료 콜백·저장 목록은 어느 값이든 고른 순서를 지킨다) |
 | `accept` | string | - | 허용 확장자 (예: `"image/*"`, `".jpg,.png,.pdf"`) |
 | `imageCompression` | object | - | 이미지 압축 옵션 `{ maxSizeMB, maxWidthOrHeight }` |
 | `autoUpload` | boolean | `true` | 파일 선택 시 즉시 업로드 여부 |

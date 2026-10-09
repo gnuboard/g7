@@ -4,10 +4,13 @@ namespace Plugins\Sirsoft\Gdpr\Http\Requests;
 
 use App\Services\PluginSettingsService;
 use Illuminate\Foundation\Http\FormRequest;
+use Plugins\Sirsoft\Gdpr\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /** 수신자는 인증 회원으로 고정하고 저장된 채널 설정을 검증합니다. */
 class SendTestNoticeRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 권한 검사는 라우트 미들웨어에 위임합니다.
      *

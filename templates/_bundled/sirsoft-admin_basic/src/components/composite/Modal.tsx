@@ -164,12 +164,24 @@ export const Modal: React.FC<ModalProps> = ({
     const token = Symbol('modal');
     openModalStack.push(token);
 
+    // 창 안에서 펼친 팝업(선택 목록·검색 드롭다운·작업 메뉴 등)이 있으면 이 Esc 는 팝업 몫이다 — 팝업이 자기 리스너로 닫는다.
+    // 창과 팝업이 각자 Esc 를 받아, 목록을 펼친 채 누른 Esc 한 번에 창까지 닫혀 저장 안 한 입력이 사라졌다(7.1.0 O-K3-16,
+    // g7 D-J3 와 같은 결함). 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
+    // 자기 onKeyDown 으로 닫는 팝업은 브라우저에서 이 리스너보다 먼저 닫힌 상태가 그려지므로, 키를 누른 순간(캡처 단계)의
+    // 펼침 여부를 함께 본다.
+    const hasOpenPopup = () => Boolean(
+      modalRef.current?.querySelector('[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])')
+    );
+    let popupOpenAtKeyDown = false;
+    const notePopupOnKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') popupOpenAtKeyDown = hasOpenPopup();
+    };
+
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || openModalStack[openModalStack.length - 1] !== token) return;
-      // 창 안에서 펼친 팝업(선택 목록·태그 메뉴 등)이 있으면 이 Esc 는 팝업 몫이다 — 팝업이 자기 리스너로 닫는다.
-      // 창과 팝업이 각자 document 리스너로 Esc 를 받아, 목록을 펼친 채 누른 Esc 한 번에 창까지 닫혔다(7.1.0 J D-J3).
-      // 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
-      if (modalRef.current?.querySelector('[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])')) return;
+      const popupWasOpen = popupOpenAtKeyDown;
+      popupOpenAtKeyDown = false;
+      if (popupWasOpen || hasOpenPopup()) return;
       if (closeOnEscapeRef.current) {
         // 닫기 처리기가 템플릿 엔진 액션 처리기일 수 있다 — 엔진은 이벤트를 받는다고 보고 event.type 을
         // 읽으므로 닫기(X)·바깥 클릭처럼 원본 이벤트를 넘긴다(빈 인자면 TypeError 로 창이 닫히지 않았다).
@@ -177,11 +189,11 @@ export const Modal: React.FC<ModalProps> = ({
       }
     };
 
-    // capture 단계에서 판정한다 — 입력칸에 초점이 있는 팝업(태그 입력·검색 선택)은 Esc 를 자기 요소에서 먼저 받아
-    // 목록을 닫으므로, bubble 단계에서 보면 `aria-expanded` 가 이미 false 라 창까지 닫혔다(회원 역할 일괄 변경 창 E2E).
-    document.addEventListener('keydown', handleEscape, true);
+    document.addEventListener('keydown', notePopupOnKeyDown, true);
+    document.addEventListener('keydown', handleEscape);
     return () => {
-      document.removeEventListener('keydown', handleEscape, true);
+      document.removeEventListener('keydown', notePopupOnKeyDown, true);
+      document.removeEventListener('keydown', handleEscape);
       const index = openModalStack.indexOf(token);
       if (index !== -1) openModalStack.splice(index, 1);
     };

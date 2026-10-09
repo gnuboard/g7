@@ -28,10 +28,14 @@ export const MemoCard: React.FC<MemoCardProps> = ({
   body = '',
   highlighted = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   return (
     <div
+      id={id}
       className={`flex items-baseline gap-2 border-b border-gray-200 py-2 dark:border-gray-700 ${className}`}
+      {...editorAttrs}
     >
       <span
         className={`text-sm font-medium ${

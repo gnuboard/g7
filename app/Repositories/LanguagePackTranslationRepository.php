@@ -109,6 +109,13 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             return $audit;
         }
 
+        // 모듈·플러그인 범위 팩은 활성화 때 확장 행뿐 아니라 그 확장이 소유한 권한·역할·메뉴·알림에도
+        // 로케일을 넣는다(applySeedFromPack). 종전에는 확장 행만 걷어, 팩을 끈 뒤에도 그 문구가 남았다.
+        if (in_array($pack->scope, [LanguagePackScope::Module->value, LanguagePackScope::Plugin->value], true)
+            && $pack->target_identifier) {
+            $this->stripExtensionOwnedRows($pack, $locale, $audit);
+        }
+
         $modelMaps = [
             LanguagePackScope::Core->value => [
                 Permission::class => ['name', 'description'],
@@ -144,6 +151,51 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         }
 
         return $audit;
+    }
+
+    /**
+     * 모듈·플러그인 범위 팩이 그 확장 소유 권한·역할·메뉴·알림 정의·알림 템플릿에 넣은 로케일을 걷습니다.
+     *
+     * 소유 판정은 주입(applyByIdentifier·applyNotifications)과 같은 기준(extension_type +
+     * extension_identifier)이다. 운영자 수정(user_overrides 의 `컬럼.로케일`)은 stripLocaleColumns 가 보존한다.
+     *
+     * @param  LanguagePack  $pack  비활성화된 모듈·플러그인 범위 언어팩
+     * @param  string  $locale  제거할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
+     */
+    protected function stripExtensionOwnedRows(LanguagePack $pack, string $locale, array &$audit): void
+    {
+        $owned = [
+            Permission::class => ['name', 'description'],
+            Role::class => ['name', 'description'],
+            Menu::class => ['name'],
+            NotificationDefinition::class => ['name', 'description'],
+        ];
+
+        foreach ($owned as $modelClass => $columns) {
+            $query = $modelClass::query();
+            $this->scopeOwnership($query, $pack);
+
+            $query->get()->each(function (Model $row) use ($columns, $locale, &$audit) {
+                $this->stripLocaleColumns($row, $locale, $columns, $audit);
+            });
+        }
+
+        $definitionQuery = NotificationDefinition::query();
+        $this->scopeOwnership($definitionQuery, $pack);
+        $definitionIds = $definitionQuery->pluck('id');
+
+        if ($definitionIds->isEmpty()) {
+            return;
+        }
+
+        NotificationTemplate::query()
+            ->whereIn('definition_id', $definitionIds)
+            ->get()
+            ->each(function (NotificationTemplate $tpl) use ($locale, &$audit) {
+                $this->stripLocaleColumns($tpl, $locale, ['subject', 'body'], $audit);
+            });
     }
 
     /**

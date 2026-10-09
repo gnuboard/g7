@@ -125,7 +125,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -283,7 +283,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-verification_nhnkcp.settings.section_live_keys"
                                     }
@@ -301,7 +301,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -383,7 +383,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -448,7 +448,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -532,7 +532,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-verification_nhnkcp.settings.section.duplicate_field"
                                     }

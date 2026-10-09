@@ -27,6 +27,7 @@ effects:
   - single_key_save_invalidates_service_cache        # 저장 직후 조회가 새 값을 본다
   - single_key_save_does_not_backfill_booleans       # 단건 저장이 미제출 토글을 끄지 않는다
   - bulk_save_backfills_unsubmitted_booleans         # 벌크 저장은 폼 전체가 기준 (기존 계약 유지)
+  - bulk_save_keeps_unsubmitted_non_boolean_values   # 벌크 본문에 빠진 비불리언 값(기본 권한·금지어 등)은 저장본을 이어 쓴다 (7.1.0 실측 K3 — 설정을 받기 전 저장한 한 칸짜리 본문)
   - report_notification_flags_forced_on_single_key_save
   - numeric_string_normalized_on_single_key_save
   - board_settings_storage_isolated_in_tests         # 테스트 저장소 격리 (실제 설정 파일 오염 차단)

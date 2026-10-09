@@ -15,6 +15,8 @@ class StoreProductNoticeTemplateRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 요청 허용 여부(권한은 라우트 미들웨어가 검사)
      */
     public function authorize(): bool
     {
@@ -56,6 +58,22 @@ class StoreProductNoticeTemplateRequest extends FormRequest
             'fields.min' => __('sirsoft-ecommerce::validation.product_notice_template.fields_min'),
             'fields.*.name.required' => __('sirsoft-ecommerce::validation.product_notice_template.field_name_required'),
             'fields.*.content.required' => __('sirsoft-ecommerce::validation.product_notice_template.field_content_required'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시 이름
+     *
+     * 다국어 칸의 현재 언어 값을 비우면 「상품군명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
+     *
+     * @return array<string, string> 필드 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.notice_template_name'),
+            'fields.*.name' => __('sirsoft-ecommerce::validation.attributes.notice_template_field_name'),
+            'fields.*.content' => __('sirsoft-ecommerce::validation.attributes.notice_template_field_content'),
         ];
     }
 }

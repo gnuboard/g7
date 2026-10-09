@@ -13,7 +13,7 @@
   "views": "閲覧",
   "views_count": "閲覧 {{count}}",
   "write": "投稿を作成",
-  "search_placeholder": "タイトル、内容、作成者で検索...",
+  "search_placeholder": "検索キーワードを入力してください",
   "board_not_found": "掲示板が見つかりません",
   "board_not_found_description": "掲示板が存在しないか、無効化されています。",
   "no_posts": "登録された投稿がありません",

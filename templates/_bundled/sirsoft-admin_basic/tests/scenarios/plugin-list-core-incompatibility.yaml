@@ -1,0 +1,17 @@
+feature: 플러그인 목록의 코어 호환성 배지와 화면 낭독기 설명
+
+description: |
+  코어 버전 요구를 충족하지 못하는 플러그인 행에 「코어 업그레이드 필요」 배지를 보이고, 화면 낭독기용 보조 설명(sr-only)으로
+  필요한 코어 버전과 현재 버전을 알린다. 호환되는 행에는 배지가 없다. 보조 설명 문구는 실제 ko 언어 파일 값을 쓰며
+  영문 이름 뒤에 괄호 조사(「은(는)」) 없이 읽혀야 한다(7.1.0 실측 O-R2-5).
+
+axes:
+  compatibility: [incompatible, compatible, incompatible_sr]
+
+effects:
+  - incompatible_badge_shown
+  - badge_hidden_when_compatible
+  - sr_description_rendered_without_bracket_particle
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_plugin_list.incompatibility.test.tsx

@@ -357,7 +357,12 @@ class AnnualNoticeCommandTest extends PluginTestCase
     }
 
     /**
-     * 해당 통지 조건과 후속 결과를 검증합니다.
+     * 마지막 발송 완료 뒤 1년이 지나야 다시 대상이 된다(364일 뒤 0건, 366일 뒤 1건).
+     *
+     * 테스트 DB 에 남은 회원은 setUp 이 가입일을 「지금」으로 맞춰 대상에서 빼는데, 이 시험은 시계를
+     * 366일 앞으로 보내므로 그 회원들도 가입 1년이 지나 대상이 된다(실행 결과가 1 이 아니라 1 + 남은
+     * 회원 수 — 테스트 DB 에 회원이 있을 때만 실패하던 간헐 실패). 시험 회원만 보도록 남은 회원의
+     * 가입일을 이동 범위 밖으로 민다.
      *
      * @return void 반환값 없음
      *
@@ -368,6 +373,7 @@ class AnnualNoticeCommandTest extends PluginTestCase
     public function test_last_success_at_year_boundary_becomes_due(): void
     {
         $this->travelTo(now()->startOfSecond());
+        User::query()->update(['created_at' => now()->addYears(2)]);
         $this->configure(true);
         $user = $this->oldUser();
         $service = app(GdprAnnualNoticeService::class);
@@ -458,6 +464,32 @@ class AnnualNoticeCommandTest extends PluginTestCase
         $notification = DB::table('notifications')->where('notifiable_id', $user->id)->first();
         $this->assertStringContainsString('Annual privacy notice', $notification->data);
         $this->assertStringContainsString('Five years (en)', json_decode($notification->data, true)['body']);
+    }
+
+    /**
+     * 사이트내 알림 본문은 평문이다 — 메일용 HTML(확장 처리 내역의 `<h3>`·`<p>`)이나 HTML 엔티티로
+     * 바꾼 서문(`&amp;`)이 글자 그대로 알림함에 보이면 안 된다. 메일 본문은 종전처럼 HTML 이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects notice_queued, database_notice_body_is_plain_text
+     */
+    public function test_database_notice_body_is_plain_text(): void
+    {
+        $user = $this->oldUser(['language' => 'ko']);
+        app(PluginSettingsService::class)->save('sirsoft-gdpr', ['annual_notice' => ['enabled' => false, 'channels' => ['database'], 'batch_size' => 500, 'introduction' => ['ko' => 'Q&A <안내>']]]);
+        HookManager::addFilter('core.privacy.notice_sections', fn (array $sections) => [...$sections, ['title' => '주문 정보', 'body' => '5년 보관 & 파기']]);
+
+        app(GdprAnnualNoticeService::class)->sendTest($user);
+
+        $body = json_decode(DB::table('notifications')->where('notifiable_id', $user->id)->value('data'), true)['body'];
+        $this->assertStringNotContainsString('<h3>', $body);
+        $this->assertStringNotContainsString('<p>', $body);
+        $this->assertStringNotContainsString('&amp;', $body);
+        $this->assertStringContainsString('Q&A <안내>', $body);
+        $this->assertStringContainsString('주문 정보: 5년 보관 & 파기', $body);
     }
 
     /**

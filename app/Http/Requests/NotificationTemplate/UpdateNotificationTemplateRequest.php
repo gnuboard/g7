@@ -140,6 +140,30 @@ class UpdateNotificationTemplateRequest extends FormRequest
     }
 
     /**
+     * 검증을 통과한 값을 반환합니다 — 수신자 규칙은 보낸 줄 순서의 목록으로 맞춥니다.
+     *
+     * 검증기는 통과 값을 **규칙 키 순서대로** 다시 조립한다. 줄마다 따로 거는 값 규칙
+     * (`recipients.{줄}.value`)이 공용 규칙(`recipients.*.type`)보다 앞에 놓이므로, 값 칸이 없는
+     * 규칙(이벤트 유발자) 뒤에 역할 규칙이 오면 둘째 줄이 먼저 자리를 잡아 `{"1":…,"0":…}` 객체로
+     * 저장됐고, 다시 열면 순서가 뒤집혔다(2026-10-07 실측).
+     *
+     * @param  array|int|string|null  $key  가져올 키 (없으면 전체)
+     * @param  mixed  $default  키가 없을 때 기본값
+     * @return mixed 검증 통과 값
+     */
+    public function validated($key = null, $default = null)
+    {
+        $validated = parent::validated();
+
+        if (isset($validated['recipients']) && is_array($validated['recipients'])) {
+            ksort($validated['recipients'], SORT_NUMERIC);
+            $validated['recipients'] = array_values($validated['recipients']);
+        }
+
+        return data_get($validated, $key, $default);
+    }
+
+    /**
      * 검증 메시지를 반환합니다.
      *
      * @return array 규칙별 오류 메시지
@@ -163,6 +187,8 @@ class UpdateNotificationTemplateRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'subject' => __('notification.validation.attributes.subject'),
+            'body' => __('notification.validation.attributes.body'),
             'recipients' => __('notification.validation.attributes.recipients'),
             'recipients.*.type' => __('notification.validation.attributes.recipient_type'),
             'recipients.*.value' => __('notification.validation.attributes.recipient_value'),

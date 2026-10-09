@@ -380,6 +380,8 @@ foreach ($config['categories'] as $cat) { ... }
 
 비활성화/제거 시에도 user_overrides 등록 locale 은 JSON 에서 제거되지 않습니다. 모든 보존 결정은 `language_pack` 채널에 감사 로그로 기록됩니다.
 
+모듈·플러그인 범위 팩을 비활성화하면 그 로케일 키를 확장 행(이름·설명)뿐 아니라 그 확장이 소유한 권한·역할·메뉴·알림 정의·알림 템플릿에서도 제거합니다(활성화 때 주입한 범위와 같음). 다시 활성화하면 seed 로 다시 채웁니다. 확장에 내장된 언어(`bundled_with_extension`)는 확장 자신의 언어라 제거하지 않습니다.
+
 ## 백엔드 번역 namespace fallback 메커니즘
 
 Laravel `Translator` 의 FileLoader 는 `addNamespace($namespace, $hint)` 가 단일 hint 만 보유하며 덮어쓰는 구조이므로, 모듈/플러그인 자체의 `src/lang` namespace 등록 후 같은 namespace 로 언어팩이 추가되면 모듈의 ko/en 등록이 통째로 사라지는 회귀가 발생합니다.

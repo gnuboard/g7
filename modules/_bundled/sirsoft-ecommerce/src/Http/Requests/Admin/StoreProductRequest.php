@@ -337,6 +337,11 @@ class StoreProductRequest extends FormRequest
             'options.*.stock_quantity' => __('sirsoft-ecommerce::validation.product.attributes.option_stock_quantity'),
             'options.*.option_name' => __('sirsoft-ecommerce::validation.product.attributes.option_name'),
             'options.*.option_code' => __('sirsoft-ecommerce::validation.product.attributes.option_code'),
+            'option_groups.*.name' => __('sirsoft-ecommerce::validation.product.attributes.option_group_name'),
+            'additional_options.*.name' => __('sirsoft-ecommerce::validation.product.attributes.additional_option_name'),
+            'additional_options.*.values.*.name' => __('sirsoft-ecommerce::validation.product.attributes.additional_option_value_name'),
+            'notice_items.*.name' => __('sirsoft-ecommerce::validation.product.attributes.notice_item_name'),
+            'notice_items.*.content' => __('sirsoft-ecommerce::validation.product.attributes.notice_item_content'),
         ];
     }
 

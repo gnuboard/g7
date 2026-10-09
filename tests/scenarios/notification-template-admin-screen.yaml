@@ -113,6 +113,9 @@ effects:
   - core_template_save_body_reads_the_namespace
   # 꺼 둔 템플릿 편집·저장이 다시 켜지 않는다 — 옛 본인인증 메시지 창의 #727 W13 계약을 이식(#699)
   - core_template_save_omits_is_active
+  # 수신자 규칙 여러 줄이 보낸 순서의 목록으로 저장되고, 이미 줄 번호 객체로 저장된 행도 순서대로 읽힌다 (M1-O7)
+  - notification_template_recipients_keep_submitted_order
+  - notification_template_resource_lists_keyed_recipients_in_index_order
 
 test_files:
   - tests/Feature/Api/Admin/NotificationTemplateControllerTest.php

@@ -15,7 +15,7 @@ describe('ActionMenu', () => {
   // @effects action_menu_opens_with_items
   it('컴포넌트가 렌더링됨', () => {
     render(<ActionMenu items={mockItems} />);
-    expect(screen.getByText('작업')).toBeInTheDocument();
+    expect(screen.getByText('Actions')).toBeInTheDocument();
   });
 
   // @scenario space_below=enough
@@ -89,7 +89,7 @@ describe('ActionMenu', () => {
       </div>
     );
 
-    const trigger = screen.getByText('작업');
+    const trigger = screen.getByText('Actions');
     await user.click(trigger);
 
     expect(screen.getByText('수정')).toBeInTheDocument();
@@ -176,5 +176,131 @@ describe('ActionMenu', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  describe('키보드 접근 (WAI-ARIA 메뉴 버튼)', () => {
+    // 레이아웃이 children 으로 트리거를 넘기는 경우(반응·스크랩 관리의 회원 이름 등)에도
+    // 키보드로 열고, 항목을 옮겨 가며 고를 수 있어야 한다.
+    const memberItems: ActionMenuItem[] = [
+      { id: 'view_member', label: '회원정보 보기' },
+      { id: 'locked', label: '잠긴 항목', disabled: true },
+      { id: 'search_member', label: '이 회원으로 검색' },
+    ];
+
+    const renderCustomTrigger = (onItemClick = vi.fn()) => {
+      render(
+        <ActionMenu items={memberItems} onItemClick={onItemClick}>
+          <span>홍길동</span>
+        </ActionMenu>
+      );
+      return { onItemClick, trigger: screen.getByRole('button', { name: '홍길동' }) };
+    };
+
+    // @scenario space_below=enough
+    // @effects action_menu_keyboard_operable
+    it('children 트리거도 초점을 받는 메뉴 버튼으로 노출된다', () => {
+      const { trigger } = renderCustomTrigger();
+
+      expect(trigger).toHaveAttribute('tabindex', '0');
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_keyboard_operable
+    it('Enter 로 열면 첫 항목에 초점이 가고, 항목은 menuitem 이다', () => {
+      const { trigger } = renderCustomTrigger();
+
+      trigger.focus();
+      fireEvent.keyDown(trigger, { key: 'Enter' });
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+      const items = screen.getAllByRole('menuitem');
+      expect(items.map((item) => item.textContent)).toEqual(['회원정보 보기', '잠긴 항목', '이 회원으로 검색']);
+      expect(items[1]).toHaveAttribute('aria-disabled', 'true');
+      expect(document.activeElement).toBe(items[0]);
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_keyboard_operable
+    it('화살표로 잠긴 항목을 건너뛰고 Enter 로 고르면 닫히고 트리거로 초점이 돌아온다', () => {
+      const { trigger, onItemClick } = renderCustomTrigger();
+
+      fireEvent.keyDown(trigger, { key: ' ' });
+      fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowDown' });
+      expect(document.activeElement?.textContent).toBe('이 회원으로 검색');
+
+      fireEvent.keyDown(document.activeElement as Element, { key: 'Enter' });
+      expect(onItemClick).toHaveBeenCalledWith('search_member', expect.objectContaining({ id: 'search_member' }));
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_keyboard_operable
+    it('기본 버튼 트리거는 키보드 클릭(detail 0)으로 열면 첫 항목에 초점을 준다', () => {
+      render(<ActionMenu items={memberItems} />);
+      const trigger = screen.getByRole('button', { name: /Actions/ });
+
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+      fireEvent.click(trigger, { detail: 0 });
+      expect(document.activeElement?.textContent).toBe('회원정보 보기');
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_keyboard_operable
+    it('Space 로도 고르고, Escape 는 고르지 않고 닫는다', () => {
+      const { trigger, onItemClick } = renderCustomTrigger();
+
+      fireEvent.keyDown(trigger, { key: 'Enter' });
+      fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(onItemClick).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(trigger);
+
+      fireEvent.keyDown(trigger, { key: 'Enter' });
+      fireEvent.keyDown(document.activeElement as Element, { key: ' ' });
+      expect(onItemClick).toHaveBeenCalledWith('view_member', expect.objectContaining({ id: 'view_member' }));
+    });
+  });
+
+  describe('아이콘만 있는 트리거의 접근 가능한 이름', () => {
+    const expectedFallback = () => {
+      // 컴포넌트와 같은 규칙 — 번역이 없거나 엔진 밖이면 영어 대체 문구
+      const translated = (window as any).G7Core?.t?.('common.actions') as string | undefined;
+      return translated && translated !== 'common.actions' ? translated : 'Actions';
+    };
+
+    // @scenario space_below=enough
+    // @effects action_menu_trigger_has_accessible_name
+    it('글자 없는 아이콘 트리거는 ariaLabel 을 이름으로 단다', () => {
+      render(<ActionMenu items={mockItems} triggerLabel="" triggerIconName={IconName.EllipsisHorizontal} ariaLabel="관리" />);
+      const trigger = screen.getByRole('button');
+
+      expect(trigger).toHaveAttribute('aria-label', '관리');
+      expect(trigger).toHaveAccessibleName('관리');
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_trigger_has_accessible_name
+    it('ariaLabel 이 없으면 공용 「작업」(엔진 밖 Actions) 문구로 이름을 채운다 (이름 없는 버튼을 남기지 않는다)', () => {
+      render(<ActionMenu items={mockItems} triggerLabel="" triggerIconName={IconName.EllipsisVertical} />);
+      const trigger = screen.getByRole('button');
+
+      expect(trigger.getAttribute('aria-label')).toBe(expectedFallback());
+      expect(trigger.getAttribute('aria-label')).not.toBe('');
+    });
+
+    // @scenario space_below=enough
+    // @effects action_menu_trigger_has_accessible_name
+    it('보이는 글자가 있으면 aria-label 로 덮지 않는다 (보이는 이름 = 읽히는 이름)', () => {
+      render(<ActionMenu items={mockItems} triggerLabel="작업" ariaLabel="다른 이름" />);
+      const trigger = screen.getByRole('button');
+
+      expect(trigger).not.toHaveAttribute('aria-label');
+      // 시험 환경의 아이콘은 이름 글자를 그리므로 앞부분만 본다(브라우저의 아이콘은 글자가 없다)
+      expect(trigger).toHaveAccessibleName(/^작업/);
+    });
   });
 });

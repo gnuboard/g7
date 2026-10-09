@@ -282,6 +282,59 @@ class AdminReactionTest extends BoardTestCase
     }
 
     /**
+     * 목록 응답에 게시판 필터 선택지가 실린다 — 반응 조회 권한만 가진 매니저도 게시판을 고를 수 있다.
+     *
+     * 게시판 목록 API(admin/boards)는 게시판 관리 권한이 있어야 열린다. 화면이 그 API 로
+     * 게시판 셀렉트를 채우면 반응 조회만 가진 매니저에게는 403 이 나고 셀렉트가 빈다.
+     *
+     * @scenario case=response_carries_board_options_meta
+     *
+     * @effects index_response_carries_board_options_meta
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_response_carries_board_options_meta(): void
+    {
+        $boards = $this->actingAs($this->viewer)->getJson(self::ENDPOINT)->assertOk()->json('data.boards');
+
+        $this->assertIsArray($boards, '목록 응답에 게시판 선택지가 실려야 합니다.');
+        $mine = collect($boards)->firstWhere('id', $this->board->id);
+        $this->assertNotNull($mine);
+        $this->assertSame($this->board->getLocalizedName(), $mine['name']);
+        $this->assertSame($this->board->slug, $mine['slug']);
+    }
+
+    /**
+     * 반응 조회 권한이 없는 관리자에게는 회원 상세에 반응 요약을 싣지 않는다.
+     *
+     * 요약을 실으면 화면이 「반응」 탭과 건수를 그리고, 「이 회원 반응 목록 보기」는 403 화면으로 끝난다.
+     *
+     * @scenario case=user_detail_summary_requires_view_permission
+     *
+     * @effects admin_user_detail_omits_reactions_summary_without_view_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_user_detail_omits_reactions_summary_without_view_permission(): void
+    {
+        $member = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $this->createUser()->id]);
+        $this->seedReaction($member->id, 'post', $postId, $this->likeId);
+
+        $reader = $this->createAdminWithOnly(['core.users.read']);
+
+        $response = $this->actingAs($reader)->getJson('/api/admin/users/'.$member->uuid);
+        $response->assertOk();
+        $this->assertArrayNotHasKey('board_reactions', $response->json('data') ?? []);
+
+        // 조회 권한이 있으면 그대로 실린다.
+        $this->assertSame(
+            1,
+            $this->actingAs($this->admin)->getJson('/api/admin/users/'.$member->uuid)->json('data.board_reactions.count')
+        );
+    }
+
+    /**
      * per_page 상한(100)을 넘기면 422.
      *
      * @scenario case=per_page_over_limit_rejected
@@ -462,6 +515,36 @@ class AdminReactionTest extends BoardTestCase
         $this->assertNotNull($menu, '모듈이 반응 관리 메뉴를 선언해야 합니다.');
         $this->assertSame('/admin/boards/reactions', $menu['url']);
         $this->assertSame('sirsoft-board.reactions.view', $menu['permission']);
+    }
+
+    /**
+     * 주어진 관리자 권한만 가진 운영자를 만듭니다 (공용 admin 역할을 쓰지 않는다).
+     *
+     * @param  array<int, string>  $permissionIdentifiers  부여할 권한 식별자
+     * @return User 운영자
+     */
+    private function createAdminWithOnly(array $permissionIdentifiers): User
+    {
+        $role = Role::firstOrCreate(
+            ['identifier' => 'sirsoft-board.reaction-only-perms-test'],
+            [
+                'name' => ['ko' => '권한 한정 운영자', 'en' => 'Limited Operator'],
+                'description' => ['ko' => '테스트용', 'en' => 'For tests'],
+            ]
+        );
+
+        foreach ($permissionIdentifiers as $identifier) {
+            $permission = Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => 'admin']
+            );
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        }
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role->id);
+
+        return $user;
     }
 
     /**

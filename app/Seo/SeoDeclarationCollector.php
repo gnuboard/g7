@@ -8,6 +8,7 @@ use App\Contracts\Extension\TemplateManagerInterface;
 use App\Extension\HookManager;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,6 +19,15 @@ use Illuminate\Support\Facades\Log;
  */
 class SeoDeclarationCollector
 {
+    /**
+     * 수집에 필요한 서비스와 확장 관리자를 주입합니다.
+     *
+     * @param  TemplateService  $templateService  템플릿 서비스 (활성 템플릿 조회)
+     * @param  LayoutService  $layoutService  레이아웃 서비스 (병합 레이아웃 로드)
+     * @param  TemplateManagerInterface  $templateManager  템플릿 관리자
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     */
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly LayoutService $layoutService,
@@ -90,7 +100,7 @@ class SeoDeclarationCollector
             }
 
             try {
-                $layout = $this->layoutService->getLayout($templateIdentifier, $layoutName);
+                $layout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $layoutName));
                 $seo = $layout['meta']['seo'] ?? null;
 
                 if (! $seo || ! ($seo['enabled'] ?? false)) {

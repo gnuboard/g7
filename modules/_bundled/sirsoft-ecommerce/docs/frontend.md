@@ -345,6 +345,10 @@
 <!-- @intent END -->
 
 
+### 환경설정 본인인증 정책 탭의 목록 조작
+
+환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`.
+
 ### 레이아웃 주석과 클레임 모달의 입력 전달
 
 새 이벤트 블록(`<on>`)·모달 참조(`<modal src>`)를 만들면 같은 변경에서 설명 주석을 단다 — 이벤트 블록은 `<on>` 앞이 아니라 **첫 액션 앞**에 쓴다(`<on>` 앞 주석은 컴파일 에러). 주석 주입(S21)이 완료로 선언된 뒤라 빈 자리가 생기면 `CommentAnchorStageLedgerTest` 가 red 가 된다. 주석은 산출 JSON 의 `comment` 키로만 들어가고 공개 서빙에서 제거되므로 화면 동작은 바뀌지 않는다.

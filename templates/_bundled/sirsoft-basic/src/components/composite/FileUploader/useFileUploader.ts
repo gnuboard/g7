@@ -146,7 +146,24 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
   // 상태
   const [existingFiles, setExistingFiles] = useState<Attachment[]>(initialFiles);
-  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  // 언어 전환은 화면을 새로 마운트한다 — 저장 전에 고른 대기 파일은 엔진의 언어 전환 인계 저장소에 맡겼다가
+  // 새 인스턴스가 되찾는다(G7Core.locale.handoff, engine-v1.79.0). 키는 화면 경로 + 컬렉션 + 업로드 트리거.
+  const localeHandoffKey = `FileUploader:${typeof window !== 'undefined' ? window.location.pathname : ''}:${collection ?? ''}:${uploadTriggerEvent ?? ''}`;
+  // 맡긴 값은 { pending, order, reordered } — 드래그로 정한 순서도 함께 넘긴다. 올리던 중(압축·업로드)에 넘어온
+  // 항목은 옛 인스턴스의 요청 결과를 받을 수 없으므로 대기로 되돌려 저장 때 다시 올린다.
+  const [localeHandoff] = useState<{ pending: PendingFile[]; order: (string | number)[]; reordered: boolean } | null>(() => {
+    const taken = (window as any).G7Core?.locale?.handoff?.take?.(localeHandoffKey);
+    if (!taken) return null;
+    const rawPending: PendingFile[] = Array.isArray(taken) ? taken : (taken.pending ?? []);
+    return {
+      pending: rawPending.map((f) => (f.status === 'uploading' || f.status === 'compressing' ? { ...f, status: 'pending' as const, progress: 0 } : f)),
+      order: Array.isArray(taken) ? [] : (taken.order ?? []),
+      reordered: Array.isArray(taken) ? false : taken.reordered === true,
+    };
+  });
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>(() => localeHandoff?.pending ?? []);
+  const pendingFilesForLocaleHandoffRef = useRef<PendingFile[]>(pendingFiles);
+  pendingFilesForLocaleHandoffRef.current = pendingFiles;
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeUploadsRef = useRef(0);
@@ -160,9 +177,11 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const [itemToDelete, setItemToDelete] = useState<Attachment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   // 순서가 변경되었는지 추적 (변경 후에는 initialFiles 동기화 무시)
-  const hasReorderedRef = useRef(false);
+  const hasReorderedRef = useRef(localeHandoff?.reordered ?? false);
   // 드래그 순서 유지: 기존/신규 파일 간 섞인 순서를 보존하기 위한 ID 배열
-  const [customOrder, setCustomOrder] = useState<(string | number)[]>([]);
+  const [customOrder, setCustomOrder] = useState<(string | number)[]>(() => localeHandoff?.order ?? []);
+  const customOrderForLocaleHandoffRef = useRef<(string | number)[]>(customOrder);
+  customOrderForLocaleHandoffRef.current = customOrder;
   // initialFiles 참조 안정성 — 외부에서 매 렌더마다 새 배열이 전달되는 경우 방어
   const prevInitialFilesRef = useRef<Attachment[]>(initialFiles);
 
@@ -413,15 +432,30 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
   // 모든 파일 업로드
   const handleUploadAll = useCallback(async (): Promise<Attachment[]> => {
-    const filesToUpload = pendingFiles.filter(
-      (f) => f.status === 'pending' || f.status === 'error'
-    );
+    // 화면 순서(고른 순서, 드래그했으면 드래그 순서)대로 올린다.
+    // 게시판 첨부처럼 서버가 도착 순서로 번호를 매기는 화면에서는 이 순서가 곧 저장 순서다.
+    const visualIndex = new Map(customOrder.map((id, idx) => [String(id), idx]));
+    const filesToUpload = pendingFiles
+      .filter((f) => f.status === 'pending' || f.status === 'error')
+      .map((f, idx) => ({ f, idx }))
+      .sort((a, b) =>
+        customOrder.length === 0
+          ? a.idx - b.idx
+          : (visualIndex.get(String(a.f.id)) ?? pendingFiles.length + a.idx) -
+            (visualIndex.get(String(b.f.id)) ?? pendingFiles.length + b.idx)
+      )
+      .map(({ f }) => f);
+    // 대기 파일 → 고른 순서 위치. 동시 업로드에서 먼저 끝난 파일이 앞에 서지 않게 결과를 이 위치로 정렬한다.
+    const selectionPosition = new Map(filesToUpload.map((f, idx) => [String(f.id), idx]));
 
     if (filesToUpload.length === 0) {
       return [];
     }
 
-    const uploadedAttachments: Attachment[] = [];
+    // 고른 순서 위치에 담는다(완료 순서와 무관)
+    const uploadedByPosition: (Attachment | undefined)[] = [];
+    // 업로드된 첨부 ID → 고른 순서 위치 (화면 목록에 끼워 넣을 자리 계산용)
+    const batchPositionById = new Map<number, number>();
     // 드래그 순서 복원용: pending ID → 업로드된 hash 매핑
     const pendingToHashMap = new Map<string, string>();
     const uploadQueue = [...filesToUpload];
@@ -438,13 +472,29 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         try {
           const attachment = await uploadSingleFile(pendingFile);
           if (attachment) {
-            uploadedAttachments.push(attachment);
+            const position = selectionPosition.get(String(pendingFile.id)) ?? uploadedByPosition.length;
+            uploadedByPosition[position] = attachment;
+            batchPositionById.set(attachment.id, position);
             // 드래그 순서 복원용: pending ID → 업로드된 hash 매핑
             pendingToHashMap.set(String(pendingFile.id), String(attachment.hash));
             // 세션 중 업로드된 파일 추적 (initialFiles 동기화 시 유지)
             uploadedFilesRef.current.set(attachment.id, attachment);
             setPendingFiles((prev) => prev.filter((f) => f.id !== pendingFile.id));
-            setExistingFiles((prev) => [...prev, attachment]);
+            // 이번 묶음의 첨부는 완료 순서가 아니라 고른 순서 자리에 선다
+            setExistingFiles((prev) => {
+              const next = [...prev, attachment];
+              const slots: number[] = [];
+              next.forEach((item, idx) => {
+                if (batchPositionById.has(item.id)) slots.push(idx);
+              });
+              const batchItems = slots
+                .map((idx) => next[idx])
+                .sort((a, b) => (batchPositionById.get(a.id) ?? 0) - (batchPositionById.get(b.id) ?? 0));
+              slots.forEach((slot, k) => {
+                next[slot] = batchItems[k];
+              });
+              return next;
+            });
 
             // customOrder에 pending ID가 있으면 즉시 hash로 교체
             // → allItems useMemo가 올바른 순서로 E를 표시 (UI 플래시 방지)
@@ -495,6 +545,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       .map(() => processQueue());
 
     await Promise.all(workers);
+
+    const uploadedAttachments = uploadedByPosition.filter((item): item is Attachment => Boolean(item));
 
     if (uploadedAttachments.length > 0) {
       onUploadComplete?.(uploadedAttachments);
@@ -785,6 +837,17 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       cancelled = true;
     };
   }, [existingFiles]);
+
+  // 언어 전환으로 언마운트되면 아직 올리지 않은 대기 파일을 인계 저장소에 맡긴다 (engine-v1.79.0)
+  useEffect(() => {
+    return () => {
+      const handoff = (window as any).G7Core?.locale?.handoff;
+      const waiting = pendingFilesForLocaleHandoffRef.current.filter((f) => f.status !== 'done');
+      if (handoff?.isSwitching?.() && waiting.length > 0) {
+        handoff.stash(localeHandoffKey, { pending: waiting, order: customOrderForLocaleHandoffRef.current, reordered: hasReorderedRef.current });
+      }
+    };
+  }, [localeHandoffKey]);
 
   // 언마운트 시에만 모든 인증된 이미지 URL 해제
   useEffect(() => {

@@ -108,6 +108,9 @@ return [
             'recipient_value' => '수신자 값',
             'recipient_relation' => '관련 사용자 관계',
             'recipient_exclude_trigger_user' => '이벤트 유발자 제외',
+            // 다국어 칸 표시 이름 — 템플릿 저장 때 다국어 필수 문구가 칸 이름으로 쓴다
+            'subject' => '알림 제목',
+            'body' => '알림 본문',
         ],
     ],
 

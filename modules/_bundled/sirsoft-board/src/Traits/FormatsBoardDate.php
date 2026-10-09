@@ -39,6 +39,8 @@ trait FormatsBoardDate
         $diffInHours = (int) $now->diffInHours($userCarbon, absolute: true);
 
         // 1시간 미만: N분 전 (공통). 라벨은 현재 로케일을 따른다.
+        // 수가 붙는 문구는 trans_choice 로 고른다 — en 은 1 이면 단수(「1 hour ago」), 그 밖에는 복수.
+        // ko·ja 는 문구가 하나라 그대로 쓰인다(7.1.0 실측 O-K2-4: 「1 hours ago」).
         if ($diffInMinutes < 60) {
             if ($diffInMinutes < 1) {
                 return __('sirsoft-board::messages.common.relative_time.just_now');

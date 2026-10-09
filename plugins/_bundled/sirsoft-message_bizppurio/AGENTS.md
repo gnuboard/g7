@@ -100,8 +100,8 @@
 가드를 거치지 않습니다 — 삭제는 서비스가 카카오측 실패(사유, 연결 실패)를 잡아 DB 행을 지우고 200 과
 `kakao_skip_reason` 으로 끝내고, 예약 동기화는 그 주기만 건너뛰고 명령을 성공으로 끝냅니다.
 
-**임시 저장과 검수 신청의 검증 분담**: 플러그인 설정 화면 작성 창의 「저장」은 본문에
-`draft: true` 를 실어 보내고, `ValidatesTemplateContent::contentRules()` 는 이때
+**임시 저장과 검수 신청의 검증 분담**: 플러그인 설정 화면 작성 창의 「저장」과 코어 알림 편집
+창 하단의 통합 「저장」은 본문에 `draft: true` 를 실어 보내고(두 화면이 같게 동작한다), `ValidatesTemplateContent::contentRules()` 는 이때
 `relaxForDraft()` 로 필수 조건(`required*` · `min:` · 링크 종류별 필수 칸)만 걷어 냅니다 —
 유형 코드 허용값·최대 길이 같은 형식 제약은 그대로입니다. 쓰다 만 내용도 초안으로 남기기
 위해서이며, 종전에는 본문·카테고리 같은 등록 필수값을 모두 채워야만 저장돼 초안을 남길 수
@@ -109,8 +109,8 @@
 content 가 아니라 **저장된 행의 content** 를 검증 입력으로 싣고(`prepareForValidation`), 같은
 trait 의 전체 규칙과 조건부 검증(`validateContentConditionals`)을 걸어 카카오 호출 전에 항목별
 422 로 알립니다. 이 요청의 `isDraftSave()` 는 항상 `false` 라 본문에 `draft` 를 실어도 완화되지
-않습니다. 「저장 후 검수 신청」과 코어 알림 편집 창의 통합 저장은 `draft` 를 싣지 않으므로
-종전대로 전부 검증합니다.
+않습니다. 두 화면의 「저장 후 검수 신청」은 `draft` 를 싣지 않으므로 종전대로 전부 검증하고,
+빠진 필수값을 항목별 422 로 돌려줍니다.
 
 **알림 이력 연결**: 코어가 알림 발송 성공·실패를 기록하면
 (`core.notification_log.after_log_sent` / `after_log_failed`) `LinkNotificationLogListener`

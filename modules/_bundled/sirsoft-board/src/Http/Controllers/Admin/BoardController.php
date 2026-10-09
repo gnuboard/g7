@@ -236,6 +236,8 @@ class BoardController extends AdminBaseController
     {
         try {
             $basicDefaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
+            // 생성·복사 모드에서만 채운다 — 수정 모드는 기존 명단을 그대로 다시 보내는 저장이라 검사 대상이 아니다
+            $canAssignMembers = null;
 
             // 수정 모드 — board_slug(신규, slug 라우팅) 또는 board_id(하위호환) 로 식별
             if ($request->filled('board_slug') || $request->filled('board_id')) {
@@ -256,6 +258,18 @@ class BoardController extends AdminBaseController
             elseif ($request->filled('copy_id')) {
                 $copyData = $this->boardService->copyBoard($request->copy_id);
 
+                // 원본 명단을 그대로 채우면 담당자를 지정할 수 없는 액터(새 게시판 ACL 밖의 위임 관리자)가
+                // 저장할 때 403 이다 — 그런 액터에게는 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고
+                // 스텝은 비운다(_meta.can_assign_board_members=false, K4F-2)
+                $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard($copyData['permissions'] ?? []);
+                if (! $canAssignMembers) {
+                    $self = $this->selfManagerPrefill();
+                    $copyData['board_manager_ids'] = $self['board_manager_ids'];
+                    $copyData['board_managers'] = $self['board_managers'];
+                    $copyData['board_step_ids'] = [];
+                    $copyData['board_steps'] = [];
+                }
+
                 $copyData['permissions'] = BoardResource::formatPermissionsForFrontend(
                     $copyData['permissions'] ?? []
                 );
@@ -274,15 +288,16 @@ class BoardController extends AdminBaseController
                 $data['is_active'] = true;
                 $data['add_to_menu'] = false;
 
-                // 로그인한 관리자를 게시판 관리자 기본값으로 지정
-                $currentUser = Auth::user();
-                $data['board_managers'] = $currentUser ? [[
-                    'uuid' => $currentUser->uuid,
-                    'name' => $currentUser->name,
-                    'email' => $currentUser->email,
-                ]] : [];
+                // 로그인한 관리자를 게시판 관리자 기본값으로 지정한다. 새 게시판의 기본 ACL 로 게시판 권한을 받지
+                // 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어(K4F-2) 같은 값을 채우고,
+                // 다른 담당자는 지정할 수 없다는 사실만 _meta.can_assign_board_members=false 로 알린다
+                $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard(
+                    $basicDefaults['default_board_permissions'] ?? []
+                );
+                $self = $this->selfManagerPrefill();
+                $data['board_managers'] = $self['board_managers'];
                 $data['board_steps'] = [];
-                $data['board_manager_ids'] = $currentUser ? [$currentUser->uuid] : [];
+                $data['board_manager_ids'] = $self['board_manager_ids'];
                 $data['board_step_ids'] = [];
                 $data['created_at'] = null;
                 $data['updated_at'] = null;
@@ -320,6 +335,8 @@ class BoardController extends AdminBaseController
 
             $data['_meta'] = [
                 'limits' => config('sirsoft-board.limits', []),
+                // false 면 화면이 담당자 칸을 잠그고 이유를 보여 준다(생성·복사 모드), 수정 모드는 null
+                'can_assign_board_members' => $canAssignMembers,
             ];
 
             return $this->success('sirsoft-board::messages.boards.form_data_retrieved', $data);
@@ -359,10 +376,32 @@ class BoardController extends AdminBaseController
     }
 
     /**
+     * 생성·복사 폼의 관리자 칸에 채울 로그인한 관리자 본인 한 명을 만듭니다.
+     *
+     * @return array{board_manager_ids: array<int, string>, board_managers: array<int, array{uuid: string, name: string, email: string}>} 관리자 명단 초기값
+     */
+    private function selfManagerPrefill(): array
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser) {
+            return ['board_manager_ids' => [], 'board_managers' => []];
+        }
+
+        return [
+            'board_manager_ids' => [$currentUser->uuid],
+            'board_managers' => [[
+                'uuid' => $currentUser->uuid,
+                'name' => $currentUser->name,
+                'email' => $currentUser->email,
+            ]],
+        ];
+    }
+
+    /**
      * 여러 게시판의 관리자·스텝에 회원을 한꺼번에 더하거나 뺍니다.
      *
      * @param  BulkBoardMembersRequest  $request  대상 게시판·회원·구분·작업 요청
-     * @return JsonResponse 변경 게시판 수·제외 수·제외 사유
+     * @return JsonResponse 변경 게시판 수·제외 수·변화 없음 수·제외 사유
      */
     public function bulkMembers(BulkBoardMembersRequest $request): JsonResponse
     {
@@ -380,10 +419,10 @@ class BoardController extends AdminBaseController
                 'sirsoft-board::messages.boards.bulk_members_success',
                 $result,
                 200,
-                ['count' => $result['updated_count'], 'skipped' => $result['skipped_count']]
+                ['count' => $result['updated_count'], 'skipped' => $result['skipped_count'], 'unchanged' => $result['unchanged_count']]
             );
         } catch (PermissionEscalationException $e) {
-            // 액터가 부여할 수 없는 게시판 역할 — 전체 롤백됨
+            // 고른 게시판 중 액터가 부여할 수 없는 게시판 역할 — 전체 롤백됨(「모든 게시판」 은 그 게시판만 not_grantable 로 건너뛴다)
             return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.bulk_members_failed');

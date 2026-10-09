@@ -27,6 +27,7 @@ effects:
   - language_save_via_core_api           # 언어 저장이 G7Core.api.patch 로 나가고 템플릿은 토큰을 읽거나 헤더를 붙이지 않는다
   - language_save_failure_keeps_ui       # 저장이 실패해도 경고만 남기고 화면 언어는 바뀐다
   - locale_switch_via_public_api         # 화면 언어 전환이 G7Core.locale.change 로 일어나고 window.__templateApp 을 읽지 않는다
+  - member_language_saved_on_reselect    # 현재 언어를 다시 골라도 G7Core.locale.change 로 넘겨 로그인 회원의 언어를 맞춘다(7.1.0 결정)
   - identity_challenge_via_core_api      # challenge 시작이 G7Core.api.post 로 나가고 Accept-Language 는 코어가 붙인다
   - identity_challenge_failure_reported  # 서버 거절 시 응답 message 로 실패 결과와 토스트를 낸다
   - state_subscription_released          # 구독 해제 함수가 언마운트·종료 때 불려 구독자 수가 0 으로 돌아간다

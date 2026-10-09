@@ -39,7 +39,7 @@
             <div class="flex-center gap-2">
               <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.pc_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment</span>
-              <span class="{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+              <span class="{{health.data.summary.pc_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
             <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment_requires</p>
           </div>
@@ -48,7 +48,7 @@
             <div class="flex-center gap-2">
               <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment</span>
-              <span class="{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+              <span class="{{health.data.summary.mobile_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
             <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment_requires</p>
           </div>
@@ -57,7 +57,7 @@
             <div class="flex-center gap-2">
               <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank</span>
-              <span class="{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+              <span class="{{health.data.summary.mobile_vbank_only_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
             <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank_requires</p>
           </div>
@@ -88,9 +88,9 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="grid-3col-responsive">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
@@ -110,17 +110,17 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body</p>
+            <h3 class="text-sm font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
       <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_nhnkcp.settings.section_live_keys</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_live_keys</h3>
         </div>
         <div class="p-6 space-y-6">
-          <div data-ref="field_live_site_cd" class="section-heading-md">
+          <div data-ref="field_live_site_cd" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_cd</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_hint</p>
@@ -133,7 +133,7 @@
               <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_example</p>
             </div>
           </div>
-          <div data-ref="field_live_site_key" class="section-heading-md">
+          <div data-ref="field_live_site_key" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_key</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_key_hint</p>
@@ -146,7 +146,7 @@
       </div>
       <div data-ref="easy_pay_section" data-if="{{false}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay</h3>
           <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay_hint</p>
         </div>
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -193,10 +193,10 @@
       </div>
       <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_nhnkcp.settings.section_redirect</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_redirect</h3>
         </div>
         <div class="p-6 space-y-6">
-          <div data-ref="field_redirect_success_url" class="section-heading-md">
+          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url_hint</p>
@@ -205,7 +205,7 @@
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="dark:focus:ring-blue-400 focus:border-transparent"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="section-heading-md">
+          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url_hint</p>
@@ -218,11 +218,11 @@
       </div>
       <div data-ref="vbank_settings_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
-          <h3 class="text-error-strong">$t:sirsoft-pay_nhnkcp.settings.section_vbank</h3>
+          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_vbank</h3>
           <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.section_vbank_hint</p>
         </div>
         <div class="p-6">
-          <div data-ref="field_vbank_expire_days" class="section-heading-md">
+          <div data-ref="field_vbank_expire_days" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_hint</p>
@@ -240,8 +240,8 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title</h3>
-            <p class="mt-1 text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body</p>
+            <h3 class="text-sm font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title</h3>
+            <p class="mt-1 text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body</p>
             <div class="mt-3 rounded border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-gray-900/30 px-3 py-2">
               <p class="text-xs font-medium text-amber-900 dark:text-amber-200">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_path</p>
               <p class="mt-1 text-xs text-amber-800 dark:text-amber-100">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_effect</p>
@@ -313,7 +313,7 @@
             </div>
             <toggle data-type="composite" name="use_escrow"/>
           </div>
-          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="section-heading-md">
+          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd</label>
               <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd_hint</p>

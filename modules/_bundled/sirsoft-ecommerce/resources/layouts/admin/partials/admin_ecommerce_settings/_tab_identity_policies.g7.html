@@ -66,7 +66,8 @@
         </div>
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
-        <select name="filter.scope" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
+        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -75,7 +76,7 @@
           </options>
           <on type="change">
             <!-- 범위 필터. 빈 값이면 query 에서 아예 빼고(`undefined`), 쪽은 1로 되돌린다. -->
-            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
               <query tab="identity_policies" scope="{{$event.target.value || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -86,10 +87,14 @@
             </navigate>
           </on>
         </select>
-        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
+        <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
+          <on type="change">
+            <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
+          </on>
           <on type="keypress" key="Enter">
             <!-- 검색어 Enter. 필터와 같이 query 로 나가고 쪽을 1로 되돌린다. -->
-            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
               <query tab="identity_policies" search="{{$event.target.value || undefined}}" :page="1"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -102,14 +107,27 @@
         </input>
         <button type="button" class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
           <on type="click">
-            <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+            <!-- Enter 키와 같이 입력값을 쿼리로 실어 옮긴다 — 다시 받기만 하면 입력 중인 검색어가 반영되지 않는다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+              <query tab="identity_policies" search="{{(_local.identityPolicySearch ?? query.search) || undefined}}" :page="1"/>
+              <field name="scroll">
+                <field name="container" value="#right_content_area"/>
+                <field name="to" value="#identity_section_policies"/>
+                <field name="offset" :value="180"/>
+                <field name="block" value="start"/>
+              </field>
+            </navigate>
           </on>
           <span>$t:common.search</span>
         </button>
         <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
+            <!-- 입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다. -->
+            <set-state target="local" identityPolicySearch=""/>
+          </on>
+          <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
-            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="false" transition_overlay_target="policy_table_card">
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="false" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
               <query tab="identity_policies"/>
               <field name="scroll">
                 <field name="container" value="#right_content_area"/>
@@ -318,7 +336,7 @@
             <button type="button" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 이전 쪽. 첫 쪽에서는 버튼이 잠기고, 이동 후 정책 구획으로 스크롤을 되돌린다. -->
-                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
                   <query tab="identity_policies" page="{{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}"/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>
@@ -334,7 +352,7 @@
             <button type="button" disabled="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 쪽. 마지막 쪽에서는 잠긴다. -->
-                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
+                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
                   <query tab="identity_policies" page="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>

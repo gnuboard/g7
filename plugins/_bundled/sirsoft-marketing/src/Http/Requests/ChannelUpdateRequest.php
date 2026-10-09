@@ -62,6 +62,42 @@ class ChannelUpdateRequest extends FormRequest
     }
 
     /**
+     * 칸 이름 — 오류 문구가 몇 번째 채널인지(`channels.1.label`)가 아니라 어느 채널인지 알리게 한다
+     *
+     * 화면 오류 목록은 서버 문구를 그대로 보여 준다. 검증기 기본 칸 이름이 나가면 운영자는 어느 채널의
+     * 항목명을 채워야 하는지 알 수 없다(2026-10-07 실측 — 영어 화면에서 기존 채널의 영어 이름이 비어 저장 거절).
+     *
+     * @return array<string, string> 칸 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        $attributes = [];
+
+        foreach ((array) $this->input('channels', []) as $index => $channel) {
+            $key = is_array($channel) && is_scalar($channel['key'] ?? null) ? trim((string) $channel['key']) : '';
+            $name = $key !== '' ? $key : (string) ((int) $index + 1);
+
+            $attributes["channels.{$index}.key"] = __('sirsoft-marketing::messages.attributes.channel_key', ['key' => $name]);
+            $attributes["channels.{$index}.label"] = __('sirsoft-marketing::messages.attributes.channel_label', ['key' => $name]);
+            $attributes["channels.{$index}.page_slug"] = __('sirsoft-marketing::messages.attributes.channel_page_slug', ['key' => $name]);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * 규칙별 문구 — 키 형식 오류는 쓸 수 있는 문자를 알린다(채널 추가 창의 사전 안내와 같은 기준)
+     *
+     * @return array<string, string> 규칙 키 → 문구
+     */
+    public function messages(): array
+    {
+        return [
+            'channels.*.key.regex' => __('sirsoft-marketing::messages.channel_key_invalid'),
+        ];
+    }
+
+    /**
      * 커스텀 검증 — key 중복, is_system 보호, 동의 존재 시 삭제 거부
      *
      * @param  Validator  $validator  검증기
@@ -116,9 +152,11 @@ class ChannelUpdateRequest extends FormRequest
             }
 
             // 기존 동의 데이터 존재 시 채널 삭제 거부
+            // 시스템 채널은 위에서 「삭제할 수 없음」으로 이미 막았다 — 「비활성화로 전환」으로 되살리는 대상이 아니므로
+            // 동의 회원 사유와 blocked_channel_keys 를 싣지 않는다(실으면 화면이 동의 회원 안내 창을 띄운다).
             $submittedKeys = array_column($channels, 'key');
             foreach ($existingChannels as $key => $existing) {
-                if (in_array($key, $submittedKeys, true)) {
+                if (in_array($key, $submittedKeys, true) || ($existing['is_system'] ?? false)) {
                     continue;
                 }
                 // 삭제 대상 채널에 동의 데이터가 있는지 확인

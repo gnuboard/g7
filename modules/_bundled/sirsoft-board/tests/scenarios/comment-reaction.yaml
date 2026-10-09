@@ -3,12 +3,12 @@ feature: 댓글 반응 (target_type=comment)
 description: |
   이슈 #525 후속 — 게시글에만 있던 반응을 댓글로 넓힌다. 마이그레이션·모델 주석이
   「향후 comment 확장」으로 남겨 둔 미구현 표면이었고, 게시글에는 있고 댓글에는 없는
-  「반응」은 제보 ③④ 와 동형의 반쪽 표면이라 이번에 닫는다 (PO 결정 R7).
+  「반응」은 제보 ③④ 와 동형의 반쪽 표면이라 이번에 닫는다 (결정 R7).
 
   핵심 동작 (확정):
     - 게시글 반응과 같은 규약 — 대상당 1개, 같은 유형 재클릭=해제, 다른 유형=전환
     - 카운트는 board_comments.reaction_counts JSON(키=유형 ID), 게시글과 같은 규약
-    - 게시판이 use_reaction **과** use_comment_reaction 을 모두 켰을 때만 허용 (PO 결정 R9)
+    - 게시판이 use_reaction **과** use_comment_reaction 을 모두 켰을 때만 허용 (결정 R9)
       — use_comment_reaction 은 use_reaction 의 하위 토글이다
     - 삭제·블라인드된 댓글에는 새 반응 불가(기존 반응 해제는 마이페이지 몫)
     - 본인 댓글 차단. 단 **비회원 댓글(user_id NULL)은 본인 판정이 불가능하므로 허용**
@@ -34,6 +34,8 @@ axes:
     - admin_post_detail_shows_comment_reaction_counts
     - secret_post_comment_reaction_denied
     - comment_reaction_counts_recalculated
+    # 같은 프로세스에서 유형을 끄거나 다시 만들면 다음 응답의 카운트 키도 바뀐다(K1 후속 2026-10-06)
+    - active_type_ids_follow_type_changes_in_same_process
 
 effects:
   # 등록/전환/해제 + 카운트 정합성
@@ -46,6 +48,8 @@ effects:
   # 대상·행위자 가드
   - self_comment_react_returns_422
   - guest_comment_react_allowed
+  # 비로그인 방문자를 비회원 댓글의 작성자로 판정하지 않는다(K1 실측 2026-10-06) — 판정되면 반응 버튼이 흐려지고 로그인 안내 대신 본인 댓글 안내가 뜬다
+  - guest_viewer_not_author_of_guest_comment
   - unavailable_comment_returns_422
   - cross_board_comment_returns_404
   - inactive_type_comment_react_returns_422
@@ -70,6 +74,10 @@ effects:
   - secret_post_author_can_react_to_comment
   - comment_reaction_counts_match_row_count
   - comment_reaction_counts_serialize_as_object
+  # 활성 유형 ID 캐시는 요청 단위다 — 함수 정적 변수면 장기 실행 프로세스가 끈 유형·옛 ID 를 계속 쓴다(K1 후속 2026-10-06)
+  - comment_reaction_counts_follow_type_changes_in_same_process
+  # 댓글 반응 스위치는 게시판 폼·환경설정·일괄 적용에서 같은 라벨이고, 설명이 가리키는 상위 스위치 이름이 실제 라벨과 같다(ko/en/ja, K1 후속 2026-10-06)
+  - comment_reaction_toggle_label_matches_across_screens
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/CommentReactionApiTest.php

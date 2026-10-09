@@ -8,7 +8,7 @@
     "name": "Div",
     "children": [
         {
-            "id": "reply_header",
+            "id": "reply_header_{{item.id}}",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -16,7 +16,7 @@
             },
             "children": [
                 {
-                    "id": "title_row",
+                    "id": "title_row_{{item.id}}",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {
@@ -31,7 +31,7 @@
                     },
                     "children": [
                         {
-                            "id": "title_with_badges",
+                            "id": "title_with_badges_{{item.id}}",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -39,7 +39,7 @@
                             },
                             "children": [
                                 {
-                                    "id": "title_with_prefix",
+                                    "id": "title_with_prefix_{{item.id}}",
                                     "type": "basic",
                                     "name": "H2",
                                     "responsive": {
@@ -54,7 +54,7 @@
                                     },
                                     "children": [
                                         {
-                                            "id": "reply_arrow_icon",
+                                            "id": "reply_arrow_icon_{{item.id}}",
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
@@ -63,7 +63,7 @@
                                             }
                                         },
                                         {
-                                            "id": "category_badge_prefix",
+                                            "id": "category_badge_prefix_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{item.category}}",
@@ -73,7 +73,7 @@
                                             "text": "{{item.category}}"
                                         },
                                         {
-                                            "id": "notice_prefix",
+                                            "id": "notice_prefix_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{item.is_notice}}",
@@ -83,13 +83,13 @@
                                             "text": "$t:sirsoft-board.admin.posts.badge.notice"
                                         },
                                         {
-                                            "id": "title_text",
+                                            "id": "title_text_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "text": "{{item.title}}"
                                         },
                                         {
-                                            "id": "attachment_icon",
+                                            "id": "reply_attachment_icon_{{item.id}}",
                                             "type": "basic",
                                             "name": "Icon",
                                             "if": "{{item.has_attachment}}",
@@ -99,7 +99,7 @@
                                             }
                                         },
                                         {
-                                            "id": "new_badge",
+                                            "id": "new_badge_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{item.is_new}}",
@@ -109,7 +109,7 @@
                                             "text": "$t:sirsoft-board.common.new"
                                         },
                                         {
-                                            "id": "secret_icon",
+                                            "id": "secret_icon_{{item.id}}",
                                             "type": "basic",
                                             "name": "Icon",
                                             "if": "{{item.is_secret}}",
@@ -119,7 +119,7 @@
                                             }
                                         },
                                         {
-                                            "id": "status_badge_blinded",
+                                            "id": "status_badge_blinded_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{item.status === 'blinded'}}",
@@ -129,7 +129,7 @@
                                             "text": "$t:sirsoft-board.admin.posts.detail.status_blinded"
                                         },
                                         {
-                                            "id": "status_badge_deleted",
+                                            "id": "status_badge_deleted_{{item.id}}",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{item.deleted_at}}",
@@ -143,7 +143,7 @@
                             ]
                         },
                         {
-                            "id": "detail_button",
+                            "id": "detail_button_{{item.id}}",
                             "type": "basic",
                             "name": "Button",
                             "if": "{{item.id != route.id}}",
@@ -173,7 +173,7 @@
                     ]
                 },
                 {
-                    "id": "reply_meta",
+                    "id": "reply_meta_{{item.id}}",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -181,7 +181,7 @@
                     },
                     "children": [
                         {
-                            "id": "author_name_menu",
+                            "id": "author_name_menu_{{item.id}}",
                             "type": "composite",
                             "name": "ActionMenu",
                             "if": "{{!item.author?.is_guest}}",
@@ -253,14 +253,14 @@
                             "text": "{{item.created_at}}"
                         },
                         {
-                            "id": "comment_count_separator",
+                            "id": "comment_count_separator_{{item.id}}",
                             "type": "basic",
                             "name": "Span",
                             "if": "{{(item.comment_count ?? 0) > 0}}",
                             "text": "·"
                         },
                         {
-                            "id": "comment_count",
+                            "id": "comment_count_{{item.id}}",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(item.comment_count ?? 0) > 0}}",
@@ -303,7 +303,7 @@
             ]
         },
         {
-            "id": "attachments_section",
+            "id": "reply_attachments_section_{{item.id}}",
             "type": "basic",
             "name": "Div",
             "if": "{{item.has_attachment}}",
@@ -312,9 +312,9 @@
             },
             "children": [
                 {
-                    "id": "attachments_toggle",
+                    "id": "reply_attachments_toggle_{{item.id}}",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "comment": "이 답글의 첨부 목록을 폈다 접었다 한다. 이 조각은 반복 안에서 쓰이므로 상태를 하나로 두면 모든 답글이 함께 열린다 — 바로 아래 본문 펼침과 같이 «답글 id 별 표»를 통째로 다시 지어 그 답글의 값만 뒤집는다",
@@ -327,12 +327,15 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-between cursor-pointer"
+                        "type": "button",
+                        "className": "flex-between w-full text-left cursor-pointer",
+                        "aria-expanded": "{{!!_local.expandedReplyAttachments?.[item.id]}}",
+                        "aria-controls": "reply_attachments_list_{{item.id}}"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center gap-2 text-body font-medium"
                             },
@@ -363,60 +366,68 @@
                     ]
                 },
                 {
-                    "id": "attachments_list_{{index}}",
+                    "comment": "펼침 토글의 aria-controls 가 가리키는 목록 묶음. 이 조각은 답글마다 반복되므로 id 에 답글 식별자를 넣어 답글끼리 겹치지 않게 한다",
+                    "id": "reply_attachments_list_{{item.id}}",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_local.expandedReplyAttachments?.[item.id]}}",
-                    "iteration": {
-                        "source": "item.attachments ?? []",
-                        "item_var": "attachment",
-                        "index_var": "index"
-                    },
-                    "props": {
-                        "className": "mt-3 ml-4 grid grid-cols-1 gap-2"
-                    },
                     "children": [
                         {
-                            "id": "attachment_card_{{index}}",
+                            "id": "reply_{{item.id}}_attachments_list_{{index}}",
                             "type": "basic",
                             "name": "Div",
-                            "actions": [
-                                {
-                                    "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
-                                    "type": "click",
-                                    "handler": "sirsoft-board.downloadAttachment",
-                                    "params": {
-                                        "url": "{{attachment.download_url}}",
-                                        "filename": "{{attachment.original_filename}}"
-                                    },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
-                                        }
-                                    }
-                                }
-                            ],
+                            "if": "{{_local.expandedReplyAttachments?.[item.id]}}",
+                            "iteration": {
+                                "source": "item.attachments ?? []",
+                                "item_var": "attachment",
+                                "index_var": "index"
+                            },
                             "props": {
-                                "className": "flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group"
+                                "className": "mt-3 ml-4 grid grid-cols-1 gap-2"
                             },
                             "children": [
                                 {
+                                    "id": "attachment_card_{{index}}_{{item.id}}",
                                     "type": "basic",
-                                    "name": "Icon",
+                                    "name": "Div",
+                                    "actions": [
+                                        {
+                                            "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
+                                            "type": "click",
+                                            "handler": "sirsoft-board.downloadAttachment",
+                                            "params": {
+                                                "url": "{{attachment.download_url}}",
+                                                "filename": "{{attachment.original_filename}}"
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
+                                                }
+                                            }
+                                        }
+                                    ],
                                     "props": {
-                                        "name": "download",
-                                        "className": "text-base text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-primary text-sm truncate flex-1"
+                                        "className": "flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group"
                                     },
-                                    "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "download",
+                                                "className": "text-base text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary text-sm truncate flex-1"
+                                            },
+                                            "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -425,7 +436,7 @@
             ]
         },
         {
-            "id": "reply_content",
+            "id": "reply_content_{{item.id}}",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -433,7 +444,7 @@
             },
             "children": [
                 {
-                    "id": "reply_html_content",
+                    "id": "reply_html_content_{{item.id}}",
                     "type": "extension_point",
                     "name": "html_content",
                     "props": {

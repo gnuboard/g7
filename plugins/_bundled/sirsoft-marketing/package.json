@@ -6,7 +6,8 @@
     "type": "module",
     "scripts": {
         "test": "vitest",
-        "test:run": "vitest run"
+        "test:run": "vitest run",
+        "test:e2e": "playwright test --config=tests/Playwright/playwright.config.ts"
     },
     "devDependencies": {
         "jsdom": "^27.4.0",

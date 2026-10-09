@@ -183,14 +183,15 @@ flowchart TB
 <layout name="product_list" version="1.0.0">
   <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
   <div>
-    <h1 text="$t:product_list"/>
+    <h1>$t:product_list</h1>
     <div data-each="item in {{products?.data?.data}}">
-      <span text="{{item.name}}"/>
+      <span>{{item.name}}</span>
     </div>
-    <button text="$t:add" data-if="{{products?.data?.abilities?.can_create}}">
+    <button data-if="{{products?.data?.abilities?.can_create}}">
       <on type="click">
         <navigate path="/products/create"/>
       </on>
+      $t:add
     </button>
   </div>
 </layout>
@@ -217,9 +218,7 @@ flowchart TB
         {
           "type": "basic",
           "name": "H1",
-          "props": {
-            "text": "$t:product_list"
-          }
+          "text": "$t:product_list"
         },
         {
           "type": "basic",
@@ -232,9 +231,7 @@ flowchart TB
             {
               "type": "basic",
               "name": "Span",
-              "props": {
-                "text": "{{item.name}}"
-              }
+              "text": "{{item.name}}"
             }
           ]
         },
@@ -251,9 +248,7 @@ flowchart TB
               }
             }
           ],
-          "props": {
-            "text": "$t:add"
-          }
+          "text": "$t:add"
         }
       ]
     }

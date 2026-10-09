@@ -363,7 +363,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.boards.create`)이 없는 경우 |
-| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 설정 기본값(기본 ACL)에 없는 역할을 `permissions` 로 더 얹거나, 새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 액터가 `board_manager_ids`·`board_step_ids` 로 담당자를 지정한 경우. 게시판·역할·권한은 하나도 만들어지지 않는다 |
+| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 설정 기본값(기본 ACL)에 없는 역할을 `permissions` 로 더 얹거나, 새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 액터가 `board_manager_ids` 에 본인 말고 다른 회원을 넣거나 `board_step_ids` 를 지정한 경우(관리자 명단이 생성자 본인 한 명뿐이면 허용 — 새로 만드는 게시판의 관리자가 되는 것은 상승이 아니다). 게시판·역할·권한은 하나도 만들어지지 않는다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 게시판 전용 테이블 생성 실패 등 생성 처리 중 예외 (`게시판 생성에 실패했습니다.`) |
 
@@ -412,7 +412,8 @@ Content-Type: application/json
 | --- | --- | --- | --- |
 | updated_count | integer | `2` | 명단이 실제로 바뀐 게시판 수 |
 | skipped_count | integer | `1` | 건너뛴 게시판 수 |
-| skipped | array | `[{"board_id":5,"reason":"last_manager"}]` | 건너뛴 게시판과 사유 — `scope`(권한 범위 밖 게시판), `last_manager`(제거하면 관리자가 0명이 되는 게시판) |
+| unchanged_count | integer | `3` | 바꿀 것이 없던 게시판 수(「제거」 인데 그 회원이 없거나 「추가」 인데 이미 있는 게시판) — 변경·제외·변화 없음의 합이 대상 게시판 수 |
+| skipped | array | `[{"board_id":5,"reason":"last_manager","board_name":"자유게시판"}]` | 건너뛴 게시판과 사유 — `scope`(권한 범위 밖 게시판), `last_manager`(제거하면 관리자가 0명이 되는 게시판), `not_grantable`(`apply_all=true` 일 때 액터가 그 게시판 역할을 줄 수 없는 게시판 — 권한 부여 상한 위반을 그 게시판만 건너뛴다. 고른 게시판(`apply_all=false`)은 종전처럼 403 이고 모두 되돌린다), `role_missing`(게시판의 관리자·스텝 역할 행이 없어 명단을 바꿀 수 없는 게시판 — 데이터 손상). `board_name` 은 요청 언어의 게시판 이름(범위 밖 게시판은 화면 선택지에 없어 이름을 함께 싣는다) |
 
 **응답 예시**
 
@@ -423,12 +424,13 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "게시판 2개의 명단을 변경했습니다. (제외 1개)",
+    "message": "게시판 2개의 명단을 변경했습니다. (제외 1개, 변화 없음 3개)",
     "data": {
         "updated_count": 2,
         "skipped_count": 1,
+        "unchanged_count": 3,
         "skipped": [
-            { "board_id": 5, "reason": "last_manager" }
+            { "board_id": 5, "reason": "last_manager", "board_name": "자유게시판" }
         ]
     }
 }
@@ -447,7 +449,7 @@ HTTP/1.1 200
 
 **설명**
 
-게시판 환경설정 「기본값」 탭의 「관리자·스텝 일괄 지정」. 한 회원(또는 여러 회원)을 전체 또는 고른 게시판들의 관리자·스텝으로 한 번에 지정하거나 뺀다. 게시판 폼에서 관리자·스텝을 저장할 때와 같은 경로(게시판별 역할 동기화)를 쓰므로 회원의 게시판 역할·권한 캐시가 같은 방식으로 갱신된다. 권한 범위 밖 게시판과, 관리자를 빼면 0명이 되는 게시판은 건너뛰고 `skipped` 에 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다). 한 트랜잭션으로 처리하며 앞뒤로 `sirsoft-board.board.before_bulk_members`·`sirsoft-board.board.after_bulk_members` 가 발화한다. 제외가 있어도 응답은 200 이다.
+게시판 환경설정 「게시판 설정」 탭의 「관리자·스텝 일괄 지정」. 한 회원(또는 여러 회원)을 전체 또는 고른 게시판들의 관리자·스텝으로 한 번에 지정하거나 뺀다. 게시판 폼에서 관리자·스텝을 저장할 때와 같은 경로(게시판별 역할 동기화)를 쓰므로 회원의 게시판 역할·권한 캐시가 같은 방식으로 갱신된다. 권한 범위 밖 게시판과, 관리자를 빼면 0명이 되는 게시판은 건너뛰고 `skipped` 에 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다). 바꿀 것이 없던 게시판은 `unchanged_count` 로 따로 세어 화면 결과 줄에 「변화 없음 N개」 로 보인다. 한 트랜잭션으로 처리하며 앞뒤로 `sirsoft-board.board.before_bulk_members`·`sirsoft-board.board.after_bulk_members` 가 발화한다. 제외가 있어도 응답은 200 이다.
 
 
 ### GET /api/modules/sirsoft-board/admin/boards/form-data
@@ -808,7 +810,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 생성/수정 폼을 렌더링하는 데 필요한 초기 데이터를 반환합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, 쿼리 파라미터로 모드가 분기됩니다: `board_id` 가 있으면 기존 게시판 값(수정 모드), `copy_id` 가 있으면 복사 원본 값(복사 모드), 둘 다 없으면 모듈 기본 설정 기반 기본값(생성 모드)을 채웁니다. 생성 모드에서는 로그인한 관리자가 게시판 관리자 기본값으로 지정되며, 응답에는 선택 가능한 게시판 타입 목록(`board_types`)과 입력 한계값(`_meta.limits`)이 함께 포함됩니다.
+**설명** 게시판 생성/수정 폼을 렌더링하는 데 필요한 초기 데이터를 반환합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, 쿼리 파라미터로 모드가 분기됩니다: `board_id` 가 있으면 기존 게시판 값(수정 모드), `copy_id` 가 있으면 복사 원본 값(복사 모드), 둘 다 없으면 모듈 기본 설정 기반 기본값(생성 모드)을 채웁니다. 생성 모드에서는 로그인한 관리자가 게시판 관리자 기본값으로 지정되며, 응답에는 선택 가능한 게시판 타입 목록(`board_types`)과 입력 한계값(`_meta.limits`)이 함께 포함됩니다. 새 게시판의 기본 ACL(복사 모드는 원본 ACL)로 게시판 권한을 모두 받지 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어, 생성 모드는 본인을 채우고 복사 모드는 원본의 관리자·스텝 명단 대신 본인 한 명을 관리자로 채우며 스텝을 비운다. 다른 담당자는 지정할 수 없으므로 `_meta.can_assign_board_members` 를 `false` 로 준다(화면은 두 명단 칸을 잠그고 이유를 안내). 슈퍼관리자와 기본 ACL 에 역할이 있는 관리자는 `true`, 수정 모드는 `null` 이다.
 
 
 ### GET /api/modules/sirsoft-board/admin/boards/slug/{slug}
@@ -2627,7 +2629,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글에 첨부된 파일들의 표시 순서를 재정렬합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, FileUploader 가 보낸 `[{id, order}]` 배열을 받아 각 첨부의 순서 값을 갱신합니다.
+**설명** 게시글에 첨부된 파일들의 표시 순서를 재정렬합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, FileUploader 가 보낸 `[{id, order}]` 배열을 받아 각 첨부의 순서 값을 갱신합니다. 자기가 올린 첨부만 순서를 바꿀 수 있고, 다른 사람의 첨부나 다른 게시판의 첨부가 하나라도 섞이면 요청 전체를 403 으로 거부합니다. 아직 글에 붙지 않은 임시 첨부(저장이 실패한 글쓰기 화면에 남은 첨부)도 그 게시판에서 올린 것이면 대상이며, 임시 첨부는 올린 사람만 다룰 수 있습니다(남의 임시 첨부는 403).
 
 
 ### DELETE /api/modules/sirsoft-board/boards/{slug}/attachments/{id}
@@ -2680,7 +2682,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 첨부파일을 삭제합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 서비스의 `canDelete` 로 현재 사용자가 해당 첨부의 소유자(작성자)인지 확인한 뒤 삭제합니다. 권한이 없으면 403을 반환합니다.
+**설명** 첨부파일을 삭제합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 서비스의 `canDelete` 로 현재 사용자가 해당 첨부의 소유자(작성자)인지 확인한 뒤 삭제합니다. 권한이 없으면 403을 반환합니다. 아직 글에 붙지 않은 임시 첨부(저장이 실패한 글쓰기 화면에 남은 첨부)도 그 게시판에서 올린 것이면 대상이며, 임시 첨부는 올린 사람만 다룰 수 있습니다(남의 임시 첨부는 403).
 
 
 ### POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/reports
@@ -3743,7 +3745,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 상세를 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.read` 권한이 필요하며, 댓글/첨부/답글을 함께 로드하고 조회수를 (중복 방지 캐시로) 1회 증가시킵니다. 삭제된 게시글은 manager 권한이 있어야 열람 가능하고, 비밀글의 본문 노출 여부와 신고 이력 표시는 로그인 사용자 기준으로 결정됩니다(비로그인은 신고 불가로 모두 false). manager 가 `del_cmt=1` 을 주면 삭제된 댓글도 포함합니다.
+**설명** 게시글 상세를 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.read` 권한이 필요하며, 댓글/첨부/답글을 함께 로드하고 조회수를 (중복 방지 캐시로) 1회 증가시킵니다 — 로그인 회원은 회원 번호, 비로그인은 IP 로 한 번만 세고, SEO 렌더러가 서버 자신에게 보내는 내부 호출(앱 키로 서명한 `X-G7-Seo-Render` 헤더)은 세지 않습니다(글 작성 직후 조회수 0). 삭제된 게시글은 manager 권한이 있어야 열람 가능하고, 비밀글의 본문 노출 여부와 신고 이력 표시는 로그인 사용자 기준으로 결정됩니다(비로그인은 신고 불가로 모두 false). manager 가 `del_cmt=1` 을 주면 삭제된 댓글도 포함합니다.
 
 
 ### PUT /api/modules/sirsoft-board/boards/{slug}/posts/{id}

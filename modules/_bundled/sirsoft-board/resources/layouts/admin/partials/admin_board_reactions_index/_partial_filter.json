@@ -199,7 +199,7 @@
                                     "type": "basic",
                                     "name": "Option",
                                     "iteration": {
-                                        "source": "{{reaction_boards?.data?.data ?? []}}",
+                                        "source": "{{reactions?.data?.boards ?? []}}",
                                         "item_var": "b"
                                     },
                                     "props": {

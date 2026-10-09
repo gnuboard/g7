@@ -21,35 +21,35 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.rating_label</label>
         <div class="flex gap-1">
-          <button type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=1" aria-pressed="{{(_local.reviewRating ?? 5) === 1}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
             <on type="click">
               <!-- 별 1점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
               <set-state target="_local" :reviewRating="1"/>
             </on>
             <icon name="star" prefix="fas" size="lg"/>
           </button>
-          <button type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=2" aria-pressed="{{(_local.reviewRating ?? 5) === 2}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
             <on type="click">
               <!-- 별 2점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
               <set-state target="_local" :reviewRating="2"/>
             </on>
             <icon name="star" prefix="fas" size="lg"/>
           </button>
-          <button type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=3" aria-pressed="{{(_local.reviewRating ?? 5) === 3}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
             <on type="click">
               <!-- 별 3점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
               <set-state target="_local" :reviewRating="3"/>
             </on>
             <icon name="star" prefix="fas" size="lg"/>
           </button>
-          <button type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=4" aria-pressed="{{(_local.reviewRating ?? 5) === 4}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
             <on type="click">
               <!-- 별 4점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
               <set-state target="_local" :reviewRating="4"/>
             </on>
             <icon name="star" prefix="fas" size="lg"/>
           </button>
-          <button type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=5" aria-pressed="{{(_local.reviewRating ?? 5) === 5}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
             <on type="click">
               <!-- 별 5점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
               <set-state target="_local" :reviewRating="5"/>

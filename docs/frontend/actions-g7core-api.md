@@ -313,7 +313,7 @@ const isStandardEvent = firstArg && typeof firstArg === 'object' && 'preventDefa
 |-----|------|-----------|
 | `G7Core.dispatch` | 액션 실행 | `dispatch(action)` |
 | `G7Core.state` | 전역 상태 관리 | `get()`, `set(updates)`, `subscribe(listener)` |
-| `G7Core.locale` | 로케일 관리 | `current()`, `supported()`, `change(locale)` |
+| `G7Core.locale` | 로케일 관리 | `current()`, `supported()`, `change(locale)`, `handoff.*`(언어 전환 인계 — g7core-api-advanced.md) |
 | `G7Core.toast` | 토스트 알림 | `show()`, `success()`, `error()`, `warning()`, `info()` |
 | `G7Core.modal` | 모달 관리 | `open()`, `close()`, `closeAll()`, `isOpen()`, `getStack()` |
 | `G7Core.navigation` | 페이지 전환 상태 | `isPending()`, `onComplete(callback)` |

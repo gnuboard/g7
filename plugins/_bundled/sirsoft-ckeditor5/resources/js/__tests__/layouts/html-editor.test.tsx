@@ -98,7 +98,6 @@ const htmlEditorWithPluginLayout = {
               name: 'Div',
               props: {
                 id: 'ckeditor5-content',
-                className: 'ckeditor5-wrapper',
                 'data-testid': 'ckeditor5-container',
               },
             },

@@ -1,0 +1,24 @@
+feature: API 문서 예시 삽입 — 실측 제외 엔드포인트의 손으로 쓴 예시 보존
+
+description: |
+  `api:docgen --examples-only` 는 기존 문서의 `@generated` 블록에 요청·응답 예시만 넣는다. 실측이 제외된 엔드포인트
+  (권한 403, 실제 파일 없는 404, 부수효과 쓰기 제외 등)에서는 새 예시가 「실측 제외」 마커와 자동 요청 예시뿐인데,
+  종전에는 그것으로 사람이 써 둔 예시를 덮거나(서술 영역에 예시가 있으면) 지웠다(2026-10-09 실측 O-R2-4, CKEditor5 문서 3곳).
+  실측이 제외된 엔드포인트는 기존 요청 예시와 손으로 쓴 응답 예시(실측 표식·실측 제외 마커가 없는 예시)를 보존하고,
+  실측된 엔드포인트와 기계가 넣은 예시는 종전처럼 갱신한다.
+
+axes:
+  probe: [skipped, probed]
+  existing: [hand_written, hand_written_with_prose_example, machine_made]
+
+exclusions:
+  - { probe: probed, existing: hand_written_with_prose_example, reason: "실측된 엔드포인트는 종전 동작 — probed x hand_written 한 칸으로 고정" }
+  - { probe: probed, existing: machine_made, reason: "실측된 엔드포인트는 종전 동작 — probed x hand_written 한 칸으로 고정" }
+
+effects:
+  - apidoc_hand_examples_kept_when_probe_skipped
+  - apidoc_probed_examples_refreshed
+  - apidoc_machine_examples_refreshed
+
+test_files:
+  - tests/Unit/Support/ApiDoc/ApiDocExampleSkippedPreserveTest.php

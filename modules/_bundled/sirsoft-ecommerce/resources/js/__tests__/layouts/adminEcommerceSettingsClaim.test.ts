@@ -40,6 +40,7 @@ import tabMileage from '../../../layouts/admin/partials/admin_ecommerce_settings
 import tabShipping from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_shipping.json';
 import disableIntlModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_disable_international_shipping_modal.json';
 import settingsShell from '../../../layouts/admin/admin_ecommerce_settings.json';
+import unsavedTabModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_modal_unsaved_tab_switch.json';
 import langKo from '../../../lang/partial/ko/admin/settings.json';
 import langEn from '../../../lang/partial/en/admin/settings.json';
 
@@ -179,9 +180,14 @@ describe('설정 클레임 탭 — 구성', () => {
   it('상위 탭 전환은 고른 하위 탭을 비워, 다시 돌아오면 주소(sub_tab 없음)와 화면(교환)이 어긋나지 않는다', () => {
     // 탭 전환은 「저장하지 않은 변경」 확인 창(S5-D41) 뒤로 갈렸다 — 정리는 변경이 없을 때의 갈래(if 없는 else)가 하고, 창 [이동] 은 같은 목록을 부모 폼에 한다(adminEcommerceSettingsUnsavedTabChange 가 키 일치를 단언)
     const onTabChange = findNode(settingsShell, (n) => n?.id === 'tab_navigation').actions.find((a: any) => a.event === 'onTabChange');
-    const elseBranch = onTabChange.conditions.find((c: any) => c.if === undefined);
-    const clear = elseBranch.then.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
-    expect(clear.params).toHaveProperty('claimReasonTab', null);
+    // 고친 것이 없으면 바로 옮기는 갈래(conditions 의 else), 고친 것이 있으면 확인 창의 「저장하지 않고 이동」
+    // (페이지 상태는 `$parent._local`) — 두 길 모두 하위 탭을 비워야 한다(7.1.0 조치 G2 확인 창)
+    const directSwitch = onTabChange.conditions[1].then;
+    const direct = directSwitch.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
+    expect(direct.params).toHaveProperty('claimReasonTab', null);
+    const leave = findNode(unsavedTabModal, (n) => n?.props?.['data-testid'] === 'ecommerce-settings-unsaved-tab-leave');
+    const confirmed = leave.actions[0].actions.find((a: any) => a.handler === 'setState' && a.params?.target === '$parent._local');
+    expect(confirmed.params).toHaveProperty('claimReasonTab', null);
   });
 
   /**

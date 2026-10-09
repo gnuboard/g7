@@ -408,7 +408,7 @@ export interface DataGridProps {
    * 데이터 행에 덧붙일 CSS 클래스 (선택적)
    *
    * 행 유형을 배경색으로 구분할 때 쓴다. 마크업에서 행 표현식으로 넘기면
-   * 템플릿 엔진이 행마다 풀어 문자열로 전달한다.
+   * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
    * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
    *
    * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
@@ -535,6 +535,37 @@ const evaluateSubRowCondition = (condition: string | undefined, row: any): boole
 
   logger.warn('G7Core.evaluateCondition 미노출 — subRow 조건을 평가할 수 없습니다:', condition);
   return true;
+};
+
+/**
+ * 행 단위 클래스(rowClassName)를 그 행 기준으로 풉니다.
+ *
+ * 관리자 게시글 목록처럼 `{{row.row_type === 'notice' ? … : …}}` 를 넘기면 행마다 다른 값이 나와야 한다.
+ * 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀면 빈 문자열이 되므로, components.json 의
+ * skipBindingKeys 로 원문을 받아 여기서 엔진의 바인딩 해석기(`G7Core.getDataBindingEngine`)로 푼다 —
+ * subRowCondition 이 엔진 판정에 위임하는 것과 같은 방식이다. 식이 없는 고정 문자열은 그대로 쓴다.
+ *
+ * @param rowClassName 행 클래스 문자열 또는 행 표현식
+ * @param row 현재 행 데이터
+ * @returns 그 행에 붙일 클래스
+ */
+const resolveRowClassName = (rowClassName: string | undefined, row: any): string => {
+  if (!rowClassName) return '';
+  if (!rowClassName.includes('{{')) return rowClassName;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) {
+    logger.warn('G7Core.getDataBindingEngine 미노출 — 행 클래스를 풀 수 없습니다:', rowClassName);
+    return '';
+  }
+
+  try {
+    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' ? resolved : '';
+  } catch (error) {
+    logger.warn('행 클래스 해석 실패:', error);
+    return '';
+  }
 };
 
 /**
@@ -1261,9 +1292,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
   const defaultCardRenderer = (row: any, cols: DataGridColumn[]) => {
     const rowId = row[idField];
     const expanded = isRowExpanded(rowId);
+    // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
+    // 배경 구분이 사라지던 것(7.1.0 실측 K3 O-K3-17). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
+    const rowCls = resolveRowClassName(rowClassName, row);
+    const cardBg = /(^|\s)bg-/.test(rowCls) ? '' : 'bg-white dark:bg-gray-800';
 
     return (
-      <Div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+      <Div className={`${cardBg} ${rowCls} border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4`}>
         <Div className="flex items-start justify-between">
           {/* 확장 버튼 (카드 뷰) */}
           {expandable && isRowExpandable(row) && (
@@ -1312,6 +1347,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                 items={resolveRowActions(row)}
                 triggerLabel=""
                 triggerIconName={IconName.EllipsisHorizontal}
+                ariaLabel={resolvedActionsColumnHeader}
               />
             </Div>
           )}
@@ -1588,7 +1624,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     <Tr
                       className={`${
                         onRowClick ? 'cursor-pointer' : ''
-                      } ${rowClassName} hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                      } ${resolveRowClassName(rowClassName, row)} hover:bg-gray-50 dark:hover:bg-gray-700 ${
                         selectedIds.includes(row[idField]) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       } ${subRowClassName && rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}
                       onClick={() => onRowClick?.(row)}
@@ -1652,6 +1688,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             items={resolveRowActions(row)}
                             triggerLabel=""
                             triggerIconName={IconName.EllipsisHorizontal}
+                            // 아이콘만 있는 트리거라 작업 열 머리말 문구를 이름으로 준다(O-KF-1)
+                            ariaLabel={resolvedActionsColumnHeader}
                             position="right"
                           />
                         </Td>

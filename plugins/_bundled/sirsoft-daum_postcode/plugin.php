@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\DaumPostcode;
 
 use App\Extension\AbstractPlugin;
+use Plugins\Sirsoft\DaumPostcode\Listeners\RegisterSettingsAttributeLabelsListener;
 
 /**
  * Daum 우편번호 서비스 플러그인
@@ -48,29 +49,35 @@ class Plugin extends AbstractPlugin
                 ],
                 'required' => false,
             ],
+            // 팝업 크기는 화면에 띄울 수 있는 범위로 묶는다 — 정수 여부만 보던 때는 -10 도 저장됐다(7.1.0 실측).
+            // 코어 설정 저장 검증이 min·max 를 그대로 규칙으로 쓰고, 설정 화면 입력칸도 같은 값을 쓴다.
             'popup_width' => [
                 'type' => 'integer',
                 'default' => 500,
+                'min' => 100,
+                'max' => 2000,
                 'label' => [
                     'ko' => '팝업 너비 (px)',
                     'en' => 'Popup Width (px)',
                 ],
                 'hint' => [
-                    'ko' => '팝업 모드에서 사용되는 창 너비입니다.',
-                    'en' => 'Window width used in popup mode.',
+                    'ko' => '팝업 모드에서 사용되는 창 너비입니다. (100~2000)',
+                    'en' => 'Window width used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
             'popup_height' => [
                 'type' => 'integer',
                 'default' => 600,
+                'min' => 100,
+                'max' => 2000,
                 'label' => [
                     'ko' => '팝업 높이 (px)',
                     'en' => 'Popup Height (px)',
                 ],
                 'hint' => [
-                    'ko' => '팝업 모드에서 사용되는 창 높이입니다.',
-                    'en' => 'Window height used in popup mode.',
+                    'ko' => '팝업 모드에서 사용되는 창 높이입니다. (100~2000)',
+                    'en' => 'Window height used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
@@ -117,5 +124,19 @@ class Plugin extends AbstractPlugin
     public function getHooks(): array
     {
         return [];
+    }
+
+    /**
+     * 구독하는 훅 리스너 목록 반환
+     *
+     * 환경설정 저장 검증 오류 문구의 항목 이름을 요청 언어로 등록한다(스키마 label 은 ko/en 만 있다).
+     *
+     * @return array<int, class-string> 리스너 클래스 목록
+     */
+    public function getHookListeners(): array
+    {
+        return [
+            RegisterSettingsAttributeLabelsListener::class,
+        ];
     }
 }

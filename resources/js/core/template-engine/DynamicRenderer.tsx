@@ -1391,11 +1391,25 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 있다. 그래서 `isBaseLayoutSwitch` 인 패스는 dynamicState 자체를 빈 값으로 파생시켜(아래 dynamicState
      * 정의) 버려지는 패스조차 stale A 를 한 번도 평가하지 않게 한다 — 초기화의 정합성이 React 가 첫 패스를
      * 버린다는 사실에 의존하지 않는다.
+     *
+     * @since engine-v1.79.0 같은 레이아웃이라도 **라우트 경로**가 바뀌면 같은 초기화를 한다.
+     * 게시판 「수정」(`/admin/boards/{slug}/edit`)과 「등록」(`/admin/boards/create`)처럼 한 레이아웃이 여러 경로를
+     * 겸하면 layoutKey 가 같아 위 조건이 발동하지 않는다. 상태 소유 루트의 저장소 A 에는 수정 화면에서 자동 바인딩이
+     * 쓴 form 전체(`id`·`name.en` …)가 남고, 레이아웃이 init 에서 저장소 B 의 form 을 비워도 병합(A 우선)이
+     * 그 값을 되살린다 — 등록 화면 영어 칸에 직전 이름이 보이고, 입력하는 순간 자동 바인딩 base 에 실려
+     * `id` 가 저장 요청으로 나갔다(트러블슈팅 state-closure 「Global State 공유 충돌」 사례 5).
+     * 쿼리만 바뀌는 이동(검색·쪽 번호·탭 — `updateQueryParams`)은 경로가 같아 발동하지 않는다.
+     * 대상: `_fromBase` 보존 컴포넌트와 상태 소유 루트(parentComponentContext 없음). 레이아웃 루트가 아닌
+     * 모달 렌더러는 layoutKey 를 받지 않으므로 대상이 아니다. 저장소 B 는 건드리지 않는다 — 같은 레이아웃의
+     * `_local` 유지 계약(레이아웃이 init 으로 B 를 정리)은 그대로다.
      */
-    const [appliedLayoutKey, setAppliedLayoutKey] = useState<string | undefined>(layoutKey);
-    const isBaseLayoutSwitch = !!componentDef._fromBase && !!layoutKey && appliedLayoutKey !== layoutKey;
+    const routePathForReset = (dataContext as any)?.route?.path as string | undefined;
+    const storeResetKey = layoutKey ? `${layoutKey}::${routePathForReset ?? ''}` : undefined;
+    const [appliedStoreResetKey, setAppliedStoreResetKey] = useState<string | undefined>(storeResetKey);
+    const ownsResettableStore = !!componentDef._fromBase || !parentComponentContext;
+    const isBaseLayoutSwitch = ownsResettableStore && !!storeResetKey && appliedStoreResetKey !== storeResetKey;
     if (isBaseLayoutSwitch) {
-      setAppliedLayoutKey(layoutKey);
+      setAppliedStoreResetKey(storeResetKey);
       setLocalDynamicState({ loadingActions: {} });
     }
 
@@ -1807,6 +1821,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 그렇지 않으면 자체 로컬 상태를 사용합니다.
      */
     // @since engine-v1.72.1: 레이아웃 전환 렌더(isBaseLayoutSwitch)에서는 stale 저장소 A 대신 빈 값을 쓴다.
+    // @since engine-v1.79.0: 같은 레이아웃의 라우트 경로 전환도 포함한다(위 storeResetKey).
     // setLocalDynamicState 가 반영된 재실행 패스에서는 localDynamicState 자체가 이미 빈 값이다.
     const dynamicState = parentComponentContext?.state
       ?? (isBaseLayoutSwitch ? { loadingActions: {} } : localDynamicState);
@@ -3730,6 +3745,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // debounce 대기 중 사용자 입력값 추적 (플리커 방지)
     // debounce 중 부모 리렌더링 시 stale state value 대신 pending value를 사용
     const autoBindingPendingValueRef = useRef<any>(undefined);
+    // 대기 값을 만든 화면 경로 (@since engine-v1.79.0) — 같은 레이아웃의 다른 경로로 옮겨도 입력칸 인스턴스는 남으므로,
+    // 경로가 바뀌었으면 이전 화면의 대기 값을 새 화면에 보이지 않게 버린다
+    const autoBindingPendingPathRef = useRef<string>('');
 
     /**
      * 자동바인딩 경로 레지스트리 등록/해제 (engine-v1.43.0+)
@@ -3932,7 +3950,17 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             clearTimeout(autoBindingDebounceTimerRef.current);
           }
           // 새 타이머 설정
+          // @since engine-v1.79.0: 예약 때의 경로를 기억해, 대기 중에 다른 경로로 옮겼으면 버린다.
+          // 같은 레이아웃의 다른 경로로 가도 입력칸 인스턴스는 남으므로 타이머가 새 화면에서 터지는데, 그 쓰기의
+          // base 는 예약 때의 `_local` 전체(이전 레코드 id 등)라 비워 둔 상태 소유 루트의 저장소 A 를 다시 오염시킨다.
+          const scheduledPath = typeof window !== 'undefined' ? window.location.pathname : '';
           autoBindingDebounceTimerRef.current = setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.pathname !== scheduledPath) {
+              autoBindingDebounceTimerRef.current = null;
+              // 표시용 대기 값도 버린다 — 남기면 새 화면 칸에 이전 화면 입력이 보인다
+              autoBindingPendingValueRef.current = undefined;
+              return;
+            }
             performStateUpdate(newValue);
             autoBindingDebounceTimerRef.current = null;
             // pending ref는 여기서 클리어하지 않음!
@@ -3988,6 +4016,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // useMemo 재계산 시 stale state value 대신 이 값을 사용
           if (debounceMs && debounceMs > 0) {
             autoBindingPendingValueRef.current = newValue;
+            autoBindingPendingPathRef.current = typeof window !== 'undefined' ? window.location.pathname : '';
           }
 
           // debounce 콜백에서 사용할 이벤트 복사본 생성
@@ -4021,6 +4050,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 부모 리렌더링 시 currentValue는 stale state에서 읽힌 값일 수 있음
         // pending ref는 debounce 콜백에서 클리어하지 않고, state가 확정된 후 여기서 클리어
         let effectiveValue: any;
+        // @since engine-v1.79.0: 다른 경로에서 만든 대기 값은 이 화면의 값이 아니다 — 버리고 지금 상태를 쓴다
+        if (autoBindingPendingValueRef.current !== undefined
+          && typeof window !== 'undefined'
+          && autoBindingPendingPathRef.current !== window.location.pathname) {
+          autoBindingPendingValueRef.current = undefined;
+        }
         if (autoBindingPendingValueRef.current !== undefined) {
           if (autoBindingDebounceTimerRef.current !== null) {
             // 타이머 실행 중 → 사용자 입력 중, pending value 사용

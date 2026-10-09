@@ -105,7 +105,7 @@ class TemplateDraftValidationTest extends PluginTestCase
     }
 
     /**
-     * draft 표시가 없는 저장(저장 후 검수 신청·코어 통합 저장)은 종전대로 전부 검증한다.
+     * draft 표시가 없는 저장(저장 후 검수 신청)은 종전대로 전부 검증한다.
      *
      * @scenario content_variant=ex_text, transition=draft_to_requested
      *

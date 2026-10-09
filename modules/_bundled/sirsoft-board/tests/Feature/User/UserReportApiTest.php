@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -355,6 +357,65 @@ class UserReportApiTest extends BoardTestCase
     // ==========================================
     // Helper
     // ==========================================
+
+    /**
+     * 신고 접수 활동 로그는 이번 신고의 사유와 대상 유형을 싣는다.
+     *
+     * 리스너가 케이스 모델에 없는 `reason`·`reportable_type` 속성을 읽어 두 값이 늘 빈 문자열로
+     * 남았다(취소 로그는 사유를 싣는데 접수 로그만 비어 있었다). 같은 케이스에 두 번째 신고자가
+     * 다른 사유로 신고하면 그 사람의 사유가 실려야 하므로 두 신고자를 함께 잰다.
+     *
+     * @scenario operation=submit_post_report, condition=reportable_target
+     * @scenario operation=submit_comment_report, condition=reportable_target
+     *
+     * @effects report_create_activity_log_carries_reason_and_target_type
+     *
+     * @return void 반환값 없음
+     */
+    public function test_report_create_activity_log_carries_reason_and_target_type(): void
+    {
+        Notification::fake();
+        Mail::fake();
+
+        $author = $this->createUser();
+        $firstReporter = $this->createUser();
+        $secondReporter = $this->createUser();
+        $commentReporter = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $author->id]);
+        $commentId = $this->createTestComment($postId, ['user_id' => $author->id]);
+
+        $this->actingAs($firstReporter)->postJson(
+            $this->postReportUrl($postId),
+            ['reason_type' => 'spam', 'reason_detail' => '스팸 게시글입니다.']
+        )->assertStatus(201);
+        $this->actingAs($secondReporter)->postJson(
+            $this->postReportUrl($postId),
+            ['reason_type' => 'abuse', 'reason_detail' => '욕설 게시글입니다.']
+        )->assertStatus(201);
+        $this->actingAs($commentReporter)->postJson(
+            $this->commentReportUrl($commentId),
+            ['reason_type' => 'privacy', 'reason_detail' => '개인정보 노출 댓글입니다.']
+        )->assertStatus(201);
+
+        $rows = DB::table('activity_logs')
+            ->where('action', 'report.create')
+            ->whereIn('user_id', [$firstReporter->id, $secondReporter->id, $commentReporter->id])
+            ->orderBy('id')
+            ->get(['user_id', 'properties'])
+            ->map(fn ($row) => [(int) $row->user_id, json_decode($row->properties, true)])
+            ->all();
+
+        $this->assertCount(3, $rows, '신고 3건에 접수 활동 로그 3행이 남아야 한다');
+        $this->assertSame($firstReporter->id, $rows[0][0]);
+        $this->assertSame('spam', $rows[0][1]['reason'] ?? null);
+        $this->assertSame('post', $rows[0][1]['reportable_type'] ?? null);
+        $this->assertSame($secondReporter->id, $rows[1][0]);
+        $this->assertSame('abuse', $rows[1][1]['reason'] ?? null, '같은 케이스의 두 번째 신고자 로그에는 그 사람의 사유가 실려야 한다');
+        $this->assertSame('post', $rows[1][1]['reportable_type'] ?? null);
+        $this->assertSame($commentReporter->id, $rows[2][0]);
+        $this->assertSame('privacy', $rows[2][1]['reason'] ?? null);
+        $this->assertSame('comment', $rows[2][1]['reportable_type'] ?? null);
+    }
 
     /**
      * 게시글 신고 API 주소를 만듭니다.

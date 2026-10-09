@@ -1,0 +1,20 @@
+feature: 403 응답의 예외 스택 노출 경계 — 운영 모드는 스택 없음, 디버그 모드 스택은 개발용 (7.1.0 실측 디버그 모드 403 스택)
+
+description: |
+  g7_2(APP_DEBUG=true) 실측에서 권한 없는 관리자가 레이아웃을 열면 「페이지 로딩 실패」 화면에 Stack Trace 가 보였다.
+  그 스택은 서버 응답이 아니라 엔진 ErrorDisplay 가 디버그 모드(config('app.debug'))에서만 그리는 클라이언트 스택이고,
+  레이아웃 권한 403 응답 본문에는 어느 모드에서도 예외 정보가 없다. Laravel 기본 예외 렌더링(abort 403 등)은 디버그
+  모드에서만 스택을 싣는다(의도된 개발용 동작). 운영 모드에서 스택·예외 메시지가 나가지 않음을 고정한다.
+
+test_files:
+  - tests/Feature/Api/Public/ForbiddenResponseDebugTraceBoundaryTest.php
+
+axes:
+  mode:
+    - production
+    - debug
+
+effects:
+  - forbidden_layout_has_no_trace
+  - framework_forbidden_trace_only_in_debug
+  - helper_error_hides_exception_in_production

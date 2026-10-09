@@ -141,9 +141,9 @@
   <computed name="filterCategoryId">{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}</computed>
   <computed name="brandOptions">{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}</computed>
   <computed name="category1Options">{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}</computed>
-  <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
-  <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
-  <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
+  <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
+  <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
+  <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
   <computed name="shippingPolicyOptions">{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.products.read</permission>
@@ -230,7 +230,7 @@
       <div data-ref="page_header" class="flex-between mb-6">
         <h1 class="page-title">$t:sirsoft-ecommerce.admin.product.title</h1>
         <div class="flex-center gap-2">
-          <button type="button" class="btn btn-icon" aria-label="$t:common.refresh">
+          <button type="button" class="btn btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
             <on type="click">
               <!-- 새로고침 — 보고 있던 목록(같은 조건·페이지)을 다시 부른다. 종전에는 처리기가 없어 눌러도 아무 일이 없었다. -->
               <refetch-data-source dataSourceId="products"/>

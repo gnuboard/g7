@@ -45,7 +45,7 @@ describe('ThemeToggle', () => {
    */
   it('테마 토글 버튼이 렌더링되어야 함', () => {
     render(<ThemeToggle />);
-    const button = screen.getByRole('button', { name: '화면 테마' });
+    const button = screen.getByRole('button', { name: 'Theme' });
     expect(button).toBeInTheDocument();
   });
 
@@ -68,7 +68,7 @@ describe('ThemeToggle', () => {
   it('버튼 클릭 시 드롭다운 메뉴가 표시되어야 함', async () => {
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     await waitFor(() => {
@@ -94,7 +94,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 라이트 모드 선택
@@ -125,7 +125,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 다크 모드 선택
@@ -166,7 +166,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 자동 모드 선택
@@ -190,7 +190,7 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 드롭다운이 표시됨
@@ -213,7 +213,7 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 라이트 모드가 선택되어 있어야 함 (bg-gray-50 클래스 확인)
@@ -234,7 +234,7 @@ describe('ThemeToggle', () => {
       />
     );
 
-    const toggleButton = screen.getByRole('button', { name: '화면 테마' });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     await waitFor(() => {

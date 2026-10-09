@@ -18,8 +18,8 @@ return [
         'name_taken' => '같은 이름의 레이아웃이 이미 있습니다: :name',
 
         // 모듈·플러그인이 제공한 원본은 지우거나 이름을 바꿀 수 없다 — 그 확장이 깨진다.
-        'delete_blocked_source_type' => ':source(:identifier)이(가) 제공한 레이아웃은 삭제할 수 없습니다. 확장을 비활성화하거나 제거해 주세요.',
-        'rename_blocked_source_type' => ':source(:identifier)이(가) 제공한 레이아웃은 이름을 바꿀 수 없습니다.',
+        'delete_blocked_source_type' => ':source(:identifier)에서 제공한 레이아웃은 삭제할 수 없습니다. 확장을 비활성화하거나 제거해 주세요.',
+        'rename_blocked_source_type' => ':source(:identifier)에서 제공한 레이아웃은 이름을 바꿀 수 없습니다.',
 
         // 참조가 걸린 파일 — 무엇이 붙들고 있는지 목록을 함께 돌려준다.
         'delete_blocked_by_reference' => ':count개 레이아웃이 이 파일을 참조하고 있어 삭제할 수 없습니다. 참조를 먼저 정리해 주세요.',

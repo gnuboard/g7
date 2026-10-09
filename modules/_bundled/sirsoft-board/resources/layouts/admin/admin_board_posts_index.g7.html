@@ -300,14 +300,15 @@
             </div>
           </cell>
         </column>
-        <column field="view_count" header="$t:sirsoft-board.admin.posts.columns.view_count" :sortable="false" if="{{posts?.data?.board?.show_view_count}}">
+        <column field="view_count" header="$t:sirsoft-board.admin.posts.columns.view_count" :sortable="false" hidden="{{posts?.data?.board?.settings?.show_view_count === false}}">
           <cell>
+            <!-- 게시판이 「조회수 표시」를 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다 — 반응 열과 같은 이유). 값은 목록 응답의 settings.show_view_count 다 -->
             <span class="text-gray-900 dark:text-white">{{row.view_count || 0}}</span>
           </cell>
         </column>
-        <column field="reaction_total" header="$t:sirsoft-board.admin.posts.columns.reaction_total" :sortable="false" if="{{posts?.data?.board?.settings?.use_reaction}}">
+        <column field="reaction_total" header="$t:sirsoft-board.admin.posts.columns.reaction_total" :sortable="false" hidden="{{!posts?.data?.board?.settings?.use_reaction}}">
           <cell>
-            <!-- 게시판이 반응을 끄면 백엔드가 reaction_total 키 자체를 빼므로 열도 함께 내려간다 -->
+            <!-- 게시판이 반응을 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다). 백엔드도 reaction_total 키 자체를 뺀다 -->
             <span class="text-gray-900 dark:text-white">{{row.reaction_total || 0}}</span>
           </cell>
         </column>
@@ -399,9 +400,11 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-testid="admin-post-bulk-confirm" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}" disabled="{{_global.bulkPostLoading}}">
+        <button data-testid="admin-post-bulk-confirm" :lockRepeatClick="true" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}" disabled="{{_global.bulkPostLoading}}">
           <on type="click">
-            <!-- 실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
+            <!-- 실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다.
+                 disabled(bulkPostLoading)는 다시 그려진 뒤에야 걸려 더블클릭의 두 번째 클릭이 요청을 한 번 더 보냈고,
+                 두 번째 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 띄웠다 — 버튼이 첫 클릭 즉시 스스로 잠근다(lockRepeatClick) -->
             <set-state target="global" :bulkPostLoading="true"/>
           </on>
           <on type="click">

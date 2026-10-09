@@ -163,7 +163,8 @@
             "expired": "만료됨",
             "other_devices_logged_out": "다른 기기에서는 로그아웃되었습니다. 이 기기는 로그인 상태가 유지됩니다.",
             "changed_toast": "비밀번호가 변경되었습니다. 다른 기기에서는 로그아웃되었습니다."
-        }
+        },
+        "avatar_preview": "새 프로필 이미지 미리보기"
     },
     "orders": {
         "title": "주문내역",
@@ -255,7 +256,8 @@
             "content_min_length": "최소 10자 이상",
             "image_label": "이미지 첨부 (최대 {{count}}장)",
             "add_image": "이미지 추가",
-            "submit_button": "등록"
+            "submit_button": "등록",
+            "rating_star": "5점 중 {{count}}점"
         },
         "status": {
             "pending": "결제대기",
@@ -357,7 +359,7 @@
         },
         "select_all": "전체 선택",
         "selected_count": "{{count}}개 선택",
-        "bulk_delete": "선택 삭제",
+        "bulk_delete": "선택 해제",
         "bulk_delete_title": "선택한 스크랩을 해제할까요?",
         "bulk_delete_confirm": "선택한 {{count}}개의 스크랩을 목록에서 제거합니다.",
         "disabled_flag": "스크랩 중지",

@@ -490,7 +490,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-soft"
+                                                            "className": "text-error-strong"
                                                         },
                                                         "text": "$t:admin.plugins.settings.validation_error"
                                                     },
@@ -2328,9 +2328,10 @@
                                                                                                                 }
                                                                                                             },
                                                                                                             {
+                                                                                                                "comment": "빠진 필수값으로 거절되면 항목 문구를 모두 잇는다 — 요약 문장(error.message)은 첫 항목과 「외 N개」만 담는다",
                                                                                                                 "handler": "toast",
                                                                                                                 "params": {
-                                                                                                                    "message": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                                                                                    "message": "{{error.errors?.bizppurio_message ?? ((error.errors && typeof error.errors === 'object') ? Object.values(error.errors).flat().join(' / ') : error.message)}}",
                                                                                                                     "type": "error"
                                                                                                                 }
                                                                                                             }
@@ -2777,6 +2778,38 @@
                                         "className": "text-xs text-red-800 dark:text-red-200"
                                     },
                                     "text": "{{_global.bz_tpl_modal?.error}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "항목별 오류 — 검수 신청이 빠진 필수값으로 거절되면 서버가 항목마다 싣는 문구를 모두 보여 준다(코어 편집 창과 같은 규약). 위 한 줄 요약에는 첫 항목만 나온다",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.bz_tpl_modal?.errors && typeof _global.bz_tpl_modal?.errors === 'object'}}",
+                            "props": {
+                                "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "list-disc pl-5 space-y-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{Object.values(_global.bz_tpl_modal?.errors ?? []).flat()}}",
+                                                "item_var": "msg"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-red-800 dark:text-red-200"
+                                            },
+                                            "text": "{{msg}}"
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -4379,7 +4412,8 @@
                                             "params": {
                                                 "target": "global",
                                                 "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null
+                                                "bz_tpl_modal.error": null,
+                                                "bz_tpl_modal.errors": null
                                             }
                                         },
                                         {
@@ -4426,7 +4460,8 @@
                                                 "params": {
                                                     "target": "global",
                                                     "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                 }
                                             }
                                         }
@@ -4456,7 +4491,8 @@
                                             "params": {
                                                 "target": "global",
                                                 "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null
+                                                "bz_tpl_modal.error": null,
+                                                "bz_tpl_modal.errors": null
                                             }
                                         },
                                         {
@@ -4502,7 +4538,8 @@
                                                 "params": {
                                                     "target": "global",
                                                     "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                 }
                                             }
                                         }
@@ -4532,7 +4569,8 @@
                                             "params": {
                                                 "target": "global",
                                                 "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null
+                                                "bz_tpl_modal.error": null,
+                                                "bz_tpl_modal.errors": null
                                             }
                                         },
                                         {
@@ -4588,7 +4626,8 @@
                                                     "params": {
                                                         "target": "global",
                                                         "bz_tpl_modal.isSaving": false,
-                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                        "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                     }
                                                 }
                                             },
@@ -4597,7 +4636,8 @@
                                                 "params": {
                                                     "target": "global",
                                                     "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                 }
                                             }
                                         }
@@ -4627,7 +4667,8 @@
                                             "params": {
                                                 "target": "global",
                                                 "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null
+                                                "bz_tpl_modal.error": null,
+                                                "bz_tpl_modal.errors": null
                                             }
                                         },
                                         {
@@ -4682,7 +4723,8 @@
                                                     "params": {
                                                         "target": "global",
                                                         "bz_tpl_modal.isSaving": false,
-                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                        "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                     }
                                                 }
                                             },
@@ -4691,7 +4733,8 @@
                                                 "params": {
                                                     "target": "global",
                                                     "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}"
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
                                                 }
                                             }
                                         }
@@ -5252,9 +5295,10 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "카카오측을 못 지운 사유(kakao_skip_reason)로 안내를 가른다 — 미등록 행은 카카오에 지울 것이 없고, 상태 제약만 「상태 제약」이며, 그 밖(카카오 사유·서버 연결 실패)은 서버가 준 사유를 붙인다",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "message": "{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : $t('sirsoft-message_bizppurio.manage.delete.done_db_only')}}",
+                                                        "message": "{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : (response.data?.kakao_skip_reason === 'not_registered' ? $t('sirsoft-message_bizppurio.manage.delete.done_not_registered') : ((!response.data?.kakao_skip_reason || response.data?.kakao_skip_reason === 'state_not_deletable') ? $t('sirsoft-message_bizppurio.manage.delete.done_db_only') : $t('sirsoft-message_bizppurio.manage.delete.done_kakao_failed') + ' ' + response.data.kakao_skip_reason))}}",
                                                         "type": "success"
                                                     }
                                                 },

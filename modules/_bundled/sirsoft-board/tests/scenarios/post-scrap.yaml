@@ -65,7 +65,8 @@ effects:
   - mypage_list_search_field_title_content_matches_title_or_content
   - mypage_list_search_field_title_ignores_content
   - mypage_list_search_field_content_ignores_title
-  - mypage_list_rejects_invalid_search_field
+  # 7.1.0 실측 O-K3-3 — 모르는 값은 422 대신 기본 검색 대상(제목+내용)
+  - mypage_list_unknown_search_field_falls_back_to_title_content
   - mypage_list_search_excludes_disabled_board
   - mypage_list_datasource_passes_search_field
   - mypage_list_init_defaults_search_and_selection
@@ -97,6 +98,11 @@ effects:
   - mypage_list_table_and_card_are_exclusive
   - mypage_tab_follows_board_activity
   - detail_scrap_state_not_inherited_by_sibling
+  # K2 실측(2026-10-06) — 게시판 삭제 스크랩 표시·좁은 화면 검색 줄·창 버튼 커서·일괄 버튼 문구
+  - mypage_list_board_deleted_row_shows_board_deleted_flag
+  - mypage_list_search_input_shrinks_on_narrow_screen
+  - mypage_scrap_modal_buttons_show_pointer
+  - mypage_scrap_bulk_button_says_remove
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostScrapApiTest.php

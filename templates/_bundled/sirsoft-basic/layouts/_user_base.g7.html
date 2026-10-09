@@ -248,7 +248,7 @@
           </on>
         </notification-center>
         <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니) -->
-        <button data-ref="mobile_cart_btn" type="button" aria-label="$t:shop.cart.title" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
+        <button data-ref="mobile_cart_btn" type="button" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
           <on type="click">
             <navigate path="{{_global.shopBase}}/cart"/>
           </on>
@@ -256,7 +256,7 @@
           <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
           <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </button>
-        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼 -->
+        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
         <button type="button" aria-label="{{_global.currentUser ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <navigate path="{{_global.currentUser ? '/mypage' : '/login'}}"/>
@@ -280,7 +280,7 @@
       <!-- 드로어 헤더 - 닫기 버튼 -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <span class="font-semibold text-gray-900 dark:text-white">$t:user.menu</span>
-        <button type="button" aria-label="$t:common.close" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
             <!-- 드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다. -->
             <set-state target="global" :mobileMenuOpen="false"/>
@@ -324,7 +324,7 @@
           <!-- 펼침 영역 — 사용자 정보 아코디언과 동일한 max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
           <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
             <!-- 가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다. -->
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2" role="listbox" aria-label="$t:common.language">
               <button data-each="loc in {{$locales}}" type="button" class="{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap" role="option" aria-selected="{{loc === $locale}}">
                 <on type="click">
                   <set-locale target="{{loc}}"/>

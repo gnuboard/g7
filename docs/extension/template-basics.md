@@ -254,6 +254,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 }
 ```
 
+`assets.css` 는 화면 HTML 이 링크할 템플릿 CSS 목록입니다. 사용자·관리자 화면과 검색엔진용 화면 모두 **선언했고 설치본에 파일이 있는** 경로만 링크하며(`dist/` 를 뗀 자산 주소, 예: `dist/css/components.css` → `/api/templates/assets/{id}?file=css/components.css`), CSS 를 쓰지 않는 템플릿은 `"css": []` 로 두면 CSS 링크가 실리지 않습니다.
+
 ### 필수 필드
 
 | 필드 | 설명 |

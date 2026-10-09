@@ -63,6 +63,9 @@ class StoreRoleRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            // 다국어 칸 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
+            'name' => __('validation.role.attributes.name'),
+            'description' => __('validation.role.attributes.description'),
             'menu_ids' => __('validation.attributes.menu_ids'),
             'menu_ids.*' => __('validation.attributes.menu_ids'),
             'password_expiry_policy' => __('validation.attributes.password_expiry_policy'),

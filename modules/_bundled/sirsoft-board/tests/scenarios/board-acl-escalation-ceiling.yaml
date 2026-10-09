@@ -11,8 +11,12 @@ description: |
     만들 때 설정 기본값이 정한 역할(기본 ACL)은 시스템 기준이라 검사하지 않고, 그 위에 얹는
     역할만 기본 ACL 이 붙은 뒤의 액터 권한으로 판정한다.
   - 명단: board_manager_ids·board_step_ids 가 바뀌면 회원 역할 배정 상한을 받는다. 게시판 생성
-    시 최초 담당자 지정도 같다 — 새 게시판의 기본 ACL 을 받지 못하는 액터는 담당자를 지정할 수
-    없다.
+    시 최초 담당자 지정도 같다 — 단 새로 만드는 게시판에 **생성자 본인 한 명만** 관리자로 두는 것은
+    허용한다(기존 게시판에 대한 상승이 아니다, 7.1.0 실측 K4F-2·PO 결정 2026-10-08). 다른 회원을 함께
+    넣거나 스텝을 지정하면 그대로 상한을 받는다. 그래서 게시판 생성·복사 폼은 새 게시판의 기본 ACL 을
+    받지 못하는 액터에게 본인 한 명만 관리자로 채우고 스텝은 비우며 `_meta.can_assign_board_members=false`
+    로 다른 담당자는 지정할 수 없음을 알린다(화면은 안내 문구를 보이고 명단 칸을 잠근다). 기본 ACL 을 받는
+    관리자·슈퍼관리자에게는 종전처럼 본인을 미리 채우고 칸을 열어 둔다.
   - 신고 관리 권한의 역할 재할당(환경설정 저장)도 같은 상한을 받고, 설정 파일을 쓰기 전에 거부한다.
   - 환경설정의 게시판 기본 권한(새 게시판에 붙는 역할 목록)도 바뀌는 키마다 액터가 기존 모든
     게시판에서 그 권한을 가져야 저장된다 — 게시판 생성 시 기본 권한을 검사하지 않는 대신 여기서 막는다.
@@ -47,6 +51,10 @@ axes:
     - super_admin_assigns_allowed
     - create_manager_self_assign_blocked
     - create_manager_by_default_acl_holder_allowed
+    - create_manager_self_only_allowed
+    - create_form_prefill_skipped_for_non_holder
+    - copy_form_prefill_skipped_for_non_holder
+    - create_form_prefill_kept_for_holder
     # E2E — 실서버에서 같은 차단·허용
     - e2e_board_acl_self_grant_blocked
     - e2e_board_manager_self_assign_blocked
@@ -65,6 +73,9 @@ effects:
   - manager_other_assign_rejected
   - step_self_assign_rejected
   - create_manager_self_assign_rejected
+  # 저장할 수 없는 값을 폼이 미리 채우지 않는다 (7.1.0 전수 실측 O-K4-3) — 위임 관리자에게는 본인 한 명만 (K4F-2)
+  - create_form_does_not_prefill_unassignable_manager
+  - copy_form_does_not_prefill_unassignable_members
   # 거부의 원자성 — 403 만 단언하면 부분 저장(이름 변경·반쪽 게시판)을 놓친다.
   - rejected_update_leaves_no_partial_state
   - rejected_create_leaves_no_board
@@ -77,8 +88,11 @@ effects:
   - unchanged_member_resubmission_allowed
   - existing_board_manager_can_assign_members
   - default_acl_holder_can_name_manager_on_create
+  # 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용 (K4F-2, 결정 2026-10-08)
+  - create_board_creator_self_manager_allowed
   - report_permission_unchanged_or_super_admin_allowed
   - default_permissions_unchanged_or_holder_allowed
+  - create_form_prefills_self_for_assignable_actor
   # 무회귀
   - super_admin_edits_board_acl_freely
   - super_admin_bulk_apply_acl_applies

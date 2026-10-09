@@ -18,6 +18,8 @@
 - 알림 템플릿 수신자 칸 검증 안내의 항목 이름(`notification.validation.attributes.*` — 受信者ルール·受信者の値·関連ユーザーの関係 등)의 일본어 번역을 추가했습니다.
 - 확장 설치·활성화·업데이트가 서버 내부 오류로 실패했을 때의 일반 안내(`extensions.errors.internal_error`)와, 이름 없는 내장 언어팩의 표시 이름(`language_packs.built_in_name`·`language_packs.core_target`)의 일본어 번역을 추가했습니다.
 - 회원 역할 일괄 변경 결과에 「반영済みのため変更なし」 수를 함께 알리는 문구(`user.bulk_roles_updated_with_unchanged`)의 일본어 번역을 추가했습니다.
+- 레이아웃 스크립트를 불러오지 못했을 때 안내에 쓰는 일반 이름(`core.assets.layout_script` 「画面機能スクリプト」)의 일본어 번역을 추가했습니다.
+- 메뉴·역할·권한·알림 템플릿 저장의 다국어 필수 문구에 쓰는 칸 이름(`validation.menu.attributes.name` 「メニュー名」, `validation.role.attributes.*` 「ロール名」·「ロールの説明」, `validation.permission.attributes.*` 「権限名」·「権限の説明」, `notification.validation.attributes.*` 「通知の件名」·「通知の本文」)의 일본어 번역을 추가했습니다.
 - 본인인증 메일 링크로 확인한 결과를 처음 화면이 받아 갈 때의 안내·오류 문구와 입력 항목 이름의 일본어 번역을 추가했습니다.
 - 비밀번호 정책(작성 규칙·재사용 금지·만료·로그인 변경 단계) 문구의 일본어 번역을 추가했습니다 — 검증 메시지(`validation.password_policy.*`·보안 설정 항목명·`validation.auth.password_change.*`), 회원 문구(`user.password_expiry_*`·`user.password_change_*`), 로그인 안내(`auth.password_change_*`), 활동 로그(`password_change`·`password_change_postpone`·`password_expiry_logout`), 직권 실행 단계 이름, 기능이 꺼져 있어 직권 실행을 거절할 때의 안내(`exceptions.privacy_manual_run_disabled`), 알림 정의 2종(비밀번호 만료 사전 안내·비밀번호 만료)의 메일·사이트 알림 문구입니다. `user.validation.password_min` 은 설정한 길이를 보여 주도록 `:min` 으로 바꿨습니다.
 - 회원 등록·수정의 역할 변경 활동 로그(`activity_log.action.roles_update`「ロール変更」·`activity_log.description.user_roles_update`)와 활동 로그 보관 기간 설정의 검증 문구·항목명(`validation.settings.activity_log_retention_days_min`·`validation.attributes.activity_log_retention_days`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 역할 변경 로그와 보관 기간 저장 오류가 한국어로 나옵니다.
@@ -132,9 +134,11 @@
 - 사용자 API 의 내 정보 권한 2종(`core.profile.read` 「マイ情報閲覧」·`core.profile.update` 「マイ情報編集」)과 그 묶음 이름(`core.profile`)의 일본어 번역을 권한 시드에 추가했습니다. 없으면 일본어 관리자 화면의 역할 편집에서 이 권한 이름이 한국어로 보입니다.
 - 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
 - 관리자 2단계 인증 전용 「로그인 인증번호 안내」 메일 번역과, 정책별 문구 추가·삭제·검증 안내, 채널을 쓸 수 없어 보내지 않은 사유 문구의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 「다른 페이지로 이동」 폼의 새 칸 이름(`layout_editor.action_recipe.navigate.param_refetch_data_sources` 「再取得するデータソース(カンマ区切り)」)을 일본어로 번역했습니다.
 
 ### Changed
 
+- 여러 언어로 적는 입력칸에서 지금 화면 언어의 값을 비웠을 때의 오류 문구(`validation.translatable.current_locale_required`)가 칸 이름과 언어 이름을 함께 알리도록(「:attributeの:language(:locale)の値は必須です。」) 원본과 함께 바꿨습니다. 칸 표시 이름이 없을 때 쓰는 문구(`validation.translatable.current_locale_required_unnamed`「:language(:locale)の値は必須です。」)도 추가했습니다.
 - 템플릿 업데이트 때의 덮어쓰기 경고 문구를 레이아웃과 확장 조각을 함께 가리키는 표현으로 바꿨습니다.
 
 - 편집기 빌드 파일 누락 안내(`templates.messages.editor_assets_missing`)를 한국어 원문 변경에 맞춰 다시 번역했습니다.

@@ -489,6 +489,33 @@ class Plugin extends AbstractPlugin
     }
 
     /**
+     * 이 플러그인이 발행해 다른 확장에 제공하는 훅 선언.
+     *
+     * 관리자 확장 관리의 플러그인 정보 창 「훅」 칸과 확장 문서의 발행 훅 표가 이 선언을 읽는다.
+     * 구독하는 훅(getHookListeners)은 여기에 싣지 않는다.
+     *
+     * @return array<int, array<string, mixed>> 훅 정의 목록
+     */
+    public function getHooks(): array
+    {
+        return [
+            [
+                'name' => 'sirsoft-message_bizppurio.balance.low',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '잔액 부족·후불 한도 초과로 문자·알림톡 발송이 실패했을 때(채널별 쿨다운 안에서 1회) 실행되는 액션 훅',
+                    'en' => 'Action hook fired when an SMS or AlimTalk send fails for low balance or an exceeded postpaid limit (once per channel cooldown)',
+                    'ja' => '残高不足・後払い上限超過で SMS・アラートトークの送信が失敗したときに(チャネルごとのクールダウン内で1回)実行されるアクションフック',
+                ],
+                'parameters' => [
+                    'resultCode' => 'string - 비즈뿌리오 결과 코드 (9070 문자 잔액 부족, 7436 알림톡 지갑 잔액 부족, 9071 후불 한도 초과)',
+                    'channel' => 'string - 실패한 채널 (sms, lms, alimtalk)',
+                ],
+            ],
+        ];
+    }
+
+    /**
      * 스케줄 작업 목록 반환 (#597 §3.4).
      *
      * 검수중(requested) 알림톡 템플릿의 카카오 검수 상태를 30분 주기로 동기화한다.

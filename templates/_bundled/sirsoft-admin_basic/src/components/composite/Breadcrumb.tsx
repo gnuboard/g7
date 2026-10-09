@@ -7,6 +7,12 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
@@ -85,7 +91,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   return (
     <Nav
       className={`flex items-center space-x-2 text-sm ${className}`}
-      aria-label="Breadcrumb"
+      aria-label={tOr('common.breadcrumb', 'Breadcrumb')}
       id={id} {...editorAttrs}
     >
       <Div className="flex items-center space-x-2">

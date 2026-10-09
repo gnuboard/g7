@@ -474,6 +474,80 @@ class UserActivityApiTest extends BoardTestCase
     }
 
     /**
+     * 「작성한 댓글」 통계는 내가 쓴 댓글 수다 — 내 글에 남이 단 댓글은 세지 않고, 남의 글에 내가 단 댓글은 센다.
+     *
+     * 종전에는 내 글들의 comments_count 합(받은 댓글 수)을 내보내, 마이페이지 「작성한 댓글」 카드와
+     * 「내가 쓴 댓글」 탭 숫자가 목록과 어긋났다(7.1.0 실측: 탭 6, 목록 2).
+     *
+     * @scenario viewer=owner
+     *
+     * @effects stats_total_comments_counts_comments_written_by_user
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stats_total_comments_counts_comments_written_by_user(): void
+    {
+        $other = $this->createUser();
+
+        // 내 글에 남이 단 댓글 2개 — 세지 않는다
+        $myPost = $this->createPost($this->board->slug, ['user_id' => $this->user->id]);
+        $this->createComment($this->board->slug, $myPost->id, ['user_id' => $other->id, 'content' => '남의 댓글 1']);
+        $this->createComment($this->board->slug, $myPost->id, ['user_id' => $other->id, 'content' => '남의 댓글 2']);
+
+        // 남의 글에 내가 단 댓글 1개 — 센다
+        $othersPost = $this->createPost($this->board->slug, ['user_id' => $other->id]);
+        $this->createComment($this->board->slug, $othersPost->id, ['user_id' => $this->user->id, 'content' => '내 댓글']);
+
+        $statsResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/activity-stats');
+        $listResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/my-comments');
+
+        $statsResponse->assertOk();
+        $listResponse->assertOk();
+        $this->assertSame(1, $statsResponse->json('data.total_comments'));
+        $this->assertSame($listResponse->json('data.total'), $statsResponse->json('data.total_comments'), '통계와 「내가 쓴 댓글」 목록 건수가 같아야 한다');
+    }
+
+    /**
+     * 댓글 기능을 끈 게시판의 내 댓글은 목록에서 빠지므로 통계에서도 빠진다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects stats_total_comments_counts_comments_written_by_user
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stats_total_comments_excludes_comment_disabled_board(): void
+    {
+        $post = $this->createPost($this->board->slug, ['user_id' => $this->user->id]);
+        $this->createComment($this->board->slug, $post->id, ['user_id' => $this->user->id, 'content' => '보일 댓글']);
+
+        $noCommentBoard = Board::factory()->create(['use_comment' => false, 'is_active' => true]);
+        $hiddenPost = Post::create([
+            'board_id' => $noCommentBoard->id,
+            'title' => '댓글 끈 게시판 글',
+            'content' => '본문',
+            'user_id' => $this->user->id,
+            'ip_address' => '127.0.0.1',
+            'is_notice' => false,
+            'is_secret' => false,
+            'status' => 'published',
+        ]);
+        Comment::create([
+            'board_id' => $noCommentBoard->id,
+            'post_id' => $hiddenPost->id,
+            'content' => '숨을 댓글',
+            'user_id' => $this->user->id,
+            'status' => 'published',
+        ]);
+
+        $statsResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/activity-stats');
+        $listResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/my-comments');
+
+        $this->assertSame(1, $statsResponse->json('data.total_comments'));
+        $this->assertSame(1, $listResponse->json('data.total'));
+    }
+
+    /**
      * 정렬 옵션으로 활동을 조회할 수 있다.
      *
      * @scenario viewer=owner

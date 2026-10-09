@@ -45,7 +45,7 @@
 | --- | --- | --- | --- | --- | --- |
 | page | query | integer | 아니오 | min 1 | 페이지 번호 |
 | search | query | string | 아니오 | max 255 | 검색어 |
-| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content` | 검색 대상. 값이 규칙에 없으면 422 |
+| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content` | 검색 대상. 값이 규칙에 없으면 기본값 `title_content` 로 처리 |
 
 **응답 필드** (`data.data[]`)
 
@@ -120,6 +120,10 @@
 | created_at | string | `2026-09-14 15:05:31` | 스크랩 시각의 절대 표기(초 단위). 저장은 UTC 이고 이 값은 회원 표시 시간대로 환산됩니다 — 관리 목록은 선후를 가려야 하므로 이 필드를 씁니다 |
 | abilities.can_delete | boolean | `true` | 삭제 권한 — 화면의 체크 칸이 이 값으로 열립니다 |
 
+**응답 메타**: `data.abilities{can_view,can_manage}` + `data.boards[]`(게시판 필터 선택지 — `id`·`slug`·`name`, 비활성 게시판 포함, 최근 생성 순) + `data.pagination`.
+게시판 선택지를 목록 응답에 싣는 이유는 게시판 목록 API 가 게시판 관리 권한이 있어야 열려,
+`scraps.view` 만 가진 매니저가 그 API 로는 게시판을 고를 수 없기 때문입니다.
+
 ### DELETE /api/modules/sirsoft-board/admin/scraps/{id}
 
 - **권한**: `sirsoft-board.scraps.manage`
@@ -143,7 +147,9 @@
 ## 회원 상세 응답의 요약
 
 `GET /api/admin/users/{uuid}` 의 관리자 응답에 `board_scraps` 가 실립니다
-(`UserScrapInfoListener` 가 관리자 요청에만 주입 — 프로필 응답에는 없습니다).
+(`UserScrapInfoListener` 가 관리자 요청에만 주입 — 프로필 응답에는 없습니다). 보는 관리자에게
+`sirsoft-board.scraps.view` 권한이 없으면 싣지 않습니다 — 실으면 회원 상세가 건수를 그리고,
+「이 회원 스크랩 목록 보기」는 403 화면으로 끝납니다.
 
 | 필드 | 타입 | 용도 |
 | --- | --- | --- |

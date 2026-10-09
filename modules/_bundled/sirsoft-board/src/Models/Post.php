@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
 use App\Support\HtmlImageExtractor;
@@ -239,13 +240,15 @@ class Post extends Model implements FulltextSearchable
      * 목록 썸네일용 첫 번째 이미지 첨부파일과의 관계를 정의합니다.
      *
      * 전체 attachments를 eager loading하는 대신 이미지 1건만 가져와 성능을 확보합니다.
+     * 미리보기로 보여 줄 수 있는 일반 이미지(InlineMediaPolicy)만 고릅니다 — SVG 처럼 미리보기를 막은
+     * 형식을 고르면 목록 썸네일이 깨진다(미리보기 400, 2026-10-07 실측).
      *
-     * @return HasOne
+     * @return HasOne 첫 번째 일반 이미지 첨부 관계
      */
     public function thumbnailAttachment(): HasOne
     {
         return $this->hasOne(Attachment::class, 'post_id')
-            ->where('mime_type', 'like', 'image/%')
+            ->whereIn('mime_type', InlineMediaPolicy::RASTER_IMAGE_MIME_TYPES)
             ->orderBy('order');
     }
 

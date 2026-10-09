@@ -137,7 +137,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** GDPR 플러그인의 관리자 설정 전체를 반환해 관리자 설정 화면 폼에 바인딩합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `cookie_categories` 같은 JSON 필드는 디코드하여 객체/배열로 노출합니다. 조회 전용이며 정책 버전 발행 등 부수 효과는 없습니다.
+**설명** GDPR 플러그인의 관리자 설정 전체를 반환해 관리자 설정 화면 폼에 바인딩합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `cookie_categories` 같은 JSON 필드는 디코드하여 객체/배열로 노출하고, 저장된 카탈로그가 비어 있으면(null·빈 배열) 공개 설정 응답과 같은 기본 카테고리 4종을 실어 화면이 카테고리 카드와 카테고리별 차단 도메인 입력칸을 그릴 수 있게 합니다. 조회 전용이며 정책 버전 발행 등 부수 효과는 없습니다.
 
 **추가 응답 필드**
 
@@ -272,7 +272,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 검증된 GDPR 관리자 설정을 저장합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요합니다. 설정만 저장할 뿐 정책 버전은 자동 발행되지 않으며, 재동의가 필요한 변경이라면 운영자가 「+ 새 버전 발행」을 별도로 눌러야 합니다. 배너 문구·위치, 쿠키 카테고리, 차단 도메인, 필수 저장 항목 허용목록 등을 갱신하는 쓰기 엔드포인트입니다.
+**설명** 검증된 GDPR 관리자 설정을 저장합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요합니다. 설정만 저장할 뿐 정책 버전은 자동 발행되지 않으며, 재동의가 필요한 변경이라면 운영자가 「+ 새 버전 발행」을 별도로 눌러야 합니다. 배너 문구·위치, 쿠키 카테고리, 차단 도메인, 필수 저장 항목 허용목록 등을 갱신하는 쓰기 엔드포인트입니다. 요청에 `cookie_categories` 키가 없으면 저장된 카탈로그를 건드리지 않습니다(다른 항목만 고친 저장이 카탈로그를 지우지 않도록).
 
 **추가 요청 파라미터**
 
@@ -478,4 +478,6 @@ _에러 없음 (공개 조회 — 요청 파라미터가 없고 컨트롤러/서
 `GET` 응답은 `data.settings.annual_notice`와 `data.annual_notice_limits.{min,max}`를 포함합니다.
 
 예: `{"annual_notice":{"enabled":false,"channels":["database"],"batch_size":500,"introduction":{"ko":"개인정보 이용내역 안내"}}}`.
-범위 초과 또는 빈 채널은 422이며 기존 설정은 보존됩니다.
+범위 초과 또는 빈 채널은 422이며 기존 설정은 보존됩니다. 켠 상태에서 채널·상한을 비우면 `annual_notice.channels`·`annual_notice.batch_size` 키에
+「자동 통지를 켜려면 …」 문구가 붙고, 서문 길이 초과는 언어별 키 한 건(`annual_notice.introduction.ko` 등, 칸 이름 「통지문 서문 (한국어)」)으로 옵니다.
+요청이 칸별 문구를 정하지 않은 규칙(in·required_with 등)은 괄호 조사 없는 플러그인 대체 문구(`Http/Requests/Concerns/ProvidesFallbackRuleMessages`)로 떨어집니다.

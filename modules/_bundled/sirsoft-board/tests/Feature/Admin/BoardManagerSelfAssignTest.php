@@ -313,8 +313,36 @@ class BoardManagerSelfAssignTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 권한이 없는 위임 관리자가 게시판을 만들며 자기를 관리자로 넣으면 403 이고, 게시판·
-     * 게시판 역할·권한이 하나도 남지 않는다.
+     * 기본 ACL 밖 위임 관리자도 새 게시판을 만들며 **자기 한 명만** 관리자로 둘 수 있다 — 새로 만드는 게시판의
+     * 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니다(7.1.0 실측 K4F-2, 결정 2026-10-08). 종전에는
+     * 누구를 지정해도 403, 비우면 422 라 게시판을 아예 만들 수 없었다.
+     *
+     * @scenario case=create_manager_self_only_allowed
+     *
+     * @effects create_board_creator_self_manager_allowed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delegate_can_create_board_naming_only_self_manager(): void
+    {
+        $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+        $slug = 'kve2367-mgr-new-'.substr(md5(uniqid('', true)), 0, 8);
+
+        $this->actingAs($delegate)->postJson(
+            '/api/modules/sirsoft-board/admin/boards',
+            $this->createPayload($slug, [$delegate->uuid])
+        )->assertStatus(201);
+
+        $board = Board::where('slug', $slug)->firstOrFail();
+        $this->assertSame($delegate->id, (int) $board->created_by);
+        $managerIds = Role::where('identifier', "sirsoft-board.{$slug}.manager")->firstOrFail()
+            ->users()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $this->assertSame([$delegate->id], $managerIds);
+    }
+
+    /**
+     * 새 게시판에서도 다른 회원을 관리자로 넣으면(자기와 함께여도) 403 이고 게시판·역할·권한이 남지 않는다 —
+     * 허용은 생성자 본인 한 명뿐이다.
      *
      * @scenario case=create_manager_self_assign_blocked
      *
@@ -322,19 +350,50 @@ class BoardManagerSelfAssignTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_delegate_cannot_create_board_naming_self_manager(): void
+    public function test_delegate_cannot_create_board_naming_other_manager(): void
     {
         $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
-        $slug = 'kve2367-mgr-new-'.substr(md5(uniqid('', true)), 0, 8);
+        $accomplice = User::factory()->create(['status' => 'active']);
 
-        $this->assertEscalationRejected($this->actingAs($delegate)->postJson(
-            '/api/modules/sirsoft-board/admin/boards',
-            $this->createPayload($slug, [$delegate->uuid])
-        ));
+        foreach ([[$accomplice->uuid], [$delegate->uuid, $accomplice->uuid]] as $managers) {
+            $slug = 'kve2367-mgr-oth-'.substr(md5(uniqid('', true)), 0, 8);
 
-        $this->assertFalse(Board::where('slug', $slug)->exists());
-        $this->assertSame(0, Role::where('identifier', 'like', "sirsoft-board.{$slug}.%")->count());
-        $this->assertSame(0, Permission::where('identifier', 'like', "sirsoft-board.{$slug}%")->count());
+            $this->assertEscalationRejected($this->actingAs($delegate)->postJson(
+                '/api/modules/sirsoft-board/admin/boards',
+                $this->createPayload($slug, $managers)
+            ));
+
+            $this->assertFalse(Board::where('slug', $slug)->exists());
+            $this->assertSame(0, Role::where('identifier', 'like', "sirsoft-board.{$slug}.%")->count());
+            $this->assertSame(0, Permission::where('identifier', 'like', "sirsoft-board.{$slug}%")->count());
+        }
+    }
+
+    /**
+     * 새 게시판의 스텝 지정은 본인이든 다른 회원이든 그대로 상한을 받는다 — 허용은 관리자 본인 한 명뿐이다.
+     * 같은 요청에서 방금 얻은 관리자 역할로 스텝 지정이 통과하지 않도록 스텝을 먼저 판정한다.
+     *
+     * @scenario case=create_manager_self_assign_blocked
+     *
+     * @effects create_manager_self_assign_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delegate_cannot_create_board_naming_self_step(): void
+    {
+        $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+        $other = User::factory()->create(['status' => 'active']);
+
+        foreach ([[$delegate->uuid], [$other->uuid]] as $steps) {
+            $slug = 'kve2367-mgr-stp-'.substr(md5(uniqid('', true)), 0, 8);
+
+            $this->assertEscalationRejected($this->actingAs($delegate)->postJson(
+                '/api/modules/sirsoft-board/admin/boards',
+                $this->createPayload($slug, [$delegate->uuid], ['board_step_ids' => $steps])
+            ));
+
+            $this->assertFalse(Board::where('slug', $slug)->exists());
+        }
     }
 
     /**
@@ -366,5 +425,114 @@ class BoardManagerSelfAssignTest extends ModuleTestCase
         $this->assertTrue(
             Role::where('identifier', "sirsoft-board.{$slug}.manager")->firstOrFail()->users()->where('users.id', $staff->id)->exists()
         );
+    }
+
+    /**
+     * 게시판 생성·복사 폼 데이터 API 경로를 돌려줍니다.
+     *
+     * @param  array<string, mixed>  $query  쿼리 (copy_id 등)
+     * @return string 폼 데이터 API URL
+     */
+    private function formDataUrl(array $query = []): string
+    {
+        $url = '/api/modules/sirsoft-board/admin/boards/form-data';
+
+        return $query === [] ? $url : $url.'?'.http_build_query($query);
+    }
+
+    /**
+     * 새 게시판의 기본 ACL 을 받지 못하는 위임 관리자에게는 생성 폼이 **본인 한 명만** 관리자로 미리 채운다 —
+     * 그대로 저장할 수 있는 값이다. 다른 담당자는 지정할 수 없다는 사실을 `_meta.can_assign_board_members=false`
+     * 로 알려 화면이 이유를 보이고 명단 칸을 잠근다(K4F-2, 결정 2026-10-08).
+     *
+     * @scenario case=create_form_prefill_skipped_for_non_holder
+     *
+     * @effects create_form_does_not_prefill_unassignable_manager
+     *
+     * @return void 반환값 없음
+     */
+    public function test_create_form_prefills_only_self_for_delegate(): void
+    {
+        $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+
+        $response = $this->actingAs($delegate)->getJson($this->formDataUrl())->assertOk();
+
+        $this->assertSame([$delegate->uuid], $response->json('data.board_manager_ids'));
+        $this->assertSame([$delegate->uuid], array_column($response->json('data.board_managers'), 'uuid'));
+        $this->assertSame([], $response->json('data.board_step_ids'));
+        $this->assertFalse($response->json('data._meta.can_assign_board_members'));
+    }
+
+    /**
+     * 복사 폼도 같다 — 원본 게시판의 관리자·스텝 명단 대신 본인 한 명을 관리자로 채우고 스텝은 비운다. 원본
+     * 명단을 그대로 채우면 위임 관리자가 저장할 때 403 이다.
+     *
+     * @scenario case=copy_form_prefill_skipped_for_non_holder
+     *
+     * @effects copy_form_does_not_prefill_unassignable_members
+     *
+     * @return void 반환값 없음
+     */
+    public function test_copy_form_prefills_only_self_for_delegate(): void
+    {
+        $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+
+        $response = $this->actingAs($delegate)->getJson($this->formDataUrl(['copy_id' => $this->board->id]))->assertOk();
+
+        $this->assertSame([$delegate->uuid], $response->json('data.board_manager_ids'));
+        $this->assertSame([$delegate->uuid], array_column($response->json('data.board_managers'), 'uuid'));
+        $this->assertSame([], $response->json('data.board_step_ids'));
+        $this->assertSame([], $response->json('data.board_steps'));
+        $this->assertFalse($response->json('data._meta.can_assign_board_members'));
+    }
+
+    /**
+     * 복사 폼이 채운 값을 그대로 저장하면 게시판이 만들어지고 위임 관리자가 그 관리자가 된다.
+     *
+     * @scenario case=copy_form_prefill_skipped_for_non_holder
+     *
+     * @effects create_board_creator_self_manager_allowed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delegate_can_save_copy_form_as_is(): void
+    {
+        $delegate = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+        $form = $this->actingAs($delegate)->getJson($this->formDataUrl(['copy_id' => $this->board->id]))->assertOk()->json('data');
+        $slug = 'kve2367-mgr-cpy-'.substr(md5(uniqid('', true)), 0, 8);
+
+        $this->actingAs($delegate)->postJson('/api/modules/sirsoft-board/admin/boards', array_merge(
+            $this->createPayload($slug, $form['board_manager_ids']),
+            ['board_step_ids' => $form['board_step_ids'], 'permissions' => $form['permissions']]
+        ))->assertStatus(201);
+
+        $this->assertTrue(
+            Role::where('identifier', "sirsoft-board.{$slug}.manager")->firstOrFail()
+                ->users()->where('users.id', $delegate->id)->exists()
+        );
+    }
+
+    /**
+     * 과차단 회귀 축 — 기본 ACL 로 새 게시판 권한을 받는 관리자(admin 역할, 슈퍼 아님)와
+     * 슈퍼관리자에게는 생성 폼이 본인을 관리자로 그대로 미리 채운다.
+     *
+     * @scenario case=create_form_prefill_kept_for_holder
+     *
+     * @effects create_form_prefills_self_for_assignable_actor
+     *
+     * @return void 반환값 없음
+     */
+    public function test_create_form_prefills_self_for_default_acl_holder_and_super_admin(): void
+    {
+        $staff = User::factory()->create(['status' => 'active']);
+        $adminRole = Role::where('identifier', 'admin')->firstOrFail();
+        $staff->roles()->attach($adminRole->id);
+
+        foreach ([$staff->fresh(), $this->superAdmin] as $actor) {
+            $response = $this->actingAs($actor)->getJson($this->formDataUrl())->assertOk();
+
+            $this->assertSame([$actor->uuid], $response->json('data.board_manager_ids'));
+            $this->assertTrue($response->json('data._meta.can_assign_board_members'));
+        }
     }
 }

@@ -5,6 +5,8 @@
  * 주문 상세·주문 완료·관리자 화면에 붙는 표시는 모두 레이아웃 조각(`resources/extensions`)이 맡는다 — 이 엔트리는
  * 화면 DOM 을 찾거나 고치지 않고, 코어 함수(fetch·history)를 덮어쓰지 않는다.
  */
+// 설정 화면 안내 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { handlerMap } from './handlers';
 import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 

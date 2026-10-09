@@ -14,12 +14,18 @@
   <data-source id="attachmentSettings" label_key="$t:sirsoft-page.editor.data_source.attachmentSettings" type="api" endpoint="/api/modules/sirsoft-page/admin/attachments/settings" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback :data="null"/>
   </data-source>
-  <computed name="isReadOnly">{{!!route?.id &amp;&amp; pageData?.data?.abilities?.can_update !== true}}</computed>
+  <!-- 등록 모드 전용 — 등록 권한 확인만이 목적이라 1건만 받는다. 등록 전용 권한 조회 API 가 없어 목록 응답의 `abilities.can_create` 를 쓴다(역할 등록 화면과 같은 방식). 주소로 바로 들어온 읽기 전용 관리자에게 입력 가능한 폼을 열어 두지 않기 위함이다. 읽기 전용(isReadOnly)은 수정 모드면 그 페이지의 `can_update`, 등록 모드면 이 응답의 `can_create` 가 true 가 아닐 때다 -->
+  <data-source id="createAbility" label_key="$t:sirsoft-page.editor.data_source.createAbility" type="api" endpoint="/api/modules/sirsoft-page/admin/pages" method="GET" :auto_fetch="true" :auth_required="true" if="{{!route?.id}}">
+    <params :per_page="1"/>
+    <fallback :data="null"/>
+  </data-source>
+  <computed name="isReadOnly">{{route?.id ? pageData?.data?.abilities?.can_update !== true : createAbility?.data?.abilities?.can_create !== true}}</computed>
   <permissions>
     <permission>sirsoft-page.pages.read</permission>
   </permissions>
   <transition-overlay>
     <wait-for>pageData</wait-for>
+    <wait-for>createAbility</wait-for>
   </transition-overlay>
   <init>
     <!-- 생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제) -->
@@ -60,7 +66,7 @@
       </div>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="flex-center mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg gap-3">
         <icon name="lock" class="text-yellow-600 dark:text-yellow-400"/>
-        <span class="text-warning-soft">$t:sirsoft-page.admin.page.form.read_only_message</span>
+        <span class="text-warning-soft">{{route?.id ? '$t:sirsoft-page.admin.page.form.read_only_message' : '$t:sirsoft-page.admin.page.form.read_only_message_create'}}</span>
       </div>
       <div data-ref="section_basic_info" class="admin-card">
         <div data-ref="basic_info_header" class="flex-center gap-2 mb-4">
@@ -141,7 +147,8 @@
               <span>$t:sirsoft-page.admin.page.form.fields.content</span>
               <span class="text-required">*</span>
             </label>
-            <extension-point name="html_editor" data-ref="content_editor" data-if="{{!route?.id || _local.form?.content !== undefined}}" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
+            <!-- 편집기는 처음 그려질 때의 읽기 전용 여부로 굳는다. 그래서 수정 모드는 기존 값이 온 뒤, 등록 모드는 등록 권한 확인이 끝난 뒤에 그린다 — 먼저 그리면 권한 있는 관리자에게도 잠긴 편집기가 남는다 -->
+            <extension-point name="html_editor" data-ref="content_editor" data-if="{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">
               <prop name="name">"content"</prop>
               <default>
                 <html-editor data-type="composite" name="content" :multilingual="true" value="{{_local.form?.content}}" isHtml="{{_local.form?.content_mode === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-page.admin.page.form.fields.content">

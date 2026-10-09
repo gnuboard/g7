@@ -13,7 +13,7 @@
   "views": "조회",
   "views_count": "조회 {{count}}",
   "write": "글쓰기",
-  "search_placeholder": "제목, 내용, 작성자로 검색...",
+  "search_placeholder": "검색어를 입력하세요",
   "board_not_found": "게시판을 찾을 수 없습니다",
   "board_not_found_description": "게시판이 존재하지 않거나 비활성화되었습니다.",
   "no_posts": "등록된 게시글이 없습니다",

@@ -22,6 +22,7 @@ return [
     'attachment' => [
         'not_found' => '添付ファイルが見つかりません。',
         'file_not_found' => '添付ファイルがストレージに存在しません。',
+        'preview_not_supported' => 'プレビューに対応していないファイル形式です。',
         'upload_success' => '添付ファイルがアップロードされました。',
         'upload_failed' => '添付ファイルのアップロードに失敗しました。',
         'delete_success' => '添付ファイルが削除されました。',

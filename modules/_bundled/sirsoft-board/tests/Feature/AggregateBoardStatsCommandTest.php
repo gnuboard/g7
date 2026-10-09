@@ -31,6 +31,10 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
     {
         parent::setUp();
 
+        // 집계의 「오늘」은 사이트 표준시의 하루다(SiteDay). 사이트 날짜와 UTC 날짜가 같은 시각으로
+        // 고정해 실행 시각과 무관하게 같은 결과를 낸다 — 날짜 경계 자체는 BoardSiteDayBoundaryTest 가 잰다.
+        $this->travelTo(CarbonImmutable::parse('2030-01-15 03:00:00', 'UTC'));
+
         BoardStat::query()->delete();
 
         $this->board = Board::create([
@@ -83,7 +87,7 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects post_graph_updated_at_caption_hidden_when_no_aggregated_rows
+     * @effects post_graph_updated_at_caption_hidden_when_no_aggregated_rows, aggregate_command_dry_run_persists_nothing
      *
      * @return void 반환값 없음
      */
@@ -105,7 +109,7 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects today_posts_badge_reflects_overview_api, today_comments_badge_reflects_overview_api
+     * @effects today_posts_badge_reflects_overview_api, today_comments_badge_reflects_overview_api, board_stats_aggregate_upserts_recent_days_only
      *
      * @return void 반환값 없음
      */
@@ -145,7 +149,7 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_previous_week, user_role=admin_with_dashboard_permission
      *
-     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api, board_stats_aggregate_upserts_recent_days_only
      *
      * @return void 반환값 없음
      */
@@ -170,7 +174,7 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=no_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects post_graph_chart_renders_7_days_from_post_graph_api
+     * @effects post_graph_chart_renders_7_days_from_post_graph_api, board_stats_aggregate_idempotent
      *
      * @return void 반환값 없음
      */

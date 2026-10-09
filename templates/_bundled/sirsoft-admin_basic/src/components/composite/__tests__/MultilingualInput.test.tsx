@@ -201,7 +201,7 @@ describe('MultilingualInput 컴포넌트', () => {
 
       // props.value 미갱신 상태에서 EN 탭 클릭
       // EN 탭 버튼 찾기 (English 텍스트 포함)
-      const enTab = screen.getByRole('button', { name: /English/i });
+      const enTab = screen.getByRole('button', { name: /^English/i });
       fireEvent.click(enTab);
 
       // props.value 미갱신 rerender
@@ -368,7 +368,7 @@ describe('MultilingualInput 컴포넌트', () => {
 
       expect(container.querySelectorAll('button button')).toHaveLength(0);
 
-      const enTab = screen.getByRole('button', { name: /English/i });
+      const enTab = screen.getByRole('button', { name: /^English/i });
       const removeButton = enTab.parentElement!.querySelectorAll('button')[1];
       expect(removeButton).toBeTruthy();
       fireEvent.click(removeButton);

@@ -187,7 +187,6 @@ describe('채널 추가 창 — 확정 전 입력 검증', () => {
     ['형식이 틀린 키', { key: 'Bad-Key', label: { ko: '문자', en: '' } }],
     ['빈 키', { key: '', label: { ko: '문자', en: '' } }],
     ['이미 있는 키', { key: 'sms_subscription', label: { ko: '문자', en: '' } }],
-    ['화면 언어 이름 누락', { key: 'kakao_subscription', label: { ko: '  ', en: 'Kakao' } }],
   ])('%s 이면 확정 버튼이 잠긴다', async (_case, input) => {
     const { confirm } = await confirmButtonFor({ ...input, page_slug: '', enabled: true, is_system: false, _editing: false });
     expect(confirm.disabled).toBe(true);
@@ -215,5 +214,75 @@ describe('채널 추가 창 — 확정 전 입력 검증', () => {
     });
     const hints = [...container.querySelectorAll('p.text-error-soft')].map((p) => p.textContent);
     expect(hints.join(' ')).toContain('key_invalid');
+  });
+});
+
+describe('채널 추가 창 — 항목명 안내는 입력칸을 떠나거나 확정을 누른 뒤에만', () => {
+  /**
+   * 편집 창을 주어진 편집 대상으로 렌더한다.
+   *
+   * @param editingChannel 편집 중인 채널
+   */
+  async function mountModal(editingChannel: Record<string, unknown>) {
+    utils = createLayoutTest(
+      { version: '1.0.0', layout_name: 'marketing_channel_edit', components: editModal.children } as any,
+      { initialState: { _global: { editingChannel, channels: SAVED_CHANNELS } }, initialData: { $locale: 'ko' }, locale: 'ko' },
+    );
+    const { container } = await utils.render();
+    return container;
+  }
+
+  /** 창 안의 빨간 안내 문구 */
+  const hintsOf = (container: HTMLElement) => [...container.querySelectorAll('p.text-error-soft')].map((p) => p.textContent ?? '');
+
+  const BLANK = { key: '', label: { ko: '', en: '' }, page_slug: '', enabled: true, is_system: false, _editing: false };
+
+  /**
+   * @scenario case=add_channel
+   * @effects add_modal_label_hint_after_touch
+   */
+  it('창을 막 열었을 때(입력 전)는 항목명 안내가 없다', async () => {
+    const container = await mountModal({ ...BLANK });
+    expect(hintsOf(container).filter((t) => t.includes('label_required'))).toHaveLength(0);
+  });
+
+  /**
+   * @scenario case=add_channel
+   * @effects add_modal_label_hint_after_touch
+   */
+  it('항목명 입력칸을 떠나면(blur) 그때 안내를 세운다', async () => {
+    await mountModal({ ...BLANK, key: 'kakao_subscription' });
+    const field = findById(editModal, 'channel_label_field') as any;
+    const blur = (field?.actions ?? []).find((a: any) => a.type === 'blur' || a.event === 'blur');
+    expect(blur).toBeTruthy();
+    await utils!.triggerAction(blur);
+    expect(utils!.getState()._global.editingChannel._labelTouched).toBe(true);
+  });
+
+  /**
+   * @scenario case=add_channel
+   * @effects add_modal_label_hint_after_touch
+   */
+  it('안내 표시 조건은 항목명을 건드린 뒤 비어 있을 때다', async () => {
+    const touched = await mountModal({ ...BLANK, key: 'kakao_subscription', _labelTouched: true });
+    expect(hintsOf(touched).some((t) => t.includes('label_required'))).toBe(true);
+  });
+
+  /**
+   * @scenario case=add_channel
+   * @effects add_modal_label_hint_after_touch, add_modal_blocks_invalid_input
+   */
+  it('항목명이 비면 확정 버튼은 눌리되, 누르면 목록에 붙이지 않고 안내를 세운다', async () => {
+    const container = await mountModal({ ...BLANK, key: 'kakao_subscription', label: { ko: '  ', en: 'Kakao' } });
+    const confirm = [...container.querySelectorAll('button')].pop() as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+
+    const confirmNode = findById(editModal, 'channel_edit_confirm') as any;
+    await utils!.triggerAction(actionsOf(confirmNode)[0]);
+
+    const state = utils!.getState()._global;
+    expect(state.editingChannel._labelTouched).toBe(true);
+    expect(state.channels.map((ch: any) => ch.key)).toEqual(SAVED_CHANNELS.map((ch) => ch.key));
+    expect(state.modalStack ?? []).toEqual([]);
   });
 });

@@ -593,11 +593,16 @@ return [
         'max_length' => "The ':lang' translation may not be greater than :max characters.",
         'min_length' => "The ':lang' translation must be at least :min characters.",
         'at_least_one_required' => 'At least one translation is required.',
-        'current_locale_required' => 'The :locale language value is required.',
+        'current_locale_required' => 'The :language (:locale) value of the :attribute field is required.',
+        'current_locale_required_unnamed' => 'The :language (:locale) value is required.',
     ],
 
     // Menu validation messages
     'menu' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'menu name',
+        ],
         'roles' => [
             'array' => 'The roles must be an array.',
             'integer' => 'Each role ID must be an integer.',
@@ -684,6 +689,11 @@ return [
 
     // Permission validation messages
     'permission' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'permission name',
+            'description' => 'permission description',
+        ],
         'name' => [
             'required' => 'Please enter a permission name.',
         ],
@@ -694,6 +704,11 @@ return [
 
     // Role validation messages
     'role' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'role name',
+            'description' => 'role description',
+        ],
         'name' => [
             'required' => 'Please enter a role name.',
         ],

@@ -559,16 +559,7 @@
     @apply text-sm text-gray-500;
     @apply dark:text-gray-400;
   }
-  /*
-   * Histories Compact Grid — 이력 표를 좁은 카드 안에 촘촘하게 싣는 DataGrid variant.
-   * 신고 상세의 「처리 이력」처럼 행수가 적고 열이 짧은 표에 쓴다. 기본 DataGrid 의
-   * px-6 py-4 셀 패딩이 카드 폭을 잡아먹어 날짜·담당자가 줄바꿈되던 것을 좁힌다.
-   * 클래스 이름이 마크업에만 있고 정의가 없어 audit `layout-component-contract` 가
-   * 잡았다(2026-09-16) — 의도는 있었으나 정의가 누락된 상태였다.
-   */
-  .histories-compact-grid :is(th, td) {
-    @apply px-3 py-2;
-  }
+  /* Histories Compact Grid 는 캐스케이드 층 밖에 둔다 — 아래 「Histories Compact Grid (층 밖)」 참고 */
   .admin-card > .card-title {
     @apply mb-4;
   }
@@ -3577,6 +3568,22 @@
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+/*
+ * Histories Compact Grid (층 밖) — 이력 표를 좁은 카드 안에 촘촘하게 싣는 DataGrid variant.
+ * 신고 상세의 「처리 이력」처럼 행수가 적고 열이 짧은 표에 쓴다. 기본 DataGrid 의
+ * px-6 py-4 셀 패딩이 카드 폭을 잡아먹어 날짜·담당자가 줄바꿈되던 것을 좁힌다.
+ * 클래스 이름이 마크업에만 있고 정의가 없어 audit `layout-component-contract` 가
+ * 잡았다(2026-09-16) — 의도는 있었으나 정의가 누락된 상태였다.
+ *
+ * **`@layer components` 안에 두면 안 된다.** 표 칸에 붙은 `px-6 py-4` 는 utilities 층이라
+ * 컴포넌트 층 규칙을 명시도와 상관없이 이긴다 — 층 안에 있던 동안 이 규칙은 한 번도 적용되지
+ * 않았고, 1024px 신고 상세에서 표가 칸보다 넓어 가로 스크롤이 생겼다(7.1.0 실측 O-K2-7).
+ * 층 없는 규칙은 모든 층을 이기므로 여기 둔다.
+ */
+.histories-compact-grid :is(th, td) {
+  @apply px-3 py-2;
 }
 
 /* Responsive Grid - sm breakpoint */

@@ -36,6 +36,10 @@ class DashboardApiTest extends ModuleTestCase
     {
         parent::setUp();
 
+        // 대시보드의 「오늘」은 사이트 표준시의 하루다(SiteDay). 사이트 날짜와 UTC 날짜가 같은 시각으로
+        // 고정해 실행 시각과 무관하게 같은 결과를 낸다 — 날짜 경계 자체는 BoardSiteDayBoundaryTest 가 잰다.
+        $this->travelTo(CarbonImmutable::parse('2030-01-15 03:00:00', 'UTC'));
+
         BoardStat::query()->delete();
 
         // 대시보드 라우트는 admin 미들웨어 + permission:admin,sirsoft-board.dashboard.view 가드를 사용한다.
@@ -202,7 +206,7 @@ class DashboardApiTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects latest_posts_card_renders_recent_posts_api_items
+     * @effects latest_posts_card_renders_recent_posts_api_items, recent_posts_limit_validated
      *
      * @return void 반환값 없음
      */
@@ -219,7 +223,7 @@ class DashboardApiTest extends ModuleTestCase
      *
      * @scenario module_state=active, data_state=has_posts, user_role=admin_with_dashboard_permission
      *
-     * @effects latest_posts_card_renders_recent_posts_api_items
+     * @effects latest_posts_card_renders_recent_posts_api_items, recent_posts_limit_validated
      *
      * @return void 반환값 없음
      */

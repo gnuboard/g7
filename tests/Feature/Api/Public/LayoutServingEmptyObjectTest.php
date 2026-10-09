@@ -2,57 +2,222 @@
 
 namespace Tests\Feature\Api\Public;
 
+use App\Contracts\Extension\ModuleInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutExtensionType;
+use App\Enums\LayoutSourceType;
+use App\Extension\ModuleManager;
+use App\Models\LayoutExtension;
 use App\Models\Template;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\DB;
+use App\Models\TemplateLayout;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 레이아웃 서빙이 빈 객체({})를 빈 배열([])로 바꾸지 않는지 검증한다.
+ * 레이아웃 서빙 빈 객체 보존 테스트
  *
- * 레이아웃 원문(파일·DB)은 이름표로 값을 꺼내는 자리를 `{}` 로 두는데(예: 상품 상세의 추가 옵션·상품평 옵션 필터,
- * 주문서 확장 칸), 서빙 응답에서는 `[]` 로 내려가 화면 상태가 빈 목록으로 시작한다. 원문을 고쳐도 런타임에
- * 반영되지 않는다(이커머스 전수 실측 S4 — sirsoft-basic 1.2.0 SB-160 대조 중 발견).
+ * GET /api/layouts/{template}/{layout}.json
+ *
+ * 원본·DB 행이 `{}` 인 자리가 응답에서 `[]` 로 바뀌면 화면이 키-값 상태를 배열로 받는다
+ * (7.1.0 실측 O-K3-4 — 게시판 환경설정 `_local.expandedNotifications` 가 배열).
+ *
+ * 트러블슈팅 `[case:backend-52]` 의 회귀 그물이다.
  */
 class LayoutServingEmptyObjectTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     /**
-     * 저장된 레이아웃의 `{}` 는 서빙 응답에서도 `{}` 로 내려간다.
+     * 레이아웃 서빙 경로가 GDPR 미들웨어를 거치므로 그 마이그레이션을 포함한다.
      *
-     * @scenario container=object_and_array_side_by_side
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
+    /**
+     * 활성 템플릿을 만듭니다.
      *
-     * @effects empty_object_served_as_object, empty_array_served_as_array
+     * @return Template 템플릿
+     */
+    private function createTemplate(): Template
+    {
+        return Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+    }
+
+    /**
+     * 부모·자식 병합 뒤에도 상태 초기값·대체값·액션 인자의 빈 객체가 `{}` 로 나간다.
+     *
+     * @scenario position=init_state_value
+     *
+     * @effects init_state_empty_object_preserved, fallback_empty_object_preserved, action_params_empty_object_preserved, empty_list_stays_list, empty_object_served_as_object, empty_array_served_as_array
      *
      * @return void 반환값 없음
      */
-    public function test_served_layout_keeps_empty_objects(): void
+    public function test_merged_layout_keeps_empty_objects_in_value_positions(): void
     {
-        $template = Template::create([
-            'identifier' => 'e130s4-empty-object-tpl',
-            'vendor' => 'e130s4',
-            'name' => ['ko' => '빈 객체 검증 템플릿', 'en' => 'Empty Object Template'],
-            'version' => '1.0.0',
-            'type' => 'user',
-            'status' => ExtensionStatus::Active->value,
-            'description' => ['ko' => '검증용', 'en' => 'test'],
-        ]);
+        $template = $this->createTemplate();
 
-        DB::table('template_layouts')->insert([
+        TemplateLayout::create([
             'template_id' => $template->id,
-            'name' => 'empty_object_probe',
-            'content' => '{"meta":{"title":"probe"},"init_actions":[{"handler":"setState","params":{"target":"local","filters":{},"items":[]}}],"components":[]}',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'name' => '_base',
+            'content' => [
+                'meta' => ['title' => 'Base'],
+                'initLocal' => ['openVisits' => new \stdClass],
+                'components' => [['id' => 'slot_root', 'type' => 'basic', 'name' => 'Div', 'slot' => 'content']],
+            ],
         ]);
 
-        $response = $this->getJson("/api/layouts/{$template->identifier}/empty_object_probe.json");
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'settings_page',
+            'content' => [
+                'extends' => '_base',
+                'initLocal' => [
+                    'expandedNotifications' => new \stdClass,
+                    'selectedIds' => [],
+                ],
+                'data_sources' => [[
+                    'id' => 'stats',
+                    'type' => 'api',
+                    'endpoint' => '/api/stats',
+                    'fallback' => ['data' => ['targets' => new \stdClass]],
+                ]],
+                'slots' => [
+                    'content' => [[
+                        'id' => 'reset_button',
+                        'type' => 'basic',
+                        'name' => 'Button',
+                        'actions' => [[
+                            'type' => 'click',
+                            'handler' => 'navigate',
+                            'params' => ['path' => '/admin', 'query' => new \stdClass],
+                        ]],
+                    ]],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
 
         $response->assertOk();
-        $raw = $response->getContent();
-        $this->assertStringContainsString('"filters":{}', $raw, '빈 객체가 빈 배열로 바뀌어 서빙됐다');
-        $this->assertStringContainsString('"items":[]', $raw);
+        $data = json_decode($response->getContent())->data;
+
+        $this->assertEquals(new \stdClass, $data->initLocal->expandedNotifications, '자식 initLocal 빈 객체');
+        $this->assertEquals(new \stdClass, $data->initLocal->openVisits, '부모 initLocal 빈 객체');
+        $this->assertSame([], $data->initLocal->selectedIds, '빈 배열은 배열 그대로');
+        $this->assertEquals(new \stdClass, $data->data_sources[0]->fallback->data->targets);
+        $this->assertStringContainsString('"query":{}', $response->getContent());
+    }
+
+    /**
+     * 비어 있는 루트 맵 섹션은 `{}` 로 나간다.
+     *
+     * @scenario position=root_section
+     *
+     * @effects root_map_section_restored
+     *
+     * @return void 반환값 없음
+     */
+    public function test_empty_root_map_sections_are_served_as_objects(): void
+    {
+        $template = $this->createTemplate();
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'plain_page',
+            'content' => [
+                'meta' => new \stdClass,
+                'initLocal' => new \stdClass,
+                'data_sources' => [],
+                'components' => [['id' => 'root', 'type' => 'basic', 'name' => 'Div']],
+            ],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertOk();
+        $data = json_decode($response->getContent())->data;
+
+        $this->assertEquals(new \stdClass, $data->meta);
+        $this->assertEquals(new \stdClass, $data->initLocal);
+        $this->assertSame([], $data->data_sources, '목록 섹션은 배열 그대로');
+    }
+
+    /**
+     * 확장 조각이 얹은 노드의 액션 인자 빈 객체도 `{}` 로 나간다.
+     *
+     * @scenario position=params_fallback_value
+     *
+     * @effects action_params_empty_object_preserved
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_injected_node_keeps_empty_object_params(): void
+    {
+        $activeModule = $this->createMock(ModuleInterface::class);
+        $activeModule->method('getIdentifier')->willReturn('sirsoft-ecommerce');
+        $mockModuleManager = $this->createMock(ModuleManager::class);
+        $mockModuleManager->method('getActiveModules')->willReturn(['sirsoft-ecommerce' => $activeModule]);
+        $this->app->instance(ModuleManager::class, $mockModuleManager);
+
+        $template = $this->createTemplate();
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'host_with_extension',
+            'content' => [
+                'layout_name' => 'host_with_extension',
+                'meta' => ['title' => 'Host Layout'],
+                'data_sources' => [],
+                'components' => [
+                    ['id' => 'host_anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        LayoutExtension::create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'host_with_extension',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => [
+                'target_layout' => 'host_with_extension',
+                'injections' => [[
+                    'target_id' => 'host_anchor',
+                    'position' => 'append_child',
+                    'components' => [[
+                        'id' => 'ext_injected',
+                        'type' => 'basic',
+                        'name' => 'Button',
+                        'actions' => [[
+                            'type' => 'click',
+                            'handler' => 'setState',
+                            'params' => ['target' => 'local', 'selection' => new \stdClass],
+                        ]],
+                    ]],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertOk();
+        $body = $response->getContent();
+        $this->assertStringContainsString('ext_injected', $body, '확장 조각이 병합되지 않았다');
+        $this->assertStringContainsString('"selection":{}', $body);
     }
 }

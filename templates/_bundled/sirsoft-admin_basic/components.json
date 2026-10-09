@@ -1211,7 +1211,7 @@
         "type": "composite",
         "description": "Data grid with sorting, filtering, and pagination",
         "path": "src/components/composite/DataGrid.tsx",
-        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren"],
+        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren", "rowClassName"],
         "props": {
           "columns": {
             "type": "array",
@@ -1835,6 +1835,11 @@
             "required": false,
             "description": "트리거 버튼 아이콘"
           },
+          "ariaLabel": {
+            "type": "string",
+            "required": false,
+            "description": "글자 없는 아이콘 트리거(triggerLabel 빈 값)의 접근 가능한 이름. 없으면 common.actions(작업)"
+          },
           "position": {
             "type": "string",
             "required": false,
@@ -1903,7 +1908,7 @@
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?}"
+            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?, if?} — if 키가 있고 값이 거짓이면 탭 목록에서 뺀다"
           },
           "activeTabId": {
             "type": "string|number",
@@ -4403,8 +4408,8 @@
           "maxConcurrentUploads": {
             "type": "number",
             "required": false,
-            "default": 3,
-            "description": "동시 업로드 수"
+            "default": 1,
+            "description": "동시 업로드 수 (기본 1: 고른 순서대로 하나씩 올려 저장 순서를 지킴)"
           },
           "accept": {
             "type": "string",

@@ -54,6 +54,11 @@ class NotificationTemplateResource extends BaseApiResource
     {
         $locale = app()->getLocale();
 
+        // 수정 요청이 줄 번호 객체(`{"1":…,"0":…}`)로 저장해 둔 행이 남아 있다 — 줄 번호 순서의
+        // 목록으로 낸다. 그대로 내면 화면이 저장 순서(1, 0)로 그려 규칙 순서가 뒤집혀 보인다.
+        ksort($recipients, SORT_NUMERIC);
+        $recipients = array_values($recipients);
+
         return array_map(function (array $rule) use ($locale) {
             if ($rule['type'] === 'role' && ! empty($rule['value'])) {
                 // 값은 문자열 하나일 수도, 여러 개일 수도 있다(역할 다중 선택).

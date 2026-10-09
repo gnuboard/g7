@@ -78,7 +78,7 @@
 
 ```html
 <on type="click">
-  <action handler="scrollToSection" selector="#features" :offset="-80"/>
+  <action handler="scrollToSection" targetId="features" :offset="80"/>
 </on>
 ```
 
@@ -337,10 +337,11 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 #### 사용 예시
 
 ```html
-<button data-ref="lang_en_btn" text="English">
+<button data-ref="lang_en_btn">
   <on type="click">
     <set-locale locale="en"/>
   </on>
+  English
 </button>
 ```
 
@@ -351,9 +352,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
   "id": "lang_en_btn",
   "type": "basic",
   "name": "Button",
-  "props": {
-    "text": "English"
-  },
+  "text": "English",
   "actions": [
     {
       "type": "click",
@@ -477,7 +476,7 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
 ```html
 <on type="click">
-  <action handler="scrollToSection" selector="#features" :offset="-80"/>
+  <action handler="scrollToSection" targetId="features" :offset="80"/>
 </on>
 ```
 
@@ -515,10 +514,11 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 #### 사용 예시
 
 ```html
-<a data-ref="nav_features" text="$t:common.features" class="cursor-pointer">
+<a data-ref="nav_features" class="cursor-pointer">
   <on type="click">
-    <action handler="scrollToSection" selector="#features" :offset="-80"/>
+    <action handler="scrollToSection" targetId="features" :offset="80"/>
   </on>
+  $t:common.features
 </a>
 ```
 
@@ -530,9 +530,9 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
   "type": "basic",
   "name": "A",
   "props": {
-    "text": "$t:common.features",
     "className": "cursor-pointer"
   },
+  "text": "$t:common.features",
   "actions": [
     {
       "type": "click",
@@ -618,7 +618,12 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 ```html
 <init>
-  <action handler="initFilterVisibility"/>
+  <action handler="initFilterVisibility" storageKey="product_index_filters" stateKey="visibleFilters">
+    <field name="defaultFilters">
+      <item>category</item>
+      <item>date</item>
+    </field>
+  </action>
 </init>
 ```
 
@@ -645,7 +650,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 ```html
 <on type="click">
-  <action handler="saveFilterVisibility" filters="{{_local.filterVisibility}}"/>
+  <action handler="saveFilterVisibility" storageKey="product_index_filters" filters="{{_local.visibleFilters}}"/>
 </on>
 ```
 
@@ -668,7 +673,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 ```html
 <on type="click">
-  <action handler="toggleFilterVisibility" key="advancedFilters"/>
+  <action handler="toggleFilterVisibility" storageKey="product_index_filters" filterId="category"/>
 </on>
 ```
 
@@ -691,7 +696,12 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 ```html
 <on type="click">
-  <action handler="resetFilterVisibility"/>
+  <action handler="resetFilterVisibility" storageKey="product_index_filters">
+    <field name="defaultFilters">
+      <item>category</item>
+      <item>date</item>
+    </field>
+  </action>
 </on>
 ```
 
@@ -725,15 +735,21 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 ```html
 <init>
-  <action handler="initFilterVisibility"/>
+  <action handler="initFilterVisibility" storageKey="product_index_filters">
+    <field name="defaultFilters">
+      <item>advancedFilters</item>
+    </field>
+  </action>
 </init>
-<button data-ref="filter_toggle_btn" text="$t:common.toggle_filters">
+<button data-ref="filter_toggle_btn">
   <on type="click">
-    <action handler="toggleFilterVisibility" key="advancedFilters"/>
+    <action handler="toggleFilterVisibility" storageKey="product_index_filters" filterId="advancedFilters"/>
   </on>
+  $t:common.toggle_filters
 </button>
-<div data-ref="filter_section" data-if="{{_local.filterVisibility?.advancedFilters}}">
-  <json>{"comment":"필터 컴포넌트들"}</json>
+<div data-ref="filter_section" data-if="{{_local.visibleFilters?.includes('advancedFilters')}}">
+  <!-- 필터 컴포넌트들 -->
+  <div class="space-y-2"/>
 </div>
 ```
 
@@ -752,9 +768,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
       "id": "filter_toggle_btn",
       "type": "basic",
       "name": "Button",
-      "props": {
-        "text": "$t:common.toggle_filters"
-      },
+      "text": "$t:common.toggle_filters",
       "actions": [
         {
           "type": "click",
@@ -769,7 +783,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
       "name": "Div",
       "if": "{{_local.visibleFilters?.includes('advancedFilters')}}",
       "children": [
-        { "comment": "필터 컴포넌트들" }
+        { "type": "basic", "name": "Div", "comment": "필터 컴포넌트들", "props": { "className": "space-y-2" } }
       ]
     }
   ]

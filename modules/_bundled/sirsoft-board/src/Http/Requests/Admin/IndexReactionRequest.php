@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Models\ReactionType;
 
 /**
@@ -14,6 +15,8 @@ use Modules\Sirsoft\Board\Models\ReactionType;
  */
 class IndexReactionRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 허용하는 검색 대상 값
      *

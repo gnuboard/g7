@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 마이페이지 「내 신고」 API Feature 테스트.
  *
  * 본인이 남긴 신고 이력만 조회하고(다른 신고자·처리자·관리자 메모 비노출),
- * **접수(pending) 상태에서만** 취소할 수 있다 (PO 결정 R10).
+ * **접수(pending) 상태에서만** 취소할 수 있다 (결정 R10).
  * 내가 마지막 신고자였으면 케이스를 영구 삭제한다 — 소프트 삭제로 남기면
  * unique(board,target) 제약이 살아 있어 같은 대상을 다시 신고할 수 없다.
  */
@@ -38,12 +38,12 @@ class MyReportsApiTest extends BoardTestCase
     /**
      * 케이스 + 내 신고 로그를 만듭니다.
      *
+     * @param  $targetId  대상 ID
+     * @param  $targetType  대상 유형
+     * @param  $status  status 값
+     * @param  $reporter  reporter 값
+     * @param  $snapshot  snapshot 값
      * @return array{0: Report, 1: ReportLog} array{0: 인스턴스
-     * @param $targetId 대상 ID
-     * @param $targetType 대상 유형
-     * @param $status status 값
-     * @param $reporter reporter 값
-     * @param $snapshot snapshot 값
      */
     private function seedReport(
         int $targetId,
@@ -159,9 +159,13 @@ class MyReportsApiTest extends BoardTestCase
         $act('?search=스팸&search_field=title')->assertOk()->assertJsonCount(1, 'data.data')
             ->assertJsonPath('data.data.0.title', '스팸 광고글');
 
-        // 잘못된 값은 422
+        // 잘못된 상태는 422
         $act('?status=unknown')->assertStatus(422);
-        $act('?search_field=author')->assertStatus(422);
+
+        // 잘못된 검색 대상은 기본(제목+내용)으로 처리한다 (7.1.0 실측 O-K3-3)
+        $act('?search=스팸&search_field=author')->assertOk()->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.title', '스팸 광고글')
+            ->assertJsonPath('data.query.search_field', 'title_content');
     }
 
     /**

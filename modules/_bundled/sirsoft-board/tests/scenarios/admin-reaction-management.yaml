@@ -2,7 +2,7 @@ feature: 관리자 반응 관리 (전 회원 반응 조회·삭제)
 
 description: |
   이슈 #525 제보 ④ — 반응 내역을 권한 있는 운영자가 관리자에서 관리할 수단이 없었다.
-  게시판 관리 › 「반응 관리」 메뉴를 신설하고 회원 상세에 요약 탭을 붙인다 (PO 결정 R6).
+  게시판 관리 › 「반응 관리」 메뉴를 신설하고 회원 상세에 요약 탭을 붙인다 (결정 R6).
   스크랩 관리(admin-post-scrap-management.yaml)와 1:1 동형이다.
 
   핵심 동작 (확정):
@@ -31,6 +31,12 @@ axes:
     - search_six_fields_like_branches
     - row_marks_deleted_target_and_withdrawn_member
     - response_carries_inactive_types_meta
+    # K1 실측(2026-10-06) — 반응 조회만 가진 매니저는 게시판 목록 API 가 403 이라 게시판 셀렉트가 비었다
+    - response_carries_board_options_meta
+    # K1 실측(2026-10-06) — 반응 조회 권한 없는 관리자에게 회원 상세 요약이 실려 탭 링크가 403 으로 끝났다
+    - user_detail_summary_requires_view_permission
+    # K1 실측(2026-10-06) — 게시판이 삭제된 행의 「게시글 보기」가 /admin/board//post/N 404 로 갔다
+    - row_go_to_post_disabled_when_board_deleted
     - per_page_over_limit_rejected
     - destroy_forbidden_with_view_only
     - destroy_removes_and_recalculates
@@ -55,6 +61,7 @@ effects:
   - index_search_fields_like_branches
   - index_marks_deleted_target_board_off_withdrawn_and_inactive_type
   - index_response_carries_reaction_types_meta_incl_inactive
+  - index_response_carries_board_options_meta
   - index_rejects_per_page_over_100
   # 삭제
   - destroy_removes_other_users_reaction_and_recalculates
@@ -63,6 +70,7 @@ effects:
   # 회원 상세 요약
   - admin_user_detail_includes_board_reactions_summary
   - profile_omits_board_reactions
+  - admin_user_detail_omits_reactions_summary_without_view_permission
 
   # 화면(레이아웃 계약)
   - admin_screen_datasource_reads_every_filter_from_query
@@ -71,6 +79,8 @@ effects:
   - admin_screen_selectable_follows_can_manage
   - admin_screen_sort_and_page_clear_selection
   - admin_screen_row_actions_split_three_ways
+  - admin_screen_board_select_iterates_response_meta
+  - admin_screen_go_to_post_disabled_without_board
   - admin_screen_modals_call_single_and_bulk_delete
   - admin_route_declares_reactions_view_permission
   - admin_user_tab_navigates_with_user_uuid_not_href

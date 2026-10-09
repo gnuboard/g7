@@ -373,7 +373,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 배송정책을 생성합니다. `sirsoft-ecommerce.shipping-policies.create` 권한이 필요하며, `ShippingPolicyService::create()` 가 다국어 정책명(`name`), 활성여부, 기본여부, 정렬순서, 국가별 설정(`country_settings`, 최소 1개)을 저장하고 201 로 생성된 정책 리소스를 반환합니다. 국가별로 배송방식·배송비 부과정책을 담은 배송정책을 새로 등록할 때 사용합니다.
+**설명** 관리자가 새 배송정책을 생성합니다. `sirsoft-ecommerce.shipping-policies.create` 권한이 필요하며, `ShippingPolicyService::create()` 가 다국어 정책명(`name`), 활성여부, 기본여부, 정렬순서, 국가별 설정(`country_settings`, 최소 1개)을 저장하고 201 로 생성된 정책 리소스를 반환합니다. 국가별로 배송방식·배송비 부과정책을 담은 배송정책을 새로 등록할 때 사용합니다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송정책명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Shipping Policy Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/active
@@ -1038,7 +1038,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 배송정책을 수정합니다. `sirsoft-ecommerce.shipping-policies.update` 권한이 필요하며, 컨트롤러가 `getDetail()` 로 정책을 조회해 없으면 404 를 반환한 뒤 `ShippingPolicyService::update()` 가 다국어 정책명·활성여부·기본여부·정렬순서·국가별 설정(`country_settings`, 최소 1개)을 갱신하고 수정된 리소스를 반환합니다. 배송정책의 국가별 배송비/방식을 변경할 때 사용합니다.
+**설명** 관리자가 기존 배송정책을 수정합니다. `sirsoft-ecommerce.shipping-policies.update` 권한이 필요하며, 컨트롤러가 `getDetail()` 로 정책을 조회해 없으면 404 를 반환한 뒤 `ShippingPolicyService::update()` 가 다국어 정책명·활성여부·기본여부·정렬순서·국가별 설정(`country_settings`, 최소 1개)을 갱신하고 수정된 리소스를 반환합니다. 배송정책의 국가별 배송비/방식을 변경할 때 사용합니다. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송정책명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Shipping Policy Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/set-default

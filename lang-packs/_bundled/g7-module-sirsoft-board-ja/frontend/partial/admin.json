@@ -236,6 +236,7 @@
     "permissions": {
       "managers_title": "掲示板管理者",
       "managers_description": "掲示板の全権限を持つ管理者を指定します。",
+      "members_assign_denied": "基本権限設定に含まれていないアカウントは、新しい掲示板の管理者に本人のみ指定できます。このまま保存すると本人がこの掲示板の管理者になります。他の管理者・スタッフは掲示板の作成後に掲示板の編集画面で指定してください（掲示板の編集権限が必要です）。",
       "managers_select_button": "管理者を選択",
       "manager_email_placeholder": "管理者メールアドレスを入力",
       "search_manager": "閲覧",
@@ -593,8 +594,8 @@
       "guest_password_verify_message": "非会員の投稿を編集するにはパスワードを入力してください。",
       "password_placeholder": "パスワードを入力してください",
       "password_incorrect": "パスワードが一致しません。",
-      "show_replies": "返信 {{count}}件を表示",
-      "hide_replies": "返信を非表示",
+      "show_replies": "返信コメント {{count}}件を表示",
+      "hide_replies": "返信コメントを非表示",
       "reply_blocked_blinded_post": "非表示処理された投稿には返信を作成できません。",
       "reply_blocked_deleted_post": "削除された投稿には返信を作成できません。",
       "user_info": "ユーザー情報",
@@ -1199,9 +1200,11 @@
       "confirm_add_step": "選択した会員を掲示板スタッフに追加します。",
       "confirm_remove_manager": "選択した会員を掲示板管理者から削除します。",
       "confirm_remove_step": "選択した会員を掲示板スタッフから削除します。",
-      "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外",
+      "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外、変化なし{{unchanged}}件",
       "reason_last_manager": "管理者が0名になる",
       "reason_scope": "管理権限の範囲外",
+      "reason_not_grantable": "このロールを付与できない掲示板（権限不足）",
+      "no_permission": "管理者・スタッフを一括指定するには掲示板の編集権限が必要です。",
       "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
     }
   },

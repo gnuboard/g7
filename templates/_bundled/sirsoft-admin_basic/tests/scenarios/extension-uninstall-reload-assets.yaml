@@ -1,0 +1,19 @@
+feature: admin_basic 모듈·플러그인 제거·비활성화 — 프론트 자산(JS·CSS) 걷어 내기
+
+description: |
+  제거 창은 성공하면 reloadExtensions 에 지운 확장을 넘겨 G7Config.{module,plugin}Assets 의 그 항목과 그 확장이 실은
+  script·link 를 지운다. 종전에는 제거 응답(`{{result}}`)을 넘겼는데 제거 응답의 data 는 preserved_backups 뿐이라 식별자가
+  없어, 엔진이 「…Info with identifier is required」 경고만 남기고 자산 제거를 건너뛰었다(켜진 채로 지운 확장의 JS·CSS 가
+  새로고침 전까지 남음, 7.1.0 종합 실측). 제거 창은 고른 확장의 식별자를 넘기고, 그 선택을 비우기 전에 실행한다.
+  비활성화 경로(목록 스위치, 강제 비활성화 창)는 응답이 Resource 라 식별자가 있다 — 같은 결함군 대조로 함께 고정한다.
+
+axes:
+  path: [uninstall_no_backups, uninstall_with_backups, force_deactivate_modal, list_toggle_off]
+
+effects:
+  - removed_extension_assets_unloaded
+  - reload_runs_before_selection_cleared
+  - deactivated_extension_assets_unloaded
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-uninstall-reload-assets.test.ts

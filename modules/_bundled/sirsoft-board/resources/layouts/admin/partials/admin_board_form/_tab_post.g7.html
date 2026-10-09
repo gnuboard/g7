@@ -162,6 +162,8 @@
         </label>
         <tag-input data-type="composite" data-ref="allowed_extensions_input" name="allowed_extensions" placeholder="$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="allowed_extensions_description" class="form-hint">$t:sirsoft-board.admin.form.fields.allowed_extensions.description</p>
+        <!-- 확장자 없이 첨부를 켜고 저장하면 422 가 이 칸을 가리킨다 — 형제 칸(최대 파일 용량·개수)처럼 칸 아래에도 문구를 둔다 -->
+        <span data-if="{{_local.errors?.allowed_extensions}}" class="form-error-xs mt-1">{{_local.errors?.allowed_extensions?.[0] ?? ''}}</span>
       </div>
     </div>
   </div>

@@ -97,7 +97,8 @@
   "scope_type_self_desc": "Only resources created by you",
   "scope_type_role_desc": "Only resources from users with the same role",
   "multilingual": {
-    "add_language": "Add Language"
+    "add_language": "Add Language",
+    "remove_language": "Remove {{language}}"
   },
   "refresh": "Refresh",
   "activate": "Activate",
@@ -127,6 +128,9 @@
   "more_actions": "More actions",
   "clear_selection": "Clear selection",
   "theme_select": "Theme",
+  "delete_notification": "Delete notification",
+  "close_alert": "Close alert",
+  "breadcrumb": "Breadcrumb",
   "user_menu": "User menu",
   "file_input": {
     "clear": "Clear file",
@@ -134,6 +138,11 @@
     "no_file": "No file selected",
     "too_large": "File size exceeds the {{size}}MB limit."
   },
+  "logging_out": "Logging out...",
+  "type_to_search": "Type to search",
+  "empty_illustration": "Empty state illustration",
+  "logo": "Logo",
+  "no_items_selected": "No items selected",
   "show_value": "Show value",
   "hide_value": "Hide value"
 }

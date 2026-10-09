@@ -1,8 +1,10 @@
 <!-- 게시판 모듈 전역 설정. 탭이 여덟이고 데이터소스가 열둘인데, 설정 본체(`settings`)와 버튼으로만 여는 명단(`privacyTargets`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
 <layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
   <meta _e2e_allow="e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
-  <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다) -->
-  <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+  <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다).
+       blocking 이라 설정을 다 받기 전에는 입력칸을 그리지 않는다 — 받기 전에 칸을 고치면 도착한 값(initLocal)이
+       그 입력을 말없이 덮어써 사용자가 고친 값이 사라졌다(7.1.0 실측 K3 O-K3T-5). 게시판 생성·수정 화면과 같은 방식이다 -->
+  <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking" initLocal="form" :refetchOnMount="true">
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
@@ -55,6 +57,16 @@
         <field name="data" :value="[]"/>
       </field>
     </fallback>
+    <!-- 실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에
+         「권한 없음」 이유로 보였다(7.1.0 S2 #8). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다 -->
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" bulkMembersBoardsError="forbidden"/>
+      </on-code>
+      <default>
+        <set-state target="local" bulkMembersBoardsError="failed"/>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 역할 선택지 — 「기본값」과 「신고 정책」 두 탭이 함께 쓴다(새 게시판의 기본 권한 · 신고를 다룰 수 있는 역할). 활성 역할만 받는다 -->
   <data-source id="roles" label_key="$t:sirsoft-board.editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" if="{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
@@ -138,6 +150,9 @@
     <field name="notificationDefinitionTotalItems" :value="0"/>
   </init-local>
   <computed name="isReadOnly">{{!!settings?.data &amp;&amp; settings?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="bulkMembersLocked">{{boards_list?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="bulkMembersNoPermission">{{boards_list?.data?.abilities ? boards_list.data.abilities.can_update !== true : _local.bulkMembersBoardsError === 'forbidden'}}</computed>
+  <computed name="bulkMembersLoadFailed">{{!boards_list?.data?.abilities &amp;&amp; _local.bulkMembersBoardsError === 'failed'}}</computed>
   <computed name="isNotificationReadOnly">{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
   <computed name="boardOptions">{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}</computed>
   <computed name="adminPermissions">{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}</computed>
@@ -150,7 +165,7 @@
   <permissions>
     <permission>sirsoft-board.settings.read</permission>
   </permissions>
-  <transition-overlay>
+  <transition-overlay target="tab_content" fallback-target="right_content_area">
     <wait-for>settings</wait-for>
     <wait-for>boardPrivacyRetentionPreview</wait-for>
     <wait-for>privacyManualRuns</wait-for>
@@ -159,6 +174,7 @@
     <wait-for>board_types</wait-for>
     <wait-for>boardNotificationDefinitions</wait-for>
     <wait-for>notification_channels</wait-for>
+    <wait-for>boardIdentityPolicies</wait-for>
   </transition-overlay>
   <init>
     <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
@@ -186,16 +202,25 @@
               <item id="privacy_retention" label="$t:sirsoft-board.admin.settings.tabs.privacy_retention"/>
             </prop>
             <on type="change" event="onTabChange">
-              <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
-              <sequence>
-                <set-state target="local" :errors="null"/>
-                <set-state target="global" activeBoardSettingsTab="{{$args[0]}}" :boardBulkMembers="null"/>
-                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
-                <navigate path="/admin/boards/settings" :replace="true">
-                  <query tab="{{$args[0]}}"/>
-                </navigate>
-                <scroll-into-view selector="#tab_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
-              </sequence>
+              <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게) -->
+              <conditions>
+                <when if="{{_local.hasChanges === true &amp;&amp; $args[0] !== (_global.activeBoardSettingsTab || query.tab || 'general')}}">
+                  <set-state target="global" pendingBoardSettingsTab="{{$args[0]}}"/>
+                  <open-modal target="modal_board_settings_unsaved_tab"/>
+                </when>
+                <else>
+                  <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
+                  <sequence>
+                    <set-state target="local" :errors="null"/>
+                    <set-state target="global" activeBoardSettingsTab="{{$args[0]}}" :boardBulkMembers="null"/>
+                    <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+                    <navigate path="/admin/boards/settings" :replace="true">
+                      <query tab="{{$args[0]}}"/>
+                    </navigate>
+                    <scroll-into-view selector="#tab_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+                  </sequence>
+                </else>
+              </conditions>
             </on>
           </tab-navigation>
         </div>
@@ -255,7 +280,9 @@
             </on>
             <span>$t:common.cancel</span>
           </button>
-          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
+          <!-- 설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,
+               서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3) -->
+          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
             <on type="click">
               <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여러 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>
@@ -305,4 +332,6 @@
   <modal src="partials/admin_board_settings/_modal_privacy_targets.g7.html"/>
   <!-- 개인정보 보유기간 직권 실행 확인 창(일반 탭 — 작성 IP·비회원 글 두 대상이 함께 쓴다). -->
   <modal src="partials/admin_board_settings/_modal_privacy_run.g7.html"/>
+  <!-- 저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다 -->
+  <modal src="partials/admin_board_settings/_modal_unsaved_tab_switch.g7.html"/>
 </layout>

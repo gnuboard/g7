@@ -1,0 +1,15 @@
+feature: Hello 모듈 메모 목록 — 쿼리 없는 첫 진입의 페이지 번호
+
+description: |
+  공개 메모 목록(/memos)을 쿼리 없이 열면 데이터 소스가 page={{query.page}} 를 그대로 보내 page=undefined 가 되고,
+  목록 요청 검증(page 정수)이 422 를 돌려 메모가 한 건도 보이지 않았다(7.1.0 전수 실측 M3). 관리자 목록도 같은
+  파라미터를 쓴다. 쿼리가 없을 때 1쪽을 보낸다. 축 screen 은 목록 화면(사용자, 관리자)이다.
+
+axes:
+  screen: [user_list, admin_list]
+
+effects:
+  - page_param_defaults_to_first_page
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/tests/Unit/Layouts/MemoListPageParamTest.php

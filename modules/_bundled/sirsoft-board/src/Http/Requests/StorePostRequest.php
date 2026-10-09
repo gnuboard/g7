@@ -7,6 +7,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
@@ -21,6 +22,7 @@ use Modules\Sirsoft\Board\Rules\ParentPostValidationRule;
  */
 class StorePostRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
     use ValidatesTempKey;

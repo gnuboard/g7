@@ -254,6 +254,17 @@ protected function prepareForValidation(): void
 - `prepareForValidation()`은 `rules()` 호출 **전**에 실행됨
 - `$this->merge()`로 값을 병합 (기존 값 덮어쓰기)
 - 검증 로직은 넣지 않음 — 검증은 `rules()`에서 처리
+- **요청이 보내지 않은 키는 merge 하지 않는다.** 설정 화면처럼 한 구획만 보내는 부분 저장에서, 정규화 결과(빈 값이면 `null`·`[]`)를 무조건 merge 하면 그 키가 「비우라」는 값으로 저장돼 이미 저장된 값이 지워진다. 정규화한 값은 `array_key_exists($key, $this->all())` 일 때만 넣는다.
+
+```php
+// ❌ 키가 없어도 null 로 채워 저장 — 다른 항목만 고친 저장이 카탈로그를 지운다
+$this->merge(['cookie_categories' => $normalized]);
+
+// ✅ 보낸 키만 정규화해 넣는다
+if (array_key_exists('cookie_categories', $this->all())) {
+    $this->merge(['cookie_categories' => $normalized]);
+}
+```
 
 ---
 
@@ -807,6 +818,18 @@ use App\Rules\LocaleRequiredTranslatable;
 
 > `app.locale` 은 요청마다 `SetLocale` 미들웨어가 보는 사람의 언어로 덮으므로 필수 언어 판정에 쓰지 않는다. 규칙 밖에서 이름 필수를 직접 판정하는 코드도 `config('app.site_locale', config('app.locale'))` 를 쓴다.
 
+**칸 표시 이름 필수**: 이 규칙을 붙인 칸은 요청의 `attributes()` 에 표시 이름을 둔다. 필수 문구가
+「메뉴 이름의 한국어(ko) 값은 필수입니다.」처럼 그 이름을 싣는다. 표시 이름이 없으면 필드 키(`name`)를 내보이지
+않으려고 칸 이름 없이 「한국어(ko) 값은 필수입니다.」만 나오므로, 어느 칸인지 알 수 없다(7.1.0 실측 — 메뉴·역할·권한·
+알림 템플릿·게시판 유형·페이지 요청에 매핑을 넣었다).
+```php
+public function attributes(): array
+{
+    return [
+        'name' => __('validation.menu.attributes.name'), // 「메뉴 이름」 / "menu name"
+    ];
+}
+```
 ### TranslatableField 사용법
 
 **파일 위치**: `app/Rules/TranslatableField.php`
@@ -873,7 +896,8 @@ public function messages(): array
 // lang/ko/validation.php
 'translatable' => [
     'must_be_array' => '다국어 필드는 배열이어야 합니다.',
-    'current_locale_required' => ':locale 언어의 값은 필수입니다.',
+    'current_locale_required' => ':attribute의 :language(:locale) 값은 필수입니다.',
+    'current_locale_required_unnamed' => ':language(:locale) 값은 필수입니다.', // 칸 표시 이름이 없을 때
     'unsupported_language' => "지원하지 않는 언어 코드(':lang')입니다.",
     'must_be_string' => "':lang' 번역은 문자열이어야 합니다.",
     'max_length' => "':lang' 번역은 최대 :max자까지 가능합니다.",
@@ -884,7 +908,8 @@ public function messages(): array
 // lang/en/validation.php
 'translatable' => [
     'must_be_array' => 'The translatable field must be an array.',
-    'current_locale_required' => 'The :locale language value is required.',
+    'current_locale_required' => 'The :language (:locale) value of the :attribute field is required.',
+    'current_locale_required_unnamed' => 'The :language (:locale) value is required.', // when the field has no display name
     'unsupported_language' => "Unsupported language code: ':lang'.",
     'must_be_string' => "The ':lang' translation must be a string.",
     'max_length' => "The ':lang' translation must not exceed :max characters.",
@@ -1055,6 +1080,36 @@ public function update(UpdatePluginSettingsRequest $request, string $identifier)
 ✅ 플러그인/모듈 설정처럼 관리자만 접근하는 API에 적합
 ❌ 일반 사용자 입력에는 사용 금지 (검증 우회 위험)
 ```
+
+### 설정 항목 이름을 요청 언어로 등록 (플러그인 설정)
+
+플러그인 설정 스키마의 `label` 은 보통 ko/en 만 있다. 이것만 믿으면 ja 화면의 검증 오류가 항목 이름을 기본 언어(ko)나 영문 키(`live site cd`)로 낸다. 설정 검증을 거는 리스너(`core.plugin_settings.update_validation_rules` filter)는 규칙을 돌려주는 시점에 **현재 요청 언어**로 `validation.attributes.{field}` 를 등록한다. 코어 검증기는 이 번역선을 스키마 `label` 보다 먼저 쓰므로, ja 이름은 플러그인 lang 파일(언어팩이 주는 `ja` 포함)에서 온다.
+
+```php
+private function registerSettingsAttributeLabels(): void
+{
+    $locale = app()->getLocale();
+
+    // validation 그룹을 먼저 읽힌다 — addLines 가 attributes 만 든 그룹을 먼저 캐시하면 required 등 기본 문구가 로드되지 않는다
+    Lang::get('validation.required', [], $locale);
+
+    $lines = [];
+    foreach (self::SETTINGS_FIELDS as $field) {
+        $key = "vendor-plugin::messages.settings.{$field}_attribute";
+        if (Lang::has($key, $locale)) { // 번역이 없는 언어는 등록하지 않고 스키마 label 에 맡긴다
+            $lines["validation.attributes.{$field}"] = __($key, [], $locale);
+        }
+    }
+
+    if ($lines !== []) {
+        Lang::addLines($lines, $locale);
+    }
+}
+```
+
+- 서비스 프로바이더 부팅 때가 아니라 요청 처리 중(규칙 filter 안)에 등록한다. 그때라야 요청 언어가 정해져 있고 플러그인 lang 네임스페이스와 언어팩이 준비돼 있다.
+- 라이브 모드 같은 조건부 항목만이 아니라 설정 항목 전부를 등록한다. 형식 오류(길이 등)도 같은 항목 이름을 쓴다.
+- 번들 예: `sirsoft-message_bizppurio`(`ValidateBizppurioSettingsListener`), `sirsoft-verification_kginicis`(`ValidateInicisSettingsListener`), `sirsoft-verification_nhnkcp`(`ValidateKcpSettingsListener`).
 
 ---
 

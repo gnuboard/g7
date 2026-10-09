@@ -24,6 +24,7 @@ use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Support\LayoutEmptyObjects;
 use Composer\Semver\Semver;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -646,7 +647,8 @@ class LayoutExtensionService
                         continue;
                     }
 
-                    $content = $extension->content;
+                    // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
+                    $content = LayoutEmptyObjects::decode($extension->getAttributes()['content'] ?? null, $extension->content ?? []);
                     $mode = $content['mode'] ?? 'append';
 
                     // 컴포넌트 추가 (extension_point props/callbacks를 주입 컴포넌트에 전달)
@@ -857,7 +859,8 @@ class LayoutExtensionService
                 continue;
             }
 
-            $content = $overlay->content;
+            // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
+            $content = LayoutEmptyObjects::decode($overlay->getAttributes()['content'] ?? null, $overlay->content ?? []);
             $injections = $content['injections'] ?? [];
 
             Log::debug('Overlay 확장 적용', [

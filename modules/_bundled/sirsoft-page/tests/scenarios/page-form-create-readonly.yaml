@@ -1,0 +1,20 @@
+feature: 등록 권한 없는 관리자의 페이지 작성 화면 읽기 전용
+
+description: |
+  목록의 [페이지 추가]는 등록 권한이 없으면 비활성인데, 주소로 /admin/pages/create 에 바로 들어오면
+  입력 가능한 폼이 열렸다(7.1.0 전수 실측 영역 L, O-L6). 서버가 중복 확인과 저장을 403 으로 막아
+  데이터 영향은 없지만 입력을 다 하고 나서야 거절을 받는다. 등록 모드도 목록 응답의 abilities.can_create
+  로 읽기 전용을 판정해 안내 문구를 띄우고 입력, 저장, 첨부를 잠근다. 수정 모드 판정(can_update)은 그대로다.
+
+axes:
+  mode: [create, edit]
+  permission: [granted, denied]   # create 모드는 can_create, edit 모드는 can_update
+
+effects:
+  - create_form_read_only_without_create_permission
+  - create_form_editable_with_create_permission
+  - edit_form_read_only_rule_unchanged
+  - create_ability_fetched_only_in_create_mode
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-form-create-readonly.test.ts

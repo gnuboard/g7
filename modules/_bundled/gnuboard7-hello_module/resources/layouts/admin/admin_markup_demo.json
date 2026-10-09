@@ -13,16 +13,12 @@
                 {
                     "type": "basic",
                     "name": "H2",
-                    "props": {
-                        "text": "Hello Markup Demo"
-                    }
+                    "text": "Hello Markup Demo"
                 },
                 {
                     "type": "basic",
                     "name": "Span",
-                    "props": {
-                        "text": "{{message ?? ''}}"
-                    }
+                    "text": "{{message ?? ''}}"
                 }
             ]
         }

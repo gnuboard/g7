@@ -71,6 +71,7 @@
     "too_large": "ファイルサイズが{{size}}MBを超えています。"
   },
   "theme_select": "画面テーマ",
+  "delete_notification": "通知を削除",
   "expand": "展開",
   "collapse": "折りたたむ",
   "quantity": "数量",

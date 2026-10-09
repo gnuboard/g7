@@ -17,6 +17,8 @@ class StoreBrandRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 요청 허용 여부(권한은 라우트 미들웨어가 검사)
      */
     public function authorize(): bool
     {
@@ -55,6 +57,20 @@ class StoreBrandRequest extends FormRequest
             'slug.unique' => __('sirsoft-ecommerce::validation.brand.slug_unique'),
             'slug.regex' => __('sirsoft-ecommerce::validation.brand.slug_format'),
             'website.url' => __('sirsoft-ecommerce::validation.brand.website_invalid_url'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시 이름
+     *
+     * 다국어 칸의 현재 언어 값을 비우면 「브랜드명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
+     *
+     * @return array<string, string> 필드 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.brand_name'),
         ];
     }
 }

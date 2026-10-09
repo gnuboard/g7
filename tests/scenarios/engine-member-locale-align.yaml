@@ -1,0 +1,24 @@
+feature: 로그인 회원의 언어(users.language)를 화면 언어의 기준으로 삼는다 (engine-v1.79.0)
+
+description: |
+  회원 언어와 이 브라우저에 남은 화면 언어(g7_locale)가 갈리면 화면 문구는 브라우저 언어, 필수 언어 검증 문구와
+  확장 목록 이름은 회원 언어로 섞였다(7.1.0 O-C1-2, O-C2a-3). 결정(2026-10-08): 회원이 설정한 언어 기준.
+  로그인 상태면 부팅·새로고침 때 첫 렌더 전에 회원 언어로 맞추고, 같은 언어를 다시 골라도 회원 언어가 다르면
+  저장한다(같은 언어 재선택 포함). 관리자 헤더 언어 선택은 직접 저장한 뒤 persist:false 로 넘겨 저장 요청이 한 번만 나간다(O-C3-3).
+  비로그인은 종전대로 브라우저 언어.
+
+axes:
+  case: [member_differs_on_boot, guest_boot, member_same_on_boot, member_unsupported, reselect_same_language, persist_false, guest_reselect, login_switch_route_in_flight, login_switch_route_starts_during_reinit]
+
+effects:
+  - boot_aligns_to_member_language        # 인증 프리로드 뒤 첫 렌더 전에 g7_locale·엔진을 회원 언어로
+  - guest_keeps_browser_language          # 비로그인은 브라우저 언어 유지, 저장 요청 없음
+  - no_reinit_when_aligned                # 이미 같으면 엔진을 다시 초기화하지 않는다
+  - unsupported_member_language_ignored   # 사이트가 지원하지 않는 회원 언어면 브라우저 언어 유지
+  - reselect_saves_member_language       # 같은 언어 재선택도 로그인 회원의 언어를 저장(저장 요청 1회, 비로그인은 요청 없음)
+  - single_save_request                   # persist:false 면 엔진이 다시 저장하지 않는다
+  - locale_switch_waits_for_route_change  # 언어 전환은 진행 중인 화면 전환이 끝난 뒤 엔진을 내린다(로그인 직후 홈 이동 경쟁, O-C3b-1)
+  - route_change_waits_for_engine_ready   # 엔진이 내려가 있는 동안 시작한 화면 전환은 새 엔진·핸들러 준비 뒤 진행
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.memberLocale.test.ts

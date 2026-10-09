@@ -143,12 +143,15 @@ return [
             ],
             'annual_notice_channels' => [
                 'label' => '発送チャネル',
+                'required_when_enabled' => '自動通知をオンにするには、発送チャネルを1つ以上選択してください。',
             ],
             'annual_notice_batch_size' => [
                 'label' => '1回実行当たりの発送上限',
+                'required_when_enabled' => '自動通知をオンにするには、1回実行当たりの発送上限を入力してください。',
             ],
             'annual_notice_introduction' => [
                 'label' => '通知文序文',
+                'label_with_language' => ':label (:language)',
             ],
             'privacy_policy_url' => [
                 'label' => 'プライバシーポリシーのURL',
@@ -364,6 +367,21 @@ return [
             'privacy_policy_url' => 'プライバシーポリシーURL',
             'privacy_policy_link' => 'プライバシーポリシーのリンク行（アドレスがなければ空）',
             'notice_sections' => '拡張機能が追加した処理内容',
+        ],
+    ],
+    'validation' => [
+        // リクエストが項目別に文言を定めていない規則の代替文言(ProvidesFallbackRuleMessages)。
+        'fallback' => [
+            'in' => '選択された :attribute の値は正しくありません。',
+            'not_in' => '選択された :attribute の値は使用できません。',
+            'enum' => '選択された :attribute の値は正しくありません。',
+            'exists' => '選択された :attribute の値は存在しません。',
+            'unique' => ':attribute の値は既に使用されています。',
+            'required_if' => ':other が :value の場合、:attribute は必須です。',
+            'required_with' => ':values がある場合、:attribute も必須です。',
+            'required_without' => ':values がない場合、:attribute は必須です。',
+            'same' => ':attribute と :other は一致する必要があります。',
+            'different' => ':attribute と :other は異なる必要があります。',
         ],
     ],
 ];

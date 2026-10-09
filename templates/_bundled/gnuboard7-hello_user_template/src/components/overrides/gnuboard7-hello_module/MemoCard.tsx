@@ -20,6 +20,12 @@ export interface HelloModuleMemoCardProps {
 
   /** 사용자 정의 클래스 */
   className?: string;
+
+  /** DOM id — 레이아웃 편집기 [속성] 탭의 「요소 ID」가 여기에 닿는다 */
+  id?: string;
+
+  /** 레이아웃 편집기가 주입하는 표식과 선택 핸들러 (편집 모드 전용) — 원본과 같은 계약으로 루트에 펼친다 */
+  editorAttrs?: Record<string, unknown>;
 }
 
 /**
@@ -51,12 +57,16 @@ export const HelloModuleMemoCard: React.FC<HelloModuleMemoCardProps> = ({
   highlighted = false,
   accent = '',
   className = '',
+  id,
+  editorAttrs,
 }) => {
   return (
     <article
+      id={id}
       className={`border-l-4 pl-3 ${
         accent || (highlighted ? 'border-l-amber-500' : 'border-l-gray-300')
       } ${className}`}
+      {...editorAttrs}
     >
       <h3 className="text-sm font-bold uppercase tracking-wide text-gray-800">{title}</h3>
       <p className="text-sm text-gray-600">{body}</p>

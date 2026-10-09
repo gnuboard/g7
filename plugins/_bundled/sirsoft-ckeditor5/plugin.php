@@ -136,6 +136,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점)',
                     'en' => 'Fired right before an editor image upload (identity verification, quota, etc.)',
+                    'ja' => 'エディター画像のアップロード直前に発火(本人認証・容量制限などの拡張ポイント)',
                 ],
                 'parameters' => [
                     'file' => 'UploadedFile - 업로드된 파일',
@@ -148,6 +149,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '에디터 이미지 업로드 기록 생성 후 발화',
                     'en' => 'Fired after the editor image upload record is created',
+                    'ja' => 'エディター画像のアップロード記録の作成後に発火',
                 ],
                 'parameters' => [
                     'record' => 'Model - Ckeditor5ImageUpload',
@@ -159,6 +161,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '업로드 파일 변형 지점 (압축·리사이즈 등)',
                     'en' => 'Transform the uploaded file (compression, resizing, etc.)',
+                    'ja' => 'アップロードファイルの変換ポイント(圧縮・リサイズなど)',
                 ],
                 'parameters' => [
                     'file' => 'UploadedFile - 업로드된 파일',
@@ -170,6 +173,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '에디터 이미지 참조 스캔 대상 테이블/컬럼 목록에 확장 콘텐츠를 추가',
                     'en' => 'Append extension content tables/columns to the editor image reference scan sources',
+                    'ja' => 'エディター画像の参照スキャン対象テーブル/カラム一覧に拡張機能のコンテンツを追加',
                 ],
                 'parameters' => [
                     'sources' => 'array - list<array{table: string, columns: list<string>}>',

@@ -1,0 +1,35 @@
+feature: sirsoft-basic 모바일 뷰포트 가로 오버플로와 드로어 선호설정
+
+description: |
+  390 폭(그리고 320 폭)에서 문서가 가로로 넘치지 않는다. 언어와 통화는 머리글 오른쪽이 아니라 모바일 드로어의 선호설정에
+  있고, 각각 독립 아코디언으로 기본 접힘이며 접힘 상태에서도 트리거에 현재값을 요약한다. 펼치면 칩이 가로로 나열되고
+  뷰포트를 넘지 않는다. 데스크톱(1280)의 통화 셀렉터는 absolute 드롭다운 그대로다. 비회원 글쓰기 폼의 이름과 비밀번호는
+  세로로 쌓이고, 상품 상세 쿠폰 칩 라벨은 한 줄을 유지한다.
+  드로어를 여는 단계는 메뉴 단추의 aria-expanded 가 true 가 될 때까지 다시 누른다 — 엔진이 핸들러를 붙이기 전의 클릭은
+  무시되어 파일 전체 실행에서 드로어 안 단추가 「outside of the viewport」로 멈췄다(7.1.0 종합 최종 검증).
+
+axes:
+  case:
+    - home_no_overflow
+    - header_right_group_slim
+    - drawer_prefs_collapsed
+    - drawer_prefs_expanded
+    - drawer_accordions_independent
+    - narrow_320_menu_reachable
+    - desktop_currency_dropdown
+    - guest_write_form_stacked
+    - coupon_chip_single_line
+
+effects:
+  - document_no_horizontal_overflow
+  - header_has_no_language_currency_selector
+  - drawer_prefs_collapsed_with_summary
+  - chips_inline_within_viewport
+  - accordions_toggle_independently
+  - menu_button_in_viewport
+  - desktop_currency_dropdown_absolute
+  - guest_fields_stack_vertically
+  - coupon_chip_label_nowrap
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mobile-viewport-overflow.spec.ts

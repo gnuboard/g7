@@ -45,13 +45,13 @@
             "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "params": {
                 "page": "{{query.page || 1}}",
                 "per_page": 20
             },
-            "comment": "그 사람이 쓴 글 — 위 프로필과 달리 비회원도 읽는다(공개 게시판의 글이므로). 페이지 번호는 URL 질의에서 온다."
+            "comment": "그 사람이 쓴 글 — 위 프로필과 달리 비회원도 읽는다(공개 게시판의 글이므로). 로그인했으면 토큰을 실어 보는 사람이 읽을 수 있는 게시판의 글까지 보인다. 페이지 번호는 URL 질의에서 온다."
         }
     ],
     "permissions": [],

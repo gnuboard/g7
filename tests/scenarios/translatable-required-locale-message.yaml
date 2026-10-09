@@ -1,0 +1,20 @@
+feature: 현재 언어 필수 다국어 칸의 오류 문구가 칸 이름과 언어 이름을 알려 준다
+
+description: |
+  현재 언어 값만 필수로 보는 다국어 칸 검증 규칙의 오류 문구가 로케일 코드만 담아
+  「The en language value is required.」·「en 언어의 값은 필수입니다.」처럼 나왔다(7.1.0 실측 O-KF3-1).
+  어느 칸의 어느 언어를 채워야 하는지 알 수 있도록 칸 표시 이름과 언어 이름(코드 병기)을 넣는다.
+  언어 이름은 사이트의 언어 이름 목록(app.locale_names)을 쓰고, 목록에 없으면 코드를 그대로 쓴다.
+  표시 이름을 정하지 않은 칸은 필드 키(name 등)를 싣지 않고 언어만 알린다(축 값 unnamed_field).
+  이 규칙은 코어 요청(메뉴·역할·권한·알림 템플릿·본인인증 알림 정의)과 확장(게시판·이커머스)이 함께 쓴다.
+
+axes:
+  locale: [ko, en, unnamed, unnamed_field]
+
+effects:
+  - required_locale_message_names_field_and_language
+  - required_locale_message_falls_back_to_code
+  - required_locale_message_hides_raw_field_key
+
+test_files:
+  - tests/Feature/Rules/LocaleRequiredTranslatableMessageTest.php

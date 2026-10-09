@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Models\Role;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -85,5 +87,47 @@ class GuestNoticeAbilityTest extends BoardTestCase
         $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/form-meta");
 
         $response->assertOk()->assertJsonPath('data.board.max_file_size', 30);
+    }
+
+    /**
+     * 같은 프로세스에서 guest 역할이 바뀌면 다음 응답의 비회원 능력도 새 역할을 따른다.
+     *
+     * 게시판 리소스가 guest 역할을 함수 정적 변수에 담으면 프로세스가 끝날 때까지 첫 역할 행을 붙잡아,
+     * 장기 실행 프로세스(그리고 같은 PHPUnit 프로세스의 다음 테스트)가 다시 만든 역할의 권한을 보지 못한다.
+     * 코어 미들웨어·Gate 와 같은 요청 단위 해석기(GuestRoleResolver)를 써야 한다.
+     *
+     * @scenario actor=guest, guest_notice_permission=none
+     *
+     * @effects guest_abilities_follow_guest_role_changes_in_same_process
+     *
+     * @return void 없음
+     */
+    public function test_guest_abilities_follow_recreated_guest_role_in_same_process(): void
+    {
+        $this->setGuestPermissions(['posts.read', 'posts.write']);
+
+        $url = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/form-meta";
+        $this->assertTrue((bool) $this->getJson($url)->assertOk()->json('data.board.user_abilities.can_write'));
+
+        // guest 역할 행을 새로 만든다 — 옛 행은 이름을 바꾸고 이 게시판 권한을 뗀다.
+        $oldGuest = Role::where('identifier', 'guest')->firstOrFail();
+        $boardPermissionIds = $oldGuest->permissions()
+            ->where('identifier', 'like', "sirsoft-board.{$this->board->slug}.%")
+            ->pluck('permissions.id');
+        $oldGuest->permissions()->detach($boardPermissionIds);
+        DB::table('roles')->where('id', $oldGuest->id)->update(['identifier' => 'guest_retired_for_test']);
+
+        $newGuest = Role::create([
+            'identifier' => 'guest',
+            'name' => ['ko' => '비회원', 'en' => 'Guest'],
+        ]);
+        $newGuest->permissions()->sync($boardPermissionIds);
+        $this->resetPermissionMiddlewareCache();
+
+        $this->assertNotSame($oldGuest->id, $newGuest->id);
+        $this->assertTrue(
+            (bool) $this->getJson($url)->assertOk()->json('data.board.user_abilities.can_write'),
+            '옛 guest 역할 행을 붙잡고 있으면 새 역할의 글쓰기 권한을 보지 못한다.'
+        );
     }
 }

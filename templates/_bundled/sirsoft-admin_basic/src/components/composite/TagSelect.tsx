@@ -4,6 +4,12 @@ import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface TagSelectOption {
   value: string | number;
   label: string;
@@ -51,12 +57,14 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   options = [],
   value = [],
   onChange,
-  placeholder = 'No items selected',
+  placeholder: placeholderProp,
   disabled = false,
   className = '',
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const placeholder = placeholderProp ?? tOr('common.no_items_selected', 'No items selected');
   // 값으로 라벨 찾기
   const getLabel = useCallback(
     (val: string | number): string => {
@@ -99,7 +107,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
                 className={STYLES.tagRemove}
                 onClick={() => handleRemove(item.value)}
                 role="button"
-                aria-label={`Remove ${item.label}`}
+                aria-label={tOr('common.tag_input.remove', `Remove ${item.label}`, { label: item.label })}
               >
                 <Svg
                   className="w-3 h-3"

@@ -1,0 +1,18 @@
+feature: 파일 업로더 — 이 화면에서 지운 첨부를 다른 인스턴스가 다시 그리지 않음
+
+description: |
+  게시판 환경설정의 반응 유형 아이콘처럼 같은 배열을 넓은 화면 표와 좁은 화면 카드가 함께 편집하는 화면에서,
+  한 업로더가 첨부를 서버에서 지운 직후 폭 전환이나 반복 행 재마운트로 새로 생긴 인스턴스가 지우기 전 값을
+  initialFiles 로 한 번 받으면 지운 첨부를 목록에 올리고 썸네일을 내려받다 404 를 콘솔에 남겼다(7.1.0 실측 O-K1-6).
+  서버 삭제가 끝난 첨부는 화면 안의 모든 업로더 인스턴스가 함께 보는 기록으로 걸러 낸다. 서버 삭제가 실패한
+  첨부는 기록하지 않아 다른 곳에서 그대로 보인다.
+
+axes:
+  case: [new_instance_with_stale_initial, mounted_sibling_stale_sync, new_instance_during_pending_delete, server_delete_failed]
+
+effects:
+  - file_uploader_deleted_attachment_not_redrawn_by_other_instance
+  - file_uploader_failed_delete_still_shown_elsewhere
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderSessionDeleted.test.tsx

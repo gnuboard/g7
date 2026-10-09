@@ -21,6 +21,15 @@
           "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
         }
       },
+      "createAbility": {
+        "comment": "작성 화면(등록 모드)의 등록 권한 확인. 목록 API 를 1건만 받아 abilities.can_create 만 쓴다 — 편집기에서는 입력 가능한 작성 화면으로 보인다.",
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true
+          }
+        }
+      },
       "pages": {
         "data": {
           "data": [

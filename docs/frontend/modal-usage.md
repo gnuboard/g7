@@ -11,7 +11,7 @@
 4. 로딩 상태 등 공유 상태는 _global 사용 권장 (모달 간 공유 필요 시)
 5. 삭제/위험 작업 버튼은 로딩 중 흐림 + 스피너 + 텍스트 변경 필수
 6. $parent._local 은 모달 마운트 시점의 스냅샷 — 모달이 열린 뒤의 부모 변경은 반영되지 않음
-7. closeModal 후 setState 금지 — setState 를 먼저 실행하고 closeModal 을 나중에
+7. `_local`(target 생략 포함)·부모 상태($parent._local · setParentLocal)를 고치는 setState 는 closeModal 보다 먼저 — `_global`·`_isolated` 정리는 closeModal 뒤여도 된다(§주의사항 1, §편집 모달 표준 예)
 8. 하단 버튼이 **방금 입력한 값**을 읽어야 하면 props.footer 가 아니라 본문 맨 아래 줄에 둔다 (§Footer 예외)
 9. 부모 **폼**(저장이 실어 보내는 값)을 고칠 때는 $parent._local 만으로 부족하다 — §부모 폼 커밋 참조
 ```
@@ -54,7 +54,7 @@
 ```html
 <modal>
   <modal data-ref="delete_confirm_modal" title="$t:common.confirm">
-    <div text="$t:common.delete_confirm"/>
+    <div>$t:common.delete_confirm</div>
   </modal>
 </modal>
 ```
@@ -71,7 +71,7 @@
       "name": "Modal",
       "props": { "title": "$t:common.confirm" },
       "children": [
-        { "type": "basic", "name": "Div", "props": { "text": "$t:common.delete_confirm" } }
+        { "type": "basic", "name": "Div", "text": "$t:common.delete_confirm" }
       ]
     }
   ]
@@ -555,10 +555,9 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 서버 API 를 직접 부르는 창(예: 본인인증 정책 창)은 이 문제가 없다 — 부모 폼을 거치지 않기 때문이다.
 창이 부모 폼을 고쳐야 하는지, 자기가 저장해야 하는지를 먼저 정하고 그에 맞는 형태를 고른다.
 
-> 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 이 형태를 쓰는 곳은
-> `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`(관리자 템플릿 환경설정),
-> `_modal_default_confirm`(이커머스 공통정보)·`_modal_extend_expiry`(이커머스 마일리지 내역)이며,
-> 새로 쓸 때는 이 절을 근거로 삼는다.
+> 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 새로 쓸 때는 이 절을 근거로 삼는다.
+> 번들 예: 관리자 환경설정 `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`, 이커머스 공통정보 `_modal_default_confirm`·마일리지 내역 `_modal_extend_expiry`, 탭을 옮길 때 묻는 미저장 확인 창
+> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정, 이커머스 환경설정).
 
 ### Footer 스타일 규칙
 
@@ -1151,7 +1150,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 □ 로딩 중 스피너 아이콘(Icon name="spinner" animate-spin)이 표시되는가?
 □ 버튼 텍스트가 로딩 상태에 따라 변경되는가? (삼항 연산자 사용)
 □ setState target이 "global"인가?
-□ onSuccess에서 closeModal이 setState보다 먼저 호출되는가?
+□ onSuccess에서 closeModal이 `_global` 정리 setState보다 먼저 호출되는가? (`_local`·부모 상태 `$parent._local` 쓰기는 closeModal 보다 먼저 — §주의사항 1)
 □ onError에서 로딩 상태가 false로 복원되는가?
 ```
 

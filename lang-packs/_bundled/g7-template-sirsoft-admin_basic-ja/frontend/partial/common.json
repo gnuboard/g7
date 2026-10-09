@@ -97,7 +97,8 @@
   "scope_type_self_desc": "自分が作成したリソースのみ",
   "scope_type_role_desc": "同じロールのユーザーリソースのみ",
   "multilingual": {
-    "add_language": "言語を追加"
+    "add_language": "言語を追加",
+    "remove_language": "{{language}}を削除"
   },
   "refresh": "更新",
   "activate": "有効化",
@@ -126,6 +127,9 @@
   "more_actions": "その他の操作",
   "clear_selection": "選択をクリア",
   "theme_select": "画面テーマ",
+  "delete_notification": "通知を削除",
+  "close_alert": "メッセージを閉じる",
+  "breadcrumb": "パンくずリスト",
   "user_menu": "ユーザーメニュー",
   "file_input": {
     "clear": "ファイルを削除",
@@ -133,6 +137,11 @@
     "no_file": "ファイルが選択されていません",
     "too_large": "ファイルサイズが{{size}}MBを超えています。"
   },
+  "logging_out": "ログアウト中...",
+  "type_to_search": "検索キーワードを入力してください",
+  "empty_illustration": "空の状態のイラスト",
+  "logo": "ロゴ",
+  "no_items_selected": "選択された項目はありません",
   "show_value": "値を表示",
   "hide_value": "値を隠す"
 }

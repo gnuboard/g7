@@ -179,6 +179,9 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-marketing/tests --filter='<대�
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-marketing && powershell -Command "npm run test:run -- <대상>"
 
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-marketing && npm run test:e2e -- specs/<대상>.spec.ts
+
 ```
 
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.

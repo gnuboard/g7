@@ -495,7 +495,7 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 레이아웃 JSON에서 `abilities.can_*` 키로 접근합니다:
 
 ```html
-<button data-if="{{item.abilities.can_update}}" text="수정"/>
+<button data-if="{{item.abilities.can_update}}">수정</button>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -505,7 +505,7 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
     "if": "{{item.abilities.can_update}}",
     "type": "basic",
     "name": "Button",
-    "props": { "text": "수정" }
+    "text": "수정"
 }
 ```
 

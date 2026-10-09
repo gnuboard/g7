@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
@@ -203,6 +204,80 @@ class AdminPostBulkActionTest extends BoardTestCase
         $this->assertIsArray($logs);
         $this->assertSame('blind', $logs[0]['action']);
         $this->assertSame('운영 정책 위반', $logs[0]['reason']);
+    }
+
+    /**
+     * 일괄 블라인드는 삭제된 글을 건너뛰고 「이미 삭제된 글」 사유를 싣는다 — 삭제가 풀리지 않는다.
+     *
+     * 종전에는 삭제된 글도 블라인드되며 deleted_at 이 지워져 되살아났다(브라우저 실측 O-K3T-2).
+     *
+     * @effects admin_post_bulk_blind_skips_deleted
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_blind_skips_deleted_post_and_keeps_it_deleted(): void
+    {
+        $alive = $this->createTestPost(['title' => '게시 중인 글']);
+        $deleted = $this->createTestPost([
+            'title' => '지워진 글',
+            'status' => 'deleted',
+            'trigger_type' => 'user',
+            'deleted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->adminWithManage)
+            ->withHeader('Accept-Language', 'ko')
+            ->patchJson($this->url('/bulk-blind'), ['ids' => [$alive, $deleted]]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.affected_count', 1);
+        $response->assertJsonPath('data.skipped.0.id', $deleted);
+        $response->assertJsonPath('data.skipped.0.reason', 'already_deleted');
+        $response->assertJsonPath('data.skipped.0.reason_label', '이미 삭제된 글');
+
+        $row = DB::table('board_posts')->where('id', $deleted)->first();
+        $this->assertSame('deleted', $row->status);
+        $this->assertNotNull($row->deleted_at);
+    }
+
+    /**
+     * 다른 게시판의 글·없는 번호는 「처리 중 오류」가 아니라 「찾을 수 없는 글」 사유로 건너뛴다.
+     *
+     * @effects admin_post_bulk_skips_missing_with_not_found_reason
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_action_reports_not_found_for_other_board_or_missing_id(): void
+    {
+        $alive = $this->createTestPost(['title' => '이 게시판 글']);
+        $otherBoard = Board::updateOrCreate(
+            ['slug' => 'admin-post-bulk-other'],
+            $this->getDefaultBoardAttributes('admin-post-bulk-other'),
+        );
+        DB::table('board_posts')->where('board_id', $otherBoard->id)->delete();
+        $otherBoardPost = DB::table('board_posts')->insertGetId([
+            'board_id' => $otherBoard->id,
+            'title' => '다른 게시판 글',
+            'content' => '내용',
+            'author_name' => '테스트',
+            'ip_address' => '127.0.0.1',
+            'status' => 'published',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->adminWithManage)
+            ->withHeader('Accept-Language', 'en')
+            ->patchJson($this->url('/bulk-blind'), ['ids' => [$alive, $otherBoardPost, 999999]]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.affected_count', 1);
+        $response->assertJsonPath('data.skipped.0.reason', 'not_found');
+        $response->assertJsonPath('data.skipped.0.reason_label', 'Post not found in this board');
+        $response->assertJsonPath('data.skipped.1.reason', 'not_found');
+
+        // 다른 게시판 글은 건드리지 않는다
+        $this->assertSame('published', DB::table('board_posts')->where('id', $otherBoardPost)->value('status'));
     }
 
     /**

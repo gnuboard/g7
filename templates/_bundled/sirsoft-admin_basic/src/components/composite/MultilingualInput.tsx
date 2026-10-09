@@ -37,6 +37,18 @@ const getLocaleNameByCode = (code: string): string => {
   return translatedName;
 };
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+// 언어 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
+const removeLanguageLabel = (code: string): string => {
+  const language = getLocaleNameByCode(code);
+  return tOr('common.multilingual.remove_language', `Remove ${language}`, { language });
+};
+
 // 시스템 언어 목록을 LocaleOption[]으로 변환
 const getSystemLocaleOptions = (): LocaleOption[] => {
   const supportedLocales = getSupportedLocales();
@@ -383,6 +395,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 onClick={() => handleRemoveLocale(localeCode)}
                 aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon name="xmark" className="w-3 h-3" />
               </Button>
@@ -525,6 +538,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 onClick={() => handleRemoveLocale(localeCode)}
                 aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon
                   name="xmark"

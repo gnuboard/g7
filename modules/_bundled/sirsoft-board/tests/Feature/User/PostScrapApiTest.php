@@ -606,23 +606,37 @@ class PostScrapApiTest extends BoardTestCase
     }
 
     /**
-     * 허용 목록 밖의 search_field → 422 (닫힌 집합 게이트).
+     * 허용 목록 밖의 search_field 는 422 가 아니라 기본(제목+내용)으로 처리한다 (7.1.0 실측 O-K3-3).
      *
      * @scenario action=mypage_search
      *
-     * @effects mypage_list_rejects_invalid_search_field
+     * @effects mypage_list_unknown_search_field_falls_back_to_title_content
      *
      * @return void 반환값 없음
      */
-    public function test_index_rejects_invalid_search_field(): void
+    public function test_index_unknown_search_field_falls_back_to_title_content(): void
     {
         $user = $this->createUser();
+        $titleHit = $this->createTestPost(['title' => '알파 제목', 'content' => '무관한 본문']);
+        $contentHit = $this->createTestPost(['title' => '무관한 제목', 'content' => '알파 본문 키워드']);
 
-        $response = $this->actingAs($user)->getJson(
-            '/api/modules/sirsoft-board/me/scraps?search=x&search_field=author'
-        );
+        foreach ([$titleHit, $contentHit] as $postId) {
+            $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+        }
 
-        $response->assertStatus(422);
+        $expected = [$titleHit, $contentHit];
+        sort($expected);
+
+        foreach (['author', 'abc'] as $unknown) {
+            $response = $this->actingAs($user)->getJson(
+                '/api/modules/sirsoft-board/me/scraps?search='.urlencode('알파').'&search_field='.$unknown
+            );
+
+            $response->assertStatus(200);
+            $ids = array_column($response->json('data.data'), 'post_id');
+            sort($ids);
+            $this->assertSame($expected, $ids, "{$unknown}: 제목·내용 매칭이 모두 잡혀야 한다");
+        }
     }
 
     // ==========================================

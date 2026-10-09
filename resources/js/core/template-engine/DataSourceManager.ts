@@ -1075,6 +1075,29 @@ export class DataSourceManager {
   }
 
   /**
+   * 데이터 소스 요청 실패를 로그에 남깁니다.
+   *
+   * 레이아웃이 그 실패를 `suppress` 로 처리했거나(비회원의 401, 연결이 끊긴 외부 서비스의 422 등),
+   * 토큰이 없어 요청을 보내지 않고 건너뛴 인증 필요 소스는 예정된 흐름이라 error 가 아닌 log 로 남긴다.
+   * 종전에는 디버그 모드 콘솔에 비회원 화면마다 「Auth required but not authenticated」 3건이 error 로
+   * 쌓였다(7.1.0 실측 O-K1-2·E-M2-1). 처리기가 없거나 화면에 알리는 처리기의 실패는 종전대로 error 다.
+   *
+   * @param message 로그 문구
+   * @param error 실패 원인
+   * @param handler 이 실패에 결정된 오류 처리기(없으면 null)
+   * @returns void
+   * @since engine-v1.79.0
+   */
+  private logFetchFailure(message: string, error: unknown, handler: { handler?: string } | null): void {
+    if (handler?.handler === 'suppress' || (error as any)?._authSkipped === true) {
+      logger.log(message, error);
+      return;
+    }
+
+    logger.error(message, error);
+  }
+
+  /**
    * 요청이 실패했을 때 화면에 남길 데이터를 고릅니다.
    *
    * 권한 오류(401·403)는 마지막 값을 지키지 않고 지운다 — 보관 값은 계정을 가리지 않으므로, 같은
@@ -1182,8 +1205,6 @@ export class DataSourceManager {
             }
           }
         } catch (error) {
-          logger.error(`Failed to fetch data source: ${source.id}`, error);
-
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1207,6 +1228,8 @@ export class DataSourceManager {
             errorHandling: source.errorHandling,
             onError: source.onError,
           });
+
+          this.logFetchFailure(`Failed to fetch data source: ${source.id}`, error, resolveResult.handler);
 
           if (resolveResult.handler) {
             try {
@@ -1361,8 +1384,6 @@ export class DataSourceManager {
             data,
           };
         } catch (error) {
-          logger.error(`Failed to fetch data source: ${source.id}`, error);
-
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1386,6 +1407,8 @@ export class DataSourceManager {
             errorHandling: source.errorHandling,
             onError: source.onError,
           });
+
+          this.logFetchFailure(`Failed to fetch data source: ${source.id}`, error, resolveResult.handler);
 
           let errorHandled = false;
 
@@ -1521,8 +1544,6 @@ export class DataSourceManager {
           }
         })
         .catch(async (error) => {
-          logger.error(`Background fetch failed: ${source.id}`, error);
-
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1546,6 +1567,8 @@ export class DataSourceManager {
             errorHandling: source.errorHandling,
             onError: source.onError,
           });
+
+          this.logFetchFailure(`Background fetch failed: ${source.id}`, error, resolveResult.handler);
 
           if (resolveResult.handler) {
             try {
@@ -1848,8 +1871,13 @@ export class DataSourceManager {
         let url = endpoint;
 
         // GET 요청인 경우 쿼리 스트링 생성
+        // 값이 없는(undefined·null) 파라미터는 싣지 않는다 — 그대로 넘기면 `page=undefined` 처럼 문자열로
+        // 나가 서버 검증이 422 로 거절한다(ApiClient 경로의 axios 는 이미 뺀다). @since engine-v1.79.0
         if (method === 'GET') {
-          const queryString = new URLSearchParams(params).toString();
+          const presentParams = Object.fromEntries(
+            Object.entries(params).filter(([, value]) => value !== undefined && value !== null),
+          );
+          const queryString = new URLSearchParams(presentParams).toString();
           url = queryString ? `${endpoint}?${queryString}` : endpoint;
         }
 

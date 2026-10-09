@@ -197,6 +197,64 @@ class MemberEmailExposureTest extends BoardTestCase
     }
 
     /**
+     * 비로그인 작성자 검색은 회원 이메일로 글을 찾지 않는다(이메일을 한 글자씩 맞혀 보는 경로 차단).
+     *
+     * 2026-10-07 실측(K4-D2): 응답에서 이메일을 뺀 뒤에도 `search_field=author` 가 회원 이메일을
+     * LIKE 로 찾아, 이메일 일부(`m2@exa`)로 그 회원의 글이 걸렸다. 이름 검색은 그대로 된다.
+     *
+     * @scenario case=author_search_guest
+     *
+     * @effects author_search_ignores_email_for_guest
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function guest_author_search_does_not_match_member_email(): void
+    {
+        $this->createTestPost([
+            'user_id' => $this->author->id,
+            'author_name' => null,
+            'title' => '이메일 검색 차단 확인용',
+        ]);
+        $url = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
+
+        $byEmail = $this->getJson($url.'?search_field=author&search='.urlencode('author-exposure@exa'));
+        $byEmail->assertStatus(200);
+        $this->assertStringNotContainsString('이메일 검색 차단 확인용', $byEmail->getContent(), '작성자 이메일 일부로 글이 검색됐다');
+
+        $byName = $this->getJson($url.'?search_field=author&search='.urlencode($this->author->name));
+        $byName->assertStatus(200);
+        $this->assertStringContainsString('이메일 검색 차단 확인용', $byName->getContent(), '작성자 이름 검색이 깨졌다');
+    }
+
+    /**
+     * 관리자 게시글 목록의 작성자 검색은 종전대로 이메일로도 찾는다(관리자 화면은 이메일을 보여 준다).
+     *
+     * @scenario case=author_search_admin
+     *
+     * @effects author_search_matches_email_for_admin
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function admin_author_search_still_matches_member_email(): void
+    {
+        $this->createTestPost([
+            'user_id' => $this->author->id,
+            'author_name' => null,
+            'title' => '관리자 이메일 검색 확인용',
+        ]);
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')->getJson(
+            "/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts?filters[0][field]=author&filters[0][value]="
+                .urlencode('author-exposure@exa')
+        );
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('관리자 이메일 검색 확인용', $response->getContent());
+    }
+
+    /**
      * 비로그인 댓글 목록 응답 원문에 작성자 이메일이 없다.
      *
      * @scenario case=comment_list_guest
@@ -383,7 +441,7 @@ class MemberEmailExposureTest extends BoardTestCase
             ->getJson('/api/modules/sirsoft-board/boards/popular')
             ->assertStatus(200);
 
-        $cached = Cache::get('g7:module.sirsoft-board:popular_posts_v2_week_20');
+        $cached = Cache::get('g7:module.sirsoft-board:popular_posts_v2_week_20_'.app()->getLocale());
         $this->assertIsArray($cached, '인기글 캐시가 예상 키에 채워지지 않았다');
         $this->assertStringNotContainsString(
             $this->author->email,

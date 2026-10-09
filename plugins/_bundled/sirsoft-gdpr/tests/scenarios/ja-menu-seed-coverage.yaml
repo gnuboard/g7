@@ -1,0 +1,16 @@
+feature: GDPR ja 언어팩 메뉴 시드가 플러그인 관리자 메뉴를 빠짐없이 덮는다
+
+description: |
+  플러그인 언어팩을 켜면 코어는 그 팩의 `seed/menus.json` 만 읽어 메뉴 이름에 그 언어를 넣는다.
+  1.1.0 에서 생긴 「개인정보 통지 이력」(`sirsoft-gdpr-notice-log`) 번역이 다른 이름의 파일에만 있어
+  ja 팩을 켜도 그 메뉴만 일본어 사이드바에 영어로 남았다. 선언 메뉴 전수를 시드와 대조한다.
+
+axes:
+  locale: [ja]
+  surface: [menu_seed]
+
+effects:
+  - ja_menu_seed_covers_every_admin_menu
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/JaMenuSeedCoverageTest.php

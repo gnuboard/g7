@@ -212,6 +212,30 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 자동 검증이
 번들 확장 전수를 대상으로 두 조건(객체 형식 · 산출물 실재)을 확인합니다.
 
+### 확장 화면의 의미 색은 확장 CSS 가 싣는다
+
+확장 레이아웃(환경설정 화면, 조각)의 경고, 성공, 위험, 안내 글자색은 템플릿의 의미 색 클래스(`text-warning-soft`,
+`text-success-soft` 등)에 기대지 않고 **확장이 자기 CSS 에 접두 클래스로 직접 정의**합니다. 템플릿은 자기 화면에 맞춰
+의미 클래스의 이름이나 색을 바꿀 수 있고, 그러면 확장 화면의 색이 오류도 없이 따라 바뀝니다(경고 본문이 초록으로 보이는 식).
+
+- 이름은 확장 고유 접두를 붙입니다. 번들 결제 플러그인은 `pay-<id>-tone-{warning|success|danger|info}` 와 진한 제목용
+  `-strong` 짝을 씁니다(예: `pay-kginicis-tone-warning-strong`). 다른 확장의 클래스는 참조하지 않습니다.
+- 다크 모드 짝을 함께 둡니다. 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark .pay-kginicis-tone-warning` 처럼
+  조상 선택자로 씁니다.
+- 글자 크기와 굵기는 레이아웃의 유틸리티 클래스가 정하고, 접두 클래스는 색만 맡습니다.
+- 그 화면에만 있는 임의값 배치(`grid-cols-[150px_1fr]`, `min-w-[180px]` 등)도 같은 파일에 접두 클래스로 둡니다. 템플릿은
+  자기 레이아웃만 훑어 CSS 를 만들므로 확장 레이아웃에만 있는 임의값 유틸리티는 규칙이 생성되지 않습니다.
+- 배선은 세 곳입니다. manifest 에 `assets.css`(`entry`·`output`)를 선언하고, JS 엔트리가 CSS 를 import 하며,
+  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(`css/plugin.css` 등)로 냅니다.
+
+```ts
+// vite.config.ts — rollupOptions.output
+assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/plugin.css' : 'assets/[name][extname]'),
+```
+
+입력 줄 배치(`grid-3col-responsive`), 섹션 제목(`section-heading-md`), 저장 오류 상자(`text-error-strong`·`text-error-soft`)처럼
+코어 플러그인 설정 화면 규약이 정한 구조 클래스는 계속 템플릿 것을 씁니다. 이 절은 확장 화면에서 **뜻이 있는 색**을 고를 때의 규약입니다.
+
 ---
 
 ## 모듈 프론트엔드 구조

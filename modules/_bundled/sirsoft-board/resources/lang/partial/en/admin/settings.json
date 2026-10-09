@@ -7,6 +7,12 @@
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
   "unsaved_changes": "You have unsaved changes.",
+  "unsaved_tab_modal": {
+    "title": "Unsaved changes",
+    "message": "You have unsaved changes on this tab. If you switch tabs, your changes will be discarded and the saved values will be restored.",
+    "btn_stay": "Stay on this tab",
+    "btn_leave": "Leave without saving"
+  },
   "tabs": {
     "general": "General",
     "basic_defaults": "Board Settings",
@@ -67,9 +73,9 @@
     "attachment_cleanup_description": "Decide when the files of deleted attachments are destroyed. Temporary attachments uploaded while writing but never saved are cleaned up daily regardless of this setting."
   },
   "fields": {
-    "attachment_purge_enabled": "Purge deleted attachments",
+    "attachment_purge_enabled": "Purge Deleted Attachments",
     "attachment_purge_enabled_hint": "Off by default — the operator must turn it on for the daily automatic cleanup to run. When on, files and records of attachments deleted longer ago than the retention period are permanently removed. Cleanup commands run directly on the server are not affected by this setting.",
-    "attachment_purge_retention_days": "Deleted attachment retention (days)",
+    "attachment_purge_retention_days": "Deleted Attachment Retention (days)",
     "attachment_purge_retention_days_hint": "Restoring a post from the trash also restores attachments within this period. Keep it aligned with your trash retention window. (1 ~ 3650 days)",
     "type": "Board Type",
     "secret_mode": "Secret Mode",
@@ -191,9 +197,9 @@
       "max_file_size": "Maximum file size for uploads (in MB, {{min}}–{{max}})",
       "max_file_count": "Maximum number of files per post ({{min}}–{{max}})",
       "allowed_extensions": "Enter at least one allowed file extension",
-      "use_comment_reaction": "Show reaction buttons on comments too. Works only where \"Reactions\" is on."
+      "use_comment_reaction": "Show reaction buttons on comments too. Works only on boards where \"Enable Reactions\" is on."
     },
-    "use_comment_reaction": "Comment reactions"
+    "use_comment_reaction": "Enable Comment Reactions"
   },
   "options": {
     "date_display_format": {
@@ -479,9 +485,9 @@
     }
   },
   "reaction_types": {
-    "title": "Reaction types",
-    "add_button": "Add type",
-    "empty": "No reaction types yet. Add one with \"Add type\", then save.",
+    "title": "Reaction Types",
+    "add_button": "Add Type",
+    "empty": "No reaction types yet. Add one with \"Add Type\", then save.",
     "none_hint": "Add a type in the editor below first.",
     "form": {
       "code": "Code",
@@ -507,11 +513,14 @@
     "validation": {
       "code_required": "Enter a code",
       "code_duplicate": "That code already exists",
-      "name_required": "Enter the name in the default language"
+      "code_format": "Use 2-50 characters: start with a lowercase letter, then lowercase letters, digits or underscores (_)",
+      "name_required": "Enter the name in the current display language"
     },
     "confirm_delete": "Delete this reaction type? It applies once you save.",
+    "icon_remove_confirm_title": "Delete Icon",
+    "icon_remove_confirm_message": "Delete this icon? The uploaded file is removed right away, even before you save, and this cannot be undone. The default icon will be used instead.",
     "messages": {
-      "icon_upload_failed": "Failed to upload the icon",
+      "icon_upload_failed": "Couldn't upload the icon — use a PNG, JPG, GIF or WEBP image up to 1MB",
       "icon_delete_failed": "Failed to delete the icon"
     },
     "delete_blocked_suffix": " reactions use this type, so it cannot be deleted — you can turn it off instead",
@@ -603,10 +612,14 @@
     "confirm_add_step": "Add the selected members as board staff.",
     "confirm_remove_manager": "Remove the selected members from board managers.",
     "confirm_remove_step": "Remove the selected members from board staff.",
-    "result_summary": "{{updated}} boards changed, {{skipped}} skipped",
-    "result_summary_one": "{{updated}} board changed, {{skipped}} skipped",
+    "result_summary": "{{updated}} boards changed, {{skipped}} skipped, {{unchanged}} unchanged",
+    "result_summary_one": "{{updated}} board changed, {{skipped}} skipped, {{unchanged}} unchanged",
     "reason_last_manager": "Would leave no manager",
     "reason_scope": "Outside your scope",
+    "reason_not_grantable": "Cannot grant this role (insufficient permission)",
+    "reason_role_missing": "Board role record missing (data damaged)",
+    "no_permission": "You need permission to edit boards to assign managers or staff in bulk.",
+    "load_failed": "Could not load the board list, so bulk assignment is unavailable. Please reopen this page shortly.",
     "failed": "Failed to assign board managers/staff in bulk."
   }
 }

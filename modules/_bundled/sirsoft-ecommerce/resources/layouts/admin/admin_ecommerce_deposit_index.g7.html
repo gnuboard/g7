@@ -23,7 +23,7 @@
           <h1 class="page-title">$t:sirsoft-ecommerce.admin.deposit.title</h1>
           <p class="page-description">$t:sirsoft-ecommerce.admin.deposit.description</p>
         </div>
-        <button type="button" class="btn btn-icon">
+        <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
           <icon name="arrows-rotate" class="text-xl"/>
         </button>
       </div>
@@ -50,7 +50,7 @@
             </input>
             <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
           </div>
-          <button type="button" class="btn btn-icon">
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
             <icon name="arrows-rotate" class="text-base"/>
           </button>
           <!-- 검색 초기화 — 아래 매칭·결제수단·기간 필터까지 함께 되돌린다(입력칸만 비우면 걸린 필터가 남아 결과가 안 늘어난다) -->
@@ -366,18 +366,18 @@
       </div>
       <div data-ref="pagination" class="flex justify-center mt-6">
         <div class="pagination">
-          <button type="button" class="pagination-btn" :disabled="true">
+          <button aria-label="$t:common.first_page" type="button" class="pagination-btn" :disabled="true">
             <icon name="angles-left" class="text-base"/>
           </button>
-          <button type="button" class="pagination-btn" :disabled="true">
+          <button aria-label="$t:common.prev_page" type="button" class="pagination-btn" :disabled="true">
             <icon name="chevron-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn active">1</button>
           <button type="button" class="pagination-btn">2</button>
-          <button type="button" class="pagination-btn">
+          <button aria-label="$t:common.next_page" type="button" class="pagination-btn">
             <icon name="chevron-right" class="text-base"/>
           </button>
-          <button type="button" class="pagination-btn">
+          <button aria-label="$t:common.last_page" type="button" class="pagination-btn">
             <icon name="angles-right" class="text-base"/>
           </button>
         </div>

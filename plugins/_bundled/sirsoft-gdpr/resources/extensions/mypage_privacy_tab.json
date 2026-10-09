@@ -1,5 +1,5 @@
 {
-    "comment": "마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다",
+    "comment": "마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다\ne2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평가 Vitest(mypage-consent-label-suffix.test.ts) + Playwright 격리 브라우저 ko/en 재실측",
     "target_layout": "mypage/profile",
     "priority": 90,
     "data_sources": [
@@ -293,7 +293,7 @@
                                     "props": {
                                         "className": "block font-medium"
                                     },
-                                    "text": "$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? ''}}"
+                                    "text": "{{String(_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', _global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '')}}"
                                 },
                                 {
                                     "type": "basic",
@@ -899,13 +899,13 @@
                                                             },
                                                             "children": [
                                                                 {
-                                                                    "comment": "라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출.",
+                                                                    "comment": "라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출. 기본 ko 라벨('필수 쿠키')처럼 이미 접미사로 끝나면 다시 붙이지 않는다(「필수 쿠키 쿠키」 방지).",
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
                                                                         "className": "text-gray-900 dark:text-white font-medium text-sm"
                                                                     },
-                                                                    "text": "$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{consent?.consent_label ?? consent?.consent_key ?? ''}}"
+                                                                    "text": "{{String(consent?.consent_label ?? consent?.consent_key ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (consent?.consent_label ?? consent?.consent_key ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', consent?.consent_label ?? consent?.consent_key ?? '')}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",

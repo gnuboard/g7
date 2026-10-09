@@ -11,6 +11,7 @@
 import { test as base } from '@playwright/test';
 // 6단계 상위 = 코어 루트의 fixtures/auth.ts
 import { issueToken, issueScopedToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
+import { adminToken } from '../../../../../../tests/Playwright/fixtures/admin-login';
 
 type Ckeditor5AuthFixtures = {
   /** 업로드 조회 + 삭제 권한 보유 토큰 */
@@ -33,10 +34,12 @@ export const test = base.extend<Ckeditor5AuthFixtures>({
     await use(issueScopedToken('sirsoft-ckeditor5.uploads.read'));
   },
   // 자산 실패 폴백은 권한 경계가 아니라 편집기 마운트를 보는 검증이므로 admin 역할을
-  // 함께 받는 `issueToken` 으로 충분하다 (게시글 작성 화면 전체가 열려야 한다).
-  editorToken: async ({}, use) => {
+  // 함께 받는 토큰으로 충분하다 (게시글 작성 화면 전체가 열려야 한다). 코어 `adminToken` 과 같이
+  // G7_E2E_ADMIN_EMAIL·G7_E2E_ADMIN_PASSWORD_FILE 이 있으면 정해 둔 관리자 계정으로 로그인하고,
+  // 없으면 `issueToken` 발급 경로로 돌아간다.
+  editorToken: async ({ request }, use) => {
     // admin 역할이 게시판 작성 권한을 모두 가진다 — 게시판 이름 없는 `sirsoft-board.posts.create` 는 없는 권한이었다.
-    await use(issueToken());
+    await use(await adminToken(request));
   },
 });
 

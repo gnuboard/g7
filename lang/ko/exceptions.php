@@ -39,7 +39,7 @@ return [
         'max_include_depth_exceeded' => 'include 최대 깊이를 초과했습니다 (최대: :max단계)',
         'include_outside_directory' => 'include 경로가 허용된 디렉토리 외부입니다: :path (허용: :allowed_dir)',
         // 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록한다 (경고)
-        'include_skipped' => 'JSON 레이아웃 :file 의 조각 :partial 을(를) 불러오지 못해 빈 자리로 등록했습니다 (:reason)',
+        'include_skipped' => 'JSON 레이아웃 :file 에서 조각 :partial 불러오기에 실패해 빈 자리로 등록했습니다 (:reason)',
     ],
 
     // 레이아웃 버전 관련 예외
@@ -120,7 +120,7 @@ return [
         ],
 
         // 속성 표기
-        'foreign_idiom' => ':found 는 G7 문법이 아닙니다: :suggestion 을(를) 사용하세요.',
+        'foreign_idiom' => 'G7 문법이 아닌 표현입니다: :found — 대신 :suggestion 사용',
         'invalid_type_literal' => '":attr" 의 값이 JSON 이 아닙니다: :found — 표현식·문자열은 콜론 없이 :suggestion="..." 로 쓰세요.',
         'boolean_attribute_false' => ':attr 는 있고 없고로 참·거짓을 표기합니다: 참이면 :attr, 거짓이면 속성을 지우세요. 값 자체를 전달하려면 ::attr="false" 로 쓰세요.',
         'directive_needs_value' => ':attr 에는 값이 필요합니다.',
@@ -146,7 +146,7 @@ return [
         'empty_action_block' => '<:tag> 안에 실행할 액션이 없습니다.',
         'unexpected_action_child' => '<:tag> 는 <:parent> 안에서 이 자리에 올 수 없습니다.',
         'unknown_action_tag' => '<:tag> 는 내장 핸들러가 아닙니다. 확장·동적 핸들러는 <action handler="이름"> 으로 쓰세요.',
-        'unknown_action_tag_with_suggestion' => '<:tag> 는 내장 핸들러가 아닙니다: <:suggestion> 을(를) 쓰려던 것 아닌가요? (확장·동적 핸들러는 <action handler="이름">)',
+        'unknown_action_tag_with_suggestion' => '내장 핸들러가 아닌 태그입니다: <:tag> — <:suggestion> 태그를 쓰려던 것 아닌가요? (확장·동적 핸들러는 <action handler="이름">)',
         'duplicate_case_key' => ':case 케이스를 두 번 지정했습니다.',
         'duplicate_action_key' => ':key 를 두 번 지정했습니다. 속성과 태그가 같은 자리를 다투지 않는지 확인하세요.',
         'confirm_not_at_root' => 'confirm 은 이벤트에 직접 연결된 액션에서만 확인창을 띄웁니다. 중첩 액션의 confirm 은 무시되므로 진입 액션으로 옮기세요.',

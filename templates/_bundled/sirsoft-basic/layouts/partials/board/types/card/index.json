@@ -393,7 +393,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white flex-shrink-0"
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white flex-shrink-0"
                                             },
                                             "text": "N"
                                         }

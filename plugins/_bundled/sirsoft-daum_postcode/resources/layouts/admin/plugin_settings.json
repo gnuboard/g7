@@ -1,5 +1,5 @@
 {
-    "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다",
+    "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다\ne2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구조 Vitest(pluginSettingsDisplay.test.ts) + Playwright 격리 브라우저 ko/en·1440·375px 재실측",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -134,7 +134,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -167,7 +167,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -216,7 +216,7 @@
                                                                 "props": {
                                                                     "value": "popup"
                                                                 },
-                                                                "text": "popup"
+                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.popup"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -224,9 +224,19 @@
                                                                 "props": {
                                                                     "value": "layer"
                                                                 },
-                                                                "text": "layer"
+                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.layer"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "comment": "저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11)",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.display_mode}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.display_mode?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -237,7 +247,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -273,13 +283,25 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "범위는 플러그인 설정 스키마(min 100 · max 2000)와 같다 — 서버 검증이 같은 값으로 422 를 낸다",
                                                         "type": "basic",
                                                         "name": "Input",
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_width",
+                                                            "min": "100",
+                                                            "max": "2000",
                                                             "className": "focus:border-transparent"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.popup_width}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.popup_width?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -290,7 +312,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -331,8 +353,19 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_height",
+                                                            "min": "100",
+                                                            "max": "2000",
                                                             "className": "focus:border-transparent"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.popup_height}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.popup_height?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -343,7 +376,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -387,6 +420,15 @@
                                                             "placeholder": "#1D4ED8",
                                                             "className": "focus:border-transparent"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.theme_color}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.theme_color?.[0]}}"
                                                     }
                                                 ]
                                             }

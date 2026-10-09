@@ -1,5 +1,5 @@
 {
-    "comment": "CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다",
+    "comment": "CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다\ne2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제목) — 구조 Vitest(pluginSettingsSemanticClasses.test.ts) + Playwright 격리 브라우저 1440·375px 재실측",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -116,7 +116,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -136,7 +136,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -168,7 +168,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_toolbar"
                                     }
@@ -187,7 +187,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -265,7 +265,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -337,7 +337,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_image"
                                     }
@@ -356,7 +356,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -407,7 +407,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -460,7 +460,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -543,7 +543,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "section-heading-md"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_cleanup"
                                     }
@@ -562,7 +562,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -613,7 +613,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "grid-3col-responsive"
                                         },
                                         "children": [
                                             {
@@ -811,7 +811,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-strong"
+                                                    "className": "section-heading-md"
                                                 },
                                                 "text": "$t:sirsoft-ckeditor5.settings.section_preview"
                                             },

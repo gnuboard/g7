@@ -1,4 +1,5 @@
-<!-- CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다 -->
+<!-- CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다
+e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제목) — 구조 Vitest(pluginSettingsSemanticClasses.test.ts) + Playwright 격리 브라우저 1440·375px 재실측 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
@@ -19,19 +20,19 @@
         <div class="flex-center gap-3">
           <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
           <div>
-            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="grid-3col-responsive">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
       <div data-ref="section_toolbar_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_toolbar_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_toolbar</h3>
+          <h3 class="section-heading-md">$t:sirsoft-ckeditor5.settings.section_toolbar</h3>
         </div>
         <div data-ref="section_toolbar_fields" class="p-6 space-y-6">
-          <div data-ref="field_toolbar" class="section-heading-md">
+          <div data-ref="field_toolbar" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.toolbar.label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
@@ -44,7 +45,7 @@
               </select>
             </div>
           </div>
-          <div data-ref="field_editor_height" class="section-heading-md">
+          <div data-ref="field_editor_height" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.editor_height.label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.editor_height.hint</p>
@@ -57,10 +58,10 @@
       </div>
       <div data-ref="section_image_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_image_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_image</h3>
+          <h3 class="section-heading-md">$t:sirsoft-ckeditor5.settings.section_image</h3>
         </div>
         <div data-ref="section_image_fields" class="p-6 space-y-6">
-          <div data-ref="field_image_upload" class="section-heading-md">
+          <div data-ref="field_image_upload" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_upload.label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_upload.hint</p>
@@ -69,7 +70,7 @@
               <toggle data-type="composite" name="imageUpload"/>
             </div>
           </div>
-          <div data-ref="field_image_max_size" class="section-heading-md">
+          <div data-ref="field_image_max_size" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_max_size.label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint</p>
@@ -78,7 +79,7 @@
               <input type="number" name="imageMaxSizeMb" class="focus:border-transparent"/>
             </div>
           </div>
-          <div data-ref="field_public_asset_disk" class="section-heading-md">
+          <div data-ref="field_public_asset_disk" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint</p>
@@ -93,10 +94,10 @@
       </div>
       <div data-ref="section_cleanup_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_cleanup_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_cleanup</h3>
+          <h3 class="section-heading-md">$t:sirsoft-ckeditor5.settings.section_cleanup</h3>
         </div>
         <div data-ref="section_cleanup_fields" class="p-6 space-y-6">
-          <div data-ref="field_unused_image_cleanup" class="section-heading-md">
+          <div data-ref="field_unused_image_cleanup" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.toggle_label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint</p>
@@ -105,7 +106,7 @@
               <toggle data-type="composite" name="unusedImageCleanup"/>
             </div>
           </div>
-          <div data-ref="field_unused_image_retention_days" class="section-heading-md">
+          <div data-ref="field_unused_image_retention_days" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.retention_label</label>
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.retention_hint</p>
@@ -142,7 +143,7 @@
             <set-state target="local" showPreview="{{!_local.showPreview}}"/>
           </on>
           <div>
-            <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_preview</h3>
+            <h3 class="section-heading-md">$t:sirsoft-ckeditor5.settings.section_preview</h3>
             <p class="form-hint">$t:sirsoft-ckeditor5.settings.section_preview_hint</p>
           </div>
           <icon name="{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>

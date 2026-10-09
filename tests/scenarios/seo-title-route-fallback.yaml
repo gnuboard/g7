@@ -1,0 +1,42 @@
+feature: SEO 렌더 제목 — 사이트 이름 중복 제거와 라우트 meta.title 대체
+
+description: |
+  봇 렌더(`SeoRenderer`) 의 `<title>` 은 「화면 제목 + 코어 접미사(| 사이트 이름)」 다.
+  두 결함을 막는다.
+    - 게시판 목록 기본 제목 틀 `{site_name}` 처럼 확장 제목이 사이트 이름만 내면 접미사와 겹쳐
+      「그누보드7 | 그누보드7」 이 됐다(인기글, 게시판 목록). 사이트 이름만 되풀이하는 제목은
+      화면 정보가 없는 것으로 보고 다음 단계로 넘긴다.
+    - SEO 제목 선언이 없는 화면(회원 프로필, 회원 작성글)은 라우트 `meta.title` 이 있어도 쓰이지 않아
+      사이트 이름만 나갔다. 다른 단계가 모두 비면 라우트 `meta.title` 을 마지막 대체로 쓴다.
+  사이트 첫 화면(`/`)은 사이트 이름 자체가 제목이라 렌더러가 라우트 제목을 넘기지 않는다.
+
+axes:
+  title_tier: [extension_page_info, extension_site_name_only, extension_suffix_name_only, none]
+  fallback: [layout_og_title, route_title, none]
+
+exclusions:
+  - { title_tier: extension_page_info, fallback: [layout_og_title, none], reason: "화면 정보가 있는 확장 제목이 그대로 쓰여 대체 단계가 결과에 닿지 않는다 — route_title 조합 하나로 대표" }
+  - { title_tier: extension_suffix_name_only, fallback: [layout_og_title, none], reason: "사이트 이름 판정 기준(접미사 이름)만 다르고 넘긴 뒤 경로는 extension_site_name_only 와 같다" }
+
+effects:
+  - site_name_only_extension_title_falls_through_to_layout_og_title
+  - site_name_only_extension_title_falls_through_to_route_title
+  - suffix_site_name_match_treated_as_site_name_only
+  - route_title_used_when_no_other_title
+  - extension_title_with_page_info_wins_over_route_title
+  - site_name_only_title_without_fallback_leaves_single_site_name
+  - layout_og_title_wins_over_route_title
+  - empty_title_leaves_site_name_only
+  - renderer_passes_route_meta_title_to_resolver
+  - renderer_skips_route_title_for_site_root
+
+sub_flows:
+  - id: renderer_route_title_handoff
+    description: 렌더러가 라우트 meta.title 을 해석기에 넘기되 사이트 첫 화면은 넘기지 않는다
+    effects:
+      - renderer_passes_route_meta_title_to_resolver
+      - renderer_skips_route_title_for_site_root
+
+test_files:
+  - tests/Unit/Seo/SeoTitleRouteFallbackTest.php
+  - tests/Unit/Seo/SeoRendererTest.php

@@ -24,7 +24,7 @@
             <span class="text-blue-600 dark:text-blue-400 shrink-0">{{post.board_name}}</span>
             <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-400 dark:text-gray-500 shrink-0"/>
             <span class="text-sm font-medium text-gray-900 dark:text-white text-left line-clamp-1">{{post.title}}</span>
-            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded shrink-0">N</span>
+            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded shrink-0">N</span>
             <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
             <span data-if="{{(post.reaction_total ?? 0) > 0}}" class="text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post.reaction_total}}</span></span>
           </div>

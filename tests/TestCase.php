@@ -10,9 +10,16 @@ use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Support\AssetUrl;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
+use Illuminate\Foundation\Testing\CachedState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Testing\WithCachedConfig;
+use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\TestingDatabaseGuard;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -75,6 +82,45 @@ abstract class TestCase extends BaseTestCase
         }
 
         parent::setUp();
+    }
+
+    /**
+     * 앱을 만들되, 설정을 읽은 직후 — 서비스 제공자가 부팅하며 DB 를 읽기 전에 — 테스트 전용 DB 에 붙는지 확인합니다.
+     *
+     * 부팅 단계부터 DB 를 읽으므로(확장 목록·설정 등) 부팅이 끝난 뒤나 `afterApplicationCreated` 콜백(트레이트 초기화
+     * 뒤)에서 확인하면 이미 개발 DB 에 붙은 뒤다. 그래서 `LoadConfiguration` 부트스트래퍼 직후에 판정을 건다
+     * (TestingDatabaseGuard 주석 참조). 그 밖의 본문은 프레임워크 `TestCase::createApplication()` 과 같다 —
+     * 프레임워크를 올릴 때 그쪽 본문이 바뀌었는지 함께 대조한다.
+     *
+     * @return Application 테스트 앱
+     */
+    public function createApplication()
+    {
+        $app = require Application::inferBasePath().'/bootstrap/app.php';
+
+        $app->afterBootstrapping(LoadConfiguration::class, function ($app): void {
+            $connection = (string) $app['config']->get('database.default');
+            TestingDatabaseGuard::assertConnectionIsTesting(
+                $connection,
+                (array) $app['config']->get("database.connections.{$connection}", [])
+            );
+        });
+
+        $this->traitsUsedByTest = array_flip(class_uses_recursive(static::class));
+
+        if (isset(CachedState::$cachedConfig) &&
+            isset($this->traitsUsedByTest[WithCachedConfig::class])) {
+            $this->markConfigCached($app);
+        }
+
+        if (isset(CachedState::$cachedRoutes) &&
+            isset($this->traitsUsedByTest[WithCachedRoutes::class])) {
+            $app->booting(fn () => $this->markRoutesCached($app));
+        }
+
+        $app->make(Kernel::class)->bootstrap();
+
+        return $app;
     }
 
     /**

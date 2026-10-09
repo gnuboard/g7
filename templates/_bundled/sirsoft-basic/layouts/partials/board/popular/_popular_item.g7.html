@@ -11,7 +11,7 @@
           </on>
           {{post.title}}
         </button>
-        <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
+        <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
         <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
       </div>
       <div class="flex items-center justify-between">

@@ -1,0 +1,17 @@
+feature: 비즈뿌리오 관리 API 응답 안내 문장의 번역
+
+description: |
+  템플릿 목록·요약·상세, 알림톡 분류·발신 프로필, 발송 결과 조회의 성공 응답과 없는 템플릿의 404 는
+  이 플러그인의 번역 문구로 `message` 를 낸다. 코어 도메인 원문 키(`messages.success`·`messages.not_found`)는
+  코어에 번역 묶음이 없어 그대로 노출된다.
+
+axes:
+  surface: [template_lookup, reference_lookup, dispatch_result]
+
+exclusions: []
+
+effects:
+  - response_message_is_translated
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/ResponseMessageTranslationTest.php

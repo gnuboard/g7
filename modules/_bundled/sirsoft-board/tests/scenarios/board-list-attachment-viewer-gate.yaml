@@ -1,0 +1,45 @@
+feature: 목록·프로필의 첨부 표시와 썸네일·작성글 건수를 보는 사람 권한 기준으로 (7.1.0 실측 조치 O-K4-7·9·10)
+
+description: |
+  2026-10-08 결정 세 건을 한 기준(보는 사람이 그 글·게시판을 볼 수 있는가)으로 맞춘다.
+
+  1. 블라인드 글 첨부 표시 (O-K4-9) — 첨부 목록·서빙은 작성자·게시판 관리자로 막았지만(K4-D5) 목록·상세의
+     attachment_count·has_attachment 가 남아 클립 아이콘이 보였다. 작성자·게시판 관리자(사용자: manager,
+     관리자: admin.manage)가 아니면 0·false. 기본형·카드형·갤러리형 목록과 관리자 목록이 같은 응답 필드를 쓴다.
+  2. 비밀글 목록 썸네일 (O-K4-10) — 서빙은 비밀글 무서명 미리보기를 막는데(<img> 요청에는 토큰이 없다)
+     목록 썸네일만 무서명 주소라 작성자·관리자 카드형 목록 이미지가 403. 블라인드 글(K4-D5b)과 같이
+     게이트를 통과한 응답에 한해 한시 서명 주소로 싣는다. 열람 권한이 없으면 종전대로 null.
+  3. 공개 프로필·작성글 화면 (O-K4-7) — 서버는 optional.sanctum 으로 보는 사람 기준을 이미 따르는데
+     화면 데이터 소스가 토큰을 싣지 않아 로그인 회원에게도 비로그인 기준 목록·건수가 보였다.
+     글 목록·건수 데이터 소스를 auth_mode optional 로(비로그인은 그대로 토큰 없이 요청).
+
+axes:
+  # 판정은 보는 사람으로 갈린다. 대상(목록 행·상세·관리자 목록·프로필 화면)은 effects 로 나눈다.
+  viewer:
+    - guest
+    - regular
+    - member
+    - owner
+    - manager
+
+effects:
+  # 1. 블라인드 글 첨부 표시
+  - blinded_post_attachment_indicator_hidden_for_others
+  - blinded_post_attachment_indicator_follows_admin_manage
+  # 2. 비밀글 목록 썸네일
+  - secret_post_thumbnail_signed_for_owner_and_manager_in_list
+  - normal_post_thumbnail_stays_plain_in_list
+  # 3. 공개 프로필 화면
+  - public_profile_post_sources_send_viewer_token
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/SecretPostAttachmentAccessTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/users-public-profile-viewer-auth.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/public-profile-viewer-auth.spec.ts
+
+validation:
+  note: |
+    백엔드 효과는 SecretPostAttachmentAccessTest 가 비로그인·일반 회원·작성자·게시판 관리자·관리자(관리 권한 유무)
+    별로 단언한다(수정 전 3건 fail 확인). 프로필 화면의 토큰 싣기는 Vitest 가 레이아웃 선언을 고정하고,
+    E2E(public-profile-viewer-auth.spec.ts)가 실서버에서 회원·비로그인 요청의 Authorization 유무를 잰다.
+    카드 건수·목록 클립·썸네일은 브라우저 실측(Playwright 라이브러리)으로 보는 사람별로 쟀다.

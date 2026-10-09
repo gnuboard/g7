@@ -77,10 +77,18 @@
             <set-state target="global" myReactionsSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReactionsSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReactionsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
           <on type="change">
             <!-- 검색어 — 담아만 둔다 -->
             <set-state target="global" myReactionsSearch="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <!-- Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다 -->
+            <sequence>
+              <set-state target="global" :myReactionsPage="1" myReactionsSearch="{{$event.target.value}}" myReactionsSearchApplied="{{$event.target.value}}"/>
+              <set-state target="global" :myReactionsSelectedIds="[]"/>
+              <refetch-data-source dataSourceId="myReactions"/>
+            </sequence>
           </on>
         </input>
         <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">

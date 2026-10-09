@@ -99,7 +99,7 @@ spec 이 전부 실패한다.
 ([TemplateApp.ts](../../resources/js/core/TemplateApp.ts) 생성자), 서버값은 `SetLocale` 미들웨어가
 **미로그인 요청에서 `Accept-Language` 헤더로** 결정한다. Playwright 의 `locale` 옵션이 그 헤더를
 만들므로, 지정하지 않으면 첫 페이지 로드가 `en-US` 로 나가 화면이 영어로 렌더되고 엔진이 그 값을
-`localStorage` 에 저장한다. 이후 인증해도 저장된 값이 최우선이라 세션 전체가 영어로 고정된다.
+`localStorage` 에 저장한다. 비로그인 화면은 저장된 값이 최우선이라 세션 전체가 영어로 고정된다. 로그인 상태에서는 부팅 때 회원 언어(DB `users.language`)로 맞추므로(engine-v1.79.0+), 로케일별 실측은 테스트 계정의 회원 언어를 바꿔서 정한다.
 
 `getByText('전체회원수')` 처럼 한국어만 단언하는 곳은 물론이고, `getByRole('button', { name: /저장/ })`
 같은 접근 가능한 이름 조회도 함께 깨진다.
@@ -390,6 +390,18 @@ await expect(page.locator('input[name="..."]')).toBeDisabled();   // 통과
 ```typescript
 // 회원 조회를 본인 범위로만 가진 계정 — 회원 목록·최근 가입·통계가 모두 본인 1명이어야 한다
 const token = issueScopedToken('core.users.read:self', 'core.dashboard.read');
+```
+
+#### 정해 둔 관리자 계정으로 재야 할 때는 `adminToken` (`tests/Playwright/fixtures/admin-login.ts`)
+
+`issueToken` 은 실행마다 `playwright_test_*` 계정을 만든다. 테스트 데이터를 정해 둔 계정으로만 남겨야 하는 실행에서는
+`G7_E2E_ADMIN_EMAIL` 과 `G7_E2E_ADMIN_PASSWORD_FILE`(비밀번호를 담은 파일 경로 — 비밀번호를 명령줄·로그에 남기지 않는다)을
+주면 `adminToken(request, ...permissions)` 이 그 계정으로 `POST /api/auth/admin/login` 해 토큰을 받는다. 둘 중 하나라도
+없으면 `issueToken(...permissions)` 로 돌아간다.
+
+```typescript
+const token = await adminToken(request, 'core.templates.layouts.edit');
+await authenticatePage(page, token);
 ```
 
 ### 5.2 확장 fixture — 권한 + 시드 분리

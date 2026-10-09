@@ -51,10 +51,9 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
-     * @param $commentId commentId 값
-     *
+     * @param  $commentId  commentId 값
      * @return string 문자열
      */
     private function reactUrl(int $commentId): string
@@ -217,9 +216,9 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
 
     /**
      * `board_comments.reaction_counts` 에 캐시된 특정 유형의 값을 읽습니다.
-     * @param $commentId commentId 값
-     * @param $reactionTypeId reactionTypeId 값
      *
+     * @param  $commentId  commentId 값
+     * @param  $reactionTypeId  reactionTypeId 값
      * @return int 정수 식별자
      */
     private function cachedCount(int $commentId, int $reactionTypeId): int

@@ -38,7 +38,7 @@ class ReactionTypeSeedBackfillTest extends BoardTestCase
     }
 
     /**
-     * 테스트을(를) 돕는 헬퍼입니다.
+     * 테스트를 돕는 헬퍼입니다.
      *
      * @return string 문자열
      */

@@ -177,6 +177,8 @@
               <icon name="bolt" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.plugins.modals.hooks</span>
             </div>
+            <!-- 이 칸은 플러그인이 getHooks() 로 선언해 다른 확장에 제공하는 훅만 보여 준다(구독하는 훅은 싣지 않는다) — 필터 칸과 같이 설명을 둬 「구독 훅이 비어 보인다」는 오해를 막는다 -->
+            <p class="text-tertiary mb-2">$t:admin.plugins.modals.hooks_description</p>
             <p data-if="{{!_global.selectedPlugin.hooks || _global.selectedPlugin.hooks.filter(h => h.type === 'action').length === 0}}" class="text-label-subtle">$t:admin.plugins.modals.no_hooks</p>
             <div data-if="{{_global.selectedPlugin.hooks &amp;&amp; _global.selectedPlugin.hooks.filter(h => h.type === 'action').length > 0}}" class="flex flex-wrap gap-2">
               <span data-each="hook in _global.selectedPlugin.hooks.filter(h => h.type === 'action')" class="text-info-soft px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">{{$localized(hook.description)}} ({{hook.name}})</span>

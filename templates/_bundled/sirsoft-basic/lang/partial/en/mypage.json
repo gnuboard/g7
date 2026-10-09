@@ -163,7 +163,8 @@
             "expired": "Expired",
             "other_devices_logged_out": "You have been logged out on other devices. This device stays logged in.",
             "changed_toast": "Your password has been changed. You have been logged out on other devices."
-        }
+        },
+        "avatar_preview": "New profile image preview"
     },
     "orders": {
         "title": "Order History",
@@ -255,7 +256,8 @@
             "content_min_length": "Min. 10 characters",
             "image_label": "Attach Images (Max {{count}})",
             "add_image": "Add Image",
-            "submit_button": "Submit"
+            "submit_button": "Submit",
+            "rating_star": "{{count}} out of 5 stars"
         },
         "status": {
             "pending": "Pending Payment",

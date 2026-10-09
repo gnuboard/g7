@@ -2381,6 +2381,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.first_page",
                                                     "type": "button",
                                                     "className": "pagination-btn",
                                                     "disabled": true
@@ -2400,6 +2401,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.prev_page",
                                                     "type": "button",
                                                     "className": "pagination-btn",
                                                     "disabled": true
@@ -2437,6 +2439,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.next_page",
                                                     "type": "button",
                                                     "className": "pagination-btn"
                                                 },
@@ -2455,6 +2458,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "aria-label": "$t:common.last_page",
                                                     "type": "button",
                                                     "className": "pagination-btn"
                                                 },

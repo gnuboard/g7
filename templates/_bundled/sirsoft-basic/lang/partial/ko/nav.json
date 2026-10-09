@@ -9,5 +9,7 @@
   "register": "회원가입",
   "logout": "로그아웃",
   "more": "더보기",
-  "loading": "로딩 중..."
+  "loading": "로딩 중...",
+  "cart_with_count": "장바구니 (담긴 상품 {{count}}개)",
+  "close_menu": "메뉴 닫기"
 }

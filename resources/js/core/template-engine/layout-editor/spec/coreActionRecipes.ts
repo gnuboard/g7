@@ -108,6 +108,14 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         // replace=true 일 때만 노출(폼이 dependsOn 으로 게이팅). C4 주.
         dependsOn: { param: 'replace', equals: true },
       },
+      {
+        // 이 이동에서 다시 받을 데이터 소스 id(쉼표 구분 또는 배열) — 빠지면 쿼리 갱신이 auto_fetch 소스를
+        // 전부 다시 받는다(engine-v1.79.0). build 틀에 없으면 편집기 폼 저장이 이 값을 지운다.
+        key: 'refetch_data_sources',
+        label: `$t:${L}.navigate.param_refetch_data_sources`,
+        widget: 'text',
+        dependsOn: { param: 'replace', equals: true },
+      },
     ],
     build: {
       handler: 'navigate',
@@ -118,6 +126,7 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         scroll: '{{scroll}}',
         replace: '{{replace}}',
         transition_overlay_target: '{{transition_overlay_target}}',
+        refetch_data_sources: '{{refetch_data_sources}}',
       },
     },
   },

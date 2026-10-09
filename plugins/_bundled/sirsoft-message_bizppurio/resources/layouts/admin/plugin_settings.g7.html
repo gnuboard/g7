@@ -123,7 +123,7 @@
           <div class="flex gap-3">
             <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
             <div>
-              <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+              <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
               <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
                 <li class="text-error-soft">{{message}}</li>
               </ul>
@@ -548,7 +548,8 @@
                               </success>
                               <fail>
                                 <set-state target="global" :bz_row_busy="false"/>
-                                <toast message="{{error.errors?.bizppurio_message ?? error.message}}" type="error"/>
+                                <!-- 빠진 필수값으로 거절되면 항목 문구를 모두 잇는다 — 요약 문장(error.message)은 첫 항목과 「외 N개」만 담는다 -->
+                                <toast message="{{error.errors?.bizppurio_message ?? ((error.errors &amp;&amp; typeof error.errors === 'object') ? Object.values(error.errors).flat().join(' / ') : error.message)}}" type="error"/>
                               </fail>
                             </api-call>
                           </sequence>
@@ -691,6 +692,12 @@
         <div data-if="{{_global.bz_tpl_modal?.error}}" class="flex-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
           <icon name="fas fa-triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
           <span class="text-xs text-red-800 dark:text-red-200">{{_global.bz_tpl_modal?.error}}</span>
+        </div>
+        <!-- 항목별 오류 — 검수 신청이 빠진 필수값으로 거절되면 서버가 항목마다 싣는 문구를 모두 보여 준다(코어 편집 창과 같은 규약). 위 한 줄 요약에는 첫 항목만 나온다 -->
+        <div data-if="{{_global.bz_tpl_modal?.errors &amp;&amp; typeof _global.bz_tpl_modal?.errors === 'object'}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
+          <ul class="list-disc pl-5 space-y-0.5">
+            <li data-each="msg in {{Object.values(_global.bz_tpl_modal?.errors ?? []).flat()}}" class="text-xs text-red-800 dark:text-red-200">{{msg}}</li>
+          </ul>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -1108,7 +1115,7 @@
           <on type="click">
             <!-- 임시 저장(신규) — DB 에 초안 행만 만든다. 검수 신청은 하지 않는다. draft 표시를 실어 쓰다 만 내용(본문·카테고리·유형별 필수값 미입력)도 남기고, 필수값은 검수 신청 때 서버가 확인한다. -->
             <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
-              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null"/>
+              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null" :bz_tpl_modal.errors="null"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates" method="POST">
                 <success>
                   <refetch-data-source dataSourceId="bizppurio_templates_list"/>
@@ -1117,7 +1124,7 @@
                   <set-state target="global" :bz_tpl_modal.isSaving="false"/>
                 </success>
                 <fail>
-                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                 </fail>
                 <body :alimtalk_enabled="true" :draft="true" content="{{_global.bz_tpl_modal?.content}}" notification_type="{{_global.bz_tpl_modal?.notification_type}}"/>
               </api-call>
@@ -1129,7 +1136,7 @@
           <on type="click">
             <!-- 임시 저장(기존) — 초안 내용만 갱신한다. 검수 신청은 하지 않는다. 신규와 같이 draft 표시를 실어 미완성 내용도 받는다. -->
             <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
-              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null"/>
+              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null" :bz_tpl_modal.errors="null"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}" method="PUT">
                 <success>
                   <refetch-data-source dataSourceId="bizppurio_templates_list"/>
@@ -1138,7 +1145,7 @@
                   <set-state target="global" :bz_tpl_modal.isSaving="false"/>
                 </success>
                 <fail>
-                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                 </fail>
                 <body :alimtalk_enabled="true" :draft="true" content="{{_global.bz_tpl_modal?.content}}"/>
               </api-call>
@@ -1150,7 +1157,7 @@
           <on type="click">
             <!-- 저장 후 검수 신청(신규) — 생성 응답의 id 로 검수 신청을 이어 붙인다. -->
             <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
-              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null"/>
+              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null" :bz_tpl_modal.errors="null"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates" method="POST">
                 <success>
                   <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request" method="POST">
@@ -1161,13 +1168,13 @@
                       <set-state target="global" :bz_tpl_modal.isSaving="false"/>
                     </success>
                     <fail>
-                      <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                      <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                     </fail>
                     <body comment="{{_global.bz_tpl_modal?.request_comment ?? ''}}"/>
                   </api-call>
                 </success>
                 <fail>
-                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                 </fail>
                 <body :alimtalk_enabled="true" content="{{_global.bz_tpl_modal?.content}}" notification_type="{{_global.bz_tpl_modal?.notification_type}}"/>
               </api-call>
@@ -1179,7 +1186,7 @@
           <on type="click">
             <!-- 저장 후 검수 신청(기존) — 내용을 갱신한 뒤 같은 id 로 검수를 신청한다. -->
             <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false)}}">
-              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null"/>
+              <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null" :bz_tpl_modal.errors="null"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}" method="PUT">
                 <success>
                   <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request" method="POST">
@@ -1190,13 +1197,13 @@
                       <set-state target="global" :bz_tpl_modal.isSaving="false"/>
                     </success>
                     <fail>
-                      <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                      <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                     </fail>
                     <body comment="{{_global.bz_tpl_modal?.request_comment ?? ''}}"/>
                   </api-call>
                 </success>
                 <fail>
-                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}"/>
+                  <set-state target="global" :bz_tpl_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
                 </fail>
                 <body :alimtalk_enabled="true" content="{{_global.bz_tpl_modal?.content}}"/>
               </api-call>
@@ -1351,7 +1358,8 @@
               <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_delete_modal?.id}}" method="DELETE">
                 <success>
                   <refetch-data-source dataSourceId="bizppurio_templates_list"/>
-                  <toast message="{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : $t('sirsoft-message_bizppurio.manage.delete.done_db_only')}}" type="success"/>
+                  <!-- 카카오측을 못 지운 사유(kakao_skip_reason)로 안내를 가른다 — 미등록 행은 카카오에 지울 것이 없고, 상태 제약만 「상태 제약」이며, 그 밖(카카오 사유·서버 연결 실패)은 서버가 준 사유를 붙인다 -->
+                  <toast message="{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : (response.data?.kakao_skip_reason === 'not_registered' ? $t('sirsoft-message_bizppurio.manage.delete.done_not_registered') : ((!response.data?.kakao_skip_reason || response.data?.kakao_skip_reason === 'state_not_deletable') ? $t('sirsoft-message_bizppurio.manage.delete.done_db_only') : $t('sirsoft-message_bizppurio.manage.delete.done_kakao_failed') + ' ' + response.data.kakao_skip_reason))}}" type="success"/>
                   <close-modal target="modal_bizppurio_delete"/>
                   <set-state target="global" :bz_delete_modal.isSaving="false"/>
                 </success>

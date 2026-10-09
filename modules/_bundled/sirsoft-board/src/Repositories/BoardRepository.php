@@ -280,6 +280,8 @@ class BoardRepository implements BoardRepositoryInterface
             ...$this->reactionTotalFor($post, $post->board),
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
+            // 캐시에서 꺼낼 때 보는 사람의 시간대·지금 시각으로 날짜 표기와 New 를 다시 계산하는 원본(UTC) — 응답 전에 뺀다
+            '_created_at' => $post->created_at?->toIso8601String(),
         ])->toArray();
     }
 
@@ -581,6 +583,8 @@ class BoardRepository implements BoardRepositoryInterface
                 'comment_count' => $commentCount,
                 'created_at' => $this->formatCreatedAt(Carbon::parse($post->created_at)),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
+                // 캐시에서 꺼낼 때 날짜 표기·New 를 다시 계산하는 원본(UTC) — 응답 전에 뺀다
+                '_created_at' => $post->created_at ? Carbon::parse($post->created_at)->toIso8601String() : null,
             ];
         })->toArray();
     }

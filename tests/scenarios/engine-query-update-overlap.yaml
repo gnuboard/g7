@@ -1,0 +1,24 @@
+feature: 탭 전환 쿼리 갱신이 겹칠 때의 덮개·응답 적용과 목록만 다시 받기 (engine-v1.79.0)
+
+description: |
+  탭을 빠르게 오가 navigate replace(updateQueryParams)가 겹치면 먼저 시작한 호출이 끝나면서 뒤 호출의 덮개와
+  대기 표시를 걷었고, 늦게 끝난 옛 호출의 응답이 새 탭의 폼(initLocal)을 덮었다(7.1.0 조치 R1 ①, 게시판 환경설정
+  실측: 덮개 해제 3450ms, 설정 응답 4012ms). 소스마다 가장 최근에 다시 받기 시작한 호출이면서 지금 쿼리에서 고른 소스의
+  응답만 적용하고, 덮개는 현재 화면 소스를 받는 호출이 모두 끝난 뒤 걷는다. 같은 탭 목록의 검색·필터·쪽 넘김은
+  navigate 의 refetch_data_sources 로 목록 소스만 다시 받아 설정 폼을 건드리지 않는다(R1 ②, 2026-10-08 결정).
+
+axes:
+  case: [older_finishes_first, stale_same_source, newer_finishes_first, stale_previous_tab_source, route_change_during_update, scoped_list_refetch, scoped_during_full_refetch, newer_without_sources, single_call, navigate_param_string, navigate_param_array, navigate_param_absent, navigate_param_blank]
+
+effects:
+  - overlay_held_until_latest_refetch           # 앞 호출이 먼저 끝나도 뒤 호출의 응답(blocking 설정 포함)까지 덮개·대기 표시 유지
+  - overlay_released_when_current_sources_loaded # 현재 화면 소스를 받는 호출이 남지 않으면 덮개·대기 표시를 걷는다
+  - stale_response_discarded                    # 새 호출이 같은 소스를 받기 시작했거나 화면 이동이 시작된 뒤의 늦은 응답은 적용하지 않는다
+  - non_current_source_response_discarded       # 지금 쿼리에서 고르지 않은 옛 탭 전용 소스의 응답(initLocal)은 적용하지 않는다
+  - scoped_refetch_keeps_settings_form          # refetchDataSourceIds 로 목록만 다시 받으면 설정 폼(initLocal)·hasChanges 를 건드리지 않는다
+  - navigate_refetch_param_forwarded            # navigate 의 refetch_data_sources 가 updateQueryParams 의 재조회 대상으로 전달된다
+  - single_call_unchanged                       # 겹치지 않거나 옵션이 없으면 종전 동작
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.updateQueryParams.overlap.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.navigateRefetchDataSources.test.ts

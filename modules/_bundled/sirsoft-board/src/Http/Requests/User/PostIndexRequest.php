@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\FallsBackUnknownSearchField;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 사용자 게시글 목록 조회 요청
@@ -15,10 +17,15 @@ use Illuminate\Validation\Rule;
  *
  * search_field 만 게이트에서 닫는 이유: 저장소의 검색 분기가 닫힌 집합이라
  * 모르는 값이 들어오면 조용히 'all' 로 떨어진다. 그러면 「내용」 으로 검색했는데
- * 제목 매칭이 섞여 나오는 식으로, 오류 없이 결과만 틀린다.
+ * 제목 매칭이 섞여 나오는 식으로, 오류 없이 결과만 틀린다. 그래서 모르는 값은
+ * 검증 전에 화면 기본값인 'title_content' 로 바꾼다 — 관리자 목록처럼 목록을 실패시키지
+ * 않으면서(422 아님) 작성자 매칭도 섞지 않는다. 값을 보내지 않은 예전 링크는 종전대로 'all'.
  */
 class PostIndexRequest extends FormRequest
 {
+    use FallsBackUnknownSearchField;
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 허용하는 검색 대상 값
      *
@@ -34,6 +41,16 @@ class PostIndexRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * 허용 목록 밖의 검색 대상은 422 대신 기본 검색 대상(제목+내용)으로 바꿉니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->fallBackUnknownSearchField(self::SEARCH_FIELDS, 'title_content');
     }
 
     /**

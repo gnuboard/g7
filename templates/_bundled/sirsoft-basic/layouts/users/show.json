@@ -49,9 +49,9 @@
             "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts/stats",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "comment": "활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다)."
+            "comment": "활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다). 로그인했으면 토큰을 실어 보는 사람이 읽을 수 있는 게시판(회원전용 등)의 글까지 센다."
         },
         {
             "id": "recentPosts",
@@ -60,12 +60,12 @@
             "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "params": {
                 "per_page": 5
             },
-            "comment": "최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다."
+            "comment": "최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다. 위 숫자와 같은 기준이 되도록 로그인했으면 토큰을 싣는다."
         }
     ],
     "permissions": [],
@@ -340,7 +340,7 @@
                                                         "props": {
                                                             "className": "text-3xl font-bold text-blue-600 dark:text-blue-400"
                                                         },
-                                                        "text": "{{postStats.data.posts_count ?? 0 | number}}"
+                                                        "text": "{{postStats.data?.posts_count ?? 0 | number}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -366,7 +366,7 @@
                                                         "props": {
                                                             "className": "text-3xl font-bold text-green-600 dark:text-green-400"
                                                         },
-                                                        "text": "{{postStats.data.comments_count ?? 0 | number}}"
+                                                        "text": "{{postStats.data?.comments_count ?? 0 | number}}"
                                                     },
                                                     {
                                                         "type": "basic",

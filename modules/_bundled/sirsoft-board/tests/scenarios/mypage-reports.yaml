@@ -52,6 +52,9 @@ effects:
   - mypage_reports_cancel_modal_calls_delete_and_refetches
   - mypage_reports_deleted_target_is_toned_down
   - mypage_reports_search_field_matches_backend
+  # K2 실측(2026-10-06) — 좁은 화면 검색 줄·취소 창 확인 버튼 커서
+  - mypage_reports_search_input_shrinks_on_narrow_screen
+  - mypage_reports_cancel_confirm_shows_pointer
   - mypage_reports_post_row_leads_with_title
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/MyReportsApiTest.php

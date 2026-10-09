@@ -432,9 +432,7 @@
                                                 },
                                                 {
                                                     "handler": "closeModal",
-                                                    "params": {
-                                                        "id": "bank_management_modal"
-                                                    }
+                                                    "target": "bank_management_modal"
                                                 }
                                             ],
                                             "onError": [

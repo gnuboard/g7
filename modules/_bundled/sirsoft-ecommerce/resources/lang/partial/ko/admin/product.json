@@ -568,7 +568,7 @@
       "unit_percent": "%",
       "preview_increase": "판매가를 {{value}}{{unit}} 인상합니다.",
       "preview_decrease": "판매가를 {{value}}{{unit}} 인하합니다.",
-      "preview_fixed": "판매가를 {{value}}{{unit}}(으)로 변경합니다."
+      "preview_fixed": "판매가를 다음 값으로 변경합니다: {{value}}{{unit}}"
     },
     "bulk_stock": {
       "title": "재고 일괄 변경",
@@ -579,7 +579,7 @@
       "value": "변경 수량",
       "preview_increase": "재고를 {{value}}개 증가합니다.",
       "preview_decrease": "재고를 {{value}}개 감소합니다.",
-      "preview_set": "재고를 {{value}}개(으)로 변경합니다."
+      "preview_set": "재고를 {{value}}개로 변경합니다."
     },
     "bulk_confirm": {
       "title": "일괄 변경 확인",
@@ -587,8 +587,8 @@
       "bulk_changes_section": "일괄 변경 조건",
       "products_section": "변경될 상품 ({{count}}개)",
       "options_section": "변경될 옵션 ({{count}}개)",
-      "sales_status": "판매 상태를 {{value}}(으)로 변경합니다.",
-      "display_status": "전시 상태를 {{value}}(으)로 변경합니다.",
+      "sales_status": "판매 상태를 다음으로 변경합니다: {{value}}",
+      "display_status": "전시 상태를 다음으로 변경합니다: {{value}}",
       "price": "판매가를 {{value}} 변경합니다.",
       "stock": "재고를 {{value}} 변경합니다.",
       "price_change": "판매가 일괄 변경",
@@ -1167,7 +1167,7 @@
     "preview": "미리보기",
     "delete_modal": {
       "title": "라벨 삭제",
-      "message": "을(를) 삭제하시겠습니까?",
+      "message": " 라벨을 삭제하시겠습니까?",
       "description": "삭제된 라벨은 모든 상품에서 제거됩니다.",
       "deleting": "삭제 중..."
     },

@@ -341,7 +341,7 @@ modules/_bundled/vendor-module/
 레이아웃 JSON에서 `$t:` 접두사를 사용하여 다국어 키를 참조합니다:
 
 ```html
-<h1 data-ref="page-title" text="$t:sirsoft-sample.admin.index.title"/>
+<h1 data-ref="page-title">$t:sirsoft-sample.admin.index.title</h1>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -351,9 +351,7 @@ modules/_bundled/vendor-module/
   "id": "page-title",
   "type": "basic",
   "name": "H1",
-  "props": {
-    "text": "$t:sirsoft-sample.admin.index.title"
-  }
+  "text": "$t:sirsoft-sample.admin.index.title"
 }
 ```
 
@@ -396,7 +394,7 @@ $t:sirsoft-sample.messages.save_success
 ```
 
 ```html
-<button data-ref="submit-button" text="$t:sirsoft-sample.admin.create.submit" variant="primary"/>
+<button data-ref="submit-button" variant="primary">$t:sirsoft-sample.admin.create.submit</button>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -407,9 +405,9 @@ $t:sirsoft-sample.messages.save_success
   "type": "basic",
   "name": "Button",
   "props": {
-    "text": "$t:sirsoft-sample.admin.create.submit",
     "variant": "primary"
-  }
+  },
+  "text": "$t:sirsoft-sample.admin.create.submit"
 }
 ```
 

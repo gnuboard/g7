@@ -482,7 +482,10 @@ class ReportRepository implements ReportRepositoryInterface
         $query = ReportLog::where('reporter_id', $userId);
         $this->applyViewerTodayFilter($query, 'created_at');
 
-        return $query->count();
+        return ReportLog::where('reporter_id', $userId)
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $end)
+            ->count();
     }
 
     /**

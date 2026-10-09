@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
@@ -52,6 +53,7 @@ class ReactionService
      * @param  PostRepositoryInterface  $postRepository  게시글 스코프 조회 Repository
      * @param  CommentRepositoryInterface  $commentRepository  댓글 스코프 조회 Repository
      * @param  UserRepositoryInterface  $userRepository  회원 조회 Repository (관리자 회원 필터)
+     * @param  CacheInterface|null  $cache  모듈 캐시 드라이버 (최근 게시글 위젯 캐시 무효화용)
      */
     public function __construct(
         private readonly ReactionRepositoryInterface $reactionRepository,
@@ -59,6 +61,7 @@ class ReactionService
         private readonly PostRepositoryInterface $postRepository,
         private readonly CommentRepositoryInterface $commentRepository,
         private readonly UserRepositoryInterface $userRepository,
+        private readonly ?CacheInterface $cache = null,
     ) {}
 
     /**
@@ -117,7 +120,7 @@ class ReactionService
      * 댓글에 반응을 남깁니다 (등록/전환/해제 통합).
      *
      * 게시글 반응과 같은 규약이되 게시판이 `use_reaction` 과 `use_comment_reaction` 을
-     * 모두 켰을 때만 허용합니다 (PO 결정 R9 — 댓글 반응은 하위 토글).
+     * 모두 켰을 때만 허용합니다 (결정 R9 — 댓글 반응은 하위 토글).
      * 비회원 댓글(user_id NULL)은 본인 판정이 불가능하므로 셀프 차단을 걸지 않습니다.
      *
      * @param  int  $userId  반응한 사용자 ID
@@ -198,7 +201,7 @@ class ReactionService
     /**
      * 본인 반응 1건을 해제합니다 (마이페이지).
      *
-     * 반응이 꺼진 게시판이라도 해제는 허용한다 (PO 결정 R11) — 남긴 기록을 회수하는
+     * 반응이 꺼진 게시판이라도 해제는 허용한다 (결정 R11) — 남긴 기록을 회수하는
      * 행위는 게시판 설정과 무관하게 회원의 권리다.
      *
      * @param  int  $id  반응 ID
@@ -393,6 +396,10 @@ class ReactionService
             return ['action' => $action, 'reaction_type_id' => $reactionTypeId, 'reaction_counts' => $counts];
         });
 
+        if ($targetType === self::TARGET_POST) {
+            $this->forgetPostListCaches();
+        }
+
         HookManager::doAction(
             'sirsoft-board.reaction.after_react',
             $userId,
@@ -437,6 +444,10 @@ class ReactionService
      */
     private function recalculateAfterRemoval(Reaction $reaction): void
     {
+        if ($reaction->target_type === self::TARGET_POST) {
+            $this->forgetPostListCaches();
+        }
+
         try {
             $this->reactionRepository->recalculateReactionCounts(
                 $reaction->target_type,
@@ -445,6 +456,20 @@ class ReactionService
         } catch (ModelNotFoundException $e) {
             // 대상이 하드 삭제된 반응 — 재집계 대상 없음
         }
+    }
+
+    /**
+     * 게시글 반응 수가 실리는 캐시 목록(홈 최근 게시글 등 `board-posts` 태그)을 비웁니다.
+     *
+     * 최신글 위젯은 `board-posts` 태그로 하루 동안 캐시된다. 게시글 작성·삭제만 이 태그를
+     * 비우면 반응을 남기거나 지워도 위젯의 반응 수가 그대로 남는다. 댓글 반응은 게시글의
+     * 반응 합계를 바꾸지 않으므로 호출하지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    private function forgetPostListCaches(): void
+    {
+        $this->cache?->flushTags(['board-posts']);
     }
 
     /**

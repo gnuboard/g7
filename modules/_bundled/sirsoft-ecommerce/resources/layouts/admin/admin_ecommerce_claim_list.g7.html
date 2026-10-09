@@ -143,7 +143,7 @@
       <div data-ref="page_header" class="page-header">
         <div class="flex-center gap-3">
           <!-- 모바일 뒤로가기 -->
-          <button data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-icon hidden">
+          <button aria-label="$t:common.back" data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-icon hidden">
             <responsive on="portable" class="btn btn-ghost btn-icon flex"/>
             <on type="click">
               <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
@@ -157,7 +157,7 @@
           </div>
         </div>
         <div class="page-actions">
-          <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다. -->
               <navigate path="/admin/ecommerce/claims" :mergeQuery="true">

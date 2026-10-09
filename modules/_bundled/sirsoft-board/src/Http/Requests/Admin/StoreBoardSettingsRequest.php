@@ -4,10 +4,12 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use App\Models\Attachment;
 use App\Models\Role;
+use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\ReactionType;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
@@ -21,6 +23,7 @@ use Modules\Sirsoft\Board\Services\ReactionTypeService;
  */
 class StoreBoardSettingsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
 
     /**
@@ -238,9 +241,9 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.reaction_types' => ['sometimes', 'array', 'max:50'],
             'basic_defaults.reaction_types.*.id' => ['nullable', 'integer', Rule::exists(ReactionType::class, 'id')],
             'basic_defaults.reaction_types.*.code' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]{1,49}$/', 'distinct'],
-            'basic_defaults.reaction_types.*.name' => ['required', 'array'],
-            'basic_defaults.reaction_types.*.name.ko' => ['required', 'string', 'max:50'],
-            'basic_defaults.reaction_types.*.name.*' => ['nullable', 'string', 'max:50'],
+            // 이름은 화면(요청) 언어 값만 필수 — 게시판 유형 이름과 같은 계약이다. 한국어를 고정 필수로 받아 영어 화면 관리자도
+            // 쓰지 않는 한국어 칸을 채워야 했다(7.1.0 S2 #9). 오류는 이름 칸 전체 키(name)로 돌아간다
+            'basic_defaults.reaction_types.*.name' => ['required', new LocaleRequiredTranslatable(maxLength: 50)],
             'basic_defaults.reaction_types.*.icon_attachment_id' => ['nullable', 'integer', Rule::exists(Attachment::class, 'id')
                 ->where('collection', ReactionTypeService::ICON_COLLECTION)
                 ->where('source_identifier', ReactionTypeService::ICON_SOURCE_IDENTIFIER)

@@ -779,30 +779,8 @@ class CommentRepository implements CommentRepositoryInterface
 
         $orderDirection = $sort === 'oldest' ? 'asc' : 'desc';
 
-        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용.
-        // use_comment 를 끈 게시판의 기존 댓글은 원글에서 더 이상 보이지 않으므로
-        // 마이페이지 "내 댓글" 에도 남기지 않는다 (게시판 비활성과 같은 기준).
-        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글·댓글 수와 무관)
-        $excludedBoardIds = Board::where('is_active', false)
-            ->orWhere('use_comment', false)
-            ->pluck('id')
-            ->all();
-
         // 관계/정렬은 지연 조인이 담당한다 (inner 는 키 컬럼만 조회)
-        $query = Comment::query()
-            ->where('board_comments.user_id', $userId)
-            // 삭제된 게시글 제외 — whereExists로 JOIN 대체
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from((new Post)->getTable())
-                    ->whereColumn('board_posts.id', 'board_comments.post_id')
-                    ->whereNull('board_posts.deleted_at');
-            });
-
-        // 비활성·댓글 비활성 게시판 제외
-        if (! empty($excludedBoardIds)) {
-            $query->whereNotIn('board_comments.board_id', $excludedBoardIds);
-        }
+        $query = $this->userCommentsBaseQuery($userId);
 
         // 게시판 필터: board_slug → board_id 조회
         if ($boardSlugFilter) {
@@ -870,6 +848,52 @@ class CommentRepository implements CommentRepositoryInterface
         });
 
         return $paginator;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countUserComments(int $userId): int
+    {
+        return $this->userCommentsBaseQuery($userId)->count();
+    }
+
+    /**
+     * 「내가 쓴 댓글」 목록과 그 건수가 함께 쓰는 기본 조건을 만듭니다.
+     *
+     * 삭제된 글의 댓글, 비활성 게시판과 댓글 기능을 끈 게시판의 댓글은 뺀다 — 원글 화면에서 더 이상
+     * 보이지 않는 댓글이라 목록에도 통계에도 남기지 않는다. 목록과 통계가 같은 조건을 쓰도록 한곳에 둔다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @return \Illuminate\Database\Eloquent\Builder<Comment> 댓글 쿼리
+     */
+    private function userCommentsBaseQuery(int $userId)
+    {
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 원글에서 더 이상 보이지 않으므로
+        // 마이페이지 "내 댓글" 에도 남기지 않는다 (게시판 비활성과 같은 기준).
+        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글·댓글 수와 무관)
+        $excludedBoardIds = Board::where('is_active', false)
+            ->orWhere('use_comment', false)
+            ->pluck('id')
+            ->all();
+
+        $query = Comment::query()
+            ->where('board_comments.user_id', $userId)
+            // 삭제된 게시글 제외 — whereExists로 JOIN 대체
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from((new Post)->getTable())
+                    ->whereColumn('board_posts.id', 'board_comments.post_id')
+                    ->whereNull('board_posts.deleted_at');
+            });
+
+        // 비활성·댓글 비활성 게시판 제외
+        if (! empty($excludedBoardIds)) {
+            $query->whereNotIn('board_comments.board_id', $excludedBoardIds);
+        }
+
+        return $query;
     }
 
     /**

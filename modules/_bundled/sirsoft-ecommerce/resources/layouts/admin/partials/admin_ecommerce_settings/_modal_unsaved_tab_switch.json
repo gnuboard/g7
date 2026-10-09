@@ -1,0 +1,184 @@
+{
+    "comment": "저장하지 않은 변경이 있을 때 다른 탭으로 옮기기 전에 묻는 창 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아간다. 말없이 사라지지 않게 먼저 알리고, 옮기기로 하면 탭 전환과 같은 정리와 순서로 옮긴다",
+    "meta": {
+        "is_partial": true,
+        "description": "이커머스 환경설정 미저장 변경 탭 전환 확인 모달"
+    },
+    "id": "modal_ecommerce_settings_unsaved_tab",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "머무르기 — 옮기려던 탭을 지우고 창만 닫는다(고친 값과 「변경 있음」은 그대로)",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingEcommerceSettingsTab": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_ecommerce_settings_unsaved_tab"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "data-testid": "ecommerce-settings-unsaved-tab-stay",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_stay"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "저장하지 않고 옮기기 — 페이지 상태(오류, 「변경 있음」 끄기)는 여는 쪽 문맥인 `$parent._local` 로 먼저 고친다. 모달 문맥의 target=local 은 페이지 폼 렌더러 상태에 닿지 않아 옮긴 뒤 첫 입력에 지운 값이 되살아났다(G2 실측 C7). `$parent` 는 openModal 이 쌓은 문맥이라 closeModal 이 걷어 내기 전에 쓴다(modal-usage.md TL;DR 7). 그다음 창을 닫고(이동이 끝날 때까지 창이 떠 있지 않게), 평소 탭 전환과 같은 전역 탭, URL 갱신으로 옮긴다. 「변경 있음」을 바로 끄는 까닭은 설정 재조회(수 초) 도착 전 다른 탭을 누르면 창이 다시 뜨기 때문이다(실측). 설정을 다시 받으며 고친 값은 저장된 값으로 돌아간다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "바로 옮길 때(onTabChange)와 같은 정리 — 인라인 추가 폼 플래그, 입력 버퍼, 그 폼의 오류. 한쪽을 고치면 다른 쪽도 함께 고친다.\n                 ① 저장, 저장 가드가 읽는 자리(전역 `_local`) ② 화면 폼 렌더러가 읽는 자리(`$parent._local`) — 엔진은 $parent 쓰기를 전역 미러에서 빼 두므로 두 자리에 같은 값을 쓴다(modal-usage.md §부모 폼 커밋). 한쪽만 지우면 옮긴 뒤 첫 입력에 다른 쪽 옛 값이 되살아난다(G2 실측 C7)",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "_local.hasChanges": false,
+                                        "_local.errors": null,
+                                        "_local.isAddingExchangeReason": false,
+                                        "_local.exchangeReasonForm": null,
+                                        "_local.exchangeReasonFormErrors": null,
+                                        "_local.isAddingReturnReason": false,
+                                        "_local.returnReasonForm": null,
+                                        "_local.returnReasonFormErrors": null,
+                                        "_local.isAddingRefundReason": false,
+                                        "_local.refundReasonForm": null,
+                                        "_local.refundReasonFormErrors": null,
+                                        "_local.isAddingCarrier": false,
+                                        "_local.carrierForm": null,
+                                        "_local.carrierFormErrors": null,
+                                        "_local.isAddingShippingType": false,
+                                        "_local.shippingTypeForm": null,
+                                        "_local.shippingTypeFormErrors": null,
+                                        "_local.isAddingCountry": false,
+                                        "_local.newCountry": null,
+                                        "_local.isAddingCurrency": false,
+                                        "_local.isAddingMileageCurrency": false,
+                                        "_local.claimReasonTab": null,
+                                        "_local.form.newCurrency": null,
+                                        "_local.form.newMileageCurrency": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "hasChanges": false,
+                                        "errors": null,
+                                        "isAddingExchangeReason": false,
+                                        "exchangeReasonForm": null,
+                                        "exchangeReasonFormErrors": null,
+                                        "isAddingReturnReason": false,
+                                        "returnReasonForm": null,
+                                        "returnReasonFormErrors": null,
+                                        "isAddingRefundReason": false,
+                                        "refundReasonForm": null,
+                                        "refundReasonFormErrors": null,
+                                        "isAddingCarrier": false,
+                                        "carrierForm": null,
+                                        "carrierFormErrors": null,
+                                        "isAddingShippingType": false,
+                                        "shippingTypeForm": null,
+                                        "shippingTypeFormErrors": null,
+                                        "isAddingCountry": false,
+                                        "newCountry": null,
+                                        "isAddingCurrency": false,
+                                        "isAddingMileageCurrency": false,
+                                        "claimReasonTab": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local.form.newCurrency",
+                                        "value": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local.form.newMileageCurrency",
+                                        "value": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_ecommerce_settings_unsaved_tab"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "activeEcommerceSettingsTab": "{{_global.pendingEcommerceSettingsTab}}"
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/settings",
+                                        "replace": true,
+                                        "query": {
+                                            "tab": "{{_global.pendingEcommerceSettingsTab}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingEcommerceSettingsTab": null
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "data-testid": "ecommerce-settings-unsaved-tab-leave",
+                        "className": "px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_leave"
+                }
+            ]
+        }
+    ]
+}

@@ -22,7 +22,7 @@
   "badges": {
     "incompatible": "코어 업그레이드 필요",
     "incompatible_tooltip": "코어 {{required}} 이상 필요 (현재: {{installed}})",
-    "incompatible_sr": "{{name}} 은(는) 코어 {{required}} 이상이 필요하지만 현재 {{installed}} 가 설치되어 있어 업데이트할 수 없습니다."
+    "incompatible_sr": "{{name}} 업데이트에는 코어 {{required}} 이상이 필요해 업데이트할 수 없습니다. (현재 코어: {{installed}})"
   },
   "banner": {
     "title": "코어 호환성 문제로 자동 비활성화된 확장이 있습니다",

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -30,7 +31,9 @@ class AdminPostScrapCollection extends BaseApiCollection
     {
         return array_merge([
             'data' => $this->collection->map(fn ($scrap) => new AdminPostScrapResource($scrap)),
-        ], $this->paginationMeta());
+        ], $this->paginationMeta(), [
+            'boards' => $this->boardOptions(),
+        ]);
     }
 
     /**
@@ -47,10 +50,32 @@ class AdminPostScrapCollection extends BaseApiCollection
         return array_merge([
             'data' => $this->collection->map(fn ($scrap) => new AdminPostScrapResource($scrap)),
         ], $this->paginationMeta(), [
+            'boards' => $this->boardOptions(),
             'abilities' => [
                 'can_view' => $this->checkModulePermission('scraps', 'view'),
                 'can_manage' => $this->checkModulePermission('scraps', 'manage'),
             ],
         ]);
+    }
+
+    /**
+     * 게시판 필터 셀렉트용 옵션을 만듭니다 (비활성 게시판 포함, 최근 생성 순).
+     *
+     * 게시판 목록 API 는 게시판 관리 권한이 있어야 열리므로, 스크랩 조회 권한만 가진 매니저도
+     * 게시판으로 좁힐 수 있게 목록 응답 메타로 싣는다(반응 관리와 같은 방식).
+     *
+     * @return array<int, array<string, mixed>> 게시판 옵션
+     */
+    private function boardOptions(): array
+    {
+        return app(BoardRepositoryInterface::class)->all()
+            ->sortByDesc('id')
+            ->map(fn ($board) => [
+                'id' => (int) $board->id,
+                'slug' => $board->slug,
+                'name' => $board->getLocalizedName(),
+            ])
+            ->values()
+            ->all();
     }
 }

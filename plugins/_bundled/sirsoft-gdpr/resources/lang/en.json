@@ -230,7 +230,7 @@
             "snapshot_modal": {
                 "editor_label": "View policy version snapshot",
                 "title": "Policy version v{version} snapshot",
-                "description": "Full snapshot of settings at publication time — categories, privacy policy address, blocked domains. Used by DPO as evidence in consent disputes.",
+                "description": "The full record of what was saved when this version was published — cookie categories, privacy policy address, blocked domains. The data protection officer (DPO) can use it as evidence in a consent dispute.",
                 "section_categories": "Cookie categories",
                 "section_privacy_policy": "Privacy policy address",
                 "section_blocked_domains": "Blocked domain catalog",
@@ -467,7 +467,9 @@
             "btn_close": "Close"
         },
         "card_description": "Choose delivery channels for each notification and edit per-channel subject, body and recipients. Definitions added by this extension do not appear on the core notification list.",
-        "empty_message": "No notification definitions yet."
+        "empty_message": "No notification definitions yet.",
+        "forbidden_message": "You do not have permission to view notification templates. Ask an administrator who can manage notifications to change them.",
+        "load_failed_message": "Could not load the notification definitions. Refresh the page and try again later."
     },
     "notification_channels": "Delivery channels",
     "save_channels": "Save channels",

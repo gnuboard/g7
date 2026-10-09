@@ -2,10 +2,10 @@
 
 namespace Plugins\Sirsoft\Gdpr\Http\Requests;
 
-use App\Rules\TranslatableField;
 use App\Services\PluginSettingsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Plugins\Sirsoft\Gdpr\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Rules\PrivacyPolicyUrlRule;
 use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
@@ -20,6 +20,8 @@ use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
  */
 class UpdateAdminSettingsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 배너 위치 허용 값
      */
@@ -92,7 +94,9 @@ class UpdateAdminSettingsRequest extends FormRequest
             // 다시 보낸다. 지원 목록 밖 키를 거절(strict)하면 통지가 꺼져 입력이 잠긴 상태에서는 그 칸을
             // 지울 수도 없어 어떤 설정도 저장하지 못한다. 코어 기본(비엄격)대로 통과시켜 값을 보존하고
             // (언어팩을 다시 켜면 그대로 복구), 길이 상한은 아래 `.*` 규칙이 모든 키에 건다.
-            'annual_notice.introduction' => ['sometimes', new TranslatableField(maxLength: 2000)],
+            // 다국어 규칙(TranslatableField)에 길이를 함께 걸면 같은 초과가 두 키(`introduction`·`.ko`)로
+            // 두 번 보고됐다 — 길이는 언어별 규칙 하나가 맡고, 문구의 칸 이름에 언어를 붙인다(attributes()).
+            'annual_notice.introduction' => ['sometimes', 'array'],
             'annual_notice.introduction.*' => ['nullable', 'string', 'max:2000'],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자가 직접 입력하지 않으므로 본 FormRequest 에서 검증하지 않음 (전달되어도 stripped).
@@ -148,6 +152,11 @@ class UpdateAdminSettingsRequest extends FormRequest
     public function messages(): array
     {
         return [
+            // 자동 통지를 켠 채 채널·상한을 비운 경우 — 코어 required_with 문구(「개인정보 연간 통지이(가) 있을 때
+            // … 필수입니다」)는 무엇을 해야 하는지 말하지 않는다. 켜려면 채워야 한다고 알린다.
+            'annual_notice.channels.required_with' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_channels.required_when_enabled'),
+            'annual_notice.channels.min' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_channels.required_when_enabled'),
+            'annual_notice.batch_size.required_with' => __('sirsoft-gdpr::messages.settings.fields.annual_notice_batch_size.required_when_enabled'),
             'data_storage_location.not_regex' => __('sirsoft-gdpr::messages.settings.fields.data_storage_location.sensitive_format'),
             'cookie_categories.*.key.in' => __('sirsoft-gdpr::messages.consent.invalid_key'),
             // 카테고리별 메시지 — 운영자가 어떤 카테고리의 어느 도메인이 잘못됐는지 즉시 식별 가능.
@@ -182,7 +191,7 @@ class UpdateAdminSettingsRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return [
+        return $this->introductionLanguageAttributes() + [
             // cookie_policy_version 은 자동 발행이므로 FormRequest 가 검증하지 않음 (attributes 도 불필요).
             // 연간 통지 — 라벨이 없으면 "annual notice.batch size 필드는 …" 처럼 키가 그대로 노출된다.
             'annual_notice' => __('sirsoft-gdpr::messages.settings.fields.annual_notice.label'),
@@ -212,6 +221,36 @@ class UpdateAdminSettingsRequest extends FormRequest
             'necessary_storage_allowlist.*' => __('sirsoft-gdpr::messages.settings.section.necessary_storage'),
             'necessary_storage_allowlist.*.*' => __('sirsoft-gdpr::messages.settings.attributes.necessary_storage_item'),
         ];
+    }
+
+    /**
+     * 통지문 서문의 언어별 칸 이름 — 「통지문 서문 (한국어)」.
+     *
+     * 서문은 언어마다 따로 길이를 검사하므로, 칸 이름에 언어가 없으면 여러 언어를 채운 운영자가
+     * 어느 칸이 넘쳤는지 알 수 없다. 언어 이름은 코어 언어 목록(app.locale_names)의 표기를 쓰고,
+     * 목록 밖 언어(꺼진 언어팩의 남은 값)는 코드를 그대로 쓴다.
+     *
+     * @return array<string, string> 칸 키 => 표시 이름
+     */
+    private function introductionLanguageAttributes(): array
+    {
+        $introduction = $this->input('annual_notice.introduction');
+        if (! is_array($introduction)) {
+            return [];
+        }
+
+        $label = __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label');
+        $names = (array) config('app.locale_names', []);
+        $attributes = [];
+        foreach (array_keys($introduction) as $locale) {
+            $locale = (string) $locale;
+            $attributes['annual_notice.introduction.'.$locale] = __('sirsoft-gdpr::messages.settings.fields.annual_notice_introduction.label_with_language', [
+                'label' => $label,
+                'language' => $names[$locale] ?? $locale,
+            ]);
+        }
+
+        return $attributes;
     }
 
     /**
@@ -284,7 +323,12 @@ class UpdateAdminSettingsRequest extends FormRequest
             is_array($cookieCategories) ? $cookieCategories : [],
         );
 
-        $merge = ['cookie_categories' => $cookieCategories];
+        // 키를 보내지 않은 저장은 카탈로그를 건드리지 않는다 — null 로 채워 넣으면 다른 항목만 고친
+        // 저장 한 번이 카탈로그를 지우고, 관리자 화면은 카테고리·차단 도메인 칸을 그리지 못한다.
+        $merge = [];
+        if (array_key_exists('cookie_categories', $this->all())) {
+            $merge['cookie_categories'] = $cookieCategories;
+        }
         if ($blockedDomains !== null) {
             $merge['blocked_domains'] = $blockedDomains;
         }

@@ -78,7 +78,9 @@
 `sirsoft-ckeditor5.initEditor` 핸들러가 실행되어 편집기를 붙이고
 `form.{name}_mode = 'html'` 을 세웁니다. 화면을 떠날 때 `destroyEditor` 가 인스턴스를
 해제합니다. 자산 로드가 실패하면 `renderTextareaFallback` 이 평문 입력창을 그리고 사용자에게
-사실을 알린 뒤 재시도 통로를 남깁니다.
+사실을 알린 뒤 재시도 통로를 남깁니다. 조각의 스크립트 선언에는 `label="$t:sirsoft-ckeditor5.editor.asset.label"` 이 있어
+코어의 스크립트 실패 안내도 「편집기」라는 이름으로 나옵니다(스크립트 id 를 보이지 않음). 편집기 안내가 뜨면
+같은 본체에 대한 코어 안내(`layout-script:ckeditor5_script`)는 `editorFailureNotice.ts` 가 걷어 배너에 한 건만 남깁니다.
 
 **이미지 업로드 → 서빙**: 편집기가 `POST /api/plugins/sirsoft-ckeditor5/upload` 호출 →
 `ImageUploadService`(`before_upload` → `filter_upload_file` → 저장 → `after_upload`) →

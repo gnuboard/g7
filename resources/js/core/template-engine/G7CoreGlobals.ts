@@ -68,6 +68,7 @@ import {
   convertToCurrentMode,
 } from '../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -2856,14 +2857,27 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
     /**
      * 로케일을 변경합니다.
      * @param locale 변경할 로케일 (예: 'ko', 'en')
+     * @param options persist: false 면 로그인 회원의 언어를 저장하지 않는다(호출자가 이미 저장한 경우 — 요청 1회) @since engine-v1.79.0
      */
-    change: async (locale: string) => {
+    change: async (locale: string, options?: { persist?: boolean }) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.changeLocale) {
-        await templateApp.changeLocale(locale);
+        await (options ? templateApp.changeLocale(locale, options) : templateApp.changeLocale(locale));
       } else {
         logger.warn('G7Core.locale.change: TemplateApp이 초기화되지 않았습니다.');
       }
+    },
+    /**
+     * 언어 전환 인계 저장소 — 언어 전환은 같은 화면을 새로 마운트하므로, 컴포넌트 안에만 있는 저장 전
+     * 상태(업로더가 고른 대기 파일 등)를 언마운트 때 맡기고 새 인스턴스가 마운트 때 되찾는다.
+     * `stash` 는 언어 전환 중에만 받고, `take` 는 한 번 꺼내면 지운다. 다음 화면 이동이 시작되면 남은 값은 버린다.
+     *
+     * @since engine-v1.79.0
+     */
+    handoff: {
+      isSwitching: (): boolean => isLocaleSwitching(),
+      stash: (key: string, value: unknown): boolean => stashForLocaleSwitch(key, value),
+      take: <T = unknown>(key: string): T | undefined => takeLocaleSwitchHandoff<T>(key),
     },
   };
 
@@ -3259,7 +3273,7 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   // options.transitionOverlayTarget: 호출별 transition_overlay.target 동적 override (@since engine-v1.36.0)
   G7Core.updateQueryParams = async (
     newPath: string,
-    options?: { transitionOverlayTarget?: string }
+    options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {

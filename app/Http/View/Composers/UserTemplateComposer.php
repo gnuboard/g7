@@ -13,6 +13,7 @@ use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
+use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
@@ -32,6 +33,7 @@ class UserTemplateComposer
     use CollectsCustomAssets;
     use CollectsExtensionAssets;
     use CollectsTemplateExternals;
+    use CollectsTemplateStylesheets;
 
     /**
      * 서비스 주입
@@ -150,6 +152,8 @@ class UserTemplateComposer
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
         $view->with('templateExternals', $templateExternals);
+        // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
+        $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);

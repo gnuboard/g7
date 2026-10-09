@@ -20,16 +20,16 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="section-heading-md">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
       <div data-ref="section_channels_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_channels_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-marketing.settings.section.channels</h3>
+          <h3 class="section-heading-md">$t:sirsoft-marketing.settings.section.channels</h3>
         </div>
         <div data-ref="section_channels_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
           <div data-ref="field_marketing_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
@@ -68,6 +68,7 @@
                         <field name="enabled" :value="true"/>
                         <field name="is_system" :value="false"/>
                         <field name="_editing" :value="false"/>
+                        <field name="_labelTouched" :value="false"/>
                       </field>
                     </set-state>
                     <open-modal target="channel_edit_modal"/>
@@ -89,8 +90,8 @@
                 <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
                   <div class="col-span-6 sm:col-span-4">
                     <div class="flex-center gap-2 flex-wrap">
-                      <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다 -->
-                      <span class="text-heading">{{channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key}}</span>
+                      <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
+                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}</span>
                       <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
@@ -115,7 +116,7 @@
                       <on type="click">
                         <!-- 채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다 -->
                         <sequence>
-                          <set-state target="global" editingChannel="{{{ ...channel, _editing: true }}}"/>
+                          <set-state target="global" editingChannel="{{{ ...channel, _editing: true, _labelTouched: false }}}"/>
                           <open-modal target="channel_edit_modal"/>
                         </sequence>
                       </on>
@@ -140,7 +141,7 @@
       </div>
       <div data-ref="section_legal_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_legal_header" class="panel-header-row">
-          <h3 class="text-error-strong">$t:sirsoft-marketing.settings.section.legal</h3>
+          <h3 class="section-heading-md">$t:sirsoft-marketing.settings.section.legal</h3>
         </div>
         <div data-ref="section_legal_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
           <div data-ref="field_third_party_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
@@ -259,14 +260,20 @@
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.label_ko</label>
-          <multilingual-input data-type="composite" value="{{_global.editingChannel.label ?? {ko: '', en: ''}}}" layout="tabs" name="channel_label" placeholder="$t:sirsoft-marketing.settings.channel_modal.label_placeholder">
-            <on event="onChange">
-              <!-- 채널 이름 — 로케일별로 입력받아 객체 그대로 담는다 -->
-              <set-state target="global" editingChannel.label="{{$args[0]?.target?.value ?? _global.editingChannel.label}}"/>
+          <div data-ref="channel_label_field">
+            <on type="blur">
+              <!-- 항목명 입력칸(언어 탭 포함)을 떠나면 그때부터 이름 필수 안내를 보인다 — 창을 막 연 입력 전에는 빨간 안내를 띄우지 않는다 -->
+              <set-state target="global" :editingChannel._labelTouched="true"/>
             </on>
-          </multilingual-input>
-          <!-- 이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다 -->
-          <p data-if="{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.label_required</p>
+            <multilingual-input data-type="composite" value="{{_global.editingChannel.label ?? {ko: '', en: ''}}}" layout="tabs" name="channel_label" placeholder="$t:sirsoft-marketing.settings.channel_modal.label_placeholder">
+              <on event="onChange">
+                <!-- 채널 이름 — 로케일별로 입력받아 객체 그대로 담는다 -->
+                <set-state target="global" editingChannel.label="{{$args[0]?.target?.value ?? _global.editingChannel.label}}"/>
+              </on>
+            </multilingual-input>
+          </div>
+          <!-- 이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다. 입력칸을 떠났거나 확정을 누른 뒤에만 보인다 -->
+          <p data-if="{{(_global.editingChannel?._labelTouched ?? false) &amp;&amp; String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.label_required</p>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.page_slug</label>
@@ -286,14 +293,19 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="channel_edit_confirm" type="button" disabled="{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || String(_global.editingChannel?.label?.[$locale] ?? '').trim() === '' || (!_global.editingChannel?._editing &amp;&amp; (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}" class="btn btn-primary">
+        <button data-ref="channel_edit_confirm" type="button" disabled="{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing &amp;&amp; (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}" class="btn btn-primary">
           <on type="click">
-            <!-- 편집 확정 —새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다 -->
-            <sequence>
-              <set-state target="global" channels="{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"/>
-              <set-state target="$parent._local" :hasChanges="true"/>
-              <close-modal/>
-            </sequence>
+            <!-- 편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다) -->
+            <conditions>
+              <when if="{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}">
+                <set-state target="global" :editingChannel._labelTouched="true"/>
+              </when>
+              <else>
+                <set-state target="global" channels="{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"/>
+                <set-state target="$parent._local" :hasChanges="true"/>
+                <close-modal/>
+              </else>
+            </conditions>
           </on>
           <span>$t:common.save</span>
         </button>
@@ -307,7 +319,7 @@
       <div class="row-stack">
         <p class="text-body">$t:sirsoft-marketing.settings.channel_deactivate_modal.message</p>
         <ul class="list-disc list-inside space-y-1">
-          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key}} ({{blockedChannel.key}})</li>
+          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})</li>
         </ul>
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" class="btn btn-secondary">

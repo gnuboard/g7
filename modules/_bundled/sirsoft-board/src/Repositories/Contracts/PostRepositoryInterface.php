@@ -291,11 +291,13 @@ interface PostRepositoryInterface
      * 기존 getUserActivityStats()와 다른 점:
      * - status='published' 조건 적용
      * - comments_count = 실제 작성한 댓글 수 (댓글 단 게시글 수가 아님)
+     * - 비활성 게시판과 $excludeBoardIds(보는 사람이 읽을 수 없는 게시판)의 글·댓글은 세지 않음
      *
      * @param  int  $userId  사용자 ID
+     * @param  array<int>  $excludeBoardIds  세지 않을 게시판 ID 목록
      * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
      */
-    public function getUserPublicStats(int $userId): array;
+    public function getUserPublicStats(int $userId, array $excludeBoardIds = []): array;
 
     /**
      * 게시판 ID와 게시글 ID로 게시글을 조회합니다 (삭제 포함).

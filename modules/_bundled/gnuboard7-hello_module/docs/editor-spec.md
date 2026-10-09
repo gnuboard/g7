@@ -60,6 +60,14 @@
 레지스트리 등록 이름(`gnuboard7-hello_module.MemoCard`)을 그대로 쓰고, 라벨은 이 모듈의
 언어팩 네임스페이스(`$t:gnuboard7-hello_module.editor.palette.*`)에 둡니다 — 코어의
 `editor.*` 를 침범하지 않습니다. 템플릿 컴포넌트를 여기 얹지 않는 이유는 위 「의도」와 같습니다.
+
+팔레트에 올린 컴포넌트는 컴포넌트 쪽도 편집기 계약을 지켜야 합니다. 편집기는 캔버스의
+`[data-editor-path]` 로 노드를 찾는데, composite 컴포넌트는 도메인 prop 만 받으므로 코어가
+주입하는 `editorAttrs` 를 받아 시각적 루트에 펼쳐야 합니다. 펼치지 않으면 팔레트에서 꺼낸
+카드가 캔버스에 그려지기만 하고 선택·이동·삭제가 되지 않습니다. 편집 역량의 `coreProps: ["id"]`
+가 기입하는 요소 ID 도 `id` prop 으로 받아 같은 루트에 둡니다. 두 판본(`composite/MemoCard.tsx`,
+`for/gnuboard7-hello_admin_template/MemoCard.tsx`)과 Hello 사용자 템플릿의 대체본이 모두 그렇게
+합니다(규약: `docs/frontend/components-types.md` 「editorAttrs 패스스루」).
 <!-- @intent END -->
 
 ## 샘플 데이터와 페이지 상태

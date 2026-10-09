@@ -385,7 +385,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-400"
+                                "className": "text-gray-400 dark:text-gray-500"
                             },
                             "text": "~"
                         },
@@ -647,19 +647,19 @@
                                     },
                                     {
                                         "value": "core",
-                                        "label": "$t:identity.policy.source_type.core"
+                                        "label": "$t:admin.identity.policies.source.core"
                                     },
                                     {
                                         "value": "module",
-                                        "label": "$t:identity.policy.source_type.module"
+                                        "label": "$t:admin.identity.policies.source.module"
                                     },
                                     {
                                         "value": "plugin",
-                                        "label": "$t:identity.policy.source_type.plugin"
+                                        "label": "$t:admin.identity.policies.source.plugin"
                                     },
                                     {
                                         "value": "admin",
-                                        "label": "$t:identity.policy.source_type.admin"
+                                        "label": "$t:admin.identity.policies.source.admin"
                                     }
                                 ]
                             }

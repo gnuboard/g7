@@ -23,6 +23,15 @@ export interface UploadLoader {
 const UPLOAD_FIELD = 'upload';
 
 /**
+ * 편집기가 받는 이미지 형식 — 서버 검증(`ImageUploadRequest` 의 `mimes:jpeg,jpg,png,gif,webp`)과 같은 목록.
+ *
+ * CKEditor 의 기본값(`image.upload.types`)은 bmp·tiff 까지 받아, 파일 선택 창이 서버가 거절할 형식을
+ * 고르게 했다(고르면 「이미지 파일만 업로드할 수 있습니다」로 실패, 7.1.0 실측 M1-O9). 파일 선택 창의
+ * accept 와 끌어 놓기·붙여 넣기 필터가 모두 이 목록을 쓴다.
+ */
+export const UPLOAD_IMAGE_TYPES: readonly string[] = ['jpeg', 'png', 'gif', 'webp'];
+
+/**
  * 실패 응답에서 사람이 읽을 문구를 꺼냅니다.
  *
  * @param error API 클라이언트가 던진 오류

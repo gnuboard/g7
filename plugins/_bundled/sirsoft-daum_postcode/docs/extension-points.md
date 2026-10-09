@@ -25,7 +25,9 @@ _이 확장은 훅을 발행하지 않습니다._
 ## 구독 훅
 
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 훅을 구독하지 않습니다._
+| 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
+|---|---|---|---|---|
+| `core.plugin_settings.update_validation_rules` | filter | `RegisterSettingsAttributeLabelsListener` | `registerLabels` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -38,7 +40,9 @@ _이 확장은 훅을 구독하지 않습니다._
 ## 훅 리스너
 
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_훅 리스너가 없습니다._
+| 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
+|---|---|---|---|---|
+| `RegisterSettingsAttributeLabelsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterSettingsAttributeLabelsListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->

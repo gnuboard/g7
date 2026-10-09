@@ -22,6 +22,7 @@ effects:
   - manual_send_ignores_the_toggle_and_keeps_the_batch_limit
   - manual_send_button_opens_the_confirm_modal
   - stale_locale_introduction_does_not_block_save
+  - database_notice_body_is_plain_text
 test_files:
   - plugins/_bundled/sirsoft-gdpr/tests/Feature/AnnualNoticeMigrationTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprUserDeleteListenerTest.php

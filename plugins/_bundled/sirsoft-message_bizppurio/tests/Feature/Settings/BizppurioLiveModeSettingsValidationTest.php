@@ -8,6 +8,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\ValidateBizppurioSettingsListener;
@@ -179,6 +180,100 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
         $this->assertStringContainsString('비즈뿌리오 아이디', $errors['bizppurio_id'][0]);
         $this->assertStringNotContainsString('bizppurio id', $errors['bizppurio_id'][0]);
         $this->assertStringContainsString('발신번호', $errors['sender_number'][0]);
+    }
+
+    /**
+     * 설정 항목 6개 모두 검증 오류 문구의 항목 이름이 요청 언어(ko/en/ja)를 따른다.
+     *
+     * 7.1.0 전수 실측(원 세션 관측 O-M2r-3): ja 화면에서 저장이 거절되면 목록 줄이
+     * 「검수 모드 フィールドは …」처럼 항목 이름만 한국어였다. 설정 스키마 label 은 ko/en 만 들고 있어
+     * ja 에서 기본 언어(ko)로 대체됐고, 리스너는 운영 모드 자격증명 3개만, 그것도 운영 모드일 때만
+     * 언어별 이름을 등록했다. ja 이름은 번들 일본어 언어팩 파일의 실제 값을 그대로 싣는다 — 언어팩에
+     * 항목이 빠져도 red 가 된다.
+     *
+     * @scenario test_mode=on,field_kind=credential,locale=ja
+     *
+     * @effects validation_error_labels_follow_request_locale_for_every_settings_field
+     *
+     * @return void 반환값 없음
+     */
+    public function test_validation_error_labels_follow_request_locale_for_every_settings_field(): void
+    {
+        // 검수 모드 값이 참·거짓이 아니고 문자열 칸에 목록이 오면 6개 항목 모두 422 가 된다(운영 모드 아님).
+        $body = [
+            'is_test_mode' => 'not-a-boolean',
+            'bizppurio_id' => ['x'],
+            'password' => ['x'],
+            'api_key' => ['x'],
+            'sender_number' => ['x'],
+            'sender_key' => ['x'],
+        ];
+
+        $packFile = base_path('lang-packs/_bundled/g7-plugin-sirsoft-message_bizppurio-ja/backend/ja/messages.php');
+        $jaSettings = (require $packFile)['settings'] ?? [];
+        $lines = [];
+        foreach ($jaSettings as $key => $value) {
+            $lines['messages.settings.'.$key] = $value;
+        }
+        Lang::addLines($lines, 'ja', self::IDENTIFIER);
+
+        $expected = [
+            'ko' => [
+                'is_test_mode' => '검수 모드',
+                'bizppurio_id' => '비즈뿌리오 아이디',
+                'password' => '비밀번호',
+                'api_key' => 'API 키',
+                'sender_number' => '발신번호',
+                'sender_key' => '알림톡 발신프로필 키',
+            ],
+            'en' => [
+                'is_test_mode' => 'Test Mode',
+                'bizppurio_id' => 'Bizppurio ID',
+                'password' => 'Password',
+                'api_key' => 'API Key',
+                'sender_number' => 'Sender Number',
+                'sender_key' => 'Alimtalk Sender Profile Key',
+            ],
+            'ja' => [
+                'is_test_mode' => $jaSettings['is_test_mode_attribute'] ?? '(ja 언어팩에 is_test_mode_attribute 없음)',
+                'bizppurio_id' => $jaSettings['bizppurio_id_attribute'] ?? '(ja 언어팩에 bizppurio_id_attribute 없음)',
+                'password' => $jaSettings['password_attribute'] ?? '(ja 언어팩에 password_attribute 없음)',
+                'api_key' => $jaSettings['api_key_attribute'] ?? '(ja 언어팩에 api_key_attribute 없음)',
+                'sender_number' => $jaSettings['sender_number_attribute'] ?? '(ja 언어팩에 sender_number_attribute 없음)',
+                'sender_key' => $jaSettings['sender_key_attribute'] ?? '(ja 언어팩에 sender_key_attribute 없음)',
+            ],
+        ];
+
+        $originalLocales = config('app.supported_locales');
+        config(['app.supported_locales' => array_values(array_unique(array_merge((array) $originalLocales, ['ja'])))]);
+
+        try {
+            foreach ($expected as $locale => $labels) {
+                // 코어 SetLocale 미들웨어의 1순위는 인증 사용자의 users.language 다. 한 테스트 안에서 요청을
+                // 이어 보내면 인증 가드가 첫 요청의 사용자(언어 포함)를 붙들고 있으므로 매번 가드를 비운다.
+                $this->admin->forceFill(['language' => $locale])->save();
+                $this->app['auth']->forgetGuards();
+
+                $response = $this->withHeaders([
+                    'Authorization' => 'Bearer '.$this->token,
+                    'Accept' => 'application/json',
+                    'Accept-Language' => $locale,
+                ])->putJson('/api/admin/plugins/'.self::IDENTIFIER.'/settings', $body);
+
+                $response->assertStatus(422);
+                $errors = $response->json('errors');
+
+                foreach ($labels as $field => $label) {
+                    $this->assertArrayHasKey($field, $errors, "{$locale}: {$field} 오류가 있어야 한다");
+                    $this->assertStringContainsString($label, $errors[$field][0], "{$locale}: {$field} 오류 문구의 항목 이름");
+                    if ($locale !== 'ko') {
+                        $this->assertStringNotContainsString($expected['ko'][$field], $errors[$field][0], "{$locale}: {$field} 항목 이름이 한국어로 남으면 안 된다");
+                    }
+                }
+            }
+        } finally {
+            config(['app.supported_locales' => $originalLocales]);
+        }
     }
 
     /**

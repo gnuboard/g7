@@ -554,7 +554,7 @@
                 {
                     "id": "attachments_toggle",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "comment": "첨부 목록을 폈다 접었다 한다 — 기본은 접힘이라 첨부가 많아도 본문이 밀리지 않는다",
@@ -567,12 +567,15 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-between cursor-pointer"
+                        "type": "button",
+                        "className": "flex-between w-full text-left cursor-pointer",
+                        "aria-expanded": "{{!!_local.showAttachments}}",
+                        "aria-controls": "post_attachments_list"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center gap-2 text-body font-medium"
                             },
@@ -603,125 +606,133 @@
                     ]
                 },
                 {
-                    "id": "attachments_list_{{index}}",
+                    "comment": "펼침 토글의 aria-controls 가 가리키는 목록 묶음 — 접혀 있어도 자리는 남아 가리키는 대상이 사라지지 않는다",
+                    "id": "post_attachments_list",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_local.showAttachments}}",
-                    "iteration": {
-                        "source": "post?.data?.attachments ?? []",
-                        "item_var": "attachment",
-                        "index_var": "index"
-                    },
-                    "props": {
-                        "className": "mt-3 ml-4 space-y-2"
-                    },
                     "children": [
                         {
-                            "id": "attachment_card_{{index}}",
+                            "id": "attachments_list_{{index}}",
                             "type": "basic",
                             "name": "Div",
-                            "actions": [
-                                {
-                                    "comment": "첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
-                                    "type": "click",
-                                    "handler": "sirsoft-board.downloadAttachment",
-                                    "params": {
-                                        "url": "{{attachment?.download_url}}",
-                                        "filename": "{{attachment?.original_filename}}"
-                                    },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
-                                        }
-                                    }
-                                }
-                            ],
+                            "if": "{{_local.showAttachments}}",
+                            "iteration": {
+                                "source": "post?.data?.attachments ?? []",
+                                "item_var": "attachment",
+                                "index_var": "index"
+                            },
                             "props": {
-                                "className": "group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                "className": "mt-3 ml-4 space-y-2"
                             },
                             "children": [
                                 {
-                                    "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
+                                    "id": "attachment_card_{{index}}",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{attachment?.is_image}}",
-                                    "props": {
-                                        "className": "flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700"
-                                    },
-                                    "children": [
+                                    "actions": [
                                         {
-                                            "type": "basic",
-                                            "name": "Img",
-                                            "props": {
-                                                "src": "{{attachment?.preview_url}}",
-                                                "alt": "{{attachment?.original_filename}}",
-                                                "className": "w-full h-full object-cover"
+                                            "comment": "첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
+                                            "type": "click",
+                                            "handler": "sirsoft-board.downloadAttachment",
+                                            "params": {
+                                                "url": "{{attachment?.download_url}}",
+                                                "filename": "{{attachment?.original_filename}}"
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
+                                                }
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "comment": "파일 아이콘 (일반 파일인 경우)",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{!attachment?.is_image}}",
+                                    ],
                                     "props": {
-                                        "className": "flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center"
+                                        "className": "group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                                     },
                                     "children": [
                                         {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "file",
-                                                "className": "text-lg text-gray-400 dark:text-gray-500"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "파일 정보",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex-1 min-w-0"
-                                    },
-                                    "children": [
-                                        {
+                                            "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
                                             "type": "basic",
                                             "name": "Div",
+                                            "if": "{{attachment?.is_image}}",
                                             "props": {
-                                                "className": "text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
+                                                "className": "flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700"
                                             },
-                                            "text": "{{attachment?.original_filename}}"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "props": {
+                                                        "src": "{{attachment?.preview_url}}",
+                                                        "alt": "{{attachment?.original_filename}}",
+                                                        "className": "w-full h-full object-cover"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
+                                            "comment": "파일 아이콘 (일반 파일인 경우)",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!attachment?.is_image}}",
+                                            "props": {
+                                                "className": "flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "file",
+                                                        "className": "text-lg text-gray-400 dark:text-gray-500"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "파일 정보",
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "text-[10px] text-gray-500 dark:text-gray-400"
+                                                "className": "flex-1 min-w-0"
                                             },
-                                            "text": "{{attachment?.size_formatted}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "다운로드 아이콘",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex-shrink-0"
-                                    },
-                                    "children": [
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
+                                                    },
+                                                    "text": "{{attachment?.original_filename}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-[10px] text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{attachment?.size_formatted}}"
+                                                }
+                                            ]
+                                        },
                                         {
+                                            "comment": "다운로드 아이콘",
                                             "type": "basic",
-                                            "name": "Icon",
+                                            "name": "Div",
                                             "props": {
-                                                "name": "download",
-                                                "className": "text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
-                                            }
+                                                "className": "flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "download",
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ]
                                 }

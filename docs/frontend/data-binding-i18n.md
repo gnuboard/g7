@@ -485,7 +485,7 @@ $t:defer:는 renderItemChildren 내부에서만 처리됨
 ### 레이아웃에서 모듈 다국어 사용
 
 ```html
-<h1 data-ref="page-title" text="$t:sirsoft-sample.admin.index.title"/>
+<h1 data-ref="page-title">$t:sirsoft-sample.admin.index.title</h1>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -495,9 +495,7 @@ $t:defer:는 renderItemChildren 내부에서만 처리됨
   "id": "page-title",
   "type": "basic",
   "name": "H1",
-  "props": {
-    "text": "$t:sirsoft-sample.admin.index.title"
-  }
+  "text": "$t:sirsoft-sample.admin.index.title"
 }
 ```
 
@@ -1092,7 +1090,7 @@ await G7Core.locale.change('en');
 ### 예시
 
 ```html
-<span text="{{raw:post.title}}"/>
+<span>{{raw:post.title}}</span>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -1101,9 +1099,7 @@ await G7Core.locale.change('en');
 {
   "type": "basic",
   "name": "Span",
-  "props": {
-    "text": "{{raw:post.title}}"
-  }
+  "text": "{{raw:post.title}}"
 }
 ```
 

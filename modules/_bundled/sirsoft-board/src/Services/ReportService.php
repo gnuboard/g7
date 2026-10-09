@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Exceptions\ReportCancelNotAllowedException;
@@ -239,7 +240,7 @@ class ReportService
             && in_array($report->status, [ReportStatus::Rejected, ReportStatus::Suspended]);
 
         // 신고자 로그 INSERT (DuplicateReportException은 Repository에서 throw)
-        $this->reportRepository->createLog([
+        $reportLog = $this->reportRepository->createLog([
             'report_id' => $report->id,
             'reporter_id' => $data['reporter_id'] ?? null,
             'snapshot' => $logData['snapshot'] ?? null,
@@ -296,8 +297,9 @@ class ReportService
         $autoHideCount = $isReactivation ? 1 : $currentCycleCount;
         $this->checkAndApplyAutoHide($report, $autoHideCount);
 
-        // 훅: after_create
-        HookManager::doAction('sirsoft-board.report.after_create', $report);
+        // 훅: after_create — 둘째 인자는 이번 신고자 로그(사유·신고자). 케이스에는 사유가 없어
+        // 활동 로그가 이 값을 읽는다(같은 케이스의 다른 신고자 로그와 섞이지 않게 직접 넘긴다).
+        HookManager::doAction('sirsoft-board.report.after_create', $report, $reportLog);
 
         return $report;
     }
@@ -590,8 +592,10 @@ class ReportService
      */
     protected function applyReportActionToContent(Report $report, ReportStatus $newStatus, ReportStatus $oldStatus): array
     {
-        // 복구가 필요한 경우 (게시중단/삭제 → 접수/검토/반려)
-        if ($this->shouldRestoreContent($oldStatus, $newStatus)) {
+        // 복구가 필요한 경우 (게시중단/삭제 → 반려)
+        // 신고 반려가 되돌리는 것은 신고가 가린 것(블라인드)뿐이다. 그 사이 작성자·관리자가 지운
+        // 글·댓글을 게시 상태로 되살리면 삭제를 우회하게 되므로 손대지 않는다.
+        if ($this->shouldRestoreContent($oldStatus, $newStatus) && ! $this->isTargetDeleted($report)) {
             $wasManualBlind = $this->isManualBlindTarget($report);
             $this->restoreContent($report);
 
@@ -632,6 +636,21 @@ class ReportService
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * 신고 대상 글·댓글이 지금 삭제된 상태인지 확인합니다.
+     *
+     * @param  Report  $report  신고 모델
+     * @return bool 삭제된 상태면 true (대상을 찾지 못해도 false)
+     */
+    protected function isTargetDeleted(Report $report): bool
+    {
+        $target = $report->target_type->value === 'post'
+            ? $this->postRepository->findByBoardId($report->board_id, $report->target_id)
+            : $this->commentRepository->findByBoardId($report->board_id, $report->target_id);
+
+        return $target !== null && ($target->status === PostStatus::Deleted || $target->trashed());
     }
 
     /**
@@ -710,6 +729,8 @@ class ReportService
             } else {
                 $this->getCommentService()->blindComment($slug, $targetId, $reason, 'report');
             }
+        } catch (DeletedContentBlindException) {
+            // 이미 지워진 대상 — 게시 중단할 것이 없다. 블라인드하면 삭제가 풀리므로 그대로 둔다.
         } catch (\Exception $e) {
             Log::error('Failed to blind content', [
                 'report_id' => $report->id,
@@ -794,6 +815,8 @@ class ReportService
             } else {
                 $this->getCommentService()->blindComment($slug, $targetId, $reason, 'auto_hide');
             }
+        } catch (DeletedContentBlindException) {
+            // 이미 지워진 대상 — 자동 블라인드할 것이 없다.
         } catch (\Exception $e) {
             Log::error('Auto-hide failed', [
                 'report_id' => $report->id,

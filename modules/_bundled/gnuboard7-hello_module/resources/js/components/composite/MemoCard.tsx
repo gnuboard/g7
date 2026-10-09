@@ -12,6 +12,17 @@ export interface MemoCardProps {
 
   /** 사용자 정의 클래스 */
   className?: string;
+
+  /** DOM id — 레이아웃 편집기 [속성] 탭의 「요소 ID」가 여기에 닿는다 */
+  id?: string;
+
+  /**
+   * 레이아웃 편집기가 주입하는 표식(`data-editor-*`)과 선택 핸들러 (편집 모드 전용).
+   *
+   * composite 컴포넌트는 도메인 prop 만 받으므로 이 객체를 받아 시각적 루트에 펼쳐야 편집기가
+   * 이 노드를 찾는다(선택·이동·삭제). 사용자 화면에서는 주입되지 않아 아무 일도 하지 않는다.
+   */
+  editorAttrs?: Record<string, unknown>;
 }
 
 /**
@@ -33,13 +44,15 @@ export const MemoCard: React.FC<MemoCardProps> = ({
   body = '',
   highlighted = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const tone = highlighted
     ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950'
     : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800';
 
   return (
-    <div className={`rounded-lg border p-4 ${tone} ${className}`}>
+    <div id={id} className={`rounded-lg border p-4 ${tone} ${className}`} {...editorAttrs}>
       <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{body}</p>
     </div>

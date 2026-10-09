@@ -1271,7 +1271,8 @@
       "param_merge_query": "Keep existing query",
       "param_scroll": "Scroll position",
       "param_replace": "Replace history",
-      "param_overlay_target": "Loading overlay area"
+      "param_overlay_target": "Loading overlay area",
+      "param_refetch_data_sources": "Data sources to refetch (comma-separated)"
     },
     "open_window": {
       "label": "Open in a new window",

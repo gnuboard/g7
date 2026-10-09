@@ -15,7 +15,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 반응 유형 인라인 편집기 동기화 Feature 테스트.
  *
  * 유형 관리는 전용 CRUD 엔드포인트가 아니라 게시판 환경설정 저장(PUT settings)이
- * basic_defaults.reaction_types 행 배열을 받아 DB 와 맞추는 방식이다 (PO 결정 R2).
+ * basic_defaults.reaction_types 행 배열을 받아 DB 와 맞추는 방식이다 (결정 R2).
  * 이 테스트는 그 동기화 계약 — 생성·수정·순서·삭제·불변 code·사용 중 차단·JSON 미오염 — 을 고정한다.
  */
 class ReactionTypeSettingsSyncTest extends BoardTestCase
@@ -39,6 +39,8 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
             'sirsoft-board.settings.read',
             'sirsoft-board.settings.update',
         ]);
+        // 반응 유형 이름은 요청 언어 값이 필수다(게시판 유형과 같은 계약) — 한국어 이름만 싣는 픽스처가 한국어 화면 관리자로 저장한다
+        $this->admin->forceFill(['language' => 'ko'])->save();
 
         // FK(restrictOnDelete) 순서: 이력 먼저 정리 후 유형 삭제
         DB::table('board_reactions')->delete();
@@ -153,7 +155,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
     }
 
     /**
-     * 기존 유형의 code 는 페이로드로 바꿀 수 없다 (추가 후 불변 — PO 결정 R12).
+     * 기존 유형의 code 는 페이로드로 바꿀 수 없다 (추가 후 불변 — 결정 R12).
      *
      * @scenario case=settings_code_immutable_on_update
      *
@@ -224,7 +226,10 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
     }
 
     /**
-     * 기본 언어 이름이 비면 422.
+     * 화면(요청) 언어의 이름이 비면 422 — 오류는 이름 칸 전체 키(name)로 돌아온다.
+     *
+     * 반응 유형 이름은 한국어(name.ko)를 고정 필수로 받아, 영어 화면 관리자도 쓰지 않는 한국어 칸을 채워야 했다.
+     * 게시판 유형 이름과 같게 요청 언어 값만 필수로 한다(7.1.0 S2 #9, 지침 2026-10-09).
      *
      * @scenario case=settings_missing_default_name_rejected
      *
@@ -232,9 +237,9 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_missing_default_name_returns_422(): void
+    public function test_missing_request_locale_name_returns_422(): void
     {
-        $this->actingAs($this->admin)->putJson(self::ENDPOINT, [
+        $response = $this->actingAs($this->admin)->putJson(self::ENDPOINT, [
             '_tab' => 'basic_defaults',
             'basic_defaults' => [
                 'reaction_types' => [
@@ -243,7 +248,64 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
             ],
         ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['basic_defaults.reaction_types.0.name.ko']);
+            ->assertJsonValidationErrors(['basic_defaults.reaction_types.0.name']);
+
+        $this->assertArrayNotHasKey('basic_defaults.reaction_types.0.name.ko', $response->json('errors'));
+        $this->assertStringContainsString(
+            __('sirsoft-board::validation.attributes.settings')['basic_defaults.reaction_types.*.name'],
+            $response->json('errors')['basic_defaults.reaction_types.0.name'][0]
+        );
+    }
+
+    /**
+     * 영어 화면 관리자는 한국어 이름 없이 영어 이름만으로 반응 유형을 추가한다.
+     *
+     * @scenario case=settings_missing_default_name_rejected
+     *
+     * @effects add_requires_code_and_default_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_english_admin_adds_type_with_english_name_only(): void
+    {
+        $this->admin->forceFill(['language' => 'en'])->save();
+
+        $this->actingAs($this->admin)->putJson(self::ENDPOINT, [
+            '_tab' => 'basic_defaults',
+            'basic_defaults' => [
+                'reaction_types' => [
+                    ['id' => null, 'code' => 'en_only', 'name' => ['ko' => '', 'en' => 'English Only'], 'is_active' => true],
+                ],
+            ],
+        ])->assertOk();
+
+        $created = ReactionType::where('code', 'en_only')->firstOrFail();
+        $this->assertSame('English Only', $created->name['en'] ?? null);
+    }
+
+    /**
+     * 영어 화면 관리자가 영어 이름을 비우면 한국어가 있어도 422 다.
+     *
+     * @scenario case=settings_missing_default_name_rejected
+     *
+     * @effects add_requires_code_and_default_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_english_admin_missing_english_name_returns_422(): void
+    {
+        $this->admin->forceFill(['language' => 'en'])->save();
+
+        $this->actingAs($this->admin)->putJson(self::ENDPOINT, [
+            '_tab' => 'basic_defaults',
+            'basic_defaults' => [
+                'reaction_types' => [
+                    ['id' => null, 'code' => 'ko_only', 'name' => ['ko' => '한국어만'], 'is_active' => true],
+                ],
+            ],
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['basic_defaults.reaction_types.0.name']);
     }
 
     /**

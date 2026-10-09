@@ -38,22 +38,7 @@
                     }
                 }
             },
-            "comment": "스크랩 목록 본체 — 정렬은 스크랩일 하나뿐이라 sort_by 를 받지 않고 방향만 받는다"
-        },
-        {
-            "id": "scrap_boards",
-            "label_key": "$t:sirsoft-board.editor.data_source.scrap_boards",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/admin/boards?per_page=999&fields=id,title",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "fallback": {
-                "data": {
-                    "data": []
-                }
-            },
-            "comment": "게시판 필터 셀렉트를 채우는 용도 — 목록이 아니라 선택지라 페이지를 나누지 않고 두 칸만 받는다 (환경설정 화면의 boards_list 와 같은 방식)"
+            "comment": "스크랩 목록 본체 — 정렬은 스크랩일 하나뿐이라 sort_by 를 받지 않고 방향만 받는다. 게시판 필터 셀렉트의 선택지도 별도 데이터소스가 아니라 이 응답의 메타(`scraps.data.boards`)에서 온다 — 게시판 목록 API 는 게시판 관리 권한이 있어야 열려, 스크랩 조회 권한만 가진 매니저에게는 403 이 나고 셀렉트가 빈다(반응 관리와 같은 방식)"
         }
     ],
     "initLocal": {
@@ -372,7 +357,7 @@
                                 ]
                             },
                             {
-                                "comment": "행 메뉴 세 갈래 — 원글로, 회원 상세로, 또는 이 스크랩 한 건만 삭제",
+                                "comment": "행 메뉴 세 갈래 — 원글로, 회원 상세로, 또는 이 스크랩 한 건만 삭제. 게시판이 지워진 행(board 가 null)의 「게시글 보기」는 rowActions 의 disabledField=\"board.slug\" 로 잠근다 — 잠그지 않으면 /admin/board//post/N 404 로 간다(제목 칸 링크와 같은 근거)",
                                 "event": "onRowAction",
                                 "handler": "switch",
                                 "cases": {
@@ -433,7 +418,8 @@
                                 {
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.scraps.actions.go_to_post",
-                                    "iconName": "file-lines"
+                                    "iconName": "file-lines",
+                                    "disabledField": "board.slug"
                                 },
                                 {
                                     "id": "go_to_member",

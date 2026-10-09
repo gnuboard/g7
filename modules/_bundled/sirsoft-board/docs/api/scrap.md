@@ -96,7 +96,7 @@ HTTP/1.1 200
 | page | integer | `1` | 페이지 번호 (1 이상). 생략 시 1. |
 | per_page | integer | `20` | 페이지당 개수 (1~100). 생략 시 20. |
 | search | string | `책 추천` | 검색어 (최대 255자, 생략 가능). 매칭 대상은 `search_field` 가 정한다. 원글이 삭제된 스크랩은 응답에서 title 자체가 노출되지 않으므로 검색 대상에서도 제외된다. 검색 중에는 스크랩이 중지된 게시판(비활성·`use_scrap=false`)의 행도 제외된다. |
-| search_field | string | `content` | 검색 대상 (`title_content` 기본 · `title` · `content`). 그 밖의 값은 422. 상세는 [scraps.md](scraps.md). |
+| search_field | string | `content` | 검색 대상 (`title_content` 기본 · `title` · `content`). 그 밖의 값은 기본값 `title_content` 로 처리. 상세는 [scraps.md](scraps.md). |
 
 **요청 예시**
 

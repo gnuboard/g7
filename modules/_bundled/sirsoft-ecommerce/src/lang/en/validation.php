@@ -270,6 +270,12 @@ return [
             'option_stock_quantity' => 'option stock quantity',
             'option_name' => 'option name',
             'option_code' => 'option code',
+            // Multilingual required field names (option groups, additional options, product notice)
+            'option_group_name' => 'option group name',
+            'additional_option_name' => 'additional option group name',
+            'additional_option_value_name' => 'additional option choice name',
+            'notice_item_name' => 'product notice item name',
+            'notice_item_content' => 'product notice content',
         ],
         'name' => [
             'required' => 'Please enter the product name.',
@@ -1582,6 +1588,19 @@ return [
         'claim_reason_is_active' => 'Active Status',
         'claim_reason_sort_order' => 'Sort Order',
         'claim_reason_search' => 'Search Term',
+
+        // Multilingual name fields (field name in the current-locale-required message)
+        'category_name' => 'Category Name',
+        'brand_name' => 'Brand Name',
+        'coupon_name' => 'Coupon Name',
+        'common_info_name' => 'Common Info Name',
+        'notice_template_name' => 'Product Group Name',
+        'notice_template_field_name' => 'Item Name',
+        'notice_template_field_content' => 'Item Content',
+        'shipping_carrier_name' => 'Carrier Name',
+        'shipping_policy_name' => 'Shipping Policy Name',
+        'shipping.carriers.*.name' => 'Carrier name',
+        'shipping.types.*.name' => 'Shipping type name',
     ],
 
     // Field-specific custom validation messages

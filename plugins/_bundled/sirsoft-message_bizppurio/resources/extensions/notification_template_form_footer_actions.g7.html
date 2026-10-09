@@ -90,7 +90,7 @@
     </button>
     <button type="button" class="flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
       <on type="click">
-        <!-- 저장만(검수 신청 없음) — 생성 / 갱신 / 발송 설정만(본문이 없거나 내용이 잠긴 상태) 세 갈래 중 하나가 성립한다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다. -->
+        <!-- 저장만(검수 신청 없음) — 생성 / 갱신 / 발송 설정만(본문이 없거나 내용이 잠긴 상태) 세 갈래 중 하나가 성립한다. 생성·갱신은 draft 표시를 실어 쓰다 만 알림톡 내용(카테고리·템플릿명 등 미입력)도 초안으로 남긴다 — 「알림 템플릿 관리」 탭 작성 창의 「저장」과 같은 규약이고, 빠진 필수값은 [저장 후 검수 신청]에서 서버가 항목별로 돌려준다. 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿도 함께 저장한다. -->
         <sequence if="{{!(_global.bz_tpl_modal?.isSaving ?? false) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
           <set-state target="global" :bz_tpl_modal.isSaving="true" :bz_tpl_modal.error="null" :bz_tpl_modal.errors="null" :bz_sms_modal.isSaving="true"/>
           <!-- ① 행 없음 + 본문 입력 → POST(생성). 검수 신청은 생성 응답의 id 로 이어간다. -->
@@ -122,7 +122,7 @@
             <fail>
               <set-state target="global" :bz_tpl_modal.isSaving="false" :bz_sms_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
             </fail>
-            <body notification_type="{{_global.bz_tpl_modal?.notification_type}}" content="{{_global.bz_tpl_modal?.content}}" alimtalk_enabled="{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}" fallback_sms_enabled="{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}" sms_only="{{!!(_global.bz_sms_modal?.sms_only)}}" sms_body="{{Object.assign({}, _global.bz_sms_modal?.body)}}"/>
+            <body :draft="true" notification_type="{{_global.bz_tpl_modal?.notification_type}}" content="{{_global.bz_tpl_modal?.content}}" alimtalk_enabled="{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}" fallback_sms_enabled="{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}" sms_only="{{!!(_global.bz_sms_modal?.sms_only)}}" sms_body="{{Object.assign({}, _global.bz_sms_modal?.body)}}"/>
           </api-call>
           <!-- ② 행 있음 + draft/rejected + 본문 입력 → PUT(내용 갱신). -->
           <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}" if="{{!!(_global.bz_tpl_modal?.id) &amp;&amp; (['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '')}}" method="PUT">
@@ -153,7 +153,7 @@
             <fail>
               <set-state target="global" :bz_tpl_modal.isSaving="false" :bz_sms_modal.isSaving="false" bz_tpl_modal.error="{{error.errors?.bizppurio_message ?? error.message}}" bz_tpl_modal.errors="{{(error.errors &amp;&amp; typeof error.errors === 'object' &amp;&amp; !error.errors.bizppurio_message) ? error.errors : null}}"/>
             </fail>
-            <body content="{{_global.bz_tpl_modal?.content}}" alimtalk_enabled="{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}" fallback_sms_enabled="{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}" sms_only="{{!!(_global.bz_sms_modal?.sms_only)}}" sms_body="{{Object.assign({}, _global.bz_sms_modal?.body)}}"/>
+            <body :draft="true" content="{{_global.bz_tpl_modal?.content}}" alimtalk_enabled="{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}" fallback_sms_enabled="{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}" sms_only="{{!!(_global.bz_sms_modal?.sms_only)}}" sms_body="{{Object.assign({}, _global.bz_sms_modal?.body)}}"/>
           </api-call>
           <!-- ③ 본문 미입력(SMS 만 설정) 또는 내용 잠금 상태(검수중/승인 등) → delivery upsert(발송 설정·SMS 본문만, 행 없으면 draft 생성). -->
           <api-call :auth_required="true" target="/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_tpl_modal?.notification_type}}" if="{{!((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') || (!!(_global.bz_tpl_modal?.id) &amp;&amp; !(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')))}}" method="PUT">

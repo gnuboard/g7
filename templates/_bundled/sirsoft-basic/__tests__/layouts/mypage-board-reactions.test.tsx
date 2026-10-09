@@ -286,3 +286,54 @@ describe('내 반응 — 검색 0건 안내', () => {
         expect(json.includes('$t:board.no_search_results')).toBe(true);
     });
 });
+
+/** 레이아웃 트리에서 조건에 맞는 노드를 모두 모은다. */
+function collectNodes(node: any, pred: (n: any) => boolean, out: any[] = []): any[] {
+    if (!node || typeof node !== 'object') return out;
+    if (Array.isArray(node)) {
+        node.forEach((child) => collectNodes(child, pred, out));
+        return out;
+    }
+    if (pred(node)) out.push(node);
+    for (const value of Object.values(node)) collectNodes(value, pred, out);
+    return out;
+}
+
+describe('내 반응 — 좁은 화면(390px) 가로 넘침', () => {
+    // @scenario case=subtab_lists_rows_in_three_states
+    // @effects mypage_board_tabs_scroll_inside_bar_on_narrow_screen
+    it('네 탭(내 글·내 댓글·내 반응·내 신고) 막대는 좁은 화면에서 자기 안에서 가로로 흐른다', () => {
+        // 탭 넷의 폭(92+95+95+94px)과 간격이 343px 칸을 넘어 페이지 전체가 가로로 밀렸다(K1 실측 2026-10-06).
+        const bars = collectNodes(listPartial, (n) => typeof n?.props?.className === 'string'
+            && n.props.className.includes('border-b border-gray-200')
+            && JSON.stringify(n).includes('boardActivitySubTab'));
+
+        expect(bars.length).toBeGreaterThan(0);
+        expect(bars[0].props.className).toContain('overflow-x-auto');
+        expect(bars[0].props.className).toContain('whitespace-nowrap');
+    });
+
+    // @scenario case=subtab_lists_rows_in_three_states
+    // @effects mypage_reactions_search_input_shrinks_on_narrow_screen
+    it('검색 입력칸이 줄어들 수 있어 검색 줄이 칸 밖으로 밀리지 않는다', () => {
+        // 입력칸의 고유 최소 폭(약 213px) 때문에 찾을 곳·입력·검색·초기화 줄이 433px 로 넘쳤다.
+        const inputs = collectNodes(myReactions, (n) => n?.name === 'Input'
+            && n?.props?.placeholder === '$t:mypage.board_activities.search_placeholder');
+
+        expect(inputs.length).toBe(1);
+        expect(inputs[0].props.className).toContain('min-w-0');
+    });
+});
+
+describe('내 반응 — 해제 확인 버튼 커서', () => {
+    // @scenario case=remove_single_own_only_and_recalculates
+    // @effects mypage_reaction_confirm_buttons_show_pointer
+    it('단건·일괄 해제 확인 버튼이 형제 「취소」 처럼 손가락 커서를 쓴다', () => {
+        for (const [tid, layout] of [['reaction-delete-confirm', deleteModal], ['reaction-bulk-delete-confirm', bulkModal]] as const) {
+            const buttons = collectNodes(layout, (n) => n?.props?.['data-testid'] === tid);
+
+            expect(buttons.length, tid).toBe(1);
+            expect(buttons[0].props.className, tid).toContain('cursor-pointer');
+        }
+    });
+});

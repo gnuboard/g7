@@ -49,8 +49,8 @@
               <span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}</span>
               <span data-if="{{category?.required === true}}" class="ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
             </div>
-            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. -->
-            <p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
+            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 ko→en). -->
+            <p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description[$locale] ?? category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
           </div>
         </div>
       </div>

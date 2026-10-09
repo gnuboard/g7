@@ -5,9 +5,12 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -274,6 +277,68 @@ class UserPublicPostsApiTest extends BoardTestCase
 
         $data = $response->json('data');
         $this->assertEquals(1, $data['posts_count']);
+    }
+
+    /**
+     * 통계 건수도 보는 사람이 읽을 수 없는 게시판의 글·댓글을 세지 않는다(목록과 같은 기준).
+     *
+     * 2026-10-07 실측(K4-D4): 공개 프로필의 작성글 목록은 회원전용 게시판 글을 빼는데, 같은 화면의
+     * 「게시글 N·댓글 N」 카드 원천인 통계는 게시판 조건 없이 세고 보는 사람과 무관한 키로 캐시해
+     * 비로그인 방문자에게도 회원전용 게시판 글이 건수로 드러났다.
+     *
+     * @scenario listing=user_public_posts, request_case=default
+     *
+     * @effects stats_exclude_unreadable_board_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stats_exclude_items_in_boards_the_viewer_cannot_read(): void
+    {
+        $membersBoard = Board::updateOrCreate(['slug' => 'user-public-members-only'], [
+            'name' => ['ko' => '회원전용 통계 게시판', 'en' => 'Members Only Stats Board'],
+            'is_active' => true,
+            'blocked_keywords' => [],
+        ]);
+        DB::table('board_posts')->where('board_id', $membersBoard->id)->delete();
+        DB::table('board_comments')->where('board_id', $membersBoard->id)->delete();
+        $userRole = Role::where('identifier', 'user')->first();
+        $readPermission = Permission::firstOrCreate(
+            ['identifier' => 'sirsoft-board.user-public-members-only.posts.read'],
+            ['name' => ['ko' => '게시글 조회', 'en' => 'View Posts'], 'type' => 'user']
+        );
+        $userRole->permissions()->syncWithoutDetaching([$readPermission->id]);
+
+        $publicPost = $this->createPost($this->board->slug, ['user_id' => $this->targetUser->id]);
+        $this->createComment($this->board->slug, $publicPost->id, ['user_id' => $this->targetUser->id]);
+        $memberPost = Post::create([
+            'board_id' => $membersBoard->id,
+            'title' => '회원전용 글',
+            'content' => '회원전용 본문',
+            'user_id' => $this->targetUser->id,
+            'ip_address' => '127.0.0.1',
+            'status' => PostStatus::Published->value,
+        ]);
+        Comment::create([
+            'board_id' => $membersBoard->id,
+            'post_id' => $memberPost->id,
+            'content' => '회원전용 댓글',
+            'user_id' => $this->targetUser->id,
+            'status' => PostStatus::Published->value,
+        ]);
+
+        $guest = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts/stats")->assertOk();
+        $this->assertSame(1, (int) $guest->json('data.posts_count'), '비로그인 통계에 회원전용 게시판 글이 섞였다');
+        $this->assertSame(1, (int) $guest->json('data.comments_count'), '비로그인 통계에 회원전용 게시판 댓글이 섞였다');
+
+        // 기본 게시판의 읽기 권한은 setUp 이 비회원에게만 준다 — 회원(user 역할)에게도 줘야 두 게시판을 다 읽는 회원이 된다
+        $this->grantUserRolePermissions(['posts.read']);
+        $member = User::factory()->create();
+        $member->roles()->attach($userRole->id);
+        $asMember = $this->actingAs($member, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts/stats")
+            ->assertOk();
+        $this->assertSame(2, (int) $asMember->json('data.posts_count'), '읽을 수 있는 회원에게는 회원전용 게시판 글도 센다');
+        $this->assertSame(2, (int) $asMember->json('data.comments_count'));
     }
 
     /**

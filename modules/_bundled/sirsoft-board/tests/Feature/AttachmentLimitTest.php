@@ -90,6 +90,8 @@ class AttachmentLimitTest extends BoardTestCase
                 'board_id' => 0,
                 'post_id' => null,
                 'temp_key' => $tempKey,
+                // 실제 업로드처럼 올린 회원을 남긴다 — 번호(attachment_ids)로 잇는 경로는 올린 사람이 같을 때만 잇는다
+                'created_by' => $this->memberUser->id,
                 'collection' => 'attachments',
                 'original_filename' => "temp-{$i}.png",
                 'stored_filename' => "temp-{$i}.png",

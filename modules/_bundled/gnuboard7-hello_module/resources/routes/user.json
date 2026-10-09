@@ -1,0 +1,13 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/memos",
+            "layout": "user_memo_list",
+            "auth_required": false,
+            "meta": {
+                "title": "$t:gnuboard7-hello_module.user.memos.index.title"
+            }
+        }
+    ]
+}

@@ -184,6 +184,7 @@
                     },
                     "children": [
                         {
+                            "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다.",
                             "type": "basic",
                             "name": "Select",
                             "actions": [
@@ -196,6 +197,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
                                         "query": {
                                             "tab": "identity",
                                             "scope": "{{$event.target.value || undefined}}",
@@ -212,6 +214,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
                                 "options": [
@@ -247,6 +250,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
                                         "query": {
                                             "tab": "identity",
                                             "source_type": "{{$event.target.value || undefined}}",
@@ -263,6 +267,7 @@
                             ],
                             "props": {
                                 "name": "filter.source_type",
+                                "autoBinding": false,
                                 "value": "{{query.source_type ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
                                 "options": [
@@ -304,7 +309,7 @@
                                     }
                                 },
                                 {
-                                    "comment": "검색은 Enter 로만 낸다(옆 검색 버튼은 조회를 다시 부를 뿐 검색어를 URL 에 넣지 않는다).\n                 그래서 검색어를 바꾸고 버튼만 누르면 조건이 반영되지 않는다 — 지금 그렇게 돼 있다.",
+                                    "comment": "Enter 로 검색 — 입력값을 쿼리로 실어 옮긴다. 옆 검색 버튼도 입력 중인 검색어(identityPolicySearch)를 같은 방식으로 싣는다.",
                                     "type": "keypress",
                                     "key": "Enter",
                                     "handler": "navigate",
@@ -313,6 +318,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
                                         "query": {
                                             "tab": "identity",
                                             "search": "{{$event.target.value || undefined}}",
@@ -349,6 +355,7 @@
                                         "replace": true,
                                         "mergeQuery": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
                                         "query": {
                                             "tab": "identity",
                                             "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
@@ -397,6 +404,7 @@
                                         "path": "/admin/settings",
                                         "replace": true,
                                         "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
                                         "query": {
                                             "tab": "identity",
                                             "sub_tab": "policies"
@@ -1148,6 +1156,7 @@
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "policies",
                                                         "query": {
                                                             "tab": "identity",
                                                             "page": "{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"
@@ -1195,6 +1204,7 @@
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "policies",
                                                         "query": {
                                                             "tab": "identity",
                                                             "page": "{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"

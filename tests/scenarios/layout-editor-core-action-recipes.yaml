@@ -31,6 +31,8 @@ effects:
   - core_action_recipe_build_handler_matches_catalog_key
   - core_action_recipes_all_normalize_and_build
   - navigate_transition_overlay_target_param_gated_by_replace
+  - navigate_refetch_data_sources_survives_editor_roundtrip
+  - navigate_refetch_data_sources_survives_editor_save_e2e
   - switch_cases_param_locked_advanced
   - nested_action_containers_use_action_list_not_advanced
   - conditions_recipe_builds_top_level_conditions_key
@@ -43,7 +45,11 @@ effects:
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/coreActionRecipes.test.ts
+  - tests/Playwright/specs/layout-editor/navigate-refetch-roundtrip.spec.ts
 
 notes: |
+  navigate_refetch_data_sources_survives_editor_save_e2e 는 실제 편집기 UI 왕복이다 — 관리자 환경설정
+  본인인증 탭 「검색」 navigate 를 동작 편집 폼으로 열어 스크롤 위치만 바꿔 저장하면, 저장 요청 본문
+  (서버로 보내지 않고 가로챔)의 그 탭 navigate 7개가 모두 refetch_data_sources 를 갖는다.
   카탈로그는 정적 데이터라 Pure Logic 단위 테스트로 잠근다. 레시피 빌드와 역매칭의
   일반 메커니즘(placeholder 핸들러 recipe 포함)은 actionRecipeEngine 단위 테스트가 맡는다.

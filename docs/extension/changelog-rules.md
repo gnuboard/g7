@@ -155,6 +155,14 @@ templates/_bundled/vendor-template/CHANGELOG.md # 템플릿 (예: sirsoft-admin_
 ]
 ```
 
+### 이어 쓴 줄
+
+항목(`- `) 밑에 들여써 이어 쓴 줄은 앞 항목에 공백 하나로 이어 붙인다. 들여쓴 `- ` 는 중첩 항목으로 따로 두고 그 밑 이어 쓴 줄은
+중첩 항목에 붙인다. 빈 줄 뒤 들여쓴 문단은 같은 항목(느슨한 목록)으로, 들여쓰지 않은 문단·`####` 소제목은 항목을 끝낸다.
+항목 안 코드 블록은 울타리 줄을 빼고 내용을 붙이고, 항목 밖 코드 블록 안의 `- `·`##` 줄은 무시한다. CRLF 파일도 같다.
+종전에는 둘째 줄부터 버려져 확장 상세 「변경 내역」의 문장이 잘렸다(7.1.0 에서 수정). 회귀 고정: `tests/Unit/Extension/ChangelogParserTest.php`
+(번들 CHANGELOG 전수 포함), 시나리오 `tests/scenarios/changelog-parser.yaml`.
+
 ---
 
 ## 5. API 엔드포인트

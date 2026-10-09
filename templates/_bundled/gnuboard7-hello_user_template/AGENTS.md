@@ -45,6 +45,7 @@ SEO 설정 · 확장 오버라이드. `sirsoft-basic` 이 컴포넌트 79개와 
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update gnuboard7-hello_user_template --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan template:update gnuboard7-hello_user_template --force` |
+| `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
 | `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_user_template --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update gnuboard7-hello_user_template --force` |
@@ -150,9 +151,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 2개 | `vitest.config.ts` |
+| Vitest | 4개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

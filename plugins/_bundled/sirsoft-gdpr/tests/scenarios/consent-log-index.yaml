@@ -1,0 +1,29 @@
+feature: GDPR 관리자 동의 로그 조회 — 필터 · 응답 행 · 필터 오류 문구
+
+description: |
+  관리자 동의 로그(GET /api/plugins/sirsoft-gdpr/admin/consent-log)가 지키는 계약.
+    - 인증이 없으면 401, 개인정보 담당자는 페이지 단위 목록을 받는다
+    - 필터: 이메일(부분 일치), 액션·출처·동의 항목(배열 또는 단일 값), 세션 ID(앞부분·중간 부분 일치, 빈 값은 무시)
+    - 응답 행: 대상 회원 uuid·이메일, 카테고리 스냅샷(순회 가능한 배열, 기록이 없으면 null)
+    - 허용 밖 필터 값의 422 문구는 항목 위치(`actions.0`)가 아니라 화면 필터 이름(액션·출처·동의 항목)을 쓴다
+      (IndexConsentLogRequest::attributes() 가 배열 키와 와일드카드를 함께 덮는다)
+
+axes:
+  check: [auth_required, paginated_list, email_filter, actions_filter, sources_filter, consent_keys_filter, user_identity, session_id_prefix, session_id_substring, session_id_empty, categories_snapshot, categories_snapshot_missing, invalid_filter_label]
+
+effects:
+  - consent_log_requires_authentication
+  - consent_log_returns_paginated_rows
+  - consent_log_filters_by_email_partial_match
+  - consent_log_filters_by_actions
+  - consent_log_filters_by_sources
+  - consent_log_filters_by_consent_keys
+  - consent_log_rows_include_user_uuid
+  - consent_log_filters_by_session_id_substring
+  - consent_log_ignores_empty_session_id_filter
+  - consent_log_rows_include_categories_snapshot
+  - consent_log_snapshot_null_without_categories
+  - consent_log_invalid_filter_errors_name_the_filter
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminConsentLogControllerTest.php

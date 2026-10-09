@@ -1,0 +1,31 @@
+feature: sirsoft-admin_basic 꾸밈 아이콘 숨김과 아이콘만 담은 단추 이름, 컴포넌트 기본 문구 다국어화
+
+description: |
+  Icon 은 이름(ariaLabel)을 받지 않으면 영문 글리프 이름(「xmark」·「chevron right」·「refresh」)을 role="img" 이름으로 달아,
+  한국어·일본어 화면에서도 아이콘이 영문으로 읽혔다(7.1.0 O-C3b-3). 이름 없는 아이콘은 꾸밈(aria-hidden)으로 숨기고,
+  이름을 받은 아이콘만 role="img" 로 읽힌다. 아이콘만 담은 단추(컴포넌트 안 단추, IconButton, 번들 레이아웃 단추)는
+  그 영문 이름에 기대던 이름을 화면 언어 이름(aria-label·title)으로 직접 갖는다.
+  관리자 컴포넌트의 화면 문구·접근 이름 기본값(영문 고정)도 다국어 키로 바꾸고, 번역이 없거나 엔진 밖이면 종전 영문을 쓴다(O-C3b-4).
+
+axes:
+  control: [icon, icon_only_button, composite_icon_only_button, layout_icon_only_control, default_text]
+
+effects:
+  - decorative_icon_hidden_from_a11y_tree
+  - labelled_icon_exposes_given_name
+  - icon_button_named_by_locale
+  - composite_icon_button_named_by_locale
+  - expand_state_announced
+  - layout_icon_only_control_named
+  - default_text_follows_locale
+  - fallback_without_engine
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/IconButton.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/IconOnlyControlNames.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DefaultTextI18n.test.tsx
+
+notes: |
+  e2e_browser=verified — 관리자 대시보드·목록·설정 화면(ko/en/ja)에서 이름 없는 단추·링크 0, 아이콘 영문 이름 노출 0 을
+  격리 브라우저 접근성 트리로 확인했다(7.1.0 종합 3c).

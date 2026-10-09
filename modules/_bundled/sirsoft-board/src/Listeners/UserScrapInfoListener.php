@@ -77,6 +77,12 @@ class UserScrapInfoListener implements HookListenerInterface
             return $data;
         }
 
+        // 스크랩 조회 권한이 없는 관리자에게는 싣지 않는다 — 실으면 회원 상세가 「스크랩」 탭과
+        // 건수를 그리고, 탭의 「이 회원 스크랩 목록 보기」는 403 화면으로 끝난다.
+        if (! $this->checkModulePermission('scraps', 'view')) {
+            return $data;
+        }
+
         try {
             $summary = $this->scrapService->summaryForUser($user->id);
         } catch (QueryException $e) {

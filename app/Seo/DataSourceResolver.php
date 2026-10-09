@@ -167,6 +167,8 @@ class DataSourceResolver
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Accept-Language' => $locale,
+                    // 서버 자신의 렌더 호출임을 알린다 — 받는 쪽이 조회수 같은 열람 집계에서 뺀다
+                    ...SeoRenderRequest::headers(),
                 ]);
 
             // GET 요청 시 쿼리 파라미터 전달

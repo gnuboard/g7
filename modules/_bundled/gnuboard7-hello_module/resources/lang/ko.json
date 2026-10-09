@@ -17,7 +17,8 @@
         "memos": {
             "index": {
                 "title": "Hello 메모",
-                "description": "학습용 메모 목록"
+                "description": "학습용 메모 목록",
+                "empty": "작성된 메모가 없습니다."
             },
             "form": {
                 "title_create": "메모 생성",
@@ -36,7 +37,8 @@
     "user": {
         "memos": {
             "index": {
-                "title": "메모 목록"
+                "title": "메모 목록",
+                "empty": "아직 메모가 없습니다."
             }
         }
     }

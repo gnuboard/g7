@@ -23,7 +23,7 @@
             },
             "og": {
                 "type": "website",
-                "title": "$t:nav.popular_posts"
+                "title": "$t:user.board.popular_title"
             }
         }
     },

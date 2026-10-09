@@ -431,23 +431,6 @@ class MarketingConsentListener implements HookListenerInterface
      */
     private function resolveChannelLabel(array $channel, string $locale): string
     {
-        $labelKey = $channel['label_key'] ?? null;
-
-        if (is_string($labelKey) && $labelKey !== '') {
-            $translated = __($labelKey, [], $locale);
-
-            // 번역 부재 시 __() 는 키 원문을 돌려준다 — 그때만 저장된 맵으로 내려간다.
-            if (is_string($translated) && $translated !== $labelKey) {
-                return $translated;
-            }
-        }
-
-        $label = $channel['label'] ?? [];
-
-        if (is_string($label)) {
-            return $label;
-        }
-
-        return $label[$locale] ?? $label[config('app.fallback_locale', 'ko')] ?? $label['ko'] ?? (string) $channel['key'];
+        return $this->service->resolveChannelLabel($channel, $locale);
     }
 }

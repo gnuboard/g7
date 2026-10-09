@@ -62,6 +62,9 @@ return [
     // user-friendly attribute names shown in validation errors
     'attributes' => [
         'search' => 'search query',
+        'temp_key' => 'temporary attachment key',
+        'title' => 'page title',
+        'content' => 'page content',
     ],
 
     // search_field validation messages

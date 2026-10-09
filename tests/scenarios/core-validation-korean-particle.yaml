@@ -1,0 +1,19 @@
+feature: 코어 한국어 검증 문구 — 괄호 조사·자리표시 뒤 받침 가정 조사 제거 (7.1.0 실측 O-K4F-2)
+
+description: |
+  코어 `lang/ko/validation.php` 의 기본 문구가 「:attribute이(가)」「:other이(가)」처럼 괄호 조사를 쓰거나 「:max를」「:date와」처럼
+  자리표시 바로 뒤에 받침을 가정한 조사를 붙여, 확장 밖 모든 요청의 검증 문구가 어색하거나 틀린 문장이 됐다. 조사가
+  자리표시에 붙지 않도록 「값이」「필드가」 같은 받침이 정해진 낱말을 끼우거나 문장을 바꿔 쓴다. 게시판 모듈의 같은 검사
+  (validation-message-particle.yaml)와 같은 규칙을 코어 검증 문구에 건다.
+
+test_files:
+  - tests/Unit/Lang/CoreValidationKoreanParticleTest.php
+
+axes:
+  particle_form:
+    - bracket
+    - after_variable
+
+effects:
+  - no_bracket_particle_in_core_validation
+  - no_particle_after_placeholder_in_core_validation

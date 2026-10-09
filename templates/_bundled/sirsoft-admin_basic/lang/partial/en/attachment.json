@@ -18,5 +18,6 @@
   "set_as_primary": "Set as primary image",
   "empty_file": "[{{name}}] Empty (0-byte) files cannot be uploaded.",
   "file_too_large": "[{{name}}] File size ({{size}}) exceeds the maximum allowed size ({{max}}MB).",
+  "type_not_allowed": "[{{name}}] This file type is not allowed. (Allowed: {{accept}})",
   "upload_response_invalid": "The upload response could not be read."
 }

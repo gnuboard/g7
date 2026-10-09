@@ -14,7 +14,7 @@
   "views_count": "{{count}} views",
   "views_count_one": "{{count}} view",
   "write": "Write",
-  "search_placeholder": "Search by title, content, author...",
+  "search_placeholder": "Enter a search term",
   "board_not_found": "Board not found",
   "board_not_found_description": "The board does not exist or has been deactivated.",
   "no_posts": "No posts available",

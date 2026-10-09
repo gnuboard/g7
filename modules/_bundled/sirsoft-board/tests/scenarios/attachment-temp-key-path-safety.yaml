@@ -33,6 +33,8 @@ effects:
   # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다(#703 실측).
   - temp_dir_cleanup_failure_does_not_abort_link
   - foreign_temp_attachments_not_linked_or_deleted
+  # attachment_ids 로 잇는 경로(회원 수정·관리자 작성/수정)도 자기가 올린 임시 첨부만 잇는다(2026-10-07 실측 K4-D1).
+  - owned_attachment_ids_still_linked
   - keyless_upload_gets_server_generated_temp_key
   - upload_stores_file_and_creates_row
   - temp_upload_stored_under_temp_key_path

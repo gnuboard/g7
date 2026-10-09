@@ -8,12 +8,12 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string): string => {
-  const translated = (window as any).G7Core?.t?.(key);
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
-
 
 /** 로그아웃 후 이동 기본 경로 — `redirectPath` 가 동일 출처가 아니면 이 경로로 간다 */
 const DEFAULT_REDIRECT_PATH = '/admin/login';
@@ -93,8 +93,8 @@ export interface UserProfileProps {
  */
 export const UserProfile: React.FC<UserProfileProps> = ({
   user = { name: '', email: '' },
-  profileText = 'Profile Settings',
-  logoutText = 'Logout',
+  profileText: profileTextProp,
+  logoutText: logoutTextProp,
   // languageText / availableLocales: 언어가 헤더로 일원화되어 드롭다운에서 제거됨.
   // props 는 인터페이스에 유지(하위호환)하되 본문에서 사용하지 않으므로 destructure 생략.
   onProfileClick,
@@ -108,6 +108,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
+  const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -194,7 +197,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={() => setShowProfileMenu(!showProfileMenu)}
-        aria-label={dropdownOnly ? tOr('common.user_menu', '사용자 메뉴') : undefined}
+        aria-label={dropdownOnly ? tOr('common.user_menu', 'User menu') : undefined}
         aria-haspopup="menu"
         aria-expanded={showProfileMenu}
         className={dropdownOnly
@@ -270,7 +273,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Icon name={IconName.ArrowRight} className="w-5 h-5" />
-              <Span>{isLoggingOut ? 'Logging out...' : logoutText}</Span>
+              <Span>{isLoggingOut ? tOr('common.logging_out', 'Logging out...') : logoutText}</Span>
             </Button>
           </Div>
         </Div>

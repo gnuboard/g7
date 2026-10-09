@@ -1,0 +1,17 @@
+feature: sirsoft-basic 파일 업로더 — 여러 파일을 한 번에 골랐을 때 고른 순서로 저장
+
+description: |
+  사용자 게시판 글쓰기 업로더는 동시 업로드 기본값이 3 이라, 파일 선택창에서 여러 파일을 한 번에 고르면 먼저 끝난
+  파일이 앞 순서를 받았다. 게시판 서버는 업로드가 도착한 순서로 첨부 번호를 매기므로 저장 순서가 고른 순서와
+  달라졌다(7.1.0 전수 실측 O-F1-3 — 관리자 업로더 O-L1 과 같은 결함). 기본값은 고른 순서대로 하나씩 올리고,
+  동시 업로드를 켠 화면에서도 화면 목록·완료 콜백·저장 목록은 고른 순서를 지킨다.
+
+axes:
+  case: [default_concurrency, parallel_concurrency]
+
+effects:
+  - file_uploader_uploads_in_selection_order_by_default
+  - file_uploader_keeps_selection_order_when_parallel
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/FileUploaderSelectionOrder.test.tsx

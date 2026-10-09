@@ -319,8 +319,13 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
     it('탭 변경 시 글로벌 상태와 URL을 업데이트한다', () => {
         const content = mainLayout.slots.content[0];
         const tabNav = findById(content, 'tab_navigation');
-        const tabAction = asArray(tabNav?.actions)[0];
+        const tabChange = asArray(tabNav?.actions)[0];
 
+        // 고친 것이 있으면 확인 창을 먼저 띄우고(7.1.0 조치 G2 — admin-board-settings-unsaved-tab-confirm.test.ts),
+        // 고친 것이 없으면 아래 순서로 바로 옮긴다
+        expect(tabChange.handler).toBe('conditions');
+        const tabAction = tabChange.conditions[1].then;
+        expect(tabChange.conditions[1].if).toBeUndefined();
         expect(tabAction.handler).toBe('sequence');
         // sequence 하위 액션은 params.actions 에 위치 (엔진 규약)
         const innerActions = callbacksOf(tabAction, 'actions');

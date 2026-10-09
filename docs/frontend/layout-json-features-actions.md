@@ -1060,6 +1060,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 |------|------|------|------|
 | `src` | string | ✅ | 스크립트 URL (프로토콜 없이 `//`로 시작 권장) |
 | `id` | string | ✅ | 스크립트 요소 ID (중복 로드 방지용) |
+| `label` | string | ❌ | 로드 실패 안내에 쓸 사람이 읽는 이름 (`$t:키` 허용, engine-v1.79.0+). 없으면 「화면 기능 스크립트」로 안내하며 `id` 는 안내에 쓰지 않습니다 |
 | `if` | string | ❌ | 조건부 로드 표현식 (예: `{{_global.pluginActive}}`) |
 | `async` | boolean | ❌ | 비동기 로드 여부 (기본값: true) |
 

@@ -23,11 +23,22 @@ class PostListContentThumbnailTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 테스트 게시판 슬러그
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'list-content-thumbnail';
     }
 
+    /**
+     * 테스트 게시판 기본 속성(비밀글 사용)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -38,6 +49,11 @@ class PostListContentThumbnailTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 회원 권한과 회원 계정을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -92,9 +108,13 @@ class PostListContentThumbnailTest extends BoardTestCase
     }
 
     /**
+     * 이미지 첨부가 없으면 본문 첫 내부 이미지로 목록 썸네일을 채운다.
+     *
      * @scenario image_source=content_internal_only, secrecy=normal
      *
      * @effects content_internal_image_fills_list_thumbnail
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function list_thumbnail_filled_from_content_image_without_attachment(): void
@@ -110,9 +130,13 @@ class PostListContentThumbnailTest extends BoardTestCase
     }
 
     /**
+     * 이미지 첨부가 있으면 본문 이미지보다 첨부가 목록 썸네일이 된다.
+     *
      * @scenario image_source=both, secrecy=normal
      *
      * @effects attachment_takes_precedence_over_content_image
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function list_thumbnail_prefers_attachment_over_content_image(): void
@@ -145,9 +169,13 @@ class PostListContentThumbnailTest extends BoardTestCase
     }
 
     /**
+     * 권한 없는 조회에서 비밀글 목록 썸네일은 비고 응답 어디에도 이미지 주소가 없다.
+     *
      * @scenario image_source=content_internal_only, secrecy=secret_unauthorized
      *
      * @effects secret_post_thumbnail_stays_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_list_thumbnail_is_null_for_guest(): void
@@ -168,9 +196,13 @@ class PostListContentThumbnailTest extends BoardTestCase
     }
 
     /**
+     * 본문에 외부 이미지만 있으면 목록 썸네일은 비어 있다.
+     *
      * @scenario image_source=content_external_only, secrecy=normal
      *
      * @effects external_only_content_yields_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function external_only_content_yields_null_thumbnail_in_list(): void
@@ -186,9 +218,57 @@ class PostListContentThumbnailTest extends BoardTestCase
     }
 
     /**
+     * 미리보기를 막은 SVG 는 목록 썸네일로 고르지 않고 다음 일반 이미지를 고른다.
+     *
+     * 2026-10-07 실측(K4): 첫 이미지 첨부가 SVG 인 글은 목록 썸네일이 SVG 미리보기 주소가 되어
+     * 카드형·갤러리형 목록 이미지가 깨지고(미리보기 400 「이미지 파일만 미리보기가 가능합니다」) 콘솔 오류가 났다.
+     * SVG 는 KVE-2026-2366 이후 미리보기 대상이 아니다.
+     *
+     * @scenario image_source=attachment_only, secrecy=normal
+     *
+     * @effects svg_attachment_skipped_for_list_thumbnail
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function svg_first_attachment_is_skipped_for_list_thumbnail(): void
+    {
+        $post = $this->createPostViaModel(['content' => '<p>SVG 와 PNG 첨부</p>']);
+
+        $base = [
+            'board_id' => $this->board->id,
+            'post_id' => $post->id,
+            'disk' => 'modules',
+            'size' => 100,
+            'collection' => 'attachments',
+        ];
+        Attachment::create($base + [
+            'original_filename' => 'x.svg', 'stored_filename' => 'stored-x.svg',
+            'path' => 'attachments/x.svg', 'mime_type' => 'image/svg+xml', 'order' => 0,
+        ]);
+        $png = Attachment::create($base + [
+            'original_filename' => 'p.png', 'stored_filename' => 'stored-p.png',
+            'path' => 'attachments/p.png', 'mime_type' => 'image/png', 'order' => 1,
+        ]);
+
+        $item = $this->findListItem($post->id);
+
+        $this->assertNotNull($item);
+        $this->assertSame(
+            '/api/modules/sirsoft-board/boards/'.$this->board->slug.'/attachment/'.$png->hash.'/preview',
+            $item['thumbnail'],
+            'SVG 가 아니라 다음 일반 이미지(PNG)가 목록 썸네일이어야 합니다.'
+        );
+    }
+
+    /**
+     * 첨부만 있는 글은 종전처럼 첨부 미리보기 주소가 목록 썸네일이다.
+     *
      * @scenario image_source=attachment_only, secrecy=normal
      *
      * @effects attachment_takes_precedence_over_content_image
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_only_post_keeps_existing_behavior(): void
@@ -221,6 +301,8 @@ class PostListContentThumbnailTest extends BoardTestCase
      * 생성 응답의 thumbnail 이 본문 이미지로 즉시 채워져야 합니다.
      *
      * @effects detail_and_og_share_same_fallback
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function create_response_thumbnail_is_immediately_filled(): void
@@ -241,6 +323,8 @@ class PostListContentThumbnailTest extends BoardTestCase
      * 수정 응답의 thumbnail 이 교체된 본문 이미지로 즉시 갱신되어야 합니다.
      *
      * @effects detail_and_og_share_same_fallback
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_response_thumbnail_reflects_new_content(): void

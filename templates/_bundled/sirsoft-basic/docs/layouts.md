@@ -367,6 +367,8 @@
 <!-- @intent START -->
 오버라이드는 **확장이 제공한 조각을 이 템플릿의 것으로 갈아 끼우는** 장치입니다. 지금은 하나
 있습니다 — `sirsoft-daum_postcode` 의 주소 검색 조각.
+원본과 같이 SDK 스크립트에 `label="$t:sirsoft-daum_postcode.search_address"` 를 선언해, 스크립트를 불러오지 못했을 때
+안내가 스크립트 id 가 아니라 「주소 검색」으로 나오게 합니다 — 원본 조각의 스크립트 선언을 바꾸면 이 오버라이드도 같이 맞춥니다.
 
 플러그인이 제공하는 원본 조각은 이커머스 관리자 화면에 맞춰져 있어, 방문자 화면의 배송지 입력
 디자인과 어긋납니다. 조각을 고치는 대신 **템플릿이 자기 버전을 얹는** 것이 이 방향입니다 —
@@ -1015,6 +1017,19 @@ slots.content:
 게시판·유형·상태 같은 조건이 걸려 있으면 「검색 결과가 없습니다」(`board.no_search_results`), 아무 조건이
 없을 때만 「아직 … 없습니다」입니다. 조건을 건 채 「아직 없음」을 띄우면 있는 항목이 사라진 것으로 읽힙니다.
 
+**좁은 화면의 게시판 활동 탭**: 내가 쓴 글·내가 쓴 댓글·내 반응·내 신고 네 탭은 390px 폭에서 칸을 넘으므로
+탭 막대 자체가 가로로 흐르게 둡니다(`overflow-x-auto whitespace-nowrap`). 막대가 넘치면 페이지 전체가 가로로
+밀립니다. 같은 이유로 검색 줄의 입력칸은 `min-w-0` 으로 줄어들 수 있어야 합니다 — 입력칸의 고유 최소 폭 때문에
+찾을 곳·입력·검색·초기화 줄이 칸 밖으로 나갑니다. 네 탭과 스크랩 탭의 검색 입력칸이 모두 이 규칙을 따릅니다.
+
+**목록 선택을 고치는 확인 창**: 스크랩 해제 창처럼 `modals` 에 둔 창이 목록 화면의 선택 배열(`scrapSelectedIds`)을
+비우거나 고칠 때는 `set-state target="$parent._local"` 로 씁니다. `target="local"` 은 창 자신의 지역 상태에 써서,
+목록의 「N개 선택」과 일괄 버튼이 그대로 남고 다음 일괄 요청에 빈 배열이나 지운 ID 가 실립니다. 창이 읽는 쪽도
+`$parent._local.scrapSelectedIds` 입니다.
+
+**게시판이 지워진 스크랩**: 게시판을 지우면 글도 함께 하드 삭제되므로 그 스크랩은 늘 「삭제된 게시글」 분기
+(`item.is_deleted`)로 옵니다. 그 분기에서 `item.board_deleted` 면 게시판 자리에 「게시판 삭제됨」을 답니다.
+
 **내 신고 목록의 머리줄**: 신고 시점 스냅샷의 `title ?? excerpt` 입니다 — 글 신고는 글 제목, 제목이 없는
 댓글 신고는 본문 요약이 나옵니다. 취소 확인 창도 같은 값을 보여 어느 신고를 거두는지 알립니다.
 
@@ -1079,13 +1094,19 @@ slots.content:
 ##### 사용자 프로필 (users/show.g7.html, users/posts.g7.html)
 
 ```text
-extends: _user_base
-data_sources: [user (공개 프로필)]
+users/show  extends: _user_base
+  data_sources: [profile (공개 프로필), postStats (글·댓글 수, auth_mode optional), recentPosts (최근 글 5건, auth_mode optional)]
+users/posts extends: _user_base
+  data_sources: [userProfile (프로필 머리말, auth_required), userPosts (작성글 목록, auth_mode optional)]
 slots.content:
   └── Container
       ├── Avatar + 사용자 정보
       └── 게시글 목록 (users/posts.g7.html)
 ```
+
+글 목록·건수 데이터 소스는 `auth_mode="optional"` 이다. 로그인한 방문자는 토큰을 실어 자신이 읽을 수 있는
+게시판(회원전용 등)의 글까지 보고, 비로그인 방문자는 토큰 없이 요청해 공개 게시판 기준으로 본다(서버
+`optional.sanctum`). `required` 로 두면 비로그인 방문자에게는 요청을 건너뛰어 공개 프로필이 빈다.
 
 ##### 정적 페이지 (page/show.g7.html)
 

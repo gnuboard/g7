@@ -89,12 +89,15 @@ return [
             ],
             'annual_notice_channels' => [
                 'label' => 'Delivery channels',
+                'required_when_enabled' => 'Select at least one delivery channel to turn on automatic notices.',
             ],
             'annual_notice_batch_size' => [
                 'label' => 'Recipients per run',
+                'required_when_enabled' => 'Enter the recipients per run to turn on automatic notices.',
             ],
             'annual_notice_introduction' => [
                 'label' => 'Notice introduction',
+                'label_with_language' => ':label (:language)',
             ],
             'cookie_policy_version' => [
                 'label' => 'Policy Version',
@@ -344,6 +347,21 @@ return [
             'privacy_policy_url' => 'Privacy policy URL',
             'privacy_policy_link' => 'Privacy policy link line (empty if there is no address)',
             'notice_sections' => 'Processing details contributed by extensions',
+        ],
+    ],
+    'validation' => [
+        // Fallback messages for rules a request does not word per field (ProvidesFallbackRuleMessages trait).
+        'fallback' => [
+            'in' => 'The selected :attribute is invalid.',
+            'not_in' => 'The selected :attribute cannot be used.',
+            'enum' => 'The selected :attribute is invalid.',
+            'exists' => 'The selected :attribute does not exist.',
+            'unique' => 'The :attribute has already been taken.',
+            'required_if' => 'The :attribute field is required when :other is :value.',
+            'required_with' => 'The :attribute field is required when :values is set.',
+            'required_without' => 'The :attribute field is required when :values is not set.',
+            'same' => 'The :attribute must match :other.',
+            'different' => 'The :attribute must be different from :other.',
         ],
     ],
 ];

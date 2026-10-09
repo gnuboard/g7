@@ -11,6 +11,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -18,6 +20,8 @@ use Modules\Sirsoft\Board\Rules\PermissionRolesRequiredRule;
 
 class UpdateBoardRequest extends FormRequest
 {
+    use MapsBoardSettingAttributes;
+    use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
 
@@ -269,40 +273,17 @@ class UpdateBoardRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
+            // 다국어 이름·설명 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름을 싣는다.
+            // 없으면 「name의 한국어(ko) 값은 필수입니다」처럼 필드 키가 그대로 보인다
+            'name' => __('sirsoft-board::validation.attributes.board.name'),
+            'description' => __('sirsoft-board::validation.attributes.board.description'),
             'blocked_keywords' => __('sirsoft-board::validation.attributes.board.blocked_keywords'),
             'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
 
         // 정수/설정 필드의 표시명 매핑 (.integer 등 기본 메시지 폴백 시 :attribute 가
-        // 영문 snake_case 로 노출되는 것을 차단). 기존 settings.basic_defaults 라벨을 재사용.
-        // 라벨 배열의 키는 'basic_defaults.per_page' 형태(점 포함 단일 키)이므로
-        // settings 배열을 통째로 받아 인덱싱한다 (__() 의 점 경로 분해로는 도달 불가).
-        $settingLabels = __('sirsoft-board::validation.attributes.settings');
-
-        if (is_array($settingLabels)) {
-            $settingFieldKeys = [
-                'per_page', 'per_page_mobile', 'order_by', 'order_direction',
-                'secret_mode', 'use_comment', 'use_reply', 'use_report',
-                'use_scrap',
-                'use_reaction', 'use_comment_reaction', 'active_reaction_types',
-                'comment_order', 'show_view_count',
-                'max_reply_depth', 'max_comment_depth',
-                'min_title_length', 'max_title_length',
-                'min_content_length', 'max_content_length',
-                'min_comment_length', 'max_comment_length',
-                'use_file_upload', 'max_file_size', 'max_file_count',
-                'allowed_extensions', 'notify_admin_on_post', 'notify_author',
-                'new_display_hours',
-            ];
-
-            foreach ($settingFieldKeys as $field) {
-                $labelKey = "basic_defaults.{$field}";
-
-                if (isset($settingLabels[$labelKey])) {
-                    $attributes[$field] = $settingLabels[$labelKey];
-                }
-            }
-        }
+        // 영문 snake_case 로 노출되는 것을 차단) — 생성 요청과 같은 매핑을 쓴다
+        $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);

@@ -8,7 +8,9 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
@@ -28,6 +30,16 @@ abstract class PluginTestCase extends TestCase
     use RefreshDatabase;
 
     /**
+     * 테스트 격리용 임시 plugins 스토리지 루트 (setUp 에서 만들고 tearDown 에서 지운다).
+     *
+     * 설정 저장 테스트(`PluginSettingsService::save`)는 `plugins` 디스크의 `sirsoft-gdpr/settings/setting.json`
+     * 에 실제로 쓴다. 디스크 루트를 테스트마다 따로 두어, 앞 테스트·앞 실행이 남긴 설정이 다음 테스트로
+     * 새지 않고 어떤 경우에도 개발 사이트 설정 파일(`storage/app/plugins/...`)을 덮지 않게 한다
+     * (2026-10-07 실측 O-M1F-A: 설정 저장 테스트 실행 시각에 개발 사이트 설정이 테스트 값 「필수」로 바뀜).
+     */
+    private ?string $isolatedPluginsRoot = null;
+
+    /**
      * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리 보장.
      *
      * @var array{hooks: array, filters: array, dispatching: array}|null
@@ -37,7 +49,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 테스트 환경 설정
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -45,6 +57,9 @@ abstract class PluginTestCase extends TestCase
 
         // HookManager 상태 스냅샷 (tearDown 에서 복원)
         $this->snapshotHookManager();
+
+        // plugins 디스크를 테스트 전용 임시 루트로 돌린다 (설정 파일 격리)
+        $this->isolatePluginStorage();
 
         // Repository 인터페이스 ↔ 구현체 바인딩 (GdprServiceProvider와 동일)
         $this->app->bind(GdprUserConsentRepositoryInterface::class, GdprUserConsentRepository::class);
@@ -69,7 +84,7 @@ abstract class PluginTestCase extends TestCase
      * prefix·name·middleware 는 프로바이더와 동일하게 맞춥니다 — 어긋나면 테스트가
      * 통과해도 운영 주소와 다른 곳을 밟게 됩니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerPluginApiRoutes(): void
     {
@@ -88,19 +103,56 @@ abstract class PluginTestCase extends TestCase
     /**
      * tearDown 에 HookManager 상태 복원.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
         $this->restoreHookManager();
+        $this->restorePluginStorage();
 
         parent::tearDown();
     }
 
     /**
+     * plugins 디스크 루트를 이 테스트만의 임시 디렉토리로 바꿉니다.
+     *
+     * 프로젝트 안 `storage/framework/testing` 아래에 두어 CI·open_basedir 환경에서도 쓸 수 있게 한다
+     * (본인인증 플러그인 테스트 베이스와 같은 방식).
+     *
+     * @return void 반환값 없음
+     */
+    private function isolatePluginStorage(): void
+    {
+        $this->isolatedPluginsRoot = storage_path('framework/testing/plugin-storage-'.uniqid('', true));
+
+        File::ensureDirectoryExists($this->isolatedPluginsRoot);
+
+        config(['filesystems.disks.plugins.root' => $this->isolatedPluginsRoot]);
+
+        // 이미 만들어진 'plugins' 디스크 인스턴스를 버려 새 루트로 다시 만들게 한다
+        Storage::forgetDisk('plugins');
+    }
+
+    /**
+     * 임시 plugins 루트를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function restorePluginStorage(): void
+    {
+        if ($this->isolatedPluginsRoot !== null && is_dir($this->isolatedPluginsRoot)) {
+            File::deleteDirectory($this->isolatedPluginsRoot);
+        }
+
+        $this->isolatedPluginsRoot = null;
+
+        Storage::forgetDisk('plugins');
+    }
+
+    /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -115,7 +167,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 스냅샷 시점으로 HookManager 복원.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -134,7 +186,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 관리자 권한을 가진 사용자를 생성합니다.
      *
-     * @return User
+     * @return User 생성된 사용자
      */
     protected function createAdminUser(): User
     {
@@ -159,7 +211,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 개인정보 운영자(privacy) 권한을 가진 사용자를 생성합니다.
      *
-     * @return User
+     * @return User 생성된 사용자
      */
     protected function createPrivacyOperatorUser(): User
     {
@@ -194,7 +246,7 @@ abstract class PluginTestCase extends TestCase
      *
      * RefreshDatabase의 migrate:fresh 명령에 코어 + 플러그인 마이그레이션 경로를 전달합니다.
      *
-     * @return array
+     * @return array<string, mixed> migrate:fresh 옵션
      */
     protected function migrateFreshUsing(): array
     {

@@ -1,4 +1,5 @@
-<!-- 다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다 -->
+<!-- 다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다
+e2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구조 Vitest(pluginSettingsDisplay.test.ts) + Playwright 격리 브라우저 ko/en·1440·375px 재실측 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-daum_postcode.settings.title" description="$t:sirsoft-daum_postcode.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
@@ -21,50 +22,56 @@
           <div>
             <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="grid-3col-responsive">{{message}}</li>
+              <li class="text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
       <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="settings_fields" class="p-6 space-y-6">
-          <div data-ref="field_display_mode" class="text-error-soft">
+          <div data-ref="field_display_mode" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.display_mode.label</label>
               <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode.hint</p>
             </div>
             <div class="lg:col-span-2">
               <select name="display_mode" class="focus:border-transparent">
-                <option value="popup">popup</option>
-                <option value="layer">layer</option>
+                <option value="popup">$t:sirsoft-daum_postcode.settings.fields.display_mode.popup</option>
+                <option value="layer">$t:sirsoft-daum_postcode.settings.fields.display_mode.layer</option>
               </select>
+              <!-- 저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11) -->
+              <span data-if="{{_local.errors?.display_mode}}" class="form-error">{{_local.errors?.display_mode?.[0]}}</span>
             </div>
           </div>
-          <div data-ref="field_popup_width" class="text-error-soft">
+          <div data-ref="field_popup_width" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.popup_width.label</label>
               <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.popup_width.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="number" name="popup_width" class="focus:border-transparent"/>
+              <!-- 범위는 플러그인 설정 스키마(min 100 · max 2000)와 같다 — 서버 검증이 같은 값으로 422 를 낸다 -->
+              <input type="number" name="popup_width" min="100" max="2000" class="focus:border-transparent"/>
+              <span data-if="{{_local.errors?.popup_width}}" class="form-error">{{_local.errors?.popup_width?.[0]}}</span>
             </div>
           </div>
-          <div data-ref="field_popup_height" class="text-error-soft">
+          <div data-ref="field_popup_height" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.popup_height.label</label>
               <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.popup_height.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <input type="number" name="popup_height" class="focus:border-transparent"/>
+              <input type="number" name="popup_height" min="100" max="2000" class="focus:border-transparent"/>
+              <span data-if="{{_local.errors?.popup_height}}" class="form-error">{{_local.errors?.popup_height?.[0]}}</span>
             </div>
           </div>
-          <div data-ref="field_theme_color" class="text-error-soft">
+          <div data-ref="field_theme_color" class="grid-3col-responsive">
             <div class="lg:col-span-1">
               <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.theme_color.label</label>
               <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.theme_color.hint</p>
             </div>
             <div class="lg:col-span-2">
               <input type="text" name="theme_color" placeholder="#1D4ED8" class="focus:border-transparent"/>
+              <span data-if="{{_local.errors?.theme_color}}" class="form-error">{{_local.errors?.theme_color?.[0]}}</span>
             </div>
           </div>
         </div>

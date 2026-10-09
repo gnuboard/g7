@@ -6,11 +6,13 @@
     "scripts": [
         {
             "src": "/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js",
-            "id": "ckeditor5_script"
+            "id": "ckeditor5_script",
+            "label": "$t:sirsoft-ckeditor5.editor.asset.label"
         }
     ],
     "components": [
         {
+            "comment": "읽기 전용 값이 로드 뒤에 바뀌어도(권한 확인 도착 등) 편집기가 따라가도록, 같은 식으로 컨테이너의 상태 표식 data-readonly 를 바꾼다 — 핸들러가 이 속성 변화를 지켜본다. 표식은 스타일이 아니라 상태라 클래스로 두지 않는다. 핸들러는 컨테이너를 id 로 찾으므로 컨테이너에는 클래스가 없다",
             "id": "ckeditor5_container",
             "type": "basic",
             "name": "Div",
@@ -46,7 +48,7 @@
             },
             "props": {
                 "id": "ckeditor5-{{extensionPointProps.name ?? 'content'}}",
-                "className": "ckeditor5-wrapper"
+                "data-readonly": "{{String(_computed.isReadOnly ?? extensionPointProps.disabled ?? extensionPointProps.readOnly ?? false) === 'true' ? 'true' : 'false'}}"
             }
         }
     ]

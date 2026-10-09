@@ -11,6 +11,8 @@ axes:
 effects:
   - guest_notice_option_hidden
   - form_meta_max_file_size_falls_back_to_defaults
+  # 비회원 능력 판정은 코어의 요청 단위 guest 역할 해석기를 쓴다 — 함수 정적 변수면 다시 만든 guest 역할을 보지 못한다(K1 후속 2026-10-06)
+  - guest_abilities_follow_guest_role_changes_in_same_process
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/GuestNoticeAbilityTest.php

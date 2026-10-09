@@ -77,6 +77,12 @@ class UserReactionInfoListener implements HookListenerInterface
             return $data;
         }
 
+        // 반응 조회 권한이 없는 관리자에게는 싣지 않는다 — 실으면 회원 상세가 「반응」 탭과
+        // 건수를 그리고, 탭의 「이 회원 반응 목록 보기」는 403 화면으로 끝난다.
+        if (! $this->checkModulePermission('reactions', 'view')) {
+            return $data;
+        }
+
         try {
             $summary = $this->reactionService->summaryForUser($user->id);
         } catch (QueryException $e) {

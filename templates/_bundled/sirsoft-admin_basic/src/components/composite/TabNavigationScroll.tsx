@@ -36,7 +36,22 @@ export interface Tab {
   scrollDelay?: number;
   /** 개별 탭 클릭 시 실행될 콜백 (우선순위: 개별 > 공통 > 기본) */
   onClick?: (tabId: string | number) => void;
+  /**
+   * 항목 노출 조건 — 엔진이 `{{…}}` 를 값으로 풀어 넘긴다. 키가 있고 값이 거짓이면 탭 목록에서 뺀다.
+   * 확장이 inject_props 로 덧붙이는 탭(회원 상세 「반응」·「스크랩」 등)이 데이터·권한이 없을 때
+   * 버튼만 남지 않도록 쓴다. 키가 없으면 항상 보인다.
+   */
+  if?: unknown;
 }
+
+/**
+ * 항목 조건(if)을 통과한 탭만 남깁니다.
+ *
+ * @param tabs 레이아웃이 넘긴 탭 목록
+ * @returns 보여 줄 탭 목록
+ */
+const filterVisibleTabs = (tabs: Tab[] | undefined): Tab[] =>
+  (tabs ?? []).filter((tab) => !Object.prototype.hasOwnProperty.call(tab, 'if') || Boolean(tab.if));
 
 /**
  * TabNavigationScroll Props
@@ -101,7 +116,7 @@ export interface TabNavigationScrollProps {
  * ```
  */
 export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
-  tabs: tabsProp,
+  tabs: rawTabs,
   activeTabId,
   className = 'bg-white dark:bg-gray-800 flex gap-2 border-b border-gray-200 dark:border-gray-700 px-6',
   style,
@@ -117,11 +132,8 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 표시 조건이 거짓인 탭(`if` 키가 있고 값이 거짓)은 처음부터 목록에서 뺀다 — 그리기·화살표 이동·스크롤 감시·모바일 선택 모두 이 목록만 본다.
-  const tabs = useMemo(
-    () => (tabsProp ?? []).filter((tab) => !(tab && Object.prototype.hasOwnProperty.call(tab, 'if') && !tab.if)),
-    [tabsProp]
-  );
+  // 항목 조건(if)이 거짓인 탭은 버튼·모바일 선택지·화살표 이동·Scroll Spy 모두에서 뺀다.
+  const tabs = useMemo(() => filterVisibleTabs(rawTabs), [rawTabs]);
 
   const [activeTab, setActiveTab] = useState<string | number>(
     activeTabId ?? (tabs.length > 0 ? tabs[0].id : '')
@@ -138,6 +150,13 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   // Scroll Spy 일시 중지를 위한 ref
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /**
+   * 사용자가 누른 탭 — 사용자가 직접 스크롤(휠·터치·스크롤 키)할 때까지 Scroll Spy 가 활성 탭을 바꾸지 않는다.
+   *
+   * 스크롤 이동이 지연·애니메이션보다 길거나 섹션이 맨 위까지 올라오지 못하면(페이지 바닥) 다시 켜진 Scroll Spy 가
+   * 더 많이 보이는 다른 섹션·마지막 탭을 활성으로 바꿔, 누른 탭이 아닌 탭이 선택된 것처럼 보였다(7.1.0 실측 O-KF-2).
+   */
+  const pinnedTabRef = useRef<string | number | null>(null);
 
   /** 탭 버튼 DOM 참조 — 화살표 이동 시 초점을 옮기기 위해 보관한다. */
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -147,9 +166,10 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
    * 우선순위: 개별 탭 onClick > 공통 onTabChange > 기본 동작
    */
   const handleTabClick = (tab: Tab) => {
-    // Scroll Spy 일시 중지
+    // Scroll Spy 일시 중지 — 누른 탭은 사용자가 직접 스크롤할 때까지 고정한다
     if (enableScrollSpy) {
       isScrollingRef.current = true;
+      pinnedTabRef.current = tab.id;
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
@@ -173,6 +193,11 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     }
     // 우선순위 3: 콜백이 없으면 내부 상태 업데이트
     else {
+      setActiveTab(tab.id);
+    }
+
+    // 콜백이 있어도 Scroll Spy 를 쓰면 활성 표시는 이 컴포넌트가 그린다 — 누른 탭을 바로 활성으로 둔다
+    if (enableScrollSpy && (tab.onClick || onTabChange)) {
       setActiveTab(tab.id);
     }
 
@@ -299,12 +324,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      // 수동 스크롤 중에는 Scroll Spy 비활성화
-      if (isScrollingRef.current) {
-        return;
-      }
-
-      // 교차 비율 업데이트
+      // 교차 비율은 항상 갱신한다 — 고정이 풀린 뒤 첫 판정이 그동안 바뀐 보임 상태를 알아야 한다
       entries.forEach((entry) => {
         const targetId = entry.target.id;
         if (entry.isIntersecting) {
@@ -313,6 +333,11 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
           intersectingEntries.delete(targetId);
         }
       });
+
+      // 탭을 눌러 이동한 뒤에는 사용자가 직접 스크롤할 때까지 누른 탭을 그대로 둔다
+      if (isScrollingRef.current || pinnedTabRef.current !== null) {
+        return;
+      }
 
       // 가장 많이 보이는 섹션 찾기
       let maxRatio = 0;
@@ -357,6 +382,30 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
       // 향후 필요시 추가 로직 구현 가능
     };
 
+    // 사용자가 직접 스크롤하면 누른 탭 고정을 푼다(휠·터치·스크롤 키). 프로그램 스크롤(탭 이동)은 이 이벤트를 내지 않는다.
+    const scrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+    const releasePin = () => {
+      pinnedTabRef.current = null;
+      isScrollingRef.current = false;
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+    const handleUserScrollKey = (e: KeyboardEvent) => {
+      if (!scrollKeys.has(e.key)) {
+        return;
+      }
+      const target = e.target as HTMLElement | null;
+      // 탭 목록 안 화살표 이동·입력칸 커서 이동은 스크롤 의도가 아니다
+      if (target?.closest?.('[role="tab"], input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+      releasePin();
+    };
+    window.addEventListener('wheel', releasePin, { passive: true });
+    window.addEventListener('touchmove', releasePin, { passive: true });
+    window.addEventListener('keydown', handleUserScrollKey);
+
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
     // 모든 섹션 관찰 시작
@@ -374,6 +423,9 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     return () => {
       observer.disconnect();
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('wheel', releasePin);
+      window.removeEventListener('touchmove', releasePin);
+      window.removeEventListener('keydown', handleUserScrollKey);
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }

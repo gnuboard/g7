@@ -784,34 +784,58 @@
                                 "name": "TabNavigation",
                                 "actions": [
                                     {
-                                        "comment": "탭 전환 — 검증 오류를 **먼저 지운다**(다른 탭의 오류가 새 탭 머리에 남아 있으면\n                 그 탭이 잘못된 것으로 읽힌다). 전역과 URL 둘 다에 탭을 남기는 이유는, 전역은 소스의\n                 `if` 판정이 즉시 읽고 URL 은 새로고침·링크 공유를 위해 필요하기 때문이다.",
+                                        "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고,\n                 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
                                         "type": "change",
                                         "event": "onTabChange",
-                                        "handler": "sequence",
-                                        "actions": [
+                                        "handler": "conditions",
+                                        "conditions": [
                                             {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "errors": null
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "activeSettingsTab": "{{$args[0]}}"
-                                                }
-                                            },
-                                            {
-                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/settings",
-                                                    "replace": true,
-                                                    "query": {
-                                                        "tab": "{{$args[0]}}"
+                                                "if": "{{_local.hasChanges === true && $args[0] !== (_global.activeSettingsTab || query.tab || 'general')}}",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "pendingSettingsTab": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "modal_settings_unsaved_tab"
                                                     }
+                                                ]
+                                            },
+                                            {
+                                                "then": {
+                                                    "comment": "탭 전환 — 검증 오류를 **먼저 지운다**(다른 탭의 오류가 새 탭 머리에 남아 있으면\n                     그 탭이 잘못된 것으로 읽힌다). 전역과 URL 둘 다에 탭을 남기는 이유는, 전역은 소스의\n                     `if` 판정이 즉시 읽고 URL 은 새로고침·링크 공유를 위해 필요하기 때문이다.",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "errors": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "activeSettingsTab": "{{$args[0]}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/settings",
+                                                                "replace": true,
+                                                                "query": {
+                                                                    "tab": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         ]
@@ -1328,6 +1352,10 @@
         {
             "comment": "비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다.",
             "partial": "partials/admin_settings/_modal_password_expiry_run.json"
+        },
+        {
+            "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
+            "partial": "partials/admin_settings/_modal_unsaved_tab_switch.json"
         }
     ]
 }

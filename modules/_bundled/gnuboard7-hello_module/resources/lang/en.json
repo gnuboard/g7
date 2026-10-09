@@ -17,7 +17,8 @@
         "memos": {
             "index": {
                 "title": "Hello Memos",
-                "description": "Learning memo list"
+                "description": "Learning memo list",
+                "empty": "No memos have been written yet."
             },
             "form": {
                 "title_create": "Create Memo",
@@ -36,7 +37,8 @@
     "user": {
         "memos": {
             "index": {
-                "title": "Memo List"
+                "title": "Memo List",
+                "empty": "There are no memos yet."
             }
         }
     }

@@ -507,7 +507,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 상품을 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.products.create` 권한이 필요하며, `StoreProductRequest`로 검증된 데이터를 `ProductService::create()`에 넘겨 상품·옵션·카테고리·이미지·SEO 메타를 함께 저장하고 성공 시 201과 `ProductResource`를 반환합니다. 이미지는 사전에 `POST .../products/images`로 임시 업로드한 뒤 `image_temp_key`(또는 `images`/`thumbnail_hash`)로 연결하며, `options`는 최소 1건 필수입니다. 검증 실패는 422, 그 외 오류는 500으로 응답합니다.
+**설명** 새 상품을 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.products.create` 권한이 필요하며, `StoreProductRequest`로 검증된 데이터를 `ProductService::create()`에 넘겨 상품·옵션·카테고리·이미지·SEO 메타를 함께 저장하고 성공 시 201과 `ProductResource`를 반환합니다. 이미지는 사전에 `POST .../products/images`로 임시 업로드한 뒤 `image_temp_key`(또는 `images`/`thumbnail_hash`)로 연결하며, `options`는 최소 1건 필수입니다. 검증 실패는 422, 그 외 오류는 500으로 응답합니다. 다국어 `option_groups.*.name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`·`notice_items.*.content` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「옵션그룹명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the option group name field is required."). 칸 이름은 차례로 「옵션그룹명」·「추가옵션 그룹명」·「추가옵션 선택지명」·「상품정보제공고시 항목명」·「상품정보제공고시 내용」입니다.
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/products/bulk-price
@@ -2110,7 +2110,7 @@ HTTP/1.1 200
 > **다국어 이름 필수 언어(수정)**: 이름류(`option_groups.*.name`·`options.*.option_name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`/`content`)는 사이트 기본 언어(`app.site_locale`) 값이 필수지만, **같은 상품에 이미 저장된 값과 같은 이름**은 길이·형식만 검사한다(필수 언어 기준이 바뀌기 전에 다른 언어로만 저장된 이름이 수정 화면에 고칠 칸이 없어도 저장을 막지 않게 — 제품 결정 2026-10-08). 바꾸거나 새로 넣은 이름은 종전대로 필수다.
 
 
-**설명** ID 경로로 지정한 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, 라우트 모델 바인딩된 `Product`에 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`로 반영해 상품 기본정보·옵션·이미지·SEO 메타를 갱신하고 `ProductResource`를 반환합니다. `by-code` 변형과 동일 서비스 메서드를 쓰지만 상품코드 조회 단계 없이 바로 대상 모델을 받습니다. 검증 실패는 422, 대상이 없으면 404로 응답합니다.
+**설명** ID 경로로 지정한 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, 라우트 모델 바인딩된 `Product`에 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`로 반영해 상품 기본정보·옵션·이미지·SEO 메타를 갱신하고 `ProductResource`를 반환합니다. `by-code` 변형과 동일 서비스 메서드를 쓰지만 상품코드 조회 단계 없이 바로 대상 모델을 받습니다. 검증 실패는 422, 대상이 없으면 404로 응답합니다. 다국어 `option_groups.*.name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`·`notice_items.*.content` 에서 지금 화면 언어 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「옵션그룹명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the option group name field is required."). 칸 이름은 생성과 같습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/products/{product}/can-delete

@@ -298,6 +298,10 @@ Content-Type: application/json
 두 형태가 함께 등록되는 이유는 서버 설정 차이 때문이다. 정규식 location(`location ~* \.(js|css|json)$`)이 프리픽스 location 보다 먼저 매칭되는 nginx 구성에서는 `.json` 으로 끝나는 동적 응답이 `try_files ... /index.php` 폴백 없이 404 가 된다. 그래서 라우트는 `Route::dualSuffix()` 로 두 형태를 동시에 등록하고, 클라이언트는 `/api/system/asset-probe` 프로브 결과에 따라 어느 쪽을 쓸지 결정한다. URL 조립은 서버측 `App\Support\AssetUrl`, 프론트측 `resources/js/core/support/assetUrl.ts` 가 담당하며 직접 문자열로 조립하지 않는다.
 
 
+**빈 객체 보존** — 병합된 레이아웃 응답은 원본(`.g7.html`·짝 `.json`·DB 행)이 빈 객체 `{}` 인 자리를 `{}` 로 돌려준다. `initLocal`·`initGlobal`·`initIsolated`·`state` 섹션의 값, 액션 `params`·데이터 소스 `fallback` 아래 값이 대상이고, 비어 있는 맵 섹션(`meta`·`initLocal`·`initGlobal`·`initIsolated`·`state`·`computed`·`defines`·`named_actions`)도 `{}` 로 낸다. 목록(`[]`)은 그대로 목록이다. 종전에는 배열로 디코드하는 단계에서 `{}` 가 `[]` 로 바뀌어 화면이 키-값 상태를 배열로 받았다.
+
+**PHP 쪽 소비자** — 이 보존은 병합 단계에서 일어나므로 응답만이 아니라 PHP 가 받는 레이아웃에도 적용된다. `LayoutService::getLayout()`·`loadAndMergeLayout()` 의 반환값과 `core.layout.filter_parent_data`·`core.layout.filter_child_data`·`core.layout.filter_merged`·`core.layout.after_merge`·`core.layout.after_load`·`core.layout.after_get` 훅 페이로드에서, 위 값 자리의 빈 객체는 빈 배열이 아니라 `stdClass` 다(섹션 자체와 `props`·`params` 키 자신의 값은 종전대로 배열). 그 자리를 배열로 다루는 확장 코드(`array_merge`, `count`, 배열 인덱싱 등)는 `is_array()` 로 먼저 가리거나, 화면에 넘기지 않고 PHP 안에서만 쓸 레이아웃이면 `App\Support\LayoutEmptyObjects::toArrays($layout)` 로 빈 배열로 되돌려 쓴다(코어 SEO 렌더러가 이렇게 한다). 화면에 내보낼 레이아웃을 되돌리면 `{}` 가 다시 `[]` 로 나간다.
+
 ### GET /api/layouts/{templateIdentifier}/{layoutName}.json
 <!-- @generated:start:api.public.layouts.serve -->
 - **라우트명**: `api.public.layouts.serve`

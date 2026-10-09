@@ -10,7 +10,7 @@ description: |
   캐시에 애초에 넣지 않는다(키는 유지하고 값 `null`).
 
 axes:
-  case: [post_detail_guest, post_list_guest, comment_list_guest, board_detail_guest, post_detail_admin, post_detail_owner, popular_guest, popular_admin_then_guest, report_detail_admin]
+  case: [post_detail_guest, post_list_guest, comment_list_guest, board_detail_guest, post_detail_admin, post_detail_owner, popular_guest, popular_admin_then_guest, report_detail_admin, author_search_guest, author_search_admin]
 
 effects:
   - author_email_absent_for_guest
@@ -20,6 +20,9 @@ effects:
   - popular_other_fields_intact
   - popular_cache_never_holds_email
   - report_comment_author_email_admin_only
+  # 작성자 검색도 공개 경로에서는 이메일로 찾지 않는다(2026-10-07 실측 K4-D2) — 관리자 목록은 종전대로.
+  - author_search_ignores_email_for_guest
+  - author_search_matches_email_for_admin
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/MemberEmailExposureTest.php

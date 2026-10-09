@@ -564,10 +564,13 @@
                                                 }
                                             },
                                             {
-                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.\n                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0 O-G3-4). 꺼져 있으면 빈 값이라 주소에 붙지 않는다.",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/templates/{{$args[0]}}"
+                                                    "path": "/admin/templates/{{$args[0]}}",
+                                                    "query": {
+                                                        "include_hidden": "{{query.include_hidden === '1' ? '1' : undefined}}"
+                                                    }
                                                 }
                                             },
                                             {

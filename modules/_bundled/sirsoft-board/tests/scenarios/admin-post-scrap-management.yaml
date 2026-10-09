@@ -12,7 +12,7 @@ description: |
   알 방법이 없어, 특정 글이 왜 갑자기 조회수가 뛰는지·어떤 회원이 무엇을 모으고 있는지를
   물어 오면 DB 를 직접 열어야 했다. 이 작업은 그 축을 화면으로 세운다.
 
-  회원 상세 「스크랩」 탭은 **요약만** 낸다(PO 결정 R1) — 건수와 최근 시각, 그리고 이 회원으로
+  회원 상세 「스크랩」 탭은 **요약만** 낸다(결정 R1) — 건수와 최근 시각, 그리고 이 회원으로
   좁힌 목록으로 가는 링크. 같은 표를 회원 상세 안에 한 벌 더 두지 않는다.
 
   스크랩 레코드는 원글·게시판이 지워져도 남는다. 목록에서 감추면 정리할 대상을 찾지 못하므로,
@@ -70,6 +70,8 @@ effects:
   - admin_scrap_search_author_name
   - admin_scrap_row_exposes_deleted_post_title_and_status
   - admin_scrap_row_exposes_board_flags
+  - admin_scrap_index_carries_board_options_meta
+  - admin_scrap_index_server_error_returns_500
   # 백엔드 — 삭제
   - admin_scrap_destroy_requires_manage_permission
   - admin_scrap_destroy_removes_and_decrements_count
@@ -81,12 +83,15 @@ effects:
   - admin_scrap_bulk_destroy_requires_manage_permission
   # 백엔드 — 회원 상세 주입과 권한·메뉴 선언
   - admin_user_detail_includes_scrap_summary
+  # K2 실측(2026-10-06) — 스크랩 조회 권한 없는 관리자에게 회원 상세 요약이 실려 탭 링크가 403 으로 끝났다
+  - admin_user_detail_omits_scrap_summary_without_view_permission
   - profile_endpoint_omits_scrap_summary
   - module_declares_scrap_permissions_and_menu
   # 레이아웃 — 관리자 목록
   - admin_list_datasource_passes_all_filters
-  - admin_list_board_select_source_is_separate
-  - admin_list_board_select_iterates_data_source
+  # K2 실측(2026-10-06) — 스크랩 조회만 가진 매니저는 게시판 목록 API 가 403 이라 게시판 셀렉트가 비었다
+  - admin_list_board_select_source_is_response_meta
+  - admin_list_board_select_iterates_response_meta
   - admin_list_requires_view_permission
   - admin_list_route_bound_to_view_permission
   - admin_list_search_field_offers_six_targets
@@ -103,6 +108,8 @@ effects:
   - admin_list_page_change_clears_selection
   - admin_list_sort_change_clears_selection
   - admin_list_row_actions_three_branches
+  # K2 실측(2026-10-06) — 게시판이 삭제된 행의 「게시글 보기」가 /admin/board//post/N 404 로 갔다
+  - admin_list_go_to_post_disabled_without_board
   - admin_list_marks_deleted_board_and_post
   - admin_list_bulk_button_requires_manage_and_selection
   - admin_list_single_delete_removes_id_from_selection
@@ -118,7 +125,7 @@ effects:
   - member_tab_link_hidden_when_empty
   - member_tab_link_carries_user_uuid
 
-  # 목록 칸 표기 (PO 제보 2026-09-16) — 서버가 두 필드를 다 내므로 «화면이 어느 쪽을 골랐나» 가 축이다
+  # 목록 칸 표기 (제보 2026-09-16) — 서버가 두 필드를 다 내므로 «화면이 어느 쪽을 골랐나» 가 축이다
   - admin_list_shows_absolute_timestamp_with_seconds
   - admin_list_member_cell_opens_context_menu
   - admin_list_member_menu_search_scopes_list

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
+use Modules\Sirsoft\Board\Exceptions\CommentParentDeletedException;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Http\Requests\BlindCommentRequest;
 use Modules\Sirsoft\Board\Http\Requests\RestoreCommentRequest;
@@ -237,6 +239,9 @@ class CommentController extends AdminBaseController
                 'sirsoft-board::messages.comment.blind_success',
                 new CommentResource($comment)
             );
+        } catch (DeletedContentBlindException $e) {
+            // 삭제된 댓글 — 블라인드하면 삭제가 풀린다. 지금 상태와 충돌하므로 409, 먼저 복구하라고 안내한다
+            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
         } catch (\Exception $e) {
@@ -273,6 +278,9 @@ class CommentController extends AdminBaseController
                 'sirsoft-board::messages.comment.restore_success',
                 new CommentResource($comment)
             );
+        } catch (CommentParentDeletedException $e) {
+            // 원글이 삭제된 상태 — 댓글만 살리면 고아 댓글이 된다. 409 로 원글 복구를 먼저 안내한다
+            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
         } catch (\Exception $e) {

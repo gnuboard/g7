@@ -74,18 +74,18 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
             expect(ds.params['filters[0][value]']).toMatch(/filters\[0\]\[value\]/);
         });
 
-        // @scenario surface=admin_list
-        // @effects admin_list_board_select_source_is_separate
-        it('게시판 셀렉트는 목록이 아니라 선택지라 페이지를 나누지 않고 두 칸만 받는다', () => {
-            const ds = layout.data_sources.find((d: any) => d.id === 'scrap_boards');
-
-            expect(ds.endpoint).toContain('per_page=999');
-            expect(ds.endpoint).toContain('fields=id,title');
+        // @scenario surface=admin_list, permission=view
+        // @effects admin_list_board_select_source_is_response_meta
+        it('게시판 셀렉트는 게시판 목록 API 가 아니라 목록 응답 메타에서 선택지를 받는다', () => {
+            // 게시판 목록 API(admin/boards)는 게시판 관리 권한이 있어야 열린다 — 스크랩 조회만 가진
+            // 매니저에게는 403 이 나고 셀렉트가 빈다(K2 실측 2026-10-06, 반응 관리 K1-D10 과 같은 결함).
+            expect(layout.data_sources.some((d: any) => /admin\/boards\?/.test(d.endpoint ?? ''))).toBe(false);
+            expect(layout.data_sources.some((d: any) => d.id === 'scrap_boards')).toBe(false);
         });
 
         // @scenario surface=admin_list
-        // @effects admin_list_board_select_iterates_data_source
-        it('게시판 셀렉트 전량이 데이터소스를 실제로 순회한다 — 정적 목록으로 구워지면 빈 칸만 남는다', () => {
+        // @effects admin_list_board_select_iterates_response_meta
+        it('게시판 셀렉트 전량이 목록 응답 메타를 실제로 순회한다 — 정적 목록으로 구워지면 빈 칸만 남는다', () => {
             // 모집단을 레이아웃에서 파생한다(넓은 화면 판 + 좁은 화면 판). 한쪽만 고치면
             // 다른 쪽이 조용히 빈 셀렉트로 남는다.
             // <options> 로 감싸면 컴파일러가 정적 props.options 로 평탄화하면서 data-each 를
@@ -109,7 +109,7 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
 
                 const iterated = asArray(select?.children).find((c: any) => c?.iteration);
 
-                expect(iterated?.iteration?.source).toContain('scrap_boards');
+                expect(iterated?.iteration?.source).toContain('scraps?.data?.boards');
                 expect(iterated?.iteration?.item_var).toBeTruthy();
                 expect(iterated?.props?.value).toContain(iterated.iteration.item_var);
             }
@@ -288,6 +288,17 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
             expect(cases.go_to_post.params.path).toMatch(/\/admin\/board\//);
             expect(cases.go_to_member.params.path).toMatch(/\/admin\/users\//);
             expect(JSON.stringify(cases.delete)).toMatch(/delete_modal/);
+        });
+
+        // @scenario surface=admin_list, board_state=deleted
+        // @effects admin_list_go_to_post_disabled_without_board
+        it('게시판이 지워진 행에서는 「게시글 보기」가 잠긴다', () => {
+            // 게시판이 하드 삭제되면 행의 board 가 null 이라 경로가 /admin/board//post/N 이 되어 404 로 간다
+            // (K2 실측 2026-10-06). 제목 칸 링크는 이미 `!row.board` 면 감추므로 행 메뉴도 같은 근거로 잠근다.
+            const rowActions = asArray(grid?.props?.rowActions);
+
+            expect(rowActions.find((a: any) => a.id === 'go_to_post')?.disabledField).toBe('board.slug');
+            expect(rowActions.find((a: any) => a.id === 'delete')?.disabledField).toBe('abilities.can_delete');
         });
 
         // @scenario surface=admin_list, board_state=deleted

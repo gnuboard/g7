@@ -1,0 +1,19 @@
+feature: 관리자 게시글 상세 첨부 펼침 토글 — 버튼 의미와 고유 id
+
+description: |
+  원글·답글 카드의 「첨부파일 (N)」 펼침 토글이 Div 였다. 마우스로만 눌리고 키보드 탭 순서에 들어가지
+  않았으며 펼침 여부를 보조기술에 알리지 않았다. 답글 카드는 반복 안에서 그려지는데 id 가 고정
+  문자열 attachments_toggle 이라 원글 하나와 답글 둘인 상세에 같은 id 가 세 번 나왔다(7.1.0 실측 K3 관측 O-K3-14).
+
+  토글을 type="button" 으로 바꿔 Enter·Space 로 눌리게 하고, aria-expanded 로 펼침 상태를,
+  aria-controls 로 펼쳐지는 목록 묶음을 알린다. 답글 카드의 토글·목록 id 에는 답글 식별자를 넣는다.
+
+axes:
+  card: [post, reply]
+
+effects:
+  - admin_attachments_toggle_is_keyboard_button
+  - admin_attachments_toggle_ids_unique_per_reply
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-attachments-toggle-a11y.test.ts

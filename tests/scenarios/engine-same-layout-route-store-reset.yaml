@@ -1,0 +1,36 @@
+feature: 같은 레이아웃의 다른 경로로 옮길 때 이전 화면 폼 상태 비우기 (engine-v1.79.0)
+
+description: |
+  같은 레이아웃을 쓰는 다른 경로(역할 수정 → 등록, 게시판 수정 → 등록, 게시글 수정 → 작성)로 옮기면
+  상태를 가진 보존 루트의 내부 저장소(React localDynamicState, 저장소 A)에 이전 폼이 남아 새 화면에 섞였다
+  (7.1.0 실측 K3 C06·C07 — 영어 이름이 되살아나고, 입력하는 순간 id 가 되살아남). localInit prune 은 payload
+  잎만 지우므로 이전 레코드에만 있던 잎을 걷지 못했다.
+
+  계약:
+    1) 레이아웃 이름 + 라우트 경로가 바뀌면 상태를 가진 루트의 저장소 A 를 렌더 단계에서 비운다.
+    2) 쿼리만 바뀌면(탭 전환 등) 저장소 A 를 유지한다.
+    3) 경로가 바뀌기 전에 걸린 자동 바인딩 디바운스 값은 새 경로에서 버린다.
+    4) 경로가 바뀌면 localInit 추적을 리셋해 새 화면의 initLocal 이 처음부터 적용된다.
+    5) `_local` 선언이 없는 같은 레이아웃 재렌더도 저장소 B(전역 `_local`)를 렌더 문맥에 싣는다.
+
+axes:
+  case: [route_change_board_edit_to_create, query_only_change, debounced_auto_binding_route_change, local_init_tracking_reset, no_local_declaration_store_b, role_form_browser]
+
+effects:
+  - destination_first_render_has_no_previous_leaf
+  - typing_does_not_resurrect_previous_id
+  - store_a_kept_on_query_only_change
+  - pending_debounce_dropped_after_route_change
+  - local_init_tracking_reset_on_path_change
+  - render_context_carries_store_b
+  - previous_record_leaf_absent
+  - no_page_errors
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.sameLayoutRouteReset.test.tsx
+  - resources/js/core/__tests__/TemplateApp.localeSwitch.test.ts
+  - tests/Playwright/specs/admin/same-layout-route-locale-state.spec.ts
+
+notes: |
+  `TemplateApp.localeSwitch.test.ts` 는 언어 전환 계약(engine-locale-switch-unsaved-state.yaml)과 함께
+  경로 전환의 localInit 추적 리셋, 저장소 B 문맥 2건을 담는다. 브라우저 실측은 조치 G1.

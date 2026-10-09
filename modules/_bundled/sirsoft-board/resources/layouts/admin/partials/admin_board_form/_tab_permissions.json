@@ -68,6 +68,34 @@
                             "text": "$t:sirsoft-board.admin.form.permissions.managers_description"
                         },
                         {
+                            "comment": "다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다(K4F-2). 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다",
+                            "id": "permissions_members_assign_denied",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.can_assign_board_members === false}}",
+                            "props": {
+                                "className": "alert-warning mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "lock",
+                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.permissions.members_assign_denied"
+                                }
+                            ]
+                        },
+                        {
                             "id": "permissions_managers_taginput",
                             "type": "composite",
                             "name": "TagInput",
@@ -125,7 +153,7 @@
                                 "className": "w-full",
                                 "defaultVariant": "blue",
                                 "isSearchable": true,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}"
                             }
                         },
                         {
@@ -229,7 +257,7 @@
                                 "className": "w-full",
                                 "defaultVariant": "green",
                                 "isSearchable": true,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}"
                             }
                         },
                         {

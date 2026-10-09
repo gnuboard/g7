@@ -201,6 +201,74 @@ class MarketingConsentService
     }
 
     /**
+     * 채널 라벨을 주어진 로케일로 해석합니다.
+     *
+     * `label_key` 가 SSoT 다 — 저장된 `label` 맵은 언어팩 미설치 환경 보호용 폴백이고, 저장 시점의
+     * 지원 로케일만 담는다. 그 로케일에 번역이 있으면 번역을, 없으면 저장 맵(→ 폴백 로케일 → ko → 키)을 쓴다.
+     *
+     * @param  array<string, mixed>  $channel  채널 정의
+     * @param  string  $locale  로케일
+     * @return string 해석된 라벨
+     */
+    public function resolveChannelLabel(array $channel, string $locale): string
+    {
+        $labelKey = $channel['label_key'] ?? null;
+
+        if (is_string($labelKey) && $labelKey !== '') {
+            $translated = __($labelKey, [], $locale);
+
+            // 번역 부재 시 __() 는 키 원문을 돌려준다 — 그때만 저장된 맵으로 내려간다.
+            if (is_string($translated) && $translated !== $labelKey) {
+                return $translated;
+            }
+        }
+
+        $label = $channel['label'] ?? [];
+
+        if (is_string($label)) {
+            return $label;
+        }
+
+        return $label[$locale] ?? $label[config('app.fallback_locale', 'ko')] ?? $label['ko'] ?? (string) ($channel['key'] ?? '');
+    }
+
+    /**
+     * 화면이 `$localized` 로 읽을 로케일별 라벨 맵을 만듭니다.
+     *
+     * 저장된 맵에 `label_key` 번역을 지원 로케일마다 덮어 씌운다. 저장 맵은 저장 당시 로케일만 담고 있어,
+     * 언어팩으로 늘어난 로케일(ja 등)은 이 보강이 없으면 화면이 ko 로 떨어진다. 번역이 실제로 있는 로케일만
+     * 채운다 — 폴백 로케일의 문구를 그 로케일 값으로 넣으면 저장된 운영자 입력을 가린다.
+     *
+     * @param  array<string, mixed>  $channel  채널 정의
+     * @return array<string, string> 로케일 → 라벨
+     */
+    public function localizedLabelMap(array $channel): array
+    {
+        $label = $channel['label'] ?? [];
+        $map = is_array($label) ? array_filter($label, static fn ($value) => is_string($value) && $value !== '') : [];
+
+        if (is_string($label) && $label !== '') {
+            $map = ['ko' => $label, 'en' => $label];
+        }
+
+        $labelKey = $channel['label_key'] ?? null;
+
+        if (is_string($labelKey) && $labelKey !== '') {
+            $translator = app('translator');
+
+            foreach ((array) config('app.supported_locales', ['ko', 'en']) as $locale) {
+                $locale = (string) $locale;
+
+                if ($translator->hasForLocale($labelKey, $locale)) {
+                    $map[$locale] = (string) $translator->get($labelKey, [], $locale, false);
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * 동의 상태를 업데이트합니다.
      *
      * marketing_consent 철회 시 모든 채널을 자동 철회합니다.

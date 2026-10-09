@@ -1,4 +1,5 @@
-<!-- 마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다 -->
+<!-- 마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다
+e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평가 Vitest(mypage-consent-label-suffix.test.ts) + Playwright 격리 브라우저 ko/en 재실측 -->
 <extension target-layout="mypage/profile" priority="90">
   <inject target-id="profile_view_bio_card" position="append">
     <!-- 마이페이지 프로필 페이지 — 자기소개/마케팅 카드 다음에 GDPR 동의 매트릭스 카드 (F-04). GDPR Art.7(3) 대칭성 의무: 동의 철회는 동의 부여만큼 쉬워야 함 → 회원에게 동의 데이터가 있을 때만 노출 (빈 카드 노출 방지). Art.7(3) 보장은 *기존 동의가 있는* 회원의 철회권 보장이므로 동의 데이터 없는 신규 회원은 카드 미노출이 정합. LayoutExtensionService 의 'append' 는 array_splice(targetIndex+1) 이라 priority 가 작은 확장이 먼저 삽입되고 나중 확장이 그 자리를 밀어내는 구조 — sirsoft-marketing(100) 다음에 우리가 오게 하려면 우리 priority 가 더 작아야 함. 90 으로 설정. -->
@@ -89,8 +90,8 @@
             <!-- 라벨 + 사용자 친화 1줄 설명 (raw key 대신 카테고리 의미 노출). -->
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <!-- 라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출. -->
-                <span class="text-gray-900 dark:text-white font-medium text-sm">$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{consent?.consent_label ?? consent?.consent_key ?? ''}}</span>
+                <!-- 라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출. 기본 ko 라벨('필수 쿠키')처럼 이미 접미사로 끝나면 다시 붙이지 않는다(「필수 쿠키 쿠키」 방지). -->
+                <span class="text-gray-900 dark:text-white font-medium text-sm">{{String(consent?.consent_label ?? consent?.consent_key ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (consent?.consent_label ?? consent?.consent_key ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', consent?.consent_label ?? consent?.consent_key ?? '')}}</span>
                 <span data-if="{{consent?.is_required === true}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
                 <!-- 이슈 #430 (3안) — 상태 배지를 라벨 옆으로. 서버 status_badge_label (필수=항상 적용 / 동의함 / 거부함 / 미설정). status 로 색 분기. -->
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{consent?.status === 'consented' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (consent?.status === 'required' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')}}">{{consent?.status_badge_label ?? ''}}</span>
@@ -190,7 +191,7 @@
       <div class="space-y-4">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.grant_confirm_message</p>
         <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
-          <span class="block font-medium">$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? ''}}</span>
+          <span class="block font-medium">{{String(_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', _global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '')}}</span>
           <span data-if="{{!!_global.gdprGrantTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{_global.gdprGrantTargetDescription ?? ''}}</span>
         </div>
         <div class="flex justify-end gap-2">

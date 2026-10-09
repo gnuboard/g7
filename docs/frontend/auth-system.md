@@ -191,6 +191,16 @@ if (localeChanged && window.__templateApp) {
 
 ---
 
+## 부팅·새로고침 때 회원 언어 맞춤 (engine-v1.79.0+)
+
+로그인 상태의 화면 언어는 **회원이 설정한 언어(DB `users.language`)** 를 기준으로 한다. 서버는 로그인 회원의 요청 언어로 `users.language` 를 쓰므로(SetLocale 미들웨어), 화면 언어가 이 브라우저에 남은 `g7_locale` 로 따로 정해지면 화면 문구와 서버 문구(필수 언어 검증, 확장 목록 이름)가 섞인다.
+
+- **부팅·새로고침**: `TemplateApp.init()` 이 인증 프리로드(`preloadAuth`)를 마친 뒤, 첫 렌더 전에 회원 언어가 화면 언어와 다르면 `g7_locale` 을 회원 언어로 바꾸고 엔진을 그 언어로 다시 초기화한다(`alignLocaleWithMemberLanguage`). 사이트가 지원하지 않는 언어(`appConfig.supportedLocales` 에 없음)면 바꾸지 않는다.
+- **언어 선택**: 다른 언어를 고르면 종전처럼 화면을 바꾸고 회원 언어를 저장한다. **같은 언어를 다시 골라도** `changeLocale()` 이 화면은 그대로 두고 로그인 회원의 언어를 저장한다(세션 중 다른 기기에서 바뀐 회원 언어를 이 화면 언어로 되돌린다). 관리자 헤더 `LanguageSelector` 는 다른 언어를 고르면 직접 저장한 뒤 `G7Core.locale.change(locale, { persist: false })` 로 화면만 바꿔 저장 요청이 한 번만 나가고, 같은 언어 재선택은 `G7Core.locale.change(locale)` 에 넘긴다.
+- **비로그인**: 종전대로 `g7_locale` → 서버가 내려준 값(`Accept-Language`) → `'ko'` 순이다.
+
+---
+
 ## 2단계 인증 로그인 (engine-v1.65.0+)
 
 보안 환경설정의 「2단계 인증」이 켜져 있으면 서버는 비밀번호가 맞아도 토큰을 발급하지 않고

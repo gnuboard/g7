@@ -544,7 +544,8 @@ return [
         'max_length' => '\':lang\' 翻訳は :max文字を超えることはできません。',
         'min_length' => '\':lang\' 翻訳は最低 :min文字以上である必要があります。',
         'at_least_one_required' => '最低1つの言語での翻訳が必要です。',
-        'current_locale_required' => ':locale 言語の値は必須です。',
+        'current_locale_required' => ':attributeの:language(:locale)の値は必須です。',
+        'current_locale_required_unnamed' => ':language(:locale)の値は必須です。',
     ],
     'template' => [
         'name' => [
@@ -561,6 +562,10 @@ return [
         ],
     ],
     'menu' => [
+        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
+        'attributes' => [
+            'name' => 'メニュー名',
+        ],
         'roles' => [
             'array' => 'ロール一覧は配列である必要があります。',
             'integer' => 'ロールIDは数値である必要があります。',
@@ -645,6 +650,11 @@ return [
         ],
     ],
     'permission' => [
+        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
+        'attributes' => [
+            'name' => '権限名',
+            'description' => '権限の説明',
+        ],
         'name' => [
             'required' => '権限名を入力してください。',
         ],
@@ -653,6 +663,11 @@ return [
         ],
     ],
     'role' => [
+        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
+        'attributes' => [
+            'name' => 'ロール名',
+            'description' => 'ロールの説明',
+        ],
         'name' => [
             'required' => 'ロール名を入力してください。',
         ],

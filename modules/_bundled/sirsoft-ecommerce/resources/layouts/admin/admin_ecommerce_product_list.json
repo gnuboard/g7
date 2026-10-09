@@ -223,9 +223,9 @@
         "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}",
         "brandOptions": "{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}",
         "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
-        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
-        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
-        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
+        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
+        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
         "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}"
     },
     "permissions": [
@@ -425,7 +425,8 @@
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-icon",
-                                            "aria-label": "$t:common.refresh"
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh"
                                         },
                                         "children": [
                                             {

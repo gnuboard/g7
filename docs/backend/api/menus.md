@@ -332,7 +332,7 @@ HTTP/1.1 201
 
 **설명**
 
-새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`.
+새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the menu name field is required.").
 
 
 ### GET /api/admin/menus/active
@@ -1183,7 +1183,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 메뉴 정보를 수정한다. `{menu}` 는 라우트 모델 바인딩으로 해석되며, 전달된 필드만 갱신한다. `slug` 는 여전히 유일해야 하고, `roles` 배열을 보내면 이 메뉴 노출이 허용된 역할 목록을 교체한다. 성공 시 갱신된 메뉴를 관계 eager-load 포함해 `MenuResource` 로 반환하고, 실패 시 `menu.update_failed`(422 검증 오류 포함)를 반환한다. 관리자 메뉴 관리 화면의 메뉴 편집 폼 저장에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.update`.
+기존 메뉴 정보를 수정한다. `{menu}` 는 라우트 모델 바인딩으로 해석되며, 전달된 필드만 갱신한다. `slug` 는 여전히 유일해야 하고, `roles` 배열을 보내면 이 메뉴 노출이 허용된 역할 목록을 교체한다. 성공 시 갱신된 메뉴를 관계 eager-load 포함해 `MenuResource` 로 반환하고, 실패 시 `menu.update_failed`(422 검증 오류 포함)를 반환한다. 관리자 메뉴 관리 화면의 메뉴 편집 폼 저장에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.update`. 다국어 `name` 에서 지금 화면 언어 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」).
 
 `parent_id` 에는 자기 자신이나 자신의 하위 메뉴를 지정할 수 없다. 순환이 만들어지는 요청은 422(`parent_id`)로 거절되며, 순서 변경 엔드포인트(`PUT /api/admin/menus/order`)와 동일한 기준이 적용된다.
 

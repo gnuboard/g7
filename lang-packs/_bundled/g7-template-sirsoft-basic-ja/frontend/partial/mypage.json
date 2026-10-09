@@ -163,7 +163,8 @@
       "expired": "期限切れ",
       "other_devices_logged_out": "他の端末ではログアウトされました。この端末はログイン状態が維持されます。",
       "changed_toast": "パスワードが変更されました。他の端末ではログアウトされました。"
-    }
+    },
+    "avatar_preview": "新しいプロフィール画像のプレビュー"
   },
   "orders": {
     "title": "注文履歴",
@@ -255,7 +256,8 @@
       "content_min_length": "最小10文字以上",
       "image_label": "画像添付(最大{{count}}枚)",
       "add_image": "画像を追加",
-      "submit_button": "登録"
+      "submit_button": "登録",
+      "rating_star": "5点中{{count}}点"
     },
     "status": {
       "pending": "決済待機中",
@@ -357,7 +359,7 @@
     },
     "select_all": "すべて選択",
     "selected_count": "{{count}}件選択",
-    "bulk_delete": "選択削除",
+    "bulk_delete": "選択解除",
     "bulk_delete_title": "選択したスクラップを解除しますか?",
     "bulk_delete_confirm": "選択した{{count}}件のスクラップをリストから削除します。",
     "disabled_flag": "スクラップを停止",

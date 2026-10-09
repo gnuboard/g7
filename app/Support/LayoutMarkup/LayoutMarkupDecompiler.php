@@ -919,6 +919,10 @@ final class LayoutMarkupDecompiler
             $this->attr('id', (string) ($script['id'] ?? '')),
         ];
 
+        if (array_key_exists('label', $script)) {
+            $attributes[] = $this->attr('label', (string) $script['label']);
+        }
+
         if (array_key_exists('async', $script)) {
             $attributes[] = $script['async'] === true ? $this->attr(':async', 'true') : $this->typedAttr('async', $script['async']);
         }

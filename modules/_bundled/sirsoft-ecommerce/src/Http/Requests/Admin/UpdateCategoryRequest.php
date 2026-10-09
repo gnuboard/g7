@@ -97,4 +97,18 @@ class UpdateCategoryRequest extends FormRequest
             'parent_id.exists' => __('sirsoft-ecommerce::validation.category.parent_not_found'),
         ];
     }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시 이름
+     *
+     * 다국어 칸의 현재 언어 값을 비우면 「카테고리명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
+     *
+     * @return array<string, string> 필드 키 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.category_name'),
+        ];
+    }
 }
