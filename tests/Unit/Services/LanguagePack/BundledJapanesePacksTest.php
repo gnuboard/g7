@@ -38,7 +38,7 @@ class BundledJapanesePacksTest extends TestCase
      * 국가 이름은 코어 내장 로케일(ko·en)이 `config/countries.php` 의 `localized_names` 를 정본으로 쓰고,
      * 그 밖의 로케일만 언어팩의 `backend/{locale}/countries.php`(키 = ISO alpha-2 국가 코드)가 채운다
      * (언어팩 계약 문서 `docs/extension/language-packs.md` 「국가 이름」 절, 해석기 `App\Support\CountryName`).
-     * 그래서 `lang/ko/countries.php` 는 의도적으로 없고, 이 파일의 키는 설정의 ko 국가 코드 목록과 대조한다.
+     * 그래서 lang/ko/countries.php 는 의도적으로 없고, 이 파일의 키는 설정의 ko 국가 코드 목록과 대조한다.
      *
      * @var array<string, string> 언어팩 파일명 => 키 목록을 주는 설정 키
      */

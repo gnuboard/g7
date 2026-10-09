@@ -189,9 +189,9 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 
 회원 정보·방문자 통계의 국가 이름은 저장값이 ISO alpha-2 코드(`KR`)이고 화면에서 이름을 붙입니다. 코어는 내장 로케일(ko·en) 이름만 `config/countries.php` 의 `localized_names` 에 두고, **그 밖의 로케일은 코어 언어팩이 채웁니다** — `backend/{locale}/countries.php` 가 `['KR' => '韓国', 'US' => 'アメリカ', …]` 처럼 코드를 키로 이름을 돌려주면 번역 키 `countries.{코드}` 로 올라옵니다.
 
-해석 순서는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}` → (방문자 통계만) intl 지역 표기 → 기본 폴백 로케일의 설정 이름 → 코드. 이 파일이 없는 로케일은 회원 화면 국가 이름이 기본 폴백 로케일(ko)로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
+해석 순서는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}` → (방문자 통계만) intl 지역 표기 → 기본 폴백 로케일의 설정 이름 → 코드. 이 파일이 없는 로케일은 회원 화면 국가 이름이 기본 폴백 로케일(ko)로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
 
-이 파일은 **코어 `lang/ko` 에 짝이 없는 언어팩 전용 파일**입니다(내장 로케일의 정본이 번역 파일이 아니라 설정이므로 `lang/ko/countries.php` 를 만들지 않습니다). 그래서 다른 백엔드 파일처럼 `lang/ko/{파일}` 과 키를 대조하지 않고, 키(국가 코드)가 `config/countries.php` 의 `localized_names.ko` 국가 코드를 빠짐없이 덮는지로 확인합니다. 설정에 국가를 추가하면 번들 언어팩의 이 파일에도 같은 코드를 더합니다.
+이 파일은 **코어 `lang/ko` 에 짝이 없는 언어팩 전용 파일**입니다(내장 로케일의 정본이 번역 파일이 아니라 설정이므로 lang/ko/countries.php 를 만들지 않습니다). 그래서 다른 백엔드 파일처럼 `lang/ko/{파일}` 과 키를 대조하지 않고, 키(국가 코드)가 `config/countries.php` 의 `localized_names.ko` 국가 코드를 빠짐없이 덮는지로 확인합니다. 설정에 국가를 추가하면 번들 언어팩의 이 파일에도 같은 코드를 더합니다.
 
 ### 들여쓰기 규칙
 

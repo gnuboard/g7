@@ -44,7 +44,7 @@ function collectJson(dir: string): string[] {
 /**
  * 템플릿 레이아웃 전체가 `partial` 로 참조하는 경로 집합을 만든다.
  *
- * @returns `partials/...json` 형태의 참조 경로 집합
+ * @returns partials/….json 형태의 참조 경로 집합
  */
 function includedPartials(): Set<string> {
     const included = new Set<string>();

@@ -44,6 +44,40 @@ describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] admin_
   });
 
   /**
+   * 입력칸에 초점이 있는 팝업(태그 입력·검색 선택)은 Esc 를 **자기 요소에서 먼저** 받아 목록을 닫는다. 그 뒤 document 로
+   * 올라온 Esc 를 창이 보면 `aria-expanded` 는 이미 false 라, 펼친 팝업이 없다고 보고 창까지 닫았다(회원 목록 역할 일괄
+   * 변경 창 E2E 실측 — 역할을 고르고 Esc 로 목록만 닫으려 하면 창이 사라졌다). 창은 팝업보다 먼저(capture) 판정해야 한다.
+   *
+   * @scenario popup=focused_input_closes_itself
+   * @effects escape_closes_popup_before_modal
+   */
+  it('팝업 입력칸이 Esc 를 먼저 받아 스스로 닫혀도 그 Esc 한 번에 창은 닫히지 않는다', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal isOpen onClose={onClose} title="역할 추가">
+        <input
+          role="combobox"
+          aria-haspopup="true"
+          aria-expanded="true"
+          aria-label="역할"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') e.currentTarget.setAttribute('aria-expanded', 'false');
+          }}
+        />
+      </Modal>,
+    );
+
+    const input = screen.getByRole('combobox', { name: '역할' });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /**
    * @scenario popup=disclosure_expanded
    * @effects escape_ignores_non_popup_expanded
    */

@@ -172,10 +172,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 17개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| PHPUnit | 18개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
 | Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

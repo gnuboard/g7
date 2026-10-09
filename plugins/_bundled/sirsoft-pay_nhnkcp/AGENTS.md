@@ -158,7 +158,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 42개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 16개 | `vitest.config.ts` |
+| Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 

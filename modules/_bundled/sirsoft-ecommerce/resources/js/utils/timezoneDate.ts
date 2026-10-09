@@ -1,3 +1,4 @@
+// e2e:allow 주석 속 짝 파일 경로 표기만 정정(동작 무변경). 날짜 계산은 accountTimezoneDates.test.ts 가 잠근다.
 /**
  * 시간대 기준 「오늘」 날짜 계산 도우미
  *
@@ -13,7 +14,7 @@
  * 끼어들지 않게 한다.
  *
  * 모듈은 특정 관리자 템플릿에 기대지 않도록 같은 도우미를 모듈 안에 둔다(관리자 템플릿 sirsoft-admin_basic 의
- * `src/utils/timezoneDate.ts` 와 같은 규칙). 읽는 곳은 코어 공용 API(AuthManager·전역 설정)뿐이다.
+ * `templates/_bundled/sirsoft-admin_basic/src/utils/timezoneDate.ts` 와 같은 규칙). 읽는 곳은 코어 공용 API(AuthManager·전역 설정)뿐이다.
  */
 
 /**

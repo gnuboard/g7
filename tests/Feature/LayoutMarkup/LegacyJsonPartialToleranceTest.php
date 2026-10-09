@@ -164,7 +164,8 @@ class LegacyJsonPartialToleranceTest extends TestCase
         // 디렉토리 검증은 깨진 파일 자체의 단독 스캔에서 실패한다(7.0.11 동일) — 참조 쪽 오류는 더하지 않는다.
         $this->writeJson('host.json', ['version' => '1.0.0', 'components' => [['partial' => 'partials/broken.json']]]);
         $message = $this->expectInstallFailure();
-        $this->assertStringContainsString('1 errors', $message, '단독 스캔의 파싱 오류 1건만 — 참조 쪽 partial 오류는 없다');
+        // 영어 개수 문구는 1이면 단수다(7.1.0 단수형 원칙) — 「1 errors」 가 아니라 「1 error found」.
+        $this->assertStringContainsString('1 error found', $message, '단독 스캔의 파싱 오류 1건만 — 참조 쪽 partial 오류는 없다');
         $this->assertStringNotContainsString('Failed to process partial', $message);
     }
 

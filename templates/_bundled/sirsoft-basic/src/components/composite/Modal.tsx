@@ -148,9 +148,11 @@ export const Modal: React.FC<ModalProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
+    // capture 단계에서 판정한다 — 입력칸에 초점이 있는 팝업은 Esc 를 자기 요소에서 먼저 받아 목록을 닫으므로,
+    // bubble 단계에서 보면 `aria-expanded` 가 이미 false 라 창까지 닫혔다(admin_basic 대칭).
+    document.addEventListener('keydown', handleEscape, true);
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleEscape, true);
       const index = openModalStack.indexOf(token);
       if (index !== -1) openModalStack.splice(index, 1);
     };

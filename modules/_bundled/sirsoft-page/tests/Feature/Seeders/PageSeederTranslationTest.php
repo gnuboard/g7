@@ -13,7 +13,7 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  * 기본 페이지 시더가 언어팩 seed 번역을 받는다.
  *
  * 페이지 시더는 다국어 JSON(제목·본문)을 시드하면서 언어팩 필터를 거치지 않아, 활성 언어팩이
- * `seed/pages.json` 을 실어도 기본 페이지는 ko/en 만으로 만들어졌다. 다른 확장 시더와 같은
+ * seed/pages.json 을 실어도 기본 페이지는 ko/en 만으로 만들어졌다. 다른 확장 시더와 같은
  * `seed.{확장}.{entity}.translations` 경로로 머지되는지 잠근다.
  */
 class PageSeederTranslationTest extends ModuleTestCase

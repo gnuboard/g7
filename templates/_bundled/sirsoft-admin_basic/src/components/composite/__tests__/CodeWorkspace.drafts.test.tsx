@@ -146,7 +146,7 @@ describe('CodeWorkspace — 초안 복원', () => {
    */
   it('[복원] 한 다른 파일의 초안은 그 파일을 열어 본문이 와도 덮이지 않는다', () => {
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:b': { value: 'draft-b', savedAt: Date.now() - 60000, baseRevision: 5 } }),
     );
 
@@ -493,7 +493,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
 
     // 다른 탭이 b 를 적는다.
     window.localStorage.setItem(
-      `${NAMESPACE}.drafts`,
+      DRAFTS_KEY,
       JSON.stringify({ 'layout:b': { value: 'from-other-tab', savedAt: Date.now(), baseRevision: 1 } }),
     );
 
@@ -507,7 +507,7 @@ describe('CodeWorkspace — 초안 저장소는 남의 것을 지우지 않는�
     // 다른 탭이 b 를 버린다(저장하지 않고 닫기·저장 성공).
     const stored = storedDrafts();
     delete (stored as Record<string, unknown>)['layout:b'];
-    window.localStorage.setItem(`${NAMESPACE}.drafts`, JSON.stringify(stored));
+    window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(stored));
 
     // 이 탭이 다시 적는다.
     fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: 'mine-2' } });

@@ -1291,7 +1291,7 @@ class UserClaimApiTest extends ModuleTestCase
             'add_image_ids' => $added->pluck('id')->map('intval')->all(),
             'remove_image_ids' => [(int) $existing->first()->id],
         ])->assertStatus(422)
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', ['max' => 5]));
+            ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', ['max' => 5, 'count' => 5]));
 
         $fresh = $return->fresh();
         $this->assertSame('changed_mind', $fresh->reason_code, '거절된 수정이 사유를 바꿔 놓으면 안 됩니다.');

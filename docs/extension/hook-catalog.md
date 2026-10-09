@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (610)
+- [코어](#코어) (611)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -474,6 +474,7 @@
 | `core.role.before_update` | action | 2 |  |
 | `core.role.filter_create_data` | filter | 1 |  |
 | `core.role.filter_update_data` | filter | 2 |  |
+| `core.role.list_validation_rules` | filter | 2 |  |
 | `core.role.store_validation_rules` | filter | 2 |  |
 | `core.role.update_validation_rules` | filter | 2 |  |
 | `core.roles.config` | filter | 1 |  |
