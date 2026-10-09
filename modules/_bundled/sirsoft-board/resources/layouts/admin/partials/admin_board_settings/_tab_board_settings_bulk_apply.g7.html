@@ -28,7 +28,7 @@
               <!-- 전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다 -->
               <set-state target="local" :bulkApplyAll="true"/>
             </on>
-            <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll !== false}}">
+            <input type="radio" name="_bulkApplyAll" aria-label="$t:sirsoft-board.admin.settings.bulk_apply.apply_all" class="radio" checked="{{_local.bulkApplyAll !== false}}">
               <on type="change">
                 <!-- 「모든 게시판에」 — 아래 게시판 고르는 칸이 사라진다 -->
                 <set-state target="local" :bulkApplyAll="true"/>
@@ -41,7 +41,7 @@
               <!-- 고른 게시판에만 적용 -->
               <set-state target="local" :bulkApplyAll="false"/>
             </on>
-            <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll === false}}">
+            <input type="radio" name="_bulkApplyAll" aria-label="$t:sirsoft-board.admin.settings.bulk_apply.apply_selected" class="radio" checked="{{_local.bulkApplyAll === false}}">
               <on type="change">
                 <!-- 「고른 게시판에만」 — 아래에 게시판 고르는 칸이 나타나고, 하나도 고르지 않으면 적용 버튼이 잠긴다 -->
                 <set-state target="local" :bulkApplyAll="false"/>

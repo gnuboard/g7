@@ -366,6 +366,7 @@
     },
     "detail_title": "詳細検索",
     "amount": "金額",
+    "currency": "通貨",
     "min_amount": "最小金額",
     "max_amount": "最大金額",
     "currency_all": "すべて",

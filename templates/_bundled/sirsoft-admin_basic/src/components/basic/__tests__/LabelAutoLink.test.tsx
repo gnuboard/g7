@@ -9,6 +9,7 @@
  * (또는 칸 하나만 든 상자의 바로 앞 라벨)을 찾아 `aria-labelledby` 로 잇는다.
  *
  * 이미 이름이 있는 칸(`aria-label`·`aria-labelledby`·라벨 안의 칸·`for` 로 이어진 칸)은 그대로 둔다.
+ * 잇는 규칙은 곁 라벨 훅(`useAdjacentLabel`) 하나가 맡는다 — 스위치·태그 입력도 같은 판정을 따른다.
  *
  * @vitest-environment jsdom
  */
@@ -22,6 +23,7 @@ import { Label } from '../Label';
 import { Input } from '../Input';
 import { Select } from '../Select';
 import { Textarea } from '../Textarea';
+import { Toggle } from '../../composite/Toggle';
 
 const options = [
     { value: 'fixed', label: '고정 배송비' },
@@ -330,5 +332,51 @@ describe('라벨 자동 연결', () => {
         );
 
         expect(screen.getByTestId('second').getAttribute('aria-labelledby')).toBeNull();
+    });
+    /**
+     * @scenario case=c15
+     * @effects no_duplicate_ids
+     */
+    it('자동으로 다는 라벨 id 는 문서에 이미 있는 id 를 피한다', () => {
+        const w = window as unknown as { __g7AutoLabelSeq?: number };
+        const seq = w.__g7AutoLabelSeq ?? 0;
+        // 다음 두 일련번호 자리를 다른 요소가 이미 쓰고 있다(다른 번들·다른 부품이 단 id)
+        const { container } = render(
+            <Div>
+                <Span id={`g7-auto-label-${seq + 1}`}>다른 요소</Span>
+                <Span id={`g7-auto-label-${seq + 2}`}>또 다른 요소</Span>
+                <Div>
+                    <Label>상호</Label>
+                    <Input type="text" value="" onChange={() => {}} data-testid="name" />
+                </Div>
+            </Div>,
+        );
+
+        expect(duplicateIds(container)).toEqual([]);
+        const labelId = screen.getByTestId('name').getAttribute('aria-labelledby');
+        // 부품 공통의 일련번호(window)를 이어 쓰고, 이미 있는 두 자리를 건너뛴다
+        expect(labelId).toBe(`g7-auto-label-${seq + 3}`);
+        expect(document.getElementById(labelId as string)?.textContent).toBe('상호');
+        expect(screen.getByRole('textbox', { name: '상호' })).toBeInTheDocument();
+    });
+
+    /**
+     * @scenario case=c16
+     * @effects ambiguous_label_not_linked
+     */
+    it('스위치도 같은 판정을 따른다 — 스위치 둘을 묶는 그룹 제목은 어느 스위치에도 잇지 않는다', () => {
+        render(
+            <Div>
+                <Label>알림 채널</Label>
+                <Div className="flex">
+                    <Toggle name="notify_mail" />
+                    <Toggle name="notify_sms" />
+                </Div>
+            </Div>,
+        );
+
+        expect(screen.queryAllByRole('switch', { name: '알림 채널' })).toHaveLength(0);
+        expect(screen.getByRole('switch', { name: 'notify_mail' })).toBeInTheDocument();
+        expect(screen.getByRole('switch', { name: 'notify_sms' })).toBeInTheDocument();
     });
 });

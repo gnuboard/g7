@@ -111,14 +111,14 @@
       <div data-ref="date_range_filter" class="filter-row">
         <span class="filter-label w-32">$t:admin.activity_log.filter.date_range_label</span>
         <div class="flex-center gap-2 flex-wrap">
-          <input name="dateFrom" type="datetime-local" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
+          <input name="dateFrom" type="datetime-local" aria-label="$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
             <on type="change">
               <!-- 시작 시각을 직접 고르면 아래 기간 버튼의 선택 표시를 지운다 — 버튼이 만든 범위를 손으로 고친 순간 그 버튼은 더 이상 지금 조건이 아니다. -->
               <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
-          <input name="dateTo" type="datetime-local" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
+          <input name="dateTo" type="datetime-local" aria-label="$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
             <on type="change">
               <!-- 끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다. -->
               <set-state target="local" filter.dateTo="{{$event.target.value}}" filter.dateQuick=""/>

@@ -41,8 +41,10 @@ use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
+use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -1478,7 +1480,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
         $cancelItems = $order->options->map(fn ($o) => ['order_option_id' => $o->id, 'cancel_quantity' => $o->quantity])->values()->all();
         $result = $this->adjustmentService->calculate($order, $this->buildFullCancellation($order));
-        $rows = app(\Modules\Sirsoft\Ecommerce\Services\RefundExecutionService::class)
+        $rows = app(RefundExecutionService::class)
             ->buildRefundOptionRows($order, $cancelItems, $result);
 
         foreach ($order->options as $option) {
@@ -1518,7 +1520,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         $optA = $order->options->firstWhere('product_option_id', $oA->id);
         $cancelItems = [['order_option_id' => $optA->id, 'cancel_quantity' => 1]];
         $result = $this->adjustmentService->calculate($order, $this->buildCancellation($cancelItems));
-        $rows = app(\Modules\Sirsoft\Ecommerce\Services\RefundExecutionService::class)
+        $rows = app(RefundExecutionService::class)
             ->buildRefundOptionRows($order, $cancelItems, $result);
 
         $this->assertEqualsWithDelta((float) $optA->subtotal_paid_amount, (float) $rows[0]['refund_amount'], 0.01);
@@ -1596,7 +1598,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         $this->assertNotEmpty($snapshot, '통화 스냅샷이 있어야 보조 통화 줄이 선다');
 
         $order->options->firstWhere('product_option_id', $oA->id)->update(['option_status' => OrderStatusEnum::CANCELLED]);
-        $currency = app(\Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService::class);
+        $currency = app(CurrencyConversionService::class);
         // 실제 주문처럼 결제 총액의 통화별 맵을 들고 있다 — 환불이 나가도 이 맵은 깎이지 않는다
         $order->update([
             'subtotal_amount' => 30000,
@@ -1611,7 +1613,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ['order_option_id' => $optB->id, 'cancel_quantity' => 1],
         ]));
 
-        $expected = app(\Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService::class)
+        $expected = app(CurrencyConversionService::class)
             ->convertToMultiCurrencyWithSnapshot($paid - 10000, $snapshot);
         foreach ($expected as $code => $amount) {
             $this->assertEqualsWithDelta((float) $amount, (float) ($result->mcOriginalSnapshot['mc_total_paid_amount'][$code] ?? -1), 0.011, $code.' 보조 통화가 결제 총액을 환산한다');

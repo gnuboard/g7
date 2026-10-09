@@ -1,9 +1,10 @@
 {
+  "range_start": "{{label}} start date",
+  "range_end": "{{label}} end date",
   "all": "All",
   "view_all": "View All",
   "loading": "Loading...",
   "page_loading": "Loading page",
-  "account_menu": "Account menu",
   "remove_language": "Remove {{language}}",
   "remove_tag": "Remove {{tag}}",
   "saving": "Saving...",

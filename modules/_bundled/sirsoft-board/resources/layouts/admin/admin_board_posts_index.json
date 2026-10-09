@@ -432,6 +432,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "date",
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.date_from",
                                                     "value": "{{query.created_at_from || ''}}",
                                                     "className": "input min-w-[200px]"
                                                 }
@@ -469,6 +470,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "date",
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.date_to",
                                                     "value": "{{query.created_at_to || ''}}",
                                                     "className": "input min-w-[200px]"
                                                 }

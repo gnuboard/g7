@@ -126,14 +126,14 @@
           <div class="filter-row">
             <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.period_label</span>
             <div class="flex-center gap-2 flex-wrap">
-              <input name="analytics_subject_from" type="date" class="input w-40" value="{{_local.search?.from || ''}}">
+              <input name="analytics_subject_from" type="date" aria-label="$t:common.range_start|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.from || ''}}">
                 <on type="change">
                   <!-- 기간 시작을 폼에 담는다. 비워 두면 검색할 때 질의에서 키가 빠져 시작 없이 찾는다. -->
                   <set-state target="local" search.from="{{$event.target.value}}"/>
                 </on>
               </input>
               <span class="text-gray-400 dark:text-gray-500">~</span>
-              <input name="analytics_subject_to" type="date" class="input w-40" value="{{_local.search?.to || ''}}">
+              <input name="analytics_subject_to" type="date" aria-label="$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.to || ''}}">
                 <on type="change">
                   <!-- 기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다. -->
                   <set-state target="local" search.to="{{$event.target.value}}"/>

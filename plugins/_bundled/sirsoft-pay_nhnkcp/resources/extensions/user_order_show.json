@@ -1,5 +1,5 @@
 {
-    "comment": "내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.\n     e2e:allow S4-D10·D13 — 가상계좌 블록에 주입기와 같은 id 를 달고, 표시 조건 두 가지(취소 주문엔 안내 숨김·입금 뒤 자동 취소 경고 숨김)만 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
+    "comment": "내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.\n     e2e:allow S4-D10·D13 — 가상계좌 블록에 영수증 행처럼 고정 id 를 달고, 표시 조건 두 가지(취소 주문엔 안내 숨김·입금 뒤 자동 취소 경고 숨김)만 더했다. 대체 검증: Vitest 조건 평가·조각 렌더 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
     "extension_point": "mypage_order_payment_provider_slot",
     "mode": "append",
     "priority": 100,
@@ -51,7 +51,7 @@
             ]
         },
         {
-            "comment": "id 는 주입기(mypageOrderShowInjector)의 VBANK_ID 와 같아야 한다 — 없으면 주입기가 같은 안내를 하나 더 붙인다(영수증 행과 같은 방식).\n         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만.",
+            "comment": "가상계좌 안내는 이 조각만 그린다(#639 에서 주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.\n         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만.",
             "type": "basic",
             "name": "Div",
             "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.vbank_name && order.data.payment?.payment_status !== 'cancelled' && order.data.order_status !== 'cancelled'}}",

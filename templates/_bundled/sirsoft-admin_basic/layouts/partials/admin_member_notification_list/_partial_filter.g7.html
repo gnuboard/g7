@@ -55,14 +55,14 @@
       <div data-ref="created_range_filter" class="filter-row">
         <span class="filter-label w-32">$t:admin.member_notification.filter.created_label</span>
         <div class="flex-center flex-wrap gap-2">
-          <input name="createdFrom" type="date" class="input w-40" value="{{_local.filter.createdFrom || ''}}">
+          <input name="createdFrom" type="date" aria-label="$t:common.range_start|label={{$t('admin.member_notification.filter.created_label')}}" class="input w-40" value="{{_local.filter.createdFrom || ''}}">
             <on type="change">
               <!-- 수신일 기준 시작일. 서버가 Y-m-d 만 받으므로 날짜 입력 그대로 넘긴다. -->
               <set-state target="local" filter.createdFrom="{{$event.target.value}}"/>
             </on>
           </input>
           <span class="text-label-subtle">~</span>
-          <input name="createdTo" type="date" class="input w-40" value="{{_local.filter.createdTo || ''}}">
+          <input name="createdTo" type="date" aria-label="$t:common.range_end|label={{$t('admin.member_notification.filter.created_label')}}" class="input w-40" value="{{_local.filter.createdTo || ''}}">
             <on type="change">
               <!-- 끝일. 시작일보다 앞서면 서버가 422 로 돌려보낸다 — 화면에서 막지 않고 메시지로 알린다. -->
               <set-state target="local" filter.createdTo="{{$event.target.value}}"/>

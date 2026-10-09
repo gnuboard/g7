@@ -46,6 +46,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 기본 복사 데이터 조회 성공
      *
      * @scenario case=c01
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -77,6 +78,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * SEO 옵션 비활성화 시 SEO 필드가 null로 반환
      *
      * @scenario case=c02
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -104,6 +106,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * SEO 옵션 활성화 시 SEO 필드 포함
      *
      * @scenario case=c03
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -131,6 +134,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 이미지 옵션 비활성화 시 이미지 배열이 비어있음
      *
      * @scenario case=c04
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -154,6 +158,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 카테고리 옵션 비활성화 시 카테고리 비어있음
      *
      * @scenario case=c05
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -178,6 +183,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 설명 옵션 비활성화 시 description이 null
      *
      * @scenario case=c06
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -203,6 +209,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 배송 정책 옵션 비활성화 시 shipping_policy_id가 null
      *
      * @scenario case=c07
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -226,6 +233,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 식별 코드 옵션 비활성화 시 SKU/바코드가 null
      *
      * @scenario case=c08
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -253,6 +261,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 공통 정보 옵션 비활성화 시 common_info_id가 null
      *
      * @scenario case=c09
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -276,6 +285,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 판매 정보 옵션 비활성화 시 가격/재고가 기본값
      *
      * @scenario case=c10
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -309,6 +319,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 복사한 상품을 그대로 저장하면 정가·판매가·옵션가가 전부 422 로 거절됐다.
      *
      * @scenario case=c11
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -340,6 +351,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 존재하지 않는 상품의 복사 요청 시 404
      *
      * @scenario case=c12
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -361,6 +373,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 권한 없는 사용자의 복사 요청 시 403
      *
      * @scenario case=c13
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -383,6 +396,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * 기본 옵션으로 복사 시 created_at/updated_at이 포함되지 않음
      *
      * @scenario case=c14
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음
@@ -410,6 +424,7 @@ class ProductControllerCopyTest extends ModuleTestCase
      * "복사했는데 특정 항목만 빠져 있다" 는 결과가 나왔다.
      *
      * @scenario case=c15
+     *
      * @effects product_copy_data_filtered_by_options
      *
      * @return void 반환값 없음

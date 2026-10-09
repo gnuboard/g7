@@ -81,12 +81,13 @@ describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => 
   const settings = (methods: any[]) => ({ data: { order_settings: { payment_methods: methods } } });
   /**
    * 주문서 레이아웃의 계산값(고객이 고를 수 있는 결제수단)을 같은 설정으로 평가해 `_computed` 를 만든다.
-   * 설정을 아직 못 받았을 때 식이 던지면 엔진처럼 값 없음(undefined)으로 둔다.
+   * 설정을 아직 못 받았을 때 식이 던지면 엔진처럼 값 없음(undefined)으로 둔다. 결제 통화 허용 목록은 주문서 계산 응답
+   * (`checkoutData.data.allowed_payment_methods`)에서 읽으므로 그 데이터 소스도 함께 넘긴다(없으면 거르지 않는다).
    */
-  const computedFor = (paymentSettings: any, _global: any) => {
+  const computedFor = (paymentSettings: any, _global: any, checkoutData?: any) => {
     let selectablePaymentMethods: any;
     try {
-      selectablePaymentMethods = evaluate((checkoutJson as any).computed.selectablePaymentMethods, { paymentSettings, _global });
+      selectablePaymentMethods = evaluate((checkoutJson as any).computed.selectablePaymentMethods, { paymentSettings, _global, checkoutData });
     } catch {
       selectablePaymentMethods = undefined;
     }
@@ -121,7 +122,7 @@ describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => 
       checkoutData: { data: { has_unshippable_items: false } },
       paymentSettings: settings(methods),
       _global: {},
-      _computed: computedFor(settings(methods), {}),
+      _computed: computedFor(settings(methods), {}, { data: { has_unshippable_items: false } }),
     });
     expect(Boolean(evaluate(payButton.props.disabled, scope([])))).toBe(true);
     expect(Boolean(evaluate(payButton.props.disabled, scope([{ id: 'dbank', is_active: true }])))).toBe(false);

@@ -105,6 +105,10 @@ class OrderCreateUnexpectedFailureLogTest extends ModuleTestCase
     public function test_unexpected_failure_is_logged_with_its_cause(): void
     {
         $this->mock(OrderProcessingService::class, function ($mock): void {
+            // 주문 요청 검증이 결제 통화로 고를 수 있는 결제수단을 판정할 때 같은 서비스에 결제 통화를 묻는다
+            // (CheckoutPaymentMethodFilter). 서비스를 통째로 목으로 바꾸므로 그 답을 준다 — 없으면 검증 단계에서
+            // 목 예외가 나 주문 생성 단계까지 가지 못한다.
+            $mock->shouldReceive('resolvePaymentCurrency')->andReturn('KRW');
             $mock->shouldReceive('createFromTempOrder')->andThrow(new RuntimeException('injected fault EC-420'));
         });
         Log::spy();

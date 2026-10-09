@@ -119,14 +119,14 @@
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 등록일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 등록일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
                 <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>

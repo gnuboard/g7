@@ -105,6 +105,7 @@
                                                     "type": "basic",
                                                     "name": "Input",
                                                     "props": {
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
                                                         "type": "number",
                                                         "name": "total_quantity",
                                                         "className": "input w-32",
@@ -217,6 +218,7 @@
                                                     "responsive": {
                                                         "portable": {
                                                             "props": {
+                                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                                 "type": "datetime-local",
                                                                 "name": "issue_from",
                                                                 "className": "input w-full"
@@ -224,6 +226,7 @@
                                                         }
                                                     },
                                                     "props": {
+                                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                         "type": "datetime-local",
                                                         "name": "issue_from",
                                                         "className": "input w-52"
@@ -243,6 +246,7 @@
                                                     "responsive": {
                                                         "portable": {
                                                             "props": {
+                                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                                 "type": "datetime-local",
                                                                 "name": "issue_to",
                                                                 "className": "input w-full"
@@ -250,6 +254,7 @@
                                                         }
                                                     },
                                                     "props": {
+                                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                         "type": "datetime-local",
                                                         "name": "issue_to",
                                                         "className": "input w-52"

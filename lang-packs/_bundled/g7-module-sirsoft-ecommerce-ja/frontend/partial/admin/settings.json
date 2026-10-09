@@ -49,6 +49,7 @@
       "email_id_placeholder": "メールアドレス",
       "email_domain_placeholder": "ドメイン",
       "email_domain_direct": "直接入力",
+      "email_domain_select": "メールドメインの選択",
       "privacy_officer": "個人情報保護責任者",
       "privacy_officer_placeholder": "個人情報保護責任者名",
       "privacy_officer_email": "個人情報保護責任者メール",

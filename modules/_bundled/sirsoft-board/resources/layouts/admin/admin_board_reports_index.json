@@ -1043,6 +1043,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "date",
+                                                                    "aria-label": "$t:common.range_start|label={{$t('sirsoft-board.admin.reports.filters.reported_at_label')}}",
                                                                     "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
                                                                     "className": "rounded"
                                                                 }
@@ -1073,6 +1074,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "date",
+                                                                    "aria-label": "$t:common.range_end|label={{$t('sirsoft-board.admin.reports.filters.reported_at_label')}}",
                                                                     "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
                                                                     "className": "rounded"
                                                                 }

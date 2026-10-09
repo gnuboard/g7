@@ -367,6 +367,7 @@
                                                         "props": {
                                                             "name": "analytics_subject_from",
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_start|label={{$t('admin.analytics.privacy_requests.search.period_label')}}",
                                                             "className": "input w-40",
                                                             "value": "{{_local.search?.from || ''}}"
                                                         }
@@ -396,6 +397,7 @@
                                                         "props": {
                                                             "name": "analytics_subject_to",
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}",
                                                             "className": "input w-40",
                                                             "value": "{{_local.search?.to || ''}}"
                                                         }

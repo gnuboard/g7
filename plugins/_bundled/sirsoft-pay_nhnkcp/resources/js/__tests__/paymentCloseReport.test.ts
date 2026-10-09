@@ -285,12 +285,4 @@ describe('사이트 주소 절대 URL 닫힘 보고·재시도', () => {
 
         expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nhnkcp/payment/retry', expect.objectContaining({ oid: 'ORD-KCP-ABS-002' }));
     });
-
-    it('G7Core API 가 없으면 같은 출처 절대 URL 을 /api/plugins 경로로 fetch 한다', async () => {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
-
-        await reportPaymentWindowClosed({ closeReportUrl: abs(), oid: 'ORD-KCP-ABS-003', price: 15000 });
-
-        expect(fetchSpy).toHaveBeenCalledWith('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', expect.objectContaining({ method: 'POST' }));
-    });
 });

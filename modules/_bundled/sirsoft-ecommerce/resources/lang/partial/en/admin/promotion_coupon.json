@@ -292,6 +292,7 @@
       "coupon_name": "Coupon Name",
       "coupon_description": "Coupon Description",
       "benefit_amount": "Benefit Amount",
+      "discount_unit": "Discount unit",
       "max_discount": "Max Discount",
       "min_order_amount": "Min Order Amount",
       "validity_period": "Validity Period",

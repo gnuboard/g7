@@ -1,18 +1,19 @@
 /**
  * @file vbankGuideVisibility.test.ts
- * @description KCP 가상계좌 입금 안내 — 결제 상태에 맞게 보이는지 (확장 조각 + 주입기).
+ * @description KCP 가상계좌 입금 안내 — 결제 상태에 맞게 보이는지 (확장 조각의 조건 + 렌더 결과).
  *
  * 결함: 내 주문 상세·신청서 상세·주문 완료의 「가상계좌 입금 안내」가 결제 상태와 무관하게 늘 보였다.
  *   입금을 마친 주문에도 「입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.」가 남고, 취소된 주문에도
  *   입금 계좌가 그대로 보여 고객이 취소 뒤에 입금할 수 있었다. 나이스페이먼츠 조각은 결제 뒤 경고를 감춘다.
  *   (이커머스 전수 실측 S4 — S4-D13, 결함인계대장 S2 02:49Z·01:36Z)
+ * 입금 안내는 결제 정보 카드·주문 완료 화면의 조각이 그린다(#639 에서 주입 스크립트를 조각으로 옮김).
  */
 
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 
-import { installMypageOrderShowInjector } from '../mypageOrderShowInjector';
 import userOrderShow from '../../extensions/user_order_show.json';
 import orderComplete from '../../extensions/user_order_complete_receipt.json';
+import { cleanupRender, kcpVbankOrder, renderUserOrderShow, type LayoutTest } from './layouts/userOrderShowKit';
 
 /** 조건에 맞는 노드를 트리에서 모두 모은다 */
 function collect(node: unknown, match: (value: Record<string, unknown>) => boolean, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
@@ -98,52 +99,48 @@ describe('KCP 가상계좌 안내 — 확장 조각 조건', () => {
   });
 });
 
-describe('KCP 가상계좌 안내 — 주입기(조각이 없는 템플릿용)', () => {
-  const FLAG = '__kcpMpShowInjectorInstalled';
-
-  const seed = (payment: Record<string, unknown>, orderStatus: string) => {
-    (window as any).G7Core = { getState: () => ({ currentDataContext: { order: { data: { order_number: 'ORD-V', order_status: orderStatus, total_amount_formatted: '15,000원', payment: { pg_provider: 'nhnkcp', payment_method: 'vbank', vbank_name: '기업은행', vbank_number: 'T0309', vbank_holder: 'NHN KCP', ...payment } } } } }) };
-  };
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    document.body.innerHTML = '<div id="order_payment_info_panel"><div class="space-y-3"></div></div>';
-    vi.spyOn(console, 'info').mockImplementation(() => {});
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ success: true, data: { available: false } }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-    history.replaceState({}, '', '/mypage/orders/ORD-V');
-  });
+describe('KCP 가상계좌 안내 — 조각 렌더', () => {
+  let utils: LayoutTest | null = null;
 
   afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-    delete (window as any)[FLAG];
-    delete (window as any).G7Core;
-    document.body.innerHTML = '';
+    cleanupRender(utils);
+    utils = null;
   });
 
   /**
-   * @scenario payment_state=injector_paid
-   * @effects notice_hidden_after_payment
+   * @scenario payment_state=render_waiting
+   * @effects guide_and_notice_while_waiting
    */
-  it('입금을 마친 주문엔 자동 취소 경고 없이 안내를 붙인다', async () => {
-    seed({ payment_status: 'paid', paid_at: '2026-10-07 11:01:48' }, 'payment_complete');
-    installMypageOrderShowInjector();
-    await vi.advanceTimersByTimeAsync(5000);
+  it('입금 대기 주문을 그리면 계좌와 자동 취소 경고가 함께 보인다', async () => {
+    utils = await renderUserOrderShow(kcpVbankOrder());
 
     const block = document.getElementById('kcp-mp-vbank-row');
     expect(block).not.toBeNull();
+    expect(block!.textContent).toContain('T0309');
+    expect(block!.textContent).toContain('자동 취소');
+  });
+
+  /**
+   * @scenario payment_state=render_paid
+   * @effects notice_hidden_after_payment
+   */
+  it('입금을 마친 주문을 그리면 계좌는 남고 자동 취소 경고는 없다', async () => {
+    utils = await renderUserOrderShow(kcpVbankOrder({ payment_status: 'paid', paid_at: '2026-10-07 11:01:48' }, { order_status: 'payment_complete' }));
+
+    const block = document.getElementById('kcp-mp-vbank-row');
+    expect(block).not.toBeNull();
+    expect(block!.textContent).toContain('T0309');
     expect(block!.textContent).not.toContain('자동 취소');
   });
 
   /**
-   * @scenario payment_state=injector_cancelled
+   * @scenario payment_state=render_cancelled
    * @effects guide_hidden_when_cancelled
    */
-  it('취소된 주문엔 안내를 붙이지 않는다', async () => {
-    seed({ payment_status: 'cancelled', paid_at: null }, 'cancelled');
-    installMypageOrderShowInjector();
-    await vi.advanceTimersByTimeAsync(5000);
+  it('취소된 주문을 그리면 입금 안내 블록이 없다', async () => {
+    utils = await renderUserOrderShow(kcpVbankOrder({ payment_status: 'cancelled' }, { order_status: 'cancelled' }));
 
     expect(document.getElementById('kcp-mp-vbank-row')).toBeNull();
+    expect(document.body.textContent).not.toContain('T0309');
   });
 });

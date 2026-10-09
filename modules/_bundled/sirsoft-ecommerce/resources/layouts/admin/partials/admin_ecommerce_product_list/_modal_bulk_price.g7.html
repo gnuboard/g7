@@ -29,7 +29,7 @@
               <set-state target="local" bulkPriceValue="{{$event.target.value}}"/>
             </on>
           </input>
-          <select class="select w-24">
+          <select class="select w-24" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit">
             <on type="change">
               <!-- 단위가 `percent` 면 값이 비율이고 `won` 이면 금액이다 — 표시 기호는 쇼핑몰 기본 통화에서 오므로 원화가 아닌 몰에서도 맞는다. -->
               <set-state target="local" bulkPriceUnit="{{$event.target.value}}"/>

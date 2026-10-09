@@ -943,6 +943,7 @@
                                                                                         "type": "number",
                                                                                         "className": "input w-16 text-right",
                                                                                         "value": "{{opt.mileage_value ?? 0}}",
+                                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                                     }
@@ -965,6 +966,7 @@
                                                                                     "props": {
                                                                                         "className": "select w-16",
                                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                                     },
                                                                                     "children": [
@@ -1594,6 +1596,7 @@
                                                                         "type": "number",
                                                                         "className": "input flex-1",
                                                                         "value": "{{opt.mileage_value ?? 0}}",
+                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                         "min": "0",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                     }
@@ -1616,6 +1619,7 @@
                                                                     "props": {
                                                                         "className": "select w-20",
                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                     },
                                                                     "children": [

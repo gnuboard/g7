@@ -89,6 +89,7 @@
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.city</label>
           <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.city ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
+              <!-- 해외 재발송지의 도시 칸 값을 신청서 재발송지(claimRedelivery.city)에 그대로 둔다 -->
               <set-state target="_local" claimRedelivery.city="{{$event.target.value}}"/>
             </on>
           </input>
@@ -97,6 +98,7 @@
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.state</label>
           <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.state ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
+              <!-- 해외 재발송지의 주·도 칸 값을 신청서 재발송지(claimRedelivery.state)에 그대로 둔다 -->
               <set-state target="_local" claimRedelivery.state="{{$event.target.value}}"/>
             </on>
           </input>

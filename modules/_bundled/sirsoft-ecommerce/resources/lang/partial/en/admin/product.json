@@ -26,6 +26,7 @@
     "category": "Category",
     "no_category": "No Category",
     "date": "Date",
+    "date_type_select": "Date basis",
     "date_type": {
       "created_at": "Created Date",
       "updated_at": "Updated Date"
@@ -63,6 +64,7 @@
       "tax_free": "Tax Free"
     },
     "price": "Price",
+    "price_type_select": "Price basis",
     "price_type": {
       "selling_price": "Selling Price",
       "supply_price": "Supply Price",
@@ -564,6 +566,7 @@
       "method_decrease": "Decrease",
       "method_fixed": "Set to",
       "value": "Amount/Rate",
+      "unit": "Change unit",
       "unit_won": "KRW",
       "unit_percent": "%",
       "preview_increase": "Increase price by {{value}}{{unit}}.",
@@ -870,6 +873,8 @@
       "active": "Active",
       "required": "Required"
     },
+    "mileage_value_label": "Mileage amount",
+    "mileage_type_label": "Mileage unit",
     "mileage_type": {
       "fixed": "KRW",
       "percent": "%"

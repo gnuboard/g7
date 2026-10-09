@@ -369,6 +369,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "해외 재발송지의 도시 칸 값을 신청서 재발송지(claimRedelivery.city)에 그대로 둔다",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -403,6 +404,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "해외 재발송지의 주·도 칸 값을 신청서 재발송지(claimRedelivery.state)에 그대로 둔다",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {

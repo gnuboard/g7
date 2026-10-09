@@ -475,6 +475,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}",
                                                 "type": "date",
                                                 "name": "createdStartDate",
                                                 "value": "{{_local.filter.createdStartDate || ''}}",
@@ -505,6 +506,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}",
                                                 "type": "date",
                                                 "name": "createdEndDate",
                                                 "value": "{{_local.filter.createdEndDate || ''}}",
@@ -747,6 +749,7 @@
                                     ],
                                     "props": {
                                         "name": "discountType",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit",
                                         "className": "w-24",
                                         "value": "{{_local.filter.discountType || 'all'}}",
                                         "options": [
@@ -1425,6 +1428,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}",
                                         "type": "date",
                                         "name": "validStartDate",
                                         "value": "{{_local.filter.validStartDate || ''}}",
@@ -1454,6 +1458,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}",
                                         "type": "date",
                                         "name": "validEndDate",
                                         "value": "{{_local.filter.validEndDate || ''}}",
@@ -1532,6 +1537,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}",
                                         "type": "date",
                                         "name": "issueStartDate",
                                         "value": "{{_local.filter.issueStartDate || ''}}",
@@ -1561,6 +1567,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}",
                                         "type": "date",
                                         "name": "issueEndDate",
                                         "value": "{{_local.filter.issueEndDate || ''}}",

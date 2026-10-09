@@ -644,7 +644,8 @@ describe('사이트 주소 절대 URL 닫힘 보고', () => {
 
     it('같은 출처 절대 URL 은 G7Core.api 에 /plugins 경로로 넘긴다', async () => {
         const apiPost = vi.fn().mockResolvedValue({ success: true });
-        windowRecord().G7Core = { api: { post: apiPost }, state: { setLocal: vi.fn() } };
+        // 닫힘 메시지는 체크아웃 화면에서만 처리한다 — 체크아웃 판정은 상태 계약(_global.shopBase)이 기준이다.
+        windowRecord().G7Core = { api: { post: apiPost }, state: { get: globalState(), setLocal: vi.fn() } };
         markStandardPaymentCloseReportContext({
             closeReportUrl: `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/close-report`,
             oid: 'ORD-KGI-ABS-001',

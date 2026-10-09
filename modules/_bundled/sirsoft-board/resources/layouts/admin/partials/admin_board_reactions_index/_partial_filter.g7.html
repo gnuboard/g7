@@ -65,14 +65,14 @@
           <!-- 유형 선택지는 목록 응답이 실어 준 메타에서 온다. 반응 조회 권한만 가진 매니저는
             환경설정을 볼 수 없어 유형 API 를 부를 수 없기 때문이다. 이미 비활성으로 돌린 유형도
             남겨 둔다 — 그 유형으로 쌓인 과거 반응을 찾아야 한다. -->
-          <select data-ref="reaction_type_filter_select" data-testid="admin-reaction-type-filter" class="select-composite w-40 shrink-0" value="{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}">
+          <select data-ref="reaction_type_filter_select" data-testid="admin-reaction-type-filter" aria-label="$t:sirsoft-board.admin.reactions.filters.type_label" class="select-composite w-40 shrink-0" value="{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}">
             <option value="">$t:sirsoft-board.admin.reactions.filters.type_all</option>
             <option data-each="t in {{reactions?.data?.reaction_types ?? []}}" value="{{t.id}}">{{t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name}}</option>
             <on type="change">
               <set-state target="global" reactionTypeFilter="{{$event.target.value}}"/>
             </on>
           </select>
-          <select data-ref="target_filter_select" data-testid="admin-reaction-target-filter" class="select-composite w-32 shrink-0" value="{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}">
+          <select data-ref="target_filter_select" data-testid="admin-reaction-target-filter" aria-label="$t:sirsoft-board.admin.reactions.columns.target" class="select-composite w-32 shrink-0" value="{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}">
             <options>
               <option value="">$t:sirsoft-board.admin.reactions.filters.target_all</option>
               <option value="post">$t:sirsoft-board.admin.reactions.filters.target_post</option>
@@ -88,14 +88,14 @@
       <div data-ref="date_filter_row" class="filter-row">
         <span class="filter-label w-24">$t:sirsoft-board.admin.reactions.filters.reacted_at_label</span>
         <div class="flex-center gap-2 flex-wrap">
-          <input data-ref="date_from" type="date" class="input w-40" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}">
+          <input data-ref="date_from" type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}" class="input w-40" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}">
             <on type="change">
               <!-- 시작일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
               <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
-          <input data-ref="date_to" type="date" class="input w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}">
+          <input data-ref="date_to" type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}" class="input w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}">
             <on type="change">
               <!-- 종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
               <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>

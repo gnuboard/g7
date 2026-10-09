@@ -491,6 +491,7 @@
   },
   "filter": {
     "date": "일자",
+    "date_type_select": "일자 기준",
     "date_type": {
       "order_date": "주문일자",
       "payment_date": "결제일자",
@@ -574,6 +575,7 @@
     "category": "상품카테고리",
     "category_level": "카테고리{{level}}",
     "price": "구매금액",
+    "currency_select": "통화",
     "min_price": "최소금액",
     "max_price": "최대금액",
     "currency": "원",

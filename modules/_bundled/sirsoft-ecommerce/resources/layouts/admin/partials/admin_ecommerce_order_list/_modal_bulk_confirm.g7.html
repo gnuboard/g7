@@ -48,6 +48,7 @@
           <label data-ref="manual_paid_stock" data-if="{{(_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
             <input type="checkbox" name="apply_stock_deduction" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.apply_stock_deduction !== false}}">
               <on type="change">
+                <!-- 체크를 바꾸면 「재고 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_stock_deduction)에 싣는다 -->
                 <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="apply_stock_deduction" value="{{_global.manualPaidOptions?.apply_stock_deduction === false}}"/>
               </on>
             </input>
@@ -60,6 +61,7 @@
           <label data-ref="manual_paid_mileage" data-if="{{(_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
             <input type="checkbox" name="apply_mileage_deduction" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.apply_mileage_deduction !== false}}">
               <on type="change">
+                <!-- 체크를 바꾸면 「사용 마일리지 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_mileage_deduction)에 싣는다 -->
                 <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="apply_mileage_deduction" value="{{_global.manualPaidOptions?.apply_mileage_deduction === false}}"/>
               </on>
             </input>
@@ -73,6 +75,7 @@
           <label data-ref="manual_paid_record" data-if="{{(_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0) > 0 }}" class="flex items-start gap-2 cursor-pointer select-none">
             <input type="checkbox" name="record_paid_amount" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.record_paid_amount !== false}}">
               <on type="change">
+                <!-- 체크를 바꾸면 「결제금액 기록」 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(record_paid_amount)에 싣는다 -->
                 <action handler="sirsoft-ecommerce.setManualPaidOption" optionKey="record_paid_amount" value="{{_global.manualPaidOptions?.record_paid_amount === false}}"/>
               </on>
             </input>

@@ -192,13 +192,13 @@
                   </td>
                   <td class="px-3 py-2">
                     <div class="flex-center gap-1">
-                      <input type="number" class="input w-16 text-right" value="{{opt.mileage_value ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                      <input type="number" class="input w-16 text-right" value="{{opt.mileage_value ?? 0}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_value_label" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                         </on>
                       </input>
-                      <select class="select w-16" value="{{opt.mileage_type ?? 'percent'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                      <select class="select w-16" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_type_label" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
@@ -336,13 +336,13 @@
               <div class="form-group col-span-2">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.mileage</label>
                 <div class="flex-center gap-2">
-                  <input type="number" class="input flex-1" value="{{opt.mileage_value ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                  <input type="number" class="input flex-1" value="{{opt.mileage_value ?? 0}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_value_label" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                     </on>
                   </input>
-                  <select class="select w-20" value="{{opt.mileage_type ?? 'percent'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                  <select class="select w-20" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_type_label" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>

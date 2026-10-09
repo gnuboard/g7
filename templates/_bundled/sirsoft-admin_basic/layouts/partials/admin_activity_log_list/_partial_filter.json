@@ -450,6 +450,7 @@
                                     "props": {
                                         "name": "dateFrom",
                                         "type": "datetime-local",
+                                        "aria-label": "$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}",
                                         "step": "1",
                                         "className": "input w-56",
                                         "value": "{{_local.filter.dateFrom || ''}}"
@@ -481,6 +482,7 @@
                                     "props": {
                                         "name": "dateTo",
                                         "type": "datetime-local",
+                                        "aria-label": "$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}",
                                         "step": "1",
                                         "className": "input w-56",
                                         "value": "{{_local.filter.dateTo || ''}}"

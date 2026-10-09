@@ -244,7 +244,6 @@ class OrderRetentionClaimRecordsTest extends ModuleTestCase
         $this->assertNull($masked['state']);
         $this->assertSame('***', $masked['address1']);
 
-
         $refund = DB::table('ecommerce_order_refunds')->find($refundId);
         $this->assertNull($refund->refund_bank_holder);
         $this->assertNull($refund->refund_bank_account);

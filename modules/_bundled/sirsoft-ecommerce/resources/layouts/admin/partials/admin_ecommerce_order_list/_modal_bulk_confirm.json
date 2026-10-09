@@ -262,6 +262,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "체크를 바꾸면 「재고 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_stock_deduction)에 싣는다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setManualPaidOption",
                                                     "params": {
@@ -327,6 +328,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "체크를 바꾸면 「사용 마일리지 차감」 적용 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(apply_mileage_deduction)에 싣는다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setManualPaidOption",
                                                     "params": {
@@ -402,6 +404,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "체크를 바꾸면 「결제금액 기록」 여부를 전역 옵션에 뒤집어 둔다 — [적용] 이 이 값을 요청(record_paid_amount)에 싣는다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setManualPaidOption",
                                                     "params": {

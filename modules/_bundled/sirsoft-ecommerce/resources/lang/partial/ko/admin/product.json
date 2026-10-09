@@ -26,6 +26,7 @@
     "category": "카테고리",
     "no_category": "카테고리 미등록",
     "date": "날짜",
+    "date_type_select": "날짜 기준",
     "date_type": {
       "created_at": "등록일",
       "updated_at": "수정일"
@@ -63,6 +64,7 @@
       "tax_free": "비과세"
     },
     "price": "가격",
+    "price_type_select": "가격 기준",
     "price_type": {
       "selling_price": "판매가",
       "supply_price": "공급가",
@@ -561,6 +563,7 @@
       "method_decrease": "인하",
       "method_fixed": "으로 변경",
       "value": "변경 금액/비율",
+      "unit": "변경 단위",
       "unit_won": "원",
       "unit_percent": "%",
       "preview_increase": "판매가를 {{value}}{{unit}} 인상합니다.",
@@ -863,6 +866,8 @@
       "active": "사용",
       "required": "필수"
     },
+    "mileage_value_label": "마일리지 적립값",
+    "mileage_type_label": "마일리지 적립 단위",
     "mileage_type": {
       "fixed": "원",
       "percent": "%"

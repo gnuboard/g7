@@ -64,9 +64,19 @@ describe('주문서 결제수단 — 고객 선택 가능 수단만', () => {
    */
   it('고를 수 있는 결제수단 계산값은 비선택 수단·비활성·iOS 전용(비 iOS)을 뺀다', () => {
     expect(typeof computedDefs.selectablePaymentMethods).toBe('string');
-    const list = evaluate(computedDefs.selectablePaymentMethods, { paymentSettings, _global, _local: {} }) as { id: string }[];
+    const list = evaluate(computedDefs.selectablePaymentMethods, { paymentSettings, _global, _local: {}, checkoutData: undefined }) as { id: string }[];
 
     expect(list.map((m) => m.id)).toEqual(['card']);
+
+    // 결제 통화 허용 목록(주문서 계산 응답 allowed_payment_methods)이 오면 그 밖의 수단도 뺀다 — 같은 계산값이 거른다
+    const blocked = evaluate(computedDefs.selectablePaymentMethods, {
+      paymentSettings,
+      _global,
+      _local: {},
+      checkoutData: { data: { allowed_payment_methods: ['dbank'] } },
+    }) as { id: string }[];
+
+    expect(blocked).toEqual([]);
   });
 
   /**
@@ -76,7 +86,7 @@ describe('주문서 결제수단 — 고객 선택 가능 수단만', () => {
   it('기본 선택은 첫 고객 선택 가능 수단이다(포인트결제 아님)', () => {
     const _computed = { selectablePaymentMethods: [{ id: 'card' }] };
 
-    expect(evaluate(computedDefs.selectedPaymentMethod, { paymentSettings, _global, _local: {}, _computed })).toBe('card');
+    expect(evaluate(computedDefs.selectedPaymentMethod, { paymentSettings, _global, _local: {}, _computed, checkoutData: undefined })).toBe('card');
   });
 
   /**

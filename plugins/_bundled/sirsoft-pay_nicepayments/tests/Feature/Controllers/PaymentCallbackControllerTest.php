@@ -17,7 +17,10 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
@@ -1012,10 +1015,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
     {
         $order = $this->createTestOrder(30000, PaymentMethodEnum::VBANK);
         $this->mockPluginSettings();
-        $product = \Modules\Sirsoft\Ecommerce\Models\Product::factory()->create();
-        $option = \Modules\Sirsoft\Ecommerce\Models\ProductOption::factory()->create(['product_id' => $product->id]);
-        $cart = \Modules\Sirsoft\Ecommerce\Models\Cart::create([
-            'user_id' => \App\Models\User::factory()->create()->id,
+        $product = Product::factory()->create();
+        $option = ProductOption::factory()->create(['product_id' => $product->id]);
+        $cart = Cart::create([
+            'user_id' => User::factory()->create()->id,
             'product_id' => $product->id,
             'product_option_id' => $option->id,
             'quantity' => 1,

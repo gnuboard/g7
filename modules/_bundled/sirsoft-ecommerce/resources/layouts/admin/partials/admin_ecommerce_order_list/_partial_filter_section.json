@@ -116,6 +116,7 @@
                             ],
                             "props": {
                                 "name": "dateType",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.date_type_select",
                                 "className": "w-28",
                                 "value": "{{_local.filter.dateType || 'ordered_at'}}",
                                 "options": [
@@ -1236,6 +1237,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "currency",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.currency_select",
                                         "className": "w-20",
                                         "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                                         "options": "{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"
@@ -3147,6 +3149,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}",
                                                         "type": "date",
                                                         "className": "input w-40",
                                                         "value": "{{_local.filter.claimRequestedFrom ?? ''}}"
@@ -3177,6 +3180,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}",
                                                         "type": "date",
                                                         "className": "input w-40",
                                                         "value": "{{_local.filter.claimRequestedTo ?? ''}}"

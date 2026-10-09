@@ -59,6 +59,7 @@
       "email_id_placeholder": "이메일 아이디",
       "email_domain_placeholder": "도메인",
       "email_domain_direct": "직접입력",
+      "email_domain_select": "이메일 도메인 선택",
       "privacy_officer": "개인정보 보호책임자",
       "privacy_officer_placeholder": "개인정보 보호책임자 이름",
       "privacy_officer_email": "개인정보 보호책임자 E-mail",

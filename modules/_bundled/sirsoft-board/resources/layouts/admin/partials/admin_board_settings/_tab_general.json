@@ -65,7 +65,9 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-stack"
+                                "className": "card-stack",
+                                "role": "radiogroup",
+                                "aria-label": "$t:sirsoft-board.admin.settings.fields.date_display_format"
                             },
                             "children": [
                                 {
@@ -107,6 +109,7 @@
                                                 "type": "radio",
                                                 "name": "display.date_display_format",
                                                 "value": "standard",
+                                                "aria-label": "$t:sirsoft-board.admin.settings.options.date_display_format.standard",
                                                 "className": "radio mt-0.5",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"
@@ -186,6 +189,7 @@
                                                 "type": "radio",
                                                 "name": "display.date_display_format",
                                                 "value": "relative",
+                                                "aria-label": "$t:sirsoft-board.admin.settings.options.date_display_format.relative",
                                                 "className": "radio mt-0.5",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"

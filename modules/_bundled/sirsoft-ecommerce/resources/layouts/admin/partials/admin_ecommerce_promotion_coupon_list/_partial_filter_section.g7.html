@@ -110,14 +110,14 @@
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}" type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 만든 날 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}" type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 만든 날 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
                 <set-state target="_local" filter.createdEndDate="{{$event.target.value}}" filter.createdDateQuick=""/>
@@ -187,7 +187,7 @@
         </input>
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
         <div class="flex-center flex-wrap gap-2">
-          <select name="discountType" class="w-24" value="{{_local.filter.discountType || 'all'}}">
+          <select name="discountType" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit" class="w-24" value="{{_local.filter.discountType || 'all'}}">
             <options>
               <option value="all">$t:common.all</option>
               <option value="fixed">$t:sirsoft-ecommerce.enums.coupon_discount_type.fixed</option>
@@ -345,14 +345,14 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
         <div class="flex-center gap-2">
           <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-          <input type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="input w-36">
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 사용 가능 기간 시작. 만든 날과 달리 빠른 기간 버튼이 없고, 값을 지워도 다른 값에 영향을 주지 않는다. -->
               <set-state target="_local" filter.validStartDate="{{$event.target.value}}"/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
-          <input type="date" name="validEndDate" value="{{_local.filter.validEndDate || ''}}" class="input w-36">
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validEndDate" value="{{_local.filter.validEndDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 사용 가능 기간 종료. 지난 쿠폰을 찾을 때 쓴다. -->
               <set-state target="_local" filter.validEndDate="{{$event.target.value}}"/>
@@ -370,14 +370,14 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
         <div class="flex-center gap-2">
           <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-          <input type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="input w-36">
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 발급 기간 시작. 사용 기간과 다른 축이다 — 발급은 끝났는데 아직 쓸 수 있는 쿠폰이 있을 수 있다. -->
               <set-state target="_local" filter.issueStartDate="{{$event.target.value}}"/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
-          <input type="date" name="issueEndDate" value="{{_local.filter.issueEndDate || ''}}" class="input w-36">
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueEndDate" value="{{_local.filter.issueEndDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 발급 기간 종료. -->
               <set-state target="_local" filter.issueEndDate="{{$event.target.value}}"/>

@@ -636,6 +636,7 @@
                                                         ],
                                                         "props": {
                                                             "name": "benefitAmountType",
+                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_unit",
                                                             "className": "w-24",
                                                             "value": "{{_local.benefitAmountType}}",
                                                             "options": [

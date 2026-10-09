@@ -465,7 +465,7 @@
             </on>
           </input>
           <!-- 통화는 거래 때 굳어진 값으로 거른다. 교환·반품은 신청서 자신의 통화, 환불·취소는 주문의 결제 통화이고, 비워 두면 통화가 다른 금액도 같은 숫자 범위로 비교된다. -->
-          <select data-ref="f_600_currency_select" name="currencyCode" class="w-24" value="{{_local.filter.currencyCode || ''}}" options="{{_computed.claimCurrencyOptions ?? []}}">
+          <select data-ref="f_600_currency_select" name="currencyCode" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.currency" class="w-24" value="{{_local.filter.currencyCode || ''}}" options="{{_computed.claimCurrencyOptions ?? []}}">
             <on type="change">
               <set-state target="_local" filter.currencyCode="{{$event.target.value}}"/>
             </on>

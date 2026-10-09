@@ -17,7 +17,7 @@ const LANG: Record<string, string> = {
     ja: '../../../../../lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/common.json',
 };
 
-const KEYS = ['page_loading', 'account_menu', 'remove_language', 'remove_tag', 'remove', 'refresh', 'reset', 'back', 'edit', 'delete', 'save', 'cancel', 'add', 'search', 'prev', 'next', 'expand', 'collapse', 'actions'];
+const KEYS = ['page_loading', 'user_menu', 'more_actions', 'remove_language', 'remove_tag', 'remove', 'refresh', 'reset', 'back', 'edit', 'delete', 'save', 'cancel', 'add', 'search', 'prev', 'next', 'expand', 'collapse', 'actions'];
 
 describe('아이콘 버튼 이름용 공용 문구', () => {
     /**

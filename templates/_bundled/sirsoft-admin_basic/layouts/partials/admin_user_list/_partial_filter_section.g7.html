@@ -84,14 +84,14 @@
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.created_at')}}" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 가입일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.created_at')}}" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 가입일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
                 <set-state target="_local" filter.createdEndDate="{{$event.target.value}}" filter.createdDateQuick=""/>
@@ -174,14 +174,14 @@
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="lastLoginStartDate" value="{{_local.filter.lastLoginStartDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.last_login')}}" name="lastLoginStartDate" value="{{_local.filter.lastLoginStartDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
               <on type="change">
                 <!-- 최근 로그인 시작. 「로그인 이력 없음」 을 켜면 이 칸은 잠긴다 — 둘은 동시에 참일 수 없다. -->
                 <set-state target="_local" filter.lastLoginStartDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="lastLoginEndDate" value="{{_local.filter.lastLoginEndDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.last_login')}}" name="lastLoginEndDate" value="{{_local.filter.lastLoginEndDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
               <on type="change">
                 <!-- 최근 로그인 종료. -->
                 <set-state target="_local" filter.lastLoginEndDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
@@ -350,14 +350,14 @@
         <span class="filter-label w-32">$t:admin.users.filter.dormant_at</span>
         <div class="flex-center gap-2">
           <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-          <input type="date" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
+          <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 휴면 전환일 시작. 휴면이 풀린 회원은 전환일이 지워지므로 지금 휴면인 회원만 걸린다. -->
               <set-state target="_local" filter.dormantStartDate="{{$event.target.value}}"/>
             </on>
           </input>
           <span class="text-gray-400 dark:text-gray-500">~</span>
-          <input type="date" name="dormantEndDate" value="{{_local.filter.dormantEndDate || ''}}" class="input w-36">
+          <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.dormant_at')}}" name="dormantEndDate" value="{{_local.filter.dormantEndDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 휴면 전환일 종료. -->
               <set-state target="_local" filter.dormantEndDate="{{$event.target.value}}"/>
@@ -375,7 +375,7 @@
         </input>
         <span class="filter-label w-32">$t:admin.users.filter.status_changed</span>
         <div class="flex-center flex-wrap gap-2">
-          <select name="statusChangedType" class="w-28" value="{{_local.filter.statusChangedType || ''}}">
+          <select name="statusChangedType" aria-label="$t:admin.users.filter.status_changed" class="w-28" value="{{_local.filter.statusChangedType || ''}}">
             <options>
               <option value="">$t:common.all</option>
               <option value="withdrawn">$t:admin.users.filter.status_changed_options.withdrawn</option>
@@ -388,14 +388,14 @@
           </select>
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="statusChangedStart" value="{{_local.filter.statusChangedStart || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedStart" value="{{_local.filter.statusChangedStart || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
               <on type="change">
                 <!-- 상태 변경일 시작. 종류를 고르기 전에는 잠겨 있다 — 무엇의 날짜인지 모르면 서버가 무시한다. -->
                 <set-state target="_local" filter.statusChangedStart="{{$event.target.value}}"/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="statusChangedEnd" value="{{_local.filter.statusChangedEnd || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedEnd" value="{{_local.filter.statusChangedEnd || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
               <on type="change">
                 <!-- 상태 변경일 종료. -->
                 <set-state target="_local" filter.statusChangedEnd="{{$event.target.value}}"/>

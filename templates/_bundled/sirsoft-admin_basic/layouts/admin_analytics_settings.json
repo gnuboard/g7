@@ -2522,6 +2522,7 @@
                                                                             "min": "3",
                                                                             "max": "100",
                                                                             "className": "input",
+                                                                            "aria-label": "$t:admin.analytics.settings.retention.top_n_overview",
                                                                             "title": "$t:admin.analytics.settings.retention.top_n_overview",
                                                                             "disabled": "{{_computed.isReadOnly}}"
                                                                         }
@@ -2535,6 +2536,7 @@
                                                                             "min": "3",
                                                                             "max": "100",
                                                                             "className": "input",
+                                                                            "aria-label": "$t:admin.analytics.settings.retention.top_n_dashboard",
                                                                             "title": "$t:admin.analytics.settings.retention.top_n_dashboard",
                                                                             "disabled": "{{_computed.isReadOnly}}"
                                                                         }
@@ -2548,6 +2550,7 @@
                                                                             "min": "3",
                                                                             "max": "100",
                                                                             "className": "input",
+                                                                            "aria-label": "$t:admin.analytics.settings.retention.top_n_detail",
                                                                             "title": "$t:admin.analytics.settings.retention.top_n_detail",
                                                                             "disabled": "{{_computed.isReadOnly}}"
                                                                         }

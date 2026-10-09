@@ -21,11 +21,6 @@ export interface ActionMenuProps {
     /** 글자 없는 트리거의 접근 가능한 이름. 비우면 「더보기」(common.more_actions) */
     triggerAriaLabel?: string;
     triggerIconName?: IconName;
-    /**
-     * 기본 트리거 버튼의 읽기 이름. 글자(triggerLabel) 없이 아이콘만 그릴 때 쓰인다 — 없으면 「작업」(`common.actions`).
-     * 아이콘만 있는 버튼은 화면 낭독기가 아이콘 이름(「ellipsis h」)으로 읽기 때문이다.
-     */
-    triggerAriaLabel?: string;
     position?: 'left' | 'right';
     className?: string;
     style?: React.CSSProperties;

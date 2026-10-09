@@ -4,16 +4,15 @@
  *
  * @description
  * 마이페이지 주문 상세의 KCP 가상계좌 블록(레이아웃 확장 `user_order_show`)에는 「입금 금액」 행이 없었다(실측 S2).
- * 두 경로(확장·확장이 없는 템플릿의 주입기) 모두 입금할 금액의 기준 필드인 결제예정금액(`total_due_amount_formatted`)을
- * 읽고, 그 값이 없는 비회원 응답에서는 주문금액(`total_amount_formatted`)으로 대신한다. 입금 대기 중에는 두 값이 같다
- * (둘 다 마일리지 차감 뒤 — 실측 B5 마일리지 주문 5,000/5,000). 아래 시험의 서로 다른 두 값은 어느 필드를 읽는지 가리기 위한 값이다.
- *
- * @vitest-environment jsdom
+ * 입금할 금액의 기준 필드인 결제예정금액(`total_due_amount_formatted`)을 읽고, 그 값이 없는 비회원 응답에서는
+ * 주문금액(`total_amount_formatted`)으로 대신한다. 입금 대기 중에는 두 값이 같다(둘 다 마일리지 차감 뒤 — 실측 B5
+ * 마일리지 주문 5,000/5,000). 아래 시험의 서로 다른 두 값은 어느 필드를 읽는지 가리기 위한 값이다.
+ * 입금 안내는 결제 정보 카드의 조각이 그린다(#639 에서 주입 스크립트를 조각으로 옮김).
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installMypageOrderShowInjector } from '../mypageOrderShowInjector';
+import { afterEach, describe, expect, it } from 'vitest';
 import userOrderShow from '../../extensions/user_order_show.json';
+import { cleanupRender, kcpVbankOrder, renderUserOrderShow, type LayoutTest } from './layouts/userOrderShowKit';
 
 /**
  * 조건에 맞는 노드를 트리에서 모두 모은다.
@@ -37,9 +36,16 @@ function collect(node: unknown, match: (value: Record<string, unknown>) => boole
     return out;
 }
 
+let utils: LayoutTest | null = null;
+
+afterEach(() => {
+    cleanupRender(utils);
+    utils = null;
+});
+
 describe('KCP 가상계좌 블록(레이아웃 확장) — 입금 금액 행', () => {
     /**
-     * @scenario path=extension
+     * @scenario case=fragment_contract
      * @effects kcp_vbank_shows_due_amount
      */
     it('입금 금액 행이 있고 결제예정금액을 먼저 읽는다', () => {
@@ -49,44 +55,29 @@ describe('KCP 가상계좌 블록(레이아웃 확장) — 입금 금액 행', (
         expect(text).toContain('sirsoft-pay_nhnkcp.user.vbank_amount');
         expect(text).toContain('order.data.total_due_amount_formatted ?? order.data.total_amount_formatted');
     });
-});
 
-describe('KCP 주문 상세 주입기(확장 없는 템플릿) — 입금 금액', () => {
-    const FLAG = '__kcpMpShowInjectorInstalled';
+    /**
+     * @scenario case=member_with_mileage
+     * @effects kcp_vbank_shows_due_amount
+     */
+    it('회원 주문은 결제예정금액(마일리지 차감 뒤)을 입금 금액으로 적는다', async () => {
+        utils = await renderUserOrderShow(kcpVbankOrder({}, { total_due_amount_formatted: '12,000원' }));
 
-    beforeEach(() => {
-        vi.useFakeTimers();
-        document.body.innerHTML = '<div id="order_payment_info_panel"><div class="space-y-3"></div></div>';
-        (window as any).G7Core = {
-            getState: () => ({
-                currentDataContext: {
-                    order: { data: { order_number: 'ORD-V', total_amount_formatted: '15,000원', total_due_amount_formatted: '12,000원', payment: { pg_provider: 'nhnkcp', payment_method: 'vbank', vbank_name: '기업은행', vbank_number: 'T0309', vbank_holder: 'NHN KCP' } } },
-                },
-            }),
-        };
-        vi.spyOn(console, 'info').mockImplementation(() => {});
-        vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ success: true, data: { available: false } }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-        history.replaceState({}, '', '/mypage/orders/ORD-V');
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-        vi.restoreAllMocks();
-        delete (window as any)[FLAG];
-        delete (window as any).G7Core;
-        document.body.innerHTML = '';
+        const text = document.getElementById('kcp-mp-vbank-row')?.textContent ?? '';
+        expect(text).toContain('입금 금액');
+        expect(text).toContain('12,000원');
+        expect(text).not.toContain('15,000원');
     });
 
     /**
-     * @scenario path=injector
+     * @scenario case=guest_without_due
      * @effects kcp_vbank_shows_due_amount
      */
-    it('결제예정금액(마일리지 차감 뒤)을 입금 금액으로 적는다', async () => {
-        installMypageOrderShowInjector();
-        await vi.advanceTimersByTimeAsync(5000);
+    it('비회원 주문은 결제예정금액이 없어 주문금액을 입금 금액으로 적는다', async () => {
+        utils = await renderUserOrderShow(kcpVbankOrder());
 
         const text = document.getElementById('kcp-mp-vbank-row')?.textContent ?? '';
-        expect(text).toContain('12,000원');
-        expect(text).not.toContain('15,000원');
+        expect(text).toContain('입금 금액');
+        expect(text).toContain('15,000원');
     });
 });

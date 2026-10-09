@@ -409,8 +409,10 @@
         <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
           <on type="click">
             <!-- 앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다 -->
-            <set-state target="_local" claimPayError=""/>
-            <navigate path="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true"><query/></navigate>
+            <sequence>
+              <set-state target="_local" claimPayError=""/>
+              <navigate path="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true"><query/></navigate>
+            </sequence>
           </on>
           {{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}
         </button>
@@ -421,8 +423,10 @@
           <button type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
             <on type="click">
               <!-- 앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다 -->
-              <set-state target="_local" claimPayError=""/>
-              <navigate path="{{linkedRefund.detail_url}}" :mergeQuery="true"><query/></navigate>
+              <sequence>
+                <set-state target="_local" claimPayError=""/>
+                <navigate path="{{linkedRefund.detail_url}}" :mergeQuery="true"><query/></navigate>
+              </sequence>
             </on>
             {{linkedRefund.claim_number}}
           </button>

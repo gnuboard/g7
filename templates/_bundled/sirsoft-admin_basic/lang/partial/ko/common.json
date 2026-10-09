@@ -1,9 +1,10 @@
 {
+  "range_start": "{{label}} 시작일",
+  "range_end": "{{label}} 종료일",
   "all": "전체",
   "view_all": "전체보기",
   "loading": "로딩 중...",
   "page_loading": "페이지 로딩 중",
-  "account_menu": "계정 메뉴",
   "remove_language": "{{language}} 입력 제거",
   "remove_tag": "{{tag}} 제거",
   "saving": "저장하는 중...",

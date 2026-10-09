@@ -59,6 +59,7 @@
       "email_id_placeholder": "Email ID",
       "email_domain_placeholder": "Domain",
       "email_domain_direct": "Enter directly",
+      "email_domain_select": "Email domain",
       "privacy_officer": "Privacy Officer",
       "privacy_officer_placeholder": "Privacy officer name",
       "privacy_officer_email": "Privacy Officer Email",

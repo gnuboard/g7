@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 
 use App\Models\User;
+use App\Services\PluginSettingsService;
 use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -10,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -31,30 +33,30 @@ class MobileApprovalControllerTest extends PluginTestCase
     private function createOrder(int $totalAmount = 10000, array $tax = []): Order
     {
         $taxable = $tax['taxable'] ?? $totalAmount;
-        $vat     = $tax['vat']     ?? (int) round($taxable * 10 / 110);
+        $vat = $tax['vat'] ?? (int) round($taxable * 10 / 110);
         $taxFree = $tax['taxFree'] ?? 0;
 
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $order = OrderFactory::new()->create([
-            'user_id'              => $user->id,
-            'order_number'         => 'ORD-MOB-' . random_int(10000, 99999),
-            'order_status'         => OrderStatusEnum::PENDING_ORDER,
-            'subtotal_amount'      => $totalAmount,
-            'total_amount'         => $totalAmount,
-            'total_due_amount'     => $totalAmount,
-            'total_paid_amount'    => 0,
-            'total_tax_amount'     => $taxable,
-            'total_vat_amount'     => $vat,
-            'total_tax_free_amount'=> $taxFree,
-            'currency'             => 'KRW',
-            'currency_snapshot'    => self::krwCurrencySnapshot(),
+            'user_id' => $user->id,
+            'order_number' => 'ORD-MOB-'.random_int(10000, 99999),
+            'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'subtotal_amount' => $totalAmount,
+            'total_amount' => $totalAmount,
+            'total_due_amount' => $totalAmount,
+            'total_paid_amount' => 0,
+            'total_tax_amount' => $taxable,
+            'total_vat_amount' => $vat,
+            'total_tax_free_amount' => $taxFree,
+            'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
         ]);
 
         OrderPaymentFactory::new()->create([
-            'order_id'       => $order->id,
+            'order_id' => $order->id,
             'payment_status' => PaymentStatusEnum::READY,
             'payment_method' => PaymentMethodEnum::CARD,
-            'pg_provider'    => 'nhnkcp',
+            'pg_provider' => 'nhnkcp',
         ]);
 
         return $order;
@@ -124,7 +126,7 @@ class MobileApprovalControllerTest extends PluginTestCase
         $mock = $this->createMock(KcpSoapService::class);
         $mock->method('getApprovalKey')->willReturn([
             'approval_key' => $approvalKey,
-            'pay_url'      => self::TEST_PAY_URL,
+            'pay_url' => self::TEST_PAY_URL,
         ]);
         $mock->method('getSiteCd')->willReturn('T0000');
         $mock->method('getEscrowSiteCd')->willReturn('T0000');
@@ -150,13 +152,13 @@ class MobileApprovalControllerTest extends PluginTestCase
      */
     private function mockPluginSettings(): void
     {
-        $mock = $this->createMock(\App\Services\PluginSettingsService::class);
+        $mock = $this->createMock(PluginSettingsService::class);
         $mock->method('get')->willReturn([
-            'is_test_mode'  => true,
-            'test_site_cd'  => 'T0000',
+            'is_test_mode' => true,
+            'test_site_cd' => 'T0000',
             'test_site_key' => 'TEST_KEY',
         ]);
-        $this->app->instance(\App\Services\PluginSettingsService::class, $mock);
+        $this->app->instance(PluginSettingsService::class, $mock);
     }
 
     /**
@@ -170,13 +172,13 @@ class MobileApprovalControllerTest extends PluginTestCase
     {
         return array_merge([
             'order_number' => $order->order_number,
-            'amount'       => (int) $order->total_due_amount,
-            'good_name'    => '테스트 상품',
-            'pay_method'   => 'card',
-            'buyr_name'    => '홍길동',
-            'buyr_mail'    => 'test@test.com',
-            'buyr_tel1'    => '01012345678',
-            'ret_url'      => 'https://example.com/callback',
+            'amount' => (int) $order->total_due_amount,
+            'good_name' => '테스트 상품',
+            'pay_method' => 'card',
+            'buyr_name' => '홍길동',
+            'buyr_mail' => 'test@test.com',
+            'buyr_tel1' => '01012345678',
+            'ret_url' => 'https://example.com/callback',
         ], $overrides);
     }
 
@@ -278,7 +280,7 @@ class MobileApprovalControllerTest extends PluginTestCase
 
         $mock = $this->createMock(KcpSoapService::class);
         $mock->method('getApprovalKey')
-            ->willThrowException(new \Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException('KCP SOAP 오류'));
+            ->willThrowException(new NhnKcpApiException('KCP SOAP 오류'));
         $mock->method('getSiteCd')->willReturn('T0000');
         $this->app->instance(KcpSoapService::class, $mock);
 
@@ -489,8 +491,8 @@ class MobileApprovalControllerTest extends PluginTestCase
     {
         // 전액 과세 → 복합과세 필드 불필요. KCP가 내부 계산
         $amount = 11000;
-        $vat    = (int) round($amount * 10 / 110);
-        $order  = $this->createOrder($amount, ['taxable' => $amount, 'vat' => $vat, 'taxFree' => 0]);
+        $vat = (int) round($amount * 10 / 110);
+        $order = $this->createOrder($amount, ['taxable' => $amount, 'vat' => $vat, 'taxFree' => 0]);
         $this->mockSoapService();
         $this->mockPluginSettings();
 
@@ -518,7 +520,7 @@ class MobileApprovalControllerTest extends PluginTestCase
     {
         // 10,000원 전액 비과세 (면세 상품)
         $amount = 10000;
-        $order  = $this->createOrder($amount, ['taxable' => 0, 'vat' => 0, 'taxFree' => $amount]);
+        $order = $this->createOrder($amount, ['taxable' => 0, 'vat' => 0, 'taxFree' => $amount]);
         $this->mockSoapService();
         $this->mockPluginSettings();
 
@@ -549,8 +551,8 @@ class MobileApprovalControllerTest extends PluginTestCase
         // 21,000원 = 과세 11,000(공급가 10,000 + 부가세 1,000) + 비과세 10,000
         $taxable = 11000;
         $taxFree = 10000;
-        $total   = $taxable + $taxFree;
-        $vat     = (int) round($taxable * 10 / 110); // 1,000
+        $total = $taxable + $taxFree;
+        $vat = (int) round($taxable * 10 / 110); // 1,000
         $supplyAmt = $taxable - $vat;               // 10,000
 
         $order = $this->createOrder($total, ['taxable' => $taxable, 'vat' => $vat, 'taxFree' => $taxFree]);
@@ -565,8 +567,8 @@ class MobileApprovalControllerTest extends PluginTestCase
 
         $this->assertEquals('TG03', $fields['tax_flag']);
         $this->assertEquals((string) $supplyAmt, $fields['comm_tax_mny'], '공급가액 일치');
-        $this->assertEquals((string) $vat,        $fields['comm_vat_mny'], '부가세 일치');
-        $this->assertEquals((string) $taxFree,     $fields['comm_free_mny'], '비과세 금액 일치');
+        $this->assertEquals((string) $vat, $fields['comm_vat_mny'], '부가세 일치');
+        $this->assertEquals((string) $taxFree, $fields['comm_free_mny'], '비과세 금액 일치');
 
         // 금액 검증: good_mny = comm_tax_mny + comm_vat_mny + comm_free_mny
         $this->assertEquals(

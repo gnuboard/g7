@@ -33,6 +33,7 @@ class CouponPeriodFormattedTimezoneTest extends ModuleTestCase
      * @return void 반환값 없음
      *
      * @scenario case=c01
+     *
      * @effects coupon_period_uses_site_timezone
      */
     public function test_valid_period_formatted_uses_site_timezone_dates(): void
@@ -52,6 +53,7 @@ class CouponPeriodFormattedTimezoneTest extends ModuleTestCase
      * @return void 반환값 없음
      *
      * @scenario case=c02
+     *
      * @effects coupon_period_uses_site_timezone
      */
     public function test_issue_period_formatted_uses_site_timezone_dates(): void

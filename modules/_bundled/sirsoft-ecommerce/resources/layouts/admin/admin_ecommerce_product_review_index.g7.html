@@ -371,14 +371,14 @@
         <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.date_range</span>
           <div class="flex-center flex-wrap gap-2">
-            <input type="date" class="input w-36" value="{{_local.filter.startDate ?? ''}}">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.startDate ?? ''}}">
               <on type="change">
                 <!-- 날짜를 직접 고르면 빠른 선택 표시를 푼다 — 둘 다 켜져 있으면 어느 쪽이 지금 조건인지 알 수 없다 -->
                 <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
             <span class="text-secondary">~</span>
-            <input type="date" class="input w-36" value="{{_local.filter.endDate ?? ''}}">
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.endDate ?? ''}}">
               <on type="change">
                 <!-- 종료일도 같다 -->
                 <set-state target="local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>

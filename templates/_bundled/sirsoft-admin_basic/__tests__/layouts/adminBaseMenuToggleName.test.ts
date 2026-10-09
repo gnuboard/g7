@@ -60,7 +60,8 @@ describe('관리자 머리말 메뉴 버튼 이름', () => {
      * @effects menu_toggle_announces_expanded
      */
     it('펼침 여부를 aria-expanded 로 알린다', () => {
-        expect(button?.props?.['aria-expanded']).toBe("{{_global.sidebarCollapsed ? 'false' : 'true'}}");
+        // 불리언 식으로 둔다 — React 가 aria-* 불리언을 "true"/"false" 로 쓴다(저장소 관례)
+        expect(button?.props?.['aria-expanded']).toBe('{{!_global.sidebarCollapsed}}');
     });
 
     /**
@@ -74,7 +75,7 @@ describe('관리자 머리말 메뉴 버튼 이름', () => {
         const mobile = findById(layout, 'mobile_menu_toggle');
         expect(mobile).toBeDefined();
         expect(mobile?.props?.['aria-label']).toBe("{{_global.sidebarOpen ? '$t:common.collapse_sidebar' : '$t:common.expand_sidebar'}}");
-        expect(mobile?.props?.['aria-expanded']).toBe("{{_global.sidebarOpen ? 'true' : 'false'}}");
+        expect(mobile?.props?.['aria-expanded']).toBe('{{!!_global.sidebarOpen}}');
         expect(mobile?.props?.type).toBe('button');
     });
 });

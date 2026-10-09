@@ -288,6 +288,7 @@
       "coupon_name": "クーポン名",
       "coupon_description": "クーポン説明",
       "benefit_amount": "特典金額",
+      "discount_unit": "割引単位",
       "max_discount": "最大割引金額",
       "min_order_amount": "最小注文金額",
       "validity_period": "有効期間",

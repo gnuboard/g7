@@ -131,7 +131,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "select w-24"
+                                        "className": "select w-24",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit"
                                     },
                                     "children": [
                                         {

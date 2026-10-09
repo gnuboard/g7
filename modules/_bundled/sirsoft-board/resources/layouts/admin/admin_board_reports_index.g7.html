@@ -279,14 +279,14 @@
               <responsive on="portable" class="row-stack"/>
               <span class="text-tertiary font-medium w-20 shrink-0 pt-2">$t:sirsoft-board.admin.reports.filters.reported_at_label</span>
               <div class="flex-center flex-wrap gap-2">
-                <input data-ref="date_from" type="date" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" class="rounded">
+                <input data-ref="date_from" type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-board.admin.reports.filters.reported_at_label')}}" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" class="rounded">
                   <on type="change">
                     <!-- 시작 날짜를 직접 고르면 옆의 빠른 선택 표시를 끈다 — 「최근 1주」로 채운 값을 손으로 고친 뒤에도 그 배지가 켜져 있으면 화면이 거짓말을 한다 -->
                     <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
                   </on>
                 </input>
                 <span class="text-label-subtle">~</span>
-                <input data-ref="date_to" type="date" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}" class="rounded">
+                <input data-ref="date_to" type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-board.admin.reports.filters.reported_at_label')}}" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}" class="rounded">
                   <on type="change">
                     <!-- 끝 날짜도 같은 이유로 빠른 선택 표시를 끈다 -->
                     <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>

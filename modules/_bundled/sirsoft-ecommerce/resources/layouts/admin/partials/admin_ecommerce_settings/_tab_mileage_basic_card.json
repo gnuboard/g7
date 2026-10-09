@@ -201,6 +201,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "mileage.earn_trigger",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger",
                                 "value": "{{_local.form?.mileage?.earn_trigger ?? 'confirmed'}}",
                                 "className": "input w-32",
                                 "disabled": "{{_computed.isReadOnly}}",
@@ -230,6 +231,7 @@
                             "props": {
                                 "type": "number",
                                 "name": "mileage.earn_delay_days",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_days",
                                 "value": "{{_local.form?.mileage?.earn_delay_days ?? 0}}",
                                 "min": "{{_local?.form?._meta?.limits?.earn_delay_days_min ?? 0}}",
                                 "className": "input w-20 text-center",

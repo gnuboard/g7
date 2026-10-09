@@ -27,7 +27,7 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.color</label>
           <div class="flex-center gap-3">
-            <input type="color" value="{{_global.labelFormData?.color ?? '#6B7280'}}" class="w-12 h-10 p-1 rounded cursor-pointer">
+            <input type="color" aria-label="$t:sirsoft-ecommerce.admin.product.labels.color" value="{{_global.labelFormData?.color ?? '#6B7280'}}" class="w-12 h-10 p-1 rounded cursor-pointer">
               <on type="change">
                 <!-- 색 고르개 — 옆 글자 입력칸과 같은 값을 나눠 쓴다(어느 쪽으로 넣어도 미리보기가 따라간다) -->
                 <set-state target="global" labelFormData.color="{{$event.target.value}}"/>

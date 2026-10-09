@@ -54,7 +54,8 @@ describe('편집기 클레임 상세 표본 — 첨부 상한(attachment_setting
      * @effects claim_attachment_sample_has_settings
      */
     it('첨부 안내 문구의 인자가 표본으로 빈 값 없이 계산된다', () => {
-        const hint = markup.match(/images_hint\|max=\{\{(.*?)\}\}&amp;size=\{\{(.*?)\}\}&amp;types=\{\{(.*?)\}\}/);
+        // 영어 단수·복수 선택용 `|count={{…}}` 인자가 앞에 올 수 있다(값은 max 와 같다)
+        const hint = markup.match(/images_hint(?:\|count=\{\{.*?\}\})?\|max=\{\{(.*?)\}\}&amp;size=\{\{(.*?)\}\}&amp;types=\{\{(.*?)\}\}/);
         expect(hint).toBeTruthy();
         const claim = spec.sampleData.byDataSourceId.claim;
         // eslint-disable-next-line no-new-func

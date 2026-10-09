@@ -288,6 +288,7 @@
       "coupon_name": "쿠폰명",
       "coupon_description": "쿠폰설명",
       "benefit_amount": "혜택금액",
+      "discount_unit": "할인 단위",
       "max_discount": "최대할인금액",
       "min_order_amount": "최소주문금액",
       "validity_period": "유효기간",

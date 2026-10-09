@@ -491,6 +491,7 @@
   },
   "filter": {
     "date": "日時",
+    "date_type_select": "日付の基準",
     "date_type": {
       "order_date": "注文日",
       "payment_date": "決済日",
@@ -574,6 +575,7 @@
     "category": "商品カテゴリー",
     "category_level": "カテゴリー{{level}}",
     "price": "購入金額",
+    "currency_select": "通貨",
     "min_price": "最小金額",
     "max_price": "最大金額",
     "currency": "ウォン",

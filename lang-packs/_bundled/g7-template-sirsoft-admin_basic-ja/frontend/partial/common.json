@@ -1,9 +1,10 @@
 {
+  "range_start": "{{label}} 開始日",
+  "range_end": "{{label}} 終了日",
   "all": "すべて",
   "view_all": "すべて表示",
   "loading": "読み込み中...",
   "page_loading": "ページ読み込み中",
-  "account_menu": "アカウントメニュー",
   "remove_language": "{{language}} の入力を削除",
   "remove_tag": "{{tag}} を外す",
   "saving": "保存中...",

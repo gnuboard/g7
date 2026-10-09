@@ -9,9 +9,11 @@ description: |
       (나이스는 이미 감추고 있었다).
     - 입금 전에 취소한 주문에도 입금 계좌가 그대로 보여 취소 뒤 입금을 부를 수 있었다(KCP·나이스). 취소된 주문엔
       블록을 그리지 않는다. KG 는 입금 대기일 때만 그려 원래 맞았다.
+    - 리베이스 후속: 주입 스크립트를 조각으로 옮겨(#639) 주입기 사례를 조각 렌더 사례(render_*)로 바꿨다.
 
 axes:
-  payment_state: [waiting_deposit, paid, cancelled, paid_complete_screen, injector_paid, injector_cancelled]
+  # waiting_deposit·paid·cancelled·paid_complete_screen = 조각 조건식 평가, render_* = 조각을 엔진에 태운 렌더 결과
+  payment_state: [waiting_deposit, paid, cancelled, paid_complete_screen, render_waiting, render_paid, render_cancelled]
 
 effects:
   - guide_and_notice_while_waiting   # 입금 대기: 계좌 + 자동 취소 경고

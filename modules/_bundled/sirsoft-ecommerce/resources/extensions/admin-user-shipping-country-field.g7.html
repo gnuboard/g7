@@ -31,7 +31,7 @@
         <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
       </div>
       <!-- 배송국가 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음: 화면 하단 회원정보 [저장] 요청 본문에 실려 함께 저장된다. -->
-      <select name="ecommerce_preferred_shipping_country" value="{{_local.form?.ecommerce_preferred_shipping_country ?? user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full md:w-64"/>
+      <select name="ecommerce_preferred_shipping_country" aria-label="$t:sirsoft-ecommerce.admin.user_shipping_country.title" value="{{_local.form?.ecommerce_preferred_shipping_country ?? user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full md:w-64"/>
       <!-- 회원정보 저장 요청의 검증 오류(비활성 국가·변경 권한 없음)를 이 칸 아래에 띄운다 -->
       <p data-if="{{_local.errors?.ecommerce_preferred_shipping_country}}" class="text-red-500 text-xs mt-1">{{_local.errors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_shipping_country.description</p>

@@ -1,7 +1,6 @@
 // e2e:allow basic Input 디폴트 시맨틱(.input/.checkbox/.radio) 머지 — 동작 무변, 외형 통일 시범. 패턴 확정 후 다음 사이클에 E2E spec 일괄 작성 예정. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useRef, useCallback, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
-import { useLabelledByPrecedingLabel } from '../../hooks/useLabelledByPrecedingLabel';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -62,10 +61,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 
   // 외부 ref와 내부 ref를 연결
   useImperativeHandle(ref, () => internalRef.current as HTMLInputElement);
-
-  // 바로 앞의 보이는 라벨을 이름으로 잇는다 — 호출처가 이름을 줬으면 건드리지 않는다
-  const hasOwnName = !!(props['aria-label'] || props['aria-labelledby']);
-  const precedingLabelId = useLabelledByPrecedingLabel(internalRef, !hasOwnName);
 
   // 내부 로컬 값 (IME 조합 중에도 화면에 표시됨) - text input에만 사용
   const [localValue, setLocalValue] = useState<string>(
@@ -189,7 +184,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         checked={checked}
         defaultChecked={defaultChecked}
         value={value}
-        aria-labelledby={precedingLabelId}
         {...validProps}
       />
     );
@@ -209,7 +203,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       onKeyPress={handleKeyPress}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
-      aria-labelledby={precedingLabelId}
       {...inputProps}
       {...validProps}
     />

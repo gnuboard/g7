@@ -23,6 +23,7 @@ class LayoutServingEmptyObjectTest extends TestCase
      * 저장된 레이아웃의 `{}` 는 서빙 응답에서도 `{}` 로 내려간다.
      *
      * @scenario container=object_and_array_side_by_side
+     *
      * @effects empty_object_served_as_object, empty_array_served_as_array
      *
      * @return void 반환값 없음

@@ -10,8 +10,8 @@
       <!-- 혜택금액 (Input + Select 같은 줄) -->
       <form-field data-type="composite" data-ref="field_benefit_amount" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount" :required="true" error="{{_local.errors?.discount_value?.[0] ?? _local.errors?.discount_type?.[0] ?? ''}}">
         <div class="flex-center gap-2">
-          <input type="number" name="discount_value" class="input w-40" :min="1" max="{{_local.form?.discount_type === 'rate' ? 100 : undefined}}"/>
-          <select name="discount_type" class="input w-24">
+          <input aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount" type="number" name="discount_value" class="input w-40" :min="1" max="{{_local.form?.discount_type === 'rate' ? 100 : undefined}}"/>
+          <select aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit" name="discount_type" class="input w-24">
             <options>
               <option value="fixed">$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_fixed</option>
               <option value="rate">$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_rate</option>
@@ -52,9 +52,9 @@
           </div>
           <!-- 기간선택 시: 시작일 ~ 종료일 -->
           <div data-ref="valid_period_range" data-if="{{_local.form?.valid_type === 'period'}}" class="flex-center gap-2">
-            <input type="date" name="valid_from" class="input w-40"/>
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}" type="date" name="valid_from" class="input w-40"/>
             <span class="text-label-subtle">~</span>
-            <input type="date" name="valid_to" class="input w-40"/>
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}" type="date" name="valid_to" class="input w-40"/>
           </div>
           <!-- 발급일로부터 선택 시: 일수 입력 -->
           <div data-ref="valid_period_days" data-if="{{_local.form?.valid_type === 'days_from_issue'}}" class="flex-center gap-2">

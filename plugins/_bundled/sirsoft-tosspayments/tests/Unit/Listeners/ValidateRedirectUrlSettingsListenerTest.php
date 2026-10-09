@@ -86,6 +86,7 @@ class ValidateRedirectUrlSettingsListenerTest extends PluginTestCase
      * 잘못된 이동 주소는 성공·실패 두 칸 모두 거절됩니다.
      *
      * @scenario case=invalid
+     *
      * @effects invalid_redirect_url_rejected
      *
      * @param  string  $value  거절돼야 하는 이동 주소
@@ -104,6 +105,7 @@ class ValidateRedirectUrlSettingsListenerTest extends PluginTestCase
      * 형식에 맞는 이동 주소와 빈 값은 통과합니다.
      *
      * @scenario case=valid
+     *
      * @effects valid_redirect_url_accepted
      *
      * @param  string|null  $value  통과해야 하는 이동 주소(빈 값이면 기본값 사용)
@@ -119,6 +121,7 @@ class ValidateRedirectUrlSettingsListenerTest extends PluginTestCase
      * 거절 문구가 번역 키가 아닌 실제 문장으로 나옵니다.
      *
      * @scenario case=message
+     *
      * @effects error_message_translated
      *
      * @return void 반환값 없음
@@ -136,6 +139,7 @@ class ValidateRedirectUrlSettingsListenerTest extends PluginTestCase
      * 다른 플러그인의 설정 검증 규칙에는 손대지 않습니다.
      *
      * @scenario case=other_plugin
+     *
      * @effects other_plugin_rules_untouched
      *
      * @return void 반환값 없음
@@ -151,6 +155,7 @@ class ValidateRedirectUrlSettingsListenerTest extends PluginTestCase
      * 리스너가 플러그인 설정 검증 필터 훅에 구독돼 있고 플러그인이 그것을 등록합니다.
      *
      * @scenario case=registration
+     *
      * @effects listener_registered
      *
      * @return void 반환값 없음

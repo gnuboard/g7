@@ -300,6 +300,7 @@
                                     ],
                                     "props": {
                                         "name": "dateType",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.date_type_select",
                                         "className": "w-28",
                                         "value": "{{_local.filter.dateType || 'created_at'}}",
                                         "options": [
@@ -1283,6 +1284,7 @@
                                     ],
                                     "props": {
                                         "name": "priceType",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.price_type_select",
                                         "className": "w-full md:w-28",
                                         "value": "{{_local.filter.priceType || 'selling_price'}}",
                                         "options": [

@@ -4,7 +4,8 @@
  *
  * 목록(DataGrid)의 줄마다 붙는 작업 메뉴(⋯) 버튼은 `triggerLabel=""` 로 아이콘만 그려, 화면 낭독기가 버튼 이름을
  * 아이콘 이름 「ellipsis h」 로 읽었다(이커머스 전수 실측 S5, 2026-10-07 — 쿠폰 목록 줄 메뉴). 관리자 화면의 모든
- * 데이터 목록이 같은 부품을 쓴다. 글자가 없을 때는 「작업」(`common.actions`) 을 버튼 이름으로 단다.
+ * 데이터 목록이 같은 부품을 쓴다. 글자가 없을 때는 「더보기」(`common.more_actions`) 를 버튼 이름으로 단다
+ * (글자를 생략한 기본 트리거의 보이는 글자 「작업」(`common.actions`) 과는 다른 문구다).
  *
  * @vitest-environment jsdom
  */
@@ -20,7 +21,8 @@ const items: ActionMenuItem[] = [{ id: 1, label: '삭제', iconName: IconName.Tr
 
 describe('작업 메뉴 버튼 이름', () => {
     beforeEach(() => {
-        (window as any).G7Core = { t: (key: string) => (key === 'common.actions' ? '작업' : key) };
+        const dict: Record<string, string> = { 'common.actions': '작업', 'common.more_actions': '더보기' };
+        (window as any).G7Core = { t: (key: string) => dict[key] ?? key };
     });
 
     afterEach(() => {
@@ -31,10 +33,12 @@ describe('작업 메뉴 버튼 이름', () => {
      * @scenario case=c01
      * @effects action_menu_trigger_named
      */
-    it('글자 없이 아이콘만 그리면 「작업」 을 버튼 이름으로 단다(아이콘 이름으로 읽히지 않게)', () => {
+    it('글자 없이 아이콘만 그리면 「더보기」 를 버튼 이름으로 단다(아이콘 이름으로 읽히지 않게)', () => {
         render(<ActionMenu items={items} triggerLabel="" triggerIconName={IconName.EllipsisHorizontal} />);
 
-        expect(screen.getByRole('button', { name: '작업' })).toBeInTheDocument();
+        const button = screen.getByRole('button', { name: '더보기' });
+        expect(button.getAttribute('aria-label')).toBe('더보기');
+        expect(screen.queryByRole('button', { name: /ellipsis/ })).toBeNull();
     });
 
     /**

@@ -1,7 +1,6 @@
 // e2e:allow basic Textarea 디폴트 시맨틱(.textarea) 머지 — 외형만 변경, 동작 무변. 다음 사이클에 다른 composite 와 함께 E2E spec 일괄 작성 예정. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
-import { useLabelledByPrecedingLabel } from '../../hooks/useLabelledByPrecedingLabel';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -29,10 +28,6 @@ export const Textarea: React.FC<TextareaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // 곁 라벨을 이름으로 잇는다(7.1.0 J D-J7)
   useAdjacentLabel(textareaRef as React.RefObject<HTMLElement | null>);
-
-  // 바로 앞의 보이는 라벨을 이름으로 잇는다 — 호출처가 이름을 줬으면 건드리지 않는다
-  const hasOwnName = !!((props as any)['aria-label'] || (props as any)['aria-labelledby']);
-  const precedingLabelId = useLabelledByPrecedingLabel(textareaRef, !hasOwnName);
 
   // 내부 로컬 값 (IME 조합 중에도 화면에 표시됨)
   const [localValue, setLocalValue] = useState<string>(
@@ -116,7 +111,6 @@ export const Textarea: React.FC<TextareaProps> = ({
       onChange={handleChange}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
-      aria-labelledby={precedingLabelId}
       {...textareaValueProps}
       {...validProps}
     />

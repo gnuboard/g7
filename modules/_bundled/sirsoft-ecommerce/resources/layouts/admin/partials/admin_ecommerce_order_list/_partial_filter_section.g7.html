@@ -39,7 +39,7 @@
         <!-- F-010 -->
         <span data-ref="f_010_date_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.date</span>
         <!-- F-011 -->
-        <select data-ref="f_011_date_type_select" name="dateType" class="w-28" value="{{_local.filter.dateType || 'ordered_at'}}">
+        <select data-ref="f_011_date_type_select" name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date_type_select" class="w-28" value="{{_local.filter.dateType || 'ordered_at'}}">
           <options>
             <option value="ordered_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date</option>
             <option value="paid_at">$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date</option>
@@ -311,7 +311,7 @@
             </on>
           </input>
           <!-- F-114 -->
-          <select data-ref="f_114_currency_select" name="currency" class="w-20" value="{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"/>
+          <select data-ref="f_114_currency_select" name="currency" aria-label="$t:sirsoft-ecommerce.admin.order.filter.currency_select" class="w-20" value="{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"/>
         </div>
       </div>
       <!-- F-120 ~ F-126 배송국가 필터 -->
@@ -781,14 +781,14 @@
             <span data-ref="f_260_claim_requested_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
             <div class="flex-center gap-2 flex-wrap">
               <!-- 일자 필터(주문·결제·배송일)와 달리 클레임이 접수된 날로 거른다 — 위 상태·귀책을 만족하는 바로 그 클레임이 이 기간에 접수됐어야 걸린다. 한쪽만 채우면 그쪽 경계만 적용된다. -->
-              <input data-ref="f_261_claim_requested_from" type="date" class="input w-40" value="{{_local.filter.claimRequestedFrom ?? ''}}">
+              <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}" data-ref="f_261_claim_requested_from" type="date" class="input w-40" value="{{_local.filter.claimRequestedFrom ?? ''}}">
                 <on type="change">
                   <set-state target="_local" filter.claimRequestedFrom="{{$event.target.value}}"/>
                 </on>
               </input>
               <span data-ref="f_262_claim_requested_separator" class="text-tertiary">~</span>
               <!-- 종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣으면 검색 이동과 목록 데이터소스가 두 날짜를 바꿔 보낸다 — 그대로 보내면 서버 검증(`after_or_equal`)이 422 를 내고 목록 전체가 오류 화면이 되며, 그 구간이 URL 에 남아 새로고침으로도 빠져나올 수 없다. -->
-              <input data-ref="f_263_claim_requested_to" type="date" class="input w-40" value="{{_local.filter.claimRequestedTo ?? ''}}">
+              <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}" data-ref="f_263_claim_requested_to" type="date" class="input w-40" value="{{_local.filter.claimRequestedTo ?? ''}}">
                 <on type="change">
                   <set-state target="_local" filter.claimRequestedTo="{{$event.target.value}}"/>
                 </on>

@@ -47,6 +47,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount",
                                         "type": "number",
                                         "name": "discount_value",
                                         "className": "input w-40",
@@ -69,6 +70,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit",
                                         "name": "discount_type",
                                         "className": "input w-24",
                                         "options": [
@@ -234,6 +236,7 @@
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
+                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}",
                                                 "type": "date",
                                                 "name": "valid_from",
                                                 "className": "input w-40"
@@ -251,6 +254,7 @@
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
+                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}",
                                                 "type": "date",
                                                 "name": "valid_to",
                                                 "className": "input w-40"

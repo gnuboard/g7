@@ -8,6 +8,7 @@
 
 ### Added
 
+- 상품 등록·수정 옵션의 마일리지 칸 이름(`admin/product.options.mileage_value_label`·`mileage_type_label` — 「マイレージ積立値」「マイレージ積立単位」)과 마일리지 설정의 적립 지연 일수 칸 이름(`admin/mileage_settings.basic.earn_delay_days` — 「積立遅延日数」), 라벨 하나 뒤에 칸이 여럿 붙은 자리의 칸 이름(`admin/personal_payment.filter.date_type`·`admin/order.filter.date_type_select`·`currency_select`·`admin/product.filter.date_type_select`·`price_type_select`·`admin/product.modal.bulk_price.unit`·`admin/claim.filter.currency`·`admin/promotion_discount_code.create.field.benefit_unit_fixed`·`benefit_unit_rate`·`admin/promotion_discount_code.filter.benefit_amount_unit`·`admin/main_banner.detail.field.title_position`·`content_position`·`admin/settings.basic_info.business_info.email_domain_select`·`admin/mileage_settings.currency.earn_rounding_unit_label`·`earn_rounding_method_label`·`earn_rounding_unit_of`·`earn_rounding_method_of` — 「日付の基準」「通貨」「価格の基準」「変更の単位」「定額割引の単位」「定率割引の単位」「特典金額の単位」「タイトルの位置」「内容の位置」「メールドメインの選択」「積立の切り捨て単位」「積立の切り捨て方式」)의 일본어 번역을 추가했습니다.
 - 결제 통화에서 쓸 수 없는 결제수단을 골랐을 때의 주문 거절 문구(`validation.order.payment_method_not_allowed_for_currency`)의 일본어 번역을 추가했습니다.
 - 대시보드 「오늘」 배지로 연 주문 목록에 보이는 사이트 시간대 기준 안내(`admin/order.filter.site_day_notice`)와, 주문 목록 날짜 기준 인자 검증 문구(`validation.orders.date_basis.in`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
@@ -166,6 +167,7 @@
 - 구매자 클레임 첨부·철회·추가결제 안내 8건(`user.claim.*`)의 일본어 번역을 추가했습니다.
 - 주문 상세 「고객에게 메일 보내기」 알림(`order_custom_email`)과 「메일 채널이 꺼져 있어 보낼 수 없다」 안내의 일본어 번역을 추가했습니다.
 - 환불액이 그 결제수단의 잔여를 넘었을 때의 거절 문구와 「결제수단」 라벨의 일본어 번역을 추가했습니다. 문구에 수단과 요청액·잔여를 함께 실어 운영자가 무엇을 얼마나 줄여야 하는지 알 수 있습니다.
+- 쿠폰 등록·수정 화면 혜택금액 옆 단위 선택칸의 이름(`admin/promotion_coupon.form.field.discount_unit` — 「割引単位」)의 일본어 번역을 추가했습니다.
 
 ### Fixed
 
@@ -199,7 +201,6 @@
 - 사용 중인 클레임 사유를 삭제하려 할 때의 안내를 「주문 취소에서 사용 중」에서 「이미 사용 중」으로 바꿨습니다 — 교환·반품·환불 신청에서 쓰인 사유에도 같은 안내가 나옵니다.
 - 사용 마일리지 반환 축의 문구를 「使用マイレージ返還」으로, 환불수단 마일리지를 「マイレージで返金」으로 바꿨습니다.
 - 마일리지 거래 유형 `expired` 의 일본어 표시를 「有効期限失効」에서 「失効」로 바꿨습니다.
-- 관리자 클레임 상세에서 상품을 수량으로 나눠 처리했을 때의 안내(`admin/claim.detail.items.bulk_split_notice`)를 원문 변경에 맞춰 다시 번역했습니다 — 남은 수량은 「신청 상태」 가 아니라 나누기 전 상태 그대로 남습니다.
 
 ### Removed
 

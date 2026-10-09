@@ -26,6 +26,7 @@
     "category": "カテゴリ",
     "no_category": "カテゴリ未登録",
     "date": "日付",
+    "date_type_select": "日付の基準",
     "date_type": {
       "created_at": "登録日",
       "updated_at": "編集日"
@@ -63,6 +64,7 @@
       "tax_free": "非課税"
     },
     "price": "価格",
+    "price_type_select": "価格の基準",
     "price_type": {
       "selling_price": "販売価格",
       "supply_price": "仕入価格",
@@ -560,6 +562,7 @@
       "method_decrease": "値下げ",
       "method_fixed": "に変更",
       "value": "変更金額/比率",
+      "unit": "変更の単位",
       "unit_won": "円",
       "unit_percent": "%",
       "preview_increase": "販売価格を{{value}}{{unit}}値上げします。",
@@ -854,6 +857,8 @@
       "active": "使用",
       "required": "必須"
     },
+    "mileage_value_label": "マイレージ積立値",
+    "mileage_type_label": "マイレージ積立単位",
     "mileage_type": {
       "fixed": "円",
       "percent": "%"

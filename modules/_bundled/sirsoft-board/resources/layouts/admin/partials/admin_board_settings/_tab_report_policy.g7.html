@@ -55,14 +55,14 @@
               <div>
                 <div>
                   <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_count</span>
-                  <input type="number" name="report_policy.rejection_limit_count" min="{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}" max="{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}" class="{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="report_policy.rejection_limit_count" aria-label="$t:sirsoft-board.admin.settings.fields.rejection_limit_count" min="{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}" max="{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}" class="{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
                   <span data-if="{{_local.errors?.['report_policy.rejection_limit_count']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}</span>
                 </div>
               </div>
               <div>
                 <div>
                   <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_days</span>
-                  <input type="number" name="report_policy.rejection_limit_days" min="{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}" class="{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="report_policy.rejection_limit_days" aria-label="$t:sirsoft-board.admin.settings.fields.rejection_limit_days" min="{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}" class="{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
                   <span data-if="{{_local.errors?.['report_policy.rejection_limit_days']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}</span>
                 </div>
               </div>

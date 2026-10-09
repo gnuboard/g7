@@ -2121,11 +2121,11 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "_local",
@@ -2184,11 +2184,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "_local",
