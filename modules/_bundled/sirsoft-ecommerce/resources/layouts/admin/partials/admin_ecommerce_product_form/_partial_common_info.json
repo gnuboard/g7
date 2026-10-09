@@ -458,10 +458,35 @@
                     ]
                 },
                 {
+                    "comment": "공통정보 조회 권한이 없어 선택지가 비었을 때는 「등록된 공통정보 없음」 이 아니라 권한이 없다고 말한다 — 실재하는 안내문을 없다고 읽게 하지 않는다",
+                    "id": "common_info_forbidden_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{common_infos?.data?.unavailable === true}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos"
+                        }
+                    ]
+                },
+                {
                     "id": "common_info_empty_state",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!(common_infos?.data?.data ?? []).length}}",
+                    "if": "{{common_infos?.data?.unavailable !== true && !(common_infos?.data?.data ?? []).length}}",
                     "props": {
                         "className": "text-center py-8 text-gray-500 dark:text-gray-400"
                     },

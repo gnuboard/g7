@@ -3420,6 +3420,66 @@ class OrderProcessingServiceTest extends ModuleTestCase
     }
 
     /**
+     * 가상계좌 계좌가 발급되면(주문 완료 화면) 입금 전이라도 주문한 장바구니 항목을 정리합니다.
+     *
+     * 가상계좌는 재고 차감이 입금 완료 시점이라 장바구니도 입금 때까지 남았다 — 고객은 주문을 마쳤는데
+     * 장바구니에 같은 상품이 그대로 보였다(후속 B 실측, 제품 결정 2026-10-08).
+     *
+     * @scenario terminal_path=vbank_issued, payment_method=vbank_pg, actor=member
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_account_issued_clears_ordered_cart_items(): void
+    {
+        $user = User::factory()->create();
+        $cart = $this->createTestCart($user->id, 2);
+
+        $order = $this->createOrderWithPayment();
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], [
+                'cart_items' => [['cart_id' => $cart->id, 'quantity' => 2]],
+            ]),
+        ]);
+
+        $this->service->onVbankAccountIssued($order);
+
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
+        $this->assertNotEmpty($order->fresh()->order_meta['cart_cleared_at'] ?? null);
+    }
+
+    /**
+     * 발급 때 이미 정리한 장바구니는 입금 완료 때 다시 차감하지 않습니다(같은 상품을 더 담아 둔 수량 보존).
+     *
+     * @scenario terminal_path=complete_payment, payment_method=vbank_pg, actor=member
+     *
+     * @effects cart_cleared_once_per_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cart_cleared_at_vbank_issue_is_not_deducted_again_on_payment_complete(): void
+    {
+        $user = User::factory()->create();
+        $cart = $this->createTestCart($user->id, 5);
+
+        $order = $this->createOrderWithPayment();
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], [
+                'cart_items' => [['cart_id' => $cart->id, 'quantity' => 3]],
+            ]),
+        ]);
+
+        $this->service->onVbankAccountIssued($order);
+        $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id, 'quantity' => 2]);
+
+        $this->service->onVbankAccountIssued($order->fresh());
+        $this->service->completePayment($order->fresh(), ['transaction_id' => 'test_tx_vbank_once'], $order->total_amount);
+
+        $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart->id, 'quantity' => 2]);
+    }
+
+    /**
      * 기준 통화와 결제 통화가 다른 결제완료는 결제 통화 환산액과 기준 통화 금액을 나눠 기록합니다.
      *
      * @scenario terminal_path=complete_payment, payment_method=card_pg

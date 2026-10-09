@@ -3,9 +3,11 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Support\Query\PaginationLimits;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\PaginatesBuyerClaimList;
@@ -32,6 +34,18 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
     public function create(array $data): OrderCancel
     {
         return $this->model->create($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function markReactivated(int $cancelId, int $quantity, CarbonInterface $at): void
+    {
+        $this->model->newQuery()->whereKey($cancelId)->update([
+            'reactivated_quantity' => DB::raw('reactivated_quantity + '.(int) $quantity),
+            'reactivated_at' => $at,
+            'updated_at' => $at,
+        ]);
     }
 
     /**
@@ -158,6 +172,8 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
         return $query->orderByDesc('id')->paginate($perPage, [
             'id', 'order_id', 'cancel_number', 'cancel_type', 'cancel_status',
             'cancel_reason_type', 'cancelled_by', 'items_snapshot', 'created_at', 'cancelled_at',
+            // 재활성 배지(Q29) — 빠뜨리면 목록에서 언제나 null 이다
+            'reactivated_at', 'reactivated_quantity',
         ]);
     }
 

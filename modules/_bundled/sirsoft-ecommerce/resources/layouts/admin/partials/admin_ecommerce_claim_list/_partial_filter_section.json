@@ -1914,6 +1914,7 @@
                                     ],
                                     "props": {
                                         "name": "currencyCode",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.currency",
                                         "className": "w-24",
                                         "value": "{{_local.filter.currencyCode || ''}}",
                                         "options": "{{_computed.claimCurrencyOptions ?? []}}"

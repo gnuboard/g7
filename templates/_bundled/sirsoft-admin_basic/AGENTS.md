@@ -181,9 +181,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 351개 | `vitest.config.ts` |
-| Playwright | 19개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 38개 | `tests/scenarios` |
+| Vitest | 367개 | `vitest.config.ts` |
+| Playwright | 20개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 57개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

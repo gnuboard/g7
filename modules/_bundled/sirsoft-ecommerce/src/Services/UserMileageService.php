@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
@@ -37,12 +40,14 @@ class UserMileageService
      * @param  MileageBalanceRepositoryInterface  $cache  잔액 캐시 Repository
      * @param  EcommerceSettingsService  $settings  환경설정 서비스
      * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 추가결제 Repository (차감·환급 멱등 잠금 축)
+     * @param  UserRepositoryInterface  $userRepository  회원 Repository (탈퇴 회원 판정 — Q18)
      */
     public function __construct(
         private MileageTransactionRepositoryInterface $ledger,
         private MileageBalanceRepositoryInterface $cache,
         private EcommerceSettingsService $settings,
         private ClaimPaymentRepositoryInterface $claimPaymentRepository,
+        private UserRepositoryInterface $userRepository,
     ) {}
 
     /**
@@ -374,7 +379,9 @@ class UserMileageService
         // 금액 델타 멱등: 목표 적립액(옵션 subtotal_earned) − 기적립 purchase_earn 합계 = 델타만 적립.
         // 나눠 확정·병합으로 목표액이 늘면 차액을 추가 지급하고, 단순 재확정·스케줄러 재실행은 델타 0 으로 no-op.
         $target = (float) $option->subtotal_earned_points_amount;
-        $alreadyEarned = $this->ledger->sumPurchaseEarnedForOption($option->id);
+        // 교환 후속 행은 원 행(교환 전 상품)이 이미 받은 적립을 기적립으로 센다(S1) — 같은 구매에 두 번 적립하지 않는다.
+        $chainEarned = $this->earnedByExchangeSource($option);
+        $alreadyEarned = $this->ledger->sumPurchaseEarnedForOption($option->id) + $chainEarned;
         $amount = $target - $alreadyEarned;
         if ($amount <= 0) {
             return null;
@@ -386,7 +393,7 @@ class UserMileageService
         // 취소 회수(findEarnLotForOption 단일 lot 가정)·유효기간 정합을 위해 신규 lot 을 늘리지 않는다.
         if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
             && $this->ledger->findEarnLotForOption($option->id) !== null) {
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
+            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
         }
 
         $expiresAt = $this->resolveEarnExpiry();
@@ -412,7 +419,7 @@ class UserMileageService
                 throw $e;
             }
 
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
+            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
         }
 
         $this->cache->recalculateForUser($order->user_id, $currency);
@@ -424,6 +431,8 @@ class UserMileageService
             'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency],
         ]);
+
+        $this->forfeitIfWithdrawn($tx);
 
         return $tx;
     }
@@ -450,6 +459,55 @@ class UserMileageService
             null,
             null,
         );
+    }
+
+    /**
+     * 취소 주문·상품을 되살릴 때 취소로 돌려준 사용 마일리지를 다시 차감합니다. (Q14)
+     *
+     * 일반 주문 사용(`deductFifo`)과 같은 FIFO 차감이되 `metadata.reason=reactivation` 을 남긴다 —
+     * 회수 가능액(`reclaimablePointsForReactivation`)이 이 표시로 이미 다시 뺀 몫을 빼서, 두 번 되살려도
+     * 두 번 빼지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  int  $amount  차감액
+     * @param  string  $currency  기준 통화
+     * @param  Order  $order  주문
+     * @return MileageTransaction 사용 거래 (음수)
+     *
+     * @throws MileageValidationException 잔액 부족 시
+     */
+    public function deductForReactivation(int $userId, int $amount, string $currency, Order $order): MileageTransaction
+    {
+        return $this->consumeFifo(
+            $userId,
+            $amount,
+            $currency,
+            MileageTransactionTypeEnum::ORDER_USE,
+            ['order_id' => $order->id, 'metadata' => ['reason' => 'reactivation']],
+            null,
+            null,
+        );
+    }
+
+    /**
+     * 재활성으로 다시 뺄 수 있는 사용 마일리지를 돌려줍니다. (원장 순계산 — Q14)
+     *
+     * 「취소로 돌려준 합 − 재활성으로 다시 뺀 합」이다. `is_mileage_deducted` 로 판정하지 않는다 — 취소
+     * 복원은 그 플래그를 내리지 않으므로 「한 번이라도 차감했는가」만 말한다. 반품·교환 발 복원과 클레임
+     * 추가결제 축은 저장소가 뺀다.
+     *
+     * @param  Order  $order  주문
+     * @return float 회수 가능액 (0 이상)
+     */
+    public function reclaimablePointsForReactivation(Order $order): float
+    {
+        $restored = $this->ledger->sumCancellationRestoredForOrder(
+            (int) $order->id,
+            RefundSourceTypeEnum::cancellationSourceValues(),
+        );
+        $reclaimed = $this->ledger->sumReactivationUsageForOrder((int) $order->id);
+
+        return max(0.0, $restored - $reclaimed);
     }
 
     /**
@@ -499,6 +557,8 @@ class UserMileageService
             'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $orderId, 'order_cancel_id' => $orderCancelId, 'currency' => $currency],
         ]);
+
+        $this->forfeitIfWithdrawn($tx);
 
         return $tx;
     }
@@ -557,6 +617,64 @@ class UserMileageService
             'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $orderId, 'order_refund_id' => $orderRefundId, 'currency' => $currency],
         ]);
+
+        $this->forfeitIfWithdrawn($tx);
+
+        return $tx;
+    }
+
+    /**
+     * 클레임 환불의 현금분을 마일리지로 지급합니다. (order_refund_id + refund_credit 멱등, 신규 lot, 무기한)
+     *
+     * 환불 수단을 「마일리지로 환불」로 실행하면 PG·계좌로 나갈 현금 환불액을 회원 원장으로 지급한다.
+     * 사용 마일리지 환급(`restoreForRefund`)과 같은 환불에서 함께 생길 수 있어 타입으로 축을 가른다 —
+     * 같은 `refund_restore` 를 재사용하면 `existsRestoreForRefund()` 가 두 번째 행을 「이미 환급됨」으로
+     * 보고 조용히 건너뛴다.
+     *
+     * 현금을 대신하는 돈이라 유효기간을 붙이지 않는다(expires_at=null) — 소멸 배치 대상이 아니고 FIFO
+     * 차감 순서는 가장 나중이다. 트랜잭션은 열지 않는다 — 호출자(환불 실행)의 트랜잭션 안에서 동기
+     * 리스너로 실행되어 환불이 롤백되면 함께 사라진다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $orderId  주문 ID
+     * @param  int  $orderRefundId  주문 환불 ID (멱등 기준)
+     * @param  float  $amount  지급액 (기준 통화)
+     * @param  string  $currency  통화 코드
+     * @return MileageTransaction|null 지급 거래 (이미 지급됐거나 0원이면 null)
+     */
+    public function creditForRefund(int $userId, int $orderId, int $orderRefundId, float $amount, string $currency): ?MileageTransaction
+    {
+        if ($this->ledger->existsCreditForRefund($orderRefundId)) {
+            return null;
+        }
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            'type' => MileageTransactionTypeEnum::REFUND_CREDIT->value,
+            'amount' => $amount,
+            'remaining_amount' => $amount,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
+            'order_id' => $orderId,
+            'order_refund_id' => $orderRefundId,
+            'expires_at' => null,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_refund_credit', ['amount' => ecommerce_format_price($amount, $currency)]),
+        ]);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        $this->logActivity('mileage.refund_credit', [
+            'loggable' => $tx,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_refund_credit',
+            'description_params' => ['amount' => ecommerce_format_price($amount, $currency)],
+            'properties' => ['order_id' => $orderId, 'order_refund_id' => $orderRefundId, 'currency' => $currency],
+        ]);
+
+        $this->forfeitIfWithdrawn($tx);
 
         return $tx;
     }
@@ -724,7 +842,11 @@ class UserMileageService
     public function extendLotExpiry(?int $userId, array $lotIds, int $days): int
     {
         return DB::transaction(function () use ($userId, $lotIds, $days) {
-            $lots = $this->ledger->getRemainingLotsByIds($userId, $lotIds);
+            // 현금 대체 지급분(refund_credit)은 유효기간이 없는 돈이다(Q2) — 무기한 lot 에 기간을
+            // 「연장」하면 오히려 없던 만료일이 새로 붙어 소멸 배치 대상이 된다.
+            $lots = $this->ledger->getRemainingLotsByIds($userId, $lotIds)
+                ->reject(fn ($lot) => $this->isRefundCredit($lot))
+                ->values();
 
             foreach ($lots as $lot) {
                 $base = $lot->expires_at !== null ? $lot->expires_at->copy() : now();
@@ -793,7 +915,8 @@ class UserMileageService
             if ($touchExpiry) {
                 $isExpiredOrUsedUp = $transaction->expired_at !== null
                     || (float) $transaction->remaining_amount <= 0;
-                if ($isExpiredOrUsedUp) {
+                // 현금 대체 지급분에는 유효기간을 붙일 수 없다(Q2) — 고객이 현금 대신 받은 돈이다.
+                if ($isExpiredOrUsedUp || $type === MileageTransactionTypeEnum::REFUND_CREDIT) {
                     throw new MileageValidationException(__('sirsoft-ecommerce::messages.mileage.expiry_not_editable'));
                 }
 
@@ -877,54 +1000,55 @@ class UserMileageService
     }
 
     /**
-     * 회원 탈퇴/삭제 시 활성 lot 소멸 기록 (감사 흐름 보존 — 정책 확정 #8)
+     * 회원 탈퇴 시 남은 마일리지를 「탈퇴로 소멸」 거래로 기록합니다. (E3 — 거래 행 보존)
      *
-     * 활성 lot 을 expired 거래로 소멸 기록(활동로그에 금액·통화·회원ID 잔존)합니다.
-     * 거래/캐시 행은 이후 cascade 또는 명시 삭제로 함께 사라집니다.
+     * 예전에는 활동로그만 남기고 원장·잔액 캐시 행을 지워 지급·사용·소멸 경위가 사라졌다. 이제 활성 lot 마다
+     * `expired` 거래(`metadata.reason=withdrawal`)를 쓰고 lot 을 소멸시킨 뒤 잔액 캐시를 다시 계산한다(0).
+     * 활성 lot 을 잠가 동시 사용·소멸 배치와 겹치지 않게 한다. 두 번째 호출은 활성 lot 이 없어 0건이다.
      *
-     * @param  int  $userId  탈퇴 사용자 ID
-     * @return void 반환값 없음
+     * @param  int  $userId  탈퇴 회원 ID
+     * @param  string  $reason  사유 (`withdrawal` · `deletion`)
+     * @return int 소멸 기록한 lot 수
      */
-    public function recordWithdrawalExpiry(int $userId): void
+    public function forfeitForWithdrawal(int $userId, string $reason = 'withdrawal'): int
     {
-        $lots = $this->ledger->getActiveLotsForUser($userId);
+        return DB::transaction(function () use ($userId, $reason) {
+            $now = now();
+            $currencies = [];
+            $count = 0;
 
-        $now = now();
-        foreach ($lots as $lot) {
-            $remaining = (float) $lot->remaining_amount;
-            if ($remaining <= 0) {
-                continue;
+            foreach ($this->ledger->getActiveLotsForUserForUpdate($userId) as $lot) {
+                if ((float) $lot->remaining_amount <= 0) {
+                    continue;
+                }
+
+                $this->expireLotForRemoval($lot, $now, $reason);
+                $currencies[$lot->currency] = true;
+                $count++;
             }
 
-            $this->logActivity('mileage.expire', [
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_expire',
-                'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
-                'properties' => [
-                    'user_id' => $userId,
-                    'currency' => $lot->currency,
-                    'reason' => 'withdrawal',
-                ],
-            ]);
+            foreach (array_keys($currencies) as $currency) {
+                $this->cache->recalculateForUser($userId, $currency);
+            }
 
-            $this->ledger->markExpired($lot, $now);
-        }
+            return $count;
+        });
     }
 
     /**
-     * 회원 탈퇴/삭제 시 마일리지 데이터를 명시적으로 정리합니다 (정책 확정 #8).
+     * 회원 완전 삭제 시 남은 마일리지를 소멸 기록하고 거래 행의 회원 연결만 끊습니다. (E3)
      *
-     * 활성 lot 을 expired 거래로 소멸 기록(활동로그 보존)한 뒤, 원장·잔액 캐시 행을
-     * 동일 트랜잭션에서 삭제합니다. CASCADE 는 안전망으로만 두고 명시 삭제합니다
-     * (탈퇴는 soft 상태 변경이라 cascadeOnDelete 가 발화하지 않으므로 명시 삭제 필수).
+     * 거래 행은 지우지 않는다 — 주문(`ecommerce_orders.user_id` nullOnDelete)·동의 이력과 같이 기록은 남기고
+     * 식별자만 끊는다. 잔액 캐시는 회원 없이 의미가 없는 파생값이라 지운다. 탈퇴를 거친 회원이면 소멸 0건이다.
      *
-     * @param  int  $userId  탈퇴/삭제 회원 ID
+     * @param  int  $userId  삭제 회원 ID
      * @return void 반환값 없음
      */
-    public function purgeForUser(int $userId): void
+    public function detachForUserDeletion(int $userId): void
     {
         DB::transaction(function () use ($userId) {
-            $this->recordWithdrawalExpiry($userId);
-            $this->ledger->deleteForUser($userId);
+            $this->forfeitForWithdrawal($userId, 'deletion');
+            $this->ledger->detachUser($userId);
             $this->cache->deleteForUser($userId);
         });
     }
@@ -933,7 +1057,7 @@ class UserMileageService
      * FIFO 차감 공통 처리 (사용/관리자 차감)
      *
      * @param  int  $userId  사용자 ID
-     * @param  int  $amount  차감액
+     * @param  float  $amount  차감액 (통화 소수 자릿수까지 — 클레임 마일리지 결제는 소수 통화를 그대로 차감한다, S9)
      * @param  string  $currency  통화 코드
      * @param  MileageTransactionTypeEnum  $type  거래 유형
      * @param  array  $extra  거래 추가 필드 (order_id/granted_by/memo)
@@ -946,7 +1070,7 @@ class UserMileageService
      */
     private function consumeFifo(
         int $userId,
-        int $amount,
+        float $amount,
         string $currency,
         MileageTransactionTypeEnum $type,
         array $extra,
@@ -1050,6 +1174,8 @@ class UserMileageService
                 'description_params' => ['amount' => ecommerce_format_price((int) $delta, $currency)],
                 'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $delta],
             ]);
+
+            $this->forfeitIfWithdrawn($existingLot);
 
             return $existingLot;
         });
@@ -1217,10 +1343,25 @@ class UserMileageService
     }
 
     /**
+     * 거래가 환불 현금분 지급(refund_credit) lot 인지 판정합니다.
+     *
+     * @param  MileageTransaction  $lot  거래
+     * @return bool 환불 지급 lot 이면 true
+     */
+    private function isRefundCredit(MileageTransaction $lot): bool
+    {
+        $type = $lot->type instanceof MileageTransactionTypeEnum
+            ? $lot->type
+            : MileageTransactionTypeEnum::tryFrom((string) $lot->type);
+
+        return $type === MileageTransactionTypeEnum::REFUND_CREDIT;
+    }
+
+    /**
      * 클레임 추가결제를 마일리지로 결제합니다. (FIFO 차감, claim_payment_id 멱등 축)
      *
      * 주문 시 사용(`ORDER_USE`)과 같은 거래 유형을 쓰되 `claim_payment_id` 로 결제 건에 묶는다 —
-     * 마일리지 내역 화면의 분류·배지가 기존 8종 어휘를 그대로 읽으므로 새 유형을 늘리지 않는다.
+     * 결제에 쓴 마일리지는 주문 사용과 성격이 같아 분류·배지를 그대로 공유하므로 별도 유형을 두지 않는다.
      *
      * 멱등은 **이 메서드가 스스로 지킨다**(#599 validate P2 #10). 결제 건 행을 잠근 트랜잭션
      * 안에서 같은 결제 건의 사용 거래가 있는지 다시 보고, 있으면 그 거래를 돌려준다. 호출부
@@ -1228,14 +1369,14 @@ class UserMileageService
      * 호출부 하나가 같은 결제 건으로 두 번 차감한다.
      *
      * @param  int  $userId  사용자 ID
-     * @param  int  $amount  차감액
+     * @param  float  $amount  차감액 (결제 통화의 소수 자릿수까지)
      * @param  string  $currency  통화 코드
      * @param  ClaimPayment  $payment  클레임 추가결제 건
      * @return MileageTransaction 생성된(또는 이미 있던) 사용 거래 (음수)
      *
      * @throws MileageValidationException 잔액 부족 시
      */
-    public function deductForClaimPayment(int $userId, int $amount, string $currency, ClaimPayment $payment): MileageTransaction
+    public function deductForClaimPayment(int $userId, float $amount, string $currency, ClaimPayment $payment): MileageTransaction
     {
         return DB::transaction(function () use ($userId, $amount, $currency, $payment) {
             $this->claimPaymentRepository->findForUpdate((int) $payment->id);
@@ -1323,6 +1464,127 @@ class UserMileageService
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
             'description_params' => ['amount' => ecommerce_format_price((int) $restorable, $currency)],
             'properties' => ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id, 'currency' => $currency],
+        ]);
+
+        $this->forfeitIfWithdrawn($tx);
+
+        return $tx;
+    }
+
+    /**
+     * 교환 후속 행이 거슬러 오르는 원 행들이 이미 받은 구매 적립을 합산합니다. (S1)
+     *
+     * 교환 후속 행은 원 행을 복제해 적립 예정액을 그대로 갖는다. 적립 멱등은 주문상품 행 단위라, 원 상품이 이미
+     * 적립된 뒤 교환품이 배송완료되면 같은 구매에 한 번 더 적립됐다. 원 행이 분할 조각이면 적립 거래는 분할 전
+     * 부모 행에 붙어 있다 — 부모가 자기 목표(남은 수량 몫)보다 더 받은 만큼을 그 조각의 기적립으로 본다.
+     * 교환이 거듭되면 사슬을 따라 오른다(최대 5단).
+     *
+     * @param  OrderOption  $option  적립 대상 행
+     * @return float 원 행 사슬의 기적립 합 (교환 후속 행이 아니면 0)
+     */
+    private function earnedByExchangeSource(OrderOption $option): float
+    {
+        $total = 0.0;
+        $current = $option;
+
+        for ($depth = 0; $depth < 5 && $current->isExchanged(); $depth++) {
+            $source = $current->sourceOption;
+            if ($source === null) {
+                break;
+            }
+
+            $total += $this->ledger->sumPurchaseEarnedForOption((int) $source->id);
+
+            $parent = ($source->parent_option_id && (int) $source->parent_option_id !== (int) $source->id)
+                ? $source->parentOption
+                : null;
+            if ($parent !== null) {
+                $total += max(0.0, $this->ledger->sumPurchaseEarnedForOption((int) $parent->id) - (float) $parent->subtotal_earned_points_amount);
+            }
+
+            $current = $source;
+        }
+
+        return $total;
+    }
+
+    /**
+     * 탈퇴한 회원에게 막 지급된 lot 을 그 자리에서 소멸 기록합니다. (Q18)
+     *
+     * 탈퇴 뒤에도 진행 중이던 주문의 적립·환불 반환이 도착할 수 있다. 탈퇴 회원은 마일리지를 쓸 수 없으므로
+     * 지급하지 않되, 「왜 지급되지 않았나」 의 근거가 장부에 남도록 원래 거래 행은 그대로 기록하고 바로
+     * 「탈퇴로 소멸」 거래로 0 을 만든다(같은 트랜잭션).
+     *
+     * @param  MileageTransaction  $lot  방금 지급·증액한 lot
+     * @return void 반환값 없음
+     */
+    private function forfeitIfWithdrawn(MileageTransaction $lot): void
+    {
+        if ($lot->user_id === null || ! $this->isWithdrawnUser((int) $lot->user_id)) {
+            return;
+        }
+
+        $lot->refresh();
+        if ((float) $lot->remaining_amount <= 0) {
+            return;
+        }
+
+        $this->expireLotForRemoval($lot, now(), 'withdrawal');
+        $this->cache->recalculateForUser((int) $lot->user_id, $lot->currency);
+    }
+
+    /**
+     * 회원이 탈퇴 상태인지 판정합니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return bool 탈퇴 상태면 true
+     */
+    private function isWithdrawnUser(int $userId): bool
+    {
+        $user = $this->userRepository->findById($userId);
+
+        return $user !== null && $user->status === UserStatus::Withdrawn->value;
+    }
+
+    /**
+     * lot 하나를 탈퇴·삭제 사유로 소멸 기록합니다. (원장 행 + lot 소멸 + 활동로그)
+     *
+     * 정기 소멸(`expireLots`)과 같은 모양의 `expired` 거래를 쓰고, 사유는 `metadata.reason` 과 설명이 가른다(Q19 —
+     * 유형을 늘리지 않는다). 잔액 캐시 재계산은 호출자가 통화별로 한 번 한다.
+     *
+     * @param  MileageTransaction  $lot  소멸할 lot
+     * @param  Carbon  $now  소멸 시각
+     * @param  string  $reason  사유 (`withdrawal` 탈퇴 · `deletion` 회원 삭제)
+     * @return MileageTransaction 소멸 거래
+     */
+    private function expireLotForRemoval(MileageTransaction $lot, Carbon $now, string $reason): MileageTransaction
+    {
+        $remaining = (float) $lot->remaining_amount;
+        $userId = (int) $lot->user_id;
+        $key = $reason === 'deletion'
+            ? 'sirsoft-ecommerce::activity_log.description.mileage_deletion_expire'
+            : 'sirsoft-ecommerce::activity_log.description.mileage_withdrawal_expire';
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $lot->currency,
+            'type' => MileageTransactionTypeEnum::EXPIRED->value,
+            'amount' => -$remaining,
+            'remaining_amount' => 0,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $lot->currency) - $remaining,
+            'source_transaction_id' => $lot->id,
+            'expired_at' => $now,
+            'metadata' => ['reason' => $reason],
+            'description' => __($key, ['amount' => ecommerce_format_price($remaining, $lot->currency)]),
+        ]);
+
+        $this->ledger->markExpired($lot, $now);
+
+        $this->logActivity('mileage.expire', [
+            'loggable' => $tx,
+            'description_key' => $key,
+            'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
+            'properties' => ['user_id' => $userId, 'currency' => $lot->currency, 'reason' => $reason],
         ]);
 
         return $tx;

@@ -1,0 +1,26 @@
+feature: 관리자 상품 그림 없음 자리 표시
+
+description: |
+  상품 이미지가 없는 상품도 관리자 화면에서 깨진 그림 없이 보이는지
+  
+  상품 이미지를 올리지 않은 상품은 API 가 `thumbnail_url: null` 을 준다. 관리자 주문 상세의 상품 줄과
+  상품평 목록의 상품 칸(데스크톱 칸·모바일 카드)이 `<img src="{{…thumbnail_url…}}">` 를 조건 없이 그려
+  깨진 그림이 보였다(이커머스 전수 실측 S5, 2026-10-07 — 편집기 주문 상세 표본에서 발견).
+  상품 목록(`_partial_product_datagrid`)처럼 주소가 있을 때만 그림을, 없으면 그림 아이콘을 그려야 한다.
+  
+  관리자 레이아웃 원본(.g7.html) 전체에서 상품 그림 주소(`thumbnail_url`)를 src 로 쓰는 `<img>` 를 모두 찾아,
+  그 태그나 감싸는 요소가 같은 주소를 조건(data-if)으로 걸고, 같은 파일에 주소가 없을 때의 아이콘이 있는지 본다.
+
+  수정 이력: 이커머스 전수 실측 S5-D20 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 검사할 상품 그림 자리가 있다(주문 상세·상품평 목록 포함)
+  # c02: $file 의 그림($src)은 주소가 있을 때만 그린다
+  # c03: $file 은 그림($src)이 없을 때 아이콘을 그린다
+
+effects:
+  - missing_thumbnail_shows_placeholder
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminProductThumbnailFallback.test.ts

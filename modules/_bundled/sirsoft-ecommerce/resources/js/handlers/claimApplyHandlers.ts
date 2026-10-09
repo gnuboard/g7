@@ -630,6 +630,9 @@ export function normalizeRefundAccountPrefill(
  * (`recipient_phone` ↔ `phone`, `address`/`address_detail` ↔ `address1`/`address2`).
  * 이름이 어긋난 채 넘기면 서버는 빈 값으로 받아 원 배송지와 같은 주소로 재발송된다.
  *
+ * 해외 주문은 국내 칸이 빈 문자열로 오므로 `??` 가 아니라 `||` 로 해외 칸(`intl_postal_code`·
+ * `address_line_1/2`)에 넘어가고, 도시·주는 `city`·`state` 로 옮긴다 — 서버 스냅샷과 같은 규칙이다.
+ *
  * @param G7Core G7Core 인스턴스
  * @returns 재발송지 편집 버퍼 초기값
  */
@@ -639,9 +642,11 @@ export function orderShippingAddressAsRedelivery(G7Core: any): Record<string, st
     return {
         recipient_name: address.recipient_name ?? '',
         phone: address.recipient_phone ?? '',
-        zipcode: address.zipcode ?? address.intl_postal_code ?? '',
-        address1: address.address ?? address.address_line_1 ?? '',
-        address2: address.address_detail ?? address.address_line_2 ?? '',
+        zipcode: address.zipcode || address.intl_postal_code || '',
+        address1: address.address || address.address_line_1 || '',
+        address2: address.address_detail || address.address_line_2 || '',
+        city: address.intl_city || '',
+        state: address.intl_state || '',
         country_code: address.recipient_country_code ?? '',
     };
 }
@@ -1018,6 +1023,8 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
         // 바꿔 둔 주소가 화면에서만 사라지고, 저장하면 그 주소로 되돌아간다.
         claimRedelivery: claim.redelivery_address_snapshot ?? null,
         claimRedeliveryEditing: false,
+        claimRedeliveryReset: false,
+        claimRedeliveryTouched: false,
         // 접수 시점의 청구액 — 재발송지를 바꿔 배송비가 다시 계산되면 이 값과의 차액이
         // 추가 청구되거나 환불된다(D14). 그 차액을 화면이 드러내려면 기준값이 필요하다.
         claimEditOriginalCharge: Number(claim.total_charge_amount ?? 0),
@@ -1555,13 +1562,20 @@ export function applyClaimRedeliveryHandler(
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
-    G7Core.state.setLocal({ claimRedeliveryEditing: false });
+    // `claimRedeliveryTouched` — 구매자가 재발송지를 직접 세웠다는 표식이다. 수정 화면은 신청서의
+    // 동결 재발송지로 열리므로 값이 있다는 사실만으로는 손댔는지 알 수 없다(저장 참조).
+    G7Core.state.setLocal({ claimRedeliveryEditing: false, claimRedeliveryReset: false, claimRedeliveryTouched: true });
 
     scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
 
 /**
  * 재발송지 되돌리기 핸들러 (원 배송지로 복귀)
+ *
+ * 되돌렸다는 사실을 `claimRedeliveryReset` 으로 남긴다. 수정 화면의 저장은 이 표식을 보고
+ * 재발송지를 null 로 보낸다 — 키를 빼면 서버는 "손대지 않음"으로 읽어 신청서에 이미
+ * 저장된(바꿔 둔) 재발송지를 그대로 둔다. 작성 화면은 재발송지를 안 보내는 것이 곧 원 배송지라
+ * 이 표식을 쓰지 않는다.
  *
  * @param action 액션 객체
  * @param context 액션 컨텍스트 (미리보기 debounce 콜백의 상태 반영 대상)
@@ -1573,7 +1587,7 @@ export function resetClaimRedeliveryHandler(
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
-    G7Core.state.setLocal({ claimRedelivery: null, claimRedeliveryEditing: false });
+    G7Core.state.setLocal({ claimRedelivery: null, claimRedeliveryEditing: false, claimRedeliveryReset: true, claimRedeliveryTouched: false });
 
     scheduleClaimEstimate(G7Core, action.params ?? {}, context);
 }
@@ -2273,10 +2287,16 @@ export async function saveClaimEditHandler(
         body.remove_image_ids = removeIds;
     }
 
-    // 재발송지는 교환에서만, 그리고 구매자가 실제로 연 경우에만 싣는다. 값이 같아도
+    // 재발송지는 교환에서만, 그리고 구매자가 실제로 [적용]한 경우에만 싣는다. 값이 같아도
     // `changed_by_user` 는 true 다 — 바꾼 사실 자체가 운영자에게 남아야 할 기록이다(D14).
-    if (latest.claimType === 'exchange' && latest.claimRedelivery?.zipcode) {
+    // 수정 화면은 신청서의 동결 재발송지로 열리므로 `claimRedelivery` 가 있다는 것만으로는
+    // 손댄 것이 아니다 — 그 값으로 보내면 사유만 고친 저장이 `changed_by_user` 를 뒤집는다.
+    if (latest.claimType === 'exchange' && latest.claimRedeliveryTouched === true && latest.claimRedelivery?.zipcode) {
         body.redelivery_address = { ...latest.claimRedelivery, changed_by_user: true };
+    } else if (latest.claimType === 'exchange' && latest.claimRedeliveryReset === true) {
+        // [원 배송지로 되돌리기] — null 이 "바꿔 둔 재발송지를 버린다"는 뜻이다. 키를 빼면
+        // 서버는 손대지 않은 것으로 읽어 바꿔 둔 주소를 그대로 둔다(화면과 신청서가 갈린다).
+        body.redelivery_address = null;
     }
 
     // 환불 계좌는 접수와 같은 규칙으로 싣는다(2026-09-01 확정 — 수정 화면에서 편집 가능).

@@ -190,7 +190,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `ProductCard` | 상품 카드 (이미지, 제목, 가격) | product, showDiscount |
 | `ProductImageViewer` | 상품 이미지 뷰어 (메인 + 썸네일 + 라이트박스) | images |
-| `QuantitySelector` | 수량 선택기 (+/- 버튼) | value, min, max |
+| `QuantitySelector` | 수량 선택기 (+/- 버튼). 범위 밖 직접 입력은 min~max 로 고쳐 올리고, 칸에는 늘 고친 값을 보인다(고친 값이 지금 값과 같아도) | value, min, max |
 
 #### 게시판
 

@@ -61,11 +61,31 @@
                         {
                             "type": "basic",
                             "name": "Img",
+                            "if": "{{item.product.thumbnail_url}}",
                             "props": {
                                 "src": "{{item.product.thumbnail_url}}",
                                 "alt": "{{item.product.name}}",
                                 "className": "w-full h-full object-cover"
                             }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!item.product.thumbnail_url}}",
+                            "props": {
+                                "className": "w-full h-full flex items-center justify-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "image",
+                                        "size": "lg",
+                                        "className": "text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
@@ -333,10 +353,10 @@
                             }
                         },
                         {
-                            "comment": "판매중지 표시",
+                            "comment": "판매중지 표시 — 상품 판매 상태 외에 서버의 구매 가능 여부(available)도 본다: 담은 옵션이 판매 중지됐거나 전시 중지된 상품은 판매 중이어도 살 수 없다",
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{item.product.sales_status !== 'on_sale'}}",
+                            "if": "{{item.product.sales_status !== 'on_sale' || item.available === false}}",
                             "props": {
                                 "className": "text-sm font-medium text-red-600 dark:text-red-400"
                             },
@@ -445,7 +465,8 @@
                             "props": {
                                 "data-testid": "cart-change-option",
                                 "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer",
-                                "title": "$t:shop.cart.change_option"
+                                "title": "$t:shop.cart.change_option",
+                                "aria-label": "$t:shop.cart.change_option"
                             },
                             "children": [
                                 {
@@ -488,7 +509,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "aria-label": "$t:common.delete",
+                                "aria-label": "$t:shop.cart.delete_item",
                                 "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
                             },
                             "children": [

@@ -5,20 +5,22 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Console;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
-use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\ModuleSettingsService;
 use Carbon\Carbon;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -144,6 +146,8 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         OrderPayment::factory()->create([
             'order_id' => $order->id,
             'payment_method' => PaymentMethodEnum::VBANK,
+            // 입금 전이다 — 팩토리 기본값(입금완료)이면 「입금이 기록된 결제 전 주문」(S3-D7)이 되어 환불신청서로 간다.
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'vbank_due_at' => Carbon::now()->subDay(), // 1일 전 만료
         ]);
 
@@ -179,6 +183,8 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         OrderPayment::factory()->create([
             'order_id' => $order->id,
             'payment_method' => PaymentMethodEnum::DBANK,
+            // 입금 전이다 — 팩토리 기본값(입금완료)이면 「입금이 기록된 결제 전 주문」(S3-D7)이 되어 환불신청서로 간다.
+            'payment_status' => PaymentStatusEnum::READY,
             'deposit_due_at' => Carbon::now()->subDay(), // 1일 전 만료
         ]);
 
@@ -345,6 +351,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
             OrderPayment::factory()->create([
                 'order_id' => $order->id,
                 'payment_method' => PaymentMethodEnum::VBANK,
+                'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
                 'vbank_due_at' => Carbon::now()->subDay(),
             ]);
         }
@@ -553,7 +560,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
      *
      * 돌려줄 몫은 취소 계산이 주문 스냅샷·상품 행 배분에서 찾으므로, 주문은
      * `BuildsClaimAdjustmentOrders` 의 실제 계산 경로(마일리지 500 사용)로 조립한다.
-     * 복원 신호는 `sirsoft-ecommerce.mileage.restore` 훅의 발화 금액이다.
+     * 복원은 가짜 리스너가 받은 금액이 아니라 실제 원장(`order_cancel_restore` 행)과 잔액으로 단언한다(T20).
      *
      * @scenario order_class=pending_order_never_paid, elapsed=past_threshold, payment_status=ready_or_failed, expire_minutes_setting=positive, run_mode=apply
      *
@@ -590,28 +597,30 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         $order->options()->update(['option_status' => OrderStatusEnum::PENDING_ORDER->value]);
         $this->assertSame(500, (int) $order->total_points_used_amount, '픽스처가 마일리지 500 을 쓰는 주문이 아니다');
 
-        // 복원은 마일리지 리스너에 위임되므로, 복원이 일어났다는 신호는 이 훅의 발화다
-        // (취소 서비스는 플래그를 되돌리지 않고 취소 레코드 기준으로 멱등성을 보장한다).
-        $restoredAmounts = [];
-        HookManager::addAction(
-            'sirsoft-ecommerce.mileage.restore',
-            function ($amount) use (&$restoredAmounts) {
-                $restoredAmounts[] = $amount;
-            },
-            10,
-            ['sync' => true],
-        );
+        // 실제 차감 원장을 만든다 — 적립 500 → 주문 사용 500(FIFO). 잔액 0 에서 출발한다.
+        $userId = (int) $order->user_id;
+        MileageTransaction::create([
+            'user_id' => $userId, 'currency' => 'KRW', 'type' => MileageTransactionTypeEnum::ADMIN_EARN->value,
+            'amount' => 500, 'remaining_amount' => 500, 'balance_after' => 500, 'expires_at' => now()->addYear(),
+        ]);
+        app(UserMileageService::class)->deductFifo($userId, 500, 'KRW', $order);
 
+        // 가짜 리스너 없이 모듈이 등록한 실제 MileageTransactionListener 가 복원한다(T20)
         $this->artisan('sirsoft-ecommerce:cancel-pending-orders')
             ->assertSuccessful();
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
-        $this->assertNotEmpty(
-            $restoredAmounts,
-            '정리된 주문의 선차감 마일리지 복원이 일어나지 않았습니다.'
-        );
-        $this->assertSame(500, (int) $restoredAmounts[0]);
+
+        $restores = MileageTransaction::query()
+            ->where('order_id', $order->id)
+            ->where('type', MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value)
+            ->get();
+        $this->assertCount(1, $restores, '정리된 주문의 선차감 마일리지 복원 원장이 한 건 생겨야 합니다.');
+        $this->assertSame(500.0, (float) $restores->first()->amount);
+        $this->assertNotNull($restores->first()->order_cancel_id, '복원은 취소 ID 멱등 축에 묶인다');
+        // 회원 잔액이 사용 전(500)으로 돌아왔다
+        $this->assertSame(500.0, (float) MileageTransaction::query()->where('user_id', $userId)->where('currency', 'KRW')->sum('amount'));
     }
 
     /**

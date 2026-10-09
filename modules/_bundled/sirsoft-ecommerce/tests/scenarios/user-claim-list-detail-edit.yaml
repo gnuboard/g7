@@ -67,6 +67,7 @@ exclusions:
   - { screen: edit, entry: none, reason: "수정은 언제나 목록 또는 상세의 [수정] 버튼으로 들어온다 — 주소를 직접 입력한 진입도 그 둘과 같은 화면이다" }
 
 effects:
+  - user_claim_detail_shows_follow_up_refunds   # #747 보완 5
   # 목록 — 서브탭과 목록 컨텍스트 왕복 (①)
   - claim_list_type_tabs_follow_the_query
   - claim_list_tab_switch_does_not_inherit_the_previous_page
@@ -90,6 +91,7 @@ effects:
   - claim_detail_items_show_exchange_target
   - claim_detail_item_status_badge_only_when_different
   - claim_detail_shipping_card_absent_for_refund
+  - claim_detail_redelivery_shows_the_international_city_and_state # 해외 재발송지 도시·주 (S2-D8)
   - claim_detail_contrast_axis_shows_both_sides
   - claim_detail_refund_account_reads_the_claim_row
   - claim_detail_reject_reason_leads_the_reason_card
@@ -152,6 +154,7 @@ effects:
   - claim_payment_method_choices_exclude_mileage_for_guests  # 비회원에겐 마일리지를 권하지 않는다
   - claim_detail_pending_payment_method_can_be_rechosen      # 둘 이상이면 상세에서 다시 고른다
   - claim_pay_handler_sends_the_chosen_method                # 고른 수단이 서버로 간다
+  - claim_payment_method_choices_carry_their_own_labels      # 카드·마일리지 밖의 수단은 카탈로그 이름으로 보인다 (S1-D14)
 
   # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
   - claim_detail_comparison_renders_from_frozen_snapshot
@@ -197,6 +200,8 @@ effects:
   - user_estimate_refund_is_422_for_claim_course_items              # 코스에 잠긴 상품의 회원 취소 미리보기 422
   - user_claim_pagination_meta_contract                             # pagination 7키 계약
 test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-claim-linked-refunds.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentMethodChoicesTest.php

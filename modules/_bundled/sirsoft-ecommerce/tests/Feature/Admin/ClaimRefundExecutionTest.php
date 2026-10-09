@@ -4,24 +4,33 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Admin;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
@@ -431,8 +440,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->fakePgRefund($calls);
         [$order, , $refund] = $this->approvedReturnRefund();
 
-        $expectedAmount = (float) $refund->refund_amount;
-        $this->assertGreaterThan(0, $expectedAmount);
+        // 손계산 리터럴(T6) — 판매가 29,000 − 반품 편도 회수비 3,000(환불금 차감). 같은 값끼리 비교하면 공제 누락을 못 잡는다.
+        $expectedAmount = 26000.0;
+        $this->assertSame($expectedAmount, (float) $refund->refund_amount);
 
         $this->actingAs($this->admin)
             ->postJson($this->base()."/refunds/{$refund->id}/execute")
@@ -558,8 +568,9 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->fakePgRefund($calls);
         [$order, , $refund] = $this->approvedExchangeRefund();
 
-        $expectedAmount = (float) $refund->refund_amount;
-        $this->assertGreaterThan(0, $expectedAmount);
+        // 손계산 리터럴(T6) — 저가 교환 차액 10,000 − 왕복 배송비 6,000(환불금 차감).
+        $expectedAmount = 4000.0;
+        $this->assertSame($expectedAmount, (float) $refund->refund_amount);
 
         $this->actingAs($this->admin)
             ->postJson($this->base()."/refunds/{$refund->id}/execute")
@@ -1240,5 +1251,676 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             (float) $refund->fresh()->refund_amount,
             '상한 이내 저장이 200 을 냈는데 금액이 반영되지 않았습니다.'
         );
+    }
+
+    // ================================================================
+    // 마일리지로 환불 — 현금분 지급 (결함 1 · D1 · Q2 · Q16 · Q21)
+    // ================================================================
+
+    /**
+     * 상점의 마일리지 기능을 켭니다. (현금을 마일리지로 돌려주는 환불은 기능이 켜진 상점에서만 — Q21)
+     *
+     * @return void 반환값 없음
+     */
+    protected function enableMileage(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+        $settings->setSetting('mileage.enabled', true);
+        $settings->setSetting('mileage.expiry_enabled', true);
+        $settings->setSetting('mileage.expiry_days', 365);
+    }
+
+    /**
+     * 결제행 취소 이력의 마지막 항목을 돌려줍니다.
+     *
+     * @param  Order  $order  주문
+     * @return array<string, mixed> 마지막 이력 항목
+     */
+    protected function lastCancelHistory(Order $order): array
+    {
+        $history = $order->payment()->first()->cancel_history ?? [];
+
+        return (array) end($history);
+    }
+
+    /**
+     * 「마일리지로 환불」로 실행하면 현금 환불액이 그 환불에 묶인 무기한 마일리지로 지급되고,
+     * 카드는 취소되지 않으며 결제행은 결제완료로 남는다.
+     *
+     * @effects points_refund_credits_the_cash_amount_as_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_points_refund_credits_the_cash_amount_as_mileage(): void
+    {
+        $this->enableMileage();
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $credits = MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)->get();
+        $this->assertCount(1, $credits);
+        $this->assertSame(10000.0, (float) $credits->first()->amount);
+        $this->assertSame((int) $order->user_id, (int) $credits->first()->user_id);
+        $this->assertNull($credits->first()->expires_at);
+
+        $this->assertSame(10000.0, app(MileageTransactionRepositoryInterface::class)->getBalanceByCurrency($order->user_id, 'KRW'));
+        $this->assertSame(10000.0, (float) MileageBalance::query()->where('user_id', $order->user_id)->where('currency', 'KRW')->value('available'));
+        $this->assertSame([], $calls);
+
+        $payment = $order->payment()->first();
+        $this->assertSame(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame(0.0, (float) $payment->cancelled_amount);
+
+        $last = $this->lastCancelHistory($order);
+        $this->assertSame('points', $last['refund_method']);
+        $this->assertFalse($last['settled_on_payment']);
+        $this->assertSame(10000.0, (float) $last['amount']);
+
+        $fresh = $order->fresh();
+        $this->assertSame(10000.0, (float) $fresh->total_refunded_amount);
+        $this->assertSame(0.0, (float) $fresh->total_refunded_points_amount);
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+    }
+
+    /**
+     * 혼합 결제를 「마일리지로 환불」하면 쓴 마일리지를 먼저 반환하고 남은 현금분을 지급한다(D1).
+     *
+     * @effects points_refund_returns_used_mileage_before_crediting_the_cash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_points_refund_returns_used_mileage_before_crediting_the_cash(): void
+    {
+        $this->enableMileage();
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $restore = MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)->firstOrFail();
+        $credit = MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)->firstOrFail();
+
+        $this->assertSame(3000.0, (float) $restore->amount);
+        $this->assertNotNull($restore->expires_at);
+        $this->assertSame(7000.0, (float) $credit->amount);
+        $this->assertNull($credit->expires_at);
+        $this->assertLessThan((int) $credit->id, (int) $restore->id, '쓴 마일리지 반환이 현금분 지급보다 먼저다');
+
+        $this->assertSame(10000.0, app(MileageTransactionRepositoryInterface::class)->getBalanceByCurrency($order->user_id, 'KRW'));
+        $this->assertSame([], $calls);
+        $fresh = $order->fresh();
+        $this->assertSame(7000.0, (float) $fresh->total_refunded_amount);
+        $this->assertSame(3000.0, (float) $fresh->total_refunded_points_amount);
+    }
+
+    /**
+     * 반품 발 환불을 「마일리지로 환불」로 실행하면(refund 274 형) 현금 환불액 전액이 마일리지로
+     * 지급되고, 반품 상품 상태와 결제완료 결제행은 그대로다(Q16).
+     *
+     * @effects return_sourced_points_refund_credits_the_cash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_return_sourced_points_refund_credits_the_cash(): void
+    {
+        $this->enableMileage();
+        $this->fakePgRefund($calls);
+        [$order, , $refund] = $this->approvedReturnRefund();
+        // 손계산 리터럴(T6) — 29,000 − 반품 편도 회수비 3,000
+        $expected = 26000.0;
+        $this->assertSame($expected, (float) $refund->refund_amount);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", ['refund_method' => 'points'])
+            ->assertStatus(200);
+
+        $this->assertSame($expected, (float) MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)->sum('amount'));
+        $this->assertSame([], $calls);
+        $this->assertSame(OrderStatusEnum::RETURNED, $order->options->first()->fresh()->option_status);
+
+        $payment = $order->payment()->first();
+        $this->assertSame(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame(0.0, (float) $payment->cancelled_amount);
+        $this->assertNull($payment->cancelled_at);
+
+        $last = $this->lastCancelHistory($order);
+        $this->assertSame('points', $last['refund_method']);
+        $this->assertFalse($last['settled_on_payment']);
+        $this->assertSame($expected, (float) $last['amount']);
+        $this->assertSame($expected, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    /**
+     * 저장된 환불수단이 「마일리지」인 비회원 주문은 본문 없이 실행해도 거절된다 — 정규화는
+     * 본문(override)만 보므로 저장값 가드가 없으면 돈이 증발한다(S5).
+     *
+     * @effects stored_points_method_is_rejected_for_guest_orders
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stored_points_method_is_rejected_for_guest_orders(): void
+    {
+        $this->enableMileage();
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+        $order->forceFill(['user_id' => null])->save();
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    /**
+     * [금액 수정]으로 비회원 주문의 환불수단을 「마일리지」로 바꾸는 저장은 거절된다(S5).
+     *
+     * @effects amounts_rejects_switching_a_guest_order_to_points
+     *
+     * @return void 반환값 없음
+     */
+    public function test_amounts_rejects_switching_a_guest_order_to_points(): void
+    {
+        $this->enableMileage();
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $order->forceFill(['user_id' => null])->save();
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_method' => 'points'])
+            ->assertStatus(422);
+
+        $this->assertSame(RefundMethodEnum::PG, $refund->fresh()->refund_method);
+    }
+
+    /**
+     * 환불수단 선택지는 비회원 주문과, 마일리지 기능이 꺼진 상점의 현금 환불에서 「마일리지」를
+     * 뺀다. 현금이 0 원(쓴 마일리지 반환만)이면 기능과 무관하게 남긴다(Q21).
+     *
+     * @effects refund_method_options_hide_points_for_guest_or_disabled_mileage
+     *
+     * @return void 반환값 없음
+     */
+    public function test_refund_method_options_hide_points_for_guest_orders(): void
+    {
+        $service = app(AdminClaimService::class);
+        [$member] = $this->approvedDirectRefund(10000);
+        $guest = $this->deliveredClaimOrder();
+        $guest->forceFill(['user_id' => null])->save();
+
+        $values = fn (array $options): array => array_column($options, 'value');
+
+        // 기능 꺼짐(기본값) — 현금이 있으면 숨기고, 현금 0 원이면 남긴다.
+        $this->assertNotContains('points', $values($service->refundMethodOptions($member, 10000)));
+        $this->assertContains('points', $values($service->refundMethodOptions($member, 0)));
+
+        $this->enableMileage();
+        $this->assertContains('points', $values($service->refundMethodOptions($member, 10000)));
+        $this->assertNotContains('points', $values($service->refundMethodOptions($guest->fresh(), 10000)));
+        $this->assertNotContains('points', $values($service->refundMethodOptions($guest->fresh(), 0)));
+    }
+
+    /**
+     * 마일리지 기능이 꺼진 상점에서 현금을 「마일리지로 환불」하는 실행은 거절된다(Q21).
+     *
+     * @effects guest_or_disabled_points_refund_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_points_refund_of_cash_is_rejected_when_mileage_is_disabled(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame([], $calls);
+    }
+
+    // ================================================================
+    // 실패 삼킴 제거 · 실행 순서 (결함 2 · D2 · P-D5 · F1 · F2)
+    // ================================================================
+
+    /**
+     * 쓴 마일리지 반환이 실패하면 PG 를 부르지 않고 환불 전체가 롤백된다(D2).
+     *
+     * @effects mileage_restore_failure_stops_the_refund_before_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mileage_restore_failure_stops_the_refund_before_pg(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+        HookManager::addAction('sirsoft-ecommerce.mileage.restore', function () {
+            throw new \RuntimeException('원장 잠금 실패');
+        }, 5);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame([], $calls);
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+    }
+
+    /**
+     * 현금분 마일리지 지급이 실패하면 먼저 끝난 쓴 마일리지 반환까지 롤백된다(D2).
+     *
+     * @effects mileage_credit_failure_rolls_back_the_restore
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mileage_credit_failure_rolls_back_the_restore(): void
+    {
+        $this->enableMileage();
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+        HookManager::addAction('sirsoft-ecommerce.mileage.refund_credit', function () {
+            throw new \RuntimeException('지급 실패');
+        }, 5);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_points_amount);
+    }
+
+    /**
+     * PG 가 거절하면 그 앞에서 끝난 마일리지 반환이 함께 롤백된다 — 순서를 옮긴 뒤의 회귀 가드.
+     *
+     * @effects pg_failure_rolls_back_the_mileage_restore
+     *
+     * @return void 반환값 없음
+     */
+    public function test_pg_failure_rolls_back_the_mileage_restore(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn () => [
+            'success' => false, 'transaction_id' => null, 'error_code' => 'DENY', 'error_message' => '거절',
+        ]);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+        $this->assertSame(0.0, app(MileageTransactionRepositoryInterface::class)->getBalanceByCurrency($order->user_id, 'KRW'));
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+    }
+
+    /**
+     * PG 는 장부 쓰기가 모두 끝난 뒤 마지막에 부른다(P-D5) — 호출 시점에 주문 누적·취소신청서·
+     * 결제행 누적·상품 행 완료가 이미 기록돼 있다.
+     *
+     * @effects pg_is_the_last_step_of_the_transaction
+     *
+     * @return void 반환값 없음
+     */
+    public function test_pg_is_called_after_every_ledger_write(): void
+    {
+        $snapshot = null;
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default, $pgOrder, $payment) use (&$snapshot, $order, $refund) {
+            $snapshot = [
+                'total_refunded' => (float) Order::query()->whereKey($order->id)->value('total_refunded_amount'),
+                'cancels' => OrderCancel::query()->where('order_id', $order->id)->count(),
+                'payment_cancelled' => (float) $payment->cancelled_amount,
+                'payment_status' => $payment->payment_status,
+                'option_statuses' => OrderRefundOption::query()->where('order_refund_id', $refund->id)->pluck('option_status')->map(fn ($s) => $s->value)->all(),
+            ];
+
+            return ['success' => true, 'transaction_id' => 'PGTXN-LAST', 'error_code' => null, 'error_message' => null];
+        });
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $this->assertNotNull($snapshot);
+        $this->assertSame(10000.0, $snapshot['total_refunded']);
+        $this->assertSame(1, $snapshot['cancels']);
+        $this->assertSame(10000.0, $snapshot['payment_cancelled']);
+        $this->assertSame(PaymentStatusEnum::CANCELLED, $snapshot['payment_status']);
+        $this->assertSame([RefundStatusEnum::COMPLETED->value], array_values(array_unique($snapshot['option_statuses'])));
+        $this->assertSame('PGTXN-LAST', $refund->fresh()->pg_transaction_id);
+    }
+
+    /**
+     * PG 뒤에 코어가 쓰는 것은 신청서 행 UPDATE 하나뿐이다(P-D5).
+     *
+     * @effects only_the_refund_row_is_written_after_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_only_the_refund_row_is_written_after_pg(): void
+    {
+        $afterPg = false;
+        $writes = [];
+        [, $refund] = $this->approvedDirectRefund(10000);
+        // 테스트 자체의 트랜잭션 깊이 — 실행 트랜잭션 안의 쓰기만 센다. 커밋 뒤 훅(활동로그 등)이
+        // 남기는 행은 이 트랜잭션의 쓰기가 아니다.
+        $baseLevel = DB::transactionLevel();
+
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function () use (&$afterPg) {
+            $afterPg = true;
+
+            return ['success' => true, 'transaction_id' => 'PGTXN-W', 'error_code' => null, 'error_message' => null];
+        });
+
+        DB::listen(function ($query) use (&$afterPg, &$writes, $baseLevel) {
+            if ($afterPg && DB::transactionLevel() > $baseLevel && preg_match('/^\s*(insert|update|delete)\b/i', $query->sql)) {
+                $writes[] = $query->sql;
+            }
+        });
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $this->assertCount(1, $writes, implode("\n", $writes));
+        $this->assertMatchesRegularExpression('/^update\s+`?\w*order_refunds`?/i', $writes[0]);
+    }
+
+    /**
+     * PG 승인 직후 장부 확정이 실패해 롤백되면 critical 로그와 신청서 표식을 남긴다(P-D5 §14-C).
+     *
+     * @effects orphan_pg_settlement_leaves_a_marker
+     *
+     * @return void 반환값 없음
+     */
+    public function test_commit_failure_after_pg_leaves_a_critical_log_and_a_marker(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+
+        $critical = [];
+        Event::listen(MessageLogged::class, function (MessageLogged $log) use (&$critical) {
+            if ($log->level === 'critical') {
+                $critical[] = $log->context;
+            }
+        });
+
+        $thrown = false;
+        OrderRefund::updating(function (OrderRefund $model) use (&$thrown) {
+            if (! $thrown && $model->isDirty('refund_status') && $model->refund_status === RefundStatusEnum::COMPLETED) {
+                $thrown = true;
+                throw new \RuntimeException('커밋 직전 실패');
+            }
+        });
+
+        $status = $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->status();
+
+        $this->assertContains($status, [422, 500]);
+        $this->assertCount(1, $calls);
+        $this->assertNotEmpty($critical);
+        $this->assertSame('PGTXN-1', $critical[0]['transaction_id'] ?? null);
+
+        $fresh = $refund->fresh();
+        $this->assertSame(RefundStatusEnum::APPROVED, $fresh->refund_status);
+        $this->assertSame('PGTXN-1', $fresh->pg_transaction_id);
+        $this->assertSame('LEDGER_COMMIT_FAILED', $fresh->pg_error_code);
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    /**
+     * 표식(승인 상태 + PG 거래 ID)이 있는 신청서를 다시 실행하면 PG 를 부르지 않고 장부만 확정한다.
+     *
+     * @effects retry_with_a_marker_does_not_call_pg_again
+     *
+     * @return void 반환값 없음
+     */
+    public function test_retry_with_a_marker_does_not_call_pg_again(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $refund->update(['pg_transaction_id' => 'PGTXN-X', 'pg_error_code' => 'LEDGER_COMMIT_FAILED']);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $this->assertSame([], $calls);
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+        $this->assertSame(10000.0, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame(10000.0, (float) $order->payment()->first()->cancelled_amount);
+    }
+
+    /**
+     * 쿠폰 복원이 실패하면 PG 를 부르지 않고 환불 전체가 롤백된다(F1).
+     *
+     * @effects coupon_restore_failure_stops_the_refund_before_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_coupon_restore_failure_stops_the_refund_before_pg(): void
+    {
+        $this->fakePgRefund($calls);
+        // 재계산이 적용하지 못하는 쿠폰이 원 주문에 있었다 = 조건 소멸 → 복원 대상.
+        [$order, $refund] = $this->approvedDirectRefund(10000, 0, [
+            'promotions_applied_snapshot' => ['coupon_issue_ids' => [987654]],
+        ]);
+        HookManager::addAction('sirsoft-ecommerce.coupon.restore', function () {
+            throw new \RuntimeException('쿠폰 잠금 실패');
+        }, 5);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame([], $calls);
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(OrderStatusEnum::PREPARING, $order->options()->first()->option_status);
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    /**
+     * 재고 복원이 실패하면 PG 를 부르지 않고 환불 전체가 롤백된다(F2).
+     *
+     * @effects stock_restore_failure_stops_the_refund_before_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stock_restore_failure_stops_the_refund_before_pg(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $order->options()->update(['is_stock_deducted' => true]);
+        $this->partialMock(StockService::class, function ($mock) {
+            $mock->shouldReceive('restoreOptionStockForOrderOption')->andThrow(new \RuntimeException('재고 잠금 실패'));
+        });
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+
+        $this->assertSame([], $calls);
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_amount);
+    }
+
+    // ================================================================
+    // E1 — 결제행 취소 이력 금액 · 결제수단과 다른 수단의 환불 (Q16)
+    // ================================================================
+
+    /**
+     * 반품 발 환불의 결제행 취소 이력에 실제로 돌려준 금액이 남는다(E1).
+     *
+     * @effects return_refund_records_the_executed_amount_in_cancel_history
+     *
+     * @return void 반환값 없음
+     */
+    public function test_execute_of_a_return_sourced_refund_records_the_executed_amount_in_cancel_history(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, , $refund] = $this->approvedReturnRefund();
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $refund->refresh();
+        $last = $this->lastCancelHistory($order);
+        $this->assertSame((int) $refund->id, (int) $last['refund_id']);
+        // 손계산 리터럴(T6) — 29,000 − 반품 편도 회수비 3,000, 마일리지 사용 없음
+        $this->assertSame(26000.0, (float) $last['amount']);
+        $this->assertSame(0.0, (float) $last['points_amount']);
+        $this->assertSame('pg', $last['refund_method']);
+        $this->assertTrue($last['settled_on_payment']);
+
+        $payment = $order->payment()->first();
+        $settled = array_sum(array_map(
+            fn ($h) => ! empty($h['settled_on_payment']) ? (float) ($h['amount'] ?? 0) : 0.0,
+            $payment->cancel_history ?? [],
+        ));
+        $this->assertSame((float) $payment->cancelled_amount, $settled);
+    }
+
+    /**
+     * 운영자가 실행 시점에 고친 금액이 취소 이력에 남는다(E1).
+     *
+     * @effects cancel_history_records_the_operator_edited_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_execute_records_the_operator_edited_amount_in_cancel_history(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", ['refund_amount' => 7000])
+            ->assertStatus(200);
+
+        $this->assertSame(7000.0, (float) $this->lastCancelHistory($order)['amount']);
+        $this->assertSame(7000.0, (float) $order->payment()->first()->cancelled_amount);
+    }
+
+    /**
+     * 신청서에 적힌 마일리지 몫이 취소 이력에 그대로 남는다 — 재계산 배분값이 아니다(E1).
+     *
+     * @effects cancel_history_records_the_filed_mileage_share
+     *
+     * @return void 반환값 없음
+     */
+    public function test_execute_records_the_filed_mileage_share_in_cancel_history(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $last = $this->lastCancelHistory($order);
+        $this->assertSame(3000.0, (float) $last['points_amount']);
+        $this->assertSame(7000.0, (float) $last['amount']);
+    }
+
+    /**
+     * 카드 주문을 계좌 송금으로 환불하면 결제행은 결제완료로 남고 이력에만 수단과 함께 남는다(Q16).
+     *
+     * @effects foreign_method_refund_keeps_payment_row_paid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bank_refund_of_a_card_order_keeps_the_payment_row_paid(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", [
+                'refund_method' => 'bank',
+                'refund_bank' => ['bank_code' => '004', 'account_number' => '11122233344', 'holder' => '홍길동'],
+            ])
+            ->assertStatus(200);
+
+        $this->assertSame([], $calls);
+        $payment = $order->payment()->first();
+        $this->assertSame(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame(0.0, (float) $payment->cancelled_amount);
+        $this->assertNull($payment->cancelled_at);
+
+        $last = $this->lastCancelHistory($order);
+        $this->assertSame('bank', $last['refund_method']);
+        $this->assertFalse($last['settled_on_payment']);
+        $this->assertSame(10000.0, (float) $last['amount']);
+    }
+
+    // ================================================================
+    // Q15 — 실제로 차감되지 않은 마일리지는 반환하지도 장부에 적지도 않는다
+    // ================================================================
+
+    /**
+     * 사용 마일리지가 실제로 차감된 적 없는 주문의 환불은 마일리지 몫을 0 으로 확정한다 —
+     * 반환하지 않고, 신청서·장부·이력에도 0 원으로 남긴다(Q15).
+     *
+     * @effects mileage_never_deducted_refunds_zero_points
+     *
+     * @return void 반환값 없음
+     */
+    public function test_execute_zeroes_points_share_when_order_mileage_was_never_deducted(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => false,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $fresh = $refund->fresh();
+        $this->assertSame(0.0, (float) $fresh->refund_points_amount);
+        $this->assertNull($fresh->mc_refund_points_amount);
+        $this->assertSame(0, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+        $this->assertSame(0.0, (float) $order->fresh()->total_refunded_points_amount);
+        $this->assertSame(7000.0, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame(7000.0, (float) $calls[0]['amount']);
+        $this->assertSame(0.0, (float) $this->lastCancelHistory($order)['points_amount']);
     }
 }

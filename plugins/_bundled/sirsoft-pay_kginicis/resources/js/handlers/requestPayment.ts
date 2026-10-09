@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { toApiClientPath } from '../apiPath';
 import {
     KOREAN_PAYMENT_FORM_ID_PREFIX,
     consumeStandardPaySdkReloadFlag,
@@ -25,6 +26,29 @@ interface PgPaymentData {
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
+    /**
+     * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
+     * (`ClaimPaymentRedirect::cancelled`). 있으면 `order_number` 는 결제번호(CP…)다.
+     */
+    claim_cancel_return_url?: string;
+    /**
+     * 가상계좌 주문의 입금 기한(쇼핑몰 자동취소 기한 — ISO 8601, 한국 시각). 결제창에 계좌 만료 시각으로 넘긴다.
+     * 없으면 KG 기본 기한으로 계좌가 열린다.
+     */
+    vbank_due_at?: string;
+}
+
+/**
+ * 주문 입금 기한(ISO 8601, 한국 시각)을 KG 형식 조각(YYYYMMDD · hhmm)으로 나눕니다.
+ *
+ * 서버가 한국 시각(+09:00)으로 싣으므로 글자 자리만 잘라 쓴다 — 브라우저 시간대로 다시 환산하지 않는다.
+ *
+ * @param dueAt 주문 입금 기한
+ * @returns 날짜·시분 조각, 형식이 맞지 않으면 null
+ */
+function splitVbankDueAt(dueAt: string | undefined): { date: string; hhmm: string } | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dueAt ?? '');
+    return m ? { date: `${m[1]}${m[2]}${m[3]}`, hhmm: `${m[4]}${m[5]}` } : null;
 }
 
 interface RequestPaymentParams {
@@ -398,7 +422,7 @@ async function requestMobileKoreanPayment(
     const timestamp = String(Math.floor(Date.now()));
 
     const sigJson: { data: MobileSignatureResponse } = await G7Core.api.post(
-        config.callback_urls.mobile_signature,
+        toApiClientPath(config.callback_urls.mobile_signature),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -476,6 +500,14 @@ async function requestMobileKoreanPayment(
     // 요청에 P_NOTI_URL 을 명시해야 입금통보를 받을 수 있다.
     if (iniPayment === 'VBANK' && ! isEasyPay) {
         fields.P_NOTI_URL = requireSiteAbsoluteUrl(config.callback_urls.mobile_vbank_notify);
+
+        // 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한). 넘기지 않으면 KG 기본 기한(10일)으로 열리고
+        // 콜백이 그 값으로 주문 기한을 덮어써 주문서 안내와 어긋난다 (manual.inicis.com/pay/stdpay_m.html).
+        const due = splitVbankDueAt(pgPaymentData.vbank_due_at);
+        if (due) {
+            fields.P_VBANK_DT = due.date;
+            fields.P_VBANK_TM = due.hhmm;
+        }
     }
 
     assertTrustedPgFormAction(submitUrl);
@@ -500,7 +532,7 @@ async function requestKoreanPayment(
     const timestamp = String(Math.floor(Date.now()));
 
     const signatureJson: { data: SignatureResponse } = await G7Core.api.post(
-        config.callback_urls.signature,
+        toApiClientPath(config.callback_urls.signature),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -580,6 +612,13 @@ async function requestKoreanPayment(
             ) {
                 return base ? `${base}:cardonly` : 'cardonly';
             }
+
+            // 가상계좌 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한) — `vbank(YYYYMMDDhhmm)`
+            // (manual.inicis.com/pay/stdpay_pc.html). 넘기지 않으면 KG 기본 기한으로 열려 주문서 안내와 어긋난다.
+            const due = paymentMethod === 'vbank' ? splitVbankDueAt(pgPaymentData.vbank_due_at) : null;
+            if (due) {
+                return `${base}:vbank(${due.date}${due.hhmm})`;
+            }
             return base;
         })(),
         payViewType:  'overlay',
@@ -607,6 +646,8 @@ async function requestKoreanPayment(
             oid: pgPaymentData.order_number,
             price: Number(pgPaymentData.amount),
             payment_method: paymentMethod,
+            // 클레임 추가결제면 닫힘을 받은 리스너가 신청서 상세로 돌아간다(EC-455).
+            ...(pgPaymentData.claim_cancel_return_url ? { claimCancelReturnUrl: pgPaymentData.claim_cancel_return_url } : {}),
         });
     }
 
@@ -672,7 +713,7 @@ async function requestCbtPayment(
     const buyerEmail = pgPaymentData.customer_email ?? '';
     const buyerPhone = pgPaymentData.customer_phone ?? '';
     const tokenResponse: { data: CbtCheckoutTokenResponse } = await G7Core.api.post(
-        config.callback_urls.cbt_checkout_token,
+        toApiClientPath(config.callback_urls.cbt_checkout_token),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -684,7 +725,7 @@ async function requestCbtPayment(
     const { checkout_token: checkoutToken } = tokenResponse.data;
 
     const hashResponse: { data: CbtHashDataResponse } = await G7Core.api.post(
-        config.callback_urls.cbt_hash_data,
+        toApiClientPath(config.callback_urls.cbt_hash_data),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,

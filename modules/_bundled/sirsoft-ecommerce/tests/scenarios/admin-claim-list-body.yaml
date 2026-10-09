@@ -50,12 +50,14 @@ exclusions:
   - { claim_type: cancel, completion_choice: file_later, reason: "동일" }
 
 effects:
+  - claim_list_refund_progress_badge_navigates_to_refund   # #747 보완 5
   # 기존 핸들러 검증의 목적도 개별 테스트에 역매핑한다.
   - bulk_confirmation_requires_selection_and_status
   - noncomplete_transition_uses_confirmation
   - claim_list_spacing_classes_exist_in_the_admin_build  # 완료 창·목록 간격 클래스가 관리자 빌드 CSS 에 있다 (2026-09-26)
   - claim_filter_refs_have_unique_numbers  # 필터 칸 f_NNN 번호가 겹치지 않는다 (2026-09-26)
   - completion_rows_use_item_summary
+  - completion_modal_shows_points_refund # 완료 창이 건별·합계 사용 마일리지 반환액을 함께 보인다 — 현금만 말하면 마일리지 반환을 모른 채 완료한다(EC-694)
   - completion_success_clears_state_and_refetches
   # 실행이 실패하면 **아무것도 지우지 않는다** — 오류 토스트를 띄우고 대상 줄과 모달을
   # 그대로 두어 재시도가 가능해야 한다. 실패했는데 상태를 비우고 목록을 다시 부르면
@@ -75,6 +77,8 @@ effects:
   - completion_modal_registered_once
   # 유형 서브탭
   - subtab_switch_resets_type_scoped_filters
+  # 뱃지를 센 유형 공통 필터(기간·검색·회원구분·금액·통화)는 탭 전환 때 이어 간다 (2026-10-07 실측 — 「반품 4」를 눌러 17건)
+  - subtab_switch_carries_count_filters
   - subtab_switch_clears_bulk_status
   # 일괄 상태 변경 바
   - bulk_bar_absent_for_cancel
@@ -155,6 +159,7 @@ effects:
   - bulk_logistics_tracking_is_wired_through_confirm
   # 완료 처리 미리보기 API (D26) — 예정액·재고 건수·접수 불가 사유·대상 스코프·권한
   - completion_preview_reports_return_refund_estimate_and_stock_counts
+  - completion_preview_sums_split_rows_of_one_order_option  # 나눠 처리한 행(같은 주문옵션)의 수량을 합쳐 환불 예고 (2026-10-07 실측 — 34,000 예고)
   - completion_preview_reflects_unchecked_stock_and_no_refund_choice
   - completion_preview_blocks_exchange_without_refundable_difference
   - completion_preview_matches_exchange_frozen_difference
@@ -181,14 +186,19 @@ effects:
   - claim_amounts_prohibit_refund_fields_on_return
   - refund_amounts_reject_unknown_refund_method
   # #599 후속 — 목록 행 뱃지(판매자 접수·선교환·회수 지연·환불 미접수)와 운송장 열 「외 N개」
-  - claim_list_row_badges_read_server_flags
+  - claim_list_row_badges_read_server_flags   # 재활성(전체·일부) 두 뱃지 포함 — Q29 (cancel-reactivation-badge.yaml)
   - claim_list_tracking_column_shows_first_waybill_and_more_count
+  # #747 S8 · Q10 — 선교환 「미회수로 완료」 는 상품 대금을 청구하지 않는다는 안내 (동작은 현행 유지)
+  - advance_unreturned_completion_warns_no_charge
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBody.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBodyRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimCompletePointsPreview.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-complete-points-refund.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimCompletionPreviewTest.php
   # 완료 기본값이 `claims.read` 운영자에게 도달하는 축은 이 파일이 고정한다 — 등재하지 않으면
   # 그 마킹이 어느 매니페스트에도 계상되지 않아, 지워도 커버리지가 초록으로 남는다.

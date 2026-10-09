@@ -175,7 +175,8 @@ php artisan plugin:update sirsoft-pay_kginicis --force
 
 라이브 MID는 `SIR` 접두사 없이 입력해도 플러그인이 자동 보정합니다. 에스크로는 PC의
 `acceptmethod`에 `useescrow`를, 모바일은 `P_RESERVED`에 `useescrow=Y`를 추가하는 방식으로
-켜집니다. 일본 결제를 운영 모드로 켜려면 라이브 일본 MID/CBT 해시키와 실제 JPPG 가맹점
+켜집니다. 가상계좌 계좌 기한은 주문의 입금 기한(이커머스 「주문 자동취소」 기한)을
+PC `acceptmethod`의 `vbank(YYYYMMDDhhmm)`, 모바일 `P_VBANK_DT`·`P_VBANK_TM`으로 넘겨 정합니다. 일본 결제를 운영 모드로 켜려면 라이브 일본 MID/CBT 해시키와 실제 JPPG 가맹점
 표시 정보가 필요합니다 — 기본 샘플값이 남아 있으면 설정 저장 단계에서 차단됩니다.
 
 **콜백/통보 URL 등록** — KG 이니시스 가맹점 관리자에 아래 URL을 실제 운영 도메인으로 등록합니다.

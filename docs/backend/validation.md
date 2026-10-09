@@ -766,13 +766,13 @@ $fail(__('validation.layout.component_must_be_array', ['index' => $index]));
 
 ### 핵심 원칙
 
-- **현재 로케일 동적 결정**: `app()->getLocale()`로 현재 요청의 로케일 자동 감지
-- **현재 로케일만 필수**: 사용자의 언어만 required, 다른 로케일은 nullable
-- **일관된 검증**: 모든 다국어 필드에 동일한 규칙 적용
+- **사이트 기본 언어만 필수**: 환경설정 「기본 언어」(`config('app.site_locale')`)의 값만 required, 다른 로케일은 nullable
+- **보는 사람의 언어와 무관**: 요청 언어(`app()->getLocale()`)를 필수로 보지 않는다 — 필수 언어가 보는 사람마다 달라지면 다른 언어 관리자가 만든 레코드를 이어 고칠 수 없다
+- **일관된 검증**: 모든 다국어 필드에 동일한 규칙 적용. 관리자 다국어 입력(MultilingualInput·HtmlEditor·MultilingualTagInput)도 같은 언어 칸에 필수 표시(`*`)를 붙인다(프론트 `_global.appConfig.siteLocale`)
 
 ### Rule 종류
 
-| Rule | 용도 | 현재 로케일 | 다른 로케일 |
+| Rule | 용도 | 사이트 기본 언어 | 다른 로케일 |
 |------|------|------------|------------|
 | `LocaleRequiredTranslatable` | 필수 다국어 필드 | **required** | nullable + 조건 검증 |
 | `TranslatableField` | 선택 다국어 필드 | 하나 이상 값 존재 시 OK | nullable + 조건 검증 |
@@ -801,9 +801,11 @@ use App\Rules\LocaleRequiredTranslatable;
 ```
 
 **동작 방식**:
-1. `app()->getLocale()` → 현재 요청 로케일 결정 (예: 'ko', 'en')
-2. 현재 로케일 값 필수 검증 (빈 문자열, null, whitespace 불가)
+1. `requiredLocale` 인자 → 없으면 `config('app.site_locale')`(부팅 때 환경설정 「기본 언어」로 채워짐) 로 필수 언어 결정. 다국어 허용 목록(`app.translatable_locales`)에 없으면 첫 언어
+2. 그 언어 값 필수 검증 (빈 문자열, null, whitespace 불가)
 3. 모든 로케일에 대해 string, min, max 검증
+
+> `app.locale` 은 요청마다 `SetLocale` 미들웨어가 보는 사람의 언어로 덮으므로 필수 언어 판정에 쓰지 않는다. 규칙 밖에서 이름 필수를 직접 판정하는 코드도 `config('app.site_locale', config('app.locale'))` 를 쓴다.
 
 ### TranslatableField 사용법
 

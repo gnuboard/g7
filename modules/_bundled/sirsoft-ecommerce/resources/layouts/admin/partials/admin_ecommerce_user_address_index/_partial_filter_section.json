@@ -356,7 +356,8 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                                     },
                                                     "children": [
                                                         {
@@ -438,6 +439,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}",
                                                 "type": "date",
                                                 "name": "startDate",
                                                 "value": "{{_local.filter.startDate || ''}}",
@@ -468,6 +470,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}",
                                                 "type": "date",
                                                 "name": "endDate",
                                                 "value": "{{_local.filter.endDate || ''}}",

@@ -107,6 +107,16 @@
               <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 mt-0.5"/>
               <span class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.tax_invoice.needs_review</span>
             </div>
+            <!-- 취소된 주문에 들어온 가상계좌 입금(P-D1 · Q11). 주문을 되살리지 않고 자동 환불도 하지 않으므로, 운영자가 고객에게 돌려줘야 한다는 사실을 여기서 말한다. -->
+            <div data-ref="payment_deposit_after_cancel_warning_{{payIdx}}" data-if="{{!!payment.deposit_after_cancel}}" class="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-3">
+              <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 mt-0.5"/>
+              <span class="text-sm text-red-700 dark:text-red-300">$t:sirsoft-ecommerce.admin.order.detail.deposit_after_cancel.warning|amount={{payment.deposit_after_cancel?.amount_formatted ?? ''}}</span>
+            </div>
+            <!-- 입금 전 취소 뒤 PG 가상계좌를 닫지 못함(P-D1). 열린 계좌로 고객이 입금할 수 있으므로 PG 관리자 화면에서 직접 닫게 한다. -->
+            <div data-ref="payment_vbank_close_failed_warning_{{payIdx}}" data-if="{{payment.vbank_close_failed === true}}" class="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
+              <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 mt-0.5"/>
+              <span class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.vbank_close_failed.warning</span>
+            </div>
             <!-- 취소/환불 요약 — 취소·환불 금액은 주문(Order) 레벨 집계(total_cancelled/refunded_amount, total_refunded_points_amount)가 SSoT. 결제(payment) 레벨에는 환불 마일리지/환불액 합계가 없으므로 order.data 를 바인딩한다. 개별 환불 레코드의 상태는 환불 탭(claim_history)에서 표시. -->
             <div data-if="{{(order.data?.total_cancelled_amount ?? 0) > 0 || (order.data?.total_refunded_amount ?? 0) > 0 || (order.data?.total_refunded_points_amount ?? 0) > 0}}" class="space-y-2 border-t border-red-200 dark:border-red-800">
               <div data-if="{{(order.data?.total_cancelled_amount ?? 0) > 0}}" class="flex justify-between text-sm">
@@ -116,6 +126,11 @@
               <div data-if="{{(order.data?.total_refunded_amount ?? 0) > 0}}" class="flex justify-between text-sm">
                 <span class="text-orange-600 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount</span>
                 <span class="text-orange-600 dark:text-orange-400">-{{order.data?.total_refunded_amount_formatted}}</span>
+              </div>
+              <!-- 환불금액 중 「마일리지로 환불」로 지급한 몫(Q3) — 그중 내역이라 부호 없이 들여 쓴다. 결제행은 결제완료로 남으므로(Q16) 이 줄이 없으면 그 돈이 카드·계좌로 나가지 않았다는 사실이 보이지 않는다. -->
+              <div data-ref="payment_refunded_mileage_credit_{{payIdx}}" data-if="{{(order.data?.total_refunded_mileage_credit_amount ?? 0) > 0}}" class="flex justify-between text-sm pl-3">
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount</span>
+                <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_refunded_mileage_credit_amount_formatted}}</span>
               </div>
               <div data-if="{{(order.data?.total_refunded_points_amount ?? 0) > 0}}" class="flex justify-between text-sm">
                 <span class="text-purple-600 dark:text-purple-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_points_amount</span>
@@ -149,7 +164,7 @@
             <div class="flex items-center gap-2">
               <icon name="receipt" size="sm" class="text-gray-700 dark:text-gray-300"/>
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.title</h4>
-              <span class="text-xs text-secondary">{{payment?.cash_receipt_provider ?? ''}}</span>
+              <span class="text-xs text-secondary">{{payment?.cash_receipt_provider_label ?? ''}}</span>
             </div>
             <span data-if="{{!!order.data?.cash_receipt}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.status_issued</span>
           </div>
@@ -210,36 +225,48 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue
             </button>
             <!-- 수동 재발급 — 관리자 전용. 취소 성공 + 재발급 실패 중간 상태 복구 (recoverFailedIssue) -->
-            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white">
+            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white" disabled="{{_global.isCashReceiptBusy === true}}">
               <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"/>
               <on type="click">
-                <!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. -->
-                <api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt/reissue" :auth_required="true" method="POST">
-                  <success>
-                    <refetch-data-source dataSourceId="order"/>
-                    <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_success"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_failed')}}"/>
-                  </fail>
-                </api-call>
+                <!-- 요청 중에는 잠근다 — 두 번 누르면 결제사 재발급이 두 번 나간다(S3-D22). -->
+                <sequence>
+                  <set-state target="global" :isCashReceiptBusy="true"/>
+                  <!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. -->
+                  <api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt/reissue" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="global" :isCashReceiptBusy="false"/>
+                      <refetch-data-source dataSourceId="order"/>
+                      <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :isCashReceiptBusy="false"/>
+                      <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue_failed')}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue
             </button>
             <!-- 발급취소 — 관리자 전용 (유저 화면에는 이 버튼이 없다) -->
-            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" disabled="{{_global.isCashReceiptBusy === true}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
               <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"/>
               <on type="click">
-                <!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. -->
-                <api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt" :auth_required="true" method="DELETE">
-                  <success>
-                    <refetch-data-source dataSourceId="order"/>
-                    <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_success"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_failed')}}"/>
-                  </fail>
-                </api-call>
+                <!-- 결제사 취소는 되돌릴 수 없다 — 확인을 받고, 요청 중에는 잠근다(S3-D22). 확인을 취소하면 순차 동작 전체가 서지 않는다. -->
+                <sequence confirm="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_confirm">
+                  <set-state target="global" :isCashReceiptBusy="true"/>
+                  <!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. -->
+                  <api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt" :auth_required="true" method="DELETE">
+                    <success>
+                      <set-state target="global" :isCashReceiptBusy="false"/>
+                      <refetch-data-source dataSourceId="order"/>
+                      <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :isCashReceiptBusy="false"/>
+                      <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_failed')}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_issue
             </button>

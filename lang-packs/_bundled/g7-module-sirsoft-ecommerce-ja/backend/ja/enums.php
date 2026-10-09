@@ -224,7 +224,7 @@ return [
     'refund_method' => [
         'pg' => 'PG社返金',
         'bank' => '銀行振込返金',
-        'points' => 'マイレージ返金',
+        'points' => 'マイレージで返金',
     ],
     'request_source' => [
         'customer' => 'お客様申請',
@@ -248,10 +248,11 @@ return [
         'admin_earn' => '管理者付与',
         'order_use' => '注文で使用',
         'admin_deduct' => '管理者減額',
-        'expired' => '有効期限失効',
+        'expired' => '失効',
         'refund_restore' => '返金時に復元',
         'order_cancel_restore' => '注文キャンセル時に復元',
         'earn_cancel' => '積立回収',
+        'refund_credit' => '返金のマイレージ付与',
     ],
     'mileage_earn_trigger' => [
         'delivered' => '配送完了',

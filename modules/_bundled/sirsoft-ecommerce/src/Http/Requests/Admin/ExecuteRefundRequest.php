@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 관리자 환불 실행 요청 ('환불하기' — D18)
@@ -101,8 +102,9 @@ class ExecuteRefundRequest extends FormRequest
      * 환불수단이 그 주문에서 쓸 수 있는 수단인지 대조합니다. (금액 수정과 같은 강도)
      *
      * 게이트는 **[금액 수정](`UpdateClaimAmountsRequest` → `refundMethodOptions()`)과 같은 선택지**다 —
-     * PG 결제창을 쓰지 않은 주문에 `PG` 를 실으면 막고, 계좌 수동 환불(`BANK`)과 마일리지(`POINTS`)는
-     * 결제수단과 무관하게 받는다. 두 경로의 강도가 달랐던 동안은 카드 주문에 계좌 수동 환불을
+     * PG 결제창을 쓰지 않은 주문에 `PG` 를 실으면 막고, 계좌 수동 환불(`BANK`)은 결제수단과 무관하게
+     * 받는다. 마일리지(`POINTS`)는 회원 주문에서만, 현금을 돌려줄 때는 마일리지 기능이 켜진 상점에서만
+     * 받는다(D1·Q21). 두 경로의 강도가 달랐던 동안은 카드 주문에 계좌 수동 환불을
      * [금액 수정]으로 저장할 수는 있는데 [환불하기]가 `payment_mismatch` 로 막아, 저장한 수단으로
      * 실행할 길이 없었다.
      *
@@ -126,22 +128,30 @@ class ExecuteRefundRequest extends FormRequest
                 return;
             }
 
-            $order = $this->targetRefund()?->order;
+            $refund = $this->targetRefund();
+            $order = $refund?->order;
 
             if ($order === null) {
                 return;
             }
 
-            // 선택지는 [금액 수정] 저장 가드와 **같은 판정**이다(`OrderRefundRequestService::pgRefundAvailable()`).
-            // PG 플러그인이 빠져 계좌 환불로 떨어진 주문(P14)은 선택지에서 PG 가 이미 빠진다 — 여기서
-            // 따로 거르면 저장과 실행이 다시 다른 기준을 읽게 된다.
-            $allowed = array_column(app(AdminClaimService::class)->refundMethodOptions($order), 'value');
+            // 선택지는 [금액 수정] 저장 가드와 **같은 판정**이다(`OrderRefundRequestService::pgRefundAvailable()`·
+            // `pointsRefundAllowed()`). PG 플러그인이 빠져 계좌 환불로 떨어진 주문(P14)은 선택지에서 PG 가
+            // 이미 빠진다 — 여기서 따로 거르면 저장과 실행이 다시 다른 기준을 읽게 된다. 「마일리지」는 이번
+            // 실행의 현금 환불액(본문에 있으면 그 값)으로 판정한다(Q21).
+            $cashAmount = (float) ($this->input('refund_amount') ?? $refund->refund_amount);
+            $allowed = array_column(app(AdminClaimService::class)->refundMethodOptions($order, $cashAmount), 'value');
 
             if (! in_array($method, $allowed, true)) {
                 // 금액 수정 경로가 같은 위반에 내는 문구와 같다(`OrderClaimException::refundMethodUnavailable()`).
+                // PG 결제인데 막혔다면 그 주문의 결제 플러그인이 꺼진 것이다 — 사유와 해결책을 따로 말한다(S3-D25).
+                $pluginOff = $method === RefundMethodEnum::PG->value
+                    && app(OrderRefundRequestService::class)->pgRefundBlockedByInactivePlugin($order);
                 $validator->errors()->add(
                     'refund_method',
-                    __('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable')
+                    $pluginOff
+                        ? __('sirsoft-ecommerce::exceptions.pg_provider_inactive', ['provider' => (string) $order->payment->pg_provider])
+                        : __('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable')
                 );
             }
         });

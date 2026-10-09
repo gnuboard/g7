@@ -1019,6 +1019,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}",
                                                     "type": "date",
                                                     "className": "input w-36",
                                                     "value": "{{_local.filter.startDate ?? ''}}"
@@ -1048,6 +1049,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}",
                                                     "type": "date",
                                                     "className": "input w-36",
                                                     "value": "{{_local.filter.endDate ?? ''}}"
@@ -1679,11 +1681,30 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Img",
+                                                            "if": "{{row.product?.thumbnail_url}}",
                                                             "props": {
                                                                 "src": "{{row.product?.thumbnail_url ?? ''}}",
                                                                 "alt": "{{row.product?.name ?? ''}}",
                                                                 "className": "w-10 h-10 rounded object-cover shrink-0 border border-gray-200 dark:border-gray-700"
                                                             }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{!row.product?.thumbnail_url}}",
+                                                            "props": {
+                                                                "className": "w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "image",
+                                                                        "className": "text-lg text-gray-400 dark:text-gray-500"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1962,11 +1983,30 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Img",
+                                                                                    "if": "{{row.product?.thumbnail_url}}",
                                                                                     "props": {
                                                                                         "src": "{{row.product?.thumbnail_url ?? ''}}",
                                                                                         "alt": "{{row.product?.name ?? ''}}",
                                                                                         "className": "w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"
                                                                                     }
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "if": "{{!row.product?.thumbnail_url}}",
+                                                                                    "props": {
+                                                                                        "className": "w-16 h-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Icon",
+                                                                                            "props": {
+                                                                                                "name": "image",
+                                                                                                "className": "text-2xl text-gray-400 dark:text-gray-500"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",

@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 
 /**
@@ -177,6 +178,20 @@ class OrderReturn extends Model
             'id',
             'refund_id',
         )->distinct();
+    }
+
+    /**
+     * 이 반품에서 생긴 환불신청서 전부 (출처 축 — 반려·철회 후 재접수 이력 포함, 보완 5)
+     *
+     * 표시·목록 일괄 로드용이다. `refunds()`(상품 행 `refund_id` 경유)는 재접수 때 덮어써져 과거 신청서를 잃는다 —
+     * 화면에는 이 관계를 쓰고, 금액 선점 계산(D19)은 종전대로 `refunds()` 를 쓴다.
+     *
+     * @return HasMany 환불신청서 관계
+     */
+    public function sourcedRefunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class, 'refund_source_id')
+            ->where('refund_source_type', RefundSourceTypeEnum::RETURN->value);
     }
 
     /**

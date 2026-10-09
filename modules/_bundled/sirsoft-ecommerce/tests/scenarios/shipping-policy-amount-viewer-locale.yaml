@@ -1,0 +1,19 @@
+feature: 주문 상세 「적용 배송정책」 배송비 표기는 보는 사람의 언어를 따른다 (S3-D12)
+
+description: |
+  상품별 배송정책 줄은 스냅샷의 `standalone_shipping_amount_formatted` 를 그린다. 그 문자열은 주문을 만든 요청의 언어로
+  저장되므로, 영어 화면에서 주문한 비회원 주문을 한국어로 열면 이 줄만 「₩2,500」(같은 화면 다른 금액 「2,500원」)이었다
+  (실측: 비회원 주문 20261006-1425494404). 응답을 만들 때 금액 숫자로 다시 포맷한다 — 저장 스냅샷은 재계산 입력이라 그대로.
+
+axes:
+  response:
+    - member
+    - guest
+    - stored
+
+effects:
+  - shipping_policy_amount_follows_viewer_locale # 회원·비회원 응답이 현재 언어로 배송비를 적는다
+  - stored_shipping_snapshot_stays_untouched # 저장된 스냅샷(재계산 입력)은 바뀌지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/ShippingPolicyAmountLocaleTest.php

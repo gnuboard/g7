@@ -101,3 +101,40 @@ describe('결제창 닫힘 보고', () => {
         expect(post.mock.calls[1][1].reason).toBe('nicepay-window-closed');
     });
 });
+
+/**
+ * 닫힘 보고는 서버가 주는 사이트 절대 주소가 아니라 상수 API 경로(CLOSE_REPORT_PATH)로 보낸다.
+ *
+ * 서버가 주는 닫힘 보고 주소는 사이트 주소 기준 절대 URL 이다(`SiteUrl::absolute`). G7Core.api 는 `/api` 를 앞에 붙이는
+ * 경로를 받으므로 절대 URL 을 그대로 넘기면 `/plugins/...`(접두 없음)로 나가 404 가 났고, 결제창을 닫아도 주문이
+ * 결제대기로 남았다. 별칭 Host 로 들어온 화면에서는 교차 출처가 되어 Bearer 도 실리지 않는다.
+ */
+describe('사이트 주소 절대 URL 닫힘 보고', () => {
+    afterEach(() => {
+        delete (window as any).G7Core;
+        vi.restoreAllMocks();
+    });
+
+    // @scenario concern=close_report_member
+    // @effects close_report_via_core_api
+    it('보고 경로는 출처·/api 접두가 없는 플러그인 API 상대 경로다', () => {
+        expect(CLOSE_REPORT_PATH).toMatch(/^\/plugins\/sirsoft-pay_nicepayments\/payment\/close-report$/);
+        expect(CLOSE_REPORT_PATH).not.toMatch(/^https?:/);
+        expect(CLOSE_REPORT_PATH.startsWith('/api/')).toBe(false);
+    });
+
+    // @scenario concern=close_report_member
+    // @effects close_report_via_core_api
+    it('맥락에 서버가 준 사이트 절대 주소가 섞여 와도 G7Core.api 에는 상수 경로로 넘긴다', async () => {
+        const post = vi.fn().mockResolvedValue({ success: true });
+        seedCore(post);
+        const absolute = `${window.location.origin}/plugins/sirsoft-pay_nicepayments/payment/close-report`;
+
+        await reportPaymentWindowClosed({ ...CONTEXT, oid: 'ORD-NICE-ABS-001', closeReportUrl: absolute } as typeof CONTEXT);
+
+        expect(post).toHaveBeenCalledTimes(1);
+        expect(post.mock.calls[0][0]).toBe(CLOSE_REPORT_PATH);
+        expect(post.mock.calls[0][0]).not.toBe(absolute);
+        expect(post.mock.calls[0][1]).toEqual(expect.objectContaining({ oid: 'ORD-NICE-ABS-001' }));
+    });
+});

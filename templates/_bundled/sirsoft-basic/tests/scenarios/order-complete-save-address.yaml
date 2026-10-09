@@ -1,0 +1,25 @@
+feature: 주문완료 [이 배송지를 저장하기] — 이미 저장된 주소면 숨김, 409 는 안내
+
+description: |
+  저장 배송지로 주문해도 주문완료에 [이 배송지를 저장하기] 가 늘 보였고, 누르면 같은 주소가 「배송지」 이름으로 또 쌓이거나,
+  같은 이름이 이미 있으면 서버 409 「…덮어쓰시겠습니까?」 가 답할 수 없는 토스트로 떴다(전수 실측 S4, 제품 결정 — 세션 권장 ①).
+  회원 주소록(userAddresses)을 함께 받아 같은 주소면 숨기고, 저장 성공 뒤 주소록을 다시 받아 숨기며, 409 는 안내로 바꾼다.
+  비회원·주소록 실패는 빈 목록으로 떨어져 화면을 막지 않는다(후속 B 세션 B6).
+  409 분기는 액션 error-handling(on-code 409)로 둔다 — fail 안의 conditions 는 엔진이 조건 목록을 버려 토스트가 0건이었다(실측).
+
+axes:
+  case: [same_address_saved, different_address, address_book_unavailable, duplicate_name_409, other_error]
+
+effects:
+  - save_address_button_hidden_when_already_saved
+  - save_address_button_shown_for_new_address
+  - save_address_success_refetches_address_book
+  - save_address_409_shows_notice_not_question
+  - save_address_other_error_shows_failure_toast
+  - address_book_failure_does_not_break_screen
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/order-complete-save-address.test.tsx
+
+validation:
+  browser_check: 저장 배송지를 고른 주문의 주문완료 → 버튼 없음. 새 주소 주문의 주문완료 → 버튼 → 누르면 저장 토스트 뒤 버튼 사라짐

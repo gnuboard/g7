@@ -228,8 +228,10 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             );
             expect(tabChangeAction).toBeDefined();
 
-            // sequence 내 첫 번째 setState 는 에러 초기화 (local)
-            const sequenceActions = callbacksOf(tabChangeAction, 'actions');
+            // 저장하지 않은 변경이 있으면 확인 창을 여는 갈래가 앞서고(S5-D41), 전환은 변경이 없을 때의 갈래(if 없는 else)가 한다
+            const elseBranch = asArray(tabChangeAction?.conditions).find((c: any) => c.if === undefined);
+            // 그 갈래 sequence 의 첫 번째 setState 는 에러 초기화 (local)
+            const sequenceActions = callbacksOf(elseBranch?.then, 'actions');
             const firstSetState = sequenceActions.find(
                 (a: any) => a.handler === 'setState' && a.params?.target === 'local',
             );

@@ -45,6 +45,13 @@
 `claim_payment.refund` 필터를 결제 플러그인이 구현하는 방식이라, 이 모듈은 여기서도 PG 를
 알지 않습니다.
 
+환불신청서의 수단은 **저장값과 실효 수단**이 다를 수 있습니다. 결제 플러그인이 꺼진 동안 접수된 카드
+신청서는 계좌 환불로 폴백되고, 플러그인이 돌아오면 운영자가 수단을 고르지 않은 한 실행 때 PG 로
+되돌아갑니다. 화면(신청서 상세)·저장·실행이 모두 `OrderRefundRequestService::effectiveRefundMethod()`
+하나를 읽고, 운영자 선택 표지(`refund_method_overridden`)는 **실효 수단과 다른 값을 고른 때만** 붙습니다 —
+화면은 고치지 않은 수단도 실행 본문에 싣기 때문입니다. 반대 방향(PG → 계좌)은 바꾸지 않으며, 꺼진
+플러그인의 PG 건은 저장·실행 모두 「결제 플러그인이 꺼져 있습니다」 사유(`pg_provider_inactive`)로 막습니다.
+
 주문 하나에 여러 유형의 클레임이 걸릴 때 **어느 유형을 먼저 보여 줄 것인가**는 서비스 상수
 `UserClaimService::ORDER_LIST_TYPE_PRIORITY` 가 정합니다 — 접수 건이 있는 첫 유형을 고르되
 순서는 교환 → 반품 → 취소 → 환불입니다(설계 결정 2026-09-09). 화면 서브탭의 배열 순서와
@@ -79,7 +86,7 @@ Models 47종 (Order/OrderOption/Product/... — 주문 계열은 SoftDeletes)
 
 Support 클래스(`src/Support/`)는 계층이 아니라 **규칙의 단일 출처**입니다 — `VatCalculator`
 (과세/면세 안분) · `MileageRounding`(적립 절사) · `ShippingPolicySnapshot`(주문 시점 배송정책
-동결) · `CurrencySettingsCache`(통화 설정 조회) · `ReviewWritePolicy`(리뷰 작성 가능 판정) ·
+동결 — 표시용 금액 문자열은 `forViewer()` 가 응답 시점 언어로 다시 적는다) · `CurrencySettingsCache`(통화 설정 조회) · `ReviewWritePolicy`(리뷰 작성 가능 판정) ·
 `ShopPathResolver`(상점 경로). 같은 규칙을 서비스마다 다시 구현하지 않기 위한 자리이므로,
 새 서비스가 반올림·안분·경로 조립을 직접 하고 있으면 여기로 올려야 하는 신호입니다.
 

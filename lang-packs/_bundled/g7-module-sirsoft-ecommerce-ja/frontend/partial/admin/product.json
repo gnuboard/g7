@@ -26,6 +26,7 @@
     "category": "カテゴリ",
     "no_category": "カテゴリ未登録",
     "date": "日付",
+    "date_type_select": "日付の基準",
     "date_type": {
       "created_at": "登録日",
       "updated_at": "編集日"
@@ -63,6 +64,7 @@
       "tax_free": "非課税"
     },
     "price": "価格",
+    "price_type_select": "価格の基準",
     "price_type": {
       "selling_price": "販売価格",
       "supply_price": "仕入価格",
@@ -560,6 +562,7 @@
       "method_decrease": "値下げ",
       "method_fixed": "に変更",
       "value": "変更金額/比率",
+      "unit": "変更の単位",
       "unit_won": "円",
       "unit_percent": "%",
       "preview_increase": "販売価格を{{value}}{{unit}}値上げします。",
@@ -854,6 +857,8 @@
       "active": "使用",
       "required": "必須"
     },
+    "mileage_value_label": "マイレージ積立値",
+    "mileage_type_label": "マイレージ積立単位",
     "mileage_type": {
       "fixed": "円",
       "percent": "%"
@@ -1199,5 +1204,14 @@
     "manage_common_info": "共通情報管理",
     "manage_notice_template": "商品情報提供告示管理",
     "create_shipping_policy": "配送ポリシーを作成"
+  },
+  "selector_forbidden": {
+    "categories": "カテゴリの閲覧権限がないため、カテゴリを選択できません。",
+    "brands": "ブランドの閲覧権限がないため、ブランドを選択できません。",
+    "notice_templates": "商品情報提供告示テンプレートの閲覧権限がないため、テンプレートを読み込めません。告示項目は直接入力できます。",
+    "common_infos": "共通情報の閲覧権限がないため、共通情報を選択できません。",
+    "shipping_policies": "配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。指定せずに保存すると、既に指定されている配送ポリシーが、指定がなければ基本配送ポリシーが適用されます。",
+    "product_labels": "商品ラベルの閲覧権限がないため、ラベルを選択できません。",
+    "roles": "会員等級の一覧を読み込む権限がないため、等級を選択できません。"
   }
 }

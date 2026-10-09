@@ -115,8 +115,8 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
       <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
       <p class="text-xs text-blue-700 dark:text-blue-300 min-w-0">{{((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}</p>
     </div>
-    <!-- 환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
-    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700" data-testid="claim-refund-priority">
+    <!-- 환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 사용 마일리지를 차감하지 않은 주문도 돌려줄 마일리지가 없어 미노출(Q15). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
+    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 &amp;&amp; order?.data?.points_not_deducted !== true}}" class="pt-3 border-t border-gray-200 dark:border-gray-700" data-testid="claim-refund-priority">
       <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:claim.apply.refund_priority.title</p>
       <div data-if="{{_local.claimEditMode !== true}}" class="space-y-1">
         <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -171,7 +171,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
               <action handler="sirsoft-ecommerce.setClaimPaymentMethod" value="{{chargePaymentMethod}}"/>
             </on>
           </input>
-          <span class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}">{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}</span>
+          <span class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}">{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : (chargePaymentMethod === 'card' ? $t('claim.apply.payment_method_card') : ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_method_labels?.[chargePaymentMethod] ?? chargePaymentMethod))}}</span>
         </label>
       </div>
     </div>

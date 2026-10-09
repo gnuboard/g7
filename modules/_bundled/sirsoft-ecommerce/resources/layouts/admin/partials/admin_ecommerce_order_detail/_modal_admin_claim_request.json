@@ -360,6 +360,54 @@
                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.address2",
                                 "value": "{{_global.adminClaimRequest?.redelivery?.address2 ?? ''}}"
                             }
+                        },
+                        {
+                            "comment": "해외 주문의 도시 — 재발송지 스냅샷이 따로 담는 칸이라 빠지면 주소가 완결되지 않는다(S2-D8). 국내 주문에는 칸이 없어 핸들러의 해외 표식으로 가른다.",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{_global.adminClaimRequest?.redeliveryInternational === true}}",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 도시 (해외)",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.city",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "maxLength": 100,
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.city",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.city ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "해외 주문의 주/지역",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{_global.adminClaimRequest?.redeliveryInternational === true}}",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 주/지역 (해외)",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.state",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "maxLength": 100,
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.state",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.state ?? ''}}"
+                            }
                         }
                     ]
                 },
@@ -407,6 +455,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                         "value": "{{_global.adminClaimRequest?.refundBank?.bank_code ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}"

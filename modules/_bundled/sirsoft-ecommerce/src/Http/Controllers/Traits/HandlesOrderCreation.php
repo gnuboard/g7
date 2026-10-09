@@ -356,6 +356,11 @@ trait HandlesOrderCreation
                 ->resolveSnapshotPaymentCharge($taxFreeBase, $order->currency_snapshot ?? [])
             : null;
 
+        // 가상계좌 입금 기한 — 주문이 정한 기한(설정 `order_settings.auto_cancel_days`)을 결제창에 그대로 넘긴다.
+        // 넘기지 않으면 PG 가 자기 기본 기한(KG 10~30일·나이스 10일)으로 계좌를 열고, 콜백이 그 값으로 주문 기한을
+        // 덮어써 주문서 안내와 자동취소 시점이 결제사마다 달라진다. PG 는 한국 시각으로 받으므로 KST 로 싣는다.
+        $vbankDueAt = $order->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul')->toIso8601String();
+
         return [
             'order_number' => $order->order_number,
             'order_name' => $orderName,
@@ -375,7 +380,7 @@ trait HandlesOrderCreation
             // 에스크로 결제(가상계좌·계좌이체) 시 필수인 상품 상세 배열. PG 가 사용 여부를
             // 프론트에서 결정하므로 provider-agnostic 하게 항상 조립한다 (비에스크로는 무시).
             'escrow_products' => $this->buildEscrowProducts($order, $locale),
-        ];
+        ] + ($vbankDueAt !== null ? ['vbank_due_at' => $vbankDueAt] : []);
     }
 
     /**

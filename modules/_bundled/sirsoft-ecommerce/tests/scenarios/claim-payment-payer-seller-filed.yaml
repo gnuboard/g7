@@ -1,0 +1,17 @@
+feature: 판매자 접수 클레임 추가결제의 결제자 — 주문의 주인 (S3-D15)
+
+description: |
+  운영자 직권 접수 건은 `requested_by` 가 null 이라 결제 수단 선택지·기본 수단이 회원 주문도 비회원처럼 마일리지를 뺐다
+  (실측: EX20261007-0346461835 — 회원 화면 「결제 수단 신용카드」만). 결제자는 신청서의 비회원 판정과 같이 주문의 주인이다.
+
+axes:
+  order_owner:
+    - member
+    - guest
+
+effects:
+  - seller_filed_member_claim_offers_mileage # 회원 주문의 판매자 접수 건은 마일리지를 선택지에 올린다
+  - seller_filed_guest_claim_excludes_mileage # 비회원 주문은 종전처럼 마일리지가 없다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentPayerOfSellerFiledClaimTest.php

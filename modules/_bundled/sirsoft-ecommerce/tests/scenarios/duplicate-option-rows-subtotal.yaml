@@ -35,13 +35,27 @@ axes:
   verify_stage:
     - summed_subtotal   # 합계가 두 행의 합인가
     - removal_delta     # 한 행을 빼면 그만큼 줄어드는가
+    - shipping_group_amount  # 배송정책 그룹 금액이 키 금액을 한 번만 세는가 (S-Q26-c 엔진)
+    - shipping_share         # 같은 키 라인의 배송비 몫이 누적되는가
+    - fixed_mileage          # 정액 적립이 키 전체 수량에 곱해지는가
 
 exclusions:
   - { duplicate_shape: two_rows_different_quantity, verify_stage: removal_delta,
       reason: "제거 델타는 수량 동일 형태로 충분히 잠긴다 — 수량 상이는 합산식 자체(수량 무시 구현 방지)를 겨냥한다" }
+  - { duplicate_shape: two_rows_different_quantity, verify_stage: shipping_group_amount,
+      reason: "그룹 금액 이중 합산은 라인 수와 무관하게 키 금액을 라인마다 더하는 결함이다 — 수량 동일 형태로 잠긴다" }
+  - { duplicate_shape: two_rows_different_quantity, verify_stage: shipping_share,
+      reason: "몫 누적은 대입/누적의 차이라 수량과 무관하다 — 수량 동일 형태로 잠긴다" }
+  - { duplicate_shape: two_rows_same_quantity, verify_stage: fixed_mileage,
+      reason: "정액 적립 결함은 마지막 라인 수량만 곱하는 것이라 수량이 달라야 드러난다 — 수량 상이 형태가 소유" }
 
 effects:
   - duplicate_option_rows_are_summed   # 같은 옵션 여러 행 누적 · 제외 시 그만큼 감소 · 수량 상이 합산
+  # #747 C3b (S-Q26-c 엔진 측) — 같은 키 라인이 둘이면 키 금액을 라인마다 더해 그룹 금액이 두 배가 되던 결함,
+  # 안분 결과를 키에 대입해 앞 라인 몫이 사라지던 결함, 정액 적립이 마지막 라인 수량만 곱하던 결함.
+  - same_option_lines_count_once_in_shipping_group_amount
+  - same_option_lines_shipping_share_accumulates
+  - fixed_mileage_uses_total_quantity_of_same_option_lines
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php

@@ -24,16 +24,16 @@
 | `MileageTransaction` | `ecommerce_mileage_transactions` | 18 | user→User, order→Order, claimPayment→ClaimPayment, orderOption→OrderOption, grantedByUser→User, sourceTransaction→self | - |
 | `Order` | `ecommerce_orders` | 65 | user→User, options→OrderOption, firstOption→OrderOption, addresses→OrderAddress, shippingAddress→OrderAddress, billingAddress→OrderAddress, 외 11개 | SoftDeletes |
 | `OrderAddress` | `ecommerce_order_addresses` | 23 | order→Order | - |
-| `OrderCancel` | `ecommerce_order_cancels` | 10 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
-| `OrderCancelOption` | `ecommerce_order_cancel_options` | 10 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
+| `OrderCancel` | `ecommerce_order_cancels` | 12 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
+| `OrderCancelOption` | `ecommerce_order_cancel_options` | 11 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 16 | order→Order, payment→OrderPayment | - |
 | `OrderExchange` | `ecommerce_order_exchanges` | 45 | order→Order, exchangeOptions→OrderExchangeOption, refunds→OrderRefund, images→ClaimImage, claimPayments→ClaimPayment, requestedByUser→User, 외 4개 | - |
 | `OrderExchangeOption` | `ecommerce_order_exchange_options` | 30 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, collectionCarrier→ShippingCarrier, 외 2개 | - |
 | `OrderOption` | `ecommerce_order_options` | 57 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
 | `OrderPayment` | `ecommerce_order_payments` | 58 | order→Order, taxInvoices→OrderTaxInvoice, cashReceipts→OrderCashReceipt | - |
-| `OrderRefund` | `ecommerce_order_refunds` | 39 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
+| `OrderRefund` | `ecommerce_order_refunds` | 41 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
 | `OrderRefundOption` | `ecommerce_order_refund_options` | 13 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
-| `OrderReturn` | `ecommerce_order_returns` | 36 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, refunds→OrderRefund, requestedByUser→User, 외 3개 | - |
+| `OrderReturn` | `ecommerce_order_returns` | 36 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, refunds→OrderRefund, sourcedRefunds→OrderRefund, 외 4개 | - |
 | `OrderReturnOption` | `ecommerce_order_return_options` | 19 | orderReturn→OrderReturn, order→Order, orderOption→OrderOption, collectionCarrier→ShippingCarrier, refund→OrderRefund, processedByUser→User | - |
 | `OrderShipping` | `ecommerce_order_shippings` | 28 | order→Order, orderOption→OrderOption, shippingPolicy→ShippingPolicy, carrier→ShippingCarrier | - |
 | `OrderTaxInvoice` | `ecommerce_order_tax_invoices` | 21 | order→Order, payment→OrderPayment | - |
@@ -222,7 +222,7 @@
 **개인정보 보유기간 처리(이슈 #636)의 흔적**: 익명화된 주문은 `order_meta` 에 `privacy_anonymized_at`
 (ISO 8601)을 남깁니다 — 스키마를 바꾸지 않고 멱등 표지로 쓰며, 주소 테이블의 NOT NULL 칸에는
 `***` 가 들어갑니다. 교환·반품·환불 신청서의 환불 계좌 명의·번호·상세 사유·관리자 메모도 NULL 이 되고, 교환의
-`redelivery_address_snapshot` 은 같은 치환값으로 가려집니다. 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
+`redelivery_address_snapshot` 은 모양을 유지한 채 같은 기준으로 가려집니다 — 받는 분·연락처·우편번호·주소는 치환값, 상세 주소와 해외 주소의 도시·주(`city`·`state`)는 NULL(주문 주소의 `address_detail`·`intl_city`·`intl_state` 와 같은 처리). 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
 지우는 테이블 전수: `ecommerce_claim_images`(행 — 파일은 커밋 뒤, 임시 첨부 포함) · `ecommerce_claim_payments` ·
 `ecommerce_order_exchange_options` · `_exchanges` · `_return_options` · `_returns` · `ecommerce_order_shippings` · `_refund_options` · `_refunds` · `_cancel_options` ·
 `_cancels` · `_tax_invoices` · `_cash_receipts` · `_payments` · `_options` · `_addresses` · `ecommerce_orders`,
@@ -241,7 +241,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 122개.
+마이그레이션 126개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -367,6 +367,10 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_09_25_000002_add_item_level_columns_to_claim_tables.php` | - | - | ✅ |
 | `2026_09_25_000003_move_claim_tracking_to_option_rows.php` | - | - | ✅ |
 | `2026_09_25_000004_drop_dormant_claim_tracking_from_order_shippings.php` | - | - | ✅ |
+| `2026_10_05_000001_make_user_id_nullable_on_ecommerce_mileage_transactions_table.php` | - | - | ✅ |
+| `2026_10_05_000002_add_exchange_difference_refunds_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
+| `2026_10_05_000003_add_refund_method_overridden_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
+| `2026_10_05_000010_add_reactivation_columns_to_ecommerce_order_cancels_table.php` | - | `ecommerce_order_cancels`, `ecommerce_order_cancel_options` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -430,7 +434,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ExchangeModeEnum` | `string` | 2 | `standard`, `advance` |
 | `ExchangeStatusEnum` | `string` | 14 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 6개` |
 | `MileageEarnTriggerEnum` | `string` | 2 | `delivered`, `confirmed` |
-| `MileageTransactionTypeEnum` | `string` | 8 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel` |
+| `MileageTransactionTypeEnum` | `string` | 9 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 1개` |
 | `OrderDateTypeEnum` | `string` | 5 | `ordered_at`, `paid_at`, `confirmed_at`, `delivered_at`, `cancelled_at` |
 | `OrderOptionSourceTypeEnum` | `string` | 3 | `order`, `exchange`, `split` |
 | `OrderStatusEnum` | `string` | 14 | `pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `외 6개` |
@@ -473,7 +477,7 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `OrderStatusEnum` (10) | 주문 상태 전이의 SSoT. 어느 상태까지 취소를 허용할지는 설정(`cancellable_statuses`)이 이 케이스 이름으로 정합니다 |
 | `PaymentStatusEnum` (8) · `PaymentMethodEnum` (8) | 결제 상태와 **코어 기본 결제수단**. 플러그인이 추가하는 결제수단(`kginicis_naverpay` 등)은 여기에 없고 카탈로그 선언으로만 존재합니다 — 이 Enum 을 결제수단의 전체 목록으로 오해하지 않습니다 |
 | `ChargePolicyEnum` (14) | 배송비 산정 방식. 무료·정액·조건부무료·금액/수량/무게/부피 구간 등 국가별 요금 규칙이 전부 이 하나로 표현됩니다 |
-| `MileageTransactionTypeEnum` (8) | 원장 기록의 종류. 적립·사용·소멸·환불복원·취소복원이 모두 별개 케이스라 원장만 보고 잔액을 재구성할 수 있습니다 |
+| `MileageTransactionTypeEnum` (9) | 원장 기록의 종류. 적립·사용·소멸·환불복원·취소복원·환불금 마일리지 지급(`refund_credit`)이 모두 별개 케이스라 원장만 보고 잔액을 재구성할 수 있습니다 |
 | `RefundMethodEnum` (3) · `RefundPriorityEnum` (2) | 환불을 어디로 돌려줄지와 그 우선순위 |
 | `SequenceType` (5) · `SequenceAlgorithm` (5) | 채번 대상과 방식. 주문번호·상품코드 형식을 바꾸는 자리입니다 |
 | `ShippingStatusEnum` (11) · `ShippingCountryEnum` (4) | 배송 진행 상태와 기본 제공 국가 |

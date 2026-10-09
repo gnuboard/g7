@@ -1,0 +1,23 @@
+feature: 주문 상세 「주문 이력」 배송완료일시
+
+description: |
+  회원·비회원 주문 상세가 함께 쓰는 「주문 이력」 조각은 주문일시·결제일시·배송완료일시·구매확정일시·취소일시를 보인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D11):
+    - 배송완료일시 줄이 `order.data.delivered_at` 을 봤는데, 주문 응답의 이 값은 주문 테이블에 칼럼이 없어 늘 null 이다.
+      배송 완료 시각은 배송 행(`shippings[].delivered_at`·`delivered_at_formatted`)에 있다. 1.2.0 에서 이 줄의 문구를
+      채웠지만 값 출처가 비어 있어 배송을 마친 주문에도 줄이 한 번도 나오지 않았다.
+    - 배송 행 중 완료 시각이 있는 것의 가장 늦은 값(사용자 시간대로 서식된 값)을 보인다.
+
+axes:
+  shipping_state: [delivered, not_delivered]
+
+effects:
+  - delivered_row_shows_latest_shipping_delivery   # 배송 완료 → 배송 행의 가장 늦은 완료 시각
+  - delivered_row_hidden_until_delivery            # 배송 전 → 줄 없음
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/order-history-delivered-at.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 배송완료·구매확정 주문 상세 「주문 이력」 에 배송완료일시 줄

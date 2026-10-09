@@ -7250,7 +7250,49 @@
             "variant": "success",
             "icon": "flag-checkered"
           }
-        ]
+        ],
+        "linked_claims": {
+          "source": null,
+          "refunds": [
+            {
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_number": "RF-20260601-0002",
+              "status": "completed",
+              "status_label": "환불완료",
+              "status_variant": "success",
+              "status_icon": "status-completed",
+              "is_live": true,
+              "requested_at_formatted": "2026-06-02 10:00",
+              "detail_url": "/mypage/claims/RF-20260601-0002",
+              "refund_method": "pg",
+              "refund_method_label": "PG사 환불",
+              "refund_total": 26000,
+              "refund_total_formatted": "26,000원",
+              "mc_refund_total": {},
+              "refunded_at_formatted": "2026-06-02 11:00"
+            }
+          ],
+          "result_cancel": null,
+          "latest_refund": {
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "claim_number": "RF-20260601-0002",
+            "status": "completed",
+            "status_label": "환불완료",
+            "status_variant": "success",
+            "status_icon": "status-completed",
+            "is_live": true,
+            "requested_at_formatted": "2026-06-02 10:00",
+            "detail_url": "/mypage/claims/RF-20260601-0002",
+            "refund_method": "pg",
+            "refund_method_label": "PG사 환불",
+            "refund_total": 26000,
+            "refund_total_formatted": "26,000원",
+            "mc_refund_total": {},
+            "refunded_at_formatted": "2026-06-02 11:00"
+          }
+        }
       }
     },
     "claimable": {

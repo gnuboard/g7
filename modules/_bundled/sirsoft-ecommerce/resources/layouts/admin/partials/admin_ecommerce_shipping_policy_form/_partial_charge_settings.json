@@ -580,7 +580,8 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "btn-icon text-error"
+                                                                        "className": "btn-icon text-error",
+                                                                        "aria-label": "$t:common.delete"
                                                                     },
                                                                     "children": [
                                                                         {

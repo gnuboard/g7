@@ -12,6 +12,7 @@
 - 결제창을 열어 둔 사이 청구액이 바뀌어 결제를 다시 시작해야 할 때의 안내 문구도 함께 번역했습니다.
 - 레이아웃 편집기에 쓰이는 입금통보 웹훅 URL 데이터 소스 이름(`editor.data_source.webhook_info`)의 일본어 번역을 추가했습니다.
 - 승인 금액을 확인하지 못해 결제를 자동 취소할 때 토스페이먼츠에 남기는 취소 사유(`errors.approval_verification_cancel_reason`)의 일본어 번역을 추가했습니다.
+- 설정 화면의 결제 후 이동 주소(성공·실패) 형식 오류 안내(`settings.redirect_url_format`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

@@ -15,7 +15,7 @@
         </div>
         <button data-if="{{!_local.isAddingCarrier}}" type="button" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
-            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[현재 로케일]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 현재 로케일 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
+            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
             <set-state target="local" :isAddingCarrier="true" carrierForm="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), type: 'domestic', tracking_url: '', is_active: true, sort_order: 0 } }}" :carrierFormErrors="null"/>
           </on>
           <icon name="plus" class="text-xs"/>
@@ -80,14 +80,14 @@
           <on type="click">
             <!-- 추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 배열을 건드리지 않고 오류 표시만 세운다. -->
             <conditions>
-              <when if="{{(_local.carrierForm?.code ?? '').trim() &amp;&amp; (_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}">
+              <when if="{{(_local.carrierForm?.code ?? '').trim() &amp;&amp; (_local.carrierForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}">
                 <set-state target="local" form.shipping.carriers="{{[...(_local.form?.shipping?.carriers ?? []), _local.carrierForm]}}" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :hasChanges="true"/>
               </when>
               <else>
                 <set-state target="local">
                   <field name="carrierFormErrors">
                     <field name="code" value="{{!(_local.carrierForm?.code ?? '').trim() ? true : null}}"/>
-                    <field name="name_ko" value="{{!(_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                    <field name="name_ko" value="{{!(_local.carrierForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
                   </field>
                 </set-state>
               </else>
@@ -133,7 +133,7 @@
                 <span data-if="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}" class="form-error">{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input data-type="composite" value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}" :hasChanges="true"/>

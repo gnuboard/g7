@@ -191,6 +191,22 @@
       }
     }
   },
+  "deposit_after_cancel_admin": {
+    "definition": {
+      "name": "キャンセル注文入金 管理者通知",
+      "description": "キャンセル済み注文の仮想口座に入金が確認されると運営者に送信(自動返金されません)"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] キャンセル済み注文への入金が確認されました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">キャンセル済み注文への入金が確認されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、キャンセル済み注文の仮想口座に{deposit_amount}が入金されました。自動では返金されないため、お客様に返金してください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>注文者:</strong> {customer_name}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {total_amount}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文管理へ移動</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "キャンセル済み注文への入金が確認されました",
+        "body": "キャンセル済み注文({order_number})に{deposit_amount}の入金が確認されました。お客様に返金してください。"
+      }
+    }
+  },
   "exchange_requested": {
     "definition": {
       "name": "交換申請受付",
@@ -711,7 +727,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 返金処理が完了しました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金処理が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金処理が完了しました。ご利用ありがとうございました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>返金金額:</strong> {refund_amount}</p><p style=\"margin:5px 0\"><strong>返金方法:</strong> {refund_method_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金処理が完了しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金処理が完了しました。ご利用ありがとうございました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>返金金額:</strong> {refund_amount}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>返金内訳:</strong> {refund_breakdown}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
       },
       "database": {
         "subject": "返金処理が完了しました",

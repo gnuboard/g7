@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 
@@ -50,6 +52,35 @@ class OrderCancelOptionRepository implements OrderCancelOptionRepositoryInterfac
         return $this->model->newQuery()
             ->where('order_cancel_id', $cancelId)
             ->update($updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listReactivatableForRows(int $orderId, array $orderOptionIds): Collection
+    {
+        return $this->model->newQuery()
+            ->where('order_id', $orderId)
+            ->whereIn('order_option_id', $orderOptionIds)
+            ->whereColumn('reactivated_quantity', '<', 'cancel_quantity')
+            ->whereHas('orderCancel', fn ($q) => $q
+                ->where('cancel_status', CancelStatusEnum::COMPLETED->value)
+                ->whereDoesntHave('refund', fn ($r) => $r->whereIn('refund_source_type', [
+                    RefundSourceTypeEnum::RETURN->value,
+                    RefundSourceTypeEnum::EXCHANGE->value,
+                ])))
+            ->orderByDesc('order_cancel_id')
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function addReactivatedQuantity(OrderCancelOption $row, int $quantity): void
+    {
+        $row->increment('reactivated_quantity', $quantity);
     }
 
     /**

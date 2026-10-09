@@ -42,6 +42,24 @@ class BulkUpdateOrdersRequest extends FormRequest
             )],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             'tracking_number' => ['nullable', 'string', 'max:50'],
+            // 수동 결제 처리 확인 창의 세 항목 (Q13) — 보내지 않으면 모두 켬(기존 클라이언트 호환)
+            'apply_stock_deduction' => ['sometimes', 'boolean'],
+            'apply_mileage_deduction' => ['sometimes', 'boolean'],
+            'record_paid_amount' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 필드 라벨을 반환합니다.
+     *
+     * @return array<string, string> 필드 => 라벨
+     */
+    public function attributes(): array
+    {
+        return [
+            'apply_stock_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_stock_deduction'),
+            'apply_mileage_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_mileage_deduction'),
+            'record_paid_amount' => __('sirsoft-ecommerce::validation.attributes.record_paid_amount'),
         ];
     }
 

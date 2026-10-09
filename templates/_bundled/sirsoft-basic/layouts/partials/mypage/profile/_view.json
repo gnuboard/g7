@@ -2,6 +2,7 @@
     "comment": "내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다.",
     "meta": {
         "is_partial": true,
+        "_e2e_allow": "e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)",
         "description": "마이페이지 프로필 - View 모드 (시안 기반 레이아웃)"
     },
     "type": "basic",
@@ -860,6 +861,16 @@
                         "className": "text-base text-gray-900 dark:text-white font-medium"
                     },
                     "text": "{{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name) || (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')}}"
+                },
+                {
+                    "comment": "저장해 둔 국가를 운영자가 배송 가능 목록에서 내리면 화면·서버는 기본 국가로 계산한다 — 그 사실과 지금 적용 중인 국가를 함께 보인다.",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{user.data?.ecommerce_preferred_shipping_country !== undefined && user.data?.ecommerce_preferred_shipping_country !== null && !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === user.data?.ecommerce_preferred_shipping_country)}}",
+                    "props": {
+                        "className": "mt-2 text-sm text-amber-700 dark:text-amber-300"
+                    },
+                    "text": "$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === user.data?.ecommerce_preferred_shipping_country)?.name, 'sirsoft-ecommerce::settings.countries.' + (user.data?.ecommerce_preferred_shipping_country ?? '') + '.name') || user.data?.ecommerce_preferred_shipping_country}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}"
                 },
                 {
                     "type": "basic",

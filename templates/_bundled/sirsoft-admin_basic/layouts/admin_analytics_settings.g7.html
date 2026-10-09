@@ -605,9 +605,9 @@
               <div data-ref="field_top_n">
                 <label class="form-label">$t:admin.analytics.settings.retention.top_n</label>
                 <div class="grid grid-cols-3 gap-2">
-                  <input type="number" name="settings.top_n_overview" min="3" max="100" class="input" title="$t:admin.analytics.settings.retention.top_n_overview" disabled="{{_computed.isReadOnly}}"/>
-                  <input type="number" name="settings.top_n_dashboard" min="3" max="100" class="input" title="$t:admin.analytics.settings.retention.top_n_dashboard" disabled="{{_computed.isReadOnly}}"/>
-                  <input type="number" name="settings.top_n_detail" min="3" max="100" class="input" title="$t:admin.analytics.settings.retention.top_n_detail" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="settings.top_n_overview" min="3" max="100" class="input" aria-label="$t:admin.analytics.settings.retention.top_n_overview" title="$t:admin.analytics.settings.retention.top_n_overview" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="settings.top_n_dashboard" min="3" max="100" class="input" aria-label="$t:admin.analytics.settings.retention.top_n_dashboard" title="$t:admin.analytics.settings.retention.top_n_dashboard" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="settings.top_n_detail" min="3" max="100" class="input" aria-label="$t:admin.analytics.settings.retention.top_n_detail" title="$t:admin.analytics.settings.retention.top_n_detail" disabled="{{_computed.isReadOnly}}"/>
                 </div>
                 <span class="form-hint">$t:admin.analytics.settings.retention.top_n_hint</span>
               </div>

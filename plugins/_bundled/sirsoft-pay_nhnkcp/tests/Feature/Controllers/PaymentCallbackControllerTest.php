@@ -10,7 +10,10 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -1438,7 +1441,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      *
      * @return void 반환값 없음
      *
-     * @effects kcp_vbank_pc_issuance_with_account_data_succeeds
+     * @effects kcp_vbank_pc_issuance_with_account_data_succeeds, kcp_vbank_issue_marks_payment_waiting_deposit
      */
     public function test_vbank_pc_succeeds_on_kcp_v000_with_issuance_data(): void
     {
@@ -1478,7 +1481,56 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals('T1109260001455', $payment->vbank_number);
         $this->assertEquals('NHN KCP', $payment->vbank_holder);
         $this->assertNotNull($payment->vbank_due_at);
+        // KCP va_date 는 한국 시각이다 — 저장은 UTC(앱 시간대)로 환산해야 한다(20260516235959 KST = 14:59:59 UTC).
+        // 종전에는 한국 시각 숫자를 그대로 UTC 로 읽어, 화면에 기한이 9시간 늦게 보이고 만료 판정도 늦었다.
+        $this->assertSame('2026-05-16 14:59:59', $payment->vbank_due_at->copy()->utc()->format('Y-m-d H:i:s'));
         $this->assertNotNull($payment->vbank_issued_at);
+        // 발급이 끝난 가상계좌는 입금대기다 — KG·나이스와 같은 상태값. 결제대기(READY)로 남으면 결제창 닫힘
+        // 보고가 뒤늦게 와도 결제 전 주문으로 보여 발급된 주문이 취소될 수 있었다.
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame('nhnkcp', $payment->pg_provider);
+    }
+
+    /**
+     * 가상계좌 계좌가 발급되면 입금 전이라도 주문한 장바구니 항목을 정리한다 — 재고 차감이 입금 완료 시점이라
+     * 장바구니도 입금 때까지 남아, 주문을 마친 고객의 장바구니에 같은 상품이 그대로 보였다.
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_clears_ordered_cart_items(): void
+    {
+        $order = $this->createTestOrder(30000, [], PaymentMethodEnum::VBANK);
+        $this->mockPluginSettings();
+        $product = Product::factory()->create();
+        $option = ProductOption::factory()->create(['product_id' => $product->id]);
+        $cart = Cart::create([
+            'user_id' => User::factory()->create()->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], ['cart_items' => [['cart_id' => $cart->id, 'quantity' => 1]]]),
+        ]);
+
+        $this->mockApiService([
+            'res_cd' => 'V000',
+            'tno' => 'KCP_VBANK_CART',
+            'bankname' => 'NH농협',
+            'account' => 'T1109260001456',
+            'depositor' => 'NHN KCP',
+            'va_date' => '20260516235959',
+            'amount' => '30000',
+        ]);
+
+        $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            $this->makeCallbackParams($order->order_number, 30000, ['tno' => 'KCP_VBANK_CART', 'use_pay_method' => 'VCNT'])
+        )->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
     }
 
     /**
@@ -1624,6 +1676,37 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertNull($payment->vbank_name);
         $this->assertNull($payment->vbank_number);
         $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
+    }
+
+    /**
+     * 가상계좌 발급 정보가 없고 PG 문구도 없으면, 실패 주소의 안내 문구는 화면 언어를 따른다(한국어 고정 아님).
+     *
+     * @effects vbank_issuance_failure_message_follows_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issuance_failure_message_follows_locale(): void
+    {
+        $order = $this->createTestOrder(30000, [], PaymentMethodEnum::VBANK);
+        $this->mockPluginSettings();
+        // 모바일 가상계좌 세션 결속 nonce — 결속을 통과해야 발급 정보 판정까지 간다.
+        $nonce = bin2hex(random_bytes(16));
+        $order->payment->update(['payment_meta' => ['mobile_vbank_state' => ['nonce' => $nonce, 'issued_at' => now()->toIso8601String()]]]);
+
+        $response = $this->withHeader('Accept-Language', 'en')->post('/plugins/sirsoft-pay_nhnkcp/payment/callback', [
+            'res_cd' => '0000',
+            'res_msg' => '',
+            'ordr_idxx' => $order->order_number,
+            'good_mny' => 30000,
+            'tno' => 'KCP_VBANK_MOBILE_FAIL_EN',
+            'use_pay_method' => 'VCNT',
+            'param_opt_2' => $nonce,
+        ]);
+
+        $response->assertRedirect();
+        parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->assertSame('[vbank_issuance_incomplete] '.__('sirsoft-pay_nhnkcp::messages.errors.vbank_issuance_incomplete', [], 'en'), $query['message'] ?? null);
+        $this->assertStringNotContainsString('가상계좌', (string) ($query['message'] ?? ''));
     }
 
     /**

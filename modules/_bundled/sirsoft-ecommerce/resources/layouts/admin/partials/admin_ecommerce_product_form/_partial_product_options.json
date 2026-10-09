@@ -263,7 +263,8 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                "className": "flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                "aria-label": "$t:common.delete"
                                             },
                                             "children": [
                                                 {
@@ -942,6 +943,7 @@
                                                                                         "type": "number",
                                                                                         "className": "input w-16 text-right",
                                                                                         "value": "{{opt.mileage_value ?? 0}}",
+                                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                                     }
@@ -964,6 +966,7 @@
                                                                                     "props": {
                                                                                         "className": "select w-16",
                                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                                     },
                                                                                     "children": [
@@ -1043,7 +1046,8 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400"
+                                                                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400",
+                                                                                "aria-label": "$t:common.delete"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -1220,7 +1224,8 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "p-1 text-red-500 dark:text-red-400"
+                                                        "className": "p-1 text-red-500 dark:text-red-400",
+                                                        "aria-label": "$t:common.delete"
                                                     },
                                                     "children": [
                                                         {
@@ -1591,6 +1596,7 @@
                                                                         "type": "number",
                                                                         "className": "input flex-1",
                                                                         "value": "{{opt.mileage_value ?? 0}}",
+                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_value_label",
                                                                         "min": "0",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                     }
@@ -1613,6 +1619,7 @@
                                                                     "props": {
                                                                         "className": "select w-20",
                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type_label",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                     },
                                                                     "children": [
@@ -1902,7 +1909,8 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                            "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300",
+                                                            "aria-label": "$t:common.delete"
                                                         },
                                                         "children": [
                                                             {
@@ -2237,7 +2245,8 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6"
+                                                                    "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6",
+                                                                    "aria-label": "$t:common.delete"
                                                                 },
                                                                 "children": [
                                                                     {

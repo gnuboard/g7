@@ -72,5 +72,11 @@
   },
   "theme_select": "画面テーマ",
   "expand": "展開",
-  "collapse": "折りたたむ"
+  "collapse": "折りたたむ",
+  "quantity": "数量",
+  "quantity_decrease": "数量を減らす",
+  "quantity_increase": "数量を増やす",
+  "close_menu": "メニューを閉じる",
+  "page_transitioning": "ページ切り替え中",
+  "page_loading": "ページ読み込み中"
 }

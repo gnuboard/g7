@@ -44,7 +44,7 @@
                             "if": "{{!_local.isAddingRefundReason}}",
                             "actions": [
                                 {
-                                    "comment": "신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[현재 로케일]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 현재 로케일 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다.",
+                                    "comment": "신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -319,7 +319,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{(_local.refundReasonForm?.code ?? '').trim() && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.refundReasonForm?.code ?? '').trim().charAt(0)) && (_local.refundReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && !(_local.refundReasonForm?.code ?? '').trim().includes('__') && (_local.refundReasonForm?.code ?? '').trim().charAt((_local.refundReasonForm?.code ?? '').trim().length - 1) !== '_' && (_local.refundReasonForm?.code ?? '').trim().length <= 50 && !(_local.form?.claim?.refund_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.refundReasonForm?.code ?? '').trim().toLowerCase()) && (_local.refundReasonForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}",
+                                            "if": "{{(_local.refundReasonForm?.code ?? '').trim() && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.refundReasonForm?.code ?? '').trim().charAt(0)) && (_local.refundReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && !(_local.refundReasonForm?.code ?? '').trim().includes('__') && (_local.refundReasonForm?.code ?? '').trim().charAt((_local.refundReasonForm?.code ?? '').trim().length - 1) !== '_' && (_local.refundReasonForm?.code ?? '').trim().length <= 50 && !(_local.form?.claim?.refund_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.refundReasonForm?.code ?? '').trim().toLowerCase()) && (_local.refundReasonForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {
@@ -339,7 +339,7 @@
                                                     "target": "local",
                                                     "refundReasonFormErrors": {
                                                         "code": "{{!(_local.refundReasonForm?.code ?? '').trim() ? 'required' : (!('abcdefghijklmnopqrstuvwxyz'.includes((_local.refundReasonForm?.code ?? '').trim().charAt(0)) && (_local.refundReasonForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && !(_local.refundReasonForm?.code ?? '').trim().includes('__') && (_local.refundReasonForm?.code ?? '').trim().charAt((_local.refundReasonForm?.code ?? '').trim().length - 1) !== '_') ? 'format' : ((_local.refundReasonForm?.code ?? '').trim().length > 50 ? 'length' : ((_local.form?.claim?.refund_reasons ?? []).some(r => String(r.code ?? '').toLowerCase() === (_local.refundReasonForm?.code ?? '').trim().toLowerCase()) ? 'duplicate' : null)))}}",
-                                                        "name_ko": "{{!(_local.refundReasonForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"
+                                                        "name_ko": "{{!(_local.refundReasonForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"
                                                     }
                                                 }
                                             }
@@ -530,7 +530,7 @@
                                                         "value": "{{reason.name ?? {}}}",
                                                         "layout": "compact",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
-                                                        "error": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
+                                                        "error": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }

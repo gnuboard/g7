@@ -60,6 +60,7 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimItemCollectionState;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 교환 클레임 서비스
@@ -289,7 +290,7 @@ class OrderExchangeService
      *                          - charge_method: ClaimChargeMethodEnum|string|null
      *                          - requested_by: 신청자 ID (비회원이면 null)
      *                          - refund_priority: RefundPriorityEnum (선택)
-     *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, country_code, changed_by_user}
+     *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, city, state, country_code, changed_by_user}
      *                          - operator: bool (선택 — 운영자 직권 접수. 기간·신청가능상태 대신 물리 게이트, 판매자 귀책 사유 허용 — D5)
      *                          - requested_by_admin: 대리 접수 관리자 ID (선택 — 값이 있으면 판매자 접수, 고객 철회·수정 불가 — D8)
      *                          - shipping_fee_override: 운영자가 정한 클레임 배송비 (선택 — D7)
@@ -428,7 +429,8 @@ class OrderExchangeService
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다.
         if ($this->shouldAutoApproveZeroCharge($exchange)) {
             try {
-                return $this->transition($exchange, ExchangeStatusEnum::APPROVED);
+                // 누른 사람이 없는 전이다 — 고객 요청 안에서 돌아도 작업자는 시스템이다(S1-D16).
+                return SystemActor::run(fn () => $this->transition($exchange, ExchangeStatusEnum::APPROVED));
             } catch (OrderClaimException $e) {
                 // 접수는 이미 커밋됐고 접수 훅도 나갔다. 승인 시점의 재고 차감이 실패하면(접수와 거의
                 // 동시에 다른 주문이 마지막 재고를 가져간 경우) 자동 승인만 건너뛰고 '교환신청' 으로
@@ -1543,7 +1545,7 @@ class OrderExchangeService
      * 선교환의 헌 물건 반송 기한을 다시 계산합니다. (§3-5 — 선교환만)
      *
      * 기준은 행 재발송 도착 시각 중 가장 이른 값이고, 도착 기록이 없으면 행 재발송 송장 등록 시각 중
-     * 가장 이른 값이다(PO 예시 「도착한 지 14일」 우선). 기한이 다시 미래가 되면 지연 알림 기록을 비워
+     * 가장 이른 값이다(운영 예시 「도착한 지 14일」 우선). 기한이 다시 미래가 되면 지연 알림 기록을 비워
      * 다음 지연 때 다시 한 번 알린다. 선교환이 아니면 기한을 비운다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
@@ -1683,7 +1685,59 @@ class OrderExchangeService
             $updates['processed_by'] = $processedBy;
         }
 
+        // 결과 청구 방식이 「환불금에서 차감」 이면 신청 경로와 같은 비교를 한다(S4) — 교환 차액 환불이 왕복 배송비를
+        // 덮지 못하면 부족분이 어디에도 청구되지 않는다.
+        $finalMethod = array_key_exists('charge_method', $updates) ? $updates['charge_method'] : $exchange->charge_method;
+        if ($finalMethod === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND) {
+            $exchange->loadMissing(['order', 'exchangeOptions']);
+            $claimItems = [];
+            foreach ($exchange->exchangeOptions as $item) {
+                $claimItems[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->exchange_quantity];
+            }
+
+            $this->assertDeductCoversExchangeCharge(
+                $exchange,
+                $claimItems,
+                (float) ($updates['claim_shipping_fee'] ?? $exchange->claim_shipping_fee),
+                (float) ($updates['total_charge_amount'] ?? $exchange->total_charge_amount),
+            );
+        }
+
         return $this->exchangeRepository->update($exchange, $updates);
+    }
+
+    /**
+     * 「환불금에서 차감」 청구를 교환 차액 환불이 덮는지 판정합니다. (S4 — 금액 수정·완료 공용)
+     *
+     * 덮지 못하면 부족분이 어디에도 청구되지 않는다 — 운영자는 청구 방식을 추가결제로 바꾸고 결제를 받는다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서 (order 로드)
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $claimItems  판정 대상 상품 행과 수량
+     * @param  float  $fee  왕복 배송비
+     * @param  float  $total  총 청구액
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 차액 환불이 청구액보다 작은 경우
+     */
+    protected function assertDeductCoversExchangeCharge(OrderExchange $exchange, array $claimItems, float $fee, float $total): void
+    {
+        if ($total <= 0 || $claimItems === []) {
+            return;
+        }
+
+        $baseline = $this->adjustmentService->preview(
+            $exchange->order,
+            ExchangeAdjustment::fromShippingFee(
+                $claimItems,
+                new ClaimShippingFee(fee: (int) round($fee), claimType: ClaimTypeEnum::EXCHANGE),
+                (int) round((float) $exchange->additional_product_amount - (float) $exchange->refund_product_amount),
+            ),
+            $this->refundPriorityOf($exchange),
+        );
+
+        if ($baseline->getTotalRefundAmount() < $total) {
+            throw OrderClaimException::chargeDeductInsufficient();
+        }
     }
 
     /**
@@ -1744,7 +1798,7 @@ class OrderExchangeService
      *
      * 신청 경로의 `assertChargeMethodUsable` 과 같은 허용 목록(`claim.allowed_charge_methods`)을
      * 읽는다 — 목록 밖 방식이 금액 수정으로 들어오면 신청 화면이 감춘 방식이 우회로가 된다.
-     * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
+     * 차감 가능 여부(deduct) 판정은 여기서 하지 않고 금액 수정(`updateAmounts`)·완료가 `assertDeductCoversExchangeCharge()` 로 한다(S4).
      *
      * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
      * @return void 반환값 없음
@@ -1771,7 +1825,7 @@ class OrderExchangeService
      * 교환을 완료 처리합니다. (D26)
      *
      * 한 트랜잭션에서 ① 신청 상품 완료 전이 ② 원 주문옵션 EXCHANGED 전이 ③ 건별 원 옵션 재고 복구
-     * ④ 원 옵션 적립 회수(후속 옵션이 구매확정 시 다시 적립한다) ⑤ (선택) 차액 환불신청서 접수를
+     * ④ 원 옵션 적립 회수(후속 옵션은 원 행이 이미 받은 적립을 공제한 차액만 적립한다 — S1) ⑤ (선택) 차액 환불신청서 접수를
      * 수행한다.
      *
      * 반품 완료와 달리 주문 재계산·쿠폰 복원은 하지 않는다 — 후속 주문옵션이 원 행의 금액을 그대로
@@ -1849,6 +1903,20 @@ class OrderExchangeService
                 throw OrderClaimException::completionItemsInvalid();
             }
 
+            // 완료 시점의 차액 환불이 차감 청구액보다 작아졌으면(상품 일부 반려 뒤 재계산 등) 완료하지 않는다(S4) —
+            // 반품 완료와 같은 422. 환불신청서를 접수하지 않는 완료도 막는다(부족분이 어디에도 청구되지 않는다).
+            if ($exchange->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND) {
+                $exchange->loadMissing(['order', 'exchangeOptions']);
+                $living = [];
+                foreach ($exchange->exchangeOptions as $item) {
+                    if (in_array($item->option_status, [ExchangeStatusEnum::REJECTED, ExchangeStatusEnum::WITHDRAWN], true)) {
+                        continue;
+                    }
+                    $living[] = ['order_option_id' => (int) $item->order_option_id, 'cancel_quantity' => (int) $item->exchange_quantity];
+                }
+                $this->assertDeductCoversExchangeCharge($exchange, $living, (float) $exchange->claim_shipping_fee, (float) $exchange->total_charge_amount);
+            }
+
             $restoredAny = false;
 
             foreach ($targets as $item) {
@@ -1900,7 +1968,7 @@ class OrderExchangeService
                     }
 
                     // 원 옵션에 남은 적립 lot 을 회수한다(현재 정책은 회수하지 않는다 —
-                    // `cancelEarnForOption()`). 같은 구매의 적립은 후속 옵션이 구매확정될 때 다시 발생한다.
+                    // `cancelEarnForOption()`). 후속 옵션의 적립은 원 행이 이미 받은 적립을 공제하고 남은 차액만 생긴다(`UserMileageService::earnForOrderOption` — S1).
                     $this->mileageService->cancelEarnForOption($order, $exchangedOption->fresh() ?? $exchangedOption);
                 }
             }
@@ -2304,7 +2372,7 @@ class OrderExchangeService
 
         $snapshot = $base;
 
-        foreach (['recipient_name', 'phone', 'zipcode', 'address1', 'address2', 'country_code'] as $field) {
+        foreach (['recipient_name', 'phone', 'zipcode', 'address1', 'address2', 'city', 'state', 'country_code'] as $field) {
             if (array_key_exists($field, $input) && $input[$field] !== null && $input[$field] !== '') {
                 $snapshot[$field] = $field === 'country_code'
                     ? strtoupper(trim((string) $input[$field]))
@@ -2343,7 +2411,13 @@ class OrderExchangeService
         }
 
         foreach ($this->orderShippingAddressSnapshot($order) as $field => $value) {
-            if (($snapshot[$field] ?? null) !== $value) {
+            // 도시·주 칸이 생기기 전에 저장된 스냅샷에는 그 키가 없다 — 없는 칸은 비교하지 않는다.
+            // 비교하면 해외 주문의 예전 신청서가 손대지 않았는데도 모두 '배송지 다름' 이 된다.
+            if (! array_key_exists($field, $snapshot)) {
+                continue;
+            }
+
+            if ($snapshot[$field] !== $value) {
                 return true;
             }
         }
@@ -2354,8 +2428,11 @@ class OrderExchangeService
     /**
      * 주문 배송지를 재발송지 스냅샷 형태로 반환합니다.
      *
+     * 해외 주문은 국내 칸(우편번호·주소·상세주소)이 빈 문자열이라 해외 칸(우편번호·거리 주소 두 줄)으로
+     * 채우고, 도시·주는 `city`·`state` 로 따로 담는다. 국내 주문은 두 칸이 null 이다.
+     *
      * @param  Order  $order  주문
-     * @return array{recipient_name: string|null, phone: string|null, zipcode: string|null, address1: string|null, address2: string|null, country_code: string} 배송지
+     * @return array{recipient_name: string|null, phone: string|null, zipcode: string|null, address1: string|null, address2: string|null, city: string|null, state: string|null, country_code: string} 배송지
      */
     protected function orderShippingAddressSnapshot(Order $order): array
     {
@@ -2367,6 +2444,8 @@ class OrderExchangeService
             'zipcode' => $address?->zipcode ?: $address?->intl_postal_code,
             'address1' => $address?->address ?: $address?->address_line_1,
             'address2' => $address?->address_detail ?: $address?->address_line_2,
+            'city' => $address?->intl_city ?: null,
+            'state' => $address?->intl_state ?: null,
             'country_code' => ExchangeRedeliveryCountryUnchanged::orderShippingCountry($order),
         ];
     }
@@ -3345,7 +3424,19 @@ class OrderExchangeService
             return;
         }
 
+        // 배송비는 원 행에 남긴다 — 이 재발송은 고객이 낸 배송이 아니다. 금액째 복제하면 교환품 줄이
+        // 「유료배송 · 배송비」 로 보이고 구매자 「배송 현황」 에 같은 배송비가 한 줄 더 생긴다(S1-D11, 수량 분할 복제본과 같은 규칙 S3-D9).
         $this->orderShippingRepository->replicateForOrderOption($shipping, $successor->id, [
+            'base_shipping_amount' => 0,
+            'extra_shipping_amount' => 0,
+            'total_shipping_amount' => 0,
+            'shipping_discount_amount' => 0,
+            'return_shipping_amount' => 0,
+            'mc_base_shipping_amount' => null,
+            'mc_extra_shipping_amount' => null,
+            'mc_total_shipping_amount' => null,
+            'mc_shipping_discount_amount' => null,
+            'mc_return_shipping_amount' => null,
             'shipping_status' => ShippingStatusEnum::SHIPPED,
             'carrier_id' => $item->redelivery_carrier_id,
             'tracking_number' => $item->redelivery_tracking_number,
@@ -3355,6 +3446,10 @@ class OrderExchangeService
 
     /**
      * 후속 주문옵션과 그 배송 행을 배송완료로 옮깁니다. (재발송도착 · 발송중 완료)
+     *
+     * 후속 주문옵션은 `shipping` 으로 생겨 구매자가 발송중에 구매확정할 수 있다. 확정은 받았다는
+     * 뜻이므로 상태는 그대로 두고 배송 행만 도착으로 옮긴다 — 배송완료로 되돌리면 구매확정 → 배송완료
+     * 역전이를 전이 가드가 거절해 도착·완료 처리가 통째로 막힌다.
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
      * @return void 반환값 없음
@@ -3369,14 +3464,16 @@ class OrderExchangeService
             return;
         }
 
-        $this->orderOptionService->changeStatusWithQuantity(
-            $successor,
-            OrderStatusEnum::DELIVERED,
-            (int) $successor->quantity,
-            [],
-            restoreStockOnCancel: false,
-            mergeSiblings: false,
-        );
+        if ($successor->option_status !== OrderStatusEnum::CONFIRMED) {
+            $this->orderOptionService->changeStatusWithQuantity(
+                $successor,
+                OrderStatusEnum::DELIVERED,
+                (int) $successor->quantity,
+                [],
+                restoreStockOnCancel: false,
+                mergeSiblings: false,
+            );
+        }
 
         // 배송 행도 배송완료로 옮긴다 — 구매자 주문상세 「배송 현황」 카드는 배송 행을 읽으므로, 상품만 옮기면
         // 상품 줄은 배송완료인데 카드는 배송중으로 남았다(#599 후속 실주문 실측). 상태 변경이 송장을 싣지 않아
@@ -3783,7 +3880,8 @@ class OrderExchangeService
             'refund_bank_holder' => $exchange->refund_bank_holder,
             'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
             'refund_status' => RefundStatusEnum::REQUESTED,
-            'refund_method' => $this->refundExecutionService->determineRefundMethod($order),
+            // 돌려줄 현금이 없는 회원 주문은 결제수단과 무관하게 「마일리지」다(결함 4).
+            'refund_method' => $this->refundExecutionService->refundMethodForClaim($order),
             'reason_code' => $exchange->reason_code,
             'reason_detail' => $exchange->reason_detail,
             'fault_type' => $exchange->fault_type,
@@ -4120,7 +4218,13 @@ class OrderExchangeService
 
             $redelivery = null;
 
-            if (! empty($payload['redelivery_address']) && is_array($payload['redelivery_address'])) {
+            if (array_key_exists('redelivery_address', $payload) && $payload['redelivery_address'] === null) {
+                // 명시적 null = 바꿔 둔 재발송지를 버리고 원 배송지로 되돌린다(수정 화면의
+                // [원 배송지로 되돌리기]). 키가 없는 것("손대지 않음")과 구분해야 화면이 보여 주는
+                // 주소와 신청서에 남는 주소가 갈리지 않는다. 직전 스냅샷을 base 로 쓰지 않는다.
+                $redelivery = $this->buildRedeliveryAddressSnapshot($order, null);
+                $updates['redelivery_address_snapshot'] = $redelivery;
+            } elseif (! empty($payload['redelivery_address']) && is_array($payload['redelivery_address'])) {
                 $redelivery = $this->buildRedeliveryAddressSnapshot(
                     $order,
                     $payload['redelivery_address'],

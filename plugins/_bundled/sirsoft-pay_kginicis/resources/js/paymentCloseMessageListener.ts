@@ -5,6 +5,7 @@ import {
     removeKoreanPaymentForms,
 } from './paymentDomCleanup';
 import { buildGuestOwnershipHeaders } from './guestOrderToken';
+import { toApiClientPath } from './apiPath';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 const CLOSE_MESSAGE_SOURCE = PLUGIN_IDENTIFIER;
@@ -31,6 +32,51 @@ export interface StandardPaymentCloseReportContext {
     price: number;
     payment_method?: string;
     reported?: boolean;
+    /**
+     * 클레임 추가결제일 때만 — 결제창을 닫으면 돌아갈 신청서 상세(`?claim_payment=cancelled`).
+     * 서버가 `pg_payment_data.claim_cancel_return_url` 로 준 값이다. 있으면 `oid` 는 주문번호가
+     * 아니라 결제번호(CP…)라 주문 전용 닫힘 보고를 보내지 않는다.
+     */
+    claimCancelReturnUrl?: string;
+}
+
+/**
+ * 주소가 현재 문서와 같은 출처인지 판정합니다.
+ *
+ * 서버가 준 돌아갈 주소라도 이 사이트 밖으로는 보내지 않기 위한 확인이다(열린 이동 방지).
+ *
+ * @param url 주소 (절대·상대 모두)
+ * @returns 같은 출처면 true
+ */
+function isSameOriginUrl(url: string): boolean {
+    try {
+        return new URL(url, window.location.origin).origin === window.location.origin;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * 활성 결제가 클레임 추가결제면 신청서 상세로 돌아갑니다.
+ *
+ * 신청서 화면의 진행 표시는 결제창이 열린 동안 일부러 끄지 않는다 — 돌아온 화면이 신청서를
+ * 다시 읽어 상태를 맞춘다. 그래서 닫힘을 받고도 머물면 「결제 진행 중…」에 묶인다.
+ *
+ * @returns 이동했으면 true
+ */
+function returnToClaimDetailIfClaimPayment(): boolean {
+    const url = getActiveStandardPaymentCloseContext()?.claimCancelReturnUrl;
+    // 서버가 준 주소라도 이 사이트 밖으로는 보내지 않는다(같은 출처만 — 열린 이동 방지).
+    if (typeof url !== 'string' || url === '' || !isSameOriginUrl(url)) {
+        return false;
+    }
+
+    clearStandardPaymentCloseReportContext();
+    removeKoreanPaymentForms();
+    markStandardPaySdkForReload();
+    window.location.href = url;
+
+    return true;
 }
 
 function isPaymentCloseMessage(data: unknown): data is PaymentCloseMessage {
@@ -245,9 +291,9 @@ export async function reportStandardPaymentWindowClosed(
         }
 
         if (Object.keys(ownershipHeaders).length > 0) {
-            await apiClient.post(context.closeReportUrl, payload, { headers: ownershipHeaders });
+            await apiClient.post(toApiClientPath(context.closeReportUrl), payload, { headers: ownershipHeaders });
         } else {
-            await apiClient.post(context.closeReportUrl, payload);
+            await apiClient.post(toApiClientPath(context.closeReportUrl), payload);
         }
     } catch (error) {
         logger.warn('failed to report KG payment window close', { reason, error });
@@ -333,6 +379,10 @@ export function installPaymentCloseMessageListener(): void {
         }
 
         if (!isPaymentCloseMessage(event.data)) {
+            return;
+        }
+
+        if (returnToClaimDetailIfClaimPayment()) {
             return;
         }
 

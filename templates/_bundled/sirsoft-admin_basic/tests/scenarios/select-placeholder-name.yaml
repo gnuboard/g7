@@ -1,0 +1,21 @@
+feature: 선택 상자 안내 글자와 이름
+
+description: |
+  선택 상자(Select)가 placeholder 를 화면에 그리지 않아 값이 비면 빈칸만 보였고, 화면 낭독기는 이름 없는
+  「버튼」 으로 읽었다. 값이 비면 안내 글자를 흐리게 보이고 그 글자가 버튼 이름이 되게 한다. aria-label 은
+  바깥 상자가 아니라 버튼에 단다.
+
+  수정 이력: 이커머스 전수 실측 S5-D35 (2026-10-07) — 상품 등록 화면 브랜드 선택.
+
+axes:
+  case: [c01, c02, c03]
+
+effects:
+  - select_placeholder_visible
+  - select_trigger_named
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/SelectPlaceholderName.test.tsx
+
+validation:
+  browser_check: 상품 등록 화면 브랜드 선택 — 빈 값일 때 「브랜드를 선택하세요」(흐린 글자)·같은 이름의 버튼

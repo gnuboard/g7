@@ -2029,6 +2029,7 @@
                                                             ],
                                                             "props": {
                                                                 "className": "w-40 text-xs",
+                                                                "aria-label": "$t:sirsoft-message_bizppurio.template.form.button_link_type|index={{buttonsIdx + 1}}",
                                                                 "value": "{{buttonsItem.linkType ?? 'WL'}}",
                                                                 "options": "{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}"
                                                             }
@@ -2304,6 +2305,7 @@
                                                             ],
                                                             "props": {
                                                                 "className": "w-40 text-xs",
+                                                                "aria-label": "$t:sirsoft-message_bizppurio.template.form.quick_reply_link_type|index={{quickRepliesIdx + 1}}",
                                                                 "value": "{{quickRepliesItem.linkType ?? 'WL'}}",
                                                                 "options": "{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}"
                                                             }

@@ -42,6 +42,8 @@
       "hide": "Hide",
       "color": "Color",
       "position": "Position",
+      "title_position": "Title position",
+      "content_position": "Content position",
       "position_left": "Left",
       "position_center": "Center",
       "position_right": "Right",

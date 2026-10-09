@@ -147,6 +147,7 @@ class CartService
         // 응답 items 에는 남기되(2-f 플래그로 구분) 합계 계산에서만 제외한다.
         $itemsForCalculation = $itemsForCalculation->filter(
             fn ($cart) => $cart->product && $cart->product->isPurchasable()
+                && (! $cart->productOption || $cart->productOption->is_active)
         );
 
         // 비정상 항목 제외 후 계산 대상이 없으면 빈 계산 결과 반환
@@ -728,7 +729,8 @@ class CartService
         foreach ($topLevelOptions as $orderOption) {
             $rawName = $orderOption->product_name;
             if (is_array($rawName)) {
-                $productName = (string) ($rawName[$locale] ?? $rawName['ko'] ?? $rawName['en'] ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+                // 보는 언어 → 앱 폴백 언어 → 남은 아무 언어 순(ko·en 고정 순서가 아니다)
+                $productName = (string) ($rawName[$locale] ?? $rawName[config('app.fallback_locale')] ?? collect($rawName)->first(fn ($name) => is_string($name) && $name !== '') ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             } else {
                 $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             }
@@ -841,7 +843,6 @@ class CartService
      * @param  int  $productOptionId  상품 옵션 ID
      * @param  int  $requestedQuantity  요청 수량
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
-     * @return void
      * @return void 반환값 없음
      *
      * @throws \Exception 재고 초과 시 예외
@@ -880,15 +881,14 @@ class CartService
     /**
      * 상품 판매 가능 여부를 검증합니다. (담기/수량변경/옵션변경 시)
      *
-     * 판매중지/품절/출시예정/전시중지(hidden) 상품은 담을 수 없습니다.
+     * 판매중지/품절/출시예정/전시중지(hidden) 상품과, 상품은 판매 중이어도 판매 중지(비활성)된 옵션은 담을 수 없습니다.
      * 재고 검증보다 먼저 호출하여 판매상태 메시지를 우선 노출합니다.
      *
      * @param  int  $productOptionId  상품 옵션 ID
-     * @return void
      * @return void 반환값 없음
      *
-     * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
-     * @throws \Exception 옵션/상품을 찾을 수 없는 경우
+     * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품이거나 옵션이 판매 중지인 경우
+     * @throws CartOperationException 옵션/상품을 찾을 수 없는 경우(option_not_found)
      */
     protected function validatePurchasable(int $productOptionId): void
     {
@@ -898,7 +898,8 @@ class CartService
             throw new CartOperationException('option_not_found');
         }
 
-        if (! $option->product->isPurchasable()) {
+        // 상품이 판매 중이어도 옵션이 판매 중지(비활성)면 살 수 없다 — 옵션 id 를 직접 지정한 담기·옵션 변경도 막는다.
+        if (! $option->product->isPurchasable() || ! $option->is_active) {
             throw CartUnavailableException::fromItems([[
                 'product_id' => $option->product->id,
                 'product_option_id' => $productOptionId,
@@ -916,7 +917,6 @@ class CartService
      *
      * @param  int  $productId  상품 ID
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
-     * @return void
      * @return void 반환값 없음
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
@@ -958,7 +958,6 @@ class CartService
      *
      * @param  Cart  $cart  현재 장바구니 아이템
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
-     * @return void
      * @return void 반환값 없음
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
@@ -1045,7 +1044,6 @@ class CartService
      * 필드 규칙(`max:`)은 이번 요청분만 보므로, 기존 수량과 합산되는 경로는 여기서 판정합니다.
      *
      * @param  int  $totalQuantity  합산 후 라인 수량
-     * @return void
      * @return void 반환값 없음
      *
      * @throws CartOperationException 상한 초과 시

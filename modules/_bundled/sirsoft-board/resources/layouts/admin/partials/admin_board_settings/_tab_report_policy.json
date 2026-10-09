@@ -288,6 +288,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "name": "report_policy.rejection_limit_count",
+                                                                        "aria-label": "$t:sirsoft-board.admin.settings.fields.rejection_limit_count",
                                                                         "min": "{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}",
                                                                         "max": "{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}",
                                                                         "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}",
@@ -329,6 +330,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "name": "report_policy.rejection_limit_days",
+                                                                        "aria-label": "$t:sirsoft-board.admin.settings.fields.rejection_limit_days",
                                                                         "min": "{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}",
                                                                         "max": "{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}",
                                                                         "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}",

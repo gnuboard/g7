@@ -560,10 +560,35 @@
                     ]
                 },
                 {
+                    "comment": "배송정책 조회 권한이 없어 선택지가 비었을 때의 안내. 정책을 비운 채 저장해도 거절되지 않고 주문 계산이 기본 배송정책으로 폴백하므로 안내도 그렇게 말한다. 여기서는 「정책 만들기」 를 권하지 않는다(만들 권한도 없을 가능성이 크고 정책은 실재한다)",
+                    "id": "shipping_policy_forbidden_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{shipping_policies?.data?.unavailable === true}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.shipping_policies"
+                        }
+                    ]
+                },
+                {
                     "id": "shipping_empty_state",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!_local.form.shipping_policy_id && (_computed.shippingPolicyOptions ?? []).length === 0}}",
+                    "if": "{{shipping_policies?.data?.unavailable !== true && !_local.form.shipping_policy_id && (_computed.shippingPolicyOptions ?? []).length === 0}}",
                     "props": {
                         "className": "text-center py-8"
                     },

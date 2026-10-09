@@ -71,7 +71,8 @@
       </div>
       <div data-if="{{!!claim.data?.claim?.redelivery_address_snapshot}}" class="space-y-0.5">
         <p class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.redelivery_address_snapshot?.recipient_name ?? ''}} / {{claim.data?.claim?.redelivery_address_snapshot?.phone ?? ''}}</p>
-        <p class="text-sm text-gray-600 dark:text-gray-400">({{claim.data?.claim?.redelivery_address_snapshot?.zipcode ?? ''}}) {{claim.data?.claim?.redelivery_address_snapshot?.address1 ?? ''}} {{claim.data?.claim?.redelivery_address_snapshot?.address2 ?? ''}}</p>
+        <!-- 해외 재발송지는 도시·주를 따로 담는다 — 뒤에 붙여야 주소가 완결된다(S2-D8). 국내 스냅샷은 두 칸이 비어 종전 모양 그대로다. -->
+        <p class="text-sm text-gray-600 dark:text-gray-400">({{claim.data?.claim?.redelivery_address_snapshot?.zipcode ?? ''}}) {{[claim.data?.claim?.redelivery_address_snapshot?.address1, claim.data?.claim?.redelivery_address_snapshot?.address2].filter(Boolean).join(' ') + [claim.data?.claim?.redelivery_address_snapshot?.city, claim.data?.claim?.redelivery_address_snapshot?.state].filter(Boolean).map(part => ', ' + part).join('')}}</p>
       </div>
       <p data-if="{{(claim.data?.claim?.tracking_groups?.redelivery ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.tracking_pending</p>
       <div data-each="group in {{claim.data?.claim?.tracking_groups?.redelivery ?? []}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-1.5">

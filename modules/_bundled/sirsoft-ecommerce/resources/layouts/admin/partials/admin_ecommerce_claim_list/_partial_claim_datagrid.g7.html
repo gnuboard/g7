@@ -51,6 +51,19 @@
               <badge data-type="composite" data-if="{{row.is_advance_exchange === true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge</badge>
               <badge data-type="composite" data-if="{{row.is_collection_overdue === true}}" variant="danger" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}</badge>
               <badge data-type="composite" data-if="{{row.has_pending_refund === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge</badge>
+              <!-- 환불 진행 상태(보완 5 · Q7) — 교환·반품에서 생긴 최신 환불신청서의 상태. 누르면 그 환불신청서 상세로 간다(번호 클릭과 같은 목록 조건 승계). -->
+              <a data-if="{{!!row.refund_progress}}" href="#" class="inline-flex items-center gap-1 cursor-pointer">
+                <on type="click">
+                  <!-- 최신 환불신청서 상세로 이동 — 목록 조건을 이어 받는다 -->
+                  <navigate path="/admin/ecommerce/claims/{{row.refund_progress.claim_number}}" :mergeQuery="true"><query/></navigate>
+                </on>
+                <badge data-type="composite" variant="{{row.refund_progress.status_variant ?? 'default'}}" icon="{{row.refund_progress.status_icon ?? ''}}" size="sm">{{row.refund_progress.status_label ?? ''}}</badge>
+                <span data-if="{{(row.refund_progress.count ?? 0) > 1}}" class="text-xs text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.column.refund_progress_more|count={{(row.refund_progress.count ?? 1) - 1}}</span>
+              </a>
+              <!-- 재활성 뱃지(Q29) — 이 취소로 빠진 상품을 운영자가 다시 판매 상태로 되살렸다. 판정은 서버가 취소신청서에 기록한 값(reactivated_at)만 읽는다 — 주문 상태로 다시 판정하면 일부만 되살린 주문에서 관계없는 취소까지 표시된다. -->
+              <badge data-type="composite" data-if="{{row.reactivated_at_formatted != null &amp;&amp; row.is_partially_reactivated !== true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{row.reactivated_at_formatted}}</badge>
+              <!-- 일부만 되살린 취소 — 나머지 상품은 여전히 취소 상태다. -->
+              <badge data-type="composite" data-if="{{row.reactivated_at_formatted != null &amp;&amp; row.is_partially_reactivated === true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{row.reactivated_at_formatted}}</badge>
             </div>
           </cell>
         </column>

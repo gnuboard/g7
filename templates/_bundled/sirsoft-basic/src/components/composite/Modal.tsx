@@ -9,7 +9,7 @@ const t = (key: string, params?: Record<string, string | number>) =>
 
 export interface ModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (event?: Event | React.SyntheticEvent) => void;
   title?: string;
   /**
    * 타이틀 옆에 표시할 아이콘 이름 (Font Awesome)
@@ -144,7 +144,9 @@ export const Modal: React.FC<ModalProps> = ({
       // admin_basic 대칭). 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
       if (modalRef.current?.querySelector('[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])')) return;
       if (closeOnEscapeRef.current) {
-        onCloseRef.current();
+        // 닫기 처리기가 템플릿 엔진 액션 처리기일 수 있다 — 엔진은 이벤트를 받는다고 보고 event.type 을
+        // 읽으므로 닫기(X)·바깥 클릭처럼 원본 이벤트를 넘긴다(빈 인자면 TypeError 로 창이 닫히지 않았다).
+        onCloseRef.current(event);
       }
     };
 

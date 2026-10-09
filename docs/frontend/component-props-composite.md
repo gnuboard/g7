@@ -388,7 +388,7 @@
 | `inputType` | string | `'text'` | 입력 타입: `'text'` \| `'textarea'` |
 | `layout` | string | `'inline'` | 레이아웃: `'inline'` \| `'tabs'` \| `'compact'` |
 | `availableLocales` | LocaleOption[] | - | 사용 가능한 언어 목록 |
-| `defaultLocale` | string | - | 기본 언어 코드 |
+| `defaultLocale` | string | - | 기본(필수 `*`) 언어 코드. 생략하면 사이트 기본 언어(`_global.appConfig.siteLocale`) — 보는 사람의 언어가 아니다(서버 필수 규칙과 같은 값) |
 | `placeholder` | string | - | 입력창 placeholder |
 | `required` | boolean | `false` | 필수 입력 여부 |
 | `disabled` | boolean | `false` | 비활성화 |

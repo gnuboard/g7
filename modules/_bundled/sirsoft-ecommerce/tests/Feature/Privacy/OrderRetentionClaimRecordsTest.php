@@ -208,6 +208,15 @@ class OrderRetentionClaimRecordsTest extends ModuleTestCase
                 'address1' => '서울특별시 강남구 테헤란로 1', 'address2' => '101호', 'country_code' => 'KR', 'changed_by_user' => true,
             ],
         ]);
+        // 해외 재발송지의 도시·주는 주문 배송지의 intl_city·intl_state 처럼 지운다(S2-D8).
+        $international = $this->exchange($order, ExchangeStatusEnum::COMPLETED, [
+            'completed_at' => now()->subYears(6),
+            'redelivery_address_snapshot' => [
+                'recipient_name' => 'Jane Doe', 'phone' => '+1-212-555-0101', 'zipcode' => '10118',
+                'address1' => '350 5th Ave', 'address2' => 'Suite 2', 'city' => 'New York', 'state' => 'NY',
+                'country_code' => 'US', 'changed_by_user' => false,
+            ],
+        ]);
         $return = $this->returnClaim($order, ReturnStatusEnum::COMPLETED, $bank + $notes + ['completed_at' => now()->subYears(6)]);
         $refundId = $this->refund($order, 'completed', ['refunded_at' => now()->subYears(6), 'reason_detail' => '계좌 010-3333-4444 확인']);
         $image = $this->claimImage(ClaimTypeEnum::EXCHANGE->value, $exchange->id);
@@ -229,6 +238,11 @@ class OrderRetentionClaimRecordsTest extends ModuleTestCase
             'recipient_name' => '***', 'phone' => '***', 'zipcode' => '***',
             'address1' => '***', 'address2' => null, 'country_code' => 'KR', 'changed_by_user' => true,
         ], OrderExchange::find($exchange->id)->redelivery_address_snapshot, '재배송지는 모양을 유지한 채 주문 배송지와 같은 기준으로 가린다');
+
+        $masked = OrderExchange::find($international->id)->redelivery_address_snapshot;
+        $this->assertNull($masked['city']);
+        $this->assertNull($masked['state']);
+        $this->assertSame('***', $masked['address1']);
 
         $refund = DB::table('ecommerce_order_refunds')->find($refundId);
         $this->assertNull($refund->refund_bank_holder);
@@ -365,5 +379,33 @@ class OrderRetentionClaimRecordsTest extends ModuleTestCase
 
         $this->assertSame(3, $handler->process(false)['count']);
         $this->assertSame(0, $handler->preview(), '처리 뒤에는 남은 대상이 없다');
+    }
+
+    /**
+     * 전량 반품으로 끝난 주문의 종결일은 마지막 반품 완료 시각이다 — 주문이 나중에 수정돼도 밀리지 않는다.
+     *
+     * 수정 전 실패 이유: 대상 명단이 종결일의 바탕을 「구매확정 → 취소 → 마지막 수정 시각」으로 잡아, 반품으로
+     * 끝난 주문은 반품 완료 뒤 운영자 메모 같은 수정만 있어도 그 수정 시각이 종결일로 보였다. 대상 판정은 반품
+     * 완료 시각으로 하므로, 6년 전에 끝나 처리 대상인 주문이 「작년에 종결」로 표시됐다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario order_state=returned, toggle=on, mode=anonymize
+     *
+     * @effects completed_claims_extend_closure
+     */
+    #[Test]
+    public function returned_order_closure_date_is_the_return_completion_not_a_later_edit(): void
+    {
+        $this->enableRetention('anonymize');
+
+        $order = Order::factory()->create(['order_status' => 'returned', 'confirmed_at' => null, 'cancelled_at' => null]);
+        $return = $this->returnClaim($order, ReturnStatusEnum::COMPLETED, ['completed_at' => now()->subYears(6)]);
+        DB::table('ecommerce_orders')->where('id', $order->id)->update(['updated_at' => now()->subYear()]);
+
+        $target = collect(app(OrderRetentionHandler::class)->targets(1, 50)->items())->firstWhere('id', $order->id);
+
+        $this->assertNotNull($target, '반품 완료 6년 지난 주문은 대상이다');
+        $this->assertSame($return->completed_at->toDateTimeString(), $target->date->toDateTimeString());
     }
 }

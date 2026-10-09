@@ -65,6 +65,7 @@
     "search_member": "この会員で検索",
     "view_admin": "管理者情報",
     "none": "-",
+    "deleted_member": "削除された会員",
     "expired": "全額失効",
     "partial_expired": "一部失効",
     "expired_amount": "{{amount}} 失効",

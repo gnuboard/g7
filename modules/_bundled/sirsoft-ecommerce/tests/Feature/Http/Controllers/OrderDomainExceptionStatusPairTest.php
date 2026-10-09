@@ -46,6 +46,11 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
 {
     protected User $user;
 
+    /**
+     * 회원과 성공으로 고정한 PG 환불 훅을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +68,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
 
     /**
      * 취소 가능한 결제완료 주문(옵션 1개)을 만든다.
+     *
+     * @return Order 취소 가능한 주문
      */
     private function makeCancellableOrder(): Order
     {
@@ -91,6 +98,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
 
     /**
      * 사용자 선택 가능한 환불 사유 코드를 반환한다.
+     *
+     * @return string 환불 사유 코드
      */
     private function refundReasonCode(): string
     {
@@ -111,9 +120,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     // ------------------------------------------------------------------
 
     /**
+     * 회원 주문 취소의 도메인 예외는 422 로 응답한다.
+     *
      * @scenario endpoint=cancel, error_class=domain
      *
      * @effects order_cancel_domain_exception_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_user_cancel_domain_exception_returns_422(): void
     {
@@ -134,9 +147,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     }
 
     /**
+     * 회원 주문 취소의 인프라 예외는 500 으로 응답한다.
+     *
      * @scenario endpoint=cancel, error_class=infrastructure
      *
      * @effects order_cancel_infrastructure_exception_returns_500_not_422
+     *
+     * @return void 반환값 없음
      */
     public function test_user_cancel_infrastructure_exception_returns_500(): void
     {
@@ -162,9 +179,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     // ------------------------------------------------------------------
 
     /**
+     * 회원 구매확정의 인프라 예외는 500 으로 응답한다.
+     *
      * @scenario endpoint=confirm_option, error_class=infrastructure
      *
      * @effects order_confirm_option_infrastructure_exception_returns_500_not_422
+     *
+     * @return void 반환값 없음
      */
     public function test_user_confirm_option_infrastructure_exception_returns_500(): void
     {
@@ -193,9 +214,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     // ------------------------------------------------------------------
 
     /**
+     * 회원 재주문의 도메인 예외는 422 로 응답한다.
+     *
      * @scenario endpoint=reorder, error_class=domain
      *
      * @effects order_reorder_domain_exception_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_user_reorder_domain_exception_returns_422(): void
     {
@@ -215,9 +240,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     }
 
     /**
+     * 회원 재주문의 인프라 예외는 500 으로 응답한다.
+     *
      * @scenario endpoint=reorder, error_class=infrastructure
      *
      * @effects order_reorder_infrastructure_exception_returns_500_not_422
+     *
+     * @return void 반환값 없음
      */
     public function test_user_reorder_infrastructure_exception_returns_500(): void
     {
@@ -243,6 +272,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
 
     /**
      * 다운로드 대상 쿠폰 1건을 만든다 (발급 로직은 mock 이 대체하므로 존재만 하면 된다).
+     *
+     * @return Coupon 내려받을 수 있는 쿠폰
      */
     private function makeDownloadableCoupon(): Coupon
     {
@@ -270,6 +301,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
      * @scenario endpoint=coupon_download, error_class=domain
      *
      * @effects coupon_download_domain_exception_returns_400_with_reason_key
+     *
+     * @return void 반환값 없음
      */
     public function test_user_coupon_download_domain_exception_returns_400(): void
     {
@@ -294,9 +327,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     }
 
     /**
+     * 쿠폰 내려받기의 인프라 예외는 500 으로 응답한다.
+     *
      * @scenario endpoint=coupon_download, error_class=infrastructure
      *
      * @effects coupon_download_infrastructure_exception_returns_500_not_400
+     *
+     * @return void 반환값 없음
      */
     public function test_user_coupon_download_infrastructure_exception_returns_500(): void
     {
@@ -322,6 +359,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
 
     /**
      * 입금확인 대상(무통장·미결제) 주문을 만든다.
+     *
+     * @return Order 입금 대기 주문
      */
     private function makeDepositPendingOrder(): Order
     {
@@ -348,9 +387,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     }
 
     /**
+     * 관리자 입금 확인의 도메인 예외는 422 로 응답한다.
+     *
      * @scenario endpoint=confirm_deposit, error_class=domain
      *
      * @effects order_confirm_deposit_domain_exception_returns_422
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_confirm_deposit_domain_exception_returns_422(): void
     {
@@ -358,6 +401,8 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
         $order = $this->makeDepositPendingOrder();
 
         $this->mock(OrderProcessingService::class, function ($mock) {
+            // 컨트롤러는 처리 전에 응답 갈래를 먼저 묻는다(문자열 반환) — 기본 null 이면 형식 오류로 500 이 된다.
+            $mock->shouldReceive('resolveManualDepositOutcome')->andReturn('complete');
             $mock->shouldReceive('confirmManualDeposit')
                 ->andThrow(new OrderProcessingException('전이 불가 상태'));
             $mock->shouldReceive()->andReturnNull();
@@ -372,9 +417,13 @@ class OrderDomainExceptionStatusPairTest extends ModuleTestCase
     }
 
     /**
+     * 관리자 입금 확인의 인프라 예외는 500 으로 응답한다.
+     *
      * @scenario endpoint=confirm_deposit, error_class=infrastructure
      *
      * @effects order_confirm_deposit_infrastructure_exception_returns_500_not_422
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_confirm_deposit_infrastructure_exception_returns_500(): void
     {

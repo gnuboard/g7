@@ -268,8 +268,12 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
             continue;
         }
 
-        $scheme = strtolower((string) parse_url($urlValue, PHP_URL_SCHEME));
-        if (! filter_var($urlValue, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
+        // FILTER_VALIDATE_URL 은 호스트명의 밑줄(예: g7_3.dev)을 거부하므로 쓰지 않는다 —
+        // 로컬 개발 도메인에 흔한 형태라 스킴·호스트 존재와 공백 부재만 확인한다.
+        $parts = parse_url($urlValue);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = (string) ($parts['host'] ?? '');
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || preg_match('/\s/', $urlValue)) {
             $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
         }
     }

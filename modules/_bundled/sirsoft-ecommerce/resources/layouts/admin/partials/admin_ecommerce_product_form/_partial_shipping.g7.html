@@ -98,7 +98,12 @@
           </div>
         </div>
       </div>
-      <div data-ref="shipping_empty_state" data-if="{{!_local.form.shipping_policy_id &amp;&amp; (_computed.shippingPolicyOptions ?? []).length === 0}}" class="text-center py-8">
+      <!-- 배송정책 조회 권한이 없어 선택지가 비었을 때의 안내. 정책을 비운 채 저장해도 거절되지 않고 주문 계산이 기본 배송정책으로 폴백하므로 안내도 그렇게 말한다. 여기서는 「정책 만들기」 를 권하지 않는다(만들 권한도 없을 가능성이 크고 정책은 실재한다) -->
+      <div data-ref="shipping_policy_forbidden_notice" data-if="{{shipping_policies?.data?.unavailable === true}}" class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+        <icon name="circle-exclamation" class="text-base"/>
+        <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.shipping_policies</span>
+      </div>
+      <div data-ref="shipping_empty_state" data-if="{{shipping_policies?.data?.unavailable !== true &amp;&amp; !_local.form.shipping_policy_id &amp;&amp; (_computed.shippingPolicyOptions ?? []).length === 0}}" class="text-center py-8">
         <icon name="truck" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
         <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.shipping.empty_message</p>
         <button type="button" class="mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600">

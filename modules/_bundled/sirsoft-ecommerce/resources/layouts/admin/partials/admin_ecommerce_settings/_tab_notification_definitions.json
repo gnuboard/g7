@@ -315,7 +315,9 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+                                                        "aria-label": "{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}",
+                                                        "aria-expanded": "{{(_local.expandedNotifications ?? {})[def.id] ? 'true' : 'false'}}"
                                                     },
                                                     "children": [
                                                         {

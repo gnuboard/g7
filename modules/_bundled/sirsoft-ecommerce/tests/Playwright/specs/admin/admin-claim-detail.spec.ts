@@ -849,4 +849,79 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await expect(page.getByRole('dialog').filter({ has: page.locator('#ciq_005_confirm') })).toHaveCount(0);
     expect(patched).toEqual([]);
   });
+
+  /**
+   * 확인 창의 계좌 입력 칸은 **지금 입력한 현금액**으로 선다 — 실행 게이트가 본문 금액으로 계좌를 요구하기 때문이다.
+   * 저장된 현금으로 판정하면 저장값과 입력값이 다를 때 창과 서버가 어긋난다: 현금 0원 신청서에 현금을 넣고 계좌 환불로
+   * 열면 칸·동의가 없는 채 422 가 나고, 반대로 입력을 0 으로 비워도 칸·잠금이 남는다.
+   *
+   * 실행은 하지 않는다 — 열림과 칸·버튼 상태까지만 본다.
+   */
+  // @scenario payment=vbank_deposited, stored_account=none
+  // @effects refund_modal_account_rows_follow_selected_method
+  test('확인 창 계좌 칸은 저장값이 아니라 지금 입력한 현금액으로 선다', async ({ page, request, claimsManageToken }) => {
+    test.setTimeout(180_000);
+    const headers = { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' };
+
+    // 계좌가 아직 없고 계좌 환불이 계좌를 받아야 하는(현금이 있다면) 승인 신청서를 찾는다.
+    const list = await request.get('/api/modules/sirsoft-ecommerce/admin/claims?type=refund&statuses[]=approved&per_page=50', { headers });
+    expect(list.status()).toBe(200);
+    let claimNumber: string | null = null;
+    for (const row of (await list.json())?.data?.data ?? []) {
+      const detail = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(row.claim_number)}`, { headers });
+      if (!detail.ok()) continue;
+      const judgement = (await detail.json())?.data?.claim?.refund_account_by_method?.bank;
+      if (judgement?.required_if_cash === true) {
+        claimNumber = row.claim_number;
+        break;
+      }
+    }
+    test.skip(claimNumber === null, '계좌가 없는 승인 환불신청서가 없다 — 계좌 칸이 설 대상이 없다');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claimNumber!));
+    await waitForDetail(page);
+
+    const executeButton = page.locator('#cre_014_execute_button');
+    test.skip(await executeButton.isDisabled(), '실행 권한·상태가 없어 확인 창을 열 수 없다');
+
+    let executed = false;
+    page.on('request', (req) => {
+      if (req.url().includes('/admin/refunds/') && req.url().endsWith('/execute')) executed = true;
+    });
+
+    const openWith = async (cash: string) => {
+      const input = page.locator('#cre_008_pg_amount');
+      // 상세 응답이 화면 초기값(저장 금액)을 채운 뒤에 입력한다 — 먼저 적으면 늦게 온 초기값이 입력을 덮는다.
+      await expect(input).not.toHaveValue('', { timeout: 15_000 });
+      await page.waitForTimeout(1_000);
+      // 입력칸은 change(포커스 이탈)에 화면 상태로 옮겨진다 — fill 만으로는 확인 창이 이전 값을 받는다.
+      await input.fill(cash);
+      await input.press('Tab');
+      const bank = page.locator('#cre_010_refund_method input[value=bank]');
+      await bank.check({ force: true });
+      await bank.dispatchEvent('change');
+      await expect(input, '입력한 현금액이 화면 상태에 남지 않았다').toHaveValue(cash);
+      await executeButton.click();
+      await expect(page.locator('#crm_005_total')).toBeVisible({ timeout: 15_000 });
+    };
+    const close = async () => {
+      await page.locator('#crm_007_cancel').click();
+      await expect(page.locator('#crm_005_total')).toHaveCount(0);
+    };
+
+    // 입력 현금 0 — 계좌로 나갈 돈이 없으니 칸·잠금이 서지 않는다(저장 현금이 있어도).
+    await openWith('0');
+    await expect(page.locator('#crm_009_bank_code'), '입력 현금이 0 인데 계좌 칸이 섰다 — 저장값으로 판정하고 있다').toHaveCount(0);
+    await expect(page.locator('#crm_008_confirm')).toBeEnabled();
+    await close();
+
+    // 입력 현금 5,000 — 계좌 환불은 계좌를 받아야 하므로 칸이 서고 확인이 잠긴다.
+    await openWith('5000');
+    await expect(page.locator('#crm_009_bank_code'), '현금을 입력한 계좌 환불인데 계좌 칸이 없다').toBeVisible();
+    await expect(page.locator('#crm_008_confirm')).toBeDisabled();
+    await close();
+
+    expect(executed, '확인 창을 거치지 않고 실행했다').toBe(false);
+  });
 });

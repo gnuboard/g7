@@ -315,6 +315,38 @@ describe('requestPaymentHandler — PC closeUrl', () => {
                 '?selectedPaymentMethod=kginicis_naverpay',
         );
     });
+
+    /**
+     * 가상계좌 계좌 만료 시각은 주문의 입금 기한(쇼핑몰 자동취소 기한)이다 — 넘기지 않으면 KG 가 자기
+     * 기본 기한으로 계좌를 열고 콜백이 그 값으로 주문 기한을 덮어쓴다.
+     *
+     * @scenario surface=pc_stdpay, due=present
+     * @effects pc_acceptmethod_carries_order_vbank_due
+     */
+    it('PC 가상계좌는 주문 입금 기한을 acceptmethod vbank(YYYYMMDDhhmm) 로 넘긴다', async () => {
+        await requestPaymentHandler({
+            params: {
+                pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank', vbank_due_at: '2026-10-10T13:39:23+09:00' },
+            },
+        });
+
+        const fields = getLastPaymentFormFields();
+        expect(fields.acceptmethod).toBe('centerCd(Y):vbank(202610101339)');
+    });
+
+    /**
+     * @scenario surface=pc_stdpay, due=absent
+     * @effects missing_due_or_other_method_sends_nothing
+     */
+    it('PC 결제는 입금 기한이 없거나 가상계좌가 아니면 vbank 토큰을 붙이지 않는다', async () => {
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' } } });
+        expect(getLastPaymentFormFields().acceptmethod).not.toContain('vbank(');
+
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card', vbank_due_at: '2026-10-10T13:39:23+09:00' } },
+        });
+        expect(getLastPaymentFormFields().acceptmethod).not.toContain('vbank(');
+    });
 });
 
 /**
@@ -872,6 +904,35 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
         expect(fields.P_NOTI_URL).toBe(
             `${SITE_ORIGIN}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
         );
+    });
+
+    /**
+     * @scenario surface=mobile, due=present
+     * @effects mobile_sends_vbank_dt_and_tm
+     */
+    it('모바일 가상계좌는 주문 입금 기한을 P_VBANK_DT·P_VBANK_TM 으로 넘긴다', async () => {
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank', vbank_due_at: '2026-10-10T13:39:23+09:00' } },
+        });
+        const fields = getLastSubmittedFormFields();
+        expect(fields.P_VBANK_DT).toBe('20261010');
+        expect(fields.P_VBANK_TM).toBe('1339');
+    });
+
+    /**
+     * @scenario surface=mobile, due=absent
+     * @effects missing_due_or_other_method_sends_nothing
+     */
+    it('모바일 결제는 입금 기한이 없거나 가상계좌가 아니면 P_VBANK_DT 를 보내지 않는다', async () => {
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'vbank' } } });
+        expect(getLastSubmittedFormFields().P_VBANK_DT).toBeUndefined();
+
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card', vbank_due_at: '2026-10-10T13:39:23+09:00' } },
+        });
+        const fields = getLastSubmittedFormFields();
+        expect(fields.P_VBANK_DT).toBeUndefined();
+        expect(fields.P_VBANK_TM).toBeUndefined();
     });
 
     // @scenario flow=mobile

@@ -1,0 +1,174 @@
+{
+    "comment": "쇼핑몰 설정 — 저장하지 않은 변경이 있을 때 탭을 옮기기 전에 묻는 창. 탭 전환은 같은 화면으로의\n  재진입이라 설정을 다시 받아 폼을 덮으므로, 옮기면 입력이 사라진다는 것을 먼저 알린다. 이 조각은\n  묻기만 하고, [이동] 을 고르면 탭 줄의 「변경 없음」 갈래와 같은 정리를 부모 폼에 하고 옮긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "저장하지 않은 변경이 있을 때 탭 이동 확인 모달"
+    },
+    "id": "unsaved_tab_change_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_change.title",
+        "size": "md"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_change.message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "unsaved_tab_change_stay",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "머무르기 — 가려던 탭만 잊고 창을 닫는다. 폼·변경 표시·주소는 건드리지 않는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "pendingEcommerceSettingsTab": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_change.stay"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "unsaved_tab_change_leave",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "이동 — 변경을 버리고 가려던 탭으로 간다. 창은 자기 지역 상태를 따로 가지므로 부모 폼 정리는 $parent._local 에 한다. 정리 목록은 탭 줄의 「변경 없음」 갈래와 같아야 한다(회귀 테스트가 키 일치를 단언) — 버린 변경의 표시(hasChanges)도 함께 내린다. 가려던 탭은 이동을 마친 뒤에 잊는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "hasChanges": false,
+                                                "errors": null,
+                                                "isAddingExchangeReason": false,
+                                                "exchangeReasonForm": null,
+                                                "exchangeReasonFormErrors": null,
+                                                "isAddingReturnReason": false,
+                                                "returnReasonForm": null,
+                                                "returnReasonFormErrors": null,
+                                                "isAddingRefundReason": false,
+                                                "refundReasonForm": null,
+                                                "refundReasonFormErrors": null,
+                                                "isAddingCarrier": false,
+                                                "carrierForm": null,
+                                                "carrierFormErrors": null,
+                                                "isAddingShippingType": false,
+                                                "shippingTypeForm": null,
+                                                "shippingTypeFormErrors": null,
+                                                "isAddingCountry": false,
+                                                "newCountry": null,
+                                                "isAddingCurrency": false,
+                                                "form.newCurrency": null,
+                                                "isAddingMileageCurrency": false,
+                                                "form.newMileageCurrency": null,
+                                                "claimReasonTab": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "activeEcommerceSettingsTab": "{{_global.pendingEcommerceSettingsTab}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/settings",
+                                                "replace": true,
+                                                "query": {
+                                                    "tab": "{{_global.pendingEcommerceSettingsTab}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "pendingEcommerceSettingsTab": null
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-danger"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_change.leave"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

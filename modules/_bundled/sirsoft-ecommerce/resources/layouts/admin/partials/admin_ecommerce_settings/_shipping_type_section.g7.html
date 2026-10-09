@@ -16,7 +16,7 @@
         </div>
         <button data-if="{{!_local.isAddingShippingType}}" type="button" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
-            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[현재 로케일]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 현재 로케일 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
+            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
             <set-state target="local" :isAddingShippingType="true" shippingTypeForm="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), category: 'domestic', is_active: true, sort_order: 0 } }}" :shippingTypeFormErrors="null"/>
           </on>
           <icon name="plus" class="text-xs"/>
@@ -72,14 +72,14 @@
           <on type="click">
             <!-- 추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 오류 표시만 세운다. -->
             <conditions>
-              <when if="{{(_local.shippingTypeForm?.code ?? '').trim() &amp;&amp; (_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}">
+              <when if="{{(_local.shippingTypeForm?.code ?? '').trim() &amp;&amp; (_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}">
                 <set-state target="local" form.shipping.types="{{[...(_local.form?.shipping?.types ?? []), {..._local.shippingTypeForm, sort_order: (_local.form?.shipping?.types ?? []).length}]}}" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :hasChanges="true"/>
               </when>
               <else>
                 <set-state target="local">
                   <field name="shippingTypeFormErrors">
                     <field name="code" value="{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}"/>
-                    <field name="name_ko" value="{{!(_local.shippingTypeForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                    <field name="name_ko" value="{{!(_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
                   </field>
                 </set-state>
               </else>
@@ -118,7 +118,7 @@
                 <span class="font-mono text-body">{{$type.code}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>

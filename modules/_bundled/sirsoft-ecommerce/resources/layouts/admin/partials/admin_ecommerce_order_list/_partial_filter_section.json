@@ -116,6 +116,7 @@
                             ],
                             "props": {
                                 "name": "dateType",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.date_type_select",
                                 "className": "w-28",
                                 "value": "{{_local.filter.dateType || 'ordered_at'}}",
                                 "options": [
@@ -705,6 +706,30 @@
                                     }
                                 },
                                 {
+                                    "comment": "F-029b 반품완료 — 전량 반품을 마친 주문은 주문 상태가 반품완료가 된다. 칩이 없으면 그 주문만 골라 볼 수 없고 배송완료 필터에서도 빠진다.",
+                                    "id": "f_029b_status_returned",
+                                    "type": "composite",
+                                    "name": "ChipCheckbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.toggleArrayValue",
+                                            "params": {
+                                                "target": "_local",
+                                                "path": "filter.orderStatus",
+                                                "value": "returned"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "returned",
+                                        "checked": "{{(_local.filter.orderStatus || []).includes('returned')}}",
+                                        "icon": "box-archive",
+                                        "label": "$t:sirsoft-ecommerce.admin.order.status.returned",
+                                        "variant": "gray"
+                                    }
+                                },
+                                {
                                     "comment": "F-030",
                                     "id": "f_030_status_confirmed",
                                     "type": "composite",
@@ -1212,6 +1237,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "currency",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.currency_select",
                                         "className": "w-20",
                                         "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                                         "options": "{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"
@@ -1781,7 +1807,8 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300",
+                                        "aria-label": "$t:common.remove"
                                     },
                                     "children": [
                                         {
@@ -3122,6 +3149,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}",
                                                         "type": "date",
                                                         "className": "input w-40",
                                                         "value": "{{_local.filter.claimRequestedFrom ?? ''}}"
@@ -3152,6 +3180,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}",
                                                         "type": "date",
                                                         "className": "input w-40",
                                                         "value": "{{_local.filter.claimRequestedTo ?? ''}}"

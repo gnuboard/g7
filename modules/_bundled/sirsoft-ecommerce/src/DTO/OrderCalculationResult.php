@@ -16,8 +16,8 @@ class OrderCalculationResult
      * @param  PromotionsSummary  $promotions  적용된 프로모션 (상품별/주문별 분리)
      * @param  ValidationError[]  $validationErrors  쿠폰 검증 오류
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
-     *         - 플러그인별 추가 계산 결과 저장
-     *         - 예: deposit_calculation, grade_discount_details 등
+     *                                          - 플러그인별 추가 계산 결과 저장
+     *                                          - 예: deposit_calculation, grade_discount_details 등
      */
     public function __construct(
         public array $items = [],
@@ -32,6 +32,8 @@ class OrderCalculationResult
 
     /**
      * 검증 오류가 있는지 확인합니다.
+     *
+     * @return bool 검증 오류가 있으면 true
      */
     public function hasValidationErrors(): bool
     {
@@ -42,6 +44,7 @@ class OrderCalculationResult
      * 특정 쿠폰에 대한 검증 오류를 반환합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return ValidationError|null 그 쿠폰의 검증 오류 (없으면 null)
      */
     public function getValidationError(int $couponId): ?ValidationError
     {
@@ -56,6 +59,8 @@ class OrderCalculationResult
 
     /**
      * 중복 불가 쿠폰이 적용되었는지 확인합니다.
+     *
+     * @return bool 중복 불가 쿠폰이 적용됐으면 true
      */
     public function hasExclusiveCouponApplied(): bool
     {
@@ -98,17 +103,21 @@ class OrderCalculationResult
      */
     public function getShippingByPolicy(): array
     {
+        // 같은 정책의 서로 다른 상품옵션 몫은 더한다(대입하면 마지막 옵션 몫만 남는다). 같은 상품옵션
+        // 아이템은 같은 몫(키 단위 AppliedShippingPolicy)을 공유하므로 한 번만 센다 — S-Q26-b.
         $byPolicy = [];
+        $seen = [];
         foreach ($this->items as $item) {
-            if ($item->appliedShippingPolicy === null) {
+            if ($item->appliedShippingPolicy === null || isset($seen[$item->productOptionId])) {
                 continue;
             }
+            $seen[$item->productOptionId] = true;
             $policyId = $item->appliedShippingPolicy->policyId;
             if (! isset($byPolicy[$policyId])) {
                 $byPolicy[$policyId] = ['base' => 0, 'extra' => 0];
             }
-            $byPolicy[$policyId]['base'] = (float) $item->appliedShippingPolicy->shippingAmount;
-            $byPolicy[$policyId]['extra'] = (float) $item->appliedShippingPolicy->extraShippingAmount;
+            $byPolicy[$policyId]['base'] += (float) $item->appliedShippingPolicy->shippingAmount;
+            $byPolicy[$policyId]['extra'] += (float) $item->appliedShippingPolicy->extraShippingAmount;
         }
 
         return $byPolicy;
@@ -116,6 +125,8 @@ class OrderCalculationResult
 
     /**
      * 배열로 변환합니다.
+     *
+     * @return array<string, mixed> 배열 표현
      */
     public function toArray(): array
     {
@@ -137,6 +148,7 @@ class OrderCalculationResult
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
+     * @return self 생성된 DTO
      */
     public static function fromArray(array $data): self
     {

@@ -57,6 +57,7 @@ effects:
   - order_total_quantity_sums_the_option_quantities
   - order_total_list_price_sums_snapshot_list_price_times_quantity
   - order_total_list_price_falls_back_to_unit_price_without_a_snapshot
+  - order_total_list_price_and_quantity_count_only_accountable_rows   # 합계 줄 정가·수량은 판매가·결제액과 같은 「남은 상품」 기준(취소·교환완료 원 행·진행 중 후속 행 제외)
   - order_exposes_used_earned_and_refunded_mileage_totals
   # ② 통화 표기
   - order_formatted_amounts_follow_the_order_snapshot_currency_not_the_current_default

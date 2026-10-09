@@ -30,4 +30,7 @@ return [
         'vbank_valid_hours_range' => '가상계좌 입금기한은 :min~:max시간(최대 90일) 사이여야 합니다.',
         'use_escrow_invalid' => '에스크로 사용 설정값이 올바르지 않습니다.',
     ],
+    'settings' => [
+        'redirect_url_format' => '결제 후 이동 주소는 {shopBase}, / 또는 http(s):// 로 시작해야 하며 공백을 넣을 수 없습니다. 다른 사이트로 보내는 //주소 와 javascript: 는 쓸 수 없습니다.',
+    ],
 ];

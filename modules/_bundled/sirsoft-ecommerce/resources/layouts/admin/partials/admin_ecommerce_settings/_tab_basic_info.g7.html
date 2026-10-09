@@ -26,7 +26,7 @@
           <span data-if="{{_local.errors?.['basic_info.route_path']}}" class="form-error">{{_local.errors?.['basic_info.route_path']?.[0] ?? ''}}</span>
         </div>
         <div data-ref="field_no_route" class="flex-center gap-2">
-          <input type="checkbox" name="basic_info.no_route" class="checkbox" disabled="{{_computed.isReadOnly}}"/>
+          <input aria-label="$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route" type="checkbox" name="basic_info.no_route" class="checkbox" disabled="{{_computed.isReadOnly}}"/>
           <span class="text-body">$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route</span>
         </div>
       </div>
@@ -131,7 +131,7 @@
             <input type="text" name="basic_info.email_id" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_id_placeholder" class="{{_local.errors?.['basic_info.email_id'] ? 'input input-error w-36' : 'input w-36'}}" disabled="{{_computed.isReadOnly}}"/>
             <span class="text-label-subtle">@</span>
             <input type="text" name="basic_info.email_domain" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_placeholder" class="{{_local.errors?.['basic_info.email_domain'] ? 'input input-error w-36' : 'input w-36'}}" disabled="{{_computed.isReadOnly}}"/>
-            <select name="basic_info.email_domain_select" class="w-28" value="" disabled="{{_computed.isReadOnly}}">
+            <select name="basic_info.email_domain_select" aria-label="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_select" class="w-28" value="" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_direct</option>
                 <option value="gmail.com">gmail.com</option>

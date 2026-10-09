@@ -4,7 +4,10 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
@@ -14,18 +17,23 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
  * core.user.filter_resource_data 필터 훅을 구독해, 모듈 소유 잔액 캐시(O(1))를 응답에 병합합니다.
  * 회원 목록(toListArray)에는 이 훅이 발화하지 않으므로 N+1·목록 풀스캔이 구조적으로 없습니다.
  *
- * 부하 설계: getBalance(원장 SUM) 를 호출하지 않고 MileageBalanceRepository::getCachedBalance
- * (캐시 단일 행) 로만 조회합니다. pending 도 캐시 컬럼에서 읽습니다.
+ * 부하 설계: 잔액은 getBalance(원장 SUM) 대신 MileageBalanceRepository::getCachedBalance
+ * (캐시 단일 행) 로 조회하고, pending 도 캐시 컬럼에서 읽습니다. 예외는 탈퇴 경고용
+ * refund_credit_available 하나로, `(user_id, currency)` 인덱스를 타는 원장 SUM 을 요청당 한 번 합니다.
  */
 class UserMileageInfoListener implements HookListenerInterface
 {
     /**
      * @param  MileageBalanceRepositoryInterface  $balanceRepository  잔액 캐시 Repository
      * @param  EcommerceSettingsService  $settings  환경설정 서비스
+     * @param  MileageTransactionRepositoryInterface  $ledger  원장 Repository (환불로 받은 마일리지 잔여 — Q20)
+     * @param  CurrencyConversionService  $currencyService  통화 서비스 (기준 통화)
      */
     public function __construct(
         private MileageBalanceRepositoryInterface $balanceRepository,
         private EcommerceSettingsService $settings,
+        private MileageTransactionRepositoryInterface $ledger,
+        private CurrencyConversionService $currencyService,
     ) {}
 
     /**
@@ -48,6 +56,7 @@ class UserMileageInfoListener implements HookListenerInterface
      * 기본 핸들러 (getSubscribedHooks 의 method 매핑 사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -61,19 +70,29 @@ class UserMileageInfoListener implements HookListenerInterface
      * 화면이 "데이터 없음"과 "기능 비활성화"를 구별해 비활성 안내를 표시할 수 있도록 합니다.
      * 활성 상태에서는 enabled=true 와 함께 캐시 잔액(없으면 0)을 주입합니다.
      *
+     * `refund_credit_available` 은 현금 환불을 마일리지로 받은 몫 중 아직 남은 금액이다(Q20). 탈퇴하면 이 돈도
+     * 소멸되므로 탈퇴 확인 창이 따로 알린다. 이미 지급된 현금 대체분은 기능 설정과 무관하게 고객 돈이라 기능이
+     * 꺼져 있어도 싣는다.
+     *
      * @param  array<string, mixed>  $data  코어가 직렬화한 회원 응답 데이터
      * @param  User  $user  회원 모델
      * @return array<string, mixed> 마일리지 요약이 병합된 데이터
      */
     public function injectMileageTotal(array $data, User $user): array
     {
+        $refundCredit = $this->ledger->sumRemainingByType(
+            (int) $user->id,
+            MileageTransactionTypeEnum::REFUND_CREDIT->value,
+            $this->currencyService->getDefaultCurrency(),
+        );
+
         if (! (bool) $this->settings->getSetting('mileage.enabled', false)) {
-            $data['ecommerce_mileage'] = ['enabled' => false];
+            $data['ecommerce_mileage'] = ['enabled' => false, 'refund_credit_available' => $refundCredit];
 
             return $data;
         }
 
-        $data['ecommerce_mileage'] = ['enabled' => true]
+        $data['ecommerce_mileage'] = ['enabled' => true, 'refund_credit_available' => $refundCredit]
             + $this->balanceRepository->getCachedBalance($user->id);
 
         return $data;

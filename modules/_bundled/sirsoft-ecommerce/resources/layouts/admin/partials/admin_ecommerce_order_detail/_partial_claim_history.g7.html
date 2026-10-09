@@ -55,6 +55,8 @@
                   <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
                 </div>
               </div>
+              <!-- 환불 행의 원 신청서 번호(보완 5) — 반품·교환에서 생긴 환불이면 그 번호를 함께 적는다(서버가 같은 주문의 신청서에서 찾아 준다). -->
+              <div data-if="{{!!claim.source_claim_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
               <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
               <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
@@ -122,6 +124,8 @@
                 <badge data-type="composite" variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
                 <!-- 환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 신청서. 번호를 눌러 신청서 상단의 [환불신청서 접수] 로 간다. -->
                 <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
+                <!-- 환불 행의 원 신청서 번호(보완 5) -->
+                <div data-if="{{!!claim.source_claim_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
                 <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
                 <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>

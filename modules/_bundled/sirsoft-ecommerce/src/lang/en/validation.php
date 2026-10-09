@@ -1393,6 +1393,11 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
+        // Manual paid transition confirm items (Q13·Q14)
+        'apply_stock_deduction' => 'stock deduction',
+        'apply_mileage_deduction' => 'used mileage deduction',
+        'record_paid_amount' => 'paid amount record',
+
         // Admin user list extension filters (#705)
         'user_filter_mileage_min' => 'minimum mileage balance',
         'user_filter_mileage_max' => 'maximum mileage balance',
@@ -2290,6 +2295,8 @@ return [
         'redelivery_zipcode' => 'zip code',
         'redelivery_address1' => 'address',
         'redelivery_address2' => 'address details',
+        'redelivery_city' => 'city',
+        'redelivery_state' => 'state / province',
         'redelivery_country_code' => 'shipping country',
         'redelivery_changed_by_user' => 'address changed',
         'full_cancel' => 'full cancellation',

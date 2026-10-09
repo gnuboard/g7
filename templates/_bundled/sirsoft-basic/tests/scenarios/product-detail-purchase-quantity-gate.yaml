@@ -1,0 +1,34 @@
+feature: 상품 상세 — 구매 버튼의 구매수량 한도 판정과 옵션 수 분기
+
+description: |
+  상품 상세 구매 카드는 옵션이 둘 이상이면 옵션 칸을 세우고 고른 옵션 줄을 쌓으며, 옵션이 없거나 하나뿐이면
+  옵션 칸 대신 수량 선택기를 세워 수량만 센다. 바로 구매·장바구니 버튼은 옵션 줄 수량의 **합계**로 최소·최대
+  구매수량을 판정한다 — 라인별 max 만으로는 여러 줄을 합쳐 한도를 넘길 수 있다.
+
+  이 합계 판정은 옵션 칸과 **같은 기준(옵션 2개 이상)** 으로만 건다. 종전에는 `option_groups` 가 있으면 걸어,
+  관리자에서 옵션을 하나만 만든 상품(옵션 그룹 1개·옵션 행 1개)이 옵션 줄 합계 0 으로 영영 잠겨 살 수 없었다.
+  옵션이 없거나 하나뿐인 상품의 최소·최대는 수량 선택기의 min/max 가 막는다.
+
+# axis 의미:
+#   purchase_case — 옵션 하나뿐(수량 선택기 분기) / 옵션 둘 이상·미선택 / 옵션 둘 이상·선택함.
+#   선택 여부는 옵션 칸이 서는 둘 이상 분기에서만 의미가 있어 한 축으로 묶는다.
+axes:
+  purchase_case: [single_option, multi_option_unselected, multi_option_selected]
+
+effects:
+  - option_line_quantity_clamped_to_max_purchase      # 옵션 줄 수량 선택기 max 를 상품 구매 한도로 자른다
+  - purchase_total_checked_against_purchase_limits    # 버튼 잠금이 옵션 줄 합계로 최소·최대를 판정
+  - single_option_product_purchasable_without_selection # 옵션 하나뿐인 상품은 옵션을 고르지 않아도 잠기지 않음
+  - multi_option_product_locked_until_selection       # 옵션이 둘 이상이면 고르기 전까지 잠김
+  - quantity_selector_guards_single_option_limits     # 옵션 하나뿐인 상품은 수량 선택기 min/max 가 한도를 막음
+  - purchase_limit_notices_present                    # 최소·최대 구매수량 안내 문구
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-purchase-quantity-limit.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-single-option-purchase.test.tsx
+
+validation:
+  browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — 실브라우저 확인은 Chrome MCP 로 대체
+  note: |
+    레이아웃 소스(_purchase_card.g7.html)를 구운 산출의 disabled 표현식을 문맥별로 평가해 버튼 잠금을 판정한다.
+    옵션 하나뿐인 상품의 실제 구매(바로 구매 → 체크아웃)는 Chrome 실측으로 확인한다.

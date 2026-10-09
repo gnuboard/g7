@@ -2,12 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Resources;
 
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -27,6 +30,8 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
 {
     /**
      * 유형별 사유 카탈로그를 심습니다.
+     *
+     * @return void 반환값 없음
      */
     private function seedReasons(): void
     {
@@ -62,6 +67,13 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
         return (new ClaimResource($refund))->toArray(request());
     }
 
+    /**
+     * 교환에서 파생된 환불신청서는 교환 카탈로그에서 사유 라벨을 읽는다(환불 카탈로그에 없는 코드).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects derived_refund_reads_exchange_reason_catalog
+     */
     public function test_a_refund_derived_from_an_exchange_reads_the_exchange_reason_catalog(): void
     {
         $this->seedReasons();
@@ -79,6 +91,13 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
         $this->assertNotSame('defective_product', $result['reason_label']);
     }
 
+    /**
+     * 반품에서 파생된 환불신청서는 같은 코드가 환불 카탈로그에도 있어도 반품 카탈로그의 문구를 쓴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects derived_refund_reads_return_reason_catalog
+     */
     public function test_a_refund_derived_from_a_return_reads_the_return_reason_catalog(): void
     {
         $this->seedReasons();
@@ -96,6 +115,13 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
         $this->assertSame('반품 단순 변심', $result['reason_label']);
     }
 
+    /**
+     * 직접 접수한 환불신청서는 종전대로 환불 카탈로그를 읽는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects direct_refund_reads_refund_reason_catalog
+     */
     public function test_a_direct_refund_still_reads_the_refund_reason_catalog(): void
     {
         $this->seedReasons();
@@ -111,6 +137,13 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
         $this->assertSame('환불 단순 변심', $result['reason_label']);
     }
 
+    /**
+     * 어느 카탈로그에도 없는 사유 코드는 라벨을 지어내지 않고 코드를 그대로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects unknown_reason_code_falls_back_to_raw_code
+     */
     public function test_an_unknown_code_still_falls_back_to_the_raw_code(): void
     {
         $this->seedReasons();
@@ -125,5 +158,72 @@ class ClaimDerivedRefundReasonLabelTest extends ModuleTestCase
 
         // 어느 카탈로그에도 없으면 종전대로 코드를 그대로 둔다 — 라벨을 지어내지 않는다.
         $this->assertSame('never_registered', $result['reason_label']);
+    }
+
+    /**
+     * 환불 실행이 남긴 취소 이력(CN)을 만듭니다. 사유 코드는 환불신청서의 것을 물려받는다.
+     *
+     * @param  RefundSourceTypeEnum  $source  환불신청서의 파생 출처
+     * @param  string  $code  사유 코드
+     * @return OrderCancel 취소 이력
+     */
+    private function cancelFromRefund(RefundSourceTypeEnum $source, string $code): OrderCancel
+    {
+        $cancel = new OrderCancel(['cancel_status' => CancelStatusEnum::COMPLETED, 'cancel_reason_type' => $code]);
+        $cancel->setRelation('refund', new OrderRefund([
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'reason_code' => $code,
+            'refund_source_type' => $source,
+        ]));
+
+        return $cancel;
+    }
+
+    /**
+     * 반품 환불 실행이 남긴 취소 이력은 단건 게터·리소스·목록 라벨 맵 세 경로 모두 반품 카탈로그에서 사유 라벨을 읽는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects cancel_record_from_return_refund_reads_return_reason_catalog
+     */
+    public function test_a_cancel_record_left_by_a_return_refund_reads_the_return_reason_catalog(): void
+    {
+        $this->seedReasons();
+        ClaimReason::updateOrCreate(
+            ['type' => ClaimTypeEnum::RETURN->value, 'code' => 'defective_product'],
+            ['name' => ['ko' => '반품 상품 불량', 'en' => 'Defective'], 'fault_type' => 'seller', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 0],
+        );
+
+        // 반품 → 환불 실행이 남긴 CN 은 반품 사유 코드(`defective_product`)를 그대로 갖는다.
+        // 관리자 클레임 목록 취소 탭·주문 상세 취소 사유가 이 코드를 원시값으로 찍던 결함(C12 실측).
+        $cancel = $this->cancelFromRefund(RefundSourceTypeEnum::RETURN, 'defective_product');
+
+        $this->assertSame('반품 상품 불량', (new ClaimResource($cancel))->toArray(request())['reason_label']);
+        $this->assertSame('반품 상품 불량', $cancel->getRefundReasonLabel());
+
+        // 목록 경로(라벨 맵 주입)도 같은 카탈로그를 봐야 한다.
+        $labels = app(UserClaimService::class)->reasonLabelsFor([collect([$cancel])]);
+        $listed = (new ClaimResource($cancel))->forList()->withReasonLabels($labels)->toArray(request());
+        $this->assertSame('반품 상품 불량', $listed['reason_label']);
+    }
+
+    /**
+     * 파생 출처가 없는 취소 이력(직접 환불 연결 또는 연결 없음)은 환불 카탈로그를 읽는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects cancel_record_without_derived_refund_reads_refund_reason_catalog
+     */
+    public function test_a_cancel_record_without_a_derived_refund_still_reads_the_refund_reason_catalog(): void
+    {
+        $this->seedReasons();
+
+        // 직접 취소(환불신청서가 direct·cancel 발이거나 아직 없음)는 환불 카탈로그가 정본이다.
+        $direct = $this->cancelFromRefund(RefundSourceTypeEnum::DIRECT, 'changed_mind');
+        $bare = new OrderCancel(['cancel_status' => CancelStatusEnum::COMPLETED, 'cancel_reason_type' => 'changed_mind']);
+        $bare->setRelation('refund', null);
+
+        $this->assertSame('환불 단순 변심', $direct->getRefundReasonLabel());
+        $this->assertSame('환불 단순 변심', (new ClaimResource($bare))->toArray(request())['reason_label']);
     }
 }

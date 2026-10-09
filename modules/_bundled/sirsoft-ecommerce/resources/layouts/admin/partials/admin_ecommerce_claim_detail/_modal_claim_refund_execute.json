@@ -57,7 +57,7 @@
                                     "props": {
                                         "className": "text-gray-900 dark:text-gray-100"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundAmountFormatted ?? ''}}"
                                 }
                             ]
                         },
@@ -83,9 +83,20 @@
                                     "props": {
                                         "className": "text-purple-600 dark:text-purple-400"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundPointsAmount ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundPointsAmountFormatted ?? ''}}"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지가 고객이 낸 적 없는 돈이라 돌려주지 않는다(Q15) — 반환액 0 의 이유를 말하지 않으면 마일리지를 썼는데 왜 0 인지 알 수 없다.",
+                            "id": "crm_012_points_not_deducted",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.claimRefundExecuteContext?.pointsNotDeducted === true}}",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted"
                         },
                         {
                             "type": "basic",
@@ -114,10 +125,21 @@
                             ]
                         },
                         {
-                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "comment": "「마일리지로 환불」이고 현금 환불액이 있으면 그 현금이 카드·계좌가 아니라 회원 마일리지로 간다는 사실을 실행 직전에 다시 알린다(D1).",
+                            "id": "crm_010_points_cash_credit_notice",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.claimRefundExecuteContext?.refundMethod === 'points' && Number(_global.claimRefundExecuteContext?.refundAmount ?? 0) > 0}}",
+                            "props": {
+                                "className": "text-xs text-amber-700 dark:text-amber-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.points_cash_credit"
+                        },
+                        {
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다.",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankName}}",
+                            "if": "{{_global.claimRefundExecuteContext?.refundAccountUsed === true && !!_global.claimRefundExecuteContext?.refundBankName}}",
                             "props": {
                                 "className": "flex justify-between text-sm"
                             },
@@ -142,10 +164,10 @@
                             ]
                         },
                         {
-                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다.",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankAccount}}",
+                            "if": "{{_global.claimRefundExecuteContext?.refundAccountUsed === true && !!_global.claimRefundExecuteContext?.refundBankAccount}}",
                             "props": {
                                 "className": "flex justify-between text-sm"
                             },
@@ -170,10 +192,10 @@
                             ]
                         },
                         {
-                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+                            "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 줄은 **지금 고른 환불 수단으로 돈이 계좌로 나갈 때만** 선다(`refundAccountUsed` — 서버 수단별 판정): 「마일리지로 환불」·카드 취소에서는 저장 계좌가 있어도 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 그 계좌로 보내므로 선다.",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!!_global.claimRefundExecuteContext?.refundBankHolder}}",
+                            "if": "{{_global.claimRefundExecuteContext?.refundAccountUsed === true && !!_global.claimRefundExecuteContext?.refundBankHolder}}",
                             "props": {
                                 "className": "flex justify-between text-sm"
                             },
@@ -198,7 +220,35 @@
                             ]
                         },
                         {
-                            "comment": "합계는 여는 핸들러가 부동소수 오차를 걷어 넘긴 값(`refundTotal`)이다 — 여기서 두 값을 더하면 0.1 + 0.2 가 0.30000000000000004 로 찍힌다.",
+                            "comment": "교환으로 받은 상품의 환불이면 그 교환 때 낸 상위 옵션 차액도 낸 수단 그대로 돌려준다 — 별도 칼럼이라 위 두 금액에 들어 있지 않다. 줄로 보이고 아래 합계에 더한다(고객에게 실제로 나가는 총액). 실행 본문에는 싣지 않는다(서버 저장값).",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.claimRefundExecuteContext?.exchangeDifferenceTotal ?? 0) > 0}}",
+                            "props": {
+                                "className": "flex justify-between text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.exchange_difference_refund"
+                                },
+                                {
+                                    "id": "crm_011_exchange_difference",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.claimRefundExecuteContext?.exchangeDifferenceFormatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "합계는 여는 핸들러가 부동소수 오차를 걷어 넘긴 값(`refundTotal` — 현금 + 마일리지 + 교환 차액)이다 — 여기서 더하면 0.1 + 0.2 가 0.30000000000000004 로 찍힌다.",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -220,14 +270,14 @@
                                     "props": {
                                         "className": "text-gray-900 dark:text-gray-100"
                                     },
-                                    "text": "{{(_global.claimRefundExecuteContext?.refundTotal ?? 0) + ' ' + (_global.claimRefundExecuteContext?.currencyCode ?? '')}}"
+                                    "text": "{{_global.claimRefundExecuteContext?.refundTotalFormatted ?? ''}}"
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    "comment": "환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 판정해 `refund_account_required` 로 내려준다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다).",
+                    "comment": "환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}",

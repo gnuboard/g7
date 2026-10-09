@@ -49,7 +49,7 @@ interface MobileNavProps {
   /** 드로어 열림 상태 */
   isOpen: boolean;
   /** 닫기 콜백 */
-  onClose: () => void;
+  onClose: (event?: Event | React.SyntheticEvent) => void;
   /** 사이트 로고 URL */
   logo?: string;
   /** 사이트 이름 */
@@ -101,7 +101,8 @@ const MobileNav: React.FC<MobileNavProps> = ({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        // 닫기 처리기가 엔진 액션 처리기일 수 있어 원본 이벤트를 넘긴다(빈 인자면 event.type 에서 TypeError).
+        onClose(e);
       }
     };
 
@@ -152,7 +153,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Button
             onClick={onClose}
             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label="메뉴 닫기"
+            aria-label={t('common.close_menu')}
           >
             <Icon name="x" className="w-6 h-6 text-2xl leading-none" />
           </Button>

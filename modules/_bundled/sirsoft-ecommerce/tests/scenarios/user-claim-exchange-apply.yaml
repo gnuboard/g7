@@ -86,12 +86,14 @@ effects:
   - claim_apply_estimate_failure_clears_amounts_and_blocks_submit
   - claim_apply_preview_rejection_stays_on_screen
   - claim_apply_error_channel_splits_by_fixability
+  - claim_apply_redelivery_shows_the_international_address # 해외 주문 재발송지 요약·도시·주 칸 (S2-D8)
   - claim_apply_submit_requires_successful_preview
   # 제출 버튼 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는
   # "상계가 아니다" 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 —
   # 그 값만 보고 라벨을 정하면 승인 후 결제에서도 "N원 결제하기" 로 예고하는데 실제로는
   # 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6).
   - claim_apply_submit_label_matches_payment_timing
+  - claim_payment_method_choices_carry_their_own_labels   # 신청서 결제 수단 라디오도 카탈로그 이름 (S1-D14)
   # 청구 2축 (D6)
   - claim_apply_charge_axes_are_two_and_operator_sourced
   - claim_apply_charge_axes_hidden_for_refund

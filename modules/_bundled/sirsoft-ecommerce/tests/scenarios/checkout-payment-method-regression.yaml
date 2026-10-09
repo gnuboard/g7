@@ -1,0 +1,22 @@
+feature: 체크아웃 결제수단 — 주문 생성 본문과 계산값
+
+description: |
+  주문서 [결제하기] 의 주문 생성 요청(_checkout_summary apiCall)이 화면에서 고른(또는 기본) 결제수단을 그대로 싣는지,
+  그 값의 출처인 주문서 계산값(레이아웃 소스 checkout.g7.html 의 computed)이 어떻게 정의돼 있는지를 원문 대조로 지킨다.
+
+  수정 이력:
+    - 결제 버튼이 _local.paymentMethod 를 직접 읽어, 무통장을 고른 뒤에도 값이 비어 기본값 card 가 전송됐다 →
+      _computed.selectedPaymentMethod 를 싣는다.
+    - (이커머스 전수 실측 S4 마감 검증) 결제수단 계산값이 같은 거르기 식(활성·고객 선택·iOS)을 4벌 들고 있던 것을
+      selectablePaymentMethods 한 곳으로 모으고 selectedPaymentMethod 는 그 계산값을 참조한다.
+
+axes:
+  case: [order_body, computed_definition, dead_action]
+
+effects:
+  - order_body_carries_selected_payment_method   # 주문 생성 본문 payment_method = 계산값(빈 _local 이어도·어긋나도 계산값 우선), dbank 블록은 무통장일 때만
+  - computed_selects_first_selectable_method     # selectedPaymentMethod = _local.paymentMethod ?? 고를 수 있는 첫 결제수단(selectablePaymentMethods — 활성 판정 포함)
+  - no_dead_submit_order_action                  # 쓰이지 않는 submitOrder 액션이 남아 있지 않다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/checkoutPaymentMethodRegression.test.tsx

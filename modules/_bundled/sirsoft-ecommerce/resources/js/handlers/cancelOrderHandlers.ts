@@ -363,7 +363,7 @@ export async function executeCancelOrderHandler(
             // 떨어진다. 화면이 제 문구를 따로 들면 같은 사실을 말하는 출처가 둘이 된다.
             //
             // 서버 문구가 말하지 않는 두 사정만 화면이 덧붙인다: 클레임을 볼 수 없는 운영자에게는
-            // 신청서 번호를(이동하지 않으므로), 자동 전이가 승인에서 멈춘 건에는 그 사실을.
+            // 신청서 번호를(이동하지 않으므로), 자동 전이가 멈춘 건(송금 수단은 접수 단계에서 멈춘다)에는 그 사실을.
             const claimNumber = response?.data?.claim?.claim_number ?? null;
             const cancelled = response?.data?.claim?.cancelled === true;
             const autoBranch = response?.data?.claim?.branch === 'auto';
@@ -385,7 +385,7 @@ export async function executeCancelOrderHandler(
             } else if (!cancelled && autoBranch) {
                 message = translateOr(
                     'sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_request_auto_stopped',
-                    '환불신청서를 승인까지 처리했습니다. 자동으로 환불할 수 없는 결제수단이라 신청서에서 환불완료를 처리해야 주문취소가 확정됩니다.',
+                    '환불신청서를 접수했습니다. 자동으로 환불할 수 없는 결제수단이라 자동 처리는 멈췄습니다 — 신청서에서 승인한 뒤 [환불하기]로 환불완료를 처리해야 주문취소가 확정됩니다.',
                 );
             } else if (serverMessage !== null) {
                 message = serverMessage;

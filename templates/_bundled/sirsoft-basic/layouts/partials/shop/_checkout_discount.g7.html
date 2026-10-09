@@ -92,7 +92,7 @@
       <!-- 적용된 배송비 쿠폰 정보 -->
       <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
-        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}</span>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + checkoutData.data.calculation?.summary?.shipping_discount + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
       </div>
     </div>
     <!-- 할인코드 입력 -->

@@ -64,6 +64,7 @@
                             "props": {
                                 "name": "ecommerceShippingCountry",
                                 "className": "w-40",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.user_filter.shipping_country",
                                 "disabled": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}",
                                 "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.shipping_country=')) || '').slice('sirsoft-ecommerce.shipping_country='.length)}}",
                                 "options": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.user_filter.shipping_country_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) })))]}}"

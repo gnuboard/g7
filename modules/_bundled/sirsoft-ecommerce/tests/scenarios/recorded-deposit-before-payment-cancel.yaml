@@ -1,0 +1,38 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   진입 경로(관리자·구매자·만료 자동취소) × 취소 범위(전체·부분) × 입금 기록 여부 중 의미 있는 조합만 시험한다 —
+#   세 경로는 같은 접수 지점(OrderRefundRequestService::request)을 지나므로 부분취소·실행 정합은 관리자 경로에서
+#   한 번 잰다. 구매자·자동취소는 접수 결과(환불신청서 생성·출처)만 잰다.
+# e2e:allow 취소 창 계좌 칸의 노출 조건은 cashReceiptUi.test.tsx 가 표현식으로, 실제 화면은 총괄 Chrome MCP 실측이 잰다.
+feature: 입금을 기록만 한 결제 전 주문의 취소 — 받은 돈을 환불신청서로 돌려준다 (S3-D7)
+
+description: |
+  무통장 주문의 [입금확인]에서 「주문을 결제완료로 처리」를 끄면 결제행만 입금완료가 되고 주문은 결제대기·받은 돈 0
+  으로 남는다. 그 주문을 취소하면 「결제 전이라 돌려줄 돈이 없다」로 판정해 환불신청서 없이 취소만 기록했다 —
+  받은 돈이 장부 어디에도 남지 않았다(출시본 1.2.1 같은 경로).
+
+    - 결제 전이라도 결제행에 입금이 기록돼 있으면(paid·partial_cancelled) 돌려줄 돈이 있는 주문으로 본다.
+    - 취소 접수는 받은 돈을 주문 헤더에 먼저 올리고(S2-D4 와 같은 메서드) 환불을 산정한다 — 환불신청서는 계좌 환불로
+      접수에서 멈추고, 운영자가 송금한 뒤 [환불하기]로 완료한다. 사용 마일리지 반환은 종전대로 함께 간다.
+    - 취소 창의 환불 예정액(미리보기)도 같은 값으로 계산하고, 계좌 칸은 서버 판정(has_cash_to_return)으로 노출한다.
+    - 입금기한 만료 자동취소도 같은 접수를 지나고, 환불신청서가 열려 있는 주문은 다음 실행이 다시 집지 않는다.
+    - 입금이 기록되지 않은 결제 전 주문의 취소는 종전대로 환불신청서 없이 취소만 남긴다.
+
+axes:
+  entry: [admin_cancel_refund, buyer_mypage_cancel, expired_auto_cancel]
+  cancel_scope: [full, partial]
+  deposit_recorded: [recorded, not_recorded]
+  refund_bank: [provided, missing]
+
+effects:
+  - recorded_deposit_cancel_creates_bank_refund_request
+  - recorded_deposit_refund_executes_once
+  - recorded_deposit_preview_includes_received_cash
+  - recorded_deposit_payment_resource_reports_cash_to_return
+  - recorded_deposit_cancel_requires_refund_bank
+  - recorded_deposit_auto_cancel_creates_refund_once
+  - recorded_deposit_partial_cancel_refunds_share_only
+  - unrecorded_deposit_cancel_skips_refund_request
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/RecordedDepositBeforePaymentCancelTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cashReceiptUi.test.tsx

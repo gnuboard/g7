@@ -56,6 +56,7 @@ exclusions:
   - { screen: order_section, entry: [without_token, expired_token], claim_type: [return, refund, cancel], reason: "같은 근거 — 토큰 처분은 목록 유형과 무관하다" }
 
 effects:
+  - guest_claim_detail_shows_follow_up_refunds   # #747 보완 5
   - guest_claim_detail_loads_order_after_claim_response
   - guest_claim_routes_allow_guest_and_use_claim_number
   - guest_claim_cards_keep_shared_values
@@ -97,6 +98,7 @@ effects:
   - guest_claim_payment_result_banner_stands_on_the_lookup_form
 
 test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimLinkedClaimsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/GuestClaimRouteThrottleTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/GuestOrderTokenMiddlewareRegistrationTest.php

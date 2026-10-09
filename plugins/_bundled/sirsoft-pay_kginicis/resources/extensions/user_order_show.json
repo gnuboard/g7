@@ -127,7 +127,8 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
-                                        "_kgReceipt": "{{response.data}}"
+                                        "_kgReceipt": "{{response.data}}",
+                                        "_kgEscrowConfirmUrl": "{{response.data.escrow_confirm_url ?? null}}"
                                     }
                                 }
                             }
@@ -284,6 +285,33 @@
                                     ]
                                 },
                                 {
+                                    "comment": "입금 금액 — 실제로 입금할 결제예정금액(마일리지 차감 뒤). 비회원 응답에는 없어(비회원은 마일리지를 못 쓴다) 주문금액으로 대신한다. 나이스·KCP 와 같은 구성",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!(order.data.total_due_amount_formatted ?? order.data.total_amount_formatted)}}",
+                                    "props": {
+                                        "className": "flex items-center justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                            },
+                                            "text": "$t:sirsoft-pay_kginicis.user.vbank_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-blue-600 dark:text-blue-400"
+                                            },
+                                            "text": "{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{!!order.data.payment?.vbank_due_at_formatted}}",
@@ -308,6 +336,15 @@
                                             "text": "{{order.data.payment?.vbank_due_at_formatted}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "comment": "자동 취소 경고 — 이 안내는 입금 대기 주문에만 그려지므로 늘 함께 붙는다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_kginicis.user.vbank_notice"
                                 }
                             ]
                         },
@@ -525,6 +562,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
+                                        "id": "kginicis-mp-receipt-row",
                                         "className": "flex-between"
                                     },
                                     "children": [
@@ -551,9 +589,10 @@
                                     ]
                                 },
                                 {
+                                    "comment": "[구매결정] 은 새 창이라 토큰 로그인이 실리지 않는다 — 영수증 조회(토큰 인증)가 준 본인용 한시 서명 주소로 연다(S4-D19).",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{!!order.data.payment?.is_escrow}}",
+                                    "if": "{{!!order.data.payment?.is_escrow && !!_local._kgEscrowConfirmUrl}}",
                                     "props": {
                                         "className": "pt-1"
                                     },
@@ -562,7 +601,7 @@
                                             "type": "basic",
                                             "name": "A",
                                             "props": {
-                                                "href": "/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{{order.data.order_number}}",
+                                                "href": "{{_local._kgEscrowConfirmUrl}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
                                                 "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"

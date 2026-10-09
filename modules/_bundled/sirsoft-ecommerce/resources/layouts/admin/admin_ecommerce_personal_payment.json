@@ -586,6 +586,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "dateType",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment.filter.date_type",
                                                     "className": "select-composite w-full md:w-24",
                                                     "value": "{{_local.dateType}}",
                                                     "options": [

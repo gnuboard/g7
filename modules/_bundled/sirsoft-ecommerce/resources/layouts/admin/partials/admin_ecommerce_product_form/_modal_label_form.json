@@ -139,6 +139,7 @@
                                             ],
                                             "props": {
                                                 "type": "color",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.labels.color",
                                                 "value": "{{_global.labelFormData?.color ?? '#6B7280'}}",
                                                 "className": "w-12 h-10 p-1 rounded cursor-pointer"
                                             }

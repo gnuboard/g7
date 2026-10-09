@@ -111,7 +111,7 @@
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.created_at</span>
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-500"/>
-            <input type="date" value="{{query.created_from || ''}}" class="input input-w-sm">
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.schedules.filters.created_at')}}" value="{{query.created_from || ''}}" class="input input-w-sm">
               <on type="change">
                 <!-- 이 날짜는 **만든 날**이지 도는 날이 아니다 — 언제 실행되는지로 좁히려면 주기나 마지막 결과를 쓴다. -->
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
@@ -121,7 +121,7 @@
             </input>
             <span class="text-gray-500 dark:text-gray-400">~</span>
             <icon name="calendar" class="text-base text-gray-500"/>
-            <input type="date" value="{{query.created_to || ''}}" class="input input-w-sm">
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.schedules.filters.created_at')}}" value="{{query.created_to || ''}}" class="input input-w-sm">
               <on type="change">
                 <!-- 한쪽만 채워도 조건이 선다(그날 이후 또는 그날 이전). 아래 기간 버튼은 두 칸을 함께 채운다. -->
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">

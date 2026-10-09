@@ -59,6 +59,8 @@ class OrderActivityLogListener implements HookListenerInterface
             // 상품 상태에 맞춰 부모 주문 상태가 자동으로 따라 바뀐 전이 — 운영자가 고른 것이
             // 아니라 파생된 결과이므로 별도 줄로 남긴다.
             'sirsoft-ecommerce.order.after_status_sync' => ['method' => 'handleOrderStatusSync', 'priority' => 20],
+            // 수동 결제 처리 확인 창의 세 항목·재활성 복원 결과 (Q13·Q14·Q26) — 끈 항목까지 남긴다.
+            'sirsoft-ecommerce.order.after_manual_paid_effects' => ['method' => 'handleOrderManualPaidEffects', 'priority' => 20],
             'sirsoft-ecommerce.order_option.after_bulk_status_change' => ['method' => 'handleOrderOptionAfterBulkStatusChange', 'priority' => 20],
             // 주문 상태 동기화가 끌고 간 상품 전이 — 관계 빌더 raw update 라
             // `order_option.after_status_change` 를 지나지 않는다(A1~A5).
@@ -120,6 +122,36 @@ class OrderActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-ecommerce::activity_log.description.order_update',
             'description_params' => ['order_number' => $order->order_number],
             'changes' => $changes,
+        ]);
+    }
+
+    /**
+     * 수동 결제 처리(세 항목·재활성 복원) 결과를 기록합니다. (Q13·Q14·Q26)
+     *
+     * 운영자가 끈 항목(`skipped`)을 남겨, 나중에 「왜 재고·마일리지가 빠지지 않았는지」를 로그에서 읽을 수
+     * 있게 한다. 재활성 복원이 있었으면 합계 전후를 변경 내역으로 싣는다.
+     *
+     * @param  Order  $order  주문
+     * @param  array<string, mixed>  $report  적용 결과 (`ManualPaidEffectsReport::toArray()`)
+     * @param  array|null  $snapshotBefore  복원 전 주문 스냅샷 (복원이 없으면 null)
+     * @return void 반환값 없음
+     */
+    public function handleOrderManualPaidEffects(Order $order, array $report, ?array $snapshotBefore = null): void
+    {
+        $this->logActivity('order.manual_paid_effects', [
+            'loggable' => $order,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_manual_paid_effects',
+            'description_params' => ['order_number' => $order->order_number ?? '', 'applied' => '', 'skipped' => ''],
+            'properties' => [
+                'trigger' => $report['trigger'] ?? null,
+                'transition' => $report['transition'] ?? [],
+                'options' => $report['options'] ?? [],
+                'items' => $report['items'] ?? [],
+                'applied' => $report['applied'] ?? [],
+                'skipped' => $report['skipped'] ?? [],
+                'warnings' => $report['warnings'] ?? [],
+            ],
+            'changes' => $snapshotBefore !== null ? ChangeDetector::detect($order, $snapshotBefore) : null,
         ]);
     }
 
@@ -898,9 +930,12 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleMileageEarn(float $earnedPoints, Order $order): void
     {
+        // 결제 완료 시점의 훅은 **예정**이다 — 마일리지는 적립 시점 설정(구매확정 등)에 맞춰 적립 배치가 지급하고,
+        // 그때 `UserMileageService` 가 「마일리지 적립」을 따로 남긴다. 이 줄을 「적립」이라 쓰면 원장에 적립 행이
+        // 없는 주문도 적립된 것처럼 읽힌다(S3-D21).
         $this->logActivity('mileage.earn', [
             'loggable' => $order,
-            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_scheduled',
             'description_params' => [
                 'order_number' => $order->order_number,
                 'amount' => $this->formatOrderAmount($order, (float) $earnedPoints),

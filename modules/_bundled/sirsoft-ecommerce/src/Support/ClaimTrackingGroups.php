@@ -345,9 +345,11 @@ final class ClaimTrackingGroups
      */
     protected static function itemsOf(OrderExchange|OrderReturn $claim): iterable
     {
+        // 상품명·옵션명은 주문옵션에 있다 — 알림 경로는 신청서를 관계 없이 다시 읽으므로 여기서 함께 부른다.
+        // 빠뜨리면 운송장 줄이 「택배사 · 운송장 ·  × 수량」 으로 상품명 없이 나간다(2026-10-07 실측).
         return $claim instanceof OrderExchange
-            ? $claim->loadMissing('exchangeOptions')->exchangeOptions
-            : $claim->loadMissing('returnOptions')->returnOptions;
+            ? $claim->loadMissing('exchangeOptions.orderOption')->exchangeOptions
+            : $claim->loadMissing('returnOptions.orderOption')->returnOptions;
     }
 
     /**

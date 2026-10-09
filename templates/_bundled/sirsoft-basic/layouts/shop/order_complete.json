@@ -4,7 +4,7 @@
     "layout_name": "shop/order_complete",
     "extends": "_user_base",
     "meta": {
-        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구.",
+        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call error-handling on-code 409)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다.",
         "title": "$t:shop.order_complete.page_title",
         "description": "주문 완료/결제 완료 화면"
     },
@@ -71,8 +71,36 @@
             "auto_fetch": false,
             "auth_mode": "required",
             "comment": "배송지 저장 (회원만 — 비회원은 배송지 저장 버튼 if 로 비노출)"
+        },
+        {
+            "id": "userAddresses",
+            "label_key": "$t:editor.data_source.userAddresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "addresses": {
+                        "data": []
+                    }
+                }
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "비회원(401)·일시 실패 모두 정상 흐름 — 주소록을 못 읽으면 버튼을 종전처럼 보일 뿐이다",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "회원의 저장 배송지 목록 — 주문 배송지가 이미 주소록에 있으면 [이 배송지를 저장하기] 를 숨기는 근거다. 비회원·만료 토큰은 401 이라\n    실패를 화면 오류로 키우지 않고 빈 목록으로 떨어뜨린다(그때는 버튼 노출 판정만 종전대로)."
         }
     ],
+    "computed": {
+        "comment": "shippingAddressAlreadySaved — 주문 배송지가 주소록 항목과 같은가. 수령인·연락처(숫자만)·국가와, 국내는 우편번호·주소·상세주소, 해외는 주소줄·도시·주·우편번호를 대조한다. 배송지명은 대조하지 않는다(주문완료에는 이름 입력칸이 없어 「배송지」로 저장된다).",
+        "shippingAddressAlreadySaved": "{{(() => { const a = orderData?.data?.shipping_address; if (!a) return false; const n = v => String(v ?? '').trim(); const d = v => String(v ?? '').split('').filter(ch => '0123456789'.includes(ch)).join(''); const cc = n(a.recipient_country_code) || 'KR'; return (userAddresses?.data?.addresses?.data ?? []).some(x => (n(x.country_code) || 'KR') === cc && n(x.recipient_name) === n(a.recipient_name) && d(x.recipient_phone) === d(a.recipient_phone) && (cc === 'KR' ? (n(x.zipcode) === n(a.zipcode) && n(x.address) === n(a.address) && n(x.address_detail) === n(a.address_detail)) : (n(x.address_line_1) === n(a.address_line_1) && n(x.address_line_2) === n(a.address_line_2) && n(x.city) === n(a.intl_city) && n(x.state) === n(a.intl_state) && n(x.postal_code) === n(a.intl_postal_code)))); })()}}"
+    },
     "permissions": [],
     "slots": {
         "content": [
@@ -961,10 +989,11 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).",
+                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측 S4, 제품 결정 ①).",
+                                                "id": "save_shipping_address_button",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "if": "{{_global.currentUser?.uuid}}",
+                                                "if": "{{_global.currentUser?.uuid && !_computed.shippingAddressAlreadySaved}}",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -990,17 +1019,39 @@
                                                             }
                                                         },
                                                         "onSuccess": {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "$t:shop.order_complete.address_saved"
-                                                            }
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:shop.order_complete.address_saved"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "주소록을 다시 받아 버튼을 숨긴다 — 두 번 눌러 같은 주소를 쌓지 않게",
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "userAddresses"
+                                                                    }
+                                                                }
+                                                            ]
                                                         },
                                                         "onError": {
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
                                                                 "message": "{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"
+                                                            }
+                                                        },
+                                                        "errorHandling": {
+                                                            "409": {
+                                                                "comment": "409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻이다 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다.\n                        분기는 상태 코드별 error-handling 으로 한다(fail 안의 conditions 는 엔진이 오류 처리기로 옮길 때 조건 목록을 버려 아무 토스트도 뜨지 않았다).",
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "info",
+                                                                    "message": "$t:shop.order_complete.address_name_exists"
+                                                                }
                                                             }
                                                         }
                                                     }

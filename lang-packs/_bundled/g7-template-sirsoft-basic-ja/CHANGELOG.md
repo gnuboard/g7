@@ -10,6 +10,11 @@
 
 - 선택 상자 검색 결과 없음 문구(`common.no_results`, 「検索結果がありません」)의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기 「화면 상태」 고르개의 게시판 상태 이름 2건(「답글 펼침」·「검증 실패」, `editor.state.*`)을 일본어로 번역했습니다.
+- 주문완료 화면에서 같은 이름의 배송지가 이미 있어 저장하지 않았다는 안내(`shop.order_complete.address_name_exists`)의 일본어 번역을 추가했습니다.
+- 해외 주문의 교환 신청 화면 재발송지 [변경] 폼에 새로 생긴 도시·주 칸 라벨(`claim.apply.city`·`claim.apply.state` — 「都市」「州/道」)의 일본어 번역을 추가했습니다. 체크아웃 해외 주소 칸과 같은 표현입니다.
+- 내 정보·내 정보 수정의 배송국가 칸에 저장한 나라가 지금 배송할 수 없어 적용되지 않는다는 안내(`mypage.shipping_country_settings.saved_not_applied` — 「保存された配送国 {{saved}} は現在配送できない国のため適用されません。現在適用中の配送国: {{applied}}」)의 일본어 번역을 추가했습니다.
+- 주문서 결제 금액 상자의 마일리지 차감 전 금액 행 라벨(`shop.checkout.amount_before_points` — 「マイレージ差引前の金額」)의 일본어 번역을 추가했습니다.
+- 사용 마일리지를 차감하지 않은 주문의 반품·취소 신청 화면 반환액 표기(`claim.apply.comparison.refund_points_not_deducted` — 「0円（差し引かれていないマイレージ）」)의 일본어 번역을 추가했습니다.
 - 본인인증 메일 링크를 연 화면(본인 확인 결과 안내)의 일본어 문구를 추가했습니다.
 - 로그인 비밀번호 변경 단계·비밀번호 규칙 안내·마이페이지 비밀번호 상태 문구(`auth.password_change.*`·`auth.password_rules.*`·`mypage.profile.password_status.*`)를 일본어로 번역했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 없음).
 - 권한이 없어 내용이 가려진 비밀 댓글 자리에 뜨는 안내 문구(`board.comment.secret_comment` — 「비밀 댓글입니다.」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내만 한국어로 보입니다.
@@ -55,6 +60,11 @@
 - 파일 고르개·화면 테마 단추 문구 일본어를 추가했습니다.
 - 파일 업로더의 0바이트 파일 안내(`attachment.empty_file`), 회원가입 필수 동의 체크박스 이름(`auth.agree_terms_label`·`agree_privacy_label`), 프로필 사진 미리보기 대체 글(`mypage.profile.avatar_preview`)의 일본어를 추가했습니다.
 - 마이페이지 문의 목록 펼침 단추 이름(`common.expand`·`common.collapse`)과 프로필 사진 업로더의 형식 거부·삭제 실패 안내(`attachment.invalid_file_type`·`attachment.delete_failed`)의 일본어를 추가했습니다.
+- 회원 주문·클레임 상세의 「마일리지로 환불」 금액과 유효기간 안내 문구(「マイレージで返金」·「マイレージで付与」)를 추가했습니다.
+- 회원 클레임 상세의 「교환 차액 환급」 줄 문구를 추가했습니다.
+- 회원·비회원 신청서 상세의 「환불 진행」 칸 문구(`claim.detail.linked_title`·`linked_source`·`linked_empty`)를 추가했습니다.
+- 수량 칸·+/- 버튼, 모바일 메뉴 닫기 버튼, 페이지 전환·로딩 표시의 읽기 이름(`common.quantity`·`common.quantity_decrease`·`common.quantity_increase`·`common.close_menu`·`common.page_transitioning`·`common.page_loading`)의 일본어 번역을 추가했습니다.
+- 장바구니 상품 줄 삭제 버튼의 읽기 이름(`shop.cart.delete_item` — 「상품 삭제」)의 일본어 번역을 추가했습니다.
 
 ### Removed
 
@@ -71,6 +81,7 @@
 - 비밀번호 입력의 「n종류 이상 조합」 안내를 영문·숫자·기호 세 종류 기준 문구로 바꿨습니다(`auth.password_input.rules.minTypes`).
 - 언어팩을 전량 재생성하면서 기존 일본어 문구 669건이 최신 번역으로 바뀌었습니다 — 「会社概要」→「企業情報」, 「秘密の投稿です」→「非公開投稿」 처럼 뜻은 같고 표현이 달라진 것이 대부분입니다. ko 원본에서 이미 지워진 고아 키 3건(`mypage.scrap.notice`·`notice_sub`·`scrapped_at`)을 이 팩에서도 걷어내려면 전량 재생성이 필요했습니다.
 - 로그인 화면의 무기한 잠김 안내(`locked_permanent`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다.
+- 사용 마일리지 반환 문구를 「使用マイレージ返還」으로 바꿨습니다.
 
 ### Fixed
 

@@ -216,6 +216,7 @@ class NhnKcpApiService
      * @param  bool  $isPartial  부분 취소 여부
      * @param  int  $totalAmt  현재 부분취소 가능 금액 (KCP rem_mny)
      * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
+     * @param  array<string, string>  $taxFields  복합과세(TG03) 부분취소 금액 {tax_flag, mod_tax_mny, mod_vat_mny, mod_free_mny} — 부분취소에만 싣는다
      * @return array 파싱된 KCP 응답
      */
     public function cancelPayment(
@@ -226,6 +227,7 @@ class NhnKcpApiService
         bool $isPartial = false,
         int $totalAmt = 0,
         ?array $refundAccount = null,
+        array $taxFields = [],
     ): array {
         $modType = $isPartial ? 'RN07' : 'STSC';
 
@@ -251,6 +253,13 @@ class NhnKcpApiService
             // 첫 부분취소는 원거래금액, 이후에는 이전 부분취소 후 남은 잔액을 전달한다.
             $fields['rem_mny'] = (string) $totalAmt;
             $fields['mod_mny'] = (string) $cancelAmt;
+
+            // 복합과세(TG03)로 승인한 결제는 부분취소에도 과세·부가세·비과세 취소 금액을 나눠 보낸다(P-D8, 합 = mod_mny).
+            foreach (['tax_flag', 'mod_tax_mny', 'mod_vat_mny', 'mod_free_mny'] as $key) {
+                if (isset($taxFields[$key])) {
+                    $fields[$key] = (string) $taxFields[$key];
+                }
+            }
         }
 
         $modxData = $this->buildKcpFieldData($fields);

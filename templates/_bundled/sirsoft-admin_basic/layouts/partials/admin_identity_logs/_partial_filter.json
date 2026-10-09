@@ -375,6 +375,7 @@
                             ],
                             "props": {
                                 "type": "date",
+                                "aria-label": "$t:common.range_start|label={{$t('admin.identity.logs.filter.date_range_label')}}",
                                 "name": "dateFrom",
                                 "className": "input w-40",
                                 "value": "{{_local.filter.dateFrom || ''}}"
@@ -404,6 +405,7 @@
                             ],
                             "props": {
                                 "type": "date",
+                                "aria-label": "$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}",
                                 "name": "dateTo",
                                 "className": "input w-40",
                                 "value": "{{_local.filter.dateTo || ''}}"

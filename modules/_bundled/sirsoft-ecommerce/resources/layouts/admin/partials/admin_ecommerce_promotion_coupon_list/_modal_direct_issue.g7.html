@@ -19,8 +19,8 @@
             <set-state target="global" directIssueSearchKeyword="{{$event.target.value}}"/>
             <api-call if="{{String($event.target.value ?? '').trim() !== ''}}" auth_mode="required" target="/api/admin/users/search" method="GET">
               <success>
-                <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. -->
-                <set-state target="global" directIssueSearchResults="{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}" directIssueSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
+                <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답(한 글자가 부른 전체 회원)은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이라 옛 응답도 통과하고, 값 식의 `_global` 만 평가 시점 최신 상태다). 덮어쓰고 아래 가드로 감추기만 하면 이미 보이던 정답 목록이 사라지고 다시 오지 않는다(2026-10-07 실측). -->
+                <set-state target="global" directIssueSearchResults="{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email })) : (_global.directIssueSearchResults ?? [])}}" directIssueSearchResultsKeyword="{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.directIssueSearchResultsKeyword ?? null)}}"/>
               </success>
               <fail>
                 <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed'}}"/>
@@ -54,7 +54,7 @@
     <div data-if="{{(_global.directIssueSelectedUsers ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
       <div data-each="selected, selectedIdx in {{_global.directIssueSelectedUsers ?? []}}" class="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
         <span>{{selected.name}}</span>
-        <button type="button" class="ml-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full">
+        <button type="button" class="ml-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full" aria-label="$t:sirsoft-ecommerce.common.remove">
           <on type="click">
             <!-- 고른 회원 칩에서 빼기. 배열에서 지우는 것뿐이고 서버로는 아무것도 나가지 않는다(발급은 아래 버튼이 한다). -->
             <set-state target="global" directIssueSelectedUsers="{{(_global.directIssueSelectedUsers ?? []).filter(u => u.uuid !== selected.uuid)}}"/>

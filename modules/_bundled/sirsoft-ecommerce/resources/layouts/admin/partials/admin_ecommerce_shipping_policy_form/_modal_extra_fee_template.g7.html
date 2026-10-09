@@ -26,7 +26,7 @@
             </sequence>
           </on>
         </input>
-        <button type="button" class="btn btn-outline">
+        <button type="button" class="btn btn-outline" aria-label="$t:common.search">
           <on type="click">
             <!-- 돋보기 버튼 — 엔터와 똑같은 세 단계다(같은 동작을 두 입구로 낸 것). -->
             <sequence>
@@ -172,7 +172,7 @@
                 <td/>
                 <td class="text-center">
                   <div class="flex-center justify-center gap-1">
-                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}">
+                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}" aria-label="$t:common.save">
                       <on type="click">
                         <!-- 새 템플릿 저장 — 오류를 먼저 비우고 보낸다. 성공하면 입력 줄을 닫고 폼을
                           초깃값으로 되세운 뒤, 스크롤 상태를 처음으로 돌려 목록을 다시 부른다
@@ -200,7 +200,7 @@
                       <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="text-sm animate-spin"/>
                       <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="text-sm"/>
                     </button>
-                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.cancel">
                       <on type="click">
                         <!-- 새 줄 취소 — 줄을 닫으면서 폼과 오류를 초깃값으로 되세운다. 남겨 두면 다음에 [추가]를 눌렀을 때 지난 입력이 그대로 뜬다. -->
                         <set-state target="$parent._local" :isAddingTemplate="false" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
@@ -240,7 +240,7 @@
                   <span data-if="{{$parent._local.editingTemplate === template.id &amp;&amp; $parent._local.templateFormErrors?.region}}" class="form-error">{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}</span>
                 </td>
                 <td>
-                  <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm">{{template.fee_formatted ?? (Number(template.fee ?? 0).toLocaleString() + '원')}}</span>
+                  <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm">{{template.fee_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + Number(template.fee ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
                   <input data-if="{{$parent._local.editingTemplate === template.id}}" type="number" value="{{$parent._local.templateForm.fee ?? 0}}" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed.isReadOnly}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 금액 — 새 줄과 같은 규약이나 **비었을 때 보이는 기본값이 다르다**(새 줄 3000 ↔ 여기 0). 편집은 이미 있는 값을 부어 받으므로 그 자리가 비는 경우가 정상이 아니기 때문이다. -->
@@ -261,14 +261,14 @@
                 </td>
                 <td class="text-center">
                   <div data-if="{{$parent._local.editingTemplate !== template.id}}" class="flex-center justify-center gap-1">
-                    <button type="button" class="btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.isReadOnly}}">
+                    <button type="button" class="btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.isReadOnly}}" aria-label="$t:common.edit">
                       <on type="click">
                         <!-- 이 줄 편집 시작 — 새 줄 입력이 열려 있으면 함께 닫고(같은 `templateForm` 을 돌려 쓴다), 그 줄의 값을 폼에 부어 준다. -->
                         <set-state target="$parent._local" editingTemplate="{{template.id}}" :isAddingTemplate="false" templateForm="{{({ zipcode: template.zipcode, fee: Number(template.fee), region: template.region ?? '', description: template.description ?? '', is_active: template.is_active ?? true })}}"/>
                       </on>
                       <icon name="pencil" class="text-sm"/>
                     </button>
-                    <button type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}">
+                    <button type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}" aria-label="$t:common.delete">
                       <on type="click">
                         <!-- 이 줄 삭제 — 지운 뒤 체크 목록에서도 그 id 를 빼야 한다. 남겨 두면 없는 줄을 가리킨 채로 [선택 적용]·일괄 삭제의 건수가 어긋난다. -->
                         <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.delete_confirm">
@@ -292,7 +292,7 @@
                     </button>
                   </div>
                   <div data-if="{{$parent._local.editingTemplate === template.id}}" class="flex-center justify-center gap-1">
-                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}">
+                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}" aria-label="$t:common.save">
                       <on type="click">
                         <!-- 편집 저장 — 새 줄 저장과 같은 흐름이나 두 가지가 다르다: 주소가 그 줄의
                           id 를 달고(PUT), 앞의 두 상태 쓰기 순서가 반대다(진행 깃발 먼저, 오류 비우기
@@ -320,7 +320,7 @@
                       <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="text-sm animate-spin"/>
                       <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="text-sm"/>
                     </button>
-                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.cancel">
                       <on type="click">
                         <!-- 편집 취소 — 편집 줄을 닫고 폼·오류를 초깃값으로 되세운다(새 줄 취소와 같은 규약이고 닫는 대상만 다르다). -->
                         <set-state target="$parent._local" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>

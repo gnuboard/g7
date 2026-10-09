@@ -21,7 +21,6 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
@@ -43,6 +42,11 @@ class OrderCalculationServiceTest extends ModuleTestCase
 {
     protected OrderCalculationService $service;
 
+    /**
+     * 통화·마일리지 설정을 심고 계산 서비스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +60,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
     /**
      * 테스트용 통화 설정을 저장합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setupTestCurrencySettings(): void
     {
@@ -103,6 +109,11 @@ class OrderCalculationServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 테스트가 심은 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 설정 파일 정리
@@ -123,7 +134,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      *
      * @param  int  $price  상품 판매가
      * @param  int  $priceAdjustment  옵션 추가금액
-     * @return array [Product, ProductOption]
+     * @return array 생성된 [상품, 상품옵션]
      */
     protected function createProductWithOption(
         int $price = 50000,
@@ -157,6 +168,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario quantity_shape=multi, coupon_slot=none, execution_mode=live
      *
      * @effects option_subtotal_is_unit_price_times_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_single_option_subtotal(): void
     {
@@ -195,6 +208,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario quantity_shape=multi, coupon_slot=none, execution_mode=live
      *
      * @effects option_subtotal_is_unit_price_times_quantity, summary_subtotal_sums_all_options
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_multiple_options_subtotal_sum(): void
     {
@@ -242,6 +257,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario quantity_shape=zero, coupon_slot=none, execution_mode=live
      *
      * @effects zero_quantity_option_excluded_from_calculation
+     *
+     * @return void 반환값 없음
      */
     public function test_it_excludes_zero_quantity_option(): void
     {
@@ -328,6 +345,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * 테스트용 카테고리를 생성합니다.
      *
      * @param  string  $name  카테고리명
+     * @return Category 생성된 카테고리
      */
     protected function createCategory(string $name = '테스트 카테고리'): Category
     {
@@ -354,6 +372,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects product_coupon_scope_all_applies_to_every_item
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_fixed_discount_to_all_products(): void
     {
@@ -403,6 +423,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=single
      *
      * @effects product_coupon_scope_all_applies_to_every_item, product_coupon_rate_discount_computed_on_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_rate_discount_to_all_products(): void
     {
@@ -454,6 +476,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects product_coupon_scope_products_applies_only_to_target
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_fixed_discount_to_specific_products(): void
     {
@@ -513,6 +537,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=single
      *
      * @effects product_coupon_scope_products_applies_only_to_target, product_coupon_rate_discount_computed_on_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_rate_discount_to_specific_product(): void
     {
@@ -565,6 +591,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=single
      *
      * @effects product_coupon_scope_category_applies_only_to_member
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_rate_discount_to_specific_category(): void
     {
@@ -623,6 +651,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate_capped, quantity_shape=single
      *
      * @effects product_coupon_max_discount_caps_rate_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_it_limits_discount_to_max_amount(): void
     {
@@ -675,6 +705,11 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  bool  $extraFeeMultiply  도서산간 추가배송비 수량비례 적용
      * @param  string  $countryCode  국가코드
      * @param  string  $currencyCode  통화코드
+     * @param  string|null  $apiEndpoint  배송비 API 주소
+     * @param  array|null  $apiRequestFields  배송비 API 요청 필드
+     * @param  string|null  $apiResponseFeeField  응답의 배송비 필드
+     * @param  array|null  $apiConfig  배송비 API 설정
+     * @return ShippingPolicy 생성된 배송정책
      */
     protected function createShippingPolicy(
         ChargePolicyEnum $chargePolicy = ChargePolicyEnum::FREE,
@@ -722,6 +757,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * 테스트용 배송정책을 다국가 설정으로 생성합니다.
      *
      * @param  array  $countrySettingsData  국가별 설정 배열 [{country_code, charge_policy, base_fee, ...}, ...]
+     * @return ShippingPolicy 생성된 배송정책
      */
     protected function createMultiCountryShippingPolicy(array $countrySettingsData): ShippingPolicy
     {
@@ -754,7 +790,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      *
      * @param  int  $price  상품 판매가
      * @param  ShippingPolicy  $shippingPolicy  배송정책
-     * @return array [Product, ProductOption]
+     * @return array 생성된 [상품, 상품옵션]
      */
     protected function createProductWithShippingPolicy(
         int $price,
@@ -783,7 +819,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  ShippingPolicy  $shippingPolicy  배송정책
      * @param  float  $weight  무게 (g — 상품 옵션의 저장 단위)
      * @param  float  $volume  부피 (cm³ — 상품 옵션의 저장 단위)
-     * @return array [Product, ProductOption]
+     * @return array 생성된 [상품, 상품옵션]
      */
     protected function createProductWithDimensions(
         int $price,
@@ -818,6 +854,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=free, policy_grouping=single_policy
      *
      * @effects free_policy_charges_no_shipping
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_free_shipping_policy(): void
     {
@@ -853,6 +891,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=fixed, policy_grouping=single_policy
      *
      * @effects fixed_policy_charges_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_fixed_shipping_policy(): void
     {
@@ -889,6 +929,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=conditional_free, policy_grouping=single_policy
      *
      * @effects conditional_free_waives_fee_above_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_conditional_free_shipping_when_threshold_met(): void
     {
@@ -926,6 +968,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=conditional_free, policy_grouping=single_policy
      *
      * @effects conditional_free_charges_fee_below_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_conditional_free_shipping_when_threshold_not_met(): void
     {
@@ -963,6 +1007,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_amount, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_amount_shipping_policy(): void
     {
@@ -1005,6 +1051,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_quantity, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_quantity_shipping_policy(): void
     {
@@ -1047,6 +1095,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_quantity, policy_grouping=single_policy
      *
      * @effects per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_per_quantity_shipping_policy(): void
     {
@@ -1084,6 +1134,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_weight_shipping_policy(): void
     {
@@ -1127,6 +1179,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_volume, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_volume_shipping_policy(): void
     {
@@ -1170,6 +1224,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_volume_weight, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value, volumetric_weight_derived_from_divisor
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_volume_weight_shipping_policy(): void
     {
@@ -1214,6 +1270,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, policy_grouping=single_policy
      *
      * @effects per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_per_weight_shipping_policy(): void
     {
@@ -1252,6 +1310,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_volume, policy_grouping=single_policy
      *
      * @effects per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_per_volume_shipping_policy(): void
     {
@@ -1290,6 +1350,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_volume_weight, policy_grouping=single_policy
      *
      * @effects per_unit_policy_charges_ceil_units_times_base_fee, volumetric_weight_derived_from_divisor
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_per_volume_weight_shipping_policy(): void
     {
@@ -1328,6 +1390,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_amount, policy_grouping=single_policy
      *
      * @effects per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_per_amount_shipping_policy(): void
     {
@@ -1364,6 +1428,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=api, policy_grouping=single_policy
      *
      * @effects api_policy_uses_base_fee_without_endpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_api_shipping_policy_without_endpoint(): void
     {
@@ -1400,6 +1466,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=api, policy_grouping=single_policy
      *
      * @effects api_policy_uses_remote_fee_on_success
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_api_shipping_policy_with_mock_response(): void
     {
@@ -1449,6 +1517,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=api, policy_grouping=single_policy
      *
      * @effects api_policy_falls_back_to_base_fee_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_it_falls_back_to_base_fee_when_api_fails(): void
     {
@@ -1491,6 +1561,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=api, policy_grouping=single_policy
      *
      * @effects api_policy_falls_back_to_base_fee_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_it_falls_back_to_base_fee_when_api_timeout(): void
     {
@@ -1538,6 +1610,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=conditional_free
      *
      * @effects each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_two_policy_groups_fixed_and_conditional(): void
     {
@@ -1597,6 +1671,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=per_quantity
      *
      * @effects each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_three_policy_groups(): void
     {
@@ -1664,6 +1740,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=conditional_free
      *
      * @effects each_policy_group_computed_independently, same_policy_items_grouped_into_one_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_same_policy_different_settings(): void
     {
@@ -1730,6 +1808,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=range_amount
      *
      * @effects each_policy_group_computed_independently, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_range_and_per_mixed_policies(): void
     {
@@ -1806,6 +1886,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=free
      *
      * @effects each_policy_group_computed_independently, free_policy_charges_no_shipping
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_free_and_paid_mixed(): void
     {
@@ -1872,6 +1954,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=fixed
      *
      * @effects each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_it_calculates_four_or_more_policy_groups(): void
     {
@@ -1964,6 +2048,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=single_policy, charge_policy=fixed
      *
      * @effects shipping_fee_apportioned_to_options_by_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_it_apportions_shipping_to_two_options_by_ratio(): void
     {
@@ -2015,6 +2101,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=single_policy, charge_policy=fixed
      *
      * @effects shipping_fee_apportioned_to_options_by_ratio, apportioned_amounts_sum_to_original_discount
+     *
+     * @return void 반환값 없음
      */
     public function test_it_apportions_shipping_to_three_options_by_ratio(): void
     {
@@ -2075,6 +2163,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=fixed
      *
      * @effects shipping_fee_apportioned_to_options_by_ratio, each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_it_apportions_shipping_independently_per_policy(): void
     {
@@ -2150,6 +2240,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_charged_for_matching_zipcode
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_shipping_fee_for_island_zipcode(): void
     {
@@ -2196,6 +2288,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_normal, charge_policy=fixed
      *
      * @effects extra_fee_not_charged_for_normal_zipcode
+     *
+     * @return void 반환값 없음
      */
     public function test_it_does_not_apply_extra_fee_for_normal_zipcode(): void
     {
@@ -2239,6 +2333,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=no_address, charge_policy=fixed
      *
      * @effects extra_fee_not_charged_without_address
+     *
+     * @return void 반환값 없음
      */
     public function test_it_does_not_apply_extra_fee_without_shipping_address(): void
     {
@@ -2278,6 +2374,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_not_charged_when_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_it_does_not_apply_extra_fee_when_disabled(): void
     {
@@ -2323,6 +2421,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=per_quantity
      *
      * @effects extra_fee_multiplied_only_when_multiply_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_it_multiplies_extra_fee_for_per_quantity_policy(): void
     {
@@ -2371,6 +2471,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=per_quantity
      *
      * @effects extra_fee_multiplied_only_when_multiply_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_it_does_not_multiply_extra_fee_when_multiply_disabled(): void
     {
@@ -2415,6 +2517,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_multiplied_only_when_multiply_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_once_for_fixed_policy_even_with_multiply(): void
     {
@@ -2457,6 +2561,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, policy_grouping=multi_policy
      *
      * @effects extra_fee_charged_per_policy_group
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_to_each_policy_group(): void
     {
@@ -2516,6 +2622,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_zipcode_pattern_matching_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_it_matches_exact_zipcode(): void
     {
@@ -2578,6 +2686,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_zipcode_pattern_matching_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_it_matches_range_pattern_zipcode(): void
     {
@@ -2660,6 +2770,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed
      *
      * @effects extra_fee_zipcode_pattern_matching_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_first_matching_pattern(): void
     {
@@ -2708,6 +2820,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=conditional_free
      *
      * @effects extra_fee_charged_for_matching_zipcode, conditional_free_charges_fee_below_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_conditional_free_not_met(): void
     {
@@ -2751,6 +2865,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=conditional_free
      *
      * @effects extra_fee_charged_independently_of_base_fee, conditional_free_waives_fee_above_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_conditional_free_met(): void
     {
@@ -2794,6 +2910,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=range_amount
      *
      * @effects extra_fee_charged_for_matching_zipcode, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_range_amount(): void
     {
@@ -2843,6 +2961,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=range_quantity
      *
      * @effects extra_fee_charged_for_matching_zipcode, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_range_quantity(): void
     {
@@ -2892,6 +3012,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=range_weight
      *
      * @effects extra_fee_charged_for_matching_zipcode, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_range_weight(): void
     {
@@ -2941,6 +3063,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=range_volume
      *
      * @effects extra_fee_charged_for_matching_zipcode, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_range_volume(): void
     {
@@ -2992,6 +3116,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=per_weight
      *
      * @effects extra_fee_multiplied_only_when_multiply_enabled, per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_per_weight_multiply(): void
     {
@@ -3036,6 +3162,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=per_volume
      *
      * @effects extra_fee_charged_for_matching_zipcode, per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_per_volume(): void
     {
@@ -3079,6 +3207,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=per_amount
      *
      * @effects extra_fee_charged_for_matching_zipcode, per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_per_amount(): void
     {
@@ -3122,6 +3252,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=free
      *
      * @effects extra_fee_charged_independently_of_base_fee, free_policy_charges_no_shipping
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_extra_fee_with_free_policy(): void
     {
@@ -3168,6 +3300,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, coupon_slot=shipping, discount_type=rate
      *
      * @effects shipping_coupon_discount_covers_base_and_extra
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_to_base_and_extra_shipping(): void
     {
@@ -3221,6 +3355,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, coupon_slot=shipping, discount_type=fixed
      *
      * @effects shipping_coupon_discount_covers_base_and_extra
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_fixed_shipping_coupon_to_total_shipping(): void
     {
@@ -3274,6 +3410,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_normal, coupon_slot=shipping, discount_type=rate
      *
      * @effects shipping_coupon_discount_never_exceeds_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_only_to_base_when_no_extra(): void
     {
@@ -3329,6 +3467,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, coupon_slot=shipping, policy_grouping=multi_policy
      *
      * @effects shipping_coupon_applies_across_policy_groups, shipping_coupon_discount_covers_base_and_extra
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_to_multiple_policy_groups_with_extra(): void
     {
@@ -3403,6 +3543,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=overseas, charge_policy=fixed
      *
      * @effects shipping_uses_country_setting_of_address
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_fee_uses_country_code_from_address(): void
     {
@@ -3453,6 +3595,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_normal, charge_policy=fixed
      *
      * @effects shipping_falls_back_to_kr_without_country
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_fee_falls_back_to_kr_when_no_country_code(): void
     {
@@ -3481,6 +3625,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=overseas, charge_policy=fixed
      *
      * @effects shipping_skipped_without_matching_country
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_fee_skips_policy_without_matching_country(): void
     {
@@ -3512,6 +3658,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=overseas, charge_policy=fixed
      *
      * @effects extra_fee_limited_to_domestic_address
+     *
+     * @return void 반환값 없음
      */
     public function test_extra_fee_only_applies_to_kr_address(): void
     {
@@ -3566,6 +3714,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_normal, charge_policy=fixed
      *
      * @effects applied_policy_snapshot_records_country_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_policy_snapshot_includes_country_setting(): void
     {
@@ -3600,6 +3750,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=overseas, charge_policy=range_weight
      *
      * @effects charge_policy_can_differ_per_country
+     *
+     * @return void 반환값 없음
      */
     public function test_different_charge_policy_per_country(): void
     {
@@ -3662,6 +3814,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  float  $discountValue  할인 값
      * @param  float|null  $maxDiscount  최대 할인금액
      * @param  int  $minOrderAmount  최소 주문금액 (상품소계 기준 — P18)
+     * @return CouponIssue 발급된 쿠폰
      */
     protected function createShippingCouponWithIssue(
         CouponDiscountType $discountType,
@@ -3706,6 +3859,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=shipping, discount_type=fixed, charge_policy=fixed
      *
      * @effects shipping_coupon_discount_never_exceeds_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_full_discount(): void
     {
@@ -3751,6 +3906,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=shipping, discount_type=rate, charge_policy=fixed
      *
      * @effects shipping_coupon_discount_covers_base_and_extra
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_rate_discount(): void
     {
@@ -3796,6 +3953,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=shipping, discount_type=fixed, charge_policy=fixed
      *
      * @effects shipping_coupon_discount_never_exceeds_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_shipping_coupon_partial_discount(): void
     {
@@ -3843,6 +4002,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario basis_case=subtotal_meets_min
      *
      * @effects shipping_coupon_min_compared_to_product_subtotal, shipping_coupon_discount_capped_by_shipping_total
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_coupon_min_order_amount_uses_product_subtotal(): void
     {
@@ -3890,6 +4051,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario basis_case=subtotal_below_min
      *
      * @effects shipping_coupon_min_compared_to_product_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_coupon_min_order_amount_not_met_by_product_subtotal(): void
     {
@@ -3937,6 +4100,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  CouponDiscountType  $discountType  할인 타입
      * @param  float  $discountValue  할인 값
      * @param  float|null  $maxDiscount  최대 할인금액
+     * @return CouponIssue 발급된 쿠폰
      */
     protected function createOrderCouponWithIssue(
         CouponDiscountType $discountType,
@@ -3980,6 +4144,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @param  float  $discountValue  할인 값
      * @param  float|null  $maxDiscount  최대 할인금액
      * @param  array  $targetIds  대상 상품/카테고리 ID (선택)
+     * @return CouponIssue 발급된 쿠폰
      */
     protected function createProductCouponWithIssue(
         CouponTargetScope $targetScope,
@@ -4034,6 +4199,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects order_coupon_discount_apportioned_by_amount_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_order_coupon_fixed_discount_with_apportionment(): void
     {
@@ -4084,6 +4251,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=rate, quantity_shape=single
      *
      * @effects order_coupon_discount_apportioned_by_amount_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_order_coupon_rate_discount_with_apportionment(): void
     {
@@ -4133,6 +4302,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects apportioned_amounts_sum_to_original_discount, apportionment_remainder_assigned_to_last_item
+     *
+     * @return void 반환값 없음
      */
     public function test_it_handles_order_discount_apportionment_remainder(): void
     {
@@ -4189,6 +4360,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects final_amount_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_it_prevents_negative_final_amount(): void
     {
@@ -4231,7 +4404,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
      *
      * @param  int  $price  상품 가격
      * @param  ProductTaxStatus  $taxStatus  과세 상태
-     * @return array [Product, ProductOption]
+     * @return array 생성된 [상품, 상품옵션]
      */
     protected function createProductWithTaxStatus(
         int $price,
@@ -4261,6 +4434,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario tax_composition=taxable_only, coupon_slot=none
      *
      * @effects taxable_only_order_has_zero_tax_free_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_it_classifies_taxable_products_only(): void
     {
@@ -4306,6 +4481,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario tax_composition=tax_free_only, coupon_slot=none
      *
      * @effects tax_free_only_order_has_zero_taxable_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_it_classifies_tax_free_products_only(): void
     {
@@ -4351,6 +4528,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario tax_composition=mixed, coupon_slot=none
      *
      * @effects mixed_tax_status_split_into_two_buckets
+     *
+     * @return void 반환값 없음
      */
     public function test_it_classifies_mixed_tax_status_products(): void
     {
@@ -4399,6 +4578,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario combinable_mix=false_only, slot_combo=item_plus_order, snapshot=live
      *
      * @effects is_combinable_false_alone_passes
+     *
+     * @return void 반환값 없음
      */
     public function test_it_allows_non_combinable_coupon_alone(): void
     {
@@ -4455,6 +4636,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario combinable_mix=false_plus_true, slot_combo=item_plus_order, snapshot=live
      *
      * @effects is_combinable_false_blocks_across_all_slots
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rejects_non_combinable_coupon_with_other_coupons(): void
     {
@@ -4537,6 +4720,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario combinable_mix=false_plus_true, slot_combo=item_plus_order, snapshot=live
      *
      * @effects is_combinable_false_blocks_across_all_slots
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rejects_non_combinable_coupon_across_slots(): void
     {
@@ -4624,6 +4809,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, execution_mode=live
      *
      * @effects coupon_applied_when_min_order_amount_met
+     *
+     * @return void 반환값 없음
      */
     public function test_it_applies_coupon_when_min_order_amount_met(): void
     {
@@ -4680,6 +4867,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, execution_mode=live
      *
      * @effects coupon_rejected_when_min_order_amount_not_met
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rejects_coupon_when_min_order_amount_not_met(): void
     {
@@ -4737,6 +4926,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, execution_mode=live
      *
      * @effects product_coupon_rejected_without_target_in_cart
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rejects_product_specific_coupon_without_target_product(): void
     {
@@ -4798,6 +4989,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, execution_mode=live
      *
      * @effects expired_coupon_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rejects_expired_coupon(): void
     {
@@ -4859,6 +5052,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects apportioned_amounts_sum_to_original_discount
+     *
+     * @return void 반환값 없음
      */
     public function test_it_apportions_discount_with_exact_sum(): void
     {
@@ -4906,6 +5101,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects apportionment_remainder_assigned_to_last_item
+     *
+     * @return void 반환값 없음
      */
     public function test_it_assigns_apportionment_remainder_to_last_item(): void
     {
@@ -4956,6 +5153,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=none, quantity_shape=single, execution_mode=live
      *
      * @effects mileage_apportioned_by_subtotal_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_it_apportions_mileage_by_subtotal_ratio(): void
     {
@@ -5003,6 +5202,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, charge_policy=fixed, policy_grouping=single_policy
      *
      * @effects product_coupon_scope_all_applies_to_every_item, fixed_policy_charges_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_two_products_with_product_coupon_and_fixed_shipping(): void
     {
@@ -5047,6 +5248,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, charge_policy=fixed, policy_grouping=single_policy
      *
      * @effects order_coupon_discount_apportioned_by_amount_ratio, shipping_coupon_discount_never_exceeds_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_three_products_with_order_and_shipping_coupon(): void
     {
@@ -5098,6 +5301,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, quantity_shape=single, execution_mode=live
      *
      * @effects order_coupon_rate_computed_after_product_discount, mileage_use_reduces_final_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_product_coupon_order_coupon_and_mileage(): void
     {
@@ -5149,6 +5354,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario tax_composition=mixed, coupon_slot=product, discount_type=fixed
      *
      * @effects mixed_tax_status_split_into_two_buckets
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_mixed_tax_status_with_discount(): void
     {
@@ -5194,6 +5401,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, policy_grouping=multi_policy, charge_policy=fixed
      *
      * @effects each_policy_group_computed_independently, order_coupon_discount_apportioned_by_amount_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_multiple_shipping_policies_with_coupons(): void
     {
@@ -5252,6 +5461,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario quantity_shape=multi, coupon_slot=multi_slot, charge_policy=fixed
      *
      * @effects option_subtotal_is_unit_price_times_quantity, fixed_policy_charges_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_multiple_quantity_with_shipping_and_coupon(): void
     {
@@ -5293,6 +5504,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=rate, quantity_shape=single
      *
      * @effects final_amount_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_full_discount_zero_payment(): void
     {
@@ -5333,6 +5546,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, quantity_shape=single, execution_mode=live
      *
      * @effects mileage_use_reduces_final_amount, final_amount_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_discount_and_mileage_zero_payment(): void
     {
@@ -5371,6 +5586,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=single_policy, charge_policy=fixed
      *
      * @effects same_policy_items_grouped_into_one_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_same_shipping_policy_grouped(): void
     {
@@ -5408,6 +5625,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=fixed, quantity_shape=single
      *
      * @effects product_coupon_scope_products_applies_only_to_target, order_coupon_rate_computed_after_product_discount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_specific_product_coupon_with_order_coupon(): void
     {
@@ -5457,6 +5676,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=rate_capped, quantity_shape=single
      *
      * @effects product_coupon_max_discount_caps_rate_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_rate_coupon_max_discount_with_order_coupon(): void
     {
@@ -5503,6 +5724,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=none, quantity_shape=single, execution_mode=live
      *
      * @effects mileage_use_capped_by_payable_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_mileage_exceeds_payment_amount(): void
     {
@@ -5531,6 +5754,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_quantity, quantity_shape=multi, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_range_shipping_with_quantity(): void
     {
@@ -5573,6 +5798,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_amount, coupon_slot=product, policy_grouping=single_policy
      *
      * @effects range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_range_amount_shipping_with_coupon(): void
     {
@@ -5627,6 +5854,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, charge_policy=fixed, execution_mode=live
      *
      * @effects order_coupon_rate_computed_after_product_discount, shipping_coupon_discount_never_exceeds_fee, mileage_use_reduces_final_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_full_scenario_all_discounts(): void
     {
@@ -5692,6 +5921,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=none, quantity_shape=single, execution_mode=live
      *
      * @effects points_earning_uses_default_rate
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_points_earning_default_rate(): void
     {
@@ -5717,6 +5948,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=fixed
      *
      * @effects each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_multiple_options_separate_shipping_policies(): void
     {
@@ -5762,6 +5995,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=fixed, policy_grouping=single_policy, coupon_slot=none
      *
      * @effects fixed_policy_charges_base_fee, final_amount_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_shipping_higher_than_product_price(): void
     {
@@ -5800,6 +6035,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=none, quantity_shape=single, execution_mode=live
      *
      * @effects mileage_use_reduces_final_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_mileage_full_payment(): void
     {
@@ -5835,6 +6072,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=none, quantity_shape=zero, execution_mode=live
      *
      * @effects empty_cart_yields_zero_totals
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_empty_cart_calculation(): void
     {
@@ -5869,6 +6108,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_quantity, quantity_shape=multi, policy_grouping=single_policy
      *
      * @effects shipping_recalculated_when_quantity_changes, per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_quantity_change_affects_per_quantity_shipping(): void
     {
@@ -5913,6 +6154,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=conditional_free, quantity_shape=multi, policy_grouping=single_policy
      *
      * @effects shipping_recalculated_when_quantity_changes, conditional_free_waives_fee_above_threshold, conditional_free_charges_fee_below_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_quantity_change_conditional_free_shipping_threshold(): void
     {
@@ -5957,6 +6200,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario policy_grouping=multi_policy, charge_policy=free
      *
      * @effects each_policy_group_computed_independently
+     *
+     * @return void 반환값 없음
      */
     public function test_adding_product_with_different_shipping_policy(): void
     {
@@ -6009,6 +6254,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, coupon_slot=multi_slot, policy_grouping=single_policy
      *
      * @effects shipping_coupon_discount_covers_base_and_extra, order_coupon_rate_computed_after_product_discount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_full_flow_with_extra_shipping_and_all_coupons(): void
     {
@@ -6086,6 +6333,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, policy_grouping=multi_policy
      *
      * @effects extra_fee_charged_per_policy_group
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_multiple_policies_with_different_extra_fees(): void
     {
@@ -6154,6 +6403,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, policy_grouping=multi_policy, charge_policy=per_quantity
      *
      * @effects extra_fee_multiplied_only_when_multiply_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_per_policies_with_mixed_multiply_settings(): void
     {
@@ -6221,6 +6472,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=conditional_free, policy_grouping=single_policy
      *
      * @effects extra_fee_charged_independently_of_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_free_shipping_with_extra_fee(): void
     {
@@ -6268,6 +6521,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_island, charge_policy=fixed, policy_grouping=single_policy
      *
      * @effects extra_fee_recalculated_on_address_change
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_address_change_adds_extra_fee(): void
     {
@@ -6324,6 +6579,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario destination=domestic_normal, charge_policy=fixed, policy_grouping=single_policy
      *
      * @effects extra_fee_recalculated_on_address_change
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_address_change_removes_extra_fee(): void
     {
@@ -6386,6 +6643,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects multiple_product_coupons_each_computed_on_original_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_fixed_coupons_apply_to_same_product(): void
     {
@@ -6440,6 +6699,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=single
      *
      * @effects multiple_product_coupons_each_computed_on_original_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_rate_coupons_apply_to_same_product(): void
     {
@@ -6497,6 +6758,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=single
      *
      * @effects multiple_product_coupons_each_computed_on_original_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_fixed_and_rate_coupons_apply_to_same_product(): void
     {
@@ -6552,6 +6815,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects product_coupon_scope_products_applies_only_to_target, multiple_product_coupons_each_computed_on_original_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_different_coupons_for_different_products(): void
     {
@@ -6614,6 +6879,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects multiple_product_coupons_each_computed_on_original_subtotal, product_coupon_fixed_discount_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_coupons_with_quantity(): void
     {
@@ -6671,6 +6938,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects multiple_product_coupons_each_computed_on_original_subtotal, final_amount_never_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_coupons_discount_sum(): void
     {
@@ -6723,6 +6992,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=single
      *
      * @effects coupon_discount_exposes_formatted_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_product_coupon_includes_formatted_discount_amounts(): void
     {
@@ -6772,6 +7043,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=order, discount_type=fixed, quantity_shape=single
      *
      * @effects coupon_discount_exposes_formatted_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_order_coupon_includes_formatted_discount_amounts(): void
     {
@@ -6819,6 +7092,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=shipping, discount_type=fixed, quantity_shape=single
      *
      * @effects coupon_discount_exposes_formatted_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_coupon_includes_formatted_discount_amounts(): void
     {
@@ -6871,6 +7146,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, tax_composition=mixed, coupon_slot=none
      *
      * @effects snapshot_item_fields_override_db_values
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_uses_item_snapshot_tax_status(): void
     {
@@ -6935,6 +7212,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, charge_policy=range_weight, policy_grouping=single_policy
      *
      * @effects snapshot_item_fields_override_db_values, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_uses_item_snapshot_weight_for_shipping(): void
     {
@@ -7023,6 +7302,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, charge_policy=range_volume, policy_grouping=single_policy
      *
      * @effects snapshot_item_fields_override_db_values, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_uses_item_snapshot_volume_for_shipping(): void
     {
@@ -7112,6 +7393,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=none, quantity_shape=single
      *
      * @effects snapshot_and_db_items_calculated_together
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_mixed_snapshot_and_db_items(): void
     {
@@ -7168,6 +7451,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=none, quantity_shape=single
      *
      * @effects snapshot_mileage_fields_used_for_earning
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_mileage_fields_from_snapshot(): void
     {
@@ -7213,6 +7498,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=none, quantity_shape=single
      *
      * @effects snapshot_null_falls_back_to_db_lookup
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_null_fallback_to_db(): void
     {
@@ -7251,6 +7538,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, charge_policy=range_amount, policy_grouping=single_policy
      *
      * @effects snapshot_shipping_policy_used_for_fee, range_policy_selects_tier_by_measured_value
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_shipping_policy_different_fee_ranges(): void
     {
@@ -7334,6 +7623,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, destination=domestic_island, charge_policy=fixed
      *
      * @effects snapshot_shipping_policy_used_for_fee, extra_fee_charged_for_matching_zipcode
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_shipping_policy_extra_fee_from_snapshot(): void
     {
@@ -7417,6 +7708,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=product, discount_type=fixed
      *
      * @effects snapshot_mode_still_checks_min_order_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_coupon_min_order_still_checked(): void
     {
@@ -7499,6 +7792,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=product, discount_type=fixed
      *
      * @effects snapshot_mode_skips_expiry_and_scope_checks
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_coupon_scope_skipped(): void
     {
@@ -7579,6 +7874,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=multi_slot, charge_policy=fixed
      *
      * @effects snapshot_mode_combines_all_coupon_types
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_coupon_multiple_types_combined(): void
     {
@@ -7760,6 +8057,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_quantity_2_single_product(): void
     {
@@ -7800,6 +8099,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_multiple_products_different_quantities(): void
     {
@@ -7848,6 +8149,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, product_coupon_scope_products_applies_only_to_target
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_specific_products_with_quantity(): void
     {
@@ -7903,6 +8206,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_capped_by_item_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_quantity_discount_capped_by_subtotal(): void
     {
@@ -7943,6 +8248,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_quantity_5_large_discount(): void
     {
@@ -7983,6 +8290,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=multi
      *
      * @effects product_coupon_rate_discount_not_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_rate_product_coupon_not_multiplied_by_quantity(): void
     {
@@ -8024,6 +8333,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, product_coupon_rate_discount_not_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_fixed_and_rate_coupons_with_quantity(): void
     {
@@ -8074,6 +8385,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=rate, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, order_coupon_rate_computed_after_product_discount
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_with_order_coupon_quantity(): void
     {
@@ -8132,6 +8445,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=rate, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, order_coupon_rate_computed_after_product_discount, mileage_use_reduces_final_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_full_scenario_all_discounts_with_quantity(): void
     {
@@ -8207,6 +8522,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, multiple_product_coupons_each_computed_on_original_subtotal
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_fixed_coupons_with_quantity(): void
     {
@@ -8258,6 +8575,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, product_coupon_scope_products_applies_only_to_target
+     *
+     * @return void 반환값 없음
      */
     public function test_different_fixed_coupons_for_different_products_with_quantity(): void
     {
@@ -8318,6 +8637,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=multi_slot, discount_type=fixed, quantity_shape=multi
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, order_coupon_fixed_not_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_quantity_order_coupon_no_quantity(): void
     {
@@ -8366,6 +8687,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=rate_capped, quantity_shape=multi
      *
      * @effects product_coupon_max_discount_caps_rate_amount, product_coupon_rate_discount_not_multiplied_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_rate_product_coupon_max_discount_with_quantity(): void
     {
@@ -8408,6 +8731,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, charge_policy=per_quantity
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, per_unit_policy_charges_ceil_units_times_base_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_with_per_quantity_shipping_and_quantity(): void
     {
@@ -8455,6 +8780,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario coupon_slot=product, discount_type=fixed, tax_composition=mixed
      *
      * @effects product_coupon_fixed_discount_multiplied_by_quantity, mixed_tax_status_split_into_two_buckets
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_product_coupon_mixed_tax_status_with_quantity(): void
     {
@@ -8507,6 +8834,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario execution_mode=snapshot, coupon_slot=product, quantity_shape=multi
      *
      * @effects snapshot_mode_applies_quantity_to_fixed_product_coupon
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_mode_fixed_product_coupon_with_quantity(): void
     {
@@ -8577,6 +8906,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=fixed, policy_grouping=single_policy, coupon_slot=none
      *
      * @effects missing_shipping_policy_yields_zero_without_error
+     *
+     * @return void 반환값 없음
      */
     public function test_it_handles_deleted_shipping_policy_gracefully(): void
     {
@@ -8627,6 +8958,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_quantity, boundary=at_max, unit_source=quantity, tier_shape=inclusive, config_validity=valid
      *
      * @effects boundary_value_charged_not_free, fee_matches_admin_promise
+     *
+     * @return void 반환값 없음
      */
     public function test_it_matches_quantity_range_with_inclusive_upper_bound(): void
     {
@@ -8671,6 +9004,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=at_max, unit_source=g, tier_shape=half_open, config_validity=valid
      *
      * @effects boundary_value_charged_not_free
+     *
+     * @return void 반환값 없음
      */
     public function test_it_matches_half_open_legacy_tiers_by_upper_bound(): void
     {
@@ -8702,6 +9037,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=decimal, unit_source=g, tier_shape=inclusive, config_validity=valid
      *
      * @effects boundary_value_charged_not_free
+     *
+     * @return void 반환값 없음
      */
     public function test_it_matches_decimal_tier_boundary(): void
     {
@@ -8732,6 +9069,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=empty_tiers, unit_source=g, tier_shape=inclusive, config_validity=missing_tiers
      *
      * @effects silent_zero_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_it_logs_warning_when_range_tiers_are_empty(): void
     {
@@ -8761,6 +9100,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=empty_tiers, unit_source=g, tier_shape=inclusive, config_validity=missing_tiers
      *
      * @effects silent_zero_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_it_logs_warning_when_shipping_policy_is_missing(): void
     {
@@ -8793,6 +9134,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=empty_tiers, unit_source=g, tier_shape=inclusive, config_validity=missing_tiers
      *
      * @effects silent_zero_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_it_logs_warning_when_country_setting_is_missing(): void
     {
@@ -8827,6 +9170,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=valid
      *
      * @effects unit_converted_kg_l
+     *
+     * @return void 반환값 없음
      */
     public function test_it_converts_grams_to_kilograms_for_range_weight(): void
     {
@@ -8858,6 +9203,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_volume, boundary=below, unit_source=cm3, tier_shape=inclusive, config_validity=valid
      *
      * @effects unit_converted_kg_l
+     *
+     * @return void 반환값 없음
      */
     public function test_it_converts_cubic_centimeters_to_liters_for_range_volume(): void
     {
@@ -8890,6 +9237,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=valid
      *
      * @effects unit_converted_kg_l
+     *
+     * @return void 반환값 없음
      */
     public function test_it_charges_per_kilogram_for_per_weight_policy(): void
     {
@@ -8917,6 +9266,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_volume, boundary=below, unit_source=cm3, tier_shape=inclusive, config_validity=valid
      *
      * @effects unit_converted_kg_l
+     *
+     * @return void 반환값 없음
      */
     public function test_it_charges_per_liter_for_per_volume_policy(): void
     {
@@ -8944,6 +9295,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=range_volume_weight, boundary=below, unit_source=cm3, tier_shape=inclusive, config_validity=valid
      *
      * @effects volumetric_weight_compared_in_kg
+     *
+     * @return void 반환값 없음
      */
     public function test_it_compares_actual_and_volumetric_weight_in_kilograms(): void
     {
@@ -8976,6 +9329,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=valid
      *
      * @effects decimal_base_fee_rounded
+     *
+     * @return void 반환값 없음
      */
     public function test_it_rounds_decimal_base_fee_instead_of_truncating(): void
     {
@@ -9005,6 +9360,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=valid
      *
      * @effects extra_fee_multiplied_by_charge_units
+     *
+     * @return void 반환값 없음
      */
     public function test_it_multiplies_extra_fee_by_charge_units_not_quantity(): void
     {
@@ -9044,6 +9401,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=zero_unit_value
      *
      * @effects unit_value_clamped_not_divided_by_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_it_clamps_zero_unit_value_instead_of_dividing_by_zero(): void
     {
@@ -9072,6 +9431,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=negative_unit_value
      *
      * @effects unit_value_clamped_not_divided_by_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_it_clamps_negative_unit_value_instead_of_inverting_the_fee(): void
     {
@@ -9100,6 +9461,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=per_weight, boundary=below, unit_source=g, tier_shape=inclusive, config_validity=zero_unit_value
      *
      * @effects unit_value_clamped_not_divided_by_zero, extra_fee_multiplied_by_charge_units
+     *
+     * @return void 반환값 없음
      */
     public function test_it_clamps_zero_unit_value_in_extra_fee_charge_units(): void
     {
@@ -9132,6 +9495,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario charge_policy=api, boundary=below, unit_source=amount, tier_shape=inclusive, config_validity=valid
      *
      * @effects api_negative_fee_falls_back
+     *
+     * @return void 반환값 없음
      */
     public function test_it_falls_back_to_base_fee_when_api_returns_negative_fee(): void
     {
@@ -9177,6 +9542,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=summed_subtotal
      *
      * @effects duplicate_option_rows_are_summed
+     *
+     * @return void 반환값 없음
      */
     public function test_it_sums_two_items_sharing_the_same_product_option(): void
     {
@@ -9206,6 +9573,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=removal_delta
      *
      * @effects duplicate_option_rows_are_summed
+     *
+     * @return void 반환값 없음
      */
     public function test_removing_one_of_two_same_option_rows_reduces_subtotal(): void
     {
@@ -9239,6 +9608,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      * @scenario duplicate_shape=two_rows_different_quantity,verify_stage=summed_subtotal
      *
      * @effects duplicate_option_rows_are_summed
+     *
+     * @return void 반환값 없음
      */
     public function test_it_sums_same_option_rows_with_different_quantities(): void
     {
@@ -9252,5 +9623,102 @@ class OrderCalculationServiceTest extends ModuleTestCase
         ));
 
         $this->assertEquals(50000, $result->summary->subtotal);
+    }
+
+    /**
+     * 같은 상품옵션 라인이 둘이어도 배송정책 그룹 금액은 키 금액을 한 번만 센다.
+     *
+     * 재계산 입력에 같은 상품옵션 라인이 둘이면(상태 분할) 할인 단계 결과는 키 합계라, 라인마다 그 값을
+     * 그룹 금액에 더하면 두 배가 되어 조건부무료 기준을 잘못 넘긴다(S-Q26-c 엔진 측). 20,000 × 2 라인은
+     * 40,000 으로 기준 50,000 미만이라 배송비 2,500 이 붙어야 한다.
+     *
+     * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=shipping_group_amount
+     *
+     * @effects same_option_lines_count_once_in_shipping_group_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_shipping_group_amount_counts_same_option_lines_once(): void
+    {
+        $policy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 2500,
+            freeThreshold: 50000,
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(20000, $policy);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(40000, $result->summary->subtotal);
+        $this->assertEquals(2500, $result->summary->totalShipping, '같은 키 라인 금액이 그룹에 두 번 더해져 무료배송으로 판정했습니다.');
+    }
+
+    /**
+     * 같은 상품옵션 라인이 둘이면 배송비 몫은 두 라인 몫의 합이다.
+     *
+     * 안분 결과를 상품옵션 키에 대입하면 앞 라인 몫이 사라져, 키 몫과 다른 키 몫의 합이 정책 배송비와
+     * 어긋난다. K 라인 2개(각 10,000) + L 1개(20,000), 고정 3,000 → K 1,500 · L 1,500.
+     *
+     * @scenario duplicate_shape=two_rows_same_quantity,verify_stage=shipping_share
+     *
+     * @effects same_option_lines_shipping_share_accumulates
+     *
+     * @return void 반환값 없음
+     */
+    public function test_same_option_lines_shipping_share_accumulates(): void
+    {
+        $policy = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+        [$productK, $optionK] = $this->createProductWithShippingPolicy(10000, $policy);
+        [$productL, $optionL] = $this->createProductWithShippingPolicy(20000, $policy);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $productK->id, productOptionId: $optionK->id, quantity: 1),
+                new CalculationItem(productId: $productK->id, productOptionId: $optionK->id, quantity: 1),
+                new CalculationItem(productId: $productL->id, productOptionId: $optionL->id, quantity: 1),
+            ]
+        ));
+
+        $byOption = [];
+        foreach ($result->items as $item) {
+            $byOption[$item->productOptionId] = (int) $item->appliedShippingPolicy?->shippingAmount;
+        }
+
+        $this->assertEquals(3000, $result->summary->totalShipping);
+        $this->assertSame(1500, $byOption[$optionK->id]);
+        $this->assertSame(3000, $byOption[$optionK->id] + $byOption[$optionL->id]);
+    }
+
+    /**
+     * 정액 적립은 같은 상품옵션 라인 전체 수량에 곱한다.
+     *
+     * 라인마다 「정액 × 그 라인 수량」을 키에 대입하면 마지막 라인 수량만 남는다(S-Q26-c 엔진 측).
+     * 100P/개, 라인 수량 2 + 1 → 300P.
+     *
+     * @scenario duplicate_shape=two_rows_different_quantity,verify_stage=fixed_mileage
+     *
+     * @effects fixed_mileage_uses_total_quantity_of_same_option_lines
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fixed_mileage_uses_total_quantity_of_same_option_lines(): void
+    {
+        [$product, $option] = $this->createProductWithOption(price: 10000, priceAdjustment: 0);
+        $option->forceFill(['mileage_type' => 'fixed', 'mileage_value' => 100])->save();
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 2),
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(300, $result->items[0]->pointsEarning);
+        $this->assertEquals(300, $result->summary->pointsEarning);
     }
 }

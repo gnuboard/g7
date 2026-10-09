@@ -58,11 +58,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_get_subscribed_hooks_returns_all_26_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_27_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(26, $hooks);
+        $this->assertCount(27, $hooks);
+        // 수동 결제 처리 세 항목·재활성 복원 결과 — 27번째 구독 (Q13·Q26)
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_manual_paid_effects', $hooks);
         // 입금 기록(결제 이후 단계 주문의 입금만 기록) — 26번째 구독
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_deposit_recorded', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.tax_invoice_stale_after_cancel', $hooks);
@@ -1147,6 +1149,38 @@ class OrderActivityLogListenerTest extends ModuleTestCase
 
         $this->assertNotNull($log);
         $this->assertSame(ecommerce_format_price(1500.0), $log->description_params['amount']);
+    }
+
+    /**
+     * 결제 완료 시점의 적립 훅은 「적립 예정」으로 남긴다 — 실제 적립은 따로 기록된다 (S3-D21, 2026-10-07 실측)
+     *
+     * 결제 완료가 발화하는 `sirsoft-ecommerce.mileage.earn` 은 이 리스너만 구독한다 — 마일리지는 그 시점에 지급되지
+     * 않는다(적립은 적립 시점 설정에 맞춰 적립 배치가 하고, 그때 `UserMileageService` 가 「마일리지 적립」을 따로 남긴다).
+     * 그런데 이 로그가 「마일리지 적립 (500원)」이라 말해, 원장에 적립 행이 없는 주문에도 적립된 것처럼 읽혔다
+     * (실측: 주문 20261007-0203352356 — 결제 완료 직후 로그 「마일리지 적립 (500원)」, purchase_earn 0건, 적립 시점 구매확정).
+     *
+     * @scenario log_handler=money_side_effect
+     *
+     * @effects payment_time_earn_log_reads_as_scheduled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_payment_time_earn_hook_logs_as_scheduled(): void
+    {
+        $order = Order::factory()->create();
+
+        $this->listener->handleMileageEarn(500.0, $order);
+
+        $log = ActivityLog::where('action', 'mileage.earn')
+            ->where('loggable_id', $order->id)
+            ->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame('sirsoft-ecommerce::activity_log.description.mileage_earn_scheduled', $log->description_key, '지급되지 않은 적립을 「적립」으로 기록한다');
+        $this->assertNotSame(
+            __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => 'X']),
+            __($log->description_key, ['amount' => 'X']),
+        );
     }
 
     // ═══════════════════════════════════════════

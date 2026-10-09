@@ -123,6 +123,9 @@ effects:
   - escrow_blocking_uses_payment_snapshot_not_current_setting
   # 멱등키
   - cancel_request_carries_idempotency_key_from_refund_record
+  - cancel_idempotency_key_changes_with_amount_and_refund_account   # 금액·환불계좌가 다르면 다른 키 (#747 P-D2)
+  - refund_result_marks_handled_only_for_own_payment                # 자기 결제만 handled=true (#747 P-D6)
+  - partial_cancel_support_follows_toss_constraints                 # 에스크로·달 넘긴 휴대폰은 부분취소 불가 (#747 P-D7)
   - cancel_without_refund_record_still_succeeds
   # 코어 훅 계약
   - refund_hook_passes_order_refund_record

@@ -7,6 +7,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
+import { getSiteLocale } from '../../support/siteLocale';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -15,11 +16,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
-};
-
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return (window as any).G7Core?.locale?.current?.() ?? 'ko';
 };
 
 // 언어 코드로 언어명 가져오기 (다국어 키 사용)
@@ -137,8 +133,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return availableLocales ?? getSystemLocaleOptions();
   }, [availableLocales]);
 
+  // 기본(필수) 언어 칸 — 보는 언어가 아니라 사이트 기본 언어다. 서버 필수 규칙(LocaleRequiredTranslatable)이
+  // 같은 값을 보므로, 다른 언어로 보는 관리자도 같은 칸을 채워야 저장된다.
   const actualDefaultLocale = useMemo(() => {
-    return defaultLocale ?? getCurrentLocale();
+    return defaultLocale ?? getSiteLocale();
   }, [defaultLocale]);
 
   // ── 로컬 상태 버퍼 (debounce 대기 중 사용자 입력값 보존) ──
@@ -383,6 +381,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 type="button"
                 className="ml-0.5 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
+                aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
               >
                 <Icon name="xmark" className="w-3 h-3" />
@@ -524,6 +523,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 type="button"
                 className="mr-2 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
+                aria-label={t('common.remove_language', { language: getLocaleName(localeCode) })}
                 disabled={disabled}
               >
                 <Icon

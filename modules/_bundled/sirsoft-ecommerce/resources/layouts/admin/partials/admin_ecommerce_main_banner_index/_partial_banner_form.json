@@ -325,6 +325,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "titlePosition",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.title_position",
                                         "className": "w-24",
                                         "value": "left",
                                         "options": [
@@ -415,6 +416,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "contentPosition",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.content_position",
                                         "className": "w-24",
                                         "value": "left",
                                         "options": [

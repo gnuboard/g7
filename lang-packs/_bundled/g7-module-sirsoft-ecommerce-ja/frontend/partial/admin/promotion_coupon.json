@@ -145,7 +145,7 @@
     },
     "delete": {
       "title": "クーポンを削除しますか?",
-      "message": "この操作は元に戻すことができません。クーポンとすべての投稿が永久に削除されます。",
+      "message": "この操作は元に戻すことができません。クーポンとこのクーポンの対象商品・カテゴリ指定が一緒に削除されます。",
       "warning": "削除されたクーポンは復元できません。",
       "delete": "削除"
     },
@@ -288,6 +288,7 @@
       "coupon_name": "クーポン名",
       "coupon_description": "クーポン説明",
       "benefit_amount": "特典金額",
+      "discount_unit": "割引単位",
       "max_discount": "最大割引金額",
       "min_order_amount": "最小注文金額",
       "validity_period": "有効期間",

@@ -13,7 +13,7 @@
         <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}</span>
         <badge data-type="composite" data-if="{{_global.issueHistoryFilterUser}}" color="blue" size="sm" class="flex-center gap-1">
           <span>{{_global.issueHistoryFilterUser?.name}}</span>
-          <button class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded">
+          <button class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded" aria-label="$t:sirsoft-ecommerce.common.remove">
             <on type="click">
               <!-- 회원 필터 해제. 필터를 지우면서 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 전체 목록의 3쪽으로 튄다. -->
               <sequence>

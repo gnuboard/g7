@@ -48,6 +48,7 @@ effects:
   # 접수 창 핸들러 (adminClaimRequestHandlers) — 요청 URL·본문·debounce·늦은 응답 폐기는 화면에 보이지 않는다
   - admin_request_modal_requires_a_selection
   - admin_request_modal_seeds_rows_and_redelivery_from_the_order
+  - admin_request_modal_seeds_the_international_redelivery_address # 해외 주문 재발송지 첫 채움 (S2-D8)
   - admin_exchange_request_loads_active_option_choices
   - admin_exchange_option_lookup_failure_keeps_the_modal
   - admin_request_preview_is_debounced_after_input
@@ -57,6 +58,7 @@ effects:
   - admin_request_free_charge_omits_the_fee_override
   - admin_request_redelivery_zipcode_reschedules_preview
   - admin_request_preview_failure_shows_inline_error
+  - admin_request_server_error_shows_localized_message   # 5xx 본문(「Server Error」) 대신 번역된 폴백 문구 (S1-D9)
   - admin_request_close_cancels_pending_preview
   - admin_request_stale_preview_response_is_discarded
   - admin_request_row_quantity_is_clamped

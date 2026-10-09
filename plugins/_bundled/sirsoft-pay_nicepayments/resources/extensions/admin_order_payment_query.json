@@ -1130,7 +1130,7 @@
                                                             "props": {
                                                                 "className": "text-gray-600 dark:text-gray-400 ml-auto"
                                                             },
-                                                            "text": "{{noti.depositor + ' / ' + (noti.amt ?? 0).toLocaleString() + '원'}}"
+                                                            "text": "{{noti.depositor + ' / ' + $t('sirsoft-ecommerce.currency.krw_prefix') + (noti.amt ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix')}}"
                                                         }
                                                     ]
                                                 }

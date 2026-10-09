@@ -499,6 +499,7 @@
                                             ],
                                             "props": {
                                                 "type": "date",
+                                                "aria-label": "$t:common.range_start|label={{$t('admin.schedules.filters.created_at')}}",
                                                 "value": "{{query.created_from || ''}}",
                                                 "className": "input input-w-sm"
                                             }
@@ -541,6 +542,7 @@
                                             ],
                                             "props": {
                                                 "type": "date",
+                                                "aria-label": "$t:common.range_end|label={{$t('admin.schedules.filters.created_at')}}",
                                                 "value": "{{query.created_to || ''}}",
                                                 "className": "input input-w-sm"
                                             }

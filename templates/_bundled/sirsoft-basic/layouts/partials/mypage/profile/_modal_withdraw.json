@@ -56,6 +56,8 @@
                     "text": "$t:mypage.withdraw.confirm_message"
                 },
                 {
+                    "comment": "탈퇴 시 잃는 것 목록 — 확장(모듈)이 항목을 덧붙일 수 있게 data-ref 를 둔다(이커머스: 환불로 받은 마일리지 소멸 안내).",
+                    "id": "withdraw_warning_list",
                     "type": "basic",
                     "name": "Ul",
                     "props": {
@@ -130,6 +132,12 @@
                                     "text": "$t:mypage.withdraw.warning_points"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "확장이 경고 항목을 덧붙이는 자리. 모달 안이라 target-id 오버레이는 닿지 않고, 확장점 주입만 모달 트리까지 순회한다.",
+                            "id": "withdraw_warnings_slot",
+                            "type": "extension_point",
+                            "name": "withdraw_warnings"
                         }
                     ]
                 },

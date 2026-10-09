@@ -102,7 +102,7 @@
           <div data-ref="member_filter_chips" data-if="{{(_local.filter?.memberOptions ?? []).length > 0}}" class="flex-center flex-wrap gap-1">
             <div data-each="member, memberIndex in {{_local.filter?.memberOptions ?? []}}" class="flex-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full">
               <span>{{member.label}}</span>
-              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">
                   <!-- 칩 하나만 뗀다 — 두 칸(uuid·이름표)을 같은 손짓으로 함께 줄여야 어긋나지 않는다 -->
                   <set-state target="_local" filter.memberUuids="{{(_local.filter?.memberUuids ?? []).filter(v => v !== member.value)}}" filter.memberOptions="{{(_local.filter?.memberOptions ?? []).filter(o => o.value !== member.value)}}"/>
@@ -119,14 +119,14 @@
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 등록일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
             <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="input w-36">
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 등록일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
                 <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>

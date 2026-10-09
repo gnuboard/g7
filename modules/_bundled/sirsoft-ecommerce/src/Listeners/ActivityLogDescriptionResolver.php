@@ -81,11 +81,39 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             in_array($keySuffix, ['product_create', 'product_update', 'product_delete', 'product_stock_sync']) => $this->resolveEntityName($params, $properties, 'product_name', Product::class, 'product_id'),
             $keySuffix === 'product_review_create' => $this->resolveProductNameFromReview($params, $properties),
             str_starts_with($keySuffix, 'claim_reason_') => $this->resolveClaimReasonType($params),
+            $keySuffix === 'order_manual_paid_effects' => $this->resolveManualPaidItems($params, $properties),
             $keySuffix === 'coupon_use' => $this->resolveCouponNames($params, $properties),
             $keySuffix === 'coupon_restore' => $this->resolveCouponNamesFromIssues($params, $properties),
             in_array($keySuffix, ['coupon_create', 'coupon_update', 'coupon_delete', 'coupon_show', 'coupon_direct_issue', 'coupon_issue_cancel']) => $this->resolveEntityName($params, $properties, 'coupon_name', Coupon::class, 'coupon_id'),
             default => $params,
         };
+    }
+
+    /**
+     * 수동 결제 처리 로그의 적용/적용 안 함 항목을 표시 시점 로케일로 번역합니다. (Q13·Q26)
+     *
+     * 항목 키(`apply_stock_deduction` 등)만 properties 에 남기고 이름은 렌더 시점에 번역한다 — 기록
+     * 시점 로케일로 문장을 박제하면 다른 언어로 보는 운영자에게 원문이 섞여 보인다.
+     *
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties (applied·skipped)
+     * @return array 해석된 params
+     */
+    private function resolveManualPaidItems(array $params, array $properties): array
+    {
+        $render = static function (array $keys): string {
+            $names = array_map(
+                static fn (string $key) => __('sirsoft-ecommerce::activity_log.manual_paid.items.'.$key),
+                array_values(array_filter($keys, 'is_string')),
+            );
+
+            return $names === [] ? __('sirsoft-ecommerce::activity_log.manual_paid.none') : implode(', ', $names);
+        };
+
+        $params['applied'] = $render((array) ($properties['applied'] ?? []));
+        $params['skipped'] = $render((array) ($properties['skipped'] ?? []));
+
+        return $params;
     }
 
     /**

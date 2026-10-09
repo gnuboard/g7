@@ -22,7 +22,8 @@ class AdjustmentResult
      * @param  array  $adjustedItems  변경된 아이템 정보 [{order_option_id, cancel_quantity, cancel_amount}]
      * @param  array  $orderUpdates  주문 테이블 업데이트 데이터
      * @param  array  $optionUpdates  옵션 테이블 업데이트 데이터 [{order_option_id => [...]}]
-     * @param  array  $shippingUpdates  배송 테이블 업데이트 데이터 [{order_shipping_id => [...]}]
+     * @param  array<int, array{base: int, extra: int}>  $shippingShares  재계산 입력 행별 배송비 몫 [order_option_id => {base, extra}].
+     *                                                                    빈 배열이면 배송 행을 쓰지 않는다(전체취소·배분 불가) — S-Q26-b
      * @param  array  $originalSnapshot  재계산 전 주문 금액 스냅샷
      * @param  array  $recalculatedSnapshot  재계산 후 주문 금액 스냅샷
      * @param  array  $restoredCouponIssueIds  복원 대상 쿠폰 발급 ID 배열
@@ -52,7 +53,7 @@ class AdjustmentResult
         public array $adjustedItems = [],
         public array $orderUpdates = [],
         public array $optionUpdates = [],
-        public array $shippingUpdates = [],
+        public array $shippingShares = [],
         public array $originalSnapshot = [],
         public array $recalculatedSnapshot = [],
         public array $restoredCouponIssueIds = [],

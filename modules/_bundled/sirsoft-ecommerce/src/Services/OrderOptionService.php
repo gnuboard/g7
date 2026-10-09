@@ -3,14 +3,19 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidEffectsReport;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidTransition;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderMileageDeductionException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -29,6 +34,28 @@ use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 class OrderOptionService
 {
     /**
+     * 수량 분할로 복제하는 배송 행에 덮어쓸 금액 칸 (S3-D9).
+     *
+     * 복제본은 배송정책 승계(클레임 배송비 조회)가 목적이고 배송비는 원 행에만 남는다 — 금액까지 복제하면
+     * 나눠 보낸 주문의 고객 「배송 현황」에 같은 배송비가 줄마다 다시 보인다(주문 헤더 합계는 행 수로 세지 않는다).
+     */
+    private const SPLIT_SHIPPING_ZERO_AMOUNTS = [
+        'base_shipping_amount' => 0,
+        'extra_shipping_amount' => 0,
+        'total_shipping_amount' => 0,
+        'shipping_discount_amount' => 0,
+        'return_shipping_amount' => 0,
+        'mc_base_shipping_amount' => null,
+        'mc_extra_shipping_amount' => null,
+        'mc_total_shipping_amount' => null,
+        'mc_shipping_discount_amount' => null,
+        'mc_return_shipping_amount' => null,
+    ];
+
+    /** 결제·입금 처리 서비스 (늦은 해석 — processing()) */
+    private ?OrderProcessingService $orderProcessingService = null;
+
+    /**
      * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 Repository
      * @param  OrderShippingRepositoryInterface  $orderShippingRepository  주문 배송 Repository
      * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
@@ -38,6 +65,7 @@ class OrderOptionService
      * @param  MileageTransactionRepositoryInterface  $mileageTransactionRepository  마일리지 거래 Repository (병합 시 적립 거래 이전)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스 (주문 기준 통화 해석)
+     * @param  CancelReactivationRecorder  $cancelReactivationRecorder  재활성 수량의 취소신청서 귀속 기록 (Q29)
      */
     public function __construct(
         protected OrderOptionRepositoryInterface $orderOptionRepository,
@@ -49,6 +77,7 @@ class OrderOptionService
         protected MileageTransactionRepositoryInterface $mileageTransactionRepository,
         protected ClaimQuantityGuard $claimQuantityGuard,
         protected CurrencyConversionService $currencyService,
+        protected CancelReactivationRecorder $cancelReactivationRecorder,
     ) {}
 
     /**
@@ -113,6 +142,9 @@ class OrderOptionService
      *                               클레임(교환/반품) 코스 전이는 false — 병합은 피흡수 레코드를 삭제하는데
      *                               클레임 신청 상품 행이 그 레코드를 FK(cascade)로 참조하므로 신청 이력이 함께 사라지고,
      *                               합쳐진 행은 어느 신청서 몫인지 구분되지 않아 신청서 단위 복귀·완료가 불가능해진다.
+     * @param  bool  $redeductStockOnReactivation  취소 → 판매 상태로 되살릴 때 이 메서드가 재고를 다시 뺄지 여부.
+     *                                             관리자 확인 창에서 「재고 차감」을 끄면 false(Q13), 주문 단위 재활성
+     *                                             복원은 앞 단계가 재고를 이미 처리했으므로 false 로 부른다.
      * @return array{original: OrderOption, split: ?OrderOption} 변경 결과
      */
     public function changeStatusWithQuantity(
@@ -121,7 +153,8 @@ class OrderOptionService
         int $quantity,
         array $metadata = [],
         bool $restoreStockOnCancel = true,
-        bool $mergeSiblings = true
+        bool $mergeSiblings = true,
+        bool $redeductStockOnReactivation = true
     ): array {
         // 변경 전 훅
         HookManager::doAction('sirsoft-ecommerce.order_option.before_status_change', $option, $newStatus, $quantity);
@@ -151,6 +184,9 @@ class OrderOptionService
         }
 
         $isReactivation = $this->isReactivationTransition($oldStatusValue, $newStatus);
+        // 취소된 행을 되살리는 전이 (클레임 코스 복귀는 제외 — Q26). 취소 수량 카운터를 되돌리고
+        // 취소 사유를 비운다. 병합 전에 처리해야 한다 — 병합은 카운터를 합치지 않는다.
+        $revivesCancelledRow = $isReactivation && $oldStatusValue === OrderStatusEnum::CANCELLED->value;
         $isCancellation = $this->isCancellationTransition($oldStatusValue, $newStatus);
         // 판매 → 취소 전이 시 재고 복원 여부.
         // - $restoreStockOnCancel=false (취소 모달 경로): OrderCancellationService::restoreStock() 이 전담 → 여기선 스킵(이중 복원 방지)
@@ -161,7 +197,13 @@ class OrderOptionService
             true
         );
 
-        DB::transaction(function () use ($option, $newStatus, $quantity, $metadata, $isReactivation, $shouldRestoreOnCancel, $mergeSiblings, &$result) {
+        DB::transaction(function () use ($option, $newStatus, $quantity, $metadata, $isReactivation, $revivesCancelledRow, $redeductStockOnReactivation, $shouldRestoreOnCancel, $mergeSiblings, &$result) {
+            // 되살리는 수량이 어느 취소신청서의 취소를 되돌렸는지 분할·병합 전에 귀속한다 (Q29 재활성 배지).
+            // 병합이 취소 상품의 참조를 생존 행으로 옮기고 이 행을 지우므로 뒤에서는 근거가 사라진다.
+            if ($revivesCancelledRow) {
+                $this->cancelReactivationRecorder->record($option, $quantity, Carbon::now());
+            }
+
             if ($quantity === $option->quantity) {
                 // 전체 수량 변경 → UPDATE만
                 $updateData = ['option_status' => $newStatus];
@@ -174,6 +216,10 @@ class OrderOptionService
                 if ($newStatus === OrderStatusEnum::CONFIRMED && $option->confirmed_at === null) {
                     $updateData['confirmed_at'] = now();
                 }
+                if ($revivesCancelledRow) {
+                    $updateData['cancel_reason'] = null;
+                    $this->releaseCancelledQuantityCounter($option, $quantity);
+                }
                 $this->orderOptionRepository->update($option, $updateData);
 
                 // 배송 정보(택배사·송장번호) 기록 — 병합 전 상태 변경 대상 옵션에 반영.
@@ -181,14 +227,15 @@ class OrderOptionService
 
                 // 취소 → 판매 상태 복원 전이면 이 옵션(전체 수량)의 재고를 재차감한다.
                 // (취소 시 복원된 재고를 되돌리는 역연산 — 부족 시 예외 전파 → 트랜잭션 롤백으로 상태 복원 차단)
-                if ($isReactivation) {
+                if ($isReactivation && $redeductStockOnReactivation) {
                     $this->stockService->redeductOrderOptionForReactivation($option);
                 }
 
                 // 판매 → 취소 전이면 이 옵션(전체 수량)의 재고를 복원한다.
                 // PG 환불 동반(취소 모달) 경로가 아니어도 재고는 복원되어야 한다(재고-주문 정합성).
                 // 복원 + is_stock_deducted 플래그 정리를 원자적으로 처리.
-                if ($shouldRestoreOnCancel) {
+                // 차감하지 않은 행(확인 창에서 「재고 차감」을 끈 행)은 복원하지 않는다 — 없는 재고가 생긴다.
+                if ($shouldRestoreOnCancel && $option->is_stock_deducted) {
                     $this->stockService->restoreOptionStockForOrderOption($option, $quantity);
                 }
 
@@ -196,6 +243,7 @@ class OrderOptionService
                 $mergeCandidate = $mergeSiblings
                     ? $this->orderOptionRepository->findMergeCandidate($option, $newStatus)
                     : null;
+                $mergeCandidate = $this->guardMergeByStockFlag($mergeCandidate, $option);
                 if ($mergeCandidate && $mergeCandidate->id !== $option->id) {
                     $this->mergeOptions($mergeCandidate, $option);
                     $result['merged_into'] = $mergeCandidate;
@@ -214,6 +262,11 @@ class OrderOptionService
                 $splitOption->option_status = $newStatus;
                 $splitOption->parent_option_id = $option->id;
                 $splitOption->source_type = OrderOptionSourceTypeEnum::SPLIT;
+                // 되살린 조각은 취소 이력을 갖지 않는다 — replicate 가 원본의 카운터·사유를 복사한다(Q26).
+                if ($revivesCancelledRow) {
+                    $splitOption->cancelled_quantity = 0;
+                    $splitOption->cancel_reason = null;
+                }
                 // 배송완료로 분할 전이 시 분할 레코드에 배송완료 시점 기록
                 if ($newStatus === OrderStatusEnum::DELIVERED && $splitOption->delivered_at === null) {
                     $splitOption->delivered_at = now();
@@ -250,25 +303,31 @@ class OrderOptionService
                 $originShipping = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
 
                 if ($originShipping !== null) {
-                    $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id);
+                    $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, self::SPLIT_SHIPPING_ZERO_AMOUNTS);
                 }
 
                 // 원본 레코드 = 원본 - 분할 (잔여분)
                 $this->applyRemainingAmounts($option, $origAmounts, $splitOption, $remainingQuantity);
                 $this->orderOptionRepository->save($option);
 
+                // 원본은 취소로 남고, 취소 카운터는 원본이나 그 부모에 있다 — 되살린 수량만큼 되돌린다.
+                if ($revivesCancelledRow) {
+                    $this->releaseCancelledQuantityCounter($option, $quantity);
+                }
+
                 // 배송 정보(택배사·송장번호) 기록 — 새 상태로 전이한 분할 레코드에 반영.
                 $this->applyShippingTracking($splitOption, $newStatus, $metadata);
 
                 // 취소 → 판매 상태 복원 전이면 판매 상태로 전이된 분할 레코드(quantity)만 재차감한다.
                 // 잔여 원본($option)은 취소 상태를 유지하므로 재차감 대상 아님.
-                if ($isReactivation) {
+                if ($isReactivation && $redeductStockOnReactivation) {
                     $this->stockService->redeductOrderOptionForReactivation($splitOption);
                 }
 
                 // 판매 → 취소 전이면 취소된 분할 레코드(quantity)만 재고 복원한다.
                 // 잔여 원본($option)은 판매 상태를 유지하므로 복원 대상 아님(차감 유지).
-                if ($shouldRestoreOnCancel) {
+                // 차감하지 않은 행은 복원하지 않는다(위 전량 분기와 같은 이유).
+                if ($shouldRestoreOnCancel && $splitOption->is_stock_deducted) {
                     $this->stockService->restoreOptionStockForOrderOption($splitOption, $quantity);
                 }
 
@@ -276,6 +335,7 @@ class OrderOptionService
                 $mergeCandidate = $mergeSiblings
                     ? $this->orderOptionRepository->findMergeCandidate($splitOption, $newStatus)
                     : null;
+                $mergeCandidate = $this->guardMergeByStockFlag($mergeCandidate, $splitOption);
                 if ($mergeCandidate && $mergeCandidate->id !== $splitOption->id) {
                     $this->mergeOptions($mergeCandidate, $splitOption);
                     $result['split'] = null;
@@ -301,6 +361,62 @@ class OrderOptionService
         }
 
         return $result;
+    }
+
+    /**
+     * 취소 행을 되살릴 때 취소 수량 카운터를 되돌립니다. (Q26)
+     *
+     * 취소는 카운터를 「취소를 일으킨 원본 행」에 더한다 — 전량 취소면 그 행 자신, 일부 취소면 살아 있는
+     * 원본 행이다(OrderCancellationService::updateOrderOptions). 되돌리지 않으면 되살린 상품의 취소 이력이
+     * 남아 「취소 n개」로 보이고, 다시 취소할 때 카운터가 실제 취소 수량보다 커진다. 카운터는 이력이라
+     * 매출 집계는 읽지 않는다(quantity 가 이미 잔여 수량 — S-Q26-a).
+     * `parent_option_id` 가 자기 자신을 가리키는 레거시 행은 부모가 없는 것으로 본다.
+     *
+     * @param  OrderOption  $option  되살리는 행 (분할이면 취소로 남는 원본)
+     * @param  int  $quantity  되살리는 수량
+     * @return void 반환값 없음
+     */
+    private function releaseCancelledQuantityCounter(OrderOption $option, int $quantity): void
+    {
+        $counter = null;
+        if ((int) $option->cancelled_quantity > 0) {
+            $counter = $option;
+        } elseif ($option->parent_option_id && (int) $option->parent_option_id !== (int) $option->id) {
+            $counter = $this->orderOptionRepository->findByIdsKeyed([(int) $option->parent_option_id])
+                ->get((int) $option->parent_option_id);
+        }
+
+        if ($counter === null || (int) $counter->cancelled_quantity <= 0) {
+            return;
+        }
+
+        $released = max(0, (int) $counter->cancelled_quantity - $quantity);
+        $this->orderOptionRepository->update($counter, ['cancelled_quantity' => $released]);
+
+        if ($counter->is($option)) {
+            $option->cancelled_quantity = $released;
+        }
+    }
+
+    /**
+     * 재고 차감 여부가 다른 형제 행은 병합하지 않습니다. (Q26 병합 안전장치)
+     *
+     * 확인 창에서 「재고 차감」을 끄면 차감하지 않은 행(false)이 생긴다. 그 행이 차감된 행(true)에
+     * 흡수되면 이후 취소가 차감하지 않은 재고까지 복원한다. 두 행으로 남는 편이 재고 정합에 맞다.
+     *
+     * @param  OrderOption|null  $candidate  병합 후보
+     * @param  OrderOption  $source  병합될 행
+     * @return OrderOption|null 병합해도 되는 후보 (아니면 null)
+     */
+    private function guardMergeByStockFlag(?OrderOption $candidate, OrderOption $source): ?OrderOption
+    {
+        if ($candidate === null) {
+            return null;
+        }
+
+        $sourceDeducted = (bool) ($source->fresh()?->is_stock_deducted ?? $source->is_stock_deducted);
+
+        return (bool) $candidate->is_stock_deducted === $sourceDeducted ? $candidate : null;
     }
 
     /**
@@ -350,7 +466,7 @@ class OrderOptionService
             $originShipping = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
 
             if ($originShipping !== null) {
-                $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, [
+                $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, self::SPLIT_SHIPPING_ZERO_AMOUNTS + [
                     'shipped_at' => $originShipping->shipped_at,
                     'estimated_arrival_at' => $originShipping->estimated_arrival_at,
                     'delivered_at' => $originShipping->delivered_at,
@@ -369,8 +485,8 @@ class OrderOptionService
      * 배송 관련 상태 전이 시 택배사·송장번호를 해당 옵션의 배송 레코드에 기록합니다.
      *
      * 관리자 주문상태 변경(일괄변경)에서 배송준비중/배송중/배송완료로 전이할 때 입력한
-     * 택배사·송장번호(metadata)를 옵션 단위 배송 레코드에 반영한다. 배송 상태가 아니거나
-     * metadata 에 배송정보가 없으면 아무 것도 하지 않는다(상태만 변경되는 경로 무영향).
+     * 택배사·송장번호(metadata)를 옵션 단위 배송 레코드에 반영한다. 배송 상태가 아니면 아무 것도
+     * 하지 않는다. metadata 에 배송정보가 없으면 송장은 그대로 두고 배송중·배송완료의 진행 상태·시각만 옮긴다.
      *
      * 배송 진행 상태·시각도 함께 옮긴다(`shippingRecordStateFor()`) — 회원 주문상세의
      * 「배송 현황」 카드가 이 레코드를 읽으므로, 송장만 쓰면 배송완료 주문이 고객에게
@@ -386,8 +502,16 @@ class OrderOptionService
         $carrierId = $metadata['carrier_id'] ?? null;
         $trackingNumber = $metadata['tracking_number'] ?? null;
 
-        // 배송정보가 전혀 없으면 기록할 것이 없음.
+        // 배송정보가 없어도 배송중·배송완료 전이는 배송 레코드의 진행 상태·시각을 옮긴다 — 송장은
+        // 배송중으로 보낼 때 한 번 넣고 배송완료는 상태만 바꾸는 것이 보통이라, 여기서 돌아서면
+        // 배송완료 주문의 레코드가 `shipped` 에 남아 고객 「배송 현황」이 배송중으로 보인다(S3-D5).
+        // 송장·택배사는 건드리지 않고(저장소가 빈 값을 거른다), 송장 기록 훅도 내지 않는다.
         if (($carrierId === null || $carrierId === '') && ($trackingNumber === null || $trackingNumber === '')) {
+            $state = $this->shippingRecordStateFor($newStatus);
+            if ($state !== []) {
+                $this->orderShippingRepository->updateProgressByOrderOptionId($option->id, $state);
+            }
+
             return;
         }
 
@@ -413,6 +537,13 @@ class OrderOptionService
                 $this->shippingRecordStateFor($newStatus)
             )
         );
+
+        // 송장은 첫 배송 행에만 쓰지만 진행 상태·시각은 그 상품의 배송 행 전부에 옮긴다 — 수량을 나눠 보낸
+        // 상품은 송장마다 행이 있어, 첫 행만 고치면 나머지 송장이 이전 단계에 남는다(S3-D5).
+        $state = $this->shippingRecordStateFor($newStatus);
+        if ($state !== []) {
+            $this->orderShippingRepository->updateProgressByOrderOptionId($option->id, $state);
+        }
 
         // 송장 기록·정정 전용 훅 (F11).
         //
@@ -447,10 +578,12 @@ class OrderOptionService
      * 시각은 **이미 찍혀 있으면 덮지 않는다** — 운영자가 배송완료를 취소했다가 다시 거는 등
      * 같은 단계를 두 번 지날 때 최초 발생 시각이 사라지지 않게 한다.
      *
+     * 주문 목록 일괄 변경(`OrderService::bulkUpdate()`)도 이 값을 쓴다 — 전이 → 배송 레코드 상태의 대응이 두 곳에 갈리지 않게 한다.
+     *
      * @param  OrderStatusEnum  $newStatus  전이 목표 상태
      * @return array<string, mixed> 배송 레코드에 덮어쓸 컬럼 (해당 없으면 빈 배열)
      */
-    private function shippingRecordStateFor(OrderStatusEnum $newStatus): array
+    public function shippingRecordStateFor(OrderStatusEnum $newStatus): array
     {
         return match ($newStatus) {
             OrderStatusEnum::SHIPPING => [
@@ -472,19 +605,24 @@ class OrderOptionService
      * @param  OrderStatusEnum  $newStatus  변경할 상태
      * @param  int  $orderId  상위 주문 ID (옵션 소속 검증에 사용)
      * @param  array  $metadata  추가 정보
+     * @param  ManualPaidOptions|null  $options  수동 결제 처리 확인 창의 세 항목 (null 이면 모두 켬 — Q13)
      * @return array 변경 결과
      *
      * @throws ResourceScopeMismatchException 옵션이 상위 주문에 속하지 않는 경우
      * @throws OrderClaimException 대상 옵션이 교환·반품
      *                             코스 상태이거나 목표 상태가 코스 상태인 경우 (D15 후단 —
      *                             화면 검증을 거치지 않는 내부·훅 호출까지 막는 2차 방어)
+     * @throws OrderMileageDeductionException 수동 결제 처리의 마일리지 잔액 부족 (상품 상태 변경까지 롤백)
+     * @throws ReactivationCouponConflictException 되살릴 상품의 쿠폰을 다른 주문이 이미 쓴 경우
      */
     public function bulkChangeStatusWithQuantity(
         array $items,
         OrderStatusEnum $newStatus,
         int $orderId,
-        array $metadata = []
+        array $metadata = [],
+        ?ManualPaidOptions $options = null
     ): array {
+        $options ??= ManualPaidOptions::defaults();
         // 스냅샷 캡처 (ChangeDetector용)
         $optionIds = collect($items)->pluck('option_id')->filter()->unique()->toArray();
         $snapshots = $this->orderOptionRepository->getSnapshotsByIds($optionIds);
@@ -517,6 +655,13 @@ class OrderOptionService
         // 일괄 변경 전 훅
         HookManager::doAction('sirsoft-ecommerce.order_option.before_bulk_status_change', $items, $newStatus);
 
+        // 수동 결제 처리 전이 판정 (Q13·Q14) — 변경 **전** 값으로 만든다. 미리보기와 같은 함수다.
+        $parentOrder = $this->orderRepository->find($orderId);
+        $transition = $parentOrder !== null
+            ? $this->buildOptionTransition($parentOrder, $items, $newStatus)
+            : null;
+        $report = null;
+
         $results = [];
         $changedCount = 0;
         $splitCount = 0;
@@ -526,7 +671,7 @@ class OrderOptionService
         // 적재본이 낡는다 — 그 경우에만 그 항목을 다시 읽어 종전 동작을 유지한다.
         $prefetchedOptions = $this->orderOptionRepository->findByIdsKeyed($optionIds);
 
-        DB::transaction(function () use ($items, $newStatus, $metadata, $prefetchedOptions, &$results, &$changedCount, &$splitCount) {
+        DB::transaction(function () use ($items, $newStatus, $metadata, $prefetchedOptions, $orderId, $parentOrder, $transition, $options, &$report, &$results, &$changedCount, &$splitCount) {
             $consumed = [];
 
             foreach ($items as $item) {
@@ -540,7 +685,9 @@ class OrderOptionService
                     $option,
                     $newStatus,
                     $item['quantity'],
-                    $metadata
+                    $metadata,
+                    mergeSiblings: true,
+                    redeductStockOnReactivation: $options->applyStockDeduction,
                 );
 
                 $changedCount++;
@@ -556,22 +703,172 @@ class OrderOptionService
                     'is_full_quantity' => $item['quantity'] === $option->quantity,
                 ];
             }
-        });
 
-        // 부모 주문 상태 동기화 — 대상 옵션은 위에서 모두 $orderId 소속임을 확인했다.
-        // 변경 뒤에 옵션 id 로 주문을 다시 찾으면, 병합으로 지워진 행만 실린 요청(남은 1개를
-        // 먼저 보낸 형제에 합치는 발송)에서 주문을 못 찾아 동기화를 건너뛴다 — 모든 상품이
-        // 배송중인데 주문은 상품준비중으로 남았다(실측 2026-10-03).
-        $this->syncParentOrderStatus($orderId);
+            // 부모 주문 상태 동기화 — 대상 옵션은 위에서 모두 $orderId 소속임을 확인했다.
+            // 변경 뒤에 옵션 id 로 주문을 다시 찾으면, 병합으로 지워진 행만 실린 요청(남은 1개를
+            // 먼저 보낸 형제에 합치는 발송)에서 주문을 못 찾아 동기화를 건너뛴다 — 모든 상품이
+            // 배송중인데 주문은 상품준비중으로 남았다(실측 2026-10-03).
+            // 트랜잭션 **안**에서 한다 — 아래 수동 결제 처리(마일리지 부족 등)가 실패하면 상품 상태와
+            // 부모 상태가 함께 되돌아가야 한다(Q4).
+            $this->syncParentOrderStatus($orderId);
+
+            // 수동 결제 처리 세 항목 + 재활성 복원 (Q13·Q14·Q26). 부모 전이가 없는 R-상품도 처리한다.
+            if ($parentOrder !== null && $transition !== null && ! $transition->isEmpty()) {
+                $report = $this->processing()->applyManualPaidTransitionEffects($parentOrder, $transition, $options);
+            }
+        });
 
         // after 훅 (스냅샷 전달)
         HookManager::doAction('sirsoft-ecommerce.order_option.after_bulk_status_change', $results, $newStatus, $snapshots);
+
+        if ($report !== null && $report->hasApplicableItems()) {
+            $this->fireManualPaidEffects($orderId, $report);
+        }
 
         return [
             'changed_count' => $changedCount,
             'split_count' => $splitCount,
             'results' => $results,
         ];
+    }
+
+    /**
+     * 주문상세 상품 일괄변경 확인 창의 수동 결제 처리 항목을 미리 계산합니다. (DB 변경 없음 — Q13)
+     *
+     * 실행(`bulkChangeStatusWithQuantity`)과 같은 가드(소속·클레임 코스)를 거치고, 같은 전이 판정
+     * (`buildOptionTransition`)과 같은 계획 메서드를 쓴다 — 확인 창이 예고한 것과 실행이 갈리지 않게.
+     *
+     * @param  Order  $order  주문
+     * @param  array<int, array{option_id: int, quantity: int}>  $items  변경 대상
+     * @param  OrderStatusEnum  $newStatus  목표 상태
+     * @return array<string, mixed> 미리보기 (target_status·orders·summary)
+     *
+     * @throws ResourceScopeMismatchException 옵션이 주문에 속하지 않는 경우
+     * @throws OrderClaimException 클레임 코스 상품·목표
+     */
+    public function previewManualPaidEffects(Order $order, array $items, OrderStatusEnum $newStatus): array
+    {
+        $optionIds = collect($items)->pluck('option_id')->filter()->unique()->values()->all();
+        $this->assertOptionsBelongToOrder($optionIds, (int) $order->id);
+        $snapshots = $this->orderOptionRepository->getSnapshotsByIds($optionIds);
+        $this->claimQuantityGuard->assertNotInClaimCourse(
+            array_map(fn ($snapshot) => $snapshot['option_status'] ?? null, $snapshots)
+        );
+        $this->claimQuantityGuard->assertNotClaimCourseTarget($newStatus);
+
+        return $this->processing()->previewManualPaidEffects(
+            [[$order, $this->buildOptionTransition($order, $items, $newStatus)]],
+            $newStatus->value,
+        );
+    }
+
+    /**
+     * 상품 일괄변경 요청을 수동 결제 처리 전이로 분류합니다. (변경 전 값 — 미리보기·실행 공용)
+     *
+     * 같은 행이 여러 번 실리면 수량을 합친다. 각 행의 변경 뒤 상태 집합으로 부모 상태를 시뮬레이션해
+     * 결제 전 → 판매 진입(P)을 판정하고, 취소 행 → 판매 상태 항목은 되살리는 상품(R-상품)으로 모은다.
+     * 부모가 취소 → 판매로 같이 바뀌어도 R-상품으로 다룬다(행 단위 금액을 알 수 있으므로).
+     *
+     * @param  Order  $order  주문
+     * @param  array<int, array{option_id: int, quantity: int}>  $items  변경 대상
+     * @param  OrderStatusEnum  $newStatus  목표 상태
+     * @return ManualPaidTransition 전이
+     */
+    public function buildOptionTransition(Order $order, array $items, OrderStatusEnum $newStatus): ManualPaidTransition
+    {
+        $quantities = [];
+        foreach ($items as $item) {
+            $id = (int) ($item['option_id'] ?? 0);
+            $quantities[$id] = ($quantities[$id] ?? 0) + (int) ($item['quantity'] ?? 0);
+        }
+
+        $order->loadMissing('options');
+        $excluded = OrderStatusEnum::syncExcludedValues();
+        $active = [];
+        $cancelledLeft = 0;
+        $revived = [];
+
+        foreach ($order->options as $row) {
+            $old = $row->option_status instanceof OrderStatusEnum ? $row->option_status->value : (string) $row->option_status;
+            $quantity = min($quantities[(int) $row->id] ?? 0, (int) $row->quantity);
+
+            if ($quantity <= 0) {
+                $after = [$old];
+            } elseif ($quantity >= (int) $row->quantity) {
+                $after = [$newStatus->value];
+            } else {
+                $after = [$old, $newStatus->value];
+            }
+
+            foreach ($after as $status) {
+                if (! in_array($status, $excluded, true)) {
+                    $active[] = $status;
+                }
+                if ($status === OrderStatusEnum::CANCELLED->value) {
+                    $cancelledLeft++;
+                }
+            }
+
+            if ($quantity > 0 && OrderStatusEnum::revivesFromCancelled($old, $newStatus)) {
+                $revived[] = [
+                    'order_option_id' => (int) $row->id,
+                    'quantity' => $quantity,
+                    'row_quantity' => (int) $row->quantity,
+                    'subtotal_paid_amount' => (float) $row->subtotal_paid_amount,
+                    'subtotal_points_used_amount' => (float) $row->subtotal_points_used_amount,
+                    'is_stock_deducted' => (bool) $row->is_stock_deducted,
+                ];
+            }
+        }
+
+        $parentAfter = OrderStatusEnum::deriveParentStatus($active, $order->options->isNotEmpty());
+        $previous = $order->order_status instanceof OrderStatusEnum ? $order->order_status->value : $order->order_status;
+
+        return new ManualPaidTransition(
+            entersPaidCourse: OrderStatusEnum::movesIntoPaidCourse($previous, $parentAfter),
+            revivesWholeOrder: false,
+            revivedItems: $revived,
+            leavesNoCancelledRows: $cancelledLeft === 0,
+            trigger: 'option_bulk_status',
+            previousStatus: $previous,
+            newStatus: $newStatus->value,
+        );
+    }
+
+    /**
+     * 수동 결제 처리 결과 훅을 발화합니다. (트랜잭션 뒤 — 활동 로그·재활성 플러그인 훅)
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  ManualPaidEffectsReport  $report  적용 결과
+     * @return void 반환값 없음
+     */
+    private function fireManualPaidEffects(int $orderId, ManualPaidEffectsReport $report): void
+    {
+        $order = $this->orderRepository->find($orderId);
+        if ($order === null) {
+            return;
+        }
+
+        HookManager::doAction(
+            'sirsoft-ecommerce.order.after_manual_paid_effects',
+            $order,
+            $report->toArray(),
+            $report->applied['restoration']['snapshot_before'] ?? null,
+        );
+
+        if (($report->applied['restoration']['applied'] ?? false) === true) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_reactivation_restored', $order, $report->toArray()['items']['restoration']);
+        }
+    }
+
+    /**
+     * 결제·입금 처리 서비스를 늦게 해석합니다. (재활성 복원 서비스와의 순환을 끊는다)
+     *
+     * @return OrderProcessingService 결제 처리 서비스
+     */
+    private function processing(): OrderProcessingService
+    {
+        return $this->orderProcessingService ??= app(OrderProcessingService::class);
     }
 
     /**
@@ -924,36 +1221,90 @@ class OrderOptionService
             ->unique()
             ->values();
 
+        // 활성 상품이 0 건일 때 「전부 취소」로 보면 안 되는 두 경우 — 클레임이 진행 중이면 끝난 주문이 아니라 바꾸지 않고,
+        // 반품완료 상품이 있으면 전량 반품으로 끝난 주문이다(반품완료). 종전에는 둘 다 취소로 바꿔, 반품 서비스가 이
+        // 동기화를 부를 수 없었고 전량 반품 주문을 다시 훑으면 취소로 뒤집혔다.
         if ($activeStatusValues->isEmpty()) {
-            // 활성 옵션이 하나도 없으면 주문 전체가 취소된 것 → CANCELLED 로 전이.
-            // (옵션이 아예 없는 비정상 데이터는 전이 대상에서 제외.)
-            if ($order->options()->exists()) {
-                $this->transitionOrderStatus($order, OrderStatusEnum::CANCELLED);
+            $ended = $this->fullyEndedStatus($order);
+            if ($ended === null) {
+                return;
             }
+            if ($ended === OrderStatusEnum::RETURNED) {
+                $this->transitionOrderStatus($order, OrderStatusEnum::RETURNED);
 
+                return;
+            }
+        }
+
+        // 파생 규칙(전부 취소 → 취소, 단일 → 그 상태, 혼합 → 가장 낮은 진행 상태)은 OrderStatusEnum 이
+        // 단일 출처다 — 확인 창 미리보기의 부모 상태 시뮬레이션이 같은 함수를 쓴다(Q13).
+        // 옵션이 아예 없는 비정상 데이터는 전이 대상에서 제외한다.
+        $newStatus = OrderStatusEnum::deriveParentStatus(
+            $activeStatusValues->all(),
+            $activeStatusValues->isNotEmpty() || $order->options()->exists(),
+        );
+
+        if ($newStatus === null) {
             return;
         }
 
-        if ($activeStatusValues->count() === 1) {
-            // 모든 활성 옵션이 동일 상태
-            $newStatus = OrderStatusEnum::from($activeStatusValues->first());
-        } else {
-            // 혼합 상태 → 진행 순서상 가장 낮은 상태 (보수적)
-            // 진행 순서는 OrderStatusEnum SSoT 로 일원화한다 (전이 규칙과 동일 배열 공유).
-            $progressOrder = OrderStatusEnum::progressOrderValues();
-
-            $lowestIndex = PHP_INT_MAX;
-            foreach ($activeStatusValues as $statusValue) {
-                $index = array_search($statusValue, $progressOrder);
-                if ($index !== false && $index < $lowestIndex) {
-                    $lowestIndex = $index;
-                }
-            }
-
-            $newStatus = OrderStatusEnum::from($progressOrder[$lowestIndex]);
+        // 상품 행에는 「결제대기」가 없다 — 무통장·가상계좌 주문은 행을 「주문대기」로 만들고 헤더만 결제대기로 둔다.
+        // 입금 전 부분취소 뒤 행 기준으로 다시 정하면 헤더가 주문대기로 내려가 관리자 주문 목록(주문대기 기본 숨김)에서
+        // 사라지므로, 결제대기 헤더는 주문대기로 낮추지 않는다.
+        if ($newStatus === OrderStatusEnum::PENDING_ORDER && $order->order_status === OrderStatusEnum::PENDING_PAYMENT) {
+            return;
         }
 
         $this->transitionOrderStatus($order, $newStatus);
+    }
+
+    /**
+     * 반품 완료 뒤 살아 있는 상품이 하나도 없으면 주문을 반품완료로 바꿉니다.
+     *
+     * 반품 서비스가 완료 처리 끝에 부른다. 부분 반품(살아 있는 상품이 남음)·진행 중 클레임이 남은 주문은 바꾸지 않는다 —
+     * 이 경로는 헤더를 상품 상태에서 다시 파생하지 않으므로(그건 `syncParentOrderStatus()`) 부분 반품 주문의 상태가 따라
+     * 움직이지 않는다. 바꾸면 상태 변경 훅(알림·활동 로그)이 난다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return void 반환값 없음
+     */
+    public function syncFullyReturnedOrderStatus(int $orderId): void
+    {
+        $order = $this->orderRepository->find($orderId);
+        if (! $order || $this->fullyEndedStatus($order) !== OrderStatusEnum::RETURNED) {
+            return;
+        }
+
+        $this->transitionOrderStatus($order, OrderStatusEnum::RETURNED);
+    }
+
+    /**
+     * 살아 있는 상품이 없는 주문이 어떻게 끝났는지 판정합니다.
+     *
+     * 교환완료(`EXCHANGED`) 원 행은 받은 상품(후속 행)이 승계해 닫힌 행이라 살아 있는 상품으로도, 끝난 구성으로도 세지
+     * 않는다 — 교환으로 받은 상품을 전부 반품하면 반품완료, 전부 취소되면 취소다.
+     *
+     * @param  Order  $order  주문
+     * @return OrderStatusEnum|null 반품완료 상품이 있고 나머지가 취소면 RETURNED, 전부 취소면 CANCELLED,
+     *                              살아 있는 상품이나 진행 중 클레임이 있으면 null
+     */
+    private function fullyEndedStatus($order): ?OrderStatusEnum
+    {
+        $statuses = $order->options()->pluck('option_status')
+            ->map(fn ($s) => $s instanceof OrderStatusEnum ? $s : OrderStatusEnum::tryFrom((string) $s))
+            ->filter()
+            ->reject(fn (OrderStatusEnum $s) => $s === OrderStatusEnum::EXCHANGED);
+
+        if ($statuses->isEmpty()) {
+            return null;
+        }
+
+        $ended = [OrderStatusEnum::RETURNED, OrderStatusEnum::CANCELLED];
+        if ($statuses->contains(fn (OrderStatusEnum $s) => ! in_array($s, $ended, true))) {
+            return null;
+        }
+
+        return $statuses->contains(OrderStatusEnum::RETURNED) ? OrderStatusEnum::RETURNED : OrderStatusEnum::CANCELLED;
     }
 
     /**
@@ -995,21 +1346,10 @@ class OrderOptionService
         // 전이(전이 규칙이 허용한다)에서 같은 구멍이 그대로 남는다(2026-09-17 실측 주문 1496 —
         // 결제행 paid · 주문 결제금액 0 · [입금확인] 422 · 이후 환불 전부 0원). 취소로 내려가는 전이는
         // 아래 S1-D17 블록이 따로 다룬다.
-        $order->loadMissing('payment');
-        $paymentSettled = $order->payment?->payment_status === PaymentStatusEnum::PAID;
-        $headerUnpaid = (float) $order->total_paid_amount <= 0.0 && (float) $order->total_due_amount > 0.0;
-        $movesPastPayment = $newStatus->isPastPayment();
-
-        if ($movesPastPayment && $paymentSettled && $headerUnpaid) {
-            // 실제로 수납된 금액은 결제 레코드가 들고 있다 — 미수금(total_due_amount)을 그대로
-            // 옮기지 않고 payment 의 수납액을 쓴다(부분 입금·금액 정정이 있어도 장부가 어긋나지 않는다).
-            $paidAmount = $this->resolveSettledBaseAmount($order);
-
-            $orderUpdate['total_paid_amount'] = $paidAmount;
-            $orderUpdate['total_due_amount'] = max(0.0, (float) $order->total_due_amount - $paidAmount);
-            $orderUpdate['paid_at'] = $order->paid_at ?? $order->payment->paid_at ?? now();
-            // mc_total_paid_amount 는 여기서 파생하지 않는다 — 통화 스냅샷 환산은
-            // OrderProcessingService 가 소유한다(SSoT). 이 경로는 base 금액만 정합화한다.
+        // 정합화 본체는 OrderProcessingService 가 소유한다 — 주문 단건 수정·목록 일괄 변경의 수동 결제
+        // 처리(Q13)도 같은 메서드를 불러, 어느 경로로 올려도 헤더가 같은 값으로 맞춰진다.
+        if ($newStatus->isPastPayment()) {
+            $this->processing()->syncPaidHeaderFromSettledPayment($order);
         }
 
         // S1-D17: 취소로 내려가는 전이는 미수금을 함께 내린다 — 취소된 주문은 받을 돈이 없다.
@@ -1038,37 +1378,6 @@ class OrderOptionService
         if ($purchaseConfirmed) {
             HookManager::doAction('sirsoft-ecommerce.order.after_purchase_confirmed', $order->fresh());
         }
-    }
-
-    /**
-     * 결제행이 수납한 금액을 **기준 통화**로 반환합니다. (헤더 결제금액 정합화 전용 — S2-D4)
-     *
-     * 주문 헤더의 `total_paid_amount` 는 기준 통화 금액이다. 그래서 결제행의 기준 통화 수납액
-     * (`paid_amount_base`)만 옮길 수 있다 — 결제 통화 금액(`paid_amount_local`)은 결제 통화가
-     * 기준 통화와 같을 때만 같은 단위다. 종전에는 `base ?: local` 로 떨어져 USD 50 이 헤더에
-     * 50 원으로 적히고, `(int)` 캐스팅이 소수 통화의 센트까지 잘라냈다(#599 validate P2 #6).
-     * 단위를 세울 수 없으면 미수금(`total_due_amount` — 기준 통화)을 쓴다.
-     *
-     * @param  Order  $order  주문 (payment 로드됨)
-     * @return float 기준 통화 수납액
-     */
-    private function resolveSettledBaseAmount(Order $order): float
-    {
-        $payment = $order->payment;
-        $base = (float) ($payment->paid_amount_base ?? 0);
-
-        if ($base > 0) {
-            return $base;
-        }
-
-        $baseCurrency = $this->currencyService->resolveOrderBaseCurrency($order);
-        $local = (float) ($payment->paid_amount_local ?? 0);
-
-        if ($local > 0 && ($payment->currency === null || $payment->currency === $baseCurrency)) {
-            return $local;
-        }
-
-        return (float) $order->total_due_amount;
     }
 
     /**

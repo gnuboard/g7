@@ -3,12 +3,16 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Concerns;
 
 use App\Extension\HookManager;
+use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
+use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
+use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -19,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
+use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
  * 클레임 신청 흐름 테스트용 주문 조립 헬퍼 (S5)
@@ -282,6 +287,63 @@ trait BuildsClaimFlowOrders
                 'error_message' => $success ? null : 'refund declined',
             ]);
         });
+    }
+
+    /**
+     * 마일리지로 전액 결제한(현금 결제액 0원) 회원 주문을 만듭니다. (결함 4 — 현금 0원 환불)
+     *
+     * 고객은 마일리지 결제수단(`point`)을 고를 수 없어, 전액 마일리지 주문도 고른 수단(카드·무통장·
+     * 가상계좌·무료)을 그대로 단 채 결제완료로 끝난다. 계산기가 사용 마일리지를 결제금액에 맞춰 자르므로
+     * (`usePoints` 를 넉넉히 준다) 결제금액은 0 이고, 실제 차감 원장도 함께 남긴다(`is_mileage_deducted`).
+     *
+     * @param  User  $member  주문 회원
+     * @param  string  $paymentMethod  주문서에서 고른 결제수단 코드
+     * @param  string  $pgProvider  PG 식별자 (PG 를 타지 않는 수단은 빈 문자열)
+     * @param  OrderStatusEnum  $status  맞출 주문 상태
+     * @return Order 현금 0원 주문 (options·payment·shippings 로드됨)
+     */
+    protected function mileageOnlyPaidOrder(
+        User $member,
+        string $paymentMethod,
+        string $pgProvider = '',
+        OrderStatusEnum $status = OrderStatusEnum::PAYMENT_COMPLETE,
+    ): Order {
+        $settings = app(EcommerceSettingsService::class);
+        $settings->setSetting('mileage.enabled', true);
+        $settings->setSetting('mileage.currency_rules', [
+            ['currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 0, 'use_unit' => 1, 'max_use_type' => 'percent', 'max_use_percent' => 100, 'max_use_value' => 0],
+        ]);
+
+        $policy = $this->createClaimShippingPolicy();
+        [$product, $option] = $this->createClaimProduct(29000, $policy);
+
+        $order = $this->createClaimOrder(
+            new CalculationInput(
+                items: [new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1)],
+                usePoints: 999999,
+            ),
+            [
+                'user_id' => $member->id,
+                'is_mileage_deducted' => true,
+                'currency_snapshot' => $this->krwCurrencySnapshot(),
+            ],
+            [
+                'payment_method' => $paymentMethod,
+                'pg_provider' => $pgProvider,
+                'payment_status' => PaymentStatusEnum::PAID,
+                'paid_amount_local' => 0,
+                'paid_amount_base' => 0,
+            ],
+        );
+        $order = $this->attachPolicyShippings($order, $policy);
+
+        $points = (int) $order->total_points_used_amount;
+        $this->grantMileage($member->id, $points);
+        app(UserMileageService::class)->deductFifo($member->id, $points, 'KRW', $order);
+
+        return $status === OrderStatusEnum::PAYMENT_COMPLETE
+            ? $order->fresh(['options', 'payment', 'shippings'])
+            : $this->moveOrderTo($order, $status);
     }
 
     /**

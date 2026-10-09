@@ -91,14 +91,14 @@
     <div data-ref="date_range_filter" class="filter-row">
       <span class="filter-label w-32">$t:admin.identity.logs.filter.date_range_label</span>
       <div class="flex-center flex-wrap gap-2">
-        <input type="date" name="dateFrom" class="input w-40" value="{{_local.filter.dateFrom || ''}}">
+        <input type="date" aria-label="$t:common.range_start|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateFrom" class="input w-40" value="{{_local.filter.dateFrom || ''}}">
           <on type="change">
             <!-- 시작일. 활동 로그 쪽과 달리 날짜만 받으므로 하루 단위로만 좁혀지고, 기간 버튼도 없다. -->
             <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
           </on>
         </input>
         <span class="text-gray-400">~</span>
-        <input type="date" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
+        <input type="date" aria-label="$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
           <on type="change">
             <!-- 종료일. 두 칸 다 비워 두면 기간 조건 없이 전체를 본다. -->
             <set-state target="local" filter.dateTo="{{$event.target.value}}"/>

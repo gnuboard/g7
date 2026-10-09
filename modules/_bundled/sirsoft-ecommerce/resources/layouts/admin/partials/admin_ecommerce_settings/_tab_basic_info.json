@@ -168,6 +168,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route",
                                         "type": "checkbox",
                                         "name": "basic_info.no_route",
                                         "className": "checkbox",
@@ -846,6 +847,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "basic_info.email_domain_select",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email_domain_select",
                                                 "className": "w-28",
                                                 "value": "",
                                                 "disabled": "{{_computed.isReadOnly}}",

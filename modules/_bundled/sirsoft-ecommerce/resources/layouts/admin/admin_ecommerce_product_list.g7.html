@@ -230,7 +230,11 @@
       <div data-ref="page_header" class="flex-between mb-6">
         <h1 class="page-title">$t:sirsoft-ecommerce.admin.product.title</h1>
         <div class="flex-center gap-2">
-          <button type="button" class="btn btn-icon">
+          <button type="button" class="btn btn-icon" aria-label="$t:common.refresh">
+            <on type="click">
+              <!-- 새로고침 — 보고 있던 목록(같은 조건·페이지)을 다시 부른다. 종전에는 처리기가 없어 눌러도 아무 일이 없었다. -->
+              <refetch-data-source dataSourceId="products"/>
+            </on>
             <icon name="arrows-rotate" class="text-xl"/>
           </button>
           <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">

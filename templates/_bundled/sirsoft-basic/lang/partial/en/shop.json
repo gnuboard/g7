@@ -268,6 +268,7 @@
     "items_deleted": "Selected items have been deleted.",
     "option_updated": "Option has been updated.",
     "change_option": "Change Option",
+    "delete_item": "Remove item",
     "subtotal": "Subtotal",
     "option": "Option",
     "order_summary": "Order Summary",
@@ -412,6 +413,7 @@
     "submit": "Pay Now",
     "processing": "Processing...",
     "points_used": "Points Used",
+    "amount_before_points": "Amount before mileage",
     "discount_coupon": "Discount/Coupon",
     "discount_section_title": "Apply Discount/Coupon",
     "coupon_select": "Select Coupon",
@@ -570,7 +572,8 @@
     "free": "Free",
     "save_shipping_address": "Save this address",
     "address_saved": "Address has been saved.",
-    "address_save_failed": "Failed to save address."
+    "address_save_failed": "Failed to save address.",
+    "address_name_exists": "An address named \"Shipping Address\" is already saved, so it was not saved again. Check it in My Page › Addresses."
   },
   "coupon_download": {
     "modal_title": "Download Coupons",

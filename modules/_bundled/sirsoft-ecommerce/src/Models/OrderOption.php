@@ -14,6 +14,9 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 
 /**
  * 주문 옵션 모델
+ *
+ * @property int $quantity 이 행이 지금 가진 수량(분할로 떼어 낸 수량은 빠져 있음)
+ * @property int $cancelled_quantity 이 행에서 취소로 떼어 낸 수량의 누적(이력 — 집계 감산항 아님)
  */
 class OrderOption extends Model
 {

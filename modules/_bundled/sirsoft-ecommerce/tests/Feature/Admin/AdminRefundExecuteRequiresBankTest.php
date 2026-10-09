@@ -4,11 +4,15 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Admin;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -270,6 +274,35 @@ class AdminRefundExecuteRequiresBankTest extends ModuleTestCase
             ->assertOk();
 
         $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+    }
+
+    /**
+     * 무통장 주문의 현금 환불을 「마일리지로 환불」하면 계좌 없이 실행되고, 현금 환불액이 회원
+     * 마일리지로 지급되며 결제행은 결제완료로 남는지 검증합니다. (refund 274 재현 — D1·Q3)
+     *
+     * @return void 반환값 없음
+     *
+     * @effects points_refund_of_cash_needs_no_bank_account_and_credits_mileage
+     */
+    public function test_points_refund_of_cash_needs_no_bank_account_and_credits_mileage(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('mileage.enabled', true);
+        [$order, $refund] = $this->approvedRefund('dbank');
+        $refund->update(['refund_method' => RefundMethodEnum::POINTS]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertOk();
+
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+        $this->assertSame(10000.0, (float) MileageTransaction::query()
+            ->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)
+            ->sum('amount'));
+
+        $payment = $order->payment()->first();
+        $this->assertSame(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame(0.0, (float) $payment->cancelled_amount);
     }
 
     /**

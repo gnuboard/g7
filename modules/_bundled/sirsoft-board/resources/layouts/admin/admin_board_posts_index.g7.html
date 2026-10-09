@@ -113,7 +113,7 @@
           </div>
           <div data-ref="date_filter_row" class="flex-center flex-wrap gap-3">
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_from</span>
-            <input data-ref="date_from" type="date" value="{{query.created_at_from || ''}}" class="input min-w-[200px]">
+            <input data-ref="date_from" type="date" aria-label="$t:sirsoft-board.admin.posts.filters.date_from" value="{{query.created_at_from || ''}}" class="input min-w-[200px]">
               <on type="change">
                 <!-- 시작 날짜는 고른 즉시 적용하지 않고 전역에 담아 둔다 — 끝 날짜와 짝을 이루어야 뜻이 서므로, 한쪽만 정해진 상태로 목록이 다시 읽히지 않게 검색 버튼까지 미룬다 -->
                 <set-state target="global" dateFrom="{{$event.target.value}}"/>
@@ -121,7 +121,7 @@
             </input>
             <span class="text-label-subtle">~</span>
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_to</span>
-            <input data-ref="date_to" type="date" value="{{query.created_at_to || ''}}" class="input min-w-[200px]">
+            <input data-ref="date_to" type="date" aria-label="$t:sirsoft-board.admin.posts.filters.date_to" value="{{query.created_at_to || ''}}" class="input min-w-[200px]">
               <on type="change">
                 <!-- 끝 날짜 — 시작 날짜와 같은 이유로 담아만 둔다. 두 값 다 「손대지 않음(undefined)」과 「비움('')」이 구분되고, 검색 버튼이 그 차이로 기존 URL 값을 이어받을지 지울지를 가른다 -->
                 <set-state target="global" dateTo="{{$event.target.value}}"/>

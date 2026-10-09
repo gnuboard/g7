@@ -221,6 +221,7 @@
                                     "props": {
                                         "name": "createdFrom",
                                         "type": "date",
+                                        "aria-label": "$t:common.range_start|label={{$t('admin.member_notification.filter.created_label')}}",
                                         "className": "input w-40",
                                         "value": "{{_local.filter.createdFrom || ''}}"
                                     }
@@ -250,6 +251,7 @@
                                     "props": {
                                         "name": "createdTo",
                                         "type": "date",
+                                        "aria-label": "$t:common.range_end|label={{$t('admin.member_notification.filter.created_label')}}",
                                         "className": "input w-40",
                                         "value": "{{_local.filter.createdTo || ''}}"
                                     }

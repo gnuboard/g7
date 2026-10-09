@@ -585,7 +585,7 @@ HTTP/1.1 200
 
 확장이 `customer_selectable` 을 선언하면 그 값이 우선한다 — 결제 실행을 제공하는 플러그인은
 자기 수단을 선택 가능으로 열 수 있다.
-| order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열 — 현재 로케일 이름 필수. 은행 행에는 `id` 가 없어 클레임 사유·배송사 같은 '기존 행 면제' 가 **없다**: 다른 로케일에서 만든 은행이 있으면 그 로케일 이름을 채워야 저장된다) |
+| order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열 — 사이트 기본 언어(`app.site_locale`) 이름 필수, 요청 언어와 무관. 은행 행에는 `id` 가 없어 클레임 사유·배송사 같은 '기존 행 면제' 가 **없다**: 사이트 기본 언어 이름이 빈 은행이 있으면 그 이름을 채워야 저장된다) |
 | order_settings.bank_accounts | body | array | 아니오 | — | 무통장 입금 계좌 목록. 항목별 `bank_code`·`account_number`·`account_holder`(모두 필수)·`is_active`·`is_default`. 계좌가 있으면 최소 1건은 사용+기본 상태여야 함 |
 | order_settings.auto_cancel_expired | body | boolean | 아니오 | — | 입금대기 상태 주문의 자동취소 사용 여부 |
 | order_settings.auto_cancel_days | body | integer | 아니오 | min 0, max 30 | 자동취소 기한(일). 주문일 포함 이 일수 경과 시 입금대기 주문을 자동 취소 |
@@ -1344,7 +1344,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| banks | body | array | 아니오 | — | 무통장입금용 은행 목록 (은행 코드·다국어 은행명) |
+| banks | body | array | 아니오 | — | 무통장입금용 은행 목록 (은행 코드·다국어 은행명 — 사이트 기본 언어 은행명 필수, 요청 언어와 무관) |
 
 **요청 예시**
 

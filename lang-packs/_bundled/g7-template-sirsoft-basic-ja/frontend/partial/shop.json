@@ -263,6 +263,7 @@
     "items_deleted": "選択した商品が削除されました",
     "option_updated": "オプションが変更されました",
     "change_option": "オプション変更",
+    "delete_item": "商品を削除",
     "subtotal": "小計",
     "option": "オプション",
     "order_summary": "注文概要",
@@ -406,6 +407,7 @@
     "submit": "決済する",
     "processing": "決済中です...",
     "points_used": "マイレージ使用",
+    "amount_before_points": "マイレージ差引前の金額",
     "discount_coupon": "割引/クーポン",
     "discount_section_title": "割引/クーポン適用",
     "coupon_select": "クーポン選択",
@@ -560,7 +562,8 @@
     "free": "無料",
     "save_shipping_address": "この配送先を保存する",
     "address_saved": "配送先が保存されました。",
-    "address_save_failed": "配送先の保存に失敗しました。"
+    "address_save_failed": "配送先の保存に失敗しました。",
+    "address_name_exists": "「配送先」という名前の配送先がすでに保存されているため、保存しませんでした。マイページ › 配送先管理でご確認ください。"
   },
   "coupon_download": {
     "modal_title": "クーポンダウンロード",

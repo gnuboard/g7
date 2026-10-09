@@ -29,6 +29,11 @@ return [
             'config_key' => 'app.supported_locales',
             'type' => 'array',
         ],
+        // 사이트 기본 언어 — 관리자 다국어 입력이 필수 표시(*)를 어느 언어에 붙일지 정한다(보는 언어와 무관)
+        'siteLocale' => [
+            'config_key' => 'app.site_locale',
+            'type' => 'string',
+        ],
         'localeNames' => [
             'config_key' => 'app.locale_names',
             'type' => 'array',

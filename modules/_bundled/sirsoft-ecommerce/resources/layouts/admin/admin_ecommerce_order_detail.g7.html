@@ -43,7 +43,14 @@
   <!-- 환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다. -->
   <data-source id="paymentSettings" label_key="$t:sirsoft-ecommerce.editor.data_source.paymentSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/payment" method="GET" :auto_fetch="true" :auth_required="true"/>
   <!-- 운송장 입력 시 고를 택배사 목록 — 사용 중인 것만 받는다 -->
-  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <!-- 택배사 목록은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 억제하지 않으면 상세에 들어갈 때마다 「해당 권한이 없습니다」 알림이 뜬다(목록 화면 S3-D6 과 같은 처리). 비면 운송장 입력의 택배사 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <!-- 활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다) -->
   <data-source id="order_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.order_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true">
     <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
@@ -91,6 +98,12 @@
   <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다 -->
   <data-source id="refundReasons" label_key="$t:sirsoft-ecommerce.editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true">
     <params type="refund"/>
+    <error-handling>
+      <on-code code="403">
+        <!-- 사유 목록은 설정 조회·클레임 조회 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 비면 취소/환불 창의 사유 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <init-local>
     <field name="selectedProducts" :value="[]"/>

@@ -225,3 +225,62 @@ describe('KG 이니시스 — PG 전송 주소·제출 주소·영수증 창', (
         expect(lastFormFields().P_NEXT_URL).toBe(`${SITE_MOBILE_CALLBACK_URL}?orderId=ORD-HOST-001`);
     });
 });
+
+/**
+ * 서버가 주는 서명·CBT 발급 주소는 사이트 주소 기준 절대 URL 이다(`SiteUrl::absolute`).
+ *
+ * G7Core.api 는 받은 경로 앞에 `/api` 를 붙이고, 절대 URL 이면 그대로 보낸다. 같은 출처 절대 URL 을 그대로 넘기면
+ * `/plugins/...`(접두 없음)로 나가 404 가 나 결제창이 열리지 않았다.
+ */
+describe('같은 출처 절대 URL 서명 발급', () => {
+    it('모바일 서명 발급은 G7Core.api 에 /plugins 경로로 보낸다', async () => {
+        const origin = window.location.origin;
+        apiPost = vi.fn().mockResolvedValue({ data: { chkfake: 'chkfakestub', mobile_payment_url: INICIS_MOBILE_PAY_URL } });
+        (window as Record<string, unknown>).G7Core = {
+            api: {
+                get: vi.fn().mockResolvedValue({
+                    data: {
+                        mid: 'INIpayTest',
+                        japan_enabled: false,
+                        japan_mid: '',
+                        callback_urls: {
+                            mobile_signature: `${origin}/plugins/sirsoft-pay_kginicis/payment/mobile/signature`,
+                            mobile_callback: `${origin}/plugins/sirsoft-pay_kginicis/payment/mobile/callback`,
+                            mobile_vbank_notify: `${origin}/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`,
+                        },
+                    },
+                }),
+                post: apiPost,
+            },
+            state: { setLocal: vi.fn() },
+            modal: { open: vi.fn() },
+            toast: { error: vi.fn() },
+        };
+        Object.defineProperty(window.navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+            configurable: true,
+        });
+
+        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' } });
+
+        expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_kginicis/payment/mobile/signature', expect.any(Object));
+    });
+
+    it('CBT 체크아웃 토큰·해시 발급도 /plugins 경로로 보낸다', async () => {
+        const origin = window.location.origin;
+        mockInicisCbtEnvironment('https://cbt.inicis.com/cbtauth');
+        const get = ((window as Record<string, any>).G7Core.api.get) as ReturnType<typeof vi.fn>;
+        const cfg = (await get()).data;
+        cfg.callback_urls.cbt_checkout_token = `${origin}/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token`;
+        cfg.callback_urls.cbt_hash_data = `${origin}/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data`;
+        get.mockResolvedValue({ data: cfg });
+
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, currency: 'JPY' }, paymentMethod: 'card' },
+        });
+
+        const urls = apiPost.mock.calls.map((c: unknown[]) => c[0]);
+        expect(urls).toContain('/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token');
+        expect(urls).toContain('/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data');
+    });
+});

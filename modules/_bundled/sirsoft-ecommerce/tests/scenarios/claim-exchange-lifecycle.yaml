@@ -92,7 +92,9 @@ effects:
   - exchange_request_period_is_measured_from_delivery
   - exchange_redelivery_address_defaults_to_the_order_shipping_address
   - exchange_redelivery_address_must_stay_in_the_same_country
+  - exchange_redelivery_address_keeps_the_international_city_and_state # 해외 주문 재발송지의 도시·주 (S2-D8)
   - exchange_auto_approval_needs_a_zero_charge
+  - exchanged_source_row_is_not_counted_twice_in_the_comparison_quantity # 교환완료 원 행은 비교 카드 상품수량에서 빠진다(S3-D16)
 
   # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
   - exchange_preview_two_pass_keeps_refund_math
@@ -156,6 +158,7 @@ sub_flows:
       - exchange_approval_fails_when_the_new_option_ran_out
       - exchange_completion_restores_original_stock_only_for_checked_items
       - exchange_redelivery_tracking_creates_the_successor_option
+      - exchange_redelivery_arrival_keeps_a_successor_the_buyer_confirmed   # 발송중 교환품을 먼저 구매확정해도 도착·완료가 막히지 않는다
       - exchange_completion_keeps_the_earned_mileage   # 확정된 적립은 교환완료로도 회수하지 않는다
 
   - id: completion_refund

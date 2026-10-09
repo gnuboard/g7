@@ -92,8 +92,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 15개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 22개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 16개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -132,6 +132,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 입금된 가상계좌 환불을 일반 경로(`/v2/pg/refund`)로, 계좌번호를 평문으로 보낸다 | `/v2/pg/refund/vacct`·`/v2/pg/partialRefund/vacct` + `refundAcctNum` AES-128-CBC·base64(현금영수증 `issueNumber` 와 같은 암호화) | KG이니시스 취소 매뉴얼의 가상계좌 환불 규격이다 — 어기면 환불이 거절되고 계좌번호가 평문으로 나간다 |
 | PG 콜백의 `authUrl`/`P_REQ_URL`/`netCancelUrl`을 화이트리스트 없이 그대로 호출 | KG 이니시스 허용 URL 목록과 대조 후에만 호출 | 콜백 파라미터를 신뢰하면 공격자가 임의 URL로 서버발 요청을 유도할 수 있다(SSRF) |
 | 동일 거래번호 콜백을 매번 재처리 | 콜백 재처리 방지 검사를 거친 뒤 처리 | 재처리를 막지 않으면 같은 결제가 중복 완료 처리되거나 중복 환불될 수 있다 |
 | 결제창 서명/모바일 해시/CBT 해시 요청에 타임스탬프 검증 생략 | 타임스탬프 신선도 검증 유지 | 오래된 서명 재사용(replay)으로 위조 결제 요청이 통과할 수 있다 |
@@ -155,10 +156,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 48개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 18개 | `vitest.config.ts` |
+| PHPUnit | 54개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| Vitest | 21개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 30개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

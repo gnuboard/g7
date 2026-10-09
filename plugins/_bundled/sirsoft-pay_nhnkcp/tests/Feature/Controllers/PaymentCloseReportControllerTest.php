@@ -227,6 +227,45 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     }
 
     /**
+     * 가상계좌가 이미 발급된(입금대기) 주문의 닫힘 보고는 무시한다 — 발급 콜백과 경쟁해 늦게 온 보고가
+     * 발급된 주문을 실패·취소로 덮으면 고객은 받은 계좌로 입금할 수 없게 된다.
+     *
+     * @effects close_report_ignores_issued_vbank_waiting_deposit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_ignores_issued_vbank_waiting_deposit(): void
+    {
+        $order = $this->makeOrder('ORD-KCP-CLOSE-VBANK-001', 10000);
+        $order->order_status = OrderStatusEnum::PENDING_PAYMENT;
+        $order->setRelation('payment', new OrderPayment([
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+        ]));
+        $this->actAsOrderOwner($order);
+
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')
+            ->once()
+            ->with('ORD-KCP-CLOSE-VBANK-001')
+            ->andReturn($order);
+        $orderService->shouldNotReceive('failPayment');
+        $orderService->shouldNotReceive('recordPaymentCancellation');
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_nhnkcp/payment/close-report', [
+            'oid' => 'ORD-KCP-CLOSE-VBANK-001',
+            'price' => 10000,
+            'payment_method' => 'vbank',
+            'reason' => 'kcp-window-closed',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'ignored')
+            ->assertJsonPath('data.reason', 'payment_not_ready');
+    }
+
+    /**
      * 주문을 회원 소유로 만들고 그 회원으로 로그인합니다.
      *
      * 소유자 확인이 이 테스트의 관심사가 아닐 때 게이트를 정당하게 통과시키기 위한 준비다.

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
-use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -10,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
+use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 
 /**
  * 주문 결제 정보 리소스
@@ -44,9 +44,16 @@ class OrderPaymentResource extends BaseApiResource
             // 가상계좌 등) 주문이면 "체크해도 신청에서 멈춘다" 를 미리 알린다. 화면이 규칙을
             // 다시 유도하지 않고 서버 판정 하나를 읽게 한다 — 레이아웃 표현식에 목록 비교를
             // 박으면 설정이 바뀌거나 플러그인이 수단을 늘릴 때 안내와 실제 전이가 갈린다.
-            'auto_approves_refund' => $this->payment_method
-                ? app(PaymentMethodResolver::class)->autoApprovesRefund($this->paymentMethodId())
-                : true,
+            //
+            // 돌려줄 현금이 없는 주문(마일리지 전액 결제)은 계좌 송금이 없어 결제수단과 무관하게 완료까지 자동으로
+            // 간다(결함 4) — 그 판정(`hasCashToReturn`)을 같이 읽어야 안내와 실제 전이가 갈리지 않는다.
+            'auto_approves_refund' => ! $this->payment_method
+                || app(PaymentMethodResolver::class)->autoApprovesRefund($this->paymentMethodId())
+                || ! $this->orderHasCashToReturn(),
+            // 이 주문에 돌려줄 현금이 남아 있는가 — 관리자 취소 창이 환불 계좌 칸을 세우는 근거다(S3-D7).
+            // 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이라 헤더만 읽는 화면은 계좌 칸을 감추는데,
+            // 서버(`CancelOrderRequest`)는 같은 판정(`hasCashToReturn`)으로 계좌를 요구한다 — 화면이 이 값을 함께 읽는다.
+            'has_cash_to_return' => $this->resource->order !== null && $this->orderHasCashToReturn(),
             // 이 결제가 **부분취소를 지원하는가** (P6).
             //
             // PG 마다 제약이 다르고, 어떤 조합은 원천적으로 전액취소만 된다 — 예: NICE 가상계좌는
@@ -54,11 +61,13 @@ class OrderPaymentResource extends BaseApiResource
             // 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 원인 없는 실패를 받는다.
             // 판정은 PG 플러그인이 자기 제약을 아는 자리이므로 훅으로 위임한다 — 코어가 수단·PG
             // 조합표를 들고 있으면 플러그인이 늘 때마다 그 표가 낡는다.
-            'supports_partial_cancel' => (bool) HookManager::applyFilters(
-                'sirsoft-ecommerce.payment.supports_partial_cancel',
-                true,
-                $this->resource,
-            ),
+            'supports_partial_cancel' => app(PaymentMethodResolver::class)->supportsPartialCancel($this->resource),
+            // 부분취소를 막는 사유 — 취소 창이 사유별 안내를 고른다(입금 전 가상계좌 Q17)
+            'partial_cancel_block_reason' => app(PaymentMethodResolver::class)->partialCancelBlockReason($this->resource),
+            // 입금 전 취소 뒤 PG 가상계좌를 닫지 못했는가(P-D1) — 관리자 주문 상세가 「PG 관리자 화면에서 직접 닫으세요」 를 띄운다.
+            'vbank_close_failed' => (bool) (($this->payment_meta ?? [])['vbank_close_failed'] ?? false),
+            // 취소된 주문에 들어온 입금(P-D1 · Q11) — 자동 환불하지 않으므로 운영자에게 환불하라고 알린다.
+            'deposit_after_cancel' => $this->depositAfterCancel(),
             'pg_provider' => $this->pg_provider,
             'transaction_id' => $this->transaction_id,
             'merchant_order_id' => $this->merchant_order_id,
@@ -131,6 +140,8 @@ class OrderPaymentResource extends BaseApiResource
             // 주문상세의 현금영수증 카드가 이 리소스만 보고 렌더 여부를 판정할 수 있도록 함께 내린다
             // (프로바이더는 상점 전역 설정이지만 카드는 결제 정보 안에 있다).
             'cash_receipt_provider' => app(EcommerceSettingsService::class)->getCashReceiptProvider(),
+            // 화면 표기용 발급사 이름 — id 를 그대로 보이면 「현금영수증 tosspayments」처럼 내부 식별자가 찍힌다(S3-D17).
+            'cash_receipt_provider_label' => $this->cashReceiptProviderLabel(),
             // 머신 ISO8601 — 표시는 cash_receipt_issued_at_formatted 사용
             'cash_receipt_issued_at' => $this->cash_receipt_issued_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601, display uses cash_receipt_issued_at_formatted sibling
             'cash_receipt_issued_at_formatted' => $this->formatDateTimeStringForUser($this->cash_receipt_issued_at),
@@ -234,5 +245,72 @@ class OrderPaymentResource extends BaseApiResource
         }
 
         return null;
+    }
+
+    /**
+     * 이 결제의 주문에 돌려줄 현금이 남아 있는지 판정합니다. (결함 4 — 자동 전이 안내용)
+     *
+     * 주문이 없으면(고아 결제행) 판정 근거가 없으므로 「현금 있음」으로 보아 종전 안내를 유지한다.
+     *
+     * @return bool 돌려줄 현금이 남아 있으면 true
+     */
+    private function orderHasCashToReturn(): bool
+    {
+        $order = $this->resource->order;
+
+        return $order === null || app(RefundExecutionService::class)->hasCashToReturn($order);
+    }
+
+    /**
+     * 취소 후 입금 기록을 화면용으로 만듭니다. (P-D1)
+     *
+     * @return array{amount_formatted: string, deposited_at: string|null}|null 기록 (없으면 null)
+     */
+    private function depositAfterCancel(): ?array
+    {
+        $record = ($this->payment_meta ?? [])['deposit_after_cancel'] ?? null;
+
+        if (! is_array($record)) {
+            return null;
+        }
+
+        $currency = (string) ($record['currency'] ?? '') ?: $this->paymentCurrencyCode();
+
+        return [
+            'amount_formatted' => $this->formatCurrencyPrice((float) ($record['amount'] ?? 0), $currency),
+            'deposited_at' => $record['deposited_at'] ?? null,
+        ];
+    }
+
+    /**
+     * 현재 선택된 현금영수증 발급사의 표시명을 반환합니다. (미설정이면 null)
+     *
+     * 등록 항목의 다국어 키(`name_key`)가 현재 언어로 번역되면 그 값을, 아니면 `name` 을, 그것도 없으면 id 를 쓴다.
+     *
+     * @return string|null 발급사 표시명
+     */
+    private function cashReceiptProviderLabel(): ?string
+    {
+        $settings = app(EcommerceSettingsService::class);
+        $providerId = $settings->getCashReceiptProvider();
+
+        if ($providerId === null) {
+            return null;
+        }
+
+        foreach ($settings->getRegisteredCashReceiptProviders() as $entry) {
+            if (($entry['id'] ?? null) !== $providerId) {
+                continue;
+            }
+
+            $key = $entry['name_key'] ?? null;
+            if (is_string($key) && $key !== '' && __($key) !== $key) {
+                return __($key);
+            }
+
+            return (string) ($entry['name'] ?? $providerId);
+        }
+
+        return $providerId;
     }
 }

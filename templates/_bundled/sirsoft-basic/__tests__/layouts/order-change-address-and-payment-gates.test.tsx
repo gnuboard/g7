@@ -14,6 +14,7 @@ import changeAddressModalJson from '../../layouts/partials/mypage/orders/_modal_
 import orderShippingJson from '../../layouts/partials/mypage/orders/_shipping.json';
 import paymentJson from '../../layouts/partials/shop/_checkout_payment.json';
 import summaryJson from '../../layouts/partials/shop/_checkout_summary.json';
+import checkoutJson from '../../layouts/shop/checkout.json';
 
 /** 객체 트리에서 조건을 만족하는 노드를 모두 모은다 */
 function findAll(node: any, predicate: (n: any) => boolean, acc: any[] = []): any[] {
@@ -78,6 +79,21 @@ describe('주문 배송지 변경 창 — 저장된 배송지 미선택 적용 �
 
 describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => {
   const settings = (methods: any[]) => ({ data: { order_settings: { payment_methods: methods } } });
+  /**
+   * 주문서 레이아웃의 계산값(고객이 고를 수 있는 결제수단)을 같은 설정으로 평가해 `_computed` 를 만든다.
+   * 설정을 아직 못 받았을 때 식이 던지면 엔진처럼 값 없음(undefined)으로 둔다. 결제 통화 허용 목록은 주문서 계산 응답
+   * (`checkoutData.data.allowed_payment_methods`)에서 읽으므로 그 데이터 소스도 함께 넘긴다(없으면 거르지 않는다).
+   */
+  const computedFor = (paymentSettings: any, _global: any, checkoutData?: any) => {
+    let selectablePaymentMethods: any;
+    try {
+      selectablePaymentMethods = evaluate((checkoutJson as any).computed.selectablePaymentMethods, { paymentSettings, _global, checkoutData });
+    } catch {
+      selectablePaymentMethods = undefined;
+    }
+
+    return { selectablePaymentMethods };
+  };
 
   /**
    * @scenario surface=checkout_payment, gate=no_active_payment_method
@@ -87,10 +103,11 @@ describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => 
   it('활성 결제수단이 없으면 안내가 보이고, 있으면 숨는다', () => {
     const notice = findAll(paymentJson, (n) => JSON.stringify(n.children ?? n.text ?? '').includes('shop.checkout.no_payment_methods') && typeof n.if === 'string')[0];
     expect(notice, '안내 블록').toBeDefined();
-    expect(Boolean(evaluate(notice.if, { paymentSettings: settings([]), _global: {} }))).toBe(true);
-    expect(Boolean(evaluate(notice.if, { paymentSettings: settings([{ id: 'card', is_active: true }]), _global: {} }))).toBe(false);
+    const scope = (paymentSettings: any) => ({ paymentSettings, _global: {}, _computed: computedFor(paymentSettings, {}) });
+    expect(Boolean(evaluate(notice.if, scope(settings([]))))).toBe(true);
+    expect(Boolean(evaluate(notice.if, scope(settings([{ id: 'card', is_active: true }]))))).toBe(false);
     // 결제 설정을 아직 못 받았을 때는 안내를 띄우지 않는다(깜빡임 방지)
-    expect(Boolean(evaluate(notice.if, { paymentSettings: undefined, _global: {} }))).toBe(false);
+    expect(Boolean(evaluate(notice.if, scope(undefined)))).toBe(false);
   });
 
   /**
@@ -105,6 +122,7 @@ describe('주문서 결제수단 0건 — 안내와 결제하기 잠금', () => 
       checkoutData: { data: { has_unshippable_items: false } },
       paymentSettings: settings(methods),
       _global: {},
+      _computed: computedFor(settings(methods), {}, { data: { has_unshippable_items: false } }),
     });
     expect(Boolean(evaluate(payButton.props.disabled, scope([])))).toBe(true);
     expect(Boolean(evaluate(payButton.props.disabled, scope([{ id: 'dbank', is_active: true }])))).toBe(false);

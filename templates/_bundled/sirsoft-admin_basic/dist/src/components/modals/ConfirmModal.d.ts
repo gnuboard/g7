@@ -14,7 +14,7 @@ export interface ConfirmModalProps {
     /** 모달 열림 상태 */
     isOpen: boolean;
     /** 모달 닫기 핸들러 */
-    onClose: () => void;
+    onClose: (event?: Event | React.SyntheticEvent) => void;
     /** 모달 제목 (기본값: common.confirm) */
     title?: string;
     /** 확인 메시지 */

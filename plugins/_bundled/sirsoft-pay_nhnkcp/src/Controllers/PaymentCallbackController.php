@@ -14,11 +14,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
@@ -594,6 +596,18 @@ class PaymentCallbackController
             $order = $order->fresh('payment') ?? $order;
 
             $contextError = $this->validateVbankNotifyContext($order, $validated, $tno, $ipgmMny);
+
+            // 취소된 주문의 입금(P-D1 · Q11) — 주문은 되살리지 않고 기록·운영자 알림만 남긴 뒤 0000 으로 재통보를 멈춘다.
+            // 예전에는 9999(재통보 요청)로 답해 같은 입금이 10번 다시 왔고, 어디에도 남지 않았다. 발급 때 받은 거래번호와
+            // 맞는 통보만 기록한다(통보 출처는 KCP IP 로 이미 걸렀다).
+            if ($contextError === 'order_cancelled'
+                && $order->payment !== null
+                && hash_equals((string) $order->payment->transaction_id, $tno)) {
+                app(DepositAfterCancelRecorder::class)->record($order, (float) $ipgmMny, 'nhnkcp', $tno);
+
+                return $this->kcpNotifyResponse();
+            }
+
             if ($contextError !== null) {
                 Log::warning('KCP: vbank notify context mismatch — retry requested', [
                     'reason' => $contextError,
@@ -772,7 +786,7 @@ class PaymentCallbackController
             $effectiveCode = $pgResCd !== '' && $pgResCd !== self::SUCCESS_RES_CD
                 ? $pgResCd
                 : 'vbank_issuance_incomplete';
-            $effectiveMsg = $resMsg !== '' ? $resMsg : '가상계좌 발급 정보 누락';
+            $effectiveMsg = $resMsg !== '' ? $resMsg : __('sirsoft-pay_nhnkcp::messages.errors.vbank_issuance_incomplete');
 
             Log::warning('KCP: vbank issuance failed', [
                 'ordr_idxx' => $ordrIdxx,
@@ -866,24 +880,29 @@ class PaymentCallbackController
             $order = $order->fresh('payment') ?? $order;
         }
 
-        // 가상계좌 발급 정보를 OrderPayment vbank 전용 컬럼에 저장 (PENDING_PAYMENT 상태 유지).
+        // 가상계좌 발급 정보를 OrderPayment vbank 전용 컬럼에 저장한다. 주문은 PENDING_PAYMENT 를 유지하고
+        // 결제행은 입금대기(WAITING_DEPOSIT)로 둔다 — KG·나이스와 같은 상태값. 결제대기(READY)로 남기면
+        // 뒤늦은 결제창 닫힘 보고가 발급된 주문을 결제 전 주문으로 보고 취소할 수 있었다.
         // 저장이 실패하면 부분 저장으로 잘못된 계좌가 노출되지 않도록 실패로 되돌린다. 단
         // failPayment 는 PG 서버가 발급을 확인해 준 PC 분기에서만 부른다 (아래 catch 참조).
         try {
             $expireRaw = $pgResponse['va_date'] ?? null;
             $vbankDueAt = null;
             if ($expireRaw) {
-                // KCP va_date: YYYYMMDDHHMMSS (14자리) 또는 YYYYMMDD (8자리)
+                // KCP va_date: YYYYMMDDHHMMSS (14자리) 또는 YYYYMMDD (8자리) — 한국 시각이다. 앱 시간대(UTC)로
+                // 그대로 읽으면 기한이 9시간 늦게 저장된다(화면 표시·만료 판정 모두 어긋남).
                 try {
-                    $vbankDueAt = strlen($expireRaw) <= 8
-                        ? Carbon::createFromFormat('Ymd', $expireRaw)->endOfDay()
-                        : Carbon::createFromFormat('YmdHis', $expireRaw);
+                    $vbankDueAt = (strlen($expireRaw) <= 8
+                        ? Carbon::createFromFormat('Ymd', $expireRaw, 'Asia/Seoul')->endOfDay()
+                        : Carbon::createFromFormat('YmdHis', $expireRaw, 'Asia/Seoul'))->setTimezone(config('app.timezone', 'UTC'));
                 } catch (\Exception) {
                     $vbankDueAt = null;
                 }
             }
 
             $order->payment()->update(array_filter([
+                'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+                'pg_provider' => self::KCP_PROVIDER,
                 'transaction_id' => $tno ?: null,
                 'vbank_name' => $bankname,
                 'vbank_number' => $account,
@@ -927,6 +946,9 @@ class PaymentCallbackController
                 'orderId' => $ordrIdxx,
             ]));
         }
+
+        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+        $this->orderService->onVbankAccountIssued($order);
 
         $this->queueReceiptCookie($ordrIdxx);
 

@@ -54,7 +54,10 @@
               <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
               <navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/>
             </on>
-            <img src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
+            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
+            <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+              <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+            </div>
           </button>
           <!-- 상품 정보 -->
           <div class="flex-1 min-w-0">
@@ -154,8 +157,8 @@
                 <span class="text-xs text-purple-500 dark:text-purple-400">{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}</span>
               </div>
             </div>
-            <!-- 적용 배송정책 -->
-            <div data-if="{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
+            <!-- 적용 배송정책 — 「그 상품만 샀을 때 배송비」는 부분취소·재활성 재계산 때 남은 수량 기준으로 갱신된다. 취소된 행은 남은 행과 같은 상품 옵션을 공유해 그 갱신된 배송비가 붙으므로(이미 취소한 상품에 「2,500원」), 취소 행에서는 줄을 세우지 않는다. -->
+            <div data-if="{{item.option_status !== 'cancelled' &amp;&amp; (order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
               <icon name="truck" class="text-gray-400 dark:text-gray-500" size="xs"/>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500">/</span>

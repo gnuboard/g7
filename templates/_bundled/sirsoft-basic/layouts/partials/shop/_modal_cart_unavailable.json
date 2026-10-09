@@ -85,11 +85,31 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Img",
+                                                    "if": "{{unavailableItem.thumbnail}}",
                                                     "props": {
                                                         "src": "{{unavailableItem.thumbnail}}",
                                                         "alt": "{{unavailableItem.name}}",
                                                         "className": "w-full h-full object-cover"
                                                     }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{!unavailableItem.thumbnail}}",
+                                                    "props": {
+                                                        "className": "w-full h-full flex items-center justify-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "image",
+                                                                "size": "md",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         },

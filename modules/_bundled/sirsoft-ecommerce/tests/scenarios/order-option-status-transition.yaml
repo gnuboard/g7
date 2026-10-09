@@ -27,12 +27,14 @@ axes:
     - dbank             # 무통장 — 입금확인 경로
     - card_pg           # PG 카드 — completePayment 자동완료
     - mileage_full      # 전액 마일리지(0원) — finalizeZeroAmountPayment
+    - vbank_pg          # PG 가상계좌 — 계좌 발급 뒤 입금통보로 completePayment
   terminal_path:
     - complete_payment        # completePayment(PG)
     - fail_payment            # failPayment → CANCELLED (B1)
     - manual_deposit_confirm  # confirmManualDeposit → completePayment 위임 (B2)
     - admin_status_update     # OrderService::update → bulkUpdateOptionStatus
     - bulk_update             # OrderService::bulkUpdate 일괄
+    - vbank_issued            # PG 가상계좌 계좌 발급 직후 onVbankAccountIssued
   option_mix:
     - all_active          # 전 옵션 활성 — 전부 동기화
     - has_partial_cancel  # 일부 옵션 부분취소 — 보존 대상 혼재
@@ -45,6 +47,7 @@ exclusions:
   - { payment_method: mileage_full, terminal_path: manual_deposit_confirm, reason: "0원 주문은 입금 불필요" }
   - { payment_method: mileage_full, terminal_path: complete_payment, reason: "0원은 생성 시점 확정(finalize)" }
   - { terminal_path: manual_deposit_confirm, actor: member, reason: "입금확인은 관리자 전용 액션" }
+  - { payment_method: vbank_pg, terminal_path: manual_deposit_confirm, reason: "PG 가상계좌는 입금통보로 확정" }
   - { terminal_path: admin_status_update, actor: member, reason: "상태변경은 관리자 전용" }
   - { terminal_path: bulk_update, actor: member, reason: "일괄변경은 관리자 전용" }
 
@@ -55,6 +58,9 @@ effects:
   - fail_payment_preserves_already_cancelled_options                 # B1 syncExcludedValues
   - manual_deposit_confirm_syncs_option_status_via_complete_payment  # B2 위임
   - manual_deposit_confirm_rejects_amount_mismatch_422               # B2 정확일치
+  - manual_deposit_confirm_accepts_payment_currency_amount           # 소수 결제 통화(USD) 주문은 창이 안내한 결제 통화 금액($17.06)으로 결제완료된다 — 입금액을 최소 화폐단위로 바꿔 비교
+  - manual_deposit_record_keeps_payment_currency_amount              # 「기록만」 경로도 결제 통화 입금액을 센트까지 남긴다 (정수 절사 금지)
+  - manual_deposit_mismatch_reports_due_and_received_in_payment_currency # 불일치 진단 문구는 결제 통화로 예상 = 결제예정금액, 실제 = 입금액
   - manual_deposit_confirm_rejects_non_dbank_order_422                # 무통장이 아닌 주문의 입금확인은 422 로 거절
   - manual_deposit_confirm_requires_orders_update_permission         # 주문 수정 권한이 없으면 입금확인은 403
   - manual_deposit_confirm_records_depositor_name                    # B2 입금자명 기록
@@ -134,6 +140,8 @@ effects:
   - cart_cleared_at_order_creation_for_order_placed_timing          # order_placed 타이밍은 주문 생성 시 장바구니 정리
   - cart_kept_at_creation_for_payment_complete_timing               # payment_complete 타이밍은 생성 시 장바구니를 남기고 order_meta 에 보관
   - complete_payment_clears_ordered_cart_items                      # 결제완료 시 주문한 장바구니 항목 삭제
+  - vbank_issue_clears_ordered_cart_items                           # 가상계좌 계좌 발급(입금 전) 시 주문한 장바구니 항목 정리
+  - cart_cleared_once_per_order                                     # 장바구니 정리는 주문당 한 번 — 발급 때 정리했으면 입금 완료 때 다시 차감하지 않음
   - stock_deducted_at_order_creation_only_for_order_placed_timing   # 주문 생성 시 재고 차감은 order_placed 타이밍에서만
   - stock_deducted_at_payment_complete_only_for_payment_complete_timing # 결제완료 시 재고 차감은 payment_complete 타이밍에서만
   - complete_payment_validates_pg_amount_against_due_amount         # PG 금액은 결제예정금액과 같을 때만 통과 (구성요소 합 불일치, PG 금액 불일치 거부)

@@ -93,6 +93,8 @@ class ClaimAdminListResource extends ClaimResource
                 'is_admin_requested' => $claim->isAdminRequested(),
                 // 「환불 미접수」 뱃지(D9) — 목록 필터 `pending_refund` 와 같은 술어다(금액 0 판정은 상세가 한다).
                 'has_pending_refund' => $this->hasPendingRefund($claim),
+                // 최신 환불의 진행 상태(보완 5 · Q7) — 출처 축으로 페이지당 한 번 싣는다(Repository 의 with).
+                'refund_progress' => $this->refundProgress($claim),
             ];
 
             if ($claim instanceof OrderExchange) {
@@ -109,7 +111,8 @@ class ClaimAdminListResource extends ClaimResource
         }
 
         if ($claim instanceof OrderRefund) {
-            $refundTotal = (float) $claim->refund_amount + (float) $claim->refund_points_amount;
+            // 차감된 적 없는 사용 마일리지는 돌려주지 않는다(Q15) — 상세와 같은 합계를 낸다.
+            $refundTotal = (float) $claim->refund_amount + ($this->pointsNotDeducted($claim) ? 0.0 : (float) $claim->refund_points_amount);
 
             $data += [
                 // 목록의 출처 뱃지가 읽는 값(#599 후속 §5-6). 취소 발 환불이 환불 탭에 서게
@@ -124,14 +127,22 @@ class ClaimAdminListResource extends ClaimResource
 
         if ($claim instanceof OrderCancel) {
             $refund = $this->whenLoaded('refund', fn () => $this->refund, null);
+            // 취소 발 환불도 같은 주문의 마일리지 차감 여부로 판정한다(Q15) — 환불 탭 행·상세와 같은 합계.
+            $cancelRefundTotal = $refund
+                ? (float) $refund->refund_amount + (self::orderPointsNotDeducted($order) ? 0.0 : (float) $refund->refund_points_amount)
+                : null;
 
             $data += [
                 'cancel_type' => $claim->cancel_type?->value,
                 'cancel_type_label' => $claim->cancel_type?->label(),
-                'refund_total' => $refund ? $this->roundToOrderCurrency((float) $refund->refund_amount + (float) $refund->refund_points_amount, $currency) : null,
-                'refund_total_formatted' => $refund ? $this->formatOrderCurrency((float) $refund->refund_amount + (float) $refund->refund_points_amount, $currency) : null,
+                'refund_total' => $refund ? $this->roundToOrderCurrency($cancelRefundTotal, $currency) : null,
+                'refund_total_formatted' => $refund ? $this->formatOrderCurrency($cancelRefundTotal, $currency) : null,
                 'refund_status' => $refund?->refund_status?->value,
                 'refund_status_label' => $refund?->refund_status?->label(),
+                // 재활성 배지(Q29) — 서버가 취소신청서에 기록한 값만 읽는다. 주문 상태로 다시 판정하면 일부만
+                // 되살린 주문에서 관계없는 취소까지 표시된다.
+                'reactivated_at_formatted' => $claim->reactivated_at ? $this->formatDateTimeStringForUser($claim->reactivated_at) : null,
+                'is_partially_reactivated' => $claim->isPartiallyReactivated(),
             ];
         }
 
@@ -265,5 +276,39 @@ class ClaimAdminListResource extends ClaimResource
     protected function hasPendingRefund(OrderExchange|OrderReturn $claim): bool
     {
         return $claim->pendingRefundItems()->isNotEmpty();
+    }
+
+    /**
+     * 이 교환·반품에서 생긴 최신 환불신청서의 진행 상태를 만듭니다. (보완 5 · Q7)
+     *
+     * 관계가 미리 실리지 않았으면 되읽지 않는다 — 목록에서 행마다 쿼리가 늘어난다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @return array{claim_number: string, status: string, status_label: string, status_variant: string, status_icon: string, count: int}|null 진행 상태 (환불이 없으면 null)
+     */
+    protected function refundProgress(OrderExchange|OrderReturn $claim): ?array
+    {
+        $relation = $claim instanceof OrderReturn ? 'sourcedRefunds' : 'refunds';
+
+        if (! $claim->relationLoaded($relation)) {
+            return null;
+        }
+
+        $refunds = $claim->{$relation}->sortBy('id')->values();
+
+        if ($refunds->isEmpty()) {
+            return null;
+        }
+
+        $latest = $refunds->last();
+
+        return [
+            'claim_number' => (string) $latest->refund_number,
+            'status' => $latest->refund_status->value,
+            'status_label' => $latest->refund_status->label(),
+            'status_variant' => $latest->refund_status->variant(),
+            'status_icon' => $latest->refund_status->icon(),
+            'count' => $refunds->count(),
+        ];
     }
 }

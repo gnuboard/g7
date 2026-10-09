@@ -27,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
 use Modules\Sirsoft\Ecommerce\Support\ClaimOutstanding;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 클레임 추가결제 서비스 (S5)
@@ -139,7 +140,7 @@ class ClaimPaymentService
             return null;
         }
 
-        $requestedBy = $claim->requested_by === null ? null : (int) $claim->requested_by;
+        $requestedBy = $this->payerUserIdOf($claim);
         $method = $paymentMethod === null || $paymentMethod === ''
             ? $this->resolveDefaultPaymentMethodFor($requestedBy)
             : $this->resolvePaymentMethod($paymentMethod);
@@ -204,7 +205,7 @@ class ClaimPaymentService
         $payment = $this->paymentRepository->findPendingByPayable($claim->claimType()->value, $claim->id);
 
         if ($payment === null) {
-            $method = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+            $method = $this->resolveDefaultPaymentMethodFor($this->payerUserIdOf($claim));
 
             // 통화 기준도 같은 이유로 결제행 앞에서 본다 — 미루면 승인 시도가 결제대기로 옮긴
             // 신청서와 낼 수 없는 결제행을 남긴다(`initiateForRequest()`·`settleChargeDifference()` 동형).
@@ -495,7 +496,28 @@ class ClaimPaymentService
         ]);
 
         if ($paid === null) {
-            return $this->paymentRepository->findByPaymentNumber($locked->payment_number) ?? $locked;
+            $current = $this->paymentRepository->findByPaymentNumber($locked->payment_number) ?? $locked;
+
+            // 다른 요청이 먼저 확정했으면 그 건을 그대로 돌려준다 — 같은 결제 건의 재승인을 결제사 쪽에서 한 번으로 접는
+            // 멱등은 결제 플러그인 계약이다(docs/api/claim-payments.md).
+            if ($current->isPaid()) {
+                return $current;
+            }
+
+            // PG 왕복 사이에 철회·고아 정리가 결제 건을 닫았다(F5). PG 에서는 승인됐으므로 고객은 청구된 채 남는다 —
+            // 망취소하고 실패를 돌려준다. 예전에는 닫힌 결제 건을 그대로 돌려줘 화면은 성공이었다. 서버 콜백 경로는
+            // PG 별 보상 클로저가 이 예외 키로 같은 보상을 한다(`ClaimPaymentCallback`).
+            Log::warning('[claim.payment] 승인 중 결제 건이 닫혀 승인을 되돌립니다', [
+                'payment_number' => $current->payment_number,
+                'payment_status' => $current->payment_status?->value,
+                'transaction_id' => $result['transaction_id'] ?? null,
+            ]);
+
+            if ($voidOnReject) {
+                $this->voidRejectedApproval($current, $callback, $result);
+            }
+
+            throw OrderClaimException::paymentWithdrawnDuringApproval();
         }
 
         return $this->confirmPaid($paid);
@@ -528,6 +550,7 @@ class ClaimPaymentService
                 'transaction_id' => $approveResult['transaction_id'] ?? null,
                 'error' => $e->getMessage(),
             ]);
+            $this->markVoidFailed($payment, $approveResult, 'exception');
 
             return;
         }
@@ -539,6 +562,7 @@ class ClaimPaymentService
                 'handled' => ! empty($void['handled']),
                 'error_code' => $void['error_code'] ?? null,
             ]);
+            $this->markVoidFailed($payment, $approveResult, (string) ($void['error_code'] ?? (empty($void['handled']) ? 'unhandled' : 'unknown')));
 
             return;
         }
@@ -547,6 +571,32 @@ class ClaimPaymentService
             'payment_number' => $payment->payment_number,
             'transaction_id' => $approveResult['transaction_id'] ?? null,
         ]);
+    }
+
+    /**
+     * 망취소 실패를 결제 건에 남깁니다. (B4)
+     *
+     * 고객 돈이 PG 에 묶인 사실을 로그에만 두면 운영자 화면에서 그 결제 건을 찾을 수 없다. 사유 코드 `VOID_FAILED` 와
+     * 승인 거래 ID 를 남기면 관리자 클레임 상세가 「결제사 콘솔에서 직접 취소」 를 띄운다. 기록이 실패해도 흐름은 멈추지 않는다.
+     *
+     * @param  ClaimPayment  $payment  거절된 결제 건
+     * @param  array  $approveResult  승인 필터 결과
+     * @param  string  $reason  망취소 실패 사유 코드
+     * @return void 반환값 없음
+     */
+    protected function markVoidFailed(ClaimPayment $payment, array $approveResult, string $reason): void
+    {
+        try {
+            $this->paymentRepository->update(
+                $this->paymentRepository->findByPaymentNumber($payment->payment_number) ?? $payment,
+                [
+                    'pg_error_code' => 'VOID_FAILED',
+                    'pg_error_message' => trim($reason.' '.($approveResult['transaction_id'] ?? '')),
+                ],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -571,7 +621,12 @@ class ClaimPaymentService
                 throw OrderClaimException::paymentNotPending();
             }
 
-            $amount = (int) round($locked->getTotalAmount());
+            // 결제 통화의 소수 자릿수로 맞춘다(S9) — 정수로 자르면 소수 통화에서 청구 2.40 에 2 만 차감돼, 결제 건은
+            // PAID 인데 미수납 0.40 이 남아 신청서가 결제완료로 옮겨지지 않고 남은 돈을 낼 곳도 없다. 원화는 0자리라 같다.
+            $amount = round(
+                $locked->getTotalAmount(),
+                $this->currencyService->getDecimalPlaces((string) $locked->currency_code, $locked->order?->currency_snapshot),
+            );
 
             // 마일리지 차감의 멱등 축은 거래 행의 `claim_payment_id` 다 — 같은 결제 건으로 두 번
             // 차감되면 그 컬럼이 중복 기록을 드러낸다. 환급측(restoreForClaimPayment)이 그 컬럼으로
@@ -682,18 +737,33 @@ class ClaimPaymentService
                     // 원장 상한(`restoreForClaimPayment()`)이 같은 결제 건 행을 잠그고 기환급액을 다시
                     // 세므로, 이 경로 밖에서 들어온 환급과도 겹치지 않는다.
                     $this->mileageService->restoreForClaimPayment((int) $userId, $refundAmount, $locked->currency_code, $locked);
+                    $pgRefundTransactionId = null;
                 } else {
-                    $this->executePgRefund($locked, $refundAmount, $reason, $pgFailure);
+                    $pgRefundTransactionId = $this->executePgRefund($locked, $refundAmount, $reason, $pgFailure);
                 }
 
                 $refundedTotal = (float) $locked->refunded_amount + $refundAmount;
                 $fullyRefunded = $refundedTotal >= $locked->getTotalAmount() - 0.005;
 
-                $updated = $this->paymentRepository->update($locked, [
+                $columns = [
                     'refunded_amount' => $refundedTotal,
                     'refunded_at' => Carbon::now(),
                     'payment_status' => $fullyRefunded ? ClaimPaymentStatusEnum::REFUNDED : ClaimPaymentStatusEnum::PAID,
-                ]);
+                ];
+
+                // PG 환급마다 결제사가 준 환급 거래 ID 를 남긴다(P-D11) — 승인 거래 ID(`transaction_id`)와 따로,
+                // 부분 환급이 여러 번이면 차례대로 쌓는다. 버리면 결제사 취소 내역과 대사할 근거가 없다.
+                if (! $locked->isPointPayment()) {
+                    $raw = is_array($locked->raw_response) ? $locked->raw_response : [];
+                    $raw['refunds'][] = [
+                        'transaction_id' => $pgRefundTransactionId,
+                        'amount' => $refundAmount,
+                        'refunded_at' => Carbon::now()->toIso8601String(),
+                    ];
+                    $columns['raw_response'] = $raw;
+                }
+
+                $updated = $this->paymentRepository->update($locked, $columns);
 
                 return [$updated, $refundAmount];
             });
@@ -770,7 +840,8 @@ class ClaimPaymentService
         }
 
         // 승인 시점 결제는 승인 시도 때 결제 건이 생기므로, 아직 결제대기가 아니면 청구액만 바뀐 채 둔다.
-        if ($claim->charge_method === ClaimChargeMethodEnum::PAY_ON_APPROVAL && $pending === null) {
+        // 단 이미 한 번 받은 뒤(승인을 지난 뒤) 올린 차액은 승인 시도가 다시 오지 않으므로 지금 만든다(S3).
+        if ($claim->charge_method === ClaimChargeMethodEnum::PAY_ON_APPROVAL && $pending === null && $paid <= 0.0) {
             return null;
         }
 
@@ -779,7 +850,7 @@ class ClaimPaymentService
         if ($pending === null) {
             // 신규 결제행도 생성 전에 신청자 자격을 본다 — 허용 목록의 첫 수단이 마일리지인 상점에서
             // 비회원 신청서의 차액 결제행이 `point` 로 만들어지면 그 건은 다시 열리지 않는다.
-            $newMethod = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+            $newMethod = $this->resolveDefaultPaymentMethodFor($this->payerUserIdOf($claim));
         }
 
         // 수정 경로도 결제행을 건드리기 전에 통화 기준을 본다 — 여기서 미루면 신청서 수정과 차액
@@ -881,6 +952,17 @@ class ClaimPaymentService
     public function findByNumber(string $paymentNumber): ?ClaimPayment
     {
         return $this->paymentRepository->findByPaymentNumber($paymentNumber);
+    }
+
+    /**
+     * ID 로 결제 건을 조회합니다.
+     *
+     * @param  int  $id  결제 건 ID
+     * @return ClaimPayment|null 결제 건
+     */
+    public function findById(int $id): ?ClaimPayment
+    {
+        return $this->paymentRepository->findById($id);
     }
 
     /**
@@ -1075,7 +1157,9 @@ class ClaimPaymentService
                 // 결제는 확정됐는데 상태만 못 옮겼다 — 상태를 조용히 앞당기지 않고 운영자에게 남긴다.
                 // 훅도 발화하지 않는다: 결제대기에 머문 신청서에 '결제 완료' 를 통지하면 고객이
                 // 받은 안내와 화면 상태가 어긋난다(잔액이 남은 분할 수납을 미발화로 막는 것과 같은 이유).
-                Log::info('[claim.payment] 결제 확정 전이 거절 — 결제대기 유지', [
+                // 경고로 올린다(B5) — 신청서가 결제대기에 멈춘 이유가 여기 말고는 없다. 상세는
+                // `ClaimResource::paid_but_transition_failed` 로 같은 사실을 보인다.
+                Log::warning('[claim.payment] 결제 확정 전이 거절 — 결제대기 유지', [
                     'payment_number' => $payment->payment_number,
                     'reason' => $e->getMessageKey(),
                 ]);
@@ -1094,7 +1178,8 @@ class ClaimPaymentService
         }
 
         try {
-            $this->transitionClaim($claim, 'approved');
+            // 결제 확정은 낸 사람이 한 일이지만 그 뒤 승인은 설정이 한 일이다 — 작업자는 시스템(S1-D16).
+            SystemActor::run(fn () => $this->transitionClaim($claim, 'approved'));
         } catch (OrderClaimException $e) {
             // 결제는 확정됐다 — 승인만 운영자 몫으로 남긴다(신규 옵션 재고 부족 등).
             Log::info('[claim.payment] 결제 확정 후 자동 승인 건너뜀 — 결제완료 유지', [
@@ -1184,11 +1269,11 @@ class ClaimPaymentService
      * @param  float  $amount  환급액 (기준통화)
      * @param  string|null  $reason  환급 사유
      * @param  array|null  $failure  PG 거절 시 기록할 컬럼 갱신값 (참조)
-     * @return void
+     * @return string|null 결제사 환급 거래 ID (플러그인이 주지 않으면 null)
      *
      * @throws OrderClaimException 연동 부재 / 환급 실패
      */
-    protected function executePgRefund(ClaimPayment $payment, float $amount, ?string $reason, ?array &$failure = null): void
+    protected function executePgRefund(ClaimPayment $payment, float $amount, ?string $reason, ?array &$failure = null): ?string
     {
         // PG 실환급액은 결제 통화여야 한다 — 결제 시점 동결 환율(mc_amount)로 비례 환산한다.
         // 환산 조건 판정은 `resolvePaymentCurrencyTotal()` 이 단일 출처다 (플러그인도 같은 값을
@@ -1235,6 +1320,8 @@ class ClaimPaymentService
             // 승인 축과 같은 이유로 코드만 노출한다 (원문은 위 컬럼·로그에 남는다).
             throw OrderClaimException::paymentRefundFailed((string) ($result['error_code'] ?? 'unknown'));
         }
+
+        return filled($result['transaction_id'] ?? null) ? (string) $result['transaction_id'] : null;
     }
 
     /**
@@ -1513,6 +1600,27 @@ class ClaimPaymentService
         if ($paymentMethod === PaymentMethodEnum::POINT->value && $userId === null) {
             throw OrderClaimException::pointPaymentRequiresMember();
         }
+    }
+
+    /**
+     * 클레임 추가결제를 낼 회원 id 를 반환합니다. (비회원 주문이면 null)
+     *
+     * 운영자 직권 접수 건은 `requested_by` 가 비회원 신청과 똑같이 null 이다. 그 값으로 결제할 사람을 정하면
+     * 회원 주문의 판매자 접수 건이 비회원 취급되어 마일리지가 선택지·기본 수단에서 빠진다(S3-D15). 신청서의
+     * 비회원 판정(`isGuestRequest`)과 같이 **주문의 주인**으로 가른다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @return int|null 결제할 회원 id
+     */
+    public function payerUserIdOf(OrderExchange|OrderReturn $claim): ?int
+    {
+        if ($claim->requested_by !== null) {
+            return (int) $claim->requested_by;
+        }
+
+        $claim->loadMissing('order');
+
+        return $claim->order?->user_id === null ? null : (int) $claim->order->user_id;
     }
 
     /**

@@ -43,7 +43,8 @@
                     "props": {
                         "type": "button",
                         "className": "absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed",
-                        "disabled": "{{_computed.isReadOnly}}"
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "aria-label": "$t:common.delete"
                     },
                     "children": [
                         {
@@ -368,6 +369,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_unit'}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_of|currency={{rule.currency_code ?? ''}}",
                                         "value": "{{rule.earn_rounding_unit ?? '1'}}",
                                         "options": "{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}",
                                         "className": "flex-1",
@@ -380,6 +382,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_method'}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_of|currency={{rule.currency_code ?? ''}}",
                                         "value": "{{rule.earn_rounding_method ?? 'floor'}}",
                                         "className": "flex-1",
                                         "disabled": "{{_computed.isReadOnly}}",
@@ -722,6 +725,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "newMileageCurrency.earn_rounding_unit",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_label",
                                         "value": "{{_local.form?.newMileageCurrency?.earn_rounding_unit ?? '1'}}",
                                         "options": "{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}",
                                         "className": "flex-1",
@@ -734,6 +738,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "newMileageCurrency.earn_rounding_method",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_label",
                                         "value": "{{_local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor'}}",
                                         "className": "flex-1",
                                         "disabled": "{{_computed.isReadOnly}}",

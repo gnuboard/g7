@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
 
 use Closure;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Support\SystemActor;
 
 /**
  * 클레임 도메인 훅을 트랜잭션 커밋 뒤에 발화하는 공용 규칙
@@ -32,13 +33,14 @@ trait FiresClaimHooksAfterCommit
     /**
      * 훅 발화 클로저를 현재 트랜잭션의 커밋 뒤에 실행합니다. (트랜잭션 밖이면 즉시)
      *
-     * 클로저가 쓰는 값은 등록 시점에 캡처된다 — 커밋 뒤에 다시 읽지 않는다.
+     * 클로저가 쓰는 값은 등록 시점에 캡처된다 — 커밋 뒤에 다시 읽지 않는다. 작업자도 같다 —
+     * 자동 전이(`SystemActor`) 안에서 미룬 발화는 커밋 뒤에도 시스템으로 발화한다(S1-D16).
      *
      * @param  Closure  $fire  `HookManager::doAction(...)` 을 부르는 클로저
      * @return void 반환값 없음
      */
     protected function fireAfterCommit(Closure $fire): void
     {
-        DB::afterCommit($fire);
+        DB::afterCommit(SystemActor::wrap($fire));
     }
 }

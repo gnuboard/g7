@@ -1,0 +1,25 @@
+# e2e:allow 화면 변경 없음 — 거절 사유는 기존 오류 토스트로 나온다. 플러그인을 켜고 끄는 실측은 07 문서가 맡는다.
+feature: PG 환불은 「이 주문의 결제 플러그인」 이 응답할 때만 (P-D3 · P-D4 · P-D6) — #747 C7
+
+description: |
+  PG 리스너 존재 판정이 전역이라, 다른 PG 플러그인 하나만 켜져 있어도 꺼진 플러그인의 주문이 PG 환불로 접수되고
+  실행은 「PG 환불 실패(Unknown error)」 로만 끝났다. 계좌 환불로 폴백된 카드 주문은 플러그인을 다시 켜도 PG 를 부르지
+  않았고, 결제수단이 PG 를 거치지 않는데 수단이 PG 면 PG 단계를 건너뛰고 완료로 남았다.
+
+    - 리스너 판정은 켜진 플러그인이 등록한 제공자 목록에 결제행의 제공자가 있는지까지 본다(목록이 비면 구독자 유무).
+    - 필터 기본값에 handled=false — 각 PG 리스너는 자기 결제일 때만 true. 아무도 받지 않으면 422 pg_provider_inactive.
+    - 운영자가 수단을 고르지 않은 계좌 폴백 신청서는 실행 때 PG 로 되돌린다(refund_method_overridden).
+    - 수단 PG + 비-PG 결제수단은 422 pg_refund_unsupported.
+
+axes:
+  guard: [provider_check, unhandled_execution, fallback_reresolve, method_mismatch]
+
+effects:
+  - pg_refund_requires_the_orders_own_plugin
+  - unhandled_pg_refund_reports_inactive_plugin
+  - fallback_refund_returns_to_pg_when_the_plugin_is_back
+  - operator_chosen_refund_method_is_kept
+  - pg_refund_on_a_non_pg_payment_is_rejected
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Refund/PgRefundProviderGuardTest.php

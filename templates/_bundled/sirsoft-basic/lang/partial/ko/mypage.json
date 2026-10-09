@@ -34,7 +34,8 @@
         "edit_hint": "배송국가는 회원정보 수정에서 함께 변경됩니다.",
         "save_button": "저장",
         "saved": "배송국가가 변경되었습니다.",
-        "save_failed": "배송국가 변경에 실패했습니다."
+        "save_failed": "배송국가 변경에 실패했습니다.",
+        "saved_not_applied": "저장된 배송국가 {{saved}}은(는) 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: {{applied}}"
     },
     "notification_settings": {
         "title": "게시판 알림 설정",
@@ -273,6 +274,7 @@
         "confirm_change_address": "배송지를 변경하시겠습니까?",
         "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구",
         "claim_additional_paid": "클레임 추가결제",
+        "refund_mileage_credit": "마일리지로 환불",
         "delivered_at": "배송완료일시",
         "confirmed_at": "구매확정일시"
     },

@@ -6,6 +6,7 @@ use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -318,6 +319,30 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
             ->whereIn('refund_source_type', RefundSourceTypeEnum::quantityOwningValues())
             ->where('reason_code', $reasonCode)
             ->count();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumCompletedRefundAmountByMethod(int $orderId, RefundMethodEnum $method): float
+    {
+        return (float) OrderRefund::query()
+            ->where('order_id', $orderId)
+            ->where('refund_method', $method->value)
+            ->where('refund_status', RefundStatusEnum::COMPLETED->value)
+            ->sum('refund_amount');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumCompletedCashRefundForOrder(int $orderId, array $sourceValues): float
+    {
+        return (float) OrderRefund::query()
+            ->where('order_id', $orderId)
+            ->whereIn('refund_source_type', $sourceValues)
+            ->where('refund_status', RefundStatusEnum::COMPLETED->value)
+            ->sum('refund_amount');
     }
 
     /**

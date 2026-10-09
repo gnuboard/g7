@@ -11,13 +11,17 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderEmailChannelUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderMileageDeductionException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkChangeOrderOptionStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOrdersRequest;
@@ -156,6 +160,8 @@ class OrderController extends AdminBaseController
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (ReactivationCouponConflictException|OrderMileageDeductionException|InsufficientStockException $e) {
+            return $this->manualPaidFailure($e);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -192,6 +198,8 @@ class OrderController extends AdminBaseController
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (ReactivationCouponConflictException|OrderMileageDeductionException|InsufficientStockException $e) {
+            return $this->manualPaidFailure($e);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -254,7 +262,8 @@ class OrderController extends AdminBaseController
                 $validated['items'],
                 $newStatus,
                 $order->id,
-                $metadata
+                $metadata,
+                ManualPaidOptions::fromInput($validated)
             );
 
             return ResponseHelper::moduleSuccess(
@@ -296,6 +305,8 @@ class OrderController extends AdminBaseController
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (ReactivationCouponConflictException|OrderMileageDeductionException|InsufficientStockException $e) {
+            return $this->manualPaidFailure($e);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -303,6 +314,97 @@ class OrderController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 목록 일괄변경 확인 창 — 수동 결제 처리 항목을 미리 계산합니다. (DB 변경 없음 — Q13·Q14·Q26)
+     *
+     * 쓰기 요청과 같은 FormRequest 를 써서 「미리보기 통과 ⇔ 실행 검증 통과」를 보장한다.
+     *
+     * @param  BulkUpdateOrdersRequest  $request  일괄 변경 요청 (실행과 같은 검증)
+     * @return JsonResponse 주문별 세 항목·복원·경고와 집계
+     */
+    public function bulkManualPaidPreview(BulkUpdateOrdersRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $status = $validated['order_status'] ?? null;
+            $status = $status instanceof OrderStatusEnum ? $status->value : $status;
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.orders.manual_paid_preview_retrieved',
+                $this->orderService->previewManualPaidEffectsForBulk($validated['ids'], $status),
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.orders.manual_paid_preview_failed', 500);
+        }
+    }
+
+    /**
+     * 주문상세 상품 일괄변경 확인 창 — 수동 결제 처리 항목을 미리 계산합니다. (DB 변경 없음 — Q13·Q14·Q26)
+     *
+     * @param  BulkChangeOrderOptionStatusRequest  $request  상품 일괄 변경 요청 (실행과 같은 검증)
+     * @param  Order  $order  대상 주문
+     * @return JsonResponse 세 항목·복원·경고와 집계
+     */
+    public function optionBulkManualPaidPreview(BulkChangeOrderOptionStatusRequest $request, Order $order): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.orders.manual_paid_preview_retrieved',
+                $this->orderOptionService->previewManualPaidEffects($order, $validated['items'], OrderStatusEnum::from($validated['status'])),
+            );
+        } catch (ResourceScopeMismatchException $e) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.orders.manual_paid_preview_failed', 400);
+        } catch (OrderClaimException $e) {
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.orders.manual_paid_preview_failed', 500);
+        }
+    }
+
+    /**
+     * 수동 결제 처리(세 항목·재활성 복원)의 도메인 거절을 422 로 답합니다.
+     *
+     * 마일리지 부족·쿠폰 충돌은 막힌 주문번호를, 재고 부족은 모자란 상품을 함께 싣는다 — 운영자가 어느
+     * 주문의 무엇을 끄거나 고쳐야 하는지 읽을 수 있어야 한다(종전에는 500 「수정 실패」만 보였다).
+     *
+     * @param  ReactivationCouponConflictException|OrderMileageDeductionException|InsufficientStockException  $e  거절 사유
+     * @return JsonResponse 422 응답
+     */
+    private function manualPaidFailure(ReactivationCouponConflictException|OrderMileageDeductionException|InsufficientStockException $e): JsonResponse
+    {
+        if ($e instanceof ReactivationCouponConflictException) {
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, [
+                'order_numbers' => $e->getOrderNumbers(),
+                'coupons' => $e->getCoupons(),
+            ], $e->getMessageParams());
+        }
+
+        if ($e instanceof OrderMileageDeductionException) {
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, ['order_numbers' => $e->getOrderNumbers()], $e->getMessageParams());
+        }
+
+        return ResponseHelper::error(
+            'sirsoft-ecommerce::exceptions.manual_paid.stock_insufficient',
+            422,
+            ['items' => $e->getInsufficientItems()],
+            ['reason' => $e->getMessage()],
+        );
     }
 
     /**

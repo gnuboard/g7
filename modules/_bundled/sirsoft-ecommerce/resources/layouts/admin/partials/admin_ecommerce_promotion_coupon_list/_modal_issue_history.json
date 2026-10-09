@@ -76,7 +76,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
+                                        "className": "ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded",
+                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [
                                         {

@@ -2,6 +2,9 @@
 
 return [
     'copy_suffix' => '（コピー）',
+
+    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
+    'vbank_close_reason' => '入金前の注文キャンセル',
     'categories' => [
         'list_retrieved' => 'カテゴリ一覧を閲覧しました。',
         'retrieved' => 'カテゴリ情報を閲覧しました。',
@@ -153,6 +156,8 @@ return [
         'cannot_confirm' => '現在のステータスでは購入確定できません。',
     ],
     'orders' => [
+        'manual_paid_preview_retrieved' => '決済処理項目を確認しました。',
+        'manual_paid_preview_failed' => '決済処理項目を確認できませんでした。',
         'list_retrieved' => '注文一覧を照会しました。',
         'retrieved' => '注文情報を照会しました。',
         'not_found' => '注文が見つかりません。',
@@ -666,7 +671,7 @@ return [
                         'refund_product_amount' => '商品返金額',
                         'refund_shipping_diff' => '配送料変動',
                         'refund_discount_diff' => '割引調整',
-                        'refund_points' => 'マイレージ返金',
+                        'refund_points' => '使用マイレージ返還',
                         'refund_total' => '最終返金予定額',
                         'confirm' => '注文キャンセル',
                         'close' => '閉じる',
@@ -1195,10 +1200,12 @@ return [
         'cancellable_retrieved' => 'キャンセル可能金額を算定しました。',
         'refund_executed' => '返金を実行しました。',
         'refund_execute_failed' => '返金の実行に失敗しました。',
+        'side_effect_failed' => 'クーポン・在庫・マイレージの復元に失敗したため、変更を取り消しました。',
         'completion_preview_retrieved' => '完了処理の要約を計算しました。',
         'refund_request_created' => '返金申請書を受け付けました。',
         'logs_retrieved' => 'アクティビティログを取得しました。',
         'cancellable_method' => [
+            'reactivated_cash' => '再有効化で再記録した決済金額',
             'payment' => '決済手段',
             'mileage' => 'マイレージ',
         ],
@@ -1206,7 +1213,15 @@ return [
         'notifications' => [
             'request_origin_admin' => '販売者がお客様に代わって受け付けました。',
             'withdraw_origin_admin' => 'お客様のご要望により販売者が取り下げました。',
+            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
+            'refund_breakdown_cash' => ':method :amount',
+            'refund_breakdown_points' => 'マイレージ :amount',
             'advance_exchange_notice' => '先交換です — 既存の商品は:dateまでにお送りください。',
+        ],
+        'exchange_difference' => [
+            'format' => ':total（:methods）',
+            'part' => ':method :amount',
+            'points' => 'マイレージ',
         ],
         'tracking_deliver_not_ready' => '現在の状態では到着処理できません。',
         'exchange_mode_updated' => '進行方法を変更しました。',

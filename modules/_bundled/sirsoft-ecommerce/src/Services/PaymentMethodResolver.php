@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
 /**
  * 결제수단 능력(capability) 해석기
@@ -53,6 +55,51 @@ class PaymentMethodResolver
     public function __construct(
         private EcommerceSettingsService $settingsService
     ) {}
+
+    /**
+     * 이 결제가 일부 상품·수량만 취소하는 부분취소를 지원하는지 판정합니다. (P6 · Q17)
+     *
+     * 입금 전 가상계좌는 PG 가 발급한 입금액이 고정이다 — 일부만 취소하면 고객이 원래 금액을 입금해도 금액
+     * 대조에서 실패해 결제를 확인할 수 없다. 그래서 기본값을 false 로 두고, 수단·PG 의 제약은 필터가 더한다
+     * (PG 가 입금액 변경을 지원하면 플러그인이 true 로 되돌릴 수 있다). 화면 경고·서버 차단이 이 판정 하나를 쓴다.
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return bool 부분취소 가능하면 true
+     */
+    public function supportsPartialCancel(OrderPayment $payment): bool
+    {
+        return (bool) HookManager::applyFilters(
+            'sirsoft-ecommerce.payment.supports_partial_cancel',
+            ! $this->isVbankAwaitingDeposit($payment),
+            $payment,
+        );
+    }
+
+    /**
+     * 부분취소를 막는 사유를 반환합니다. (지원하면 null)
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return string|null `vbank_awaiting_deposit`(입금 전 가상계좌) · `payment_method`(수단·PG 제약) · null
+     */
+    public function partialCancelBlockReason(OrderPayment $payment): ?string
+    {
+        if ($this->supportsPartialCancel($payment)) {
+            return null;
+        }
+
+        return $this->isVbankAwaitingDeposit($payment) ? 'vbank_awaiting_deposit' : 'payment_method';
+    }
+
+    /**
+     * 입금 전 가상계좌 결제인지 판정합니다.
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return bool 가상계좌이고 입금 대기면 true
+     */
+    private function isVbankAwaitingDeposit(OrderPayment $payment): bool
+    {
+        return $payment->isVirtualAccount() && $payment->payment_status?->isAwaitingDeposit() === true;
+    }
 
     /**
      * PG 결제창이 필요한 결제수단인지 판정합니다.

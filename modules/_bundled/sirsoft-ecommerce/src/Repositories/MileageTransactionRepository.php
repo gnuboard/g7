@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 
 /**
@@ -35,6 +36,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         'admin_earn',
         'refund_restore',
         'order_cancel_restore',
+        'refund_credit',
     ];
 
     /**
@@ -181,6 +183,52 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
                 MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value,
             ])
             ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function existsCreditForRefund(int $orderRefundId): bool
+    {
+        return MileageTransaction::query()
+            ->where('order_refund_id', $orderRefundId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)
+            ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumCancellationRestoredForOrder(int $orderId, array $cancelSourceValues): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->whereNull('claim_payment_id')
+            ->whereIn('type', [
+                MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value,
+                MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            ])
+            ->where(function (Builder $query) use ($orderId, $cancelSourceValues) {
+                $query->whereNotNull('order_cancel_id')
+                    ->orWhereIn('order_refund_id', OrderRefund::query()
+                        ->select('id')
+                        ->where('order_id', $orderId)
+                        ->whereIn('refund_source_type', $cancelSourceValues));
+            })
+            ->sum('amount');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumReactivationUsageForOrder(int $orderId): float
+    {
+        return abs((float) MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->whereNull('claim_payment_id')
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->where('metadata->reason', 'reactivation')
+            ->sum('amount'));
     }
 
     /**
@@ -368,6 +416,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     {
         $query = MileageTransaction::query()
             ->expiringBefore($now)
+            // 회원 삭제로 연결이 끊긴 행은 잔여를 0 으로 정리한 뒤라 대상이 아니다(E3 — 방어)
+            ->whereNotNull('user_id')
             ->orderBy('id', 'asc');
 
         if ($limit !== null) {
@@ -441,7 +491,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function getEarnableOptions(string $triggerColumn, string $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection
+    public function getEarnableOptions(string $triggerColumn, string|array $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection
     {
         $threshold = $now->copy()->subDays($delayDays);
 
@@ -449,7 +499,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         $query = DB::table((new OrderOption)->getTable().' as opt')
             ->join((new Order)->getTable().' as ord', 'opt.order_id', '=', 'ord.id')
             ->whereNotNull('ord.user_id')
-            ->where('opt.option_status', $triggerStatus)
+            // 트리거 상태를 지난 상품도 대상이다(F4) — 호출부가 트리거 이후 상태 집합을 넘긴다.
+            ->whereIn('opt.option_status', (array) $triggerStatus)
             ->whereNotNull("opt.{$triggerColumn}")
             ->where("opt.{$triggerColumn}", '<=', $threshold)
             ->where('opt.subtotal_earned_points_amount', '>', 0)
@@ -538,11 +589,40 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function deleteForUser(int $userId): int
+    public function detachUser(int $userId): int
     {
         return MileageTransaction::query()
             ->where('user_id', $userId)
-            ->delete();
+            ->update(['user_id' => null]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getActiveLotsForUserForUpdate(int $userId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 탈퇴 소멸은 활성 lot 전량을 0 으로 만들어야 한다 —
+        // 일부만 읽으면 잔액이 남는다. 소진된 lot 은 active() 에서 빠져 모수가 사용 이력에 비례해 늘지 않는다
+        return MileageTransaction::query()
+            ->where('user_id', $userId)
+            ->active()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumRemainingByType(int $userId, string $type, string $currency): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->where('currency', $currency)
+            ->where('remaining_amount', '>', 0)
+            ->whereNull('expired_at')
+            ->sum('remaining_amount');
     }
 
     /**

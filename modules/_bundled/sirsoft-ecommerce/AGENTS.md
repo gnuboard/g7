@@ -55,6 +55,9 @@
 4. **마일리지는 원장이 SSoT 다.** `ecommerce_mileage_transactions` 가 원장이고
    `ecommerce_mileage_balances` 는 단방향 파생 캐시입니다. 차감·검증 같은 금전 판정은 캐시가
    아니라 원장 `FOR UPDATE` 재검증으로 하고, 캐시는 같은 트랜잭션 마지막 단계에서 재계산합니다.
+   회원이 탈퇴해도 원장 행은 지우지 않고 남은 마일리지를 「탈퇴로 소멸」(`expired`, `metadata.reason=withdrawal`)
+   거래로 0 처리하며, 회원 행을 하드 삭제하면 거래 행의 `user_id` 만 NULL 로 끊습니다. 탈퇴 뒤 도착한 적립·반환도
+   기록한 직후 같은 방식으로 소멸합니다.
 
 **의도적으로 하지 않는 것**: PG 통신 코드·실시간 브로드캐스트(채널 0개)·방문자 쇼핑 화면
 레이아웃, 그리고 상품 문의 게시판의 **콘텐츠 저장소**입니다. 문의 본문은 게시판 모듈이 글로
@@ -126,18 +129,57 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 `OrderRefund` + `OrderRefundOption` 을 `requested` 로 만들고, 분기가 `auto` 면 `autoAdvance()` 가
 `승인 → 완료` 를 실제로 밟습니다(단계를 건너뛰지 않아 활동 로그가 단계마다 남습니다). 종착점은
 환불 수단(`RefundMethodEnum`: `pg`/`bank`/`points`)이 가릅니다 — PG·마일리지는 완료까지, 계좌는
-승인에서 멈추고 운영자의 [환불하기]를 기다립니다.
+승인에서 멈추고 운영자의 [환불하기]를 기다립니다. 「마일리지로 환불」(`points`)은 주문 때 쓴 마일리지를
+먼저 반환하고 현금 환불액을 무기한 마일리지(`refund_credit`)로 지급하며, 결제행은 건드리지 않습니다 —
+결제수단과 다른 수단(마일리지·계좌 송금)으로 돌려준 환불은 결제행 상태를 바꾸지 않고 취소 이력에만
+수단·금액을 남깁니다. 돌려줄 현금이 남지 않은 주문(전액 마일리지)은 결제수단과 무관하게 `points` 로
+기록되고, 계좌를 묻지 않으며, 결제수단 자동승인 게이트를 거치지 않습니다(`hasCashToReturn`).
+입금 전 주문의 취소는 받은 돈이 없으므로 재계산 결과를 `total_paid_amount` 가 아니라 `total_due_amount`(받을 돈)로
+보내고 결제행은 입금 대기(`ready`)로 둡니다 — 남은 상품의 금액으로 [입금확인] 을 할 수 있어야 하기 때문입니다.
+단 [입금확인] 「기록만」으로 결제행에 입금이 기록된 결제 전 주문(`RefundExecutionService::hasRecordedDepositBeforePayment`)은
+받은 돈이 있는 주문입니다 — 취소 접수가 헤더에 받은 돈을 먼저 올리고(`syncPaidHeaderFromSettledPayment`, 미리보기는 같은 값의 사본)
+환불신청서를 만듭니다(S3-D7). 그 신청서가 열려 있는 동안 입금기한 만료 자동취소는 그 주문을 다시 집지 않습니다.
 
 **취소신청서(`OrderCancel` + `OrderCancelOption`)는 환불이 집행되는 순간 생깁니다.** 만드는
 지점은 `OrderCancellationService::recordCancellation()` **하나**이며, 그 메서드가 주문 장부
 확정(합계 재계산 · 누적 컬럼 · 상품 상태 전이 · 결제행 정리)까지 함께 맡습니다. 취소 단위는
 주문이 아니라 **옵션**입니다. 환불할 돈이 없는 주문(미결제·0원)만 환불신청서 없이 취소신청서가
-즉시 생깁니다.
+즉시 생깁니다(입금이 기록된 결제 전 주문은 미결제가 아닙니다 — 위 S3-D7).
 
 금액 계산은 `OrderAdjustmentService` 가 이미 적용된 쿠폰·마일리지의 안분을 되돌립니다
 (`adjustment.filter_restore_promotions` 필터로 그 안분 규칙을 확장할 수 있습니다). 쿠폰 복원·
 마일리지 복원 훅은 **호출자 트랜잭션과 함께 되돌아가야 하므로 `sync => true` 로 구독**합니다
 (기본값인 큐 래핑은 커밋 뒤에 실행되어 예외를 던져도 롤백되지 않습니다).
+
+환불 실행(`OrderRefundRequestService::executeRefund`)의 순서는 「되돌릴 수 있는 것은 모두 앞에, PG 는
+맨 뒤에」입니다 — 마일리지 반환·지급 → 재고·쿠폰 복원 → 장부(`RefundExecutionService::prepareLedger`)
+→ 신청서·상품 행·취소신청서·결제행 → PG. 마일리지·쿠폰·재고 복원 실패는 삼키지 않고 환불 전체를
+롤백합니다(PG 는 부르지 않음). PG 뒤 코어 쓰기는 신청서 행 UPDATE 1회뿐이고, PG 승인 직후 커밋이
+실패하면 critical 로그와 신청서 표식(`pg_transaction_id` + `LEDGER_COMMIT_FAILED`)을 남겨 다음
+[환불하기]가 PG 를 다시 부르지 않게 합니다. 이 트랜잭션은 attempts 1 로만 엽니다.
+
+**수동 결제 처리·재활성**: 관리자가 결제 전 주문을 결제완료 이후로 직접 올리거나(P) 취소 주문·상품을
+되살릴 때(R) PG 승인·입금확인을 거치지 않으므로, 확인 창이 「재고 차감 · 사용 마일리지 차감 · 결제금액
+기록」을 묻습니다(요청 키 `apply_stock_deduction`·`apply_mileage_deduction`·`record_paid_amount`, 생략하면 켬).
+판정은 `OrderProcessingService::planManualPaidTransitionEffects()` 하나이고 미리보기 API(`…/manual-paid-preview`)와
+실행(`applyManualPaidTransitionEffects()` — 단건·목록 일괄·`bulkUpdateStatus`·상품 일괄)이 같은 메서드를 씁니다.
+재활성 마일리지는 `is_mileage_deducted` 가 아니라 원장 순계산(취소로 돌려준 합 − `metadata.reason=reactivation`
+으로 다시 뺀 합)으로 회수하고, 돌려준 현금은 환불 누적에서 되돌려 `order_meta.reactivation_reclaim` 에 남깁니다
+— 결제행은 PG 사실대로 두므로 그 몫의 환불 한도는 `CancellableAmount::METHOD_REACTIVATED_CASH` 로 따로 셉니다.
+재활성은 `OrderReactivationService` 가 상품 행을 되살리고(취소 수량 카운터 반환, 재고 플래그가 다른 형제는
+병합 안 함) 주문 합계를 취소 엔진과 같은 입력(최초 취소 직전 `order_meta.pre_cancel_snapshot`)으로 다시
+계산합니다. 다른 주문이 이미 쓴 쿠폰이 있으면 막습니다(`ReactivationCouponConflictException`). 잔액·재고 부족도
+422 로 막고 일괄은 해당 주문번호를 모두 알립니다(all-or-nothing). 행이 되살아나는 순간(병합 전)
+`CancelReactivationRecorder` 가 그 수량을 되돌린 취소신청서에 귀속해 `order_cancels.reactivated_at` 을 씁니다 —
+클레임 목록·취소 상세의 「재활성됨」 배지는 이 값만 읽습니다.
+
+**재계산 결과의 행 배분**: 계산 엔진은 결과를 `product_option_id` 키로 합칩니다. 부분취소·재활성 재계산은
+`OrderAdjustmentService::allocateRecalcToRows()` 가 재계산 입력의 `line_order_option_ids` 로 키 합계를 주문 행에
+나눠 씁니다(같은 상품옵션의 활성 행이 둘이면 둘 다 합계를 받던 결함). 배송 행 금액은 「그 주문 행이 지금 부담하는
+몫」이고 `OrderShippingAmountWriter` 가 분할이 끝난 뒤 배송 행을 다시 읽어 씁니다(취소된 행은 0). 매출 집계는
+`quantity` 만 더합니다 — `cancelled_quantity` 는 이력 카운터라 빼면 부분취소 수량이 두 번 빠집니다. 헤더 합계
+(`buildOrderUpdates`)는 행과 같은 재계산 결과로 쓰며, 적립 예정액(`total_earned_points_amount`)도 여기에 포함됩니다
+— 빠지면 헤더만 취소 전 적립액을 들고 남습니다.
 
 잔여 환불 한도는 `total_paid_amount − total_refunded_amount` 입니다. 환불이 집행된 경로는
 환불 누적이 그 축을 이미 깎으므로 `recordCancellation()` 이 `total_paid_amount` 를 재계산값으로
@@ -163,8 +205,8 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 게이트를 통과할 때만 수행합니다. 완료 처리(`completeReturn` / `completeExchange`)의 옵션(재고
 복구 대상 · 환불신청서 접수 여부)은 **호출자가 명시 전달**하고, 환불 실행은
 `CancellableAmountCalculator` 가 저장 시점과 실행 직전 두 번 같은 식으로 상한을 재계산한 뒤
-`RefundExecutionService::execute()` 가 PG 환불·마일리지 환급·현금영수증 동기화·누적 컬럼 갱신을
-한 자리에서 수행합니다(취소 경로와 공용).
+마일리지 반환·지급(PG 앞) → 장부 누적 → PG 환불 순서로 실행하고, 현금영수증은 커밋 뒤에 맞춥니다
+(취소 경로와 공용인 `RefundExecutionService`).
 
 **주문 생성 검증의 국내/해외 갈래**: `Public\CreateOrderRequest` 는 배송지를 국내 폼(`zipcode` ·
 `address` · `address_detail`)과 해외 폼(`address_line_1` · `intl_*`) 중 하나로 받습니다. 상세주소
@@ -200,14 +242,14 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 588개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 214개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 44개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 593개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 221개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 46개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 12개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 54개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 알림 정의 | 55개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -296,6 +338,9 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 결제 플러그인 콜백에서 `CP` 결제번호를 주문번호로 조회 | `ClaimPayment::isClaimPaymentNumber()` 로 먼저 분기해 `ClaimPaymentCallback` 경로로 | 주문 경로를 타면 `order_not_found` 로 끝나 추가결제가 승인되지 않고, 실패 원인이 화면에 드러나지 않는다 |
 | 환불이 동기화할 주문 헤더 컬럼 목록을 서비스마다 따로 들기 | `OrderRefundRequestService::TAX_SYNC_COLUMNS` 하나가 정본 — `RefundExecutionService` 는 받은 것을 그대로 쓴다 | 두 곳이 각자 목록을 들면 한쪽만 늘렸을 때 조용히 잘린다(S3-D17 실측: 실행 쪽 목록이 3개뿐이라 `total_cash_equivalent_amount` 가 빠져 전액 환불 주문의 현금영수증 발급 가능액이 62,000 으로 남았다) |
 | 환불 경로에서 `total_paid_amount`·`total_amount` 를 함께 갱신 | 세금 분류 + 현금성 금액만 동기화한다 | 클레임 환불은 `total_refunded_amount` 로 누적한다 — 결제액까지 깎으면 잔여 한도(`paid - refunded`)가 같은 금액을 두 번 뺀다 |
+| 마일리지 반환·지급, 쿠폰·재고 복원 실패를 `try/catch` 로 삼키기 | 예외(`OrderCancellationException`)로 환불·취소 전체 롤백 | 삼키면 카드는 취소되고 마일리지·쿠폰·재고는 돌아오지 않은 채 완료로 닫힌다(refund 274). 현금영수증만 커밋 뒤라 삼킨다 |
+| PG 호출 뒤에 같은 트랜잭션에서 장부를 쓰기 | 되돌릴 수 있는 쓰기를 모두 끝낸 뒤 PG 를 마지막에 부르고, 완료는 그 행 UPDATE 1회 | PG 성공 뒤 쓰기가 실패하면 장부만 롤백되고 돈은 나간다 — NICE·KG·KCP 는 멱등키가 없어 재실행이 이중 환불이 된다 |
+| `DB::transaction(..., attempts>1)` 로 환불 실행 감싸기 | attempts 1 | 교착 재시도가 클로저를 다시 돌려 PG 를 두 번 부른다 |
 <!-- @intent END -->
 
 ### 환불 후 주문 헤더 동기화 계약 (S3-D17)
@@ -322,10 +367,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 605개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 212개 | `vitest.config.ts` |
-| Playwright | 69개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 261개 | `tests/scenarios` |
+| PHPUnit | 668개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 256개 | `vitest.config.ts` |
+| Playwright | 72개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 342개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

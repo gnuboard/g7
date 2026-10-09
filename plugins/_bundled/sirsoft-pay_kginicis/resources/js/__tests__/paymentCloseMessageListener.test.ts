@@ -305,6 +305,88 @@ describe('체크아웃 화면 판정 (_global.shopBase)', () => {
  * 승인이 거절된 정당한 실패는 이 경로(소유권 대조 close-report)로만 기록된다.
  * 전체 페이지 이동으로 window 컨텍스트가 사라지므로 sessionStorage 로 이어받는다.
  */
+/**
+ * 클레임 추가결제 창 닫힘 → 신청서 상세 복귀 (이커머스 EC-455 계약)
+ *
+ * 클레임 결제는 신청서 화면(/mypage/claims/{N})에서 열리고 `order_number` 가 결제번호(CP…)다.
+ * 체크아웃 화면만 보는 닫힘 처리로는 아무 일도 일어나지 않아, 신청서의 [결제하기]가
+ * 「결제 진행 중…」에 묶이고 취소 안내도 없다(2026-10-06 S2 실측 CP20261006-2211334491).
+ */
+describe('클레임 추가결제 창 닫힘', () => {
+    const CLAIM_RETURN = 'https://shop.example.test/mypage/claims/EX20261006-0001?claim_payment=cancelled';
+    let originalLocation: Location;
+    let hrefSet: string[];
+    const apiPost = vi.fn();
+
+    beforeEach(() => {
+        originalLocation = window.location;
+        hrefSet = [];
+        apiPost.mockReset().mockResolvedValue({ success: true });
+        Object.defineProperty(window, 'location', {
+            value: {
+                origin: 'https://shop.example.test',
+                pathname: '/mypage/claims/EX20261006-0001',
+                search: '',
+                get href() { return 'https://shop.example.test/mypage/claims/EX20261006-0001'; },
+                set href(v: string) { hrefSet.push(v); },
+            },
+            configurable: true,
+            writable: true,
+        });
+        windowRecord().G7Core = { api: { post: apiPost }, state: { setLocal: vi.fn() } };
+        clearStandardPaymentCloseReportContext();
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+        delete windowRecord().G7Core;
+        delete windowRecord().__sirsoftKginicisPaymentCloseListenerInstalled;
+        clearStandardPaymentCloseReportContext();
+        vi.restoreAllMocks();
+    });
+
+    it('신청서 화면에서 닫힘 메시지를 받으면 주문 닫힘 보고 없이 신청서 상세로 돌아간다', async () => {
+        markStandardPaymentCloseReportContext({
+            closeReportUrl: 'https://shop.example.test/api/plugins/sirsoft-pay_kginicis/payment/close-report',
+            oid: 'CP20261006-0001',
+            price: 6000,
+            payment_method: 'card',
+            claimCancelReturnUrl: CLAIM_RETURN,
+        });
+        installPaymentCloseMessageListener();
+
+        window.dispatchEvent(new MessageEvent('message', {
+            origin: 'https://shop.example.test',
+            data: { source: 'sirsoft-pay_kginicis', type: 'payment-window-closed', reason: 'inicis-close-url' },
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(hrefSet).toEqual([CLAIM_RETURN]);
+        expect(apiPost).not.toHaveBeenCalled();
+    });
+
+    it('신청서 복귀 주소가 다른 출처면 그 주소로 이동하지 않는다', async () => {
+        markStandardPaymentCloseReportContext({
+            closeReportUrl: 'https://shop.example.test/api/plugins/sirsoft-pay_kginicis/payment/close-report',
+            oid: 'CP20261006-0002',
+            price: 6000,
+            payment_method: 'card',
+            claimCancelReturnUrl: 'https://evil.example/phish',
+        });
+        installPaymentCloseMessageListener();
+
+        window.dispatchEvent(new MessageEvent('message', {
+            origin: 'https://shop.example.test',
+            data: { source: 'sirsoft-pay_kginicis', type: 'payment-window-closed', reason: 'inicis-close-url' },
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(hrefSet).not.toContain('https://evil.example/phish');
+    });
+});
+
 describe('결제 실패 화면 복귀 보고', () => {
     const CONTEXT = {
         closeReportUrl: '/api/plugins/sirsoft-pay_kginicis/payment/close-report',
@@ -534,5 +616,53 @@ describe('소유자 증명 헤더', () => {
         await dispatchClose();
 
         expect(apiPost.mock.calls[0]).toHaveLength(2);
+    });
+});
+
+/**
+ * 서버가 주는 닫힘 보고 주소는 사이트 주소 기준 절대 URL 이다(`SiteUrl::absolute`).
+ *
+ * G7Core.api 는 `/api` 를 앞에 붙이는 경로를 받으므로 절대 URL 을 그대로 넘기면 `/plugins/...`(접두 없음)로
+ * 나가 404 가 났고, 결제창을 닫아도 주문이 결제대기로 남았다.
+ */
+describe('사이트 주소 절대 URL 닫힘 보고', () => {
+    beforeEach(() => {
+        window.history.pushState({}, '', '/shop/checkout');
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+        clearStandardPaymentCloseReportContext();
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        delete windowRecord().__sirsoftKginicisPaymentCloseListenerInstalled;
+        clearStandardPaymentCloseReportContext();
+        vi.restoreAllMocks();
+    });
+
+    it('같은 출처 절대 URL 은 G7Core.api 에 /plugins 경로로 넘긴다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        // 닫힘 메시지는 체크아웃 화면에서만 처리한다 — 체크아웃 판정은 상태 계약(_global.shopBase)이 기준이다.
+        windowRecord().G7Core = { api: { post: apiPost }, state: { get: globalState(), setLocal: vi.fn() } };
+        markStandardPaymentCloseReportContext({
+            closeReportUrl: `${window.location.origin}/plugins/sirsoft-pay_kginicis/payment/close-report`,
+            oid: 'ORD-KGI-ABS-001',
+            price: 15000,
+            payment_method: 'card',
+        });
+        installPaymentCloseMessageListener();
+
+        window.dispatchEvent(new MessageEvent('message', {
+            origin: window.location.origin,
+            data: { source: 'sirsoft-pay_kginicis', type: 'payment-window-closed', reason: 'inicis-close-url' },
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(apiPost).toHaveBeenCalledWith(
+            '/plugins/sirsoft-pay_kginicis/payment/close-report',
+            expect.objectContaining({ oid: 'ORD-KGI-ABS-001' }),
+        );
     });
 });

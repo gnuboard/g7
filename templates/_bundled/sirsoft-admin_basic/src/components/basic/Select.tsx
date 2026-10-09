@@ -1,4 +1,4 @@
-// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe.
+// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import { createPortal } from 'react-dom';
@@ -53,6 +53,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   searchable?: boolean;
   /** 검색 input placeholder */
   searchPlaceholder?: string;
+  /** 값이 비었을 때 버튼에 흐리게 보이는 안내 글자 — 버튼의 읽기 이름도 된다 */
+  placeholder?: string;
   /**
    * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
    * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트
@@ -100,6 +102,7 @@ export const Select: React.FC<SelectProps> = ({
   searchPlaceholder,
   placeholder,
   editorAttrs,
+  'aria-label': ariaLabel,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,6 +112,7 @@ export const Select: React.FC<SelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const nativeSelectRef = useRef<HTMLSelectElement>(null);
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -272,6 +276,15 @@ export const Select: React.FC<SelectProps> = ({
     buttonRef.current?.focus();
   };
 
+  // 곁 라벨을 이름으로 잇는다 — 목록형 버튼은 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
+  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 J D-J7). 기본 select 는 라벨만 잇는다.
+  // 훅은 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
+  useAdjacentLabel(
+    (normalizedOptions ? buttonRef : nativeSelectRef) as React.RefObject<HTMLElement | null>,
+    true,
+    !!normalizedOptions
+  );
+
   // options가 없으면 기본 select 사용 (children 지원)
   // .select 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
   // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend 방지.
@@ -282,10 +295,12 @@ export const Select: React.FC<SelectProps> = ({
       : ['select', className].filter(Boolean).join(' ');
     return (
       <select
+        ref={nativeSelectRef}
         className={mergedClassName}
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
+        aria-label={ariaLabel}
         {...editorAttrs}
         {...props}
       >
@@ -314,10 +329,6 @@ export const Select: React.FC<SelectProps> = ({
   // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
   const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
 
-  // 곁 라벨을 이름으로 잇는다 — 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
-  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 J D-J7).
-  useAdjacentLabel(buttonRef as React.RefObject<HTMLElement | null>, true, true);
-
   // 폭은 **바깥 상자**가 쥔다. 커스텀 드롭다운의 버튼은 `w-full` 로 부모를 채우는데,
   // 부모(`relative`)에 폭이 없으면 글자 길이만큼 줄어 호출처가 준 `w-44` 가 무의미해진다
   // (2026-09-16 실측: 「전체」 선택 상자가 80px 로 눌렸다). 호출처의 폭 토큰만 골라
@@ -337,14 +348,11 @@ export const Select: React.FC<SelectProps> = ({
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-label={ariaLabel}
       >
         {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
             버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
-        {selectedLabel ? (
-          <Span className="truncate">{selectedLabel}</Span>
-        ) : (
-          <Span className="truncate text-gray-400 dark:text-gray-500">{placeholder || '\u00A0'}</Span>
-        )}
+        <Span className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

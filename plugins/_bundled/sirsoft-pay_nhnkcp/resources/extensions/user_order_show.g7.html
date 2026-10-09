@@ -1,4 +1,5 @@
-<!-- 내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정. -->
+<!-- 내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.
+     e2e:allow S4-D10·D13 — 가상계좌 블록에 영수증 행처럼 고정 id 를 달고, 표시 조건 두 가지(취소 주문엔 안내 숨김·입금 뒤 자동 취소 경고 숨김)만 더했다. 대체 검증: Vitest 조건 평가·조각 렌더 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
 <extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
@@ -6,7 +7,9 @@
         <span>$t:sirsoft-pay_nhnkcp.user.escrow_badge</span>
       </span>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
+    <!-- 가상계좌 안내는 이 조각만 그린다(#639 에서 주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.
+         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만. -->
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.vbank_name &amp;&amp; order.data.payment?.payment_status !== 'cancelled' &amp;&amp; order.data.order_status !== 'cancelled'}}" id="kcp-mp-vbank-row" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
       <div class="space-y-1.5">
         <div class="flex-between text-sm">
@@ -21,12 +24,17 @@
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
           <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.vbank_holder}}</span>
         </div>
+        <!-- 입금 금액 — 실제로 입금할 결제예정금액(마일리지 차감 뒤). 비회원 응답에는 없어(비회원은 마일리지를 못 쓴다) 주문금액으로 대신한다 -->
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_amount</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}</span>
+        </div>
         <div class="flex-between text-sm">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
           <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.due_date_formatted}}</span>
         </div>
       </div>
-      <p class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+      <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>

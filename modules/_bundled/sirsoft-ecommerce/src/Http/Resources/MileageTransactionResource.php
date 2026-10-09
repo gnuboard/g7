@@ -62,7 +62,9 @@ class MileageTransactionResource extends BaseApiResource
         }
 
         // 기간 변경 가능: 적립계 + 미소멸 + 잔여 > 0 (소멸/전액사용 lot 은 만료일 변경 불가, memo 만 편집)
+        // 환불 현금분 지급(refund_credit)은 현금을 대신한 돈이라 기간을 붙일 수 없다(Q2).
         $canEditExpiry = $isEarning
+            && $type !== MileageTransactionTypeEnum::REFUND_CREDIT
             && $this->resource->expired_at === null
             && (float) $this->resource->remaining_amount > 0;
 

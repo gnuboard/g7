@@ -157,7 +157,8 @@
                                 "props": {
                                     "type": "button",
                                     "className": "btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{_computed.isReadOnly}}"
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned"
                                 },
                                 "children": [
                                     {

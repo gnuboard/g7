@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Concerns;
 use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Sirsoft\Ecommerce\Support\ClaimScopePermissions;
 
 /**
  * 관리자 클레임 목록 필터 공용 트레이트
@@ -34,21 +35,31 @@ trait FiltersAdminClaimList
      * 신청서의 스코프 축은 **그 주문의 것**이다(`module.php` 의 `claims` 권한이 `orders` 와 같은
      * `owner_key = user_id` 를 선언한다). 그래서 신청서 자신이 아니라 `order` 관계에 스코프 조건을
      * 건다 — 판정식은 코어 단일 출처(`PermissionHelper::applyPermissionScope()`)이고, 주문 목록
-     * (`OrderRepository`)과 같은 식이라 "주문 목록에는 없는데 클레임 목록에는 있는" 주문이 생기지 않는다.
+     * (`OrderRepository`)과 같은 식이다.
      *
-     * 전체 스코프(null)·비인증 호출(큐·콘솔)에는 아무 조건도 붙지 않는다.
+     * 클레임 권한 범위만 걸지 않고 **주문 조회 범위를 함께 건다**(두 범위의 교집합 — EC-667). 주문 조회를
+     * 「본인만」 으로 묶은 운영자가 클레임 기본값 「전체」 로 남의 주문 신청서를 보면, "주문 목록에는
+     * 없는데 클레임 목록에는 있는" 주문이 생긴다. 판정 대상 목록은 `ClaimScopePermissions` 단일 출처다.
+     *
+     * 범위가 걸린 권한이 하나도 없으면(전체·미보유·비인증 호출) 아무 조건도 붙지 않는다.
      *
      * @param  Builder  $query  대상 쿼리
-     * @param  string  $permission  스코프를 판정할 권한 식별자
+     * @param  string  $permission  스코프를 판정할 클레임 권한 식별자
      * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimScope(Builder $query, string $permission): void
     {
-        if (PermissionHelper::getEffectiveScope($permission) === null) {
+        $scoped = ClaimScopePermissions::scoped($permission);
+
+        if ($scoped === []) {
             return;
         }
 
-        $query->whereHas('order', fn (Builder $order) => PermissionHelper::applyPermissionScope($order, $permission));
+        $query->whereHas('order', function (Builder $order) use ($scoped): void {
+            foreach ($scoped as $identifier) {
+                PermissionHelper::applyPermissionScope($order, $identifier);
+            }
+        });
     }
 
     /**
@@ -102,7 +113,7 @@ trait FiltersAdminClaimList
     {
         $columns = $this->adminClaimColumns();
 
-        // 목록·건수는 열람자의 `claims.read` 스코프 안의 신청서만 센다 — 주문 스코프 상속.
+        // 목록·건수는 열람자의 `claims.read` 범위와 주문 조회 범위가 겹치는 신청서만 센다 — 주문 스코프 상속.
         $this->applyAdminClaimScope($query, self::ADMIN_CLAIM_SCOPE_PERMISSION);
 
         if (! empty($filters['statuses'])) {

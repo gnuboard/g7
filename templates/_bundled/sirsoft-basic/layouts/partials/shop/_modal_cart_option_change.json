@@ -105,11 +105,31 @@
                                 {
                                     "type": "basic",
                                     "name": "Img",
+                                    "if": "{{$parent._local.optionModal.targetItem?.thumbnail}}",
                                     "props": {
                                         "src": "{{$parent._local.optionModal.targetItem?.thumbnail}}",
                                         "alt": "{{$parent._local.optionModal.targetItem?.product_name}}",
                                         "className": "w-full h-full object-cover"
                                     }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!$parent._local.optionModal.targetItem?.thumbnail}}",
+                                    "props": {
+                                        "className": "w-full h-full flex items-center justify-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "image",
+                                                "size": "lg",
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -496,7 +516,7 @@
                                     "comment": "추가금은 기본통화 기준 저장값이므로 서버가 준 표시통화 환산값을 우선 합산한다 (없으면 기본통화 값으로 폴백)",
                                     "type": "basic",
                                     "name": "Span",
-                                    "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => { const v = (g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id])); if (!v) return sum; return sum + (v.multi_currency_price_adjustment?.[code]?.price ?? v.price_adjustment ?? 0); }, 0); const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = cur?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}"
+                                    "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => { const v = (g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id])); if (!v) return sum; return sum + (v.multi_currency_price_adjustment?.[code]?.price ?? v.price_adjustment ?? 0); }, 0); const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = cur?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}"
                                 }
                             ]
                         },
@@ -713,10 +733,11 @@
                                             }
                                         },
                                         {
+                                            "comment": "도메인 거절(재고 부족·판매 중지 등)은 errors 에 code·message·unavailable_items(객체)·has_*(참거짓)를 함께 준다 — 통째로 펼치면 내부 코드와 객체가 목록에 그려지므로 사유 문장 하나만 담는다. 필드 검증 오류는 종전대로",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "$parent._local",
-                                                "optionErrors": "{{error.errors ?? { _general: error.message }}}"
+                                                "optionErrors": "{{error.errors?.code ? { _general: error.errors.message ?? error.message } : (error.errors ?? { _general: error.message })}}"
                                             }
                                         }
                                     ]

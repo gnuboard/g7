@@ -108,7 +108,7 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     Route::get('/recent', [PublicProductController::class, 'recent'])
         ->name('products.recent');
 
-    // 상품 상세 — product_code 기준(상품코드 규칙과 같은 문자: 영문·숫자·하이픈·밑줄). 숫자 ID 도 하위호환 허용
+    // 상품 상세 — product_code 기준(상품코드 규칙과 같은 문자: 영문·숫자·하이픈·밑줄 — StoreProductRequest::PRODUCT_CODE_PATTERN). 숫자 ID 도 하위호환 허용
     // (Product::resolveRouteBinding 이 code/id 자동 해석).
     Route::get('/{product}', [PublicProductController::class, 'show'])
         ->where('product', '[0-9A-Za-z_-]+')
@@ -1343,22 +1343,25 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // POST   /api/modules/sirsoft-ecommerce/admin/presets - 프리셋 생성
     // PUT    /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 수정
     // DELETE /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 삭제
+    // 클레임·주문 목록 화면도 프리셋을 쓰므로 각 화면의 조회 권한으로도 연다(셋 중 하나, OR) — 상품 권한만 받으면
+    // 클레임·주문 권한만 가진 운영자가 그 목록에 들어갈 때마다 403 오류 알림을 받는다. 프리셋은 운영자
+    // 본인의 조회 조건(소유권은 서비스가 검사)이라 넓혀도 남의 데이터가 열리지 않는다.
     Route::prefix('presets')->group(function () {
         Route::get('/', [SearchPresetController::class, 'index'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.read')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.read|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->name('admin.presets.index');
 
         Route::post('/', [SearchPresetController::class, 'store'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->name('admin.presets.store');
 
         Route::put('/{preset}', [SearchPresetController::class, 'update'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->whereNumber('preset')
             ->name('admin.presets.update');
 
         Route::delete('/{preset}', [SearchPresetController::class, 'destroy'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->whereNumber('preset')
             ->name('admin.presets.destroy');
     });
@@ -1495,6 +1498,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.bulk');
 
+        // 일괄변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/bulk/manual-paid-preview
+        Route::post('/bulk/manual-paid-preview', [OrderController::class, 'bulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.bulk.manual-paid-preview');
+
         Route::get('/{order}', [OrderController::class, 'show'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
             ->name('admin.orders.show');
@@ -1524,6 +1533,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::patch('/{order}/options/bulk-status', [OrderController::class, 'bulkChangeOptionStatus'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.options.bulk-status');
+
+        // 상품 일괄 상태 변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/options/bulk-status/manual-paid-preview
+        Route::post('/{order}/options/bulk-status/manual-paid-preview', [OrderController::class, 'optionBulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.options.bulk-status.manual-paid-preview');
 
         // 환불 예상금액 조회
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/estimate-refund

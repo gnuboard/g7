@@ -1,14 +1,14 @@
 {
-    "comment": "내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.",
+    "comment": "내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.\n     e2e:allow S4-D13 — 가상계좌 안내 블록에 취소 주문 제외 조건만 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
     "extension_point": "mypage_order_payment_provider_slot",
     "mode": "append",
     "priority": 100,
     "components": [
         {
-            "comment": "가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. 이 안내는 이 조각만 그린다(주입 스크립트가 같은 안내를 한 번 더 그리던 중복을 없앴다, #599). 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 값을 그대로 쓴다.",
+            "comment": "가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. 이 안내는 이 조각만 그린다(주입 스크립트가 같은 안내를 한 번 더 그리던 중복을 없앴다, #599). 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 값을 그대로 쓴다. 취소된 주문엔 그리지 않는다 — 취소 뒤 입금을 부르지 않게.",
             "type": "basic",
             "name": "Div",
-            "if": "{{order.data.payment?.pg_provider === 'nicepayments' && order.data.payment?.payment_method === 'vbank' && order.data.payment?.vbank_number}}",
+            "if": "{{order.data.payment?.pg_provider === 'nicepayments' && order.data.payment?.payment_method === 'vbank' && order.data.payment?.vbank_number && order.data.payment?.payment_status !== 'cancelled' && order.data.order_status !== 'cancelled'}}",
             "props": {
                 "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
             },
@@ -131,7 +131,7 @@
                                             "props": {
                                                 "className": "font-bold text-blue-600 dark:text-blue-400"
                                             },
-                                            "text": "{{order.data.total_amount_formatted}}"
+                                            "text": "{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}"
                                         }
                                     ]
                                 },

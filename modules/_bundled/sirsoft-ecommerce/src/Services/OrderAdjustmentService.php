@@ -3,12 +3,14 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
+use Modules\Sirsoft\Ecommerce\DTO\ReactivationRecalcResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -23,6 +25,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionReposito
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
+use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
@@ -202,6 +205,7 @@ class OrderAdjustmentService
                 $excludedItems,
                 $refundPriority,
                 $adjustment->getAdditionalCharges(),
+                $successorOverrides,
             );
         }
 
@@ -238,6 +242,9 @@ class OrderAdjustmentService
         // 행의 값까지 한 번 더 돌려준다(#599 validate P2 #2). 반대로 기준선을 다시 구해도 종결
         // 행이 없으면 값은 원 결제금액과 같으므로 판정을 넓혀 잃는 것은 계산 한 번뿐이다.
         $baselineAmount = $originalPaidAmount + $originalPointsUsed;
+        // 배송비 정책별 상세(12)의 원 주문 측도 이 기준선 재계산을 쓴다 — 종결 행이 있는 주문의 배송 행은
+        // 1.2.1 이 주문 전체 배송비로 부풀려 두었을 수 있다(S-Q26-b).
+        $priorResult = null;
 
         if ($this->hasClosedRows($order)) {
             $priorInput = $this->buildRecalcInput($order, [], $successorOverrides);
@@ -265,6 +272,7 @@ class OrderAdjustmentService
             $refundAmount = min($totalRefundable, max(0, $remainingPg));
             $refundPointsAmount = min($totalRefundable - $refundAmount, max(0, $remainingPoints));
         }
+        $refundPointsAmount = $this->pointsRefundableOnly($order, $refundPointsAmount);
 
         // 6. 배송비/할인 차이
         $originalShipping = (float) $order->total_shipping_amount;
@@ -296,8 +304,9 @@ class OrderAdjustmentService
         $recalculatedSnapshot['total_list_price_amount'] = $this->calculateListPriceTotal($order, $excludedMap, $substitutions);
 
         // 8. 옵션별 업데이트 정보 생성
-        $optionUpdates = $this->buildOptionUpdates($order, $excludedMap, $recalcResult);
-        $shippingUpdates = $this->buildShippingUpdates($order, $recalcResult);
+        $rowAllocation = $this->allocateRecalcToRows($order, $recalcInput, $recalcResult);
+        $optionUpdates = $this->buildOptionUpdates($order, $rowAllocation);
+        $shippingShares = $this->buildShippingShares($rowAllocation);
         $orderUpdates = $this->buildOrderUpdates($order, $recalcResult);
 
         // 9. 취소 대상 아이템 정보
@@ -310,7 +319,7 @@ class OrderAdjustmentService
         $restoredCoupons = $this->buildRestoredCouponsInfo($restoredCouponIssueIds, $order->currency_snapshot);
 
         // 12. 배송비 정책별 상세
-        $shippingDetails = $this->buildShippingDetails($order, $recalcResult);
+        $shippingDetails = $this->buildShippingDetails($order, $recalcResult, $priorResult);
 
         // 13. mc_* 다통화 환불금 변환
         $currencySnapshot = $order->currency_snapshot;
@@ -342,7 +351,7 @@ class OrderAdjustmentService
 
         // 14. 환불 후 잔여 잔액
         $remainingPgBalance = max(0, $remainingPg - $refundAmount);
-        $remainingPointsBalance = max(0, $remainingPoints - $refundPointsAmount);
+        $remainingPointsBalance = $this->remainingPointsBalance($order, $remainingPoints, $refundPointsAmount);
 
         // 15. 다통화 스냅샷 (총 정가금액 + 실결제금액)
         $mcOriginalSnapshot = $this->buildMcOriginalSnapshot($order);
@@ -375,7 +384,7 @@ class OrderAdjustmentService
             adjustedItems: $adjustedItems,
             orderUpdates: $orderUpdates,
             optionUpdates: $optionUpdates,
-            shippingUpdates: $shippingUpdates,
+            shippingShares: $shippingShares,
             originalSnapshot: $originalSnapshot,
             recalculatedSnapshot: $recalculatedSnapshot,
             restoredCouponIssueIds: $restoredCouponIssueIds,
@@ -449,6 +458,62 @@ class OrderAdjustmentService
     }
 
     /**
+     * 재활성 복원용 재계산 — 활성 행 전체를 취소 엔진과 같은 입력으로 다시 계산합니다. (Q26 — DB 변경 없음)
+     *
+     * 이후 부분취소의 기준선(`calculate()` 의 priorInput)이 바로 `buildRecalcInput($order, [])` 이다.
+     * 같은 식으로 헤더를 써야 재활성 뒤 첫 환불의 차액이 정확하다. 바꾸는 입력은 프로모션 스냅샷과
+     * 사용 포인트 둘뿐이며, 원본 모델이 아닌 복제본에만 덮어쓴다 — 부분취소 재계산이 스냅샷을 「적용된
+     * 쿠폰만」으로 바꿔 버리므로 조건을 잃고 빠진 쿠폰의 규칙은 최초 취소 직전 스냅샷에만 남아 있다.
+     *
+     * 결제금액(`total_paid_amount`)은 헤더 갱신값에서 뺀다(결제 기록 단계 소관). 사용 포인트·현금성
+     * 금액도 뺀다 — 장부 정합 단계가 따로 쓴다.
+     *
+     * @param  Order  $order  options·shippings·payment 가 적재된 주문 (미리보기는 시뮬레이션 options 를 건 복제본)
+     * @param  array|null  $promotionsSnapshot  쓸 프로모션 스냅샷 (null 이면 현재 값)
+     * @param  float  $usePoints  사용 포인트 입력
+     * @return ReactivationRecalcResult|null 활성 행이 없으면 null
+     */
+    public function recalculateForReactivation(Order $order, ?array $promotionsSnapshot, float $usePoints): ?ReactivationRecalcResult
+    {
+        $work = clone $order;
+        $work->setRelation('options', $order->options);
+        $work->setRelation('shippings', $order->shippings);
+        $work->setRelation('payment', $order->payment);
+        if ($promotionsSnapshot !== null) {
+            $work->promotions_applied_snapshot = $promotionsSnapshot;
+        }
+        $work->total_points_used_amount = $usePoints;
+
+        $input = $this->buildRecalcInput($work, [], $this->resolveSuccessorOverrides($work));
+        if (empty($input->items)) {
+            return null;
+        }
+
+        $result = $this->calculationService->calculate($input);
+        $rowAllocation = $this->allocateRecalcToRows($work, $input, $result);
+
+        $orderUpdates = $this->buildOrderUpdates($work, $result);
+        $pointsUsedAfter = (float) ($orderUpdates['total_points_used_amount'] ?? 0);
+        $cashEquivalentAfter = (float) ($orderUpdates['total_cash_equivalent_amount'] ?? 0);
+        unset(
+            $orderUpdates['total_paid_amount'],
+            $orderUpdates['total_points_used_amount'],
+            $orderUpdates['mc_total_points_used_amount'],
+            $orderUpdates['total_cash_equivalent_amount'],
+        );
+
+        return new ReactivationRecalcResult(
+            orderUpdates: $orderUpdates,
+            optionUpdates: $this->buildOptionUpdates($work, $rowAllocation),
+            shippingShares: $this->buildShippingShares($rowAllocation),
+            appliedCouponIssueIds: array_values(array_map('intval', $result->getAppliedCouponIds())),
+            pointsUsedAfter: $pointsUsedAfter,
+            cashEquivalentAfter: $cashEquivalentAfter,
+            totalsAfter: $this->captureRecalcSnapshot($result),
+        );
+    }
+
+    /**
      * 재계산 입력에서 빠지는 종결 행(취소·교환완료)이 주문에 있는지 판정합니다.
      *
      * `buildRecalcInput()` 이 빼는 행과 같은 집합이다 — 이 행이 있으면 「이미 빠진 상품만 뺀
@@ -487,7 +552,10 @@ class OrderAdjustmentService
             'base_shipping_amount' => (float) $order->base_shipping_amount,
             'extra_shipping_amount' => (float) $order->extra_shipping_amount,
             'shipping_discount_amount' => (float) $order->shipping_discount_amount,
-            'total_paid_amount' => (float) $order->total_paid_amount,
+            // 지금 남아 있는 결제액 — 이미 돌려준 현금은 뺀다. 비교의 다른 줄(판매가·배송비·과세)은 지금 주문을 그리므로,
+            // 처음 결제 총액을 두면 일부 환불 뒤 「실결제 60,000 → 0」 옆에 「환불 예정 32,500」이 찍히고 취소 차단
+            // 판정도 이미 돌려준 만큼 추가결제 필요를 놓친다(S3-D14). 첫 취소는 환불 누계가 0 이라 종전 값과 같다.
+            'total_paid_amount' => max(0.0, (float) $order->total_paid_amount - (float) $order->total_refunded_amount),
             'total_points_used_amount' => (float) $order->total_points_used_amount,
             'total_deposit_used_amount' => (float) $order->total_deposit_used_amount,
             // 실결제 발생 신호(취소 차단 게이트 SSoT) — payment_status === PAID 가 1차 신호(운영자 강제
@@ -500,10 +568,31 @@ class OrderAdjustmentService
             'total_tax_free_amount' => (float) $order->total_tax_free_amount,
             'total_vat_amount' => (float) $order->total_vat_amount,
             'total_earned_points_amount' => (float) $order->total_earned_points_amount,
-            'item_count' => $order->options
-                ->where('option_status', '!=', OrderStatusEnum::CANCELLED)
-                ->sum('quantity'),
+            'item_count' => $this->countAccountableItems($order),
         ];
+    }
+
+    /**
+     * 비교 카드의 상품수량 — 정가 합계(`CalculationSnapshotPresenter::listPriceTotal()`)와 같은 회계 주체만 셉니다.
+     *
+     * 취소 행만 빼면 교환이 끝난 주문에서 교환완료로 닫힌 원 행과 그것을 승계한 후속 행이 둘 다 세어져, 같은 카드의
+     * 정가 합계는 3개 몫인데 상품수량은 4개로 나온다(S3-D16). 원 행이 아직 교환 진행 중인 후속 행은 원 행이 주체다.
+     *
+     * @param  Order  $order  주문 (options 로드됨)
+     * @return int 상품수량
+     */
+    private function countAccountableItems(Order $order): int
+    {
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return (int) $order->options
+            ->reject(fn ($option) => in_array($option->option_status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED], true)
+                || ($option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true)))
+            ->sum('quantity');
     }
 
     /**
@@ -916,6 +1005,7 @@ class OrderAdjustmentService
      * @param  array  $excludedItems  제외 대상 아이템
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  float  $additionalCharges  환불액에서 차감할 추가 비용 (취소는 0)
+     * @param  array  $successorOverrides  후속 행 회계 단가 오버라이드 (`resolveSuccessorOverrides()` — 부분취소 장부와 같은 단가)
      * @return AdjustmentResult 전량 제외 결과
      */
     private function buildFullCancelResult(
@@ -926,16 +1016,22 @@ class OrderAdjustmentService
         array $excludedItems,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
         float $additionalCharges = 0,
+        array $successorOverrides = [],
     ): AdjustmentResult {
+        // 취소 장부의 취소액은 부분취소(`buildAdjustedItems()`)와 같은 **할인 전 단가 × 수량**이다.
+        // 환불 상세 행(`RefundExecutionService::buildRefundOptionRows()`)이 이 값을 정가로 보고 원 행의
+        // 할인 비율을 뺀다 — 여기서 할인 반영 후 금액(`subtotal_paid_amount`)을 적으면 할인이 두 번
+        // 빠져, 쿠폰 주문 전체취소의 행 환불액 합계가 신청서 총액보다 할인만큼 모자랐다(S3-D3).
         $adjustedItems = [];
         foreach ($order->options as $option) {
             if ($option->option_status === OrderStatusEnum::CANCELLED) {
                 continue;
             }
+            $unitPrice = $successorOverrides[(int) $option->id]['unit_price'] ?? (float) $option->unit_price;
             $adjustedItems[] = [
                 'order_option_id' => $option->id,
                 'cancel_quantity' => $option->quantity,
-                'cancel_amount' => (float) $option->subtotal_paid_amount,
+                'cancel_amount' => $unitPrice * $option->quantity,
             ];
         }
 
@@ -962,7 +1058,24 @@ class OrderAdjustmentService
         $remainingPg = max(0.0, $originalPaidAmount - (float) $order->total_refunded_amount);
         $remainingPoints = max(0.0, $originalPointsUsed - (float) $order->total_refunded_points_amount);
 
-        $totalRefundable = max(0, ($remainingPg + $remainingPoints) - $additionalCharges);
+        $refundableBase = $remainingPg + $remainingPoints;
+
+        // 환불 0원으로 닫힌 행이 있으면 그 행 값은 환불 누계에 잡히지 않는다 — 「결제액 − 환불 누계」만 보면
+        // 마지막 상품을 뺄 때 닫힌 행 값까지 다시 나간다(S3-D18). 부분 경로(`calculate()`)와 같이 종결 행을 뺀
+        // 기준선(지금 남은 상품의 결제 몫)을 상한으로 둔다. 종결 행이 없으면 두 값은 같아 종전 결과와 같다.
+        if ($this->hasClosedRows($order)) {
+            $activeInput = $this->buildRecalcInput($order, [], $successorOverrides);
+
+            if (! empty($activeInput->items)) {
+                $activeResult = $this->calculationService->calculate($activeInput);
+                $refundableBase = min(
+                    $refundableBase,
+                    (float) $activeResult->summary->finalAmount + (float) $activeResult->summary->pointsUsed,
+                );
+            }
+        }
+
+        $totalRefundable = max(0, $refundableBase - $additionalCharges);
 
         if ($refundPriority === RefundPriorityEnum::POINTS_FIRST) {
             $refundPointsAmount = min($totalRefundable, $remainingPoints);
@@ -971,27 +1084,37 @@ class OrderAdjustmentService
             $refundAmount = min($totalRefundable, $remainingPg);
             $refundPointsAmount = $totalRefundable - $refundAmount;
         }
+        $refundPointsAmount = $this->pointsRefundableOnly($order, $refundPointsAmount);
 
         $shippingDifference = (float) $order->total_shipping_amount;
 
         // 잔여 잔액
         $remainingPgBalance = max(0, $remainingPg - $refundAmount);
-        $remainingPointsBalance = max(0, $remainingPoints - $refundPointsAmount);
+        $remainingPointsBalance = $this->remainingPointsBalance($order, $remainingPoints, $refundPointsAmount);
 
         // 복원 쿠폰 상세 정보
         $restoredCoupons = $this->buildRestoredCouponsInfo($restoredCouponIds, $order->currency_snapshot);
 
-        // 배송비 정책별 상세 (전체취소: 모든 배송비 환불)
+        // 배송비 정책별 상세 (전체취소: 원 주문 측 배송비 전부가 차액) — 정책별 한 줄
+        //
+        // 원 주문 측은 부분 경로와 같은 규칙으로 구한다: 종결 행이 있으면 살아 있는 행만으로 다시 계산한
+        // 값(1.2.1 이 배송 행마다 주문 전체 배송비를 써 둔 레거시 행을 읽지 않는다 — S-Q26-b), 없으면 배송
+        // 행 정책별 합(생성 시점 몫 그대로라 정확).
+        $priorResult = null;
+        if ($this->hasClosedRows($order)) {
+            $priorInput = $this->buildRecalcInput($order, [], $this->resolveSuccessorOverrides($order));
+            if (! empty($priorInput->items)) {
+                $priorResult = $this->calculationService->calculate($priorInput);
+            }
+        }
         $shippingDetails = [];
-        foreach ($order->shippings as $shipping) {
-            $baseFee = (float) ($shipping->base_shipping_amount ?? 0);
-            $extraFee = (float) ($shipping->extra_shipping_amount ?? 0);
-            $totalFee = $baseFee + $extraFee;
+        foreach ($this->originalShippingByPolicy($order, $priorResult) as $original) {
+            $totalFee = $original['base'] + $original['extra'];
             if ($totalFee > 0) {
                 $shippingDetails[] = [
-                    'policy_name' => $shipping->shippingPolicy?->getLocalizedName() ?? __('sirsoft-ecommerce::order.default_shipping'),
-                    'base_difference' => $baseFee,
-                    'extra_difference' => $extraFee,
+                    'policy_name' => $original['name'],
+                    'base_difference' => $original['base'],
+                    'extra_difference' => $original['extra'],
                     'total_difference' => $totalFee,
                 ];
             }
@@ -1123,7 +1246,7 @@ class OrderAdjustmentService
                 ...$this->buildZeroMcOrderUpdates($order),
             ],
             optionUpdates: [],
-            shippingUpdates: [],
+            shippingShares: [],
             originalSnapshot: $originalSnapshot,
             recalculatedSnapshot: $zeroRecalculatedSnapshot,
             restoredCouponIssueIds: $restoredCouponIds,
@@ -1198,7 +1321,8 @@ class OrderAdjustmentService
         }
 
         return [
-            'total_amount' => (float) $result->summary->paymentAmount,
+            // 원본 스냅샷(captureOrderSnapshot = 헤더값)과 같은 의미로 — 사용 마일리지를 뺀 합계.
+            'total_amount' => (float) $result->summary->finalAmount,
             'subtotal_amount' => (float) $result->summary->subtotal,
             'total_discount_amount' => (float) $result->summary->totalDiscount,
             'total_coupon_discount_amount' => (float) ($result->summary->productCouponDiscount + $result->summary->orderCouponDiscount),
@@ -1224,65 +1348,203 @@ class OrderAdjustmentService
     /**
      * 옵션별 업데이트 정보를 생성합니다.
      *
+     * 재계산 결과를 주문 행 단위로 나눈 몫(allocateRecalcToRows)을 쓴다. 키(product_option_id)로 맞춰 쓰면
+     * 같은 상품옵션의 활성 행 둘이 각각 키 합계를 받는다(S-Q26-c). 전량 제외 행은 재계산 입력에 없으므로
+     * 결과에도 없다.
+     *
      * @param  Order  $order  주문
-     * @param  array  $excludedMap  제외 맵
-     * @param  OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  array<int, array{item: ItemCalculation, amounts: array<string, int>}>  $rowAllocation  행 몫 (allocateRecalcToRows)
      * @return array [order_option_id => update_data]
      */
-    private function buildOptionUpdates(Order $order, array $excludedMap, $recalcResult): array
+    private function buildOptionUpdates(Order $order, array $rowAllocation): array
     {
         $updates = [];
 
         // 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼도 재산출 (정책 확정)
         $currencySnapshot = $order->currency_snapshot;
 
-        // 재계산 결과에서 옵션별 금액 반영
-        foreach ($recalcResult->items as $item) {
-            foreach ($order->options as $option) {
-                if ($option->product_option_id == $item->productOptionId) {
-                    // 이미 취소·교환으로 닫힌 행은 재계산 주체가 아니다 — `buildRecalcInput()` 이
-                    // 그 행들을 입력에서 빼므로 재계산 결과에는 **살아 있는 행 몫만** 들어 있다.
-                    // 수량 분할(`source_type=split`)이 일어나면 닫힌 행과 살아 있는 행이 **같은
-                    // `product_option_id`** 를 갖는데, 여기서 걸러 내지 않으면 살아 있는 행의
-                    // 줄 합계가 닫힌 행에도 덮어써진다. 그러면 닫힌 행의 base(`subtotal_price`)와
-                    // mc(`mc_subtotal_price`)가 어긋나, 취소된 줄이 **할인가가 원가보다 큰**
-                    // 모습으로 렌더된다(S1-D4 — 실측: 양말 3개 줄 `12,000원` → `16,000원`).
-                    if (in_array($option->option_status, [
-                        OrderStatusEnum::CANCELLED,
-                        OrderStatusEnum::EXCHANGED,
-                    ], true)) {
-                        continue;
-                    }
+        foreach ($rowAllocation as $rowId => $allocation) {
+            $option = $order->options->firstWhere('id', $rowId);
 
-                    $cancelQty = $excludedMap[$option->id] ?? 0;
-                    $remainingQty = $option->quantity - $cancelQty;
+            // 이미 취소·교환으로 닫힌 행은 재계산 주체가 아니다 — `buildRecalcInput()` 이 그 행들을 입력에서
+            // 빼므로 여기 오지 않지만, 닫힌 행에 살아 있는 행 금액이 덮어써지면 취소된 줄이 할인가가 원가보다
+            // 큰 모습으로 렌더된다(S1-D4). 외부 입력 방어로 남긴다.
+            if (! $option || in_array($option->option_status, [
+                OrderStatusEnum::CANCELLED,
+                OrderStatusEnum::EXCHANGED,
+            ], true)) {
+                continue;
+            }
 
-                    // 전량 취소된 옵션은 제외 (잔여 수량 있는 부분취소는 포함)
-                    if ($remainingQty <= 0) {
-                        continue;
-                    }
+            $amounts = $allocation['amounts'];
+            $updates[$rowId] = [
+                'subtotal_paid_amount' => (float) $amounts['finalAmount'],
+                'coupon_discount_amount' => (float) $amounts['productCouponDiscountAmount'],
+                'code_discount_amount' => (float) $amounts['codeDiscountAmount'],
+                'subtotal_points_used_amount' => (float) $amounts['pointsUsedShare'],
+                // 부분취소 후 잔여 옵션의 예상 적립액 재안분 저장 (취소 상품 몫 제외 — §6.3)
+                'subtotal_earned_points_amount' => (float) $amounts['pointsEarning'],
+                'subtotal_tax_amount' => (float) $amounts['taxableAmount'],
+                'subtotal_tax_free_amount' => (float) $amounts['taxFreeAmount'],
+                // 어느 쿠폰이 이 상품옵션에 걸렸는지의 기록 — 키 단위 그대로 둔다
+                'promotions_applied_snapshot' => $allocation['item']->appliedPromotions?->toArray(),
+            ];
 
-                    $updates[$option->id] = [
-                        'subtotal_paid_amount' => (float) $item->finalAmount,
-                        'coupon_discount_amount' => (float) $item->productCouponDiscountAmount,
-                        'code_discount_amount' => (float) $item->codeDiscountAmount,
-                        'subtotal_points_used_amount' => (float) $item->pointsUsedShare,
-                        // 부분취소 후 잔여 옵션의 예상 적립액 재안분 저장 (취소 상품 몫 제외 — §6.3)
-                        'subtotal_earned_points_amount' => (float) $item->pointsEarning,
-                        'subtotal_tax_amount' => (float) $item->taxableAmount,
-                        'subtotal_tax_free_amount' => (float) $item->taxFreeAmount,
-                        'promotions_applied_snapshot' => $item->appliedPromotions?->toArray(),
-                    ];
-
-                    // 다통화 컬럼 재산출 (사용/적립 비대칭 해소 — 기존 mc_subtotal_points_used 도 함께 갱신)
-                    if ($currencySnapshot) {
-                        $updates[$option->id] += $this->buildOptionMultiCurrencyUpdates($item, $currencySnapshot);
-                    }
-                }
+            // 다통화 컬럼 재산출 (사용/적립 비대칭 해소 — 기존 mc_subtotal_points_used 도 함께 갱신)
+            if ($currencySnapshot) {
+                $updates[$rowId] += $this->buildOptionMultiCurrencyUpdates(
+                    $this->itemWithAmounts($allocation['item'], $amounts),
+                    $currencySnapshot
+                );
             }
         }
 
         return $updates;
+    }
+
+    /**
+     * 재계산 결과를 재계산 입력의 주문 행 단위로 나눕니다. (S-Q26-b·c)
+     *
+     * 계산 엔진은 결과를 product_option_id 키로 합친다(calculateItemSubtotals 누적 — S3-D4). 그래서 같은 상품옵션의
+     * 행이 둘이면(상태 분할·반품/교환 분할) 두 결과 아이템이 키 합계를 똑같이 들고 나오고, 키로 맞춰 쓰면 두 행이
+     * 모두 합계를 받는다(1521: 30,000원 행 둘이 각 60,000원·적립 600P). 라인 → 주문 행 대응은 buildRecalcInput 이
+     * line_order_option_ids 로 남긴다. 키 합계를 라인 소계 비중으로 나누고 마지막 라인이 나머지를 받아 합이 정확하다.
+     * 키에 라인이 하나면 결과 그대로다.
+     *
+     * 결과 아이템과 입력 라인이 어긋나면(통상 모드에서 상품옵션이 사라진 레거시 라인을 엔진이 건너뛴 경우) 경고를
+     * 남기고 입력 수량을 비중으로 쓴다. 결과에 없는 키의 행은 갱신하지 않는다.
+     *
+     * @param  Order  $order  주문 (적립 절사 기준 스냅샷)
+     * @param  CalculationInput  $input  재계산 입력
+     * @param  OrderCalculationResult  $result  재계산 결과
+     * @return array<int, array{item: ItemCalculation, amounts: array<string, int>}> order_option_id => 행 몫
+     */
+    private function allocateRecalcToRows(Order $order, CalculationInput $input, OrderCalculationResult $result): array
+    {
+        $lineIds = array_map('intval', $input->metadata['line_order_option_ids'] ?? []);
+        $items = array_values($result->items);
+        $lines = array_values($input->items);
+
+        $aligned = count($items) === count($lineIds) && count($lines) === count($lineIds);
+        if ($aligned) {
+            foreach ($items as $i => $item) {
+                if ((int) $item->productOptionId !== (int) $lines[$i]->productOptionId) {
+                    $aligned = false;
+                    break;
+                }
+            }
+        }
+        if (! $aligned) {
+            Log::warning('재계산 결과와 입력 라인이 어긋나 행 배분을 입력 수량 비중으로 대체합니다', [
+                'order_id' => $order->id,
+                'lines' => count($lineIds),
+                'items' => count($items),
+            ]);
+        }
+
+        // 키별 첫 결과 아이템 — 키 합계를 들고 있다
+        $keyItem = [];
+        foreach ($items as $item) {
+            $keyItem[(int) $item->productOptionId] ??= $item;
+        }
+
+        // 키별 라인 묶음 [행 id, 비중, 결과 인덱스]
+        $groups = [];
+        foreach ($lines as $i => $line) {
+            $poid = (int) $line->productOptionId;
+            if (! isset($keyItem[$poid], $lineIds[$i])) {
+                continue;
+            }
+            $weight = $aligned
+                ? ((int) $items[$i]->unitPrice + (int) $items[$i]->additionalOptionsTotal) * (int) $items[$i]->quantity
+                : (int) $line->quantity;
+            $groups[$poid][] = ['row' => $lineIds[$i], 'w' => max(0, $weight), 'i' => $aligned ? $i : null];
+        }
+
+        $rounding = MileageRounding::fromOrderSnapshot($order->mileage_policy_snapshot);
+        $out = [];
+        foreach ($groups as $poid => $group) {
+            $key = $keyItem[$poid];
+            $shipping = $key->appliedShippingPolicy;
+            $totals = [
+                'subtotal' => $key->subtotal,
+                'productCouponDiscountAmount' => $key->productCouponDiscountAmount,
+                'codeDiscountAmount' => $key->codeDiscountAmount,
+                'orderCouponDiscountShare' => $key->orderCouponDiscountShare,
+                'pointsUsedShare' => $key->pointsUsedShare,
+                'pointsEarning' => $key->pointsEarning,
+                'taxableAmount' => $key->taxableAmount,
+                'taxFreeAmount' => $key->taxFreeAmount,
+                'finalAmount' => $key->finalAmount,
+                'shipping_base' => (int) ($shipping?->shippingAmount ?? 0),
+                'shipping_extra' => (int) ($shipping?->extraShippingAmount ?? 0),
+            ];
+            $weights = array_column($group, 'w');
+            $split = [];
+            foreach ($totals as $field => $total) {
+                $split[$field] = $this->splitByWeight((int) $total, $weights, $field === 'pointsEarning' ? $rounding : null);
+            }
+            foreach ($group as $n => $line) {
+                $out[$line['row']] = [
+                    'item' => $line['i'] !== null ? $items[$line['i']] : $key,
+                    'amounts' => array_map(fn (array $shares) => $shares[$n], $split),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * 정수 합계를 비중으로 나눕니다 — 마지막 몫이 나머지를 받아 합이 정확합니다.
+     *
+     * 비중 합이 0 이면 균등하게 나눈다. 적립액은 분할(applySplitAmounts)과 같은 절사 기준을 쓴다.
+     *
+     * @param  int  $total  나눌 합계
+     * @param  array<int, int>  $weights  라인별 비중
+     * @param  array|null  $rounding  적립 절사 기준 (적립액일 때만)
+     * @return array<int, int> 라인별 몫
+     */
+    private function splitByWeight(int $total, array $weights, ?array $rounding = null): array
+    {
+        $count = count($weights);
+        if ($count <= 1) {
+            return [$total];
+        }
+
+        $sum = array_sum($weights);
+        $allocated = 0;
+        $shares = [];
+        foreach (array_values($weights) as $idx => $weight) {
+            if ($idx === $count - 1) {
+                $shares[] = $total - $allocated;
+                break;
+            }
+            $raw = $sum > 0 ? $total * $weight / $sum : $total / $count;
+            $share = $rounding !== null ? (int) MileageRounding::apply($raw, $rounding) : (int) floor($raw);
+            $shares[] = $share;
+            $allocated += $share;
+        }
+
+        return $shares;
+    }
+
+    /**
+     * 배분된 금액으로 바꾼 결과 아이템 사본을 만듭니다. (mc_* 산출용)
+     *
+     * @param  ItemCalculation  $item  결과 아이템
+     * @param  array<string, int>  $amounts  행 몫
+     * @return ItemCalculation 금액을 바꾼 사본
+     */
+    private function itemWithAmounts(ItemCalculation $item, array $amounts): ItemCalculation
+    {
+        $copy = clone $item;
+        foreach (['subtotal', 'productCouponDiscountAmount', 'codeDiscountAmount', 'orderCouponDiscountShare',
+            'pointsUsedShare', 'pointsEarning', 'taxableAmount', 'taxFreeAmount', 'finalAmount'] as $field) {
+            $copy->{$field} = $amounts[$field];
+        }
+
+        return $copy;
     }
 
     /**
@@ -1317,27 +1579,27 @@ class OrderAdjustmentService
     }
 
     /**
-     * 배송비 업데이트 정보를 생성합니다.
+     * 재계산 입력 행별 배송비 몫을 만듭니다. (S-Q26-b)
      *
-     * @param  Order  $order  주문
-     * @param  OrderCalculationResult  $recalcResult  재계산 결과
-     * @return array [order_shipping_id => update_data]
+     * 배송 행 금액은 「그 주문 행이 지금 부담하는 배송비 몫」이다(주문 생성 createOrderShippings 와 같은 뜻).
+     * 종전에는 주문 전체 배송비(summary)를 모든 배송 행에 같은 값으로 써서 748 의 배송 행 네 개가 모두
+     * 5,500 이 되었다. 몫은 주문 행 단위 배분기(allocateRecalcToRows)가 상품옵션 몫을 행으로 나눈 값이다.
+     * 쓰기는 OrderShippingAmountWriter 가 분할이 끝난 뒤 배송 행을 다시 읽어서 한다.
+     *
+     * @param  array<int, array{item: ItemCalculation, amounts: array<string, int>}>  $rowAllocation  행 몫 (allocateRecalcToRows)
+     * @return array<int, array{base: int, extra: int}> order_option_id => 몫
      */
-    private function buildShippingUpdates(Order $order, $recalcResult): array
+    private function buildShippingShares(array $rowAllocation): array
     {
-        // 배송비 재계산 결과를 기존 배송 레코드에 매핑
-        $updates = [];
-
-        foreach ($order->shippings as $shipping) {
-            $updates[$shipping->id] = [
-                'base_shipping_amount' => (float) ($recalcResult->summary->baseShippingTotal ?? 0),
-                'extra_shipping_amount' => (float) ($recalcResult->summary->extraShippingTotal ?? 0),
-                'total_shipping_amount' => (float) ($recalcResult->summary->totalShipping ?? 0),
-                'shipping_discount_amount' => (float) ($recalcResult->summary->shippingDiscount ?? 0),
+        $shares = [];
+        foreach ($rowAllocation as $rowId => $allocation) {
+            $shares[$rowId] = [
+                'base' => (int) $allocation['amounts']['shipping_base'],
+                'extra' => (int) $allocation['amounts']['shipping_extra'],
             ];
         }
 
-        return $updates;
+        return $shares;
     }
 
     /**
@@ -1359,6 +1621,16 @@ class OrderAdjustmentService
             $recalcResult
         );
 
+        // 옵션별 「단독 배송비」 표시 칸 — 회원·비회원 상세 「적용 배송정책」이 남은 수량 기준 값을 보이게 한다.
+        // 재계산 입력 필드는 주문 시점 값 그대로다(`ShippingPolicySnapshot::withStandaloneAmounts()`).
+        $standaloneByOptionId = [];
+        foreach ($recalcResult->items ?? [] as $item) {
+            if ($item->appliedShippingPolicy !== null) {
+                $standaloneByOptionId[$item->productOptionId] = $item->appliedShippingPolicy->standaloneShippingAmount;
+            }
+        }
+        $shippingSnapshot = ShippingPolicySnapshot::withStandaloneAmounts($order->shipping_policy_applied_snapshot, $standaloneByOptionId);
+
         return [
             'subtotal_amount' => (float) $recalcResult->summary->subtotal,
             'total_discount_amount' => (float) $recalcResult->summary->totalDiscount,
@@ -1370,9 +1642,14 @@ class OrderAdjustmentService
             'extra_shipping_amount' => (float) $recalcResult->summary->extraShippingTotal,
             'shipping_discount_amount' => (float) $recalcResult->summary->shippingDiscount,
             'total_shipping_amount' => (float) $recalcResult->summary->totalShipping,
-            'total_amount' => (float) $recalcResult->summary->paymentAmount,
+            // 주문 합계는 사용 마일리지를 뺀 값(finalAmount)이다 — 주문 생성(OrderProcessingService)과 같은 의미.
+            // 차감 전 값(paymentAmount)을 쓰면 마일리지를 쓴 주문이 부분취소·재활성 뒤 목록에 미결제(= 사용 마일리지)로 보인다.
+            'total_amount' => (float) $recalcResult->summary->finalAmount,
             'total_paid_amount' => (float) $recalcResult->summary->finalAmount,
             'total_points_used_amount' => (float) $recalcResult->summary->pointsUsed,
+            // 행별 적립 예정액(buildOptionUpdates)과 같은 재계산 결과로 헤더도 맞춘다 — 빠지면 관리자 주문 상세
+            // 합계 줄이 취소한 상품 몫까지 적립될 것처럼 취소 전 값을 보인다.
+            'total_earned_points_amount' => (float) ($recalcResult->summary->pointsEarning ?? 0),
             'total_tax_amount' => (float) $recalcResult->summary->taxableAmount,
             'total_tax_free_amount' => (float) $recalcResult->summary->taxFreeAmount,
             // 과세표준을 갱신하면서 부가세를 그대로 두면 둘이 어긋나, 주문 화면의 공급가액
@@ -1389,7 +1666,8 @@ class OrderAdjustmentService
                 (int) round((float) $recalcResult->summary->finalAmount),
             ),
             'promotions_applied_snapshot' => $promotionsSnapshot,
-        ] + $this->buildMcOrderUpdates($order, $recalcResult);
+        ] + ($shippingSnapshot === [] ? [] : ['shipping_policy_applied_snapshot' => $shippingSnapshot])
+            + $this->buildMcOrderUpdates($order, $recalcResult);
     }
 
     /**
@@ -1436,7 +1714,7 @@ class OrderAdjustmentService
             'mc_total_points_used_amount' => $convert((float) $summary->pointsUsed),
             'mc_total_tax_amount' => $convert((float) $summary->taxableAmount),
             'mc_total_tax_free_amount' => $convert((float) $summary->taxFreeAmount),
-            'mc_total_amount' => $convert((float) $summary->paymentAmount),
+            'mc_total_amount' => $convert((float) $summary->finalAmount),
         ];
     }
 
@@ -1607,24 +1885,12 @@ class OrderAdjustmentService
      *
      * @param  Order  $order  주문
      * @param  OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  OrderCalculationResult|null  $priorResult  종결 행을 뺀 기준선 재계산 (종결 행이 없으면 null)
      * @return array [{policy_name, base_difference, extra_difference, total_difference}]
      */
-    private function buildShippingDetails(Order $order, OrderCalculationResult $recalcResult): array
+    private function buildShippingDetails(Order $order, OrderCalculationResult $recalcResult, ?OrderCalculationResult $priorResult = null): array
     {
-        // 원 주문의 배송비를 정책별로 집계
-        $originalByPolicy = [];
-        foreach ($order->shippings as $shipping) {
-            $policyId = $shipping->shipping_policy_id;
-            if (! isset($originalByPolicy[$policyId])) {
-                $originalByPolicy[$policyId] = [
-                    'base' => 0,
-                    'extra' => 0,
-                    'name' => $shipping->shippingPolicy?->getLocalizedName() ?? __('sirsoft-ecommerce::order.default_shipping'),
-                ];
-            }
-            $originalByPolicy[$policyId]['base'] += (float) $shipping->base_shipping_amount;
-            $originalByPolicy[$policyId]['extra'] += (float) $shipping->extra_shipping_amount;
-        }
+        $originalByPolicy = $this->originalShippingByPolicy($order, $priorResult);
 
         // 재계산 결과의 배송비를 정책별로 집계
         $recalcByPolicy = $recalcResult->getShippingByPolicy();
@@ -1646,6 +1912,87 @@ class OrderAdjustmentService
         }
 
         return $details;
+    }
+
+    /**
+     * 환불 후 잔여 마일리지(이 주문에 쓴 마일리지 중 아직 돌려주지 않은 몫)를 계산합니다. (Q15)
+     *
+     * 사용 마일리지를 차감하지 않은 주문은 그 마일리지를 돌려줄 일이 없으므로(`pointsRefundableOnly()`) 잔여도 0 이다 —
+     * 남겨 두면 신청 화면·취소 창이 「사용 마일리지 반환 0원」 아래 돌려받을 것처럼 「잔여 마일리지 3,000」을 보인다.
+     *
+     * @param  Order  $order  주문
+     * @param  int|float  $remainingPoints  아직 돌려주지 않은 사용 마일리지
+     * @param  int|float  $refundPointsAmount  이번에 돌려줄 마일리지 몫
+     * @return int|float 환불 후 잔여 마일리지
+     */
+    private function remainingPointsBalance(Order $order, int|float $remainingPoints, int|float $refundPointsAmount): int|float
+    {
+        if (! $order->is_mileage_deducted) {
+            return 0;
+        }
+
+        return max(0, $remainingPoints - $refundPointsAmount);
+    }
+
+    /**
+     * 실제로 차감된 적 없는 사용 마일리지는 환불 몫에서 뺍니다. (Q15 — 미리보기·접수 원천)
+     *
+     * 수동 결제완료에서 「마일리지 차감」을 끈 주문처럼 사용 마일리지를 차감하지 않은 주문은, 그 몫이 고객이 낸 적
+     * 없는 돈이다. 실행(`OrderRefundRequestService` 의 Q15 보정)은 이미 0 으로 바꾸지만 미리보기·접수 저장·회원 신청
+     * 화면·관리자 확인 창은 이 계산을 읽어 「사용 마일리지 반환액 3,000」을 보였다 — 원천에서 같은 수로 맞춘다.
+     * 현금으로 옮기지 않는다(실행과 같은 수). 판정은 `is_mileage_deducted` 하나다 — 복원 가드
+     * (`RefundExecutionService::restoreMileage`)와 같은 축.
+     *
+     * 받은 값의 타입(정수·실수)을 그대로 돌려준다 — 미리보기 출력은 바이트 단위 계약(픽스처)이라 0 이 0.0 으로 바뀌면 갈린다.
+     *
+     * @param  Order  $order  주문
+     * @param  int|float  $refundPointsAmount  배분된 마일리지 환불 몫
+     * @return int|float 돌려줄 마일리지 몫 (미차감 주문이면 0)
+     */
+    private function pointsRefundableOnly(Order $order, int|float $refundPointsAmount): int|float
+    {
+        if ($order->is_mileage_deducted || $refundPointsAmount <= 0) {
+            return $refundPointsAmount;
+        }
+
+        return is_float($refundPointsAmount) ? 0.0 : 0;
+    }
+
+    /**
+     * 차액의 「원 주문 측」 배송비를 정책별로 구합니다. (S-Q26-b)
+     *
+     * 종결 행이 있으면 기준선 재계산(살아 있는 행만)의 정책별 몫을 쓴다 — 1.2.1 의 부분취소는 배송 행마다
+     * 주문 전체 배송비를 써 두었으므로 그 행을 더하면 차액이 부푼다(748: 정책별 11,000 기준). 종결 행이
+     * 없으면 배송 행은 생성 시점 몫 그대로라 행 합이 정확하다. 정책 이름은 배송 행의 정책 관계에서 읽는다.
+     *
+     * @param  Order  $order  주문 (shippings 로드됨)
+     * @param  OrderCalculationResult|null  $priorResult  기준선 재계산
+     * @return array<int|string, array{base: float, extra: float, name: string}> 정책 id => 원 주문 측 배송비
+     */
+    private function originalShippingByPolicy(Order $order, ?OrderCalculationResult $priorResult): array
+    {
+        $names = [];
+        $fromRows = [];
+        foreach ($order->shippings as $shipping) {
+            $policyId = $shipping->shipping_policy_id;
+            $names[$policyId] ??= $shipping->shippingPolicy?->getLocalizedName() ?? __('sirsoft-ecommerce::order.default_shipping');
+            $fromRows[$policyId] ??= ['base' => 0.0, 'extra' => 0.0];
+            $fromRows[$policyId]['base'] += (float) $shipping->base_shipping_amount;
+            $fromRows[$policyId]['extra'] += (float) $shipping->extra_shipping_amount;
+        }
+
+        $source = $priorResult !== null ? $priorResult->getShippingByPolicy() : $fromRows;
+
+        $out = [];
+        foreach ($source as $policyId => $amounts) {
+            $out[$policyId] = [
+                'base' => (float) ($amounts['base'] ?? 0),
+                'extra' => (float) ($amounts['extra'] ?? 0),
+                'name' => $names[$policyId] ?? __('sirsoft-ecommerce::order.default_shipping'),
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -1767,7 +2114,14 @@ class OrderAdjustmentService
      */
     private function buildMcOriginalSnapshot(Order $order): ?array
     {
-        return $this->snapshotPresenter->mcOriginal($order);
+        // 기준 통화 줄(`captureOrderSnapshot`)과 같은 값 — 이미 돌려준 현금을 뺀 지금 남은 결제액을 환산한다.
+        // 주문의 `mc_total_paid_amount` 는 결제 총액 맵이라 그대로 읽으면 한 칸에 두 시점이 섞인다(S3-D14 후속).
+        $refunded = (float) $order->total_refunded_amount;
+        $netPaid = $refunded > 0
+            ? max(0.0, (float) $order->total_paid_amount - $refunded)
+            : null;
+
+        return $this->snapshotPresenter->mcOriginal($order, null, null, $netPaid);
     }
 
     /**

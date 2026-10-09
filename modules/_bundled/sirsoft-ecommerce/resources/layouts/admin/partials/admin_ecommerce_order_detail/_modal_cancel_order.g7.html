@@ -19,7 +19,10 @@
       <!-- 부분취소 불가 안내 (P6). 어떤 수단·PG 조합은 원천적으로 전액취소만 된다 — NICE 가상계좌가 그렇다(코어 취소는 PG 가 항상 거절하고, 우회 API 는 전액취소 전용이며 이는 NICE API 자체의 제약이다). 미리 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 원인 없는 실패를 받는다. -->
       <div data-ref="cancel_partial_unsupported_notice" data-if="{{order.data?.payment?.supports_partial_cancel === false}}" class="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
         <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 mt-0.5"/>
-        <span class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported</span>
+        <!-- 사유가 입금 전 가상계좌면 그 이유를 말한다(Q17) — 발급된 입금액은 바꿀 수 없어 일부 취소 뒤에는 입금을 확인할 수 없다. -->
+        <span data-if="{{order.data?.payment?.partial_cancel_block_reason === 'vbank_awaiting_deposit'}}" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported_vbank_awaiting</span>
+        <!-- 그 밖의 사유(결제수단·PG 제약) -->
+        <span data-if="{{order.data?.payment?.partial_cancel_block_reason !== 'vbank_awaiting_deposit'}}" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported</span>
       </div>
       <!-- PG 에러 알림 영역 -->
       <div data-if="{{_local.cancelError}}" class="alert-danger">
@@ -70,6 +73,9 @@
           <div class="col-span-5 flex-center gap-2">
             <responsive on="portable" class="flex-center gap-2"/>
             <img data-if="{{cancelItem.thumbnail_url}}" src="{{cancelItem.thumbnail_url}}" class="w-10 h-10 rounded object-cover flex-shrink-0"/>
+            <div data-if="{{!cancelItem.thumbnail_url}}" class="w-10 h-10 rounded flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <icon name="image" class="text-gray-400 dark:text-gray-500"/>
+            </div>
             <div class="min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{cancelItem.product_name ?? ''}}</p>
               <p data-if="{{cancelItem.product_option_name}}" class="text-tertiary truncate">{{cancelItem.product_option_name}}</p>
@@ -124,8 +130,8 @@
         <!-- 상세 사유 필드 에러 -->
         <span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
       </div>
-      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. -->
-      <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method) &amp;&amp; ((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0)}}">
+      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이지만 돌려줄 돈이 있으므로 서버 판정(payment.has_cash_to_return)도 함께 읽는다(S3-D7). -->
+      <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method) &amp;&amp; (((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0) || order.data?.payment?.has_cash_to_return === true)}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label</span>
         <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) -->
         <p data-if="{{order.data?.payment?.payment_method === 'vbank' &amp;&amp; order.data?.payment?.payment_status === 'paid'}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint</p>
@@ -164,9 +170,11 @@
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>
         <!-- 포인트 미사용 안내 (선택 불가 사유) -->
         <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-tertiary block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
+        <!-- 사용 마일리지가 있어도 회원 잔액에서 빠진 적이 없으면(수동 결제완료에서 「사용 마일리지 차감」을 끔) 돌려줄 마일리지가 없다 — 서버도 반환 0원으로 계산하므로 배분 순서가 무의미해 같은 방식으로 잠그고 그 이유를 보인다(S3-D10). -->
+        <span data-if="{{(order.data?.total_points_used_amount ?? 0) > 0 &amp;&amp; order.data?.points_not_deducted === true}}" class="text-tertiary block mb-2">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_not_deducted</span>
         <div class="flex gap-3">
-          <label class="flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
-            <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="radio">
+          <label class="flex-center gap-2 p-2 rounded-lg border {{((order.data?.total_points_used_amount ?? 0) <= 0 || order.data?.points_not_deducted === true) ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
+            <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" disabled="{{((order.data?.total_points_used_amount ?? 0) <= 0 || order.data?.points_not_deducted === true)}}" class="radio">
               <on type="change">
                 <!-- PG 먼저 환불 — 고르는 것으로 끝나지 않는다. 배분이 달라지면 환불 예상액도 달라지므로 핸들러가 값을 바꾸면서 예상액을 다시 물어 온다. -->
                 <action handler="sirsoft-ecommerce.changeRefundPriority" priority="pg_first" orderId="{{route.orderNumber}}"/>
@@ -174,8 +182,8 @@
             </input>
             <span class="text-body">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_pg_first</span>
           </label>
-          <label class="flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'points_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
-            <input type="radio" name="refundPriority" value="points_first" checked="{{_local.refundPriority === 'points_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="radio">
+          <label class="flex-center gap-2 p-2 rounded-lg border {{((order.data?.total_points_used_amount ?? 0) <= 0 || order.data?.points_not_deducted === true) ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'points_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
+            <input type="radio" name="refundPriority" value="points_first" checked="{{_local.refundPriority === 'points_first'}}" disabled="{{((order.data?.total_points_used_amount ?? 0) <= 0 || order.data?.points_not_deducted === true)}}" class="radio">
               <on type="change">
                 <!-- 포인트 먼저 환불 — 위와 같은 경로이고 넘기는 값만 다르다. -->
                 <action handler="sirsoft-ecommerce.changeRefundPriority" priority="points_first" orderId="{{route.orderNumber}}"/>

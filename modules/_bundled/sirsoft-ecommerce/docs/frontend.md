@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 246개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 247개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 246개 |
+| `admin` | 247개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -214,6 +214,7 @@
 | `_modal_notification_template_preview` | `admin` | partial | - |
 | `_modal_privacy_run` | `admin` | partial | - |
 | `_modal_privacy_targets` | `admin` | partial | - |
+| `_modal_unsaved_tab_change` | `admin` | partial | - |
 | `_payment_methods_cards` | `admin` | partial | - |
 | `_payment_methods_list` | `admin` | partial | - |
 | `_refund_reason_cards` | `admin` | partial | - |
@@ -281,6 +282,15 @@
 부모–자식 레이아웃 사이에 데이터소스 ID 가 겹치면 안 됩니다 — 겹치면 한쪽이 조용히 다른 쪽의
 응답을 덮어씁니다.
 
+화면 권한보다 좁은 권한이 걸린 **선택지 데이터소스**는 403 을 화면 전체의 오류로 키우지 않습니다.
+상품 등록·수정 폼의 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급 7개는 403 을
+`suppress` 로 끊고 `fallback` 으로 빈 목록 + `unavailable: true` 를 실은 뒤, 그 칸 아래에서
+「… 조회 권한이 없습니다」 를 말합니다(`admin.product.selector_forbidden.*`). 「등록된 것이 없다」
+빈 상태와는 갈라 그립니다 — 실재하는 정책·라벨을 없다고 읽게 하지 않기 위해서입니다. 403 이 아닌
+실패는 종전대로 본문 오류 화면입니다. 배송정책은 비워 저장해도 거절되지 않고 주문 계산이 기본
+배송정책으로 폴백하므로(`ShippingPolicyResolver`), 그 칸의 안내는 「고르지 않으면 기존·기본 정책이
+적용된다」고 말합니다. 주문 상세의 클레임 내역(`orderClaims`)도 같은 형태입니다.
+
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-ecommerce --force`
 로 활성 디렉토리에 반영합니다. 다만 **새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면** 그
 스타일만 조용히 빠지므로, 기존 레이아웃에 쓰이지 않던 클래스를 도입할 때는 확인이 필요합니다.
@@ -296,6 +306,35 @@
 상세는 주문상세와 같은 셸(`TabNavigationScroll` + `section_*`)이며, 완료 처리 모달
 (`_modal_claim_complete`)은 목록·상세·완료 버튼 세 진입점이 파일 하나를 공유합니다 — 모달이
 보여 주는 요약은 서버 `completion-preview` 응답이 단일 출처이고 화면은 표시만 합니다.
+반품 완료 미리보기의 환불 예고는 실제 접수와 같은 입력으로 계산합니다 — 수량을 나눠 처리해 같은 주문옵션을
+가리키는 행이 둘 이상이면 수량을 합쳐 넘깁니다(재계산 입력이 주문옵션 단위라 합치지 않으면 한 행 몫이 빠집니다).
+목록의 유형 서브탭 전환은 유형 종속 필터(상태·귀책·청구·사유·접수 경로 등)만 버리고, 서브탭 뱃지를 센
+유형 공통 필터(`ClaimListRequest::countFilters()` — 기간·검색·회원구분·금액·통화)는 URL 로 이어 갑니다 —
+다른 탭 뱃지가 "그 탭을 누르면 보이는 건수" 라는 약속이 이 승계에 기댑니다.
+상세 「신청상품」 칸의 송장 미리 채움(고른 행이 모두 같은 송장일 때만)은 선택이 바뀌어도 다시 계산합니다 —
+칸 값이 직전 선택의 자동 값 그대로면 새 선택 기준으로 바꾸고(섞이면 비움), 운영자가 고쳐 적은 값은 둡니다.
+
+환경설정의 탭 전환은 같은 화면으로의 재진입(`navigate replace`)이라 설정 소스가 `refetchOnMount` 로 다시 받아 폼을
+덮습니다. 그래서 탭 줄은 `_local.hasChanges` 가 참이면 옮기지 않고 확인 창(`_modal_unsaved_tab_change`)을 엽니다 —
+가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 창의 [이동] 은 창이 자기 지역 상태를 따로 가지므로
+`$parent._local` 에 탭 줄 「변경 없음」 갈래와 **같은 정리 목록**(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false` 를
+쓰고 옮깁니다. 인라인 폼이 새로 생기면 두 목록을 함께 고칩니다(회귀 테스트가 키 일치를 단언). 창에서 사건(`emit-event`)을
+보내 부모의 `<on listen>` 하나로 모으는 방식은 쓰지 않습니다 — 엔진의 컴포넌트 사건 구독이 `handler`·`params` 만 넘겨
+`sequence` 를 받는 쪽이 아무것도 하지 않습니다.
+
+다국어 이름의 **필수 언어는 사이트 기본 언어**(`_global.appConfig.siteLocale`, 서버 `app.site_locale`)입니다 —
+보는 사람의 언어가 아닙니다. 상품 옵션 처리기(`optionHandlers.ts` 의 `getDefaultLocale`)가 옵션 조합 이름을 넣는 칸,
+환경설정 인라인 추가 폼(클레임 사유 3종·택배사·배송유형)의 확정 게이트·오류 플래그·행 오류 조회 키
+(`'….name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')`), 서버 요청의 이름 필수 검사
+(`Http/Requests/Concerns/ResolvesSiteLocale`)가 모두 같은 값을 봅니다. 한쪽만 보는 언어로 두면 다른 언어 관리자에게
+「사이트 언어 + 보는 언어」 둘 다 필수가 되거나, 서버 422 키(`name.{사이트 기본 언어}`)와 화면 오류 키가 어긋납니다.
+카드에 이름을 **보여 주는** 자리는 보는 언어 그대로입니다.
+
+화면이 새로 계산한 금액은 고정 「원」을 붙이지 않습니다. 처리기는 `calculateCurrencyPrices.ts` 의
+`formatCurrency`/`formatAmountInCurrency`(설정 기호·자릿수, 원화는 보는 언어 접두·접미)를 쓰고 — 상품 목록 인라인 옵션
+편집의 추가금(`updateOptionField` 의 `price_adjustment_formatted`)도 기본 통화로 이것을 씁니다 — 레이아웃 표현식에서
+원화를 이어 붙일 때는 `$t('sirsoft-ecommerce.currency.krw_prefix') + 금액 + $t('sirsoft-ecommerce.currency.krw_suffix')` 로 적습니다
+(배송정책 도서산간 템플릿 창의 대체 표기). 서버 `*_formatted` 와 같은 규칙이라 한 화면에서 「₩5,000」과 「5,000원」이 섞이지 않습니다.
 
 환경설정 알림 탭의 템플릿 편집 창(`_modal_notification_template_edit`)은 코어 창의 사본입니다(게시판·수출입은행
 플러그인과 함께 네 벌). 수신자 규칙 종류를 바꾸면 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 정의가 선언한
@@ -315,7 +354,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 224개 (정의: `resources/js/handlers/index.ts`).
+핸들러 226개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -463,6 +502,7 @@
 | `saveClaimAmounts` | `sirsoft-ecommerce.saveClaimAmounts` |
 | `openClaimRefundExecute` | `sirsoft-ecommerce.openClaimRefundExecute` |
 | `executeClaimRefund` | `sirsoft-ecommerce.executeClaimRefund` |
+| `formatRefundInputTotal` | `sirsoft-ecommerce.formatRefundInputTotal` |
 | `handleProductRowAction` | `sirsoft-ecommerce.handleProductRowAction` |
 | `initOrderDetailForm` | `sirsoft-ecommerce.initOrderDetailForm` |
 | `toggleProductSelection` | `sirsoft-ecommerce.toggleProductSelection` |
@@ -471,6 +511,7 @@
 | `processOrderDetailBulkChange` | `sirsoft-ecommerce.processOrderDetailBulkChange` |
 | `saveAdminMemo` | `sirsoft-ecommerce.saveAdminMemo` |
 | `updateChangeQuantity` | `sirsoft-ecommerce.updateChangeQuantity` |
+| `setManualPaidOption` | `sirsoft-ecommerce.setManualPaidOption` |
 | `openConfirmDepositModal` | `sirsoft-ecommerce.openConfirmDepositModal` |
 | `confirmDeposit` | `sirsoft-ecommerce.confirmDeposit` |
 | `initShippingPolicyForm` | `sirsoft-ecommerce.initShippingPolicyForm` |
@@ -565,13 +606,18 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 별표가 섞인 계좌는 제출하지 않습니다. 첨부·철회·추가결제 핸들러(`claimImageHandlers.ts` · `claimListHandlers.ts`)도
 같은 규칙으로 `sirsoft-ecommerce.user.claim.*` 를 `claimText()` 로 찾습니다 — `G7Core.t` 는 번역이
 없으면 키 문자열을 돌려주므로 `t(...) ?? 폴백` 은 폴백까지 가지 않습니다.
+관리자 직권 접수 창(`adminClaimRequestHandlers.ts`)은 5xx 응답의 본문 문구를 사유로 쓰지 않습니다 — 운영 환경의
+500 본문은 `Server Error` 같은 프레임워크 원문이라, 미리보기는 「청구액을 계산하지 못했습니다.」, 접수는
+「접수하지 못했습니다.」 폴백 문구로 떨어집니다. 4xx 의 서버 사유는 그대로 띄웁니다. 주문 목록 일괄 변경
+(`orderHandlers.ts` `executeOrderBulkAction`)도 같은 규칙으로, 5xx·전송 실패는 axios 원문(`Request failed with status code 500`·
+`Network Error`) 대신 「일괄 처리에 실패했습니다.」 로 떨어집니다.
 
 역할별로 네 무리입니다:
 
 | 무리 | 예 | 하는 일 |
 |---|---|---|
 | 상품 편집 | `updateProductField` · `toggleOption` · `loadExpandedOptions` | 옵션이 많은 상품 폼의 부분 상태 갱신 |
-| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산 |
+| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산. 원화 표기(`formatCurrency`)는 서버 `messages.currency.prefix/suffix.KRW` 와 같은 구성의 `currency.krw_prefix`·`krw_suffix` 번역을 따른다 — 문구에 금액과 단위를 붙인 문형을 두지 않는다 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
 | 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |

@@ -106,7 +106,13 @@ class OrderOptionResource extends BaseApiResource
             // `getEarnableOptions` 의 `option_status = 적립트리거` 조건에 영원히 걸리지
             // 않으므로 **어떤 설정에서도 적립 대상이 아니다**. 그런데 화면은 「적립예정」을
             // 말한다 — 지켜질 수 없는 예정이다. 세 번째 상태를 화면이 아니라 여기서 판정한다.
-            'is_points_earn_cancelled' => $this->option_status === OrderStatusEnum::CANCELLED
+            // 반품완료·교환완료(원 행)도 같다 — 적립 조건(`option_status = 적립트리거`)에 다시 걸리지 않는데 화면은
+            // 「적립예정」을 말했다(S3-D20). 교환으로 받은 상품의 적립은 후속 행이 가진다.
+            'is_points_earn_cancelled' => in_array($this->option_status, [
+                OrderStatusEnum::CANCELLED,
+                OrderStatusEnum::RETURNED,
+                OrderStatusEnum::EXCHANGED,
+            ], true)
                 && ! (bool) ($this->purchase_earn_transactions_exists ?? false),
             'unit_price' => $this->roundToOrderCurrency($this->unit_price),
             'unit_price_formatted' => $this->formatOrderCurrency($this->unit_price),
@@ -198,11 +204,13 @@ class OrderOptionResource extends BaseApiResource
 
                 return ShippingType::getCachedByCode($method)?->getLocalizedName();
             }),
+            // 배송비는 행들의 합 — 병합 이전분으로 배송 행이 여럿이면 재계산이 id 가 가장 작은 행에만 몫을
+            // 쓰고 나머지는 0 으로 둔다(S-Q26-b). 첫 행만 읽으면 0 행이 앞설 때 몫이 사라진다.
             'shipping_amount' => $this->whenLoaded('shippings', function () {
-                return $this->roundToOrderCurrency($this->shippings->first()?->total_shipping_amount ?? 0);
+                return $this->roundToOrderCurrency((float) $this->shippings->sum('total_shipping_amount'));
             }),
             'shipping_amount_formatted' => $this->whenLoaded('shippings', function () {
-                return $this->formatOrderCurrency($this->shippings->first()?->total_shipping_amount ?? 0);
+                return $this->formatOrderCurrency((float) $this->shippings->sum('total_shipping_amount'));
             }),
             'carrier_name' => $this->whenLoaded('shippings', function () {
                 return $this->shippings->first()?->carrier?->getLocalizedName();

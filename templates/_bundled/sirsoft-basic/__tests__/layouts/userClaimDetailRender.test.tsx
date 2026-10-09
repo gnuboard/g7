@@ -25,7 +25,8 @@
  *   claim_detail_item_reject_reason_on_the_row,
  *   claim_detail_advance_exchange_notice_and_overdue,
  *   claim_detail_unreturned_items_marked,
- *   claim_detail_admin_requested_notice
+ *   claim_detail_admin_requested_notice,
+ *   claim_detail_redelivery_shows_the_international_city_and_state
  *
  * @vitest-environment jsdom
  */
@@ -465,6 +466,32 @@ describe('클레임 신청서 상세 — 렌더', () => {
   });
 
   /**
+   * 해외 주문의 재발송지는 도시·주를 따로 담는다 — 카드가 우편번호·주소 두 줄만 읽으면 운영자와
+   * 구매자가 도시·주가 빠진 주소를 보게 된다(S2-D8). 국내 재발송지는 두 칸이 비어 종전 모양 그대로다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_redelivery_shows_the_international_city_and_state
+   */
+  it('배송 — 해외 재발송지는 도시·주까지 보이고, 국내 재발송지에는 자리가 끼지 않는다', async () => {
+    const intl = await renderDetail(['_detail_shipping.json'], exchangeDetail({
+      redelivery_address_snapshot: {
+        recipient_name: 'Jane Doe', phone: '+1-212-555-0101', zipcode: '10118',
+        address1: '350 5th Ave', address2: 'Suite 2', city: 'New York', state: 'NY',
+        country_code: 'US', changed_by_user: false,
+      },
+    }));
+    active = intl.utils;
+    expect(intl.container.textContent ?? '').toContain('(10118) 350 5th Ave Suite 2, New York, NY');
+    intl.utils.cleanup();
+
+    const domestic = await renderDetail(['_detail_shipping.json'], exchangeDetail());
+    active = domestic.utils;
+    const text = domestic.container.textContent ?? '';
+    expect(text).toContain('(06236) 서울시 강남구 2층');
+    expect(text).not.toContain('2층,');
+  });
+
+  /**
    * @scenario claim_type=refund, screen=detail, entry=none
    * @effects claim_detail_shipping_card_absent_for_refund
    */
@@ -629,6 +656,46 @@ describe('클레임 신청서 상세 — 렌더', () => {
     // 손대기 전에는 서버가 확정해 둔 수단이 골라져 있어야 한다 — 화면이 안내하는 값과
     // 실제로 나가는 값이 어긋나면 고른 적 없는 수단으로 결제가 시작된다.
     expect(radios.find((r) => r.value === 'point')?.checked).toBe(true);
+  });
+
+  /**
+   * 카드·마일리지가 아닌 수단은 서버가 붙인 표시명으로 보인다 — 값만 보고 `point` 가 아니면
+   * 모두 「카드·간편결제」로 그리면 계좌이체를 고르면서 카드로 낸다고 읽는다.
+   *
+   * 회귀 배경 (S1-D14, 2026-10-07 실측): 허용 수단을 `['card','bank']` 로 두자 두 라디오가
+   * 모두 「카드·간편결제」였다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_payment_method_choices_carry_their_own_labels
+   */
+  it('클레임 정보 — 카드·마일리지 밖의 수단은 서버 표시명으로 보인다', async () => {
+    const { utils, container } = await renderDetail(
+      ['_detail_claim_info.json'],
+      exchangeDetail({
+        outstanding_amount: 4000,
+        outstanding_amount_formatted: '4,000원',
+        available_payment_methods: ['card', 'bank'],
+        available_payment_method_labels: { card: '신용카드', bank: '계좌이체' },
+        pending_payment: {
+          payment_number: 'CP20260901-0005',
+          payment_method: 'card',
+          payment_method_label: '신용카드',
+          total_amount_formatted: '4,000원',
+        },
+      })
+    );
+    active = utils;
+
+    const labelOf = (value: string) =>
+      container
+        .querySelector<HTMLInputElement>(`input[type=radio][name=claimPayMethod][value=${value}]`)
+        ?.closest('label')
+        ?.textContent?.trim();
+
+    expect(labelOf('bank')).toBe('계좌이체');
+    // 카드는 종전 안내 문구(간편결제까지 묶어 부르는 이름)를 지킨다 — 이 환경은 식 안의
+    // `$t()` 를 키 그대로 돌려주므로 키로 잰다.
+    expect(labelOf('card')).toBe('claim.apply.payment_method_card');
   });
 
   /**

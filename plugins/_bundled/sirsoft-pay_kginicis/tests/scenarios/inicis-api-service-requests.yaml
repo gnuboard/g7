@@ -1,0 +1,40 @@
+# e2e:allow 화면 변경 없음 — 결제사 API 로 보내는 서버 측 요청(MID·서명·승인·망취소·취소·조회·CBT 취소)만 다룬다.
+feature: KG이니시스 API 서비스 요청 사양 (MID·서명·승인·망취소·취소·조회·CBT 취소)
+
+description: |
+  KgInicisApiService 가 결제사로 보내는 요청을 단위 수준에서 고정한다.
+  테스트/운영 모드에 따른 MID·결제창 URL, 서명·mKey 해시, 서버 승인·망취소 호출,
+  INIAPI v2 취소(전액·부분·입금된 가상계좌 환불계좌 암호화)·거래조회 payload,
+  CBT(일본결제) 취소 요청과 결제 당시 자격증명 재구성을 Http::fake 로 검증한다.
+
+axes:
+  call: [mid, js_url, signature, authorize, net_cancel, cancel, inquiry, cbt_refund]
+
+effects:
+  - get_mid_returns_test_mid_in_test_mode
+  - get_mid_returns_live_mid_in_live_mode
+  - get_mid_does_not_double_prefix_when_input_already_has_sir
+  - get_js_url_returns_test_url_in_test_mode
+  - get_js_url_returns_live_url_in_live_mode
+  - get_mkey_returns_sha256_of_sign_key
+  - generate_signature_returns_correct_sha256
+  - generate_signature_differs_for_different_amounts
+  - authorize_payment_posts_to_auth_url_and_returns_response
+  - authorize_payment_throws_on_http_error
+  - send_net_cancel_posts_auth_token_to_net_cancel_url
+  - send_net_cancel_does_not_throw_on_http_error
+  - cancel_payment_sends_full_refund_request
+  - cancel_payment_sends_partial_refund_request
+  - cancel_payment_sends_the_refund_account_for_a_settled_virtual_account
+  - cancel_payment_omits_the_refund_account_when_none_is_given
+  - query_transaction_does_not_carry_refund_account_keys
+  - cancel_payment_throws_on_non_00_result_code
+  - cancel_payment_throws_on_http_error
+  - cancel_payment_hash_data_includes_detail_for_partial_refund
+  - default_pg_messages_follow_locale   # 사유 미지정 취소·CBT 환불·현금영수증 취소·구매거절 확인의 기본 문구가 화면 언어(한국어 고정 아님)
+  - refund_cbt_payment_sends_manual_v071_full_refund_request
+  - refund_cbt_payment_sends_partial_refund_request
+  - use_stored_cbt_credentials_uses_payment_time_live_mid_for_refund
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Services/KgInicisApiServiceTest.php

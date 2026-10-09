@@ -589,10 +589,10 @@
             ]
         },
         {
-            "comment": "환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다.",
+            "comment": "환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 사용 마일리지를 차감하지 않은 주문도 돌려줄 마일리지가 없어 미노출(Q15). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다.",
             "type": "basic",
             "name": "Div",
-            "if": "{{_local.claimEstimateLoading !== true && !!_local.claimEstimate && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0}}",
+            "if": "{{_local.claimEstimateLoading !== true && !!_local.claimEstimate && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 && order?.data?.points_not_deducted !== true}}",
             "props": {
                 "className": "pt-3 border-t border-gray-200 dark:border-gray-700",
                 "data-testid": "claim-refund-priority"
@@ -856,7 +856,7 @@
                                     "props": {
                                         "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}"
                                     },
-                                    "text": "{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}"
+                                    "text": "{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : (chargePaymentMethod === 'card' ? $t('claim.apply.payment_method_card') : ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_method_labels?.[chargePaymentMethod] ?? chargePaymentMethod))}}"
                                 }
                             ]
                         }

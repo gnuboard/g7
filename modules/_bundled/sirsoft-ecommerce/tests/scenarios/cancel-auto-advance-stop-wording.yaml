@@ -1,0 +1,15 @@
+feature: 「환불까지 한 번에 처리」 정지 문구 (S3-D2)
+
+description: |
+  서버는 송금 수단이면 환불신청에서 멈추는데 토스트는 「승인까지 처리했습니다」라고 했다(실측: Q9).
+
+axes:
+  surface:
+    - toast
+    - checkbox_hint
+
+effects:
+  - auto_advance_stop_wording_matches_server # 정지 토스트·체크박스 설명이 서버 동작(환불신청에서 멈춤)과 같다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/cancelAutoAdvanceStopWording.test.ts

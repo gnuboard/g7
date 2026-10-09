@@ -1,0 +1,44 @@
+# e2e:allow 화면 변경 없음 — 결제사로 보내는 서버 측 요청(사이트 코드·결제창 URL·거래조회·취소·에스크로 배송등록)과 CLI 실행 안전장치만 다룬다.
+feature: NHN KCP API 서비스 요청 사양 (사이트 코드·결제창 URL·거래조회·취소·에스크로·CLI 안전장치)
+
+description: |
+  NhnKcpApiService 가 결제사로 보내는 요청을 단위 수준에서 고정한다.
+  테스트/운영 모드와 결제 당시 자격증명에 따른 사이트 코드·결제창 URL,
+  거래조회 HTTP 요청(URL·Basic 인증·서명 헤더·오류 처리)을 Http::fake 로,
+  취소(전액·부분·복합과세 TG03 과세 분리·입금된 가상계좌 환불계좌·실패·위험 사유 거절)와
+  에스크로 배송등록 CLI 인자를 인자 기록 스텁 바이너리로 검증한다.
+  CLI 실행 권한 자가 복구와 디스크 로깅 차단(log_path·log_level·디버그 로그 내용)도 함께 고정한다.
+
+axes:
+  call: [site_cd, stored_credentials, js_url, transaction, cancel, escrow, cli_exec, cli_logging]
+
+effects:
+  - get_site_cd_returns_test_site_cd_in_test_mode
+  - kcp_soap_service_falls_back_to_test_site_cd_when_escrow_test_site_cd_is_empty
+  - get_site_cd_returns_live_site_cd_in_live_mode
+  - use_stored_credentials_restores_payment_time_mode_and_site_cd
+  - get_js_url_returns_test_url_in_test_mode
+  - get_js_url_returns_live_url_in_live_mode
+  - get_transaction_calls_correct_url_with_auth_headers
+  - get_transaction_uses_basic_auth_with_site_credentials
+  - get_transaction_throws_on_http_error
+  - cancel_payment_calls_cli_with_full_cancel_params
+  - cancel_payment_calls_cli_with_partial_cancel_params
+  - cancel_payment_forwards_tg03_tax_split_only_for_partial_cancel
+  - cancel_payment_sends_the_refund_account_for_a_settled_virtual_account
+  - cancel_payment_omits_the_refund_account_when_none_is_given
+  - register_escrow_delivery_uses_test_site_cd_when_escrow_test_site_cd_is_empty
+  - cancel_payment_throws_on_non_0000_res_cd
+  - cancel_payment_throws_on_cli_fallback_error
+  - cli_debug_logs_do_not_include_raw_response_or_site_key
+  - cancel_payment_rejects_unsafe_cancel_message_before_cli_exec
+  - get_transaction_uses_live_api_url_in_live_mode
+  - ensure_cli_executable_promotes_0664_to_0755
+  - ensure_cli_executable_is_idempotent_when_already_executable
+  - ensure_cli_executable_throws_when_binary_missing
+  - log_path_is_intentionally_nonexistent_to_disable_disk_logging
+  - log_level_is_minimal_to_prevent_pii_leak
+  - cli_args_include_disabled_log_path_constant
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/NhnKcpApiServiceTest.php

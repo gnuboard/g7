@@ -1,0 +1,25 @@
+feature: 장바구니 옵션 변경 실패 — 오류 칸에 담기는 값
+
+description: |
+  장바구니 [옵션 변경] 창에서 적용이 거절되면 창 안 오류 칸(optionErrors)에 사유를 보인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D7):
+    - 서버의 도메인 거절(재고 부족·판매 중지 등)은 errors 에 `code`·`message`·`unavailable_items`(객체 배열)·
+      `has_*`(참거짓)를 함께 준다. 실패 처리가 이걸 통째로 필드 오류 묶음처럼 펼쳐, 창에
+      「입력 오류 · cart_unavailable · (사유 문장) · 컴포넌트 로드 실패 [Li] 데이터를 표시할 수 없습니다」 가 보였다.
+      도메인 거절은 사유 문장 하나만 일반 오류로, 필드 검증 오류는 종전대로 필드별로 담는다.
+
+# axis 의미: 서버 거절 응답의 모양 — 도메인 거절(사유 문장 있음 / 없음) · 필드 검증 오류
+axes:
+  rejection: [domain_with_reason, domain_without_reason, field_validation]
+
+effects:
+  - domain_rejection_shows_reason_only        # 도메인 거절 → 사유 문장 하나(_general), 내부 코드·객체 항목 없음
+  - domain_rejection_falls_back_to_message    # 사유 문장이 없으면 최상위 message
+  - field_errors_kept_per_field               # 필드 검증 오류는 필드별 목록 그대로
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/cartOptionChangeErrors.test.tsx
+
+validation:
+  browser_check: 전용 Chrome 실측 — 상품 A 블루 재고 1·장바구니 수량 2 에서 [옵션 변경] 블루 적용 → `PUT /cart/{id}/option 422` → 창에 재고 부족 문장 한 줄

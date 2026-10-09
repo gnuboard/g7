@@ -8,9 +8,16 @@
 
 ### Added
 
+- 상품 등록·수정 옵션의 마일리지 칸 이름(`admin/product.options.mileage_value_label`·`mileage_type_label` — 「マイレージ積立値」「マイレージ積立単位」)과 마일리지 설정의 적립 지연 일수 칸 이름(`admin/mileage_settings.basic.earn_delay_days` — 「積立遅延日数」), 라벨 하나 뒤에 칸이 여럿 붙은 자리의 칸 이름(`admin/personal_payment.filter.date_type`·`admin/order.filter.date_type_select`·`currency_select`·`admin/product.filter.date_type_select`·`price_type_select`·`admin/product.modal.bulk_price.unit`·`admin/claim.filter.currency`·`admin/promotion_discount_code.create.field.benefit_unit_fixed`·`benefit_unit_rate`·`admin/promotion_discount_code.filter.benefit_amount_unit`·`admin/main_banner.detail.field.title_position`·`content_position`·`admin/settings.basic_info.business_info.email_domain_select`·`admin/mileage_settings.currency.earn_rounding_unit_label`·`earn_rounding_method_label`·`earn_rounding_unit_of`·`earn_rounding_method_of` — 「日付の基準」「通貨」「価格の基準」「変更の単位」「定額割引の単位」「定率割引の単位」「特典金額の単位」「タイトルの位置」「内容の位置」「メールドメインの選択」「積立の切り捨て単位」「積立の切り捨て方式」)의 일본어 번역을 추가했습니다.
 - 결제 통화에서 쓸 수 없는 결제수단을 골랐을 때의 주문 거절 문구(`validation.order.payment_method_not_allowed_for_currency`)의 일본어 번역을 추가했습니다.
 - 대시보드 「오늘」 배지로 연 주문 목록에 보이는 사이트 시간대 기준 안내(`admin/order.filter.site_day_notice`)와, 주문 목록 날짜 기준 인자 검증 문구(`validation.orders.date_basis.in`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
+- 관리자 주문 상세 관리자 메모 저장 실패 안내(`admin/order.detail.handler.memo_save_failed` — 「管理者メモの保存に失敗しました。」)와 반품·교환 [완료 처리] 창의 사용 마일리지 반환 표기 2건(`admin/claim.complete.row_points`·`refund_now_desc_points`)의 일본어 번역을 추가했습니다.
+- 쇼핑몰 환경설정에서 저장하지 않은 변경이 있을 때 탭 이동 전에 묻는 확인 창 문구(`admin/settings.unsaved_tab_change.*` — 「保存していない変更があります」·[とどまる]·[移動])의 일본어 번역을 추가했습니다.
+- 상품 등록·수정 화면에서 선택지 조회 권한이 없을 때 칸 아래에 뜨는 안내 7건(`admin/product.selector_forbidden.*` — 분류·브랜드·고시 템플릿·공통정보·배송정책·상품 라벨·회원 등급, 예: 「配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。」)의 일본어 번역을 추가했습니다.
+- 교환 재발송지의 해외 주소 도시·주 칸 문구 — 관리자 대리 접수 창 입력 안내(`admin/order.claim_request.city`·`state`)와 검증 항목명(`validation.request_attributes.redelivery_city`·`redelivery_state`) — 의 일본어 번역(「都市」「州/道」)을 추가했습니다.
+- 부분 취소 주문을 되살리는 확인 창의 안내(`admin/order.manual_paid.restoration_hint_partial`)와, 사용 마일리지를 차감하지 않은 주문의 환불 확인 창 안내(`admin/claim.detail.refund_execute.points_not_deducted`)의 일본어 번역을 추가했습니다.
+- 관리자 주문 목록 주문 상태 필터의 「반품완료」 칩 이름(`admin/order.status.returned`)의 일본어 번역을 추가했습니다.
 - 관리자 회원 목록의 쇼핑몰 조건 필터(마일리지 잔액·배송지) 문구와 그 검증 항목명을 일본어로 번역했습니다(`admin.user_filter.*`·`validation.attributes.user_filter_*`).
 - 주문 목록 엑셀 내려받기 실패 안내(`admin/order.excel.download_failed`)의 일본어 번역을 추가했습니다.
 - 구매할 수 있는 옵션이 없는 상품의 바로 구매 거부 문구, 회원 결제 통화·배송국가 변경 권한 문구의 일본어 번역을 추가했습니다.
@@ -31,6 +38,15 @@
 - 관리자가 무통장 주문에 입금을 기록했을 때 남는 활동 로그 문구(`activity_log.action.deposit_record`·`activity_log.description.order_deposit_recorded`, 「入金記録」)의 일본어 번역을 추가했습니다.
 - 관리자 무통장 입금확인 창에서 이미 결제 이후 단계인 주문에 보이는 안내(`admin/order.detail.modal.confirm_deposit.past_payment_hint`)와, 그런 주문에 입금을 기록했을 때의 응답 문장(`messages.orders.deposit_recorded_status_kept`)의 일본어 번역을 추가했습니다.
 - 「문의 답변 완료」 알림의 수신자 관계 이름(`messages.notification_relations.author`, 「お問い合わせの投稿者」)을 일본어로 번역했습니다.
+- 「마일리지로 환불」 현금분 지급(환불 지급 유형·활동로그), 환불 실행 중 마일리지·쿠폰·재고 복원 실패 안내, PG 장부 반영 실패 표식 안내, 관리자 주문·클레임 상세의 「마일리지로 환불」 행 문구를 추가했습니다.
+- 관리자 주문 수동 결제 처리 확인 창(재고 차감·사용 마일리지 차감·결제금액 기록)과 취소 주문 재활성 복원 안내 문구(`admin/order.manual_paid.*`), 관련 예외(`exceptions.mileage.insufficient_for_payment_complete*`·`exceptions.manual_paid.*`·`exceptions.reactivation.*`)·응답 메시지(`orders.manual_paid_preview_*`)·활동 로그(`action.manual_paid_effects`·`description.order_manual_paid_effects`·`manual_paid.items.*`)·환불 한도 수단 이름(`claims.cancellable_method.reactivated_cash`)의 일본어 번역을 추가했습니다.
+- 관리자 클레임 목록·취소 상세의 「재활성됨」·「일부 재활성됨」 배지와 취소 정보 카드의 재활성 줄 문구(`admin/claim.column.reactivated_*`·`detail.cancel_info.reactivated_*`)의 일본어 번역을 추가했습니다.
+- 입금 전 가상계좌 주문의 부분취소 불가 안내(`admin/order.detail.modal.cancel.partial_unsupported_vbank_awaiting`·`exceptions.partial_cancel_not_supported_vbank_awaiting_deposit`)와 수동 결제 처리 확인 창 세 항목의 검증 항목명(`validation.attributes.apply_stock_deduction` 등)의 일본어 번역을 추가했습니다.
+- 회원 탈퇴·삭제에 따른 마일리지 소멸 설명(`activity_log.description.mileage_withdrawal_expire`·`mileage_deletion_expire`), 관리자 마일리지 내역의 「삭제된 회원」(`admin/mileage_transactions.cell.deleted_member`), 탈퇴 확인 창 안내(`user_mileage.withdraw_refund_credit_warning`)의 일본어 번역을 추가했습니다.
+- 클레임 금액 처리 문구의 일본어 번역을 추가했습니다 — 교환 차액 환급 줄(`admin/claim.detail.settlement.exchange_difference_refund`), 차감 청구 거절(`exceptions.charge_deduct_insufficient`), 환불 내역 줄(`messages.claims.notifications.refund_breakdown_*`), 교환 차액 환급의 수단 표기(`messages.claims.exchange_difference.*`), 선교환 미회수 완료 안내(`admin/claim.complete.unreturned_no_charge_notice`). 환불 완료 알림 메일 본문의 「返金方法」 줄은 수단별 금액 줄 「返金内訳」 으로 바꿨습니다.
+- 결제 플러그인 판정·가상계좌 문구의 일본어 번역을 추가했습니다 — PG 환불 불가·플러그인 꺼짐 안내(`exceptions.pg_refund_unsupported`·`pg_provider_inactive`), 가상계좌 발급 취소 사유(`messages.vbank_close_reason`), 관리자 주문 상세의 취소 주문 입금·계좌 폐쇄 실패 경고(`admin/order.detail.deposit_after_cancel.warning`·`vbank_close_failed.warning`), 새 알림 「キャンセル注文入金 管理者通知」(`deposit_after_cancel_admin`) 템플릿.
+- 클레임 결제 승인 중 철회 안내(`exceptions.claim_payment_withdrawn_during_approval`), 관리자 클레임 상세의 망취소 실패·결제 후 전이 실패 안내(`admin/claim.detail.settlement.void_failed`·`paid_transition_failed`), 현금영수증 환산 실패 사유(`cash_receipt.errors.currency_conversion_failed`)의 일본어 번역을 추가했습니다.
+- 연결 신청서 문구의 일본어 번역을 추가했습니다 — 관리자 상세의 후속 환불·원 신청서·처리 결과(`admin/claim.detail.linked.*`), 목록의 「ほか{{count}}件」(`column.refund_progress_more`), 주문 상세 클레임 내역의 원 신청서(`admin/order.detail.claim_history.source_claim`). 이미 접수된 환불 안내(`detail.settlement.blocked_already_filed`)는 위 목록을 가리키도록 바꿨습니다.
 - 주문의 결제수단으로는 쓸 수 없는 환불수단을 고른 경우의 거절 문구를 일본어로 추가했습니다 — 무통장·마일리지처럼 PG 거래가 없는 결제는 「PG사 환불」로 돌려줄 대상이 없으므로, 운영자가 그 수단을 저장하려 하면 사유를 일본어로 알려 줍니다.
 - 클레임 신청 출처 뱃지(고객 신청·비회원 신청·운영자 접수)의 일본어 번역을 추가했습니다 — 운영자는 이 셋을 다르게 대합니다. 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서에 적힌 연락처뿐이며, 운영자가 대리 접수한 건은 고객이 철회·수정할 수 없습니다.
 - 환경설정 클레임 정책 탭의 「환불 자동 승인 결제수단」 항목과 그 설명, `PG 즉시 환불` 배지 문구의 일본어 번역을 추가했습니다 — 사람이 송금해야 하는 결제수단의 환불이 운영자 승인 전까지 멈춘다는 규칙을 설정 화면에서 일본어로 설명합니다.
@@ -151,6 +167,7 @@
 - 구매자 클레임 첨부·철회·추가결제 안내 8건(`user.claim.*`)의 일본어 번역을 추가했습니다.
 - 주문 상세 「고객에게 메일 보내기」 알림(`order_custom_email`)과 「메일 채널이 꺼져 있어 보낼 수 없다」 안내의 일본어 번역을 추가했습니다.
 - 환불액이 그 결제수단의 잔여를 넘었을 때의 거절 문구와 「결제수단」 라벨의 일본어 번역을 추가했습니다. 문구에 수단과 요청액·잔여를 함께 실어 운영자가 무엇을 얼마나 줄여야 하는지 알 수 있습니다.
+- 쿠폰 등록·수정 화면 혜택금액 옆 단위 선택칸의 이름(`admin/promotion_coupon.form.field.discount_unit` — 「割引単位」)의 일본어 번역을 추가했습니다.
 
 ### Fixed
 
@@ -173,11 +190,17 @@
 - 원화(KRW) 금액이 **엔화 단위(円)로 표시되던 것**을 바로잡았습니다. 일본어로 보는 화면에서
   6,000원이 「6,000円」으로 나와, 같은 화면에 함께 표시되는 실제 엔화 환산액(¥690)과 모순됐습니다.
   통화 단위는 보는 언어가 아니라 그 돈이 무엇인지로 정해지므로 「ウォン」으로 표기합니다.
+- 쿠폰 삭제 확인 창 안내(`admin/promotion_coupon` 의 `delete.message`)가 「쿠폰과 모든 게시글이 영구 삭제된다」고 잘못 옮겨져 있던 것을, 쿠폰과 그 쿠폰의 적용 상품·카테고리 지정이 함께 삭제된다는 원문대로 고쳤습니다.
+- 결제 직후 남는 활동 로그 「마일리지 적립 예정」(`activity_log.description.mileage_earn_scheduled`)의 일본어 번역을 추가했습니다 — 결제 때 「적립」으로 남던 기록이 아직 지급하지 않은 적립임을 밝힙니다.
+- 관리자 주문 상세 현금영수증 [발급취소] 확인 창 문구(`admin/order.detail.cash_receipt.cancel_confirm`)의 일본어 번역을 추가했습니다.
+- 화면이 계산한 원화 금액의 접두·접미(`currency.krw_prefix`·`krw_suffix`, 접미 「ウォン」)를 추가했습니다 — 종전에는 일본어 화면에서도 「5,000원」으로 보였습니다.
 
 ### Changed
 
 - 「주문 시 본인확인」 인증 메일 번역을 알림 번역(`seed/notifications.json`)으로 옮겼습니다.
 - 사용 중인 클레임 사유를 삭제하려 할 때의 안내를 「주문 취소에서 사용 중」에서 「이미 사용 중」으로 바꿨습니다 — 교환·반품·환불 신청에서 쓰인 사유에도 같은 안내가 나옵니다.
+- 사용 마일리지 반환 축의 문구를 「使用マイレージ返還」으로, 환불수단 마일리지를 「マイレージで返金」으로 바꿨습니다.
+- 마일리지 거래 유형 `expired` 의 일본어 표시를 「有効期限失効」에서 「失効」로 바꿨습니다.
 
 ### Removed
 

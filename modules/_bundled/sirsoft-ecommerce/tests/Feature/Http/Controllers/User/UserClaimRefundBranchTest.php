@@ -4,13 +4,16 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\User;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
@@ -91,17 +94,24 @@ class UserClaimRefundBranchTest extends ModuleTestCase
      * `completes` 는 자동 전이가 완료까지 가는지다. 계좌(BANK)만 승인에서 멈춘다 —
      * 사람이 송금해야 하고, 운영자의 [환불하기]가 곧 송금 완료 선언이다.
      *
-     * @return array<string, array{0: string, 1: string, 2: RefundMethodEnum, 3: bool}> 결제수단·PG·기대 환불수단·기대 환불상태 네 값의 조합
+     * 다섯째 값은 **마일리지로 전액 결제한(현금 0원) 주문**인지다(결함 4). 고객은 마일리지 결제수단을
+     * 고를 수 없어 그런 주문도 카드·무통장·가상계좌·무료 수단을 그대로 단다 — 돌려줄 현금이 없으므로
+     * 결제수단과 무관하게 「마일리지로 환불」로 기록되고, 계좌를 묻지 않고, 완료까지 간다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: RefundMethodEnum, 3: RefundStatusEnum, 4: bool}> 결제수단·PG·기대 환불수단·기대 환불상태·현금 0원 여부의 조합
      */
     public static function refundMethodMatrix(): array
     {
         return [
-            '카드 결제 → PG 환불, 완료까지' => ['card', 'testpg', RefundMethodEnum::PG, RefundStatusEnum::COMPLETED],
             // P16 — 무통장은 사람이 송금해야 끝나므로 **접수에서** 멈춘다. 종전(前D4)에는
             // `approved` 까지 자동으로 갔으나, 아무도 검토하지 않은 건이 "승인됨" 으로 보이는
             // 상태를 없앴다. 승인이 사람의 검토, 실행이 사람의 송금이다.
-            '무통장 → 계좌 환불, 접수에서 멈춤' => ['dbank', '', RefundMethodEnum::BANK, RefundStatusEnum::REQUESTED],
-            '마일리지 전액 → 포인트 환불, 완료까지' => ['point', '', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED],
+            '무통장 → 계좌 환불, 접수에서 멈춤' => ['dbank', '', RefundMethodEnum::BANK, RefundStatusEnum::REQUESTED, false],
+            '카드 결제 → PG 환불, 완료까지' => ['card', 'testpg', RefundMethodEnum::PG, RefundStatusEnum::COMPLETED, false],
+            '마일리지 전액(현금 0원) 무통장 → 마일리지 환불, 완료까지' => ['dbank', '', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED, true],
+            '마일리지 전액(현금 0원) 가상계좌 → 마일리지 환불, 완료까지' => ['vbank', 'testpg', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED, true],
+            '마일리지 전액(현금 0원) 무료 → 마일리지 환불, 완료까지' => ['free', '', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED, true],
+            '마일리지 전액(현금 0원) 카드 → 마일리지 환불, 완료까지' => ['card', 'testpg', RefundMethodEnum::POINTS, RefundStatusEnum::COMPLETED, true],
         ];
     }
 
@@ -264,6 +274,7 @@ class UserClaimRefundBranchTest extends ModuleTestCase
      * @param  string  $pgProvider  PG 식별자
      * @param  RefundMethodEnum  $expectedMethod  기대 환불수단
      * @param  RefundStatusEnum  $expectedStatus  기대 환불상태(=종착점)
+     * @param  bool  $mileageOnly  마일리지로 전액 결제한(현금 0원) 주문인지
      * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, refund_branch=auto, verify_stage=refund_record
@@ -276,9 +287,13 @@ class UserClaimRefundBranchTest extends ModuleTestCase
         string $pgProvider,
         RefundMethodEnum $expectedMethod,
         RefundStatusEnum $expectedStatus,
+        bool $mileageOnly,
     ): void {
-        $order = $this->myPaidOrder($paymentMethod, $pgProvider);
+        $order = $mileageOnly
+            ? $this->mileageOnlyPaidOrder($this->user, $paymentMethod, $pgProvider)
+            : $this->myPaidOrder($paymentMethod, $pgProvider);
 
+        // 현금 0원 주문은 계좌를 싣지 않는다 — 돌려줄 현금이 없는데 계좌를 요구하면 고객이 취소하지 못한다(결함 4).
         $payload = ['items' => $this->items($order), 'reason_code' => 'changed_mind'];
         if ($expectedMethod === RefundMethodEnum::BANK) {
             // 계좌 환불은 송금 대상이 필요하다 (P9).
@@ -304,6 +319,19 @@ class UserClaimRefundBranchTest extends ModuleTestCase
             $this->assertNotNull($refund->refunded_at);
             // 취소신청서는 환불이 집행된 순간에만 생긴다 (D3).
             $this->assertSame(1, OrderCancel::where('order_id', $order->id)->count());
+
+            if ($mileageOnly) {
+                // 돈의 도착 — 주문 때 쓴 마일리지가 그 환불에 묶여 원장으로 돌아왔다.
+                $used = (float) $order->total_points_used_amount;
+                $restored = MileageTransaction::query()
+                    ->where('order_refund_id', $refund->id)
+                    ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+                    ->get();
+                $this->assertCount(1, $restored);
+                $this->assertSame($used, (float) $restored->first()->amount);
+                $this->assertSame($used, app(MileageTransactionRepositoryInterface::class)->getBalanceByCurrency($this->user->id, 'KRW'));
+                $this->assertSame(0.0, (float) $refund->refund_amount);
+            }
 
             return;
         }
@@ -353,5 +381,47 @@ class UserClaimRefundBranchTest extends ModuleTestCase
             $this->assertSame(RefundStatusEnum::REQUESTED, $refund->refund_status);
             $this->assertSame(0, OrderCancel::where('order_id', $order->id)->count());
         }
+    }
+
+    /**
+     * 현금 0원 주문을 상품준비중에 환불 신청하면 계좌 없이 접수되고 운영자 심사에서 멈춘다 —
+     * 심사 단계는 카드 주문과 같은 정책이다. 이어서 관리자가 계좌 없이 [환불하기]를 누르면
+     * 마일리지가 돌아오고 완료된다(결함 4).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects mileage_only_order_in_request_branch_needs_no_account_and_waits_for_review
+     */
+    public function test_mileage_only_order_in_request_branch_needs_no_account_and_waits_for_review(): void
+    {
+        $order = $this->mileageOnlyPaidOrder($this->user, 'dbank', '', OrderStatusEnum::PREPARING);
+
+        $this->actingAs($this->user)
+            ->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+                'items' => $this->items($order),
+                'reason_code' => 'changed_mind',
+            ])
+            ->assertCreated();
+
+        $refund = OrderRefund::where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(RefundStatusEnum::REQUESTED, $refund->refund_status);
+        $this->assertSame(RefundMethodEnum::POINTS, $refund->refund_method);
+
+        $admin = $this->createAdminUser([
+            'sirsoft-ecommerce.claims.read',
+            'sirsoft-ecommerce.claims.update-status',
+            'sirsoft-ecommerce.claims.execute-refund',
+        ]);
+        app(OrderRefundRequestService::class)->transition($refund, RefundStatusEnum::APPROVED);
+
+        $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/refunds/{$refund->id}/execute")
+            ->assertOk();
+
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+        $this->assertSame(1, MileageTransaction::query()
+            ->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->count());
     }
 }

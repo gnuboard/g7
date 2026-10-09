@@ -1393,6 +1393,11 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
+        'apply_stock_deduction' => '재고 차감',
+        'apply_mileage_deduction' => '사용 마일리지 차감',
+        'record_paid_amount' => '결제금액 기록',
+
         // 관리자 회원 목록 확장 필터 (#705)
         'user_filter_mileage_min' => '마일리지 잔액 최소',
         'user_filter_mileage_max' => '마일리지 잔액 최대',
@@ -2290,6 +2295,8 @@ return [
         'redelivery_zipcode' => '우편번호',
         'redelivery_address1' => '주소',
         'redelivery_address2' => '상세 주소',
+        'redelivery_city' => '도시',
+        'redelivery_state' => '주/도',
         'redelivery_country_code' => '배송 국가',
         'redelivery_changed_by_user' => '배송지 변경 여부',
         'full_cancel' => '전체 취소 여부',

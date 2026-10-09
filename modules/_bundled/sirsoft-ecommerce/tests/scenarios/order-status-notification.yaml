@@ -88,6 +88,7 @@ effects:
   - order_notification_amount_uses_paid_then_total                 # 결제액 우선, 0 이면 주문 총액
   - member_order_notification_uses_member_name_and_mypage_url
   - guest_order_notification_uses_orderer_name_and_lookup_url
+  - staff_order_status_notifications_carry_order_data              # 결제완료·구매확정 관리자 알림도 신규 주문 관리자 알림과 같은 변수
   - pending_deposit_notification_only_for_dbank_with_due_amount    # 무통장 + 입금 필요액 > 0 만
   - pending_deposit_amount_in_order_currency
 

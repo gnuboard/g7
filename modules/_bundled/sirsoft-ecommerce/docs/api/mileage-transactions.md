@@ -56,7 +56,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | id | integer | `830` | 기본 키 (내부 식별자) |
 | user_id | integer | `1209` | user 식별자 (연관 리소스 참조) |
 | currency | string | `KRW` | 거래 기록 통화 코드 (주문 기준통화 스냅샷, 금액 표기·잔액 집계 단위) |
-| type | string | `admin_deduct` | 거래 유형 (MileageTransactionTypeEnum 8종: purchase_earn·admin_earn·order_use·admin_deduct·expired·refund_restore·order_cancel_restore·earn_cancel) |
+| type | string | `admin_deduct` | 거래 유형 (MileageTransactionTypeEnum 9종: purchase_earn·admin_earn·order_use·admin_deduct·expired·refund_restore·order_cancel_restore·earn_cancel·refund_credit). `refund_credit` 은 「마일리지로 환불」로 지급한 현금 환불액이며 유효기간이 없다 |
 | type_label | string | `관리자 차감` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | admin_badge_group | string | `amber` | 관리자 내역 화면 배지 색상 그룹 (적립계=green·사용계=blue·소멸=gray·복원계=teal·수동/회수계=amber) |
 | user_display_category | string | `adjust` | 회원 마이페이지 표시용 4분류 (earn·use·expire·adjust — 복원·수동·회수는 adjust 로 통합) |
@@ -86,7 +86,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | created_at_formatted | string | `2026-07-31 22:36:05` | `created_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | created_at_date | string | `2026-07-31` | `created_at` 의 사이트 타임존 기준 날짜 부분 (시각 제외) |
 | is_earning | boolean | `false` | earning 여부 |
-| can_edit_expiry | boolean | `false` | edit expiry 수행 가능 여부 (권한 기반) |
+| can_edit_expiry | boolean | `false` | 만료일 편집 가능 여부 — 적립계 + 미소멸 + 잔여 > 0 일 때만 true. 환불 지급(`refund_credit`)은 현금을 대신한 돈이라 언제나 false |
 | expired_amount | integer | `0` | 이 적립 lot 을 source 로 소멸(expired)된 금액 합계 (목록 조회 시 eager 집계, 단건 조회 시 0 폴백) |
 | expired_amount_formatted | string | `0원` | `expired_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | expiry_state | string | `active` | 적립건 소멸 상태 (active=미소멸, partial_expired=일부 소멸, fully_expired=전액 소멸 — 적립계만 의미) |

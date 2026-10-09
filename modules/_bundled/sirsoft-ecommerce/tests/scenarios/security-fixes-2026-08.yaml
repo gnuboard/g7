@@ -35,6 +35,8 @@ effects:
   - double_confirm_rejected
   - confirm_hook_fires_once
   - presets_require_product_permission
+  # 클레임 목록 화면 프리셋은 클레임 조회 권한으로 다룬다 (2026-10-07 실측 — 클레임 권한만 가진 운영자 진입 시 403 알림)
+  - claims_presets_follow_claims_permission
   - highlighted_fields_escaped
   - preview_does_not_resurrect_entities
 

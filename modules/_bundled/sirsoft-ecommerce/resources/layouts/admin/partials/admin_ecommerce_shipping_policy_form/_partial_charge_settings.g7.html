@@ -124,7 +124,7 @@
                   <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}</span>
                 </td>
                 <td>
-                  <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-error">
+                  <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-error" aria-label="$t:common.delete">
                     <on type="click">
                       <!-- 구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다. -->
                       <action handler="sirsoft-ecommerce.removeRangeTier" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}"/>

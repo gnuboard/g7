@@ -710,6 +710,7 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "benefit_unit_fixed",
+                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_fixed",
                                                             "className": "w-20",
                                                             "value": "{{_local.form.benefit_unit_fixed}}",
                                                             "options": [
@@ -744,6 +745,7 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "benefit_unit_rate",
+                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_rate",
                                                             "className": "w-20",
                                                             "value": "{{_local.form.benefit_unit_rate}}",
                                                             "options": [

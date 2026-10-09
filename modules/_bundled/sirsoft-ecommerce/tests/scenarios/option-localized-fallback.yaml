@@ -1,0 +1,21 @@
+feature: 옵션 이름·값의 언어 대체 — 빈 언어 칸을 건너뛴다
+
+description: |
+  옵션 처리기는 지원 언어마다 칸을 만들어 보내므로 영어로만 입력한 옵션은 {"ko": null, "en": "Color"} 로 저장된다.
+  지역화가 「요청 언어 ?? 대체 언어 ?? 첫 값」 순이라 한국어 화면에서 이름이 빈 문자열이 됐다(사용자 상품 화면
+  「을(를) 선택해주세요」). LocalizedText::pick 이 빈 칸을 건너뛰어 비어 있지 않은 첫 값을 고른다.
+
+  수정 이력: 이커머스 전수 실측 S5-D39 (2026-10-08) — §6 변종(영어 관리자 상품 등록) 뒤 §5 회귀 축(사용자 상품 상세).
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 도우미 · c02: 옵션 그룹 이름·값 · c03: 옵션값 키·옵션명
+
+effects:
+  - option_text_falls_back_past_empty_locales
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/ProductOptionLocalizedFallbackTest.php
+
+validation:
+  browser_check: 영어로만 옵션 이름을 넣은 상품을 한국어 사용자 화면에서 열어 「Color을(를) 선택해주세요」

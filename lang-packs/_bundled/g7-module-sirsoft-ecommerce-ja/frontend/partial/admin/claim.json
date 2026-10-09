@@ -2,6 +2,13 @@
   "title": "キャンセル·返品·交換管理",
   "description": "交換·返品·返金·キャンセル申請書を確認して処理します",
   "detail": {
+    "linked": {
+      "title": "後続の返金申請",
+      "source": "元の申請",
+      "refunds": "後続の返金",
+      "result_cancel": "処理結果(キャンセル明細)",
+      "empty": "この申請で受け付けた返金申請はありません。"
+    },
     "title": "キャンセル·返品·交換の詳細",
     "description": "申請書の進行状況と処理履歴を確認して処理します",
     "claim_number": "クレーム番号",
@@ -46,7 +53,7 @@
       "quantity_confirm_title": "処理数量確認",
       "quantity_confirm_description": "選択した商品を{{status}}ステータスで処理します。一部の数量のみ処理する場合は、数量を減らしてください。",
       "quantity_not_splittable": "再発送商品としてすでに作成された交換商品は数量を分割できません。全数量で処理されます。",
-      "bulk_split_notice": "{{kept}}個を処理し、{{remaining}}個は申請状態のままにしました。",
+      "bulk_split_notice": "{{kept}}個を処理し、{{remaining}}個は現在の状態のままにしました。",
       "collection_short": "回収",
       "redelivery_short": "再発送",
       "arrived_at": "到着 {{at}}",
@@ -123,7 +130,10 @@
       "cancel_type": "キャンセル区分",
       "refund_status": "返金状態",
       "refund_amount": "返金金額",
-      "cancelled_at": "キャンセル日時"
+      "cancelled_at": "キャンセル日時",
+      "reactivated_at": "復活",
+      "reactivated_value": "{{at}} ・ 商品 {{quantity}}/{{total}}点",
+      "reactivated_hint": "このキャンセルで外れた商品を運営者が販売状態に戻しました。キャンセル・返金の記録はそのまま残ります。"
     },
     "memo": {
       "title": "管理者メモ",
@@ -179,7 +189,7 @@
       "nothing_to_save": "保存する金額がありません。",
       "payments_title": "追加決済件",
       "preview_title": "完了時に返金予定",
-      "blocked_already_filed": "この申請書の返金申請書は既に受け付けられています。",
+      "blocked_already_filed": "受け付け済みの返金申請が上の一覧にあります。",
       "blocked_not_applicable": "完了処理で受け付ける返金対象がありません。",
       "expected_refund": "返金予定額",
       "expected_refund_points": "返金予定マイレージ",
@@ -188,8 +198,9 @@
       "earn_recovery_yes": "完了時に差引",
       "refund_method": "返金方法",
       "refund_amount": "現金返金額",
-      "refund_points_amount": "マイレージ返金額",
+      "refund_points_amount": "使用マイレージ返還額",
       "refund_shipping_amount": "返金配送料",
+      "exchange_difference_refund": "交換差額の返金（支払い手段へ）",
       "refund_total": "返金合計",
       "refunded_at": "返金完了日",
       "fee_basis_no_policy": "配送ポリシーを解析できず、0円で処理しました。配送ポリシー設定を確認してください。",
@@ -199,6 +210,8 @@
       "file_refund_success": "返金申請書を受け付けました。",
       "file_refund_error": "返金申請書の受付に失敗しました。",
       "pending_title": "受け付ける返金額",
+      "void_failed": "決済代行会社で承認を取り消せませんでした。決済代行会社の管理画面でこの決済を直接取り消してください。",
+      "paid_transition_failed": "決済は完了しましたが、申請を次のステップへ進められませんでした。ステータスを直接変更してください。",
       "payment_refunded": "返金 {{amount}}"
     },
     "refund_execute": {
@@ -210,7 +223,8 @@
       "unavailable": "キャンセル可能金額を算定できませんでした。",
       "edit_title": "返金金額修正",
       "cash_amount": "現金返金額",
-      "points_amount": "マイレージ返金額",
+      "points_amount": "使用マイレージ返還額",
+      "points_not_deducted": "注文時に使用したマイレージが差し引かれていない注文のため、返還するマイレージはありません。",
       "limit_hint": "キャンセル可能金額{{amount}}以内",
       "points_hint": "会員注文にのみ指定できます。",
       "method": "返金方法",
@@ -219,6 +233,8 @@
       "save": "金額を保存",
       "execute": "返金する",
       "manual_transfer_notice": "この決済手段のPG連携が見つからないため、口座返金に切り替わりました。担当者が直接送金した後、[返金する]で完了を記録してください。PGプラグインを再インストールすると自動返金に戻ります。",
+      "points_cash_credit_notice": "「マイレージで返金」を選ぶと、現金返金額も会員のマイレージとして付与されます(有効期限なし)。カード取消・口座振込は行われず、決済状態は決済完了のままです。",
+      "pg_settled_pending_ledger_notice": "PG返金はすでに処理されましたが、台帳への反映に失敗しました。[返金する]を押すとPGを再度呼び出さず台帳のみ確定します。",
       "executed": "返金を実行しました。",
       "error": "返金を実行できませんでした。",
       "conflict": "既に実行されたか実行中です。更新後もう一度ご確認ください。",
@@ -226,6 +242,7 @@
         "title": "返金実行確認",
         "description": "{{number}}申請書の返金を実行します。",
         "warning": "返金は取り消すことができません。金額と返金方法をご確認ください。",
+        "points_cash_credit": "現金返金額は会員マイレージとして付与されます。",
         "confirm": "返金する"
       },
       "method_limit_hint": "{{method}} 残高 {{amount}}",
@@ -349,6 +366,7 @@
     },
     "detail_title": "詳細検索",
     "amount": "金額",
+    "currency": "通貨",
     "min_amount": "最小金額",
     "max_amount": "最大金額",
     "currency_all": "すべて",
@@ -409,6 +427,7 @@
     "view_detail": "詳細を見る"
   },
   "column": {
+    "refund_progress_more": "ほか{{count}}件",
     "requested_at": "申請日",
     "claim_number": "クレーム番号",
     "order_number": "注文番号",
@@ -427,6 +446,8 @@
     "advance_badge": "先交換",
     "overdue_badge": "回収遅延{{days}}日",
     "pending_refund_badge": "返金未受付",
+    "reactivated_badge": "復活済み {{at}}",
+    "reactivated_partial_badge": "一部復活 {{at}}",
     "tracking": "送り状",
     "tracking_collection": "回収{{number}}",
     "tracking_redelivery": "再発送{{number}}",
@@ -476,6 +497,8 @@
     "refund_now": "今すぐ受付",
     "refund_now_desc": "完了と同時に{{count}}件作成",
     "refund_now_desc_amount": "完了と同時に{{count}}件(合計{{amount}})作成",
+    "refund_now_desc_points": "使用マイレージ{{amount}}も併せて返還します",
+    "row_points": "+ マイレージ{{amount}}",
     "refund_later": "受け付けない",
     "refund_later_desc": "後で[返金申請書の受付]または注文詳細の返金モーダルで処理します。",
     "blocked_exists": "すでに受け付けた返金申請書があります。",
@@ -498,6 +521,7 @@
     "refund_later_desc_cancellation": "返金申請書を作成しなければ、この完了ではお金が出ていかないため、キャンセル申請書も作成されません。あとから申請書詳細の精算カードで受け付けられます。",
     "unreturned_title": "未回収で完了(先交換)",
     "unreturned_desc": "新しい商品は送信されましたが、既存の商品が結局戻ってこなかった商品です。チェックすると、在庫を復旧せずに「未回収」で完了します。",
+    "unreturned_no_charge_notice": "未回収で完了すると、お客様に商品代金は請求されません。必要に応じて別途請求してください。",
     "unreturned_reason_placeholder": "未回収理由(必須)",
     "unreturned_reason_required": "未回収で完了する商品の理由を入力してください。"
   }

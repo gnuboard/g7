@@ -7,12 +7,14 @@ use App\Extension\ModuleManager;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationRecipientCapability;
+use App\Support\SiteUrl;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\CountryNames;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
@@ -146,7 +148,9 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'order_delivered' => $this->extractOrderDelivered($args),
             'order_completed' => $this->extractOrderCompleted($args),
             'order_cancelled' => $this->extractOrderCancelled($args),
-            'new_order_admin' => $this->extractNewOrderAdmin($args),
+            // 결제완료·구매확정 관리자 알림은 신규 주문 관리자 알림과 변수가 같다(module.php 공통 빌더).
+            'new_order_admin', 'order_confirmed_admin', 'order_completed_admin' => $this->extractNewOrderAdmin($args),
+            'deposit_after_cancel_admin' => $this->extractDepositAfterCancelAdmin($args),
             'inquiry_received' => $this->extractInquiryReceived($args),
             'inquiry_replied' => $this->extractInquiryReplied($args),
             'mileage_expiring_soon' => $this->extractMileageExpiringSoon($args),
@@ -314,7 +318,16 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         }
 
         $latestCancel = $this->orderCancelRepository->latestByOrderId($order->id);
-        $cancelReason = $latestCancel?->cancel_reason ?? '';
+        // 고른 사유는 코드(`cancel_reason_type`)로, 「기타」의 직접 입력만 `cancel_reason` 에 남는다 — 직접 입력만
+        // 읽으면 목록 사유로 취소한 주문의 메일이 「취소 사유: 」 빈칸으로 나간다(S3-D8). 사유 이름을 싣고
+        // 직접 입력이 있으면 괄호로 덧붙인다.
+        $reasonLabel = $latestCancel !== null ? trim($latestCancel->getRefundReasonLabel()) : '';
+        $reasonDetail = trim((string) ($latestCancel?->cancel_reason ?? ''));
+        $cancelReason = match (true) {
+            $reasonLabel !== '' && $reasonDetail !== '' && $reasonDetail !== $reasonLabel => $reasonLabel.' ('.$reasonDetail.')',
+            $reasonLabel !== '' => $reasonLabel,
+            default => $reasonDetail,
+        };
 
         return [
             'notifiable' => null,
@@ -331,7 +344,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     // ──────────────────────────────────────────────
 
     /**
-     * 신규 주문 관리자 알림 데이터를 추출합니다.
+     * 운영자용 주문 알림(신규 주문·결제완료·구매확정) 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
      * @return array 추출 결과
@@ -343,7 +356,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
+        $baseUrl = SiteUrl::base();
 
         return [
             'notifiable' => null,
@@ -370,6 +383,32 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     }
 
     /**
+     * 취소 주문 입금 관리자 알림 데이터를 추출합니다. (P-D1)
+     *
+     * 금액은 결제행에 기록된 입금액(결제 통화)이다 — 주문 총액이 아니다. 고객이 다른 금액을 넣었을 수도 있다.
+     *
+     * @param  array  $args  훅 인수 [$order, {amount, provider}]
+     * @return array 추출 결과
+     */
+    private function extractDepositAfterCancelAdmin(array $args): array
+    {
+        $result = $this->extractNewOrderAdmin($args);
+        $order = $args[0] ?? null;
+
+        if (! $order instanceof Order) {
+            return $result;
+        }
+
+        $amount = (float) ($args[1]['amount'] ?? 0);
+        $currency = (string) ($order->payment?->currency ?: ($order->currency_snapshot['order_currency'] ?? ''));
+        $result['data']['deposit_amount'] = $currency !== ''
+            ? ecommerce_format_price($amount, $currency)
+            : (string) $amount;
+
+        return $result;
+    }
+
+    /**
      * 상품 문의 접수 관리자 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$inquiry]
@@ -382,7 +421,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
+        $baseUrl = SiteUrl::base();
         $product = $inquiry->product;
 
         return [
@@ -421,7 +460,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
+        $baseUrl = SiteUrl::base();
 
         return [
             'notifiable' => null,
@@ -475,7 +514,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function buildOrderData(Order $order, array $extra = []): array
     {
-        $baseUrl = config('app.url');
+        $baseUrl = SiteUrl::base();
 
         $name = $order->isGuestOrder()
             ? ($order->getOrdererName() ?? '')
@@ -528,7 +567,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function customerOrderUrl(Order $order): string
     {
-        $baseUrl = (string) config('app.url');
+        $baseUrl = SiteUrl::base();
 
         return $order->isGuestOrder()
             ? $baseUrl.ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX)
@@ -571,7 +610,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $data;
         }
 
-        $data['order_url'] = (string) config('app.url')."/admin/ecommerce/orders/{$orderNumber}";
+        $data['order_url'] = SiteUrl::absolute("/admin/ecommerce/orders/{$orderNumber}");
 
         return $data;
     }
@@ -589,11 +628,10 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         }
 
         $code = strtoupper($countryCode);
-        $locale = app()->getLocale();
-        $localizedNames = config('countries.localized_names', []);
+        // 코어 사전에 없는 언어(일본어 등)는 상점 배송국가 설정 이름으로 채운다 (S4-D17)
+        $names = CountryNames::forCode($code);
 
-        return $localizedNames[$locale][$code]
-            ?? ($localizedNames['en'][$code] ?? $code);
+        return $names[app()->getLocale()] ?? $names[config('app.fallback_locale')] ?? $code;
     }
 
     /**
@@ -651,7 +689,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         $currency = (string) ($args[2] ?? 'KRW');
         $expiresDate = (string) ($args[3] ?? '');
         $balance = (float) ($args[4] ?? 0);
-        $baseUrl = config('app.url');
+        $baseUrl = SiteUrl::base();
 
         return [
             'notifiable' => null,

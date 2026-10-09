@@ -10,6 +10,7 @@ return [
     'refund' => [
         'missing_tid' => 'トランザクション ID（TID）がないため、返金を進めることができません。',
         'default_reason' => '購入者返金要求',
+        'admin_cancel_reason' => '管理者による取消',
     ],
     'cbt_connectivity' => [
         'checked' => '接続診断が完了しました。',
@@ -39,12 +40,16 @@ return [
     ],
     'cash_receipt' => [
         'provider_name' => 'KGイニシス',
+        'cancel_reason' => '現金領収証の発行取消',
     ],
     'escrow' => [
         'invoice_required' => '送り状番号を入力してください。',
         'courier_required' => '配送業者を選択してください。',
         'default_confirmer' => '管理者',
         'confirm_login_required' => 'ログインしてから、注文詳細で購入確定をもう一度行ってください。',
+        'confirm_page_title' => 'エスクロー購入確定',
+        'confirm_preparing' => 'エスクロー購入確定画面を準備しています...',
+        'confirm_redirecting' => 'エスクロー購入確定ページへ移動しています...',
     ],
     'cbt_cvs' => [
         'simulate_success' => '入金シミュレーションが完了しました。',
@@ -130,5 +135,8 @@ return [
             'tosspay' => 'Toss Pay',
             'ssgpay' => 'SSG Pay',
         ],
+    ],
+    'settings' => [
+        'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
     ],
 ];

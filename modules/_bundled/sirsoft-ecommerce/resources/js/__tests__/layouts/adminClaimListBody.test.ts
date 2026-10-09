@@ -236,8 +236,33 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
     const navigate = actions.find((a) => a.handler === 'navigate') as Node;
 
     expect(navigate.params.mergeQuery).toBeUndefined();
-    expect(navigate.params.query).toEqual({ type: '{{$args[0]}}' });
+    expect(navigate.params.query.type).toBe('{{$args[0]}}');
+    // 유형 종속 어휘(상태·귀책·청구·사유·접수 경로·회수 지연·환불 미접수·청구 결제수단)는 따라가지 않는다.
+    ['statuses[]', 'fault_types[]', 'charge_methods[]', 'reason_code', 'request_source', 'collection_overdue', 'pending_refund', 'charge_payment_methods[]'].forEach((key) => {
+      expect(navigate.params.query).not.toHaveProperty(key);
+    });
     expect(navigate.comment).toContain('audit:allow layout-list-context-navigate-merge-query');
+  });
+
+  /**
+   * 다른 탭의 뱃지는 "그 탭으로 가면 몇 건이 보이는가" 다 — 서버는 그 건수를 유형 공통 필터
+   * (`ClaimListRequest::countFilters()`)로 센다. 탭을 누를 때 그 필터를 버리면 「반품 4」를 눌러
+   * 17건을 보게 된다(실측 2026-10-07). 승계 키 집합은 서버의 건수 필터 집합과 같아야 한다.
+   *
+   * @effects subtab_switch_carries_count_filters
+   */
+  it('유형 전환은 뱃지를 센 공통 필터(기간·검색·회원구분·금액·통화)를 그대로 이어 간다', () => {
+    const actions = callbacksOf(byId(shell, 'claim_type_subtabs').actions[0], 'actions') as Node[];
+    const navigate = actions.find((a) => a.handler === 'navigate') as Node;
+    const request = fs.readFileSync(path.join(MODULE_ROOT, 'src/Http/Requests/Admin/ClaimListRequest.php'), 'utf8');
+    const body = request.slice(request.indexOf('function countFilters'));
+    const countKeys = [...body.slice(0, body.indexOf('];')).matchAll(/'([a-z_]+)' =>/g)].map((m) => m[1]);
+
+    expect(countKeys.length).toBeGreaterThan(0);
+    expect(Object.keys(navigate.params.query).filter((k) => k !== 'type').sort()).toEqual([...countKeys].sort());
+    countKeys.forEach((key) => {
+      expect(navigate.params.query[key]).toBe(`{{query.${key} || null}}`);
+    });
   });
 
   /**
@@ -916,13 +941,13 @@ describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () =>
   };
 
   /**
-   * 판매자 접수·선교환·회수 지연·환불 미접수 넷은 전부 서버가 행에 실어 준 불리언으로만 켠다 — 화면이 상태·
-   * 날짜로 다시 판정하면 서버 필터(`pending_refund=1`·회수 지연만)와 뱃지가 서로 다른 건을 가리킨다.
-   * 회수 지연 일수도 서버 값이다.
+   * 판매자 접수·선교환·회수 지연·환불 미접수·재활성(전체·일부)·환불 진행(보완 5) 일곱은 전부 서버가 행에 실어 준 값으로만 켠다 —
+   * 화면이 상태·날짜로 다시 판정하면 서버 필터(`pending_refund=1`·회수 지연만)와 뱃지가 서로 다른 건을 가리킨다.
+   * 회수 지연 일수·재활성 일시도 서버 값이다(재활성은 취소신청서에 기록한 값 — Q29).
    *
-   * @effects claim_list_row_badges_read_server_flags
+   * @effects claim_list_row_badges_read_server_flags, claim_list_cancel_row_shows_reactivated_badge_with_time
    */
-  it('클레임번호 칸의 뱃지 넷이 서버 행 플래그로만 켜진다', () => {
+  it('클레임번호 칸의 뱃지 일곱이 서버 행 플래그로만 켜진다', () => {
     const badges = collect(column('claim_number').cellChildren, (n) => n.name === 'Badge');
 
     expect(badges.map((b) => [b.if, b.props.variant, b.text])).toEqual([
@@ -934,6 +959,18 @@ describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () =>
         '$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}',
       ],
       ['{{row.has_pending_refund === true}}', 'warning', '$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge'],
+      // 환불 진행(보완 5) — 노출 조건은 감싼 링크(`!!row.refund_progress`)에 있고, 상태·라벨은 서버 값이다.
+      [undefined, "{{row.refund_progress.status_variant ?? 'default'}}", "{{row.refund_progress.status_label ?? ''}}"],
+      [
+        '{{row.reactivated_at_formatted != null && row.is_partially_reactivated !== true}}',
+        'info',
+        '$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{row.reactivated_at_formatted}}',
+      ],
+      [
+        '{{row.reactivated_at_formatted != null && row.is_partially_reactivated === true}}',
+        'info',
+        '$t:defer:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{row.reactivated_at_formatted}}',
+      ],
     ]);
   });
 

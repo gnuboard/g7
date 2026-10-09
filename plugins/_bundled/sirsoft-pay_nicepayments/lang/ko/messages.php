@@ -42,4 +42,7 @@ return [
         'refund_bank_cd' => '환불 은행코드',
         'refund_acct_nm' => '환불 예금주',
     ],
+    'settings' => [
+        'redirect_url_format' => '결제 후 이동 주소는 {shopBase}, / 또는 http(s):// 로 시작해야 하며 공백을 넣을 수 없습니다. 다른 사이트로 보내는 //주소 와 javascript: 는 쓸 수 없습니다.',
+    ],
 ];

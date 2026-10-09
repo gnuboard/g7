@@ -481,7 +481,9 @@ class CurrencyConversionService
             $unitValue = 1;
         }
 
-        $divided = $price / $unitValue;
+        // 음수 금액(차액·차감)은 절댓값에 같은 규칙을 적용한 뒤 부호를 되돌린다. floor(-342.3) = -343 처럼
+        // 0 에서 멀어지면 같은 금액이 양수 ¥342 · 음수 ¥-343 으로 한 단위 어긋난다.
+        $divided = abs($price) / $unitValue;
 
         $rounded = match ($method) {
             'ceil' => ceil($divided),
@@ -493,7 +495,10 @@ class CurrencyConversionService
         // (4505 × 0.01 = 45.050000000000004). 절사 설정은 표시뿐 아니라 **저장되는 값**까지
         // 지배하므로, 단위 자신이 가진 자릿수로 다듬어 결과가 실제로 그 단위의 배수가 되게 한다.
         // 정수 단위(1·10·100)는 자릿수 0 이라 값이 그대로 통과한다.
-        return round($rounded * $unitValue, $this->roundingUnitScale($unitValue));
+        $result = round($rounded * $unitValue, $this->roundingUnitScale($unitValue));
+
+        // 0.0 - 0.0 = +0.0 — 0 으로 깎인 음수가 응답에 「-0」 으로 실리지 않게 뺄셈으로 부호를 되돌린다.
+        return $price < 0 ? 0.0 - $result : $result;
     }
 
     /**

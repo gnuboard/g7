@@ -9,6 +9,9 @@ return [
     // 복사 작업 시 이름에 추가되는 locale 별 접미사 (ProductNoticeTemplateRepository 등에서 사용)
     'copy_suffix' => ' (복사)',
 
+    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
+    'vbank_close_reason' => '입금 전 주문 취소',
+
     'categories' => [
         'list_retrieved' => '카테고리 목록을 조회했습니다.',
         'retrieved' => '카테고리 정보를 조회했습니다.',
@@ -174,6 +177,8 @@ return [
 
     // 주문 메시지 (관리자향 - plural)
     'orders' => [
+        'manual_paid_preview_retrieved' => '결제 처리 항목을 확인했습니다.',
+        'manual_paid_preview_failed' => '결제 처리 항목을 확인하지 못했습니다.',
         'list_retrieved' => '주문 목록을 조회했습니다.',
         'retrieved' => '주문 정보를 조회했습니다.',
         'not_found' => '주문을 찾을 수 없습니다.',
@@ -487,6 +492,7 @@ return [
         // 수단별 잔여 한도의 표시 라벨 (D19) — 마일리지는 결제행이 없는 주문 컬럼 원장이라
         // 결제수단 어휘(PaymentMethodEnum)에 없다. 라벨이 없으면 원시값이 화면에 나간다.
         'cancellable_method' => [
+            'reactivated_cash' => '재활성으로 다시 받은 결제금액',
             'payment' => '결제수단',
             'mileage' => '마일리지',
         ],
@@ -517,6 +523,15 @@ return [
             'advance_exchange_notice' => '선교환입니다 — 기존 상품은 :date까지 보내 주세요.',
             'request_origin_admin' => '판매자가 고객님을 대신해 접수했습니다.',
             'withdraw_origin_admin' => '고객님 요청으로 판매자가 철회했습니다.',
+            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
+            'refund_breakdown_cash' => ':method :amount',
+            'refund_breakdown_points' => '마일리지 :amount',
+        ],
+        // 교환 차액 환급 표기 — 합계와 낸 수단 (S2 「X원(카드/마일리지)」)
+        'exchange_difference' => [
+            'format' => ':total (:methods)',
+            'part' => ':method :amount',
+            'points' => '마일리지',
         ],
         'tracking_deliver_not_ready' => '지금 상태에서는 도착 처리할 수 없습니다.',
         'exchange_mode_updated' => '진행 방식을 바꿨습니다.',
@@ -532,6 +547,7 @@ return [
         'cancellable_retrieved' => '취소 가능 금액을 산정했습니다.',
         'refund_executed' => '환불을 실행했습니다.',
         'refund_execute_failed' => '환불 실행에 실패했습니다.',
+        'side_effect_failed' => '처리 중 쿠폰·재고·마일리지 복원에 실패해 변경을 되돌렸습니다.',
         'completion_preview_retrieved' => '완료 처리 요약을 계산했습니다.',
         'refund_request_created' => '환불신청서를 접수했습니다.',
         'logs_retrieved' => '활동 로그를 조회했습니다.',
@@ -799,7 +815,7 @@ return [
                         'refund_product_amount' => '상품 환불액',
                         'refund_shipping_diff' => '배송비 변동',
                         'refund_discount_diff' => '할인 조정',
-                        'refund_points' => '마일리지 환불',
+                        'refund_points' => '사용 마일리지 반환',
                         'refund_total' => '최종 환불 예정액',
                         'confirm' => '주문 취소',
                         'close' => '닫기',

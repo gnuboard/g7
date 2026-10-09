@@ -1,3 +1,4 @@
+// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
 /**
  * requestPayment 핸들러 테스트
  *
@@ -221,8 +222,9 @@ describe('requestPaymentHandler', () => {
             submitSpy.mockRestore();
         });
 
+        // 한 시험에서 결제를 여러 번 부르면 마지막 제출 폼을 본다(입금 기한·구매자명 시험)
         function getSubmittedField(name: string): string | null {
-            const form = submitSpy.mock.instances[0] as HTMLFormElement;
+            const form = submitSpy.mock.instances[submitSpy.mock.instances.length - 1] as HTMLFormElement;
             const input = form.querySelector(`input[name="${name}"]`) as HTMLInputElement | null;
             return input?.value ?? null;
         }
@@ -242,6 +244,75 @@ describe('requestPaymentHandler', () => {
             expect(submitSpy).toHaveBeenCalledTimes(1);
             expect(getSubmittedField('PayMethod')).toBe('VBANK');
             expect(getSubmittedFormAction()).toContain(NICEPAY_MOBILE_HOST);
+        });
+
+        /**
+         * 가상계좌 계좌 만료 시각은 주문의 입금 기한(쇼핑몰 자동취소 기한)이다 — 넘기지 않으면 나이스가 자기
+         * 기본 기한으로 계좌를 열고 콜백이 그 값으로 주문 기한을 덮어쓴다.
+         *
+         * @scenario due=present
+         * @effects vbank_exp_date_carries_order_vbank_due
+         */
+        it('가상계좌는 주문 입금 기한을 VbankExpDate(YYYYMMDDHHmm) 로 넘긴다', async () => {
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, vbank_due_at: '2026-10-10T13:39:23+09:00' }, paymentMethod: 'vbank' },
+            });
+
+            expect(getSubmittedField('VbankExpDate')).toBe('202610101339');
+        });
+
+        /**
+         * @scenario due=absent
+         * @effects missing_due_or_other_method_sends_nothing
+         */
+        it('입금 기한이 없거나 가상계좌가 아니면 VbankExpDate 를 보내지 않는다', async () => {
+            await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'vbank' } });
+            expect(getSubmittedField('VbankExpDate')).toBeNull();
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, vbank_due_at: '2026-10-10T13:39:23+09:00' }, paymentMethod: 'card' },
+            });
+            expect(getSubmittedField('VbankExpDate')).toBeNull();
+        });
+
+        /**
+         * 나이스 가상계좌 결제창은 구매자명을 입금자명(예금주명) 기본값으로 쓰고 10바이트(EUC-KR — 한글 5자)를
+         * 넘으면 「10bytes 이하」로 거절한다. 한글 6자 이상 주문자는 가상계좌로 결제할 수 없었다(후속 B 실측).
+         *
+         * @scenario case=vbank_over_limit
+         * @effects vbank_buyer_name_cut_to_ten_euc_kr_bytes
+         */
+        it('가상계좌는 구매자명을 EUC-KR 10바이트(한글 5자) 안으로 글자 단위로 자른다', async () => {
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, customer_name: '남궁홍길동이' }, paymentMethod: 'vbank' },
+            });
+            expect(getSubmittedField('BuyerName')).toBe('남궁홍길동');
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, customer_name: 'ab홍길동cd' }, paymentMethod: 'vbank' },
+            });
+            expect(getSubmittedField('BuyerName')).toBe('ab홍길동cd');
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, customer_name: 'abc홍길동cd' }, paymentMethod: 'vbank' },
+            });
+            expect(getSubmittedField('BuyerName')).toBe('abc홍길동c');
+        });
+
+        /**
+         * @scenario case=within_limit_or_other_method
+         * @effects buyer_name_kept_when_within_limit_or_other_method
+         */
+        it('한도 안의 이름과 가상계좌가 아닌 결제수단은 구매자명을 그대로 넘긴다', async () => {
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, customer_name: '홍길동' }, paymentMethod: 'vbank' },
+            });
+            expect(getSubmittedField('BuyerName')).toBe('홍길동');
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, customer_name: '남궁홍길동이' }, paymentMethod: 'card' },
+            });
+            expect(getSubmittedField('BuyerName')).toBe('남궁홍길동이');
         });
 
         // @scenario concern=pay_method_mapping
@@ -396,6 +467,87 @@ describe('requestPaymentHandler', () => {
  * manifest `trusted_script_hosts` 와 코드 상수가 어긋나면 그 차집합이 그대로
  * 사각이 되므로 두 목록의 일치도 함께 고정한다.
  */
+/**
+ * 클레임 추가결제 창을 닫으면 서버가 준 신청서 상세 주소로 돌아간다 (이커머스 EC-455 계약).
+ *
+ * 서버는 클레임 결제의 `pg_payment_data.claim_cancel_return_url` 에 회원/비회원 신청서 상세
+ * (`?claim_payment=cancelled`)를 싣는다. PC 결제창을 닫아도 그 주소로 가지 않으면 신청서 상세의
+ * [결제하기]가 「결제 진행 중…」으로 묶인 채 취소 안내도 뜨지 않는다
+ * (2026-10-06 S2 실측 EX20261006-1447332830 · CP20261006-2149417325).
+ */
+describe('클레임 추가결제 창 닫힘 → 신청서 상세 복귀', () => {
+    const CLAIM_RETURN = 'https://shop.example.test/mypage/claims/EX20261006-0001?claim_payment=cancelled';
+    let originalLocation: Location;
+    let hrefSet: string[];
+
+    beforeEach(() => {
+        originalLocation = window.location;
+        hrefSet = [];
+        const fakeLocation = {
+            origin: 'https://shop.example.test',
+            pathname: '/mypage/claims/EX20261006-0001',
+            search: '',
+            get href() { return 'https://shop.example.test/mypage/claims/EX20261006-0001'; },
+            set href(v: string) { hrefSet.push(v); },
+        };
+        Object.defineProperty(window, 'location', { value: fakeLocation, configurable: true, writable: true });
+
+        (window as Record<string, unknown>).goPay = vi.fn();
+        (window as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ ediDate: '20260101000000', signData: 'sig', mid: 'nicepay00m' }),
+        });
+        (window as Record<string, unknown>).G7Core = {
+            api: {
+                get: vi.fn((url: string) => url.includes('client-config')
+                    ? Promise.resolve({ data: {
+                        mid: 'nicepay00m',
+                        sdk_url: `https://${KNOWN_SDK_HOSTS[0]}/v3/webstd/js/nicepay-3.0.js`,
+                        sign_data_url: 'https://shop.example.test/api/plugins/sirsoft-pay_nicepayments/payment/sign-data',
+                        callback_url: 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback',
+                        close_report_url: 'https://shop.example.test/api/plugins/sirsoft-pay_nicepayments/payment/close-report',
+                        useEscrow: false,
+                    } })
+                    : Promise.resolve({ data: {} })),
+                // SignData 는 G7Core.api 로 받는다(#639 — 원시 fetch 를 쓰지 않는다). 그 밖의 POST(닫힘 보고)는 성공만 돌려준다.
+                post: vi.fn((url: string) => url.includes('sign-data')
+                    ? Promise.resolve({ ediDate: '20260101000000', signData: 'sig', mid: 'nicepay00m' })
+                    : Promise.resolve({ success: true })),
+            },
+            state: { setLocal: vi.fn(), get: vi.fn(() => ({})) },
+            toast: { error: vi.fn() },
+        };
+    });
+
+    afterEach(() => {
+        Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+        delete (window as Record<string, unknown>).goPay;
+        delete (window as Record<string, unknown>).fetch;
+        delete (window as Record<string, unknown>).G7Core;
+        delete (window as Record<string, unknown>).nicepayClose;
+        vi.restoreAllMocks();
+    });
+
+    it('클레임 결제창을 닫으면 claim_cancel_return_url 로 이동한다', async () => {
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, order_number: 'CP20261006-0001', claim_cancel_return_url: CLAIM_RETURN } } });
+
+        expect((window as Record<string, unknown>).goPay).toHaveBeenCalledTimes(1);
+        (window as unknown as { nicepayClose: (c: string, m: string) => void }).nicepayClose('', '');
+        await Promise.resolve();
+
+        expect(hrefSet).toEqual([CLAIM_RETURN]);
+    });
+
+    it('주문 결제창 닫힘은 종전대로 이동하지 않는다 (claim_cancel_return_url 없음)', async () => {
+        await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
+
+        (window as unknown as { nicepayClose: (c: string, m: string) => void }).nicepayClose('', '');
+        await Promise.resolve();
+
+        expect(hrefSet).toEqual([]);
+    });
+});
+
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://web.nicepay.co.kr/v3/webstd/js/nicepay-3.0.js';
 

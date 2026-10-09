@@ -76,14 +76,14 @@
     <div data-ref="date_row" class="flex flex-wrap items-center gap-3">
       <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_date</span>
       <div class="flex items-center gap-2">
-        <input type="date" value="{{_local.filter.startDate ?? ''}}" class="input w-36">
+        <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.mileage_transactions.filter.label_date')}}" type="date" value="{{_local.filter.startDate ?? ''}}" class="input w-36">
           <on type="change">
             <!-- 시작일을 손으로 고르면 빠른 선택 표시를 함께 푼다 — 두 방식이 같은 기간을 가리키므로, 지우지 않으면 '최근 1개월' 이 켜진 채 다른 날짜가 보인다. -->
             <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
           </on>
         </input>
         <span class="text-gray-400 dark:text-gray-500">~</span>
-        <input type="date" value="{{_local.filter.endDate ?? ''}}" class="input w-36">
+        <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.mileage_transactions.filter.label_date')}}" type="date" value="{{_local.filter.endDate ?? ''}}" class="input w-36">
           <on type="change">
             <!-- 종료일. 시작일과 같은 이유로 빠른 선택 표시를 푼다. 두 날짜의 앞뒤 관계는 여기서 검사하지 않고 서버가 판단한다. -->
             <set-state target="local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>

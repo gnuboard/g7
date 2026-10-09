@@ -145,7 +145,10 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 $status = $order->order_status instanceof OrderStatusEnum
                     ? $order->order_status
                     : OrderStatusEnum::tryFrom((string) $order->order_status);
-                $closedAt = $order->confirmed_at ?? $order->cancelled_at ?? $order->updated_at;
+                // 전량 반품으로 끝난 주문은 마지막 반품 완료 시각이 종결 시각이다(대상 판정과 같은 기준) — 수정 시각을
+                // 바탕에 두면 반품 완료 뒤 운영자 메모 같은 수정이 종결일을 늦춰 보인다. 완료 반품이 없는 옛 주문만 수정 시각.
+                $returnedWithCompletion = $status === OrderStatusEnum::RETURNED && $order->last_return_completed_at !== null;
+                $closedAt = $order->confirmed_at ?? $order->cancelled_at ?? ($returnedWithCompletion ? null : $order->updated_at);
 
                 foreach (['last_refunded_at', 'last_exchange_completed_at', 'last_return_completed_at'] as $column) {
                     $completedAt = $order->{$column} ? Carbon::parse($order->{$column}) : null;
@@ -293,6 +296,13 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 })->orWhere(function (Builder $cancelled) use ($cutoff) {
                     $cancelled->where('order_status', OrderStatusEnum::CANCELLED->value)
                         ->where(fn (Builder $at) => $this->closedBefore($at, 'cancelled_at', $cutoff));
+                })->orWhere(function (Builder $returned) use ($cutoff) {
+                    // 전량 반품으로 끝난 주문 — 종결 시각은 마지막 반품 완료 시각이다(아래 「기준일 뒤 완료된 반품 없음」이
+                    // 그 시각을 잰다). 반품 신청서 없이 행만 반품완료가 된 옛 주문은 마지막 수정 시각으로 대신한다.
+                    $returned->where('order_status', OrderStatusEnum::RETURNED->value)
+                        ->where(fn (Builder $at) => $at
+                            ->whereHas('returns', fn (Builder $return) => $return->where('return_status', ReturnStatusEnum::COMPLETED->value))
+                            ->orWhere('updated_at', '<=', $cutoff));
                 });
             })
             // 진행 중인 환불이 있으면 종결이 아니다 — 송금 전 환불 계좌 정보를 지우면 환불할 수 없다.

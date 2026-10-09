@@ -120,6 +120,10 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.return.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 10, 'sync' => true],
             // 선교환 회수 지연(배치 발화) → 관리자 알림 1회(D2).
             'sirsoft-ecommerce.claim.exchange.collection_overdue' => ['method' => 'handleCollectionOverdue', 'priority' => 10, 'sync' => true],
+            // 결제완료(`paid`)를 경유하지 않은 결제 확정 — 보류에서 승인해 낸 추가결제 등. 경유한 건은
+            // 상태 알림이 이미 알렸으므로 이 축은 경유하지 않은 건만 받는다.
+            'sirsoft-ecommerce.claim.exchange.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 10, 'sync' => true],
         ];
     }
 
@@ -318,6 +322,34 @@ class ClaimStatusNotificationListener implements HookListenerInterface
         }
 
         $this->fireNotify($type, $target, $claim);
+    }
+
+    /**
+     * 결제 확정 훅을 결제 완료 알림으로 옮깁니다 — `paid` 를 경유하지 않은 건만.
+     *
+     * 결제 확정은 결제대기 건을 `paid` 로 옮긴 뒤 훅을 쏜다. 그 전이가 상태 알림
+     * (`notify_payment_completed`)을 이미 보냈으므로 신청서가 `paid` 면 여기서는 보내지 않는다.
+     * 보류(`on_hold`)에서 [승인]으로 요청한 추가결제는 결제대기를 거치지 않아 `paid` 전이가 없다 —
+     * 그대로 두면 결제가 끝났는데도 고객·운영자 어느 쪽에도 결제 완료 알림이 가지 않는다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  결제가 확정된 신청서
+     * @param  mixed  $payment  결제 건 (훅 2번째 인수 — 이 리스너는 쓰지 않는다)
+     * @return void
+     */
+    public function handlePaymentCompleted(OrderExchange|OrderReturn $claim, mixed $payment = null): void
+    {
+        $status = $this->headerStatusValue($claim);
+
+        if ($status === 'paid') {
+            return;
+        }
+
+        $hook = self::notifyHookFor($claim->claimType()->value, 'paid');
+
+        if ($hook !== null) {
+            // 본문 상태는 발행 시점의 실제 헤더 상태다(이 건은 결제완료 상태를 거치지 않았다).
+            HookManager::doAction($hook, $claim, $this->publishSnapshot($claim, $status));
+        }
     }
 
     /**

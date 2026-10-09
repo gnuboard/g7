@@ -52,7 +52,9 @@
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
             </div>
           </action-menu>
-          <span data-if="{{!row.user_uuid}}" class="text-gray-700 dark:text-gray-300">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
+          <span data-if="{{!row.user_uuid &amp;&amp; row.user_id}}" class="text-gray-700 dark:text-gray-300">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
+          <!-- 회원을 완전 삭제하면 거래 기록은 남기고 회원 연결만 끊는다(E3) — 「#」 만 보이지 않게 그 사실을 적는다. -->
+          <span data-if="{{!row.user_id}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member</span>
         </cell>
       </column>
       <column field="type" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.type" width="96px" :sortable="false">
@@ -182,7 +184,7 @@
             <set-state target="global">
               <field name="mileageEdit">
                 <field name="id" value="{{$args[1].id}}"/>
-                <field name="memberName" value="{{$args[1].user_name ?? ('#' + ($args[1].user_id ?? ''))}}"/>
+                <field name="memberName" value="{{$args[1].user_id ? ($args[1].user_name ?? ('#' + $args[1].user_id)) : $t('sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member')}}"/>
                 <field name="amountFormatted" value="{{($args[1].amount >= 0 ? '+' : '') + $args[1].amount_formatted}}"/>
                 <field name="currency" value="{{$args[1].currency ?? 'KRW'}}"/>
                 <field name="typeLabel" value="{{$args[1].type_label}}"/>

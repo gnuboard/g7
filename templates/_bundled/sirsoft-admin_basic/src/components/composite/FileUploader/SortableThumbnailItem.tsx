@@ -19,7 +19,7 @@ import { Img } from '../../basic/Img';
 
 import type { Attachment, PendingFile } from './types';
 import { getFileIcon, t } from './utils';
-import { isCrossOriginAssetUrl } from '../assetOrigin';
+import { isDirectAssetUrl } from '../assetOrigin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -92,7 +92,8 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
     // 공개 자산 디스크(S3/CDN)가 준 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
     // XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 URL 을 그대로 사용한다.
-    if (isCrossOriginAssetUrl(downloadUrl)) {
+    // 문서 안에 담긴 data:·blob: URL(편집기 표본 그림 등)도 요청 대상이 아니라 그대로 쓴다.
+    if (isDirectAssetUrl(downloadUrl)) {
       setAuthenticatedImageUrl(downloadUrl);
       return;
     }

@@ -265,8 +265,11 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', [PaymentMethodEnum::POINT->value]);
 
         $return = $this->freeReturn();
+        // 비회원은 **주문의 주인**으로 정한다 — `requested_by` 가 null 인 것만으로는 운영자 직권 접수와 구별되지
+        // 않는다(S3-D15). 회원 주문의 직권 접수 건은 회원 수단(마일리지)으로 정산된다.
+        $return->order->forceFill(['user_id' => null])->save();
 
-        $this->assertClaimException('claim_point_payment_requires_member', fn () => $this->admin->updateAmounts($return, [
+        $this->assertClaimException('claim_point_payment_requires_member', fn () => $this->admin->updateAmounts($return->fresh(), [
             'claim_shipping_fee' => 3000,
             'charge_method' => ClaimChargeMethodEnum::PAY_ON_REQUEST->value,
         ]));

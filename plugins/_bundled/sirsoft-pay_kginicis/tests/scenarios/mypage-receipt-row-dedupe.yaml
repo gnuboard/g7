@@ -1,0 +1,24 @@
+feature: KG이니시스 주문 상세 영수증 줄 하나만
+
+description: |
+  주문 상세(회원·비회원)와 신청서 상세가 함께 쓰는 결제 정보 카드의 PG 슬롯에 확장 조각(user_order_show)이
+  「영수증 [영수증 조회]」 줄을 그린다. 영수증 줄은 조각 하나만 그린다(#639 에서 주입 스크립트를 조각으로 옮김).
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D16):
+    - 결제를 마친 KRW 주문 상세에서 조각 줄과 주입 스크립트 줄이 함께 보였다(실측: 비회원 KG 가상계좌 주문, 줄 2개).
+      주입 스크립트 줄은 언어 헤더 없는 조회 응답의 영어 글자(Receipt / View Receipt)를 썼다.
+    - 리베이스 후속: 주입 스크립트가 사라져 중복 경로 자체가 없다. 조각 줄에 고정 id(kginicis-mp-receipt-row)를 두어
+      화면 점검이 줄 수를 세고, 줄 글자는 응답 글자가 아니라 화면 언어 사전의 번역 키로 그린다.
+
+axes:
+  case: [fragment_contract, order_show_paid_krw]
+
+effects:
+  - fragment_receipt_row_carries_stable_id   # 조각 트리에 고정 id 를 단 영수증 줄이 하나, 글자는 번역 키
+  - single_receipt_row_rendered              # 결제 완료 KRW 주문을 그리면 영수증 줄 1개, 응답의 영어 글자는 쓰지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/mypageReceiptRowDedupe.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 비회원 KG 결제완료 주문 상세 영수증 줄 수 1(ko·en·ja)

@@ -96,7 +96,7 @@ effects:
   - listener_idempotent_across_both_hooks          # 한 입금에 두 훅이 도달해도 1회만 발급
   - listener_skips_zero_cash_equivalent_order      # 무통장 + 전액 마일리지 0원 주문 → 발급 미시도
   - listener_failure_records_failed_and_survives   # 발급 실패 → FAILED 이력, 입금확인은 성공 유지
-  - listener_swallows_provider_exception           # 프로바이더 예외 → 삼키고 로그만 (조용한 실패 금지)
+  - listener_swallows_provider_exception           # 프로바이더 예외 → FAILED 이력으로 남고 입금확인은 유지 (#747 B1)
   - listener_logs_on_swallowed_failure             # 삼킨 실패는 반드시 error/warning 로그로 남음
   - identifier_never_appears_in_logs               # 발급 실패·예외 로그 어디에도 식별번호 원본 부재
 

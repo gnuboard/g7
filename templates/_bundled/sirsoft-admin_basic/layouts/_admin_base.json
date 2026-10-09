@@ -538,6 +538,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "데스크톱 사이드바 접기·펼치기. 아이콘만 있어 이름과 펼침 여부를 속성으로 알린다(이름이 없으면 화면 낭독기가 「버튼」 으로만 읽는다).",
                                                     "type": "click",
                                                     "handler": "toggleSidebar"
                                                 }
@@ -1003,7 +1004,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
-                                                    "comment": "모바일 헤더의 햄버거 — 사이드바를 연다/닫는다. 데스크톱 토글(`toggleSidebar` 핸들러)은\n                   접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다.",
+                                                    "comment": "모바일 헤더의 햄버거 — 사이드바를 연다/닫는다. 데스크톱 토글(`toggleSidebar` 핸들러)은\n                   접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다. 글자 「☰」 만 있어 이름·열림 여부는 속성으로 알린다.",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {

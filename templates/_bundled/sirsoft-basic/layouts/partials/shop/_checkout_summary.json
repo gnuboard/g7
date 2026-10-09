@@ -2,6 +2,7 @@
     "comment": "주문서 오른쪽 요약 기둥과 최종 「결제하기」. 금액은 전부 `checkoutData.data.calculation` 이 준 값이고\n     화면에서 다시 더하지 않는다 — 왼쪽 칸들이 바꾸는 것은 조건뿐이고 계산은 늘 서버가 한다.",
     "meta": {
         "is_partial": true,
+        "_e2e_allow": "e2e:allow S4-D14 — 결제하기 잠금의 결제수단 판정을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다.",
         "description": "결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)"
     },
     "type": "basic",
@@ -571,6 +572,33 @@
                             ]
                         },
                         {
+                            "comment": "마일리지 차감 전 금액 (마일리지 사용 시) — summary.payment_amount 는 마일리지를 빼기 전 금액이다. 마일리지 사용 행 아래에 두면\n             차감 후 금액으로 읽혀 관리자 화면의 「결제예정금액」(차감 후)과 뜻이 갈렸다. 장바구니 요약의 「결제 예정금액」은 그대로 둔다.\n             e2e:allow 서버 값(summary.payment_amount) 하나를 그리는 표시 전용 행의 위치·라벨·노출 조건 변경이라 화면 판정 로직이 없다.\n             순서·라벨 키·points_used 조건은 __tests__/layouts/order-mileage-display.test.tsx 가 고정하고, ko/en/ja·모바일 실측은 후속C 이력의 브라우저 매트릭스에 있다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}",
+                            "props": {
+                                "className": "flex justify-between text-sm pt-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:shop.checkout.amount_before_points"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
                             "comment": "사용 포인트 (마일리지 사용 시)",
                             "type": "basic",
                             "name": "Div",
@@ -594,32 +622,6 @@
                                         "className": "font-medium text-red-600 dark:text-red-400"
                                     },
                                     "text": "-{{checkoutData.data.calculation?.summary?.points_used_formatted ?? '-'}}"
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "결제 예정금액",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex justify-between text-sm pt-2"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-gray-600 dark:text-gray-400"
-                                    },
-                                    "text": "$t:shop.cart.payment_amount"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "font-medium text-gray-900 dark:text-white"
-                                    },
-                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
                                 }
                             ]
                         },
@@ -923,7 +925,7 @@
                     "props": {
                         "type": "button",
                         "className": "w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(paymentSettings.data?.order_settings?.payment_methods ?? []).some(m => m.is_active && (!m.requires_ios || _global.appConfig?.isIos))}}"
+                        "disabled": "{{((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(_computed.selectablePaymentMethods ?? []).length}}"
                     },
                     "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button"
                 },

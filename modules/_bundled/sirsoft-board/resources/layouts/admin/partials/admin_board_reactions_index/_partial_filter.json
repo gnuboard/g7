@@ -251,6 +251,7 @@
                                     ],
                                     "props": {
                                         "data-testid": "admin-reaction-type-filter",
+                                        "aria-label": "$t:sirsoft-board.admin.reactions.filters.type_label",
                                         "className": "select-composite w-40 shrink-0",
                                         "value": "{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}"
                                     },
@@ -294,6 +295,7 @@
                                     ],
                                     "props": {
                                         "data-testid": "admin-reaction-target-filter",
+                                        "aria-label": "$t:sirsoft-board.admin.reactions.columns.target",
                                         "className": "select-composite w-32 shrink-0",
                                         "value": "{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}",
                                         "options": [
@@ -357,6 +359,7 @@
                                     ],
                                     "props": {
                                         "type": "date",
+                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}",
                                         "className": "input w-40",
                                         "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}"
                                     }
@@ -387,6 +390,7 @@
                                     ],
                                     "props": {
                                         "type": "date",
+                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}",
                                         "className": "input w-40",
                                         "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}"
                                     }

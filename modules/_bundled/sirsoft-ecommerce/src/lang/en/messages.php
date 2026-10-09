@@ -9,6 +9,9 @@ return [
     // Locale-specific suffix appended to names on copy (used by ProductNoticeTemplateRepository, etc.)
     'copy_suffix' => ' (Copy)',
 
+    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
+    'vbank_close_reason' => 'Order cancelled before deposit',
+
     'categories' => [
         'list_retrieved' => 'Category list retrieved successfully.',
         'retrieved' => 'Category information retrieved successfully.',
@@ -170,6 +173,8 @@ return [
 
     // Order Messages
     'orders' => [
+        'manual_paid_preview_retrieved' => 'Payment processing items retrieved.',
+        'manual_paid_preview_failed' => 'Failed to retrieve payment processing items.',
         'list_retrieved' => 'Order list retrieved successfully.',
         'retrieved' => 'Order information retrieved successfully.',
         'not_found' => 'Order not found.',
@@ -483,6 +488,7 @@ return [
         // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
         // it is an order-column ledger, so it is absent from the payment method vocabulary.
         'cancellable_method' => [
+            'reactivated_cash' => 'Payment re-recorded on reactivation',
             'payment' => 'Payment method',
             'mileage' => 'Mileage',
         ],
@@ -513,6 +519,15 @@ return [
             'advance_exchange_notice' => 'This is an advance exchange — please send the original items back by :date.',
             'request_origin_admin' => 'The seller filed this request on your behalf.',
             'withdraw_origin_admin' => 'The seller withdrew this request at your request.',
+            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
+            'refund_breakdown_cash' => ':method :amount',
+            'refund_breakdown_points' => 'Mileage :amount',
+        ],
+        // Exchange difference refund label — total and the method it returns by (S2)
+        'exchange_difference' => [
+            'format' => ':total (:methods)',
+            'part' => ':method :amount',
+            'points' => 'Mileage',
         ],
         'tracking_deliver_not_ready' => 'These items cannot be marked as arrived in their current status.',
         'exchange_mode_updated' => 'The exchange mode was changed.',
@@ -528,6 +543,7 @@ return [
         'cancellable_retrieved' => 'The cancellable amount has been calculated.',
         'refund_executed' => 'The refund has been executed.',
         'refund_execute_failed' => 'Failed to execute the refund.',
+        'side_effect_failed' => 'The change was rolled back because restoring coupons, stock, or mileage failed.',
         'completion_preview_retrieved' => 'The completion summary has been calculated.',
         'refund_request_created' => 'The refund request has been created.',
         'logs_retrieved' => 'Activity logs retrieved successfully.',
@@ -795,7 +811,7 @@ return [
                         'refund_product_amount' => 'Product Refund',
                         'refund_shipping_diff' => 'Shipping Difference',
                         'refund_discount_diff' => 'Discount Adjustment',
-                        'refund_points' => 'Points Refund',
+                        'refund_points' => 'Used mileage returned',
                         'refund_total' => 'Total Estimated Refund',
                         'confirm' => 'Cancel Order',
                         'close' => 'Close',

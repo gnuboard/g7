@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
 use Illuminate\Database\Eloquent\Builder;
@@ -304,6 +305,8 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 유효기간 포맷팅 반환
      *
+     * 저장값은 UTC 라 그대로 찍으면 사이트 자정으로 받은 시작일이 하루 이르게 보인다 — 사이트 시간대 날짜로 찍는다.
+     *
      * @return string 포맷팅된 유효기간
      */
     public function getValidPeriodFormattedAttribute(): string
@@ -315,15 +318,15 @@ class Coupon extends Model implements FulltextSearchable
         }
 
         if ($this->valid_from && $this->valid_to) {
-            return $this->valid_from->format('Y-m-d').' ~ '.$this->valid_to->format('Y-m-d');
+            return TimezoneHelper::toSiteDateString($this->valid_from).' ~ '.TimezoneHelper::toSiteDateString($this->valid_to);
         }
 
         if ($this->valid_from) {
-            return $this->valid_from->format('Y-m-d').' ~';
+            return TimezoneHelper::toSiteDateString($this->valid_from).' ~';
         }
 
         if ($this->valid_to) {
-            return '~ '.$this->valid_to->format('Y-m-d');
+            return '~ '.TimezoneHelper::toSiteDateString($this->valid_to);
         }
 
         return '-';
@@ -337,15 +340,15 @@ class Coupon extends Model implements FulltextSearchable
     public function getIssuePeriodFormattedAttribute(): string
     {
         if ($this->issue_from && $this->issue_to) {
-            return $this->issue_from->format('Y-m-d').' ~ '.$this->issue_to->format('Y-m-d');
+            return TimezoneHelper::toSiteDateString($this->issue_from).' ~ '.TimezoneHelper::toSiteDateString($this->issue_to);
         }
 
         if ($this->issue_from) {
-            return $this->issue_from->format('Y-m-d').' ~';
+            return TimezoneHelper::toSiteDateString($this->issue_from).' ~';
         }
 
         if ($this->issue_to) {
-            return '~ '.$this->issue_to->format('Y-m-d');
+            return '~ '.TimezoneHelper::toSiteDateString($this->issue_to);
         }
 
         return __('sirsoft-ecommerce::messages.coupons.issue_period_unlimited');

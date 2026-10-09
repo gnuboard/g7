@@ -16,6 +16,7 @@
     "status": "決済ステータス",
     "payment_method": "決済方法",
     "date_search": "日付検索",
+    "date_type": "日付の基準",
     "amount": "決済金額",
     "all": "すべて",
     "pending": "待機中",

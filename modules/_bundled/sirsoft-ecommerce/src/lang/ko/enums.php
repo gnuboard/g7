@@ -12,10 +12,11 @@ return [
         'admin_earn' => '관리자 지급',
         'order_use' => '주문 사용',
         'admin_deduct' => '관리자 차감',
-        'expired' => '유효기간 소멸',
+        'expired' => '소멸',
         'refund_restore' => '환불 복원',
         'order_cancel_restore' => '주문취소 복원',
         'earn_cancel' => '적립 회수',
+        'refund_credit' => '환불 지급',
     ],
 
     // 마일리지 적립 시점 (MileageEarnTriggerEnum 값과 일치)
@@ -389,7 +390,7 @@ return [
     'refund_method' => [
         'pg' => 'PG사 환불',
         'bank' => '계좌이체 환불',
-        'points' => '마일리지 환불',
+        'points' => '마일리지로 환불',
     ],
 
     // 환불 우선순위 (RefundPriorityEnum 값과 일치)

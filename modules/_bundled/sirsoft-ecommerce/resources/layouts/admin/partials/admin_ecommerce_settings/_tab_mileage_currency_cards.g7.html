@@ -6,7 +6,7 @@
 <partial description="마일리지 통화별 사용 규칙 - Mobile 카드 뷰">
   <div data-ref="currency_rules_cards_container" class="space-y-4">
     <div data-ref="currency_rule_card_{{ruleIndex}}" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))" class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
-      <button data-if="{{rule._idx !== 0}}" type="button" class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+      <button data-if="{{rule._idx !== 0}}" type="button" class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.delete">
         <on type="click">
           <!-- 삭제. 첫 줄(_idx 0)은 이 버튼이 뜨지 않는다 — 같은 줄의 통화 코드 입력도 함께 잠겨 있다. -->
           <set-state target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).filter((c, i) => i !== rule._idx)}}" :hasChanges="true"/>
@@ -69,8 +69,8 @@
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding</label>
         <div class="flex items-center gap-2">
-          <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_unit'}}" value="{{rule.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-unit-' + (rule.currency_code ?? rule._idx)}}"/>
-          <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_method'}}" value="{{rule.earn_rounding_method ?? 'floor'}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-method-' + (rule.currency_code ?? rule._idx)}}">
+          <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_unit'}}" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_of|currency={{rule.currency_code ?? ''}}" value="{{rule.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-unit-' + (rule.currency_code ?? rule._idx)}}"/>
+          <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_method'}}" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_of|currency={{rule.currency_code ?? ''}}" value="{{rule.earn_rounding_method ?? 'floor'}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-method-' + (rule.currency_code ?? rule._idx)}}">
             <options>
               <option value="floor">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.floor</option>
               <option value="round">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.round</option>
@@ -140,8 +140,8 @@
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding</label>
         <div class="flex items-center gap-2">
-          <select name="newMileageCurrency.earn_rounding_unit" value="{{_local.form?.newMileageCurrency?.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-unit"/>
-          <select name="newMileageCurrency.earn_rounding_method" value="{{_local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor'}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-method">
+          <select name="newMileageCurrency.earn_rounding_unit" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_label" value="{{_local.form?.newMileageCurrency?.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-unit"/>
+          <select name="newMileageCurrency.earn_rounding_method" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_label" value="{{_local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor'}}" class="flex-1" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-method">
             <options>
               <option value="floor">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.floor</option>
               <option value="round">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.round</option>

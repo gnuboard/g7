@@ -1,0 +1,23 @@
+feature: mobile_approval_key
+
+description: |
+  모바일 결제창 진입 — 주문 소유자가 KCP 승인키(approval_key)와 결제 주소를 받는다
+  (POST /api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key, MobileApprovalController::getApprovalKey).
+  승인 전에 소유자·금액·통화를 서버가 다시 확인하고, 결제창 필드에 간편결제 direct 값·과세 분할·가상계좌 만료를 싣는다.
+  가상계좌 만료(vcnt_expire_term)는 vbank-expiry-from-order.yaml 이 소유한다.
+
+axes:
+  request: [valid, unauthenticated, other_owner, missing_order, amount_mismatch, bad_currency, non_krw, missing_fields, soap_failure]
+
+effects:
+  - approval_key_returns_pay_url_and_fields          # 결제 주소 + 승인키·주문번호·금액 필드
+  - retryable_cancelled_order_is_restored_for_payment # 닫혀 취소된 결제 전 주문을 재결제 때 되살림
+  - soap_failure_returns_422                         # SOAP 실패 → 422
+  - approval_requires_the_order_owner                # 비로그인 401 · 남의 주문 403 · 없는 주문 404
+  - amount_and_currency_are_verified_before_approval # 금액 불일치·청구 불가 통화·비원화 → 422
+  - required_fields_are_validated                    # 필수 필드 누락 → 422
+  - easy_pay_direct_fields_are_attached              # 네이버페이·카카오페이 direct 필드
+  - tax_split_fields_follow_the_order_tax_mix        # 과세·면세 분할(TG03)과 실결제액 재분배
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/MobileApprovalControllerTest.php

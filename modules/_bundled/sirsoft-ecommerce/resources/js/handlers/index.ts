@@ -206,6 +206,7 @@ import {
     saveClaimAmountsHandler,
     openClaimRefundExecuteHandler,
     executeClaimRefundHandler,
+    formatRefundInputTotalHandler,
 } from './claimHandlers';
 
 // 상품 목록 핸들러
@@ -223,6 +224,9 @@ import {
     openConfirmDepositModalHandler,
     confirmDepositHandler,
 } from './orderDetailHandlers';
+
+// 수동 결제 처리 확인 창 핸들러 (Q13 — 재고 차감·사용 마일리지 차감·결제금액 기록)
+import { setManualPaidOptionHandler } from './manualPaidEffectsHandlers';
 
 // 주문 취소 핸들러 (관리자)
 import {
@@ -526,6 +530,7 @@ export const handlerMap = {
     saveClaimAmounts: saveClaimAmountsHandler,
     openClaimRefundExecute: openClaimRefundExecuteHandler,
     executeClaimRefund: executeClaimRefundHandler,
+    formatRefundInputTotal: formatRefundInputTotalHandler,
 
     // ===== 상품 목록 =====
     handleProductRowAction: handleProductRowActionHandler,
@@ -538,6 +543,7 @@ export const handlerMap = {
     processOrderDetailBulkChange: processOrderDetailBulkChangeHandler,
     saveAdminMemo: saveAdminMemoHandler,
     updateChangeQuantity: updateChangeQuantityHandler,
+    setManualPaidOption: setManualPaidOptionHandler,
     openConfirmDepositModal: openConfirmDepositModalHandler,
     confirmDeposit: confirmDepositHandler,
 

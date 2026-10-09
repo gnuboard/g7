@@ -114,7 +114,8 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-outline"
+                                "className": "btn btn-outline",
+                                "aria-label": "$t:common.search"
                             },
                             "children": [
                                 {
@@ -825,7 +826,8 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
-                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}"
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}",
+                                                                                "aria-label": "$t:common.save"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -866,7 +868,8 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                                "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300",
+                                                                                "aria-label": "$t:common.cancel"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -1034,7 +1037,7 @@
                                                                     "props": {
                                                                         "className": "text-primary text-sm"
                                                                     },
-                                                                    "text": "{{template.fee_formatted ?? (Number(template.fee ?? 0).toLocaleString() + '원')}}"
+                                                                    "text": "{{template.fee_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + Number(template.fee ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix'))}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
@@ -1154,7 +1157,8 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                                "disabled": "{{$parent._computed.isReadOnly}}",
+                                                                                "aria-label": "$t:common.edit"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -1252,7 +1256,8 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}"
+                                                                                "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}",
+                                                                                "aria-label": "$t:common.delete"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -1382,7 +1387,8 @@
                                                                             "props": {
                                                                                 "type": "button",
                                                                                 "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
-                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}"
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}",
+                                                                                "aria-label": "$t:common.save"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -1423,7 +1429,8 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "button",
-                                                                                "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                                "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300",
+                                                                                "aria-label": "$t:common.cancel"
                                                                             },
                                                                             "children": [
                                                                                 {

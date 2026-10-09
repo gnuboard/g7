@@ -120,7 +120,7 @@
           <div data-ref="date_range_group" class="flex flex-col gap-1">
             <label class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.carts.filters.date_label</label>
             <div class="flex items-center gap-2">
-              <input data-ref="start_date_input" type="date" class="text-sm" value="{{_local.filter.startDate ?? ''}}">
+              <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.carts.filters.date_label')}}" data-ref="start_date_input" type="date" class="text-sm" value="{{_local.filter.startDate ?? ''}}">
                 <on type="change">
                   <!-- 기간 시작 — 담아만 둔다 -->
                   <set-state target="local">
@@ -131,7 +131,7 @@
                 </on>
               </input>
               <span class="text-gray-400 dark:text-gray-500">~</span>
-              <input data-ref="end_date_input" type="date" class="text-sm" value="{{_local.filter.endDate ?? ''}}">
+              <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.carts.filters.date_label')}}" data-ref="end_date_input" type="date" class="text-sm" value="{{_local.filter.endDate ?? ''}}">
                 <on type="change">
                   <!-- 기간 끝 — 담아만 둔다 -->
                   <set-state target="local">

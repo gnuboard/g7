@@ -68,6 +68,17 @@
 
 배송등록 화면의 초기값(주문 정보·기본 배송지·기등록 배송 이력)을 반환한다. 이 주문에 에스크로 결제가 없으면 `data` 는 `null` 이다(오류 아님).
 
+### 시스템 점검
+
+`GET .../admin/health`
+
+설정 화면의 시스템 점검 카드가 부르는 경로다. CLI 바이너리·`pub.key`·WSDL 등 결제에 필요한 파일이 플러그인 `bin` 디렉토리에 있고 실행 가능한지 확인한다. 응답은 공통 성공 형식이며 `message` 에 점검 완료 안내(`sirsoft-pay_nhnkcp::messages.health.checked`, 요청 언어로 번역)가 실린다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `data.summary` | object | PC·모바일 결제 가능 여부와 상태별 건수(`error`·`warning`·`fixed`) |
+| `data.checks` | array | 점검 항목별 결과 목록 |
+
 ---
 
 ## 쓰기 경로

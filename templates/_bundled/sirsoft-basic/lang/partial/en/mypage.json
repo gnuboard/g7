@@ -34,7 +34,8 @@
         "edit_hint": "Shipping country is changed together when you edit your profile.",
         "save_button": "Save",
         "saved": "Shipping country updated.",
-        "save_failed": "Failed to update shipping country."
+        "save_failed": "Failed to update shipping country.",
+        "saved_not_applied": "Your saved shipping country {{saved}} is not available for shipping now, so it is not applied. Shipping country in use: {{applied}}"
     },
     "notification_settings": {
         "title": "Board Notification Settings",
@@ -273,6 +274,7 @@
         "confirm_change_address": "Are you sure you want to change the shipping address?",
         "charged_in_payment_currency": "Charged {{amount}} in {{currency}}",
         "claim_additional_paid": "Claim additional payment",
+        "refund_mileage_credit": "Refunded as mileage",
         "delivered_at": "Delivered At",
         "confirmed_at": "Purchase Confirmed At"
     },

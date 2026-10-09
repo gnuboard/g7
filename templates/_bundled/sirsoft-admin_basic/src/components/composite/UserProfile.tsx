@@ -195,7 +195,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       <Button
         onClick={() => setShowProfileMenu(!showProfileMenu)}
         aria-label={dropdownOnly ? tOr('common.user_menu', '사용자 메뉴') : undefined}
-        aria-haspopup="true"
+        aria-haspopup="menu"
         aria-expanded={showProfileMenu}
         className={dropdownOnly
           ? "w-full h-full opacity-0 cursor-pointer"

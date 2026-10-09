@@ -26,6 +26,8 @@ class SettingsServiceProvider extends ServiceProvider
      * 서비스를 등록합니다.
      *
      * DB 연결 전에 실행되므로 JSON 파일에서 직접 읽습니다.
+     *
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -56,6 +58,9 @@ class SettingsServiceProvider extends ServiceProvider
      *
      * 모든 코어 설정을 통합하여 g7_settings('core.category.key') 형태로
      * 접근할 수 있도록 합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function loadCoreSettingsToConfig(JsonConfigRepository $configRepository): void
     {
@@ -66,6 +71,8 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 서비스를 부트스트랩합니다.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -74,6 +81,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 메일 설정을 Laravel config에 적용합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyMailConfig(JsonConfigRepository $configRepository): void
     {
@@ -166,6 +176,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 앱 설정을 Laravel config에 적용합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyAppConfig(JsonConfigRepository $configRepository): void
     {
@@ -206,6 +219,8 @@ class SettingsServiceProvider extends ServiceProvider
 
         if (! empty($generalSettings['language'])) {
             Config::set('app.locale', $generalSettings['language']);
+            // 요청 처리 중 SetLocale 이 app.locale 을 보는 사람의 언어로 덮어도 사이트 기본 언어는 남겨 둔다
+            Config::set('app.site_locale', $generalSettings['language']);
         }
     }
 
@@ -259,6 +274,9 @@ class SettingsServiceProvider extends ServiceProvider
      * G7_PLAYWRIGHT_BYPASS=1 환경변수가 부여된 호출은 settings JSON 덮어쓰기를 건너뛰어
      * APP_DEBUG inline override 가 유지되도록 한다. CLI 한정 + 명시 옵트인이므로
      * 운영 admin UI 토글 SSoT 정책은 보존된다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyDebugConfig(JsonConfigRepository $configRepository): void
     {
@@ -336,6 +354,9 @@ class SettingsServiceProvider extends ServiceProvider
      * 지정한 테스트 전용 드라이버(array/array/sync)가 무시되고 dev의 Redis 등을 공유하게 됩니다.
      * 그 결과 테스트가 dev 캐시를 오염시켜 알림 훅 등록 같은 부팅 데이터가 silent하게
      * 망가지는 치명적 상태가 발생합니다. testing 환경에서는 드라이버 오버라이드를 건너뜁니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyDriverConfig(JsonConfigRepository $configRepository): void
     {
@@ -427,6 +448,9 @@ class SettingsServiceProvider extends ServiceProvider
      * 주입을 건너뜁니다 (테스트 격리). 실제 주입/정규화는
      * injectPublicAssetDiskConfig() 가 담당합니다 — 가드와 분리해 두어야
      * 정규화 규칙('none' → '')이 테스트에서 단언 가능합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
     {
@@ -445,6 +469,7 @@ class SettingsServiceProvider extends ServiceProvider
      * 테스트 격리 가드(applyPublicAssetDiskConfig)를 통과한 뒤에만 호출됩니다.
      *
      * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function injectPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
     {
@@ -461,6 +486,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * Redis 연결 설정을 적용합니다.
+     *
+     * @param  array  $driverSettings  드라이버 설정 배열
+     * @return void 반환값 없음
      */
     private function applyRedisConfig(array $driverSettings): void
     {
@@ -516,6 +544,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * Memcached 연결 설정을 적용합니다.
+     *
+     * @param  array  $driverSettings  드라이버 설정 배열
+     * @return void 반환값 없음
      */
     private function applyMemcachedConfig(array $driverSettings): void
     {
@@ -530,6 +561,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * S3 스토리지 설정을 적용합니다.
+     *
+     * @param  array  $driverSettings  드라이버 설정 배열
+     * @return void 반환값 없음
      */
     private function applyS3Config(array $driverSettings): void
     {
@@ -566,6 +600,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 로그 드라이버 설정을 적용합니다.
+     *
+     * @param  array  $driverSettings  드라이버 설정 배열
+     * @return void 반환값 없음
      */
     private function applyLogConfig(array $driverSettings): void
     {
@@ -595,6 +632,9 @@ class SettingsServiceProvider extends ServiceProvider
      * - 서버: 백엔드 Pusher SDK가 broadcast HTTP API를 호출할 내부 endpoint (예: 127.0.0.1:8080)
      *   → broadcasting.connections.reverb.options.* 에 저장 → Pusher SDK가 사용
      *   → reverb.apps.apps.0.options.* 에 저장 → Reverb 서버 자체 설정
+     *
+     * @param  array  $driverSettings  드라이버 설정 배열
+     * @return void 반환값 없음
      */
     private function applyWebsocketConfig(array $driverSettings): void
     {
@@ -697,6 +737,9 @@ class SettingsServiceProvider extends ServiceProvider
      *
      * core_update.json의 값으로 config('app.update.github_url')과
      * config('app.update.github_token')을 오버라이드합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyCoreUpdateConfig(JsonConfigRepository $configRepository): void
     {
@@ -726,6 +769,7 @@ class SettingsServiceProvider extends ServiceProvider
      * 런타임 값이 됩니다. env('GEOIP_ENABLED')는 fallback 역할.
      *
      * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyGeoIpConfig(JsonConfigRepository $configRepository): void
     {
@@ -768,6 +812,7 @@ class SettingsServiceProvider extends ServiceProvider
      * - max_attempts (최대 시도 횟수)
      *
      * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyIdentityConfig(JsonConfigRepository $configRepository): void
     {
@@ -785,6 +830,9 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 업로드 설정을 Laravel config에 적용합니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
      */
     private function applyUploadConfig(JsonConfigRepository $configRepository): void
     {

@@ -1,0 +1,21 @@
+# e2e:allow 화면 변경 없음 — 적립 금액 산정만 바뀐다(서버 단위·기능 테스트가 잰다).
+feature: 교환 후속 상품의 구매 적립은 같은 구매에 한 번만 (S1) — #747 C6
+
+description: |
+  교환 후속 행은 원 행을 복제해 적립 예정액을 그대로 갖고, 적립 멱등은 주문상품 행 단위라 원 상품이 이미 적립된
+  뒤 교환품이 배송완료되면 같은 구매에 한 번 더 적립됐다. 후속 행의 기적립에는 원 행(교환 전 상품)의 적립을
+  포함한다. 원 행이 분할 조각이면 적립 거래는 부모 행에 있으므로 부모가 자기 목표보다 더 받은 몫을 원 행 몫으로 본다.
+
+axes:
+  original_earned: [before_exchange, never]
+  original_shape: [whole_row, split_child]
+
+exclusions:
+  - { original_earned: never, original_shape: split_child, reason: "적립 전 분할 교환은 부모 초과분이 0 이라 whole_row 와 같은 경로다" }
+
+effects:
+  - exchanged_option_does_not_earn_again
+  - exchanged_option_earns_when_original_never_earned
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Mileage/ExchangeEarnOnceTest.php

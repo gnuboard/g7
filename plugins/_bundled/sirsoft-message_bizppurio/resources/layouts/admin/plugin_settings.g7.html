@@ -949,7 +949,7 @@
           </div>
           <div data-each="buttonsItem, buttonsIdx in {{_global.bz_tpl_modal?.content?.buttons ?? []}}" class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
             <div class="flex items-center gap-1.5">
-              <select class="w-40 text-xs" value="{{buttonsItem.linkType ?? 'WL'}}" options="{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}">
+              <select class="w-40 text-xs" aria-label="$t:sirsoft-message_bizppurio.template.form.button_link_type|index={{buttonsIdx + 1}}" value="{{buttonsItem.linkType ?? 'WL'}}" options="{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}">
                 <on type="change">
                   <!-- 버튼 링크 유형 — 해당 인덱스 버튼만 바꾼 새 배열로 content.buttons 를 교체한다(유형에 따라 아래 입력란이 달라진다). -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkType: $event.target.value}) : b)}}"/>
@@ -1022,7 +1022,7 @@
           </div>
           <div data-each="quickRepliesItem, quickRepliesIdx in {{_global.bz_tpl_modal?.content?.quickReplies ?? []}}" class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
             <div class="flex items-center gap-1.5">
-              <select class="w-40 text-xs" value="{{quickRepliesItem.linkType ?? 'WL'}}" options="{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}">
+              <select class="w-40 text-xs" aria-label="$t:sirsoft-message_bizppurio.template.form.quick_reply_link_type|index={{quickRepliesIdx + 1}}" value="{{quickRepliesItem.linkType ?? 'WL'}}" options="{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}">
                 <on type="change">
                   <!-- 바로연결 링크 유형 — 해당 인덱스 항목만 바꾼 새 배열로 content.quickReplies 를 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkType: $event.target.value}) : b)}}"/>

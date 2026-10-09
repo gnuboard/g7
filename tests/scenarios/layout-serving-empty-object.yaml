@@ -1,0 +1,20 @@
+feature: 레이아웃 서빙의 빈 객체 보존
+
+description: |
+  레이아웃 원문(파일·DB)은 이름표로 값을 꺼내는 자리를 `{}` 로 둔다(상품 상세의 추가 옵션·상품평 옵션
+  필터, 주문서 확장 칸 등). 서빙 응답이 이를 `[]` 로 바꾸면 화면 상태가 빈 목록으로 시작해 원문을
+  고쳐도 런타임에 반영되지 않는다.
+
+  현황 (이커머스 전수 실측 S4 — sirsoft-basic SB-160 대조 중 발견): 코어 레이아웃 서빙이 PHP 연관
+  배열로 디코드한 뒤 다시 인코드하면서 빈 객체가 빈 배열로 바뀐다. 코어 수정은 제품 판단 대기라 이
+  시나리오의 테스트는 현재 실패한다(결함 고정용).
+
+axes:
+  container: [object_and_array_side_by_side]   # 한 레이아웃에 {} 와 [] 를 함께 두고 둘 다 본다
+
+effects:
+  - empty_object_served_as_object   # 저장된 {} 가 응답에서도 {}
+  - empty_array_served_as_array     # 저장된 [] 는 응답에서도 []
+
+test_files:
+  - tests/Feature/Api/Public/LayoutServingEmptyObjectTest.php

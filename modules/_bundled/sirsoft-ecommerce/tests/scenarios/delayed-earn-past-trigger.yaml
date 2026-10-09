@@ -1,0 +1,16 @@
+# e2e:allow 화면 변경 없음 — 스케줄러 적립 대상 조회만 바뀐다.
+feature: 스케줄러 적립은 트리거 상태를 지난 상품도 잡는다 · 즉시 적립 실패는 보고한다 (F4) — #747 C9
+
+description: |
+  적립 대상 조회가 option_status = 트리거만 보아, 배송완료 + 지연 N일 설정에서 지연 중 구매확정된 상품과, 즉시 적립이
+  실패한 뒤 다음 단계로 넘어간 상품을 스케줄러가 영영 적립하지 않았다. 대상은 트리거 이후 상태 집합(배송완료 트리거면
+  배송완료·구매확정)으로 넓힌다. 즉시 적립 실패는 경고 로그로 흘리지 않고 report() 로 올린다(상태 전이는 막지 않는다).
+
+axes:
+  status: [confirmed_during_delay, not_reached]
+
+effects:
+  - scheduler_earns_options_past_the_trigger_status
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/DelayedEarnPastTriggerTest.php

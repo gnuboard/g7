@@ -1,0 +1,20 @@
+feature: 관리자 화면 — 화면이 계산한 금액의 기본 통화·언어별 표기
+
+description: |
+  상품 목록 인라인 옵션 편집의 추가금 표기(`price_adjustment_formatted`)가 `toLocaleString() + '원'` 고정이라 영어 관리자에게
+  「+1,500원」이 보이고 기본 통화가 원화가 아닌 상점은 단위가 틀렸다. 이커머스 공용 `formatAmountInCurrency`(기본 통화·
+  언어별 원화 접두·접미)로 적는다. 배송정책 도서산간 템플릿 창의 금액 대체 표기도 같은 번역 키(후속 B 세션 B4).
+
+axes:
+  surface: [option_adjustment, extra_fee_template]
+
+effects:
+  - admin_option_adjustment_follows_locale
+  - admin_option_adjustment_follows_base_currency
+  - admin_inline_krw_uses_locale_affix
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/adminKrwAmountLocale.test.ts
+
+validation:
+  browser_check: 관리자 English 로 상품 목록 → 옵션 펼치기 → 비기본 옵션 판매가 수정 → 추가금 「+₩1,500」

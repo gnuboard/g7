@@ -13,17 +13,23 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidEffectsReport;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidTransition;
 use Modules\Sirsoft\Ecommerce\Enums\DeliveryMemoPresetEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderEmailChannelUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderMileageDeductionException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderModificationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderOptionNotConfirmableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
@@ -39,19 +45,31 @@ class OrderService
      * @param  UserAddressRepositoryInterface  $userAddressRepository  회원 배송지 Repository
      * @param  StockService  $stockService  재고 서비스 (취소 복원 · 재활성 재차감)
      * @param  ClaimAttachmentService  $claimAttachmentService  클레임 첨부 서비스
+     * @param  OrderProcessingService|null  $orderProcessingService  결제 처리 서비스 (수동 결제 처리 세 항목 — 비우면 늦게 해석)
      */
     public function __construct(
         protected OrderRepositoryInterface $repository,
         protected UserAddressRepositoryInterface $userAddressRepository,
         protected StockService $stockService,
         protected ClaimAttachmentService $claimAttachmentService,
+        protected ?OrderProcessingService $orderProcessingService = null,
     ) {}
 
     /**
-     * 취소 → 판매 상태 복원 전이인지 판정합니다.
+     * 결제 처리 서비스를 늦게 해석합니다. (기존 4인수 생성 호출부 호환)
      *
-     * oldStatus 가 취소상태(cancelled/partial_cancelled)이고 newStatus 가
-     * 판매 반영 상태(payment_complete~confirmed)일 때만 재고 재차감 대상이다.
+     * @return OrderProcessingService 결제 처리 서비스
+     */
+    private function processing(): OrderProcessingService
+    {
+        return $this->orderProcessingService ??= app(OrderProcessingService::class);
+    }
+
+    /**
+     * 클레임 코스 → 판매 상태 복귀 전이인지 판정합니다. (교환·반품 진행 중 반려·철회)
+     *
+     * 취소 → 판매 상태 재활성은 수동 결제 처리 효과(재고·마일리지·결제금액·복원 — Q13·Q14·Q26)가
+     * 맡는다. 이 판정은 그 밖의 복귀 — 클레임 코스에서 돌아오는 경우 — 에만 종전 재고 재차감을 남긴다.
      *
      * @param  string|null  $oldStatus  변경 전 주문 상태 값
      * @param  string|null  $newStatus  변경 후 주문 상태 값
@@ -59,7 +77,7 @@ class OrderService
      */
     protected function isReactivationTransition(?string $oldStatus, ?string $newStatus): bool
     {
-        if ($oldStatus === null || $newStatus === null) {
+        if ($oldStatus === null || $newStatus === null || $oldStatus === OrderStatusEnum::CANCELLED->value) {
             return false;
         }
 
@@ -68,10 +86,11 @@ class OrderService
     }
 
     /**
-     * 일괄 상태 변경 스냅샷 중 취소 → 판매상태 복원 전이인 주문에 재고를 재차감합니다.
+     * 일괄 상태 변경 스냅샷 중 클레임 코스 → 판매상태 복귀 전이인 주문에 재고를 재차감합니다.
      *
      * 단건 update() 와 동일 정책으로, 부족 시 InsufficientStockException 을 전파하여
-     * 호출부의 트랜잭션 롤백(일괄 상태 변경 차단)을 유도한다.
+     * 호출부의 트랜잭션 롤백(일괄 상태 변경 차단)을 유도한다. 취소 주문 재활성은 여기서 하지 않는다
+     * (`applyManualPaidEffectsForBulk` — 운영자가 고른 「재고 차감」을 따른다).
      *
      * @param  array  $snapshots  ID 키 스냅샷 맵 (getSnapshotsByIds 결과 — 변경 전 상태 포함)
      * @param  string  $newStatus  일괄 변경 대상 상태 값
@@ -83,6 +102,7 @@ class OrderService
     {
         foreach ($snapshots as $orderId => $snapshot) {
             $oldStatus = $snapshot['order_status'] ?? null;
+            $oldStatus = $oldStatus instanceof OrderStatusEnum ? $oldStatus->value : $oldStatus;
 
             if (! $this->isReactivationTransition($oldStatus, $newStatus)) {
                 continue;
@@ -217,6 +237,10 @@ class OrderService
     {
         $this->assertWithinScope($order, 'sirsoft-ecommerce.orders.update');
 
+        // 확인 창의 세 항목(재고 차감·사용 마일리지 차감·결제금액 기록)은 주문 컬럼이 아니다 — 훅·저장소에
+        // 섞이지 않게 먼저 떼어 낸다. 값이 없으면 모두 켬(Q13, 기존 API 호환).
+        $manualPaid = ManualPaidOptions::extract($data);
+
         $oldStatus = $order->order_status?->value;
 
         // 수정 전 훅
@@ -288,20 +312,24 @@ class OrderService
         // 상태 변경까지 롤백되어야 하므로(오버셀 방지) 같은 트랜잭션 경계 안에서 처리한다.
         // 주문상품 상태 동기화의 전/후 내역 — 훅은 트랜잭션이 커밋된 뒤 Service 가 발행한다.
         $optionSyncChanges = [];
+        $manualPaidReport = null;
 
-        $order = DB::transaction(function () use ($order, $orderData, $oldStatus, &$optionSyncChanges) {
+        $order = DB::transaction(function () use ($order, $orderData, $oldStatus, $manualPaid, &$optionSyncChanges, &$manualPaidReport) {
             $order = $this->repository->update($order, $orderData);
 
             $newStatus = $order->order_status?->value;
 
-            // 취소 → 판매상태 복원 전이면, 취소 시 복원되었던 재고를 재차감한다.
-            // (재고 부족 시 예외 전파 → 트랜잭션 롤백으로 상태 복원 차단)
-            if (
-                array_key_exists('order_status', $orderData)
-                && $this->isReactivationTransition($oldStatus, $newStatus)
-            ) {
-                $order->loadMissing('options');
-                $this->stockService->redeductForReactivation($order);
+            if (array_key_exists('order_status', $orderData)) {
+                // 결제 전 → 판매, 취소 → 판매(재활성)는 확인 창의 세 항목과 재활성 복원을 적용한다(Q13·Q14·Q26).
+                // 마일리지·재고 부족, 쿠폰 충돌은 예외 → 트랜잭션 롤백으로 상태 변경까지 되돌린다.
+                $transition = ManualPaidTransition::forOrderStatusChange($oldStatus, $newStatus, 'single_update');
+                if (! $transition->isEmpty()) {
+                    $manualPaidReport = $this->processing()->applyManualPaidTransitionEffects($order, $transition, $manualPaid);
+                } elseif ($this->isReactivationTransition($oldStatus, $newStatus)) {
+                    // 클레임 코스 → 판매 복귀는 종전대로 복원됐던 재고를 재차감한다.
+                    $order->loadMissing('options');
+                    $this->stockService->redeductForReactivation($order);
+                }
             }
 
             // 주문 상태가 변경된 경우 주문 옵션 상태도 동일하게 동기화한다.
@@ -402,6 +430,10 @@ class OrderService
         // 수정 후 훅 (스냅샷 전달 — OrderActivityLogListener가 활동 로그 기록)
         HookManager::doAction('sirsoft-ecommerce.order.after_update', $order, $snapshot);
 
+        if ($manualPaidReport !== null && $manualPaidReport->hasApplicableItems()) {
+            $this->fireManualPaidEffects($order->fresh(), $manualPaidReport);
+        }
+
         // 배송지가 실제로 바뀐 경우에만 전용 훅을 발화한다.
         // `after_update` 는 Order 스냅샷만 들고 있어 주소 변경을 전혀 못 본다 — 그래서
         // 관리자 배송지 변경이 "주문 수정" 한 줄로만 남고 전/후값이 사라졌다(S2-D6).
@@ -497,6 +529,36 @@ class OrderService
     }
 
     /**
+     * 일괄 상태 변경이 옮긴 상품의 배송 레코드 진행 상태·시각을 맞춥니다. (S3-D5)
+     *
+     * 목록 일괄 경로는 상품 상태를 raw update 로 옮겨 상세 일괄변경(`OrderOptionService`)의 배송 레코드
+     * 동기화를 지나지 않는다 — 배송완료로 올린 주문의 레코드가 `shipped`·`delivered_at=null` 에 남아
+     * 고객 「배송 현황」이 배송중으로 보였다. 대응표는 `OrderOptionService::shippingRecordStateFor()` 한 곳을
+     * 쓰고, 나눠 보낸 상품의 배송 행 전부에 적용하며 발생 시각은 저장소가 행마다 처음 한 번만 남긴다.
+     *
+     * @param  array<int, array{order_option_id: int, order_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
+     * @param  string  $status  목표 상태 값
+     * @return void
+     */
+    private function syncShippingRecordState(array $changes, string $status): void
+    {
+        $target = OrderStatusEnum::tryFrom($status);
+        if ($target === null || $changes === []) {
+            return;
+        }
+
+        $state = app(OrderOptionService::class)->shippingRecordStateFor($target);
+        if ($state === []) {
+            return;
+        }
+
+        $shippingRepository = app(OrderShippingRepositoryInterface::class);
+        foreach (array_unique(array_map('intval', array_column($changes, 'order_option_id'))) as $optionId) {
+            $shippingRepository->updateProgressByOrderOptionId($optionId, $state);
+        }
+    }
+
+    /**
      * 주문상품 상태를 주문 상태에 맞춰 옮기고, 옮긴 전/후 내역을 돌려줍니다.
      *
      * 전/후는 갱신 **전에** 읽어야 하므로 읽기와 쓰기를 이 한 곳에서 순서대로 부른다. 훅은
@@ -565,6 +627,7 @@ class OrderService
         $orderStatus = $data['order_status'] ?? null;
         $carrierId = $data['carrier_id'] ?? null;
         $trackingNumber = $data['tracking_number'] ?? null;
+        $manualPaid = ManualPaidOptions::fromInput($data);
 
         // 스냅샷 캡처 (ChangeDetector용 + 전이 감지용 이전 order_status)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
@@ -604,11 +667,16 @@ class OrderService
 
         $updatedCount = 0;
         $optionSyncChanges = [];
+        $manualPaidReports = [];
 
-        DB::transaction(function () use ($ids, $orderStatus, $carrierId, $trackingNumber, $snapshots, &$updatedCount, &$optionSyncChanges) {
+        DB::transaction(function () use ($ids, $orderStatus, $normalizedStatus, $manualPaid, $carrierId, $trackingNumber, $snapshots, &$updatedCount, &$optionSyncChanges, &$manualPaidReports) {
             // 주문 상태 일괄 변경
             if ($orderStatus !== null) {
-                // 취소 → 판매상태 복원 전이 주문에 대해 재고 재차감 (부족 시 예외 → 롤백)
+                // 결제 전 → 판매, 취소 → 판매(재활성)는 확인 창의 세 항목과 재활성 복원 (Q13·Q14·Q26).
+                // 마일리지 부족·쿠폰 충돌은 모든 해당 주문을 모아 한 번에 거절한다(all-or-nothing).
+                $manualPaidReports = $this->applyManualPaidEffectsForBulk($snapshots, (string) $normalizedStatus, $manualPaid, 'bulk_update');
+
+                // 클레임 코스 → 판매상태 복귀 전이 주문에 대해 재고 재차감 (부족 시 예외 → 롤백)
                 $this->redeductReactivatedOrders($snapshots, $orderStatus);
 
                 $updatedCount = $this->repository->bulkUpdateStatus($ids, $orderStatus);
@@ -625,12 +693,18 @@ class OrderService
                 $shippingUpdatedCount = $this->repository->bulkUpdateShipping($ids, $carrierId, $trackingNumber);
                 $updatedCount = max($updatedCount, $shippingUpdatedCount);
             }
+
+            // 배송중·배송완료로 옮긴 상품의 배송 레코드 진행 상태·시각도 함께 옮긴다(S3-D5) — 위 송장 갱신 뒤에
+            // 둬야 송장과 함께 배송완료로 올릴 때 `shipped` 로 덮이지 않는다.
+            $this->syncShippingRecordState($optionSyncChanges, (string) $normalizedStatus);
         });
 
         $this->fireOptionStatusSynced($optionSyncChanges);
 
         // after 훅 (스냅샷 전달)
         HookManager::doAction('sirsoft-ecommerce.order.after_bulk_update', $ids, $updatedCount, $snapshots);
+
+        $this->fireManualPaidEffectsForBulk($manualPaidReports);
 
         // 주문별 상태 전이 알림 (A35/A36/D9) — 상태가 실제 변경된 주문마다 after_status_change 발화.
         if ($normalizedStatus !== null) {
@@ -680,10 +754,12 @@ class OrderService
      *
      * @param  array  $ids  주문 ID 배열
      * @param  string  $status  변경할 상태
+     * @param  ManualPaidOptions|null  $options  수동 결제 처리 세 항목 (null 이면 모두 켬 — Q13)
      * @return array 변경 결과
      */
-    public function bulkUpdateStatus(array $ids, string $status): array
+    public function bulkUpdateStatus(array $ids, string $status, ?ManualPaidOptions $options = null): array
     {
+        $options ??= ManualPaidOptions::defaults();
         $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.orders.update');
 
         // 스냅샷 캡처 (ChangeDetector용 + 전이 감지용 이전 order_status)
@@ -699,8 +775,13 @@ class OrderService
         }
 
         // 재고 재차감과 상태 변경을 동일 트랜잭션으로 묶는다 (부족 시 롤백으로 상태 변경 차단)
-        $updatedCount = DB::transaction(function () use ($ids, $status, $snapshots) {
-            // 취소 → 판매상태 복원 전이 주문에 대해 재고 재차감 (부족 시 예외 → 롤백)
+        $manualPaidReports = [];
+        $updatedCount = DB::transaction(function () use ($ids, $status, $snapshots, $options, &$manualPaidReports) {
+            // 결제 전 → 판매, 취소 → 판매(재활성)는 세 항목과 재활성 복원 (Q13·Q14·Q26).
+            // 이 경로에는 옵션 동기화가 없어, 재활성 복원이 되살리지 않으면 상품 행은 취소로 남는다.
+            $manualPaidReports = $this->applyManualPaidEffectsForBulk($snapshots, $status, $options, 'bulk_update_status');
+
+            // 클레임 코스 → 판매상태 복귀 전이 주문에 대해 재고 재차감 (부족 시 예외 → 롤백)
             $this->redeductReactivatedOrders($snapshots, $status);
 
             return $this->repository->bulkUpdateStatus($ids, $status);
@@ -709,6 +790,8 @@ class OrderService
         // after 훅 (스냅샷 전달)
         HookManager::doAction('sirsoft-ecommerce.order.after_bulk_status_update', $ids, $updatedCount, $snapshots);
 
+        $this->fireManualPaidEffectsForBulk($manualPaidReports);
+
         // 주문별 상태 전이 알림 (A35/A36/D9)
         $this->fireStatusChangeForBulk($ids, $status, $snapshots);
 
@@ -716,6 +799,160 @@ class OrderService
             'updated_count' => $updatedCount,
             'requested_count' => count($ids),
         ];
+    }
+
+    /**
+     * 목록 일괄변경 확인 창의 수동 결제 처리 항목을 미리 계산합니다. (DB 변경 없음 — Q13·Q14·Q26)
+     *
+     * 실행(`bulkUpdate`)과 같은 전이 분류·계획 메서드를 쓴다. 목표 상태가 비었거나 판매 상태가 아니면
+     * 모든 주문이 「해당 없음」이다.
+     *
+     * @param  array<int, int>  $ids  주문 ID
+     * @param  string|null  $status  목표 상태
+     * @return array<string, mixed> 미리보기 (target_status·orders·summary)
+     */
+    public function previewManualPaidEffectsForBulk(array $ids, ?string $status): array
+    {
+        $orders = $this->repository->findByIdsWithRelationsKeyed($ids, ['options', 'payment', 'shippings']);
+        $this->assertAllWithinScope($orders, 'sirsoft-ecommerce.orders.update');
+
+        $entries = [];
+        foreach ($orders as $order) {
+            $from = $order->order_status instanceof OrderStatusEnum ? $order->order_status->value : $order->order_status;
+            $entries[] = [$order, ManualPaidTransition::forOrderStatusChange($from, $status, 'bulk_update')];
+        }
+
+        return $this->processing()->previewManualPaidEffects($entries, (string) $status);
+    }
+
+    /**
+     * 일괄 상태 변경의 수동 결제 처리 세 항목과 재활성 복원을 적용합니다. (트랜잭션 내부 — all-or-nothing)
+     *
+     * 1) 쿠폰 충돌 사전 점검 — 하나라도 있으면 해당 주문을 모두 알리고 전체를 바꾸지 않는다(Q27).
+     * 2) 마일리지만 모든 주문에 시도 — 실패는 그 주문의 savepoint 만 되돌고 다음 주문을 계속 본다.
+     *    모자란 주문이 있으면 주문번호를 모두 모아 던진다(Q4) → 바깥 트랜잭션 전체 롤백.
+     * 3) 재고·결제금액·복원 — 첫 재고 부족에서 예외.
+     * 주문 id 오름차순으로 잠근다 — 교착을 막고 같은 회원 잔액 판정 순서를 미리보기와 맞춘다.
+     *
+     * @param  array  $snapshots  ID 키 스냅샷 (변경 전 상태)
+     * @param  string  $status  목표 상태
+     * @param  ManualPaidOptions  $options  운영자 선택
+     * @param  string  $trigger  진입 경로
+     * @return array<int, ManualPaidEffectsReport> 주문 ID => 적용 결과
+     *
+     * @throws OrderMileageDeductionException 잔액 부족 주문이 있을 때
+     * @throws ReactivationCouponConflictException 쿠폰 충돌 주문이 있을 때
+     */
+    private function applyManualPaidEffectsForBulk(array $snapshots, string $status, ManualPaidOptions $options, string $trigger): array
+    {
+        $targets = [];
+        foreach ($snapshots as $id => $snapshot) {
+            $from = $snapshot['order_status'] ?? null;
+            $from = $from instanceof OrderStatusEnum ? $from->value : $from;
+            $transition = ManualPaidTransition::forOrderStatusChange($from, $status, $trigger);
+            if (! $transition->isEmpty()) {
+                $targets[(int) $id] = $transition;
+            }
+        }
+
+        if ($targets === []) {
+            return [];
+        }
+
+        ksort($targets);
+        $orders = $this->repository->findByIdsKeyed(array_keys($targets));
+
+        $conflicts = [];
+        foreach ($targets as $id => $transition) {
+            if ($transition->revives() && isset($orders[$id])) {
+                $plan = app(OrderReactivationService::class)->plan($orders[$id], $transition);
+                if ($plan->couponConflicts !== []) {
+                    $conflicts[] = (string) $orders[$id]->order_number;
+                }
+            }
+        }
+        if ($conflicts !== []) {
+            throw ReactivationCouponConflictException::forBulk($conflicts);
+        }
+
+        $reports = [];
+        $short = [];
+        foreach ($targets as $id => $transition) {
+            if (! isset($orders[$id])) {
+                continue;
+            }
+
+            try {
+                $reports[$id] = $this->processing()->applyManualPaidTransitionEffects(
+                    $orders[$id],
+                    $transition,
+                    $options->with(stock: false, record: false, restoration: false),
+                );
+            } catch (OrderMileageDeductionException) {
+                $short[] = (string) $orders[$id]->order_number;
+            }
+        }
+        if ($short !== []) {
+            throw OrderMileageDeductionException::insufficientForBulk($short);
+        }
+
+        foreach ($targets as $id => $transition) {
+            if (! isset($reports[$id])) {
+                continue;
+            }
+
+            $second = $this->processing()->applyManualPaidTransitionEffects(
+                $orders[$id],
+                $transition,
+                $options->with(mileage: false, restoration: true),
+            );
+            $reports[$id] = $reports[$id]->mergeWith($second, $options);
+        }
+
+        return $reports;
+    }
+
+    /**
+     * 수동 결제 처리 결과 훅을 발화합니다. (트랜잭션 뒤 — 활동 로그·재활성 플러그인 훅)
+     *
+     * @param  Order  $order  주문
+     * @param  ManualPaidEffectsReport  $report  적용 결과
+     * @return void
+     */
+    private function fireManualPaidEffects(Order $order, ManualPaidEffectsReport $report): void
+    {
+        $payload = $report->toArray();
+
+        HookManager::doAction(
+            'sirsoft-ecommerce.order.after_manual_paid_effects',
+            $order,
+            $payload,
+            $report->applied['restoration']['snapshot_before'] ?? null,
+        );
+
+        if (($report->applied['restoration']['applied'] ?? false) === true) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_reactivation_restored', $order, $payload['items']['restoration']);
+        }
+    }
+
+    /**
+     * 일괄 처리 결과 훅을 주문마다 발화합니다.
+     *
+     * @param  array<int, ManualPaidEffectsReport>  $reports  주문 ID => 적용 결과
+     * @return void
+     */
+    private function fireManualPaidEffectsForBulk(array $reports): void
+    {
+        if ($reports === []) {
+            return;
+        }
+
+        $orders = $this->repository->findByIdsKeyed(array_keys($reports));
+        foreach ($reports as $id => $report) {
+            if (isset($orders[$id]) && $report->hasApplicableItems()) {
+                $this->fireManualPaidEffects($orders[$id], $report);
+            }
+        }
     }
 
     /**

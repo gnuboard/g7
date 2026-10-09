@@ -700,6 +700,46 @@ class ClaimItemTrackingTest extends ModuleTestCase
     }
 
     /**
+     * 재발송 배송 행은 송장·정책만 승계하고 **배송비는 원 행에 남는다.** (S1-D11)
+     *
+     * 원 배송 행을 금액째 복제하면 교환품 줄이 「유료배송 · 배송비 3,000원」 으로 보이고 구매자 「배송 현황」 에도
+     * 같은 배송비가 한 줄 더 생긴다 — 그 재발송은 고객이 낸 배송이 아니다(실측: 판매자 귀책 교환 EX…0235594357,
+     * 주문 헤더 배송비 3,000 인데 행 합 6,000). 수량 분할 복제본과 같은 규칙(S3-D9)이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=exchange, exchange_mode=standard, direction=redelivery
+     *
+     * @effects successor_shipping_carries_no_shipping_fee
+     */
+    public function test_successor_shipping_carries_no_shipping_fee(): void
+    {
+        $exchange = $this->approvedExchange(1);
+        $service = $this->exchangeService();
+        $carrier = $this->testClaimCarrier();
+        $itemId = $this->firstItemId($exchange);
+        $originalOptionId = (int) OrderExchangeOption::find($itemId)->order_option_id;
+
+        OrderShipping::where('order_option_id', $originalOptionId)->update([
+            'base_shipping_amount' => 3000,
+            'total_shipping_amount' => 3000,
+        ]);
+
+        $service->transition($exchange, ExchangeStatusEnum::COLLECTED);
+        $service->transitionOption($exchange->fresh(['exchangeOptions']), [$itemId], ExchangeStatusEnum::REDELIVERING, [
+            'carrier_id' => $carrier->id,
+            'tracking_number' => 'SHIP-FEE',
+        ]);
+
+        $successorShipping = OrderShipping::where('order_option_id', OrderExchangeOption::find($itemId)->new_order_option_id)->first();
+
+        $this->assertSame('SHIP-FEE', $successorShipping?->tracking_number);
+        $this->assertSame(0.0, (float) $successorShipping->total_shipping_amount, '재발송 행에 배송비가 복제되면 안 된다.');
+        $this->assertSame(0.0, (float) $successorShipping->base_shipping_amount);
+        $this->assertSame(3000.0, (float) OrderShipping::where('order_option_id', $originalOptionId)->first()->total_shipping_amount, '배송비는 원 행에 남는다.');
+    }
+
+    /**
      * 택배사 사용 집계는 상품 행 송장을 센다 — 행에 쓰면 사용 중, 지우면 다시 0 이다. (R12)
      *
      * @return void 반환값 없음

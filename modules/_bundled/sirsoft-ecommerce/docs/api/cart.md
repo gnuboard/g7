@@ -258,8 +258,8 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-14 10:00:00` | 최종 수정 일시 (사용자 타임존 포맷) |
 | product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`, `sales_status`, `display_status`) |
 | product_option | object\|null | `{"id":1086,"selling_price":19000, …}` | 옵션 요약 (`id`, `option_code`, `option_name`, `option_name_localized`, `option_values`, `option_values_localized`, `list_price`, `list_price_formatted`, `multi_currency_list_price`, `selling_price`, `selling_price_formatted`, `multi_currency_selling_price`, `discount_rate`, `stock_quantity`, `is_active`) |
-| available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()`) |
-| unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 구매 가능 시 `null`) |
+| available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()` 이고 담은 옵션이 판매 중(`is_active`)일 때 `true`) |
+| unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 상품은 판매 중이지만 담은 옵션이 판매 중지면 `suspended`. 구매 가능 시 `null`) |
 | is_shippable_to_selected_country | boolean | `true` | 선택된 배송 국가로 배송 가능한지 (배송정책 기준) |
 | selected_shipping_country | string | `KR` | 판정에 사용된 배송 국가 코드 |
 | subtotal | integer | `19000` | 표시 소계 = (옵션 판매가 + 추가옵션 단위 합계) × 수량 (옵션이 로드된 경우에만 존재) |

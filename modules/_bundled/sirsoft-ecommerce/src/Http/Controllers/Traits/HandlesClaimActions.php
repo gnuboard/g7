@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreRefundRequestRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreReturnRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateClaimRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimLinkResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimPaymentResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimReasonResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
@@ -28,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
+use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 use Modules\Sirsoft\Ecommerce\Support\RefundBankMask;
 
 /**
@@ -253,6 +255,14 @@ trait HandlesClaimActions
                 'progress_steps' => ClaimProgressSteps::for($claim),
                 // 선교환의 「회수」 줄 — 관리자 상세와 같은 배열(일반 교환·반품은 null).
                 'collection_lane' => ClaimProgressSteps::collectionLane($claim),
+                // 연결 신청서(보완 5 · Q8) — 주소는 서버가 회원/비회원을 갈라 준다. partial 이 회원 여부를 판단하지 않는다.
+                'linked_claims' => ClaimLinkResource::envelope(
+                    $this->claims()->linkedClaimsFor($claim),
+                    fn (string $number) => $this->viewer()['guest_order'] !== null
+                        ? ClaimUrl::guestDetail($number)
+                        : ClaimUrl::memberDetail($number),
+                    $claim->order,
+                ),
             ]);
         } catch (OrderClaimException $e) {
             return $this->claimNotFound();

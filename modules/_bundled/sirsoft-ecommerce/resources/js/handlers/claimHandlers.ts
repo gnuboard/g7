@@ -22,6 +22,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { formatAmountInCurrency } from './calculateCurrencyPrices';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Claim')) ?? {
@@ -274,6 +275,11 @@ function t(key: string, fallback: string, params?: Record<string, unknown>): str
  */
 function serverMessageOf(error: any): string | null {
     const data = error?.response?.data ?? error?.data ?? {};
+    // 서버는 일반 문구(`message`)와 실제 사유(`errors.detail` — 결제대행사 거절 사유 등)를 따로 싣는다.
+    // 사유가 있으면 그것을 보인다 — 일반 문구만으로는 운영자가 무엇을 해야 하는지 알 수 없다(S3-D11).
+    // 주문 취소·입금확인 핸들러도 같은 순서로 읽는다.
+    const detail = data?.errors?.detail;
+    if (typeof detail === 'string' && detail !== '') return detail;
     if (typeof data?.message === 'string' && data.message !== '') return data.message;
 
     const isTransportFailure = error?.isAxiosError === true && !error?.response;
@@ -505,6 +511,9 @@ function buildClaimCompleteRows(
             completable_item_count: claim.completable_item_count ?? 0,
             refund_applicable: claim.refund?.applicable === true,
             refund_amount_formatted: claim.refund?.refund_amount_formatted ?? null,
+            // 사용 마일리지 반환액 — 환불신청서는 현금과 함께 이 금액도 싣는다(EC-694). 0 이면 창이 줄을 그리지 않는다.
+            refund_points_amount: Number(claim.refund?.refund_points_amount ?? 0),
+            refund_points_amount_formatted: claim.refund?.refund_points_amount_formatted ?? null,
             blocked_reason: claim.refund?.blocked_reason ?? null,
             restore: restoreMap[String(claim.id)] !== false,
         };
@@ -1153,14 +1162,60 @@ export function syncClaimItemSelectionHandler(
     const selectedIds = (params.selectedIds ?? []).map((id) => Number(id));
     const rows = params.rows ?? [];
     const options = commonTransitionOptions(rows, selectedIds);
-    const current = G7Core.state.getLocal?.()?.itemBulkStatus ?? '';
+    const local = G7Core.state.getLocal?.() ?? {};
+    const current = local.itemBulkStatus ?? '';
+    const nextStatus = options.some((option) => option.value === current) ? current : '';
 
     G7Core.state.setLocal?.({
         selectedClaimItems: selectedIds,
         itemTransitionOptions: options,
         // 고른 상태가 새 교집합 밖이면 비운다 — 남겨 두면 화면엔 값이 보이는데 [적용] 이 422 다.
-        itemBulkStatus: options.some((option) => option.value === current) ? current : '',
+        itemBulkStatus: nextStatus,
+        ...reprefilledTracking(local, rows, selectedIds, nextStatus),
     });
+}
+
+/**
+ * 선택이 바뀔 때 미리 채운 송장을 새 선택 기준으로 다시 정합니다. (P1 「미리 채움」의 선택 변경 축)
+ *
+ * 미리 채움은 상태를 고를 때·송장 칸을 열 때·방향을 바꿀 때 계산된다. 그 **뒤에** 송장 없는 행을 더
+ * 고르면 앞 선택의 송장이 칸에 남아, 그대로 적용하면 송장 없는 상품에 다른 상품의 송장이 붙었다
+ * (2026-10-07 실측). 칸의 값이 **직전 선택의 자동 값과 같을 때만** 새 선택의 공통 송장(없으면 빈 값)으로
+ * 바꾼다 — 운영자가 손으로 적은 값은 건드리지 않는다.
+ *
+ * @param local 화면 지역 상태 (직전 선택·상태·송장 칸)
+ * @param rows 상세 상품 행
+ * @param selectedIds 새로 고른 행 ID
+ * @param status 새 선택에서 남은 목표 상태
+ * @returns 바꿀 송장 칸 (바꿀 것이 없으면 빈 객체)
+ */
+function reprefilledTracking(
+    local: Record<string, any>,
+    rows: ClaimDetailItemRow[],
+    selectedIds: number[],
+    status: string,
+): { itemCarrierId?: string; itemTrackingNumber?: string } {
+    const trackingMode = local.itemTrackingMode === true;
+
+    if (!trackingMode && !TRACKING_REQUIRED_STATUSES.includes(status)) {
+        return {};
+    }
+
+    const direction = trackingMode
+        ? (local.itemTrackingDirection === 'redelivery' ? 'redelivery' : 'collection')
+        : directionForStatus(status);
+    const previousIds: number[] = (local.selectedClaimItems ?? []).map((id: unknown) => Number(id));
+    const previous = commonRowTracking(rows, previousIds, direction);
+    const untouched = String(local.itemCarrierId ?? '') === previous.carrierId
+        && String(local.itemTrackingNumber ?? '') === previous.trackingNumber;
+
+    if (!untouched) {
+        return {};
+    }
+
+    const next = commonRowTracking(rows, selectedIds, direction);
+
+    return { itemCarrierId: next.carrierId, itemTrackingNumber: next.trackingNumber };
 }
 
 /**
@@ -1341,7 +1396,9 @@ export function updateClaimItemQuantityHandler(
 /**
  * 분할이 일어난 행을 운영자에게 알립니다.
  *
- * 표가 한 줄 늘어난 것을 스스로 해석하게 두지 않는다 — "2개 처리, 1개 신청 상태로 남음".
+ * 표가 한 줄 늘어난 것을 스스로 해석하게 두지 않는다 — "2개 처리, 1개는 지금 상태 그대로 남음".
+ * 남은 수량은 **나누기 전 상태**에 남는다(심사 단계면 신청, 발송중 상품을 일부만 발송도착으로 옮기면 발송중) —
+ * 「신청 상태」 라고 적으면 표와 어긋난다(S1-D10).
  *
  * @param data 전이 응답 데이터
  */
@@ -1357,7 +1414,7 @@ function reportClaimItemSplits(data: any): void {
     G7Core.toast?.info?.(
         t(
             'sirsoft-ecommerce.admin.claim.detail.items.bulk_split_notice',
-            `${kept}개를 처리하고 ${remaining}개는 신청 상태로 남겼습니다.`,
+            `${kept}개를 처리하고 ${remaining}개는 지금 상태 그대로 남겼습니다.`,
             { kept, remaining, count: kept },
         ),
     );
@@ -2518,8 +2575,19 @@ interface ClaimRefundExecuteContext {
     refundAmount: number;
     /** 마일리지 환불액 */
     refundPointsAmount: number;
-    /** 두 환불액의 합 — 부동소수 오차를 걷어 낸 값(모달 표시 전용) */
+    /** 최종 환불 합계 — 현금 + 마일리지 + 교환 차액 환급, 부동소수 오차를 걷어 낸 값(모달 표시 전용) */
     refundTotal: number;
+    /**
+     * 위 세 금액의 표기(`32,500원`·`$12.50`) — 창은 이 문자열을 그린다. 숫자에 통화 코드를 이어 붙이면
+     * 자릿수 구분 없는 `32500 KRW` 가 되어, 같은 신청서 상세의 금액과 꼴이 달라진다(S3-D1).
+     */
+    refundAmountFormatted: string;
+    refundPointsAmountFormatted: string;
+    refundTotalFormatted: string;
+    /** 교환 차액 환급 합계 (교환으로 받은 상품의 환불일 때만, 없으면 0) — 실행 본문에는 싣지 않는다(서버 저장값) */
+    exchangeDifferenceTotal: number;
+    /** 교환 차액 환급 표기 — 서버가 만든 「4,000원 (마일리지)」 */
+    exchangeDifferenceFormatted: string;
     /** 환불 수단 값 */
     refundMethod: string;
     /** 환불 수단 라벨 (서버가 준 선택지에서 해석) */
@@ -2527,11 +2595,15 @@ interface ClaimRefundExecuteContext {
     /**
      * 이 환불을 실행하려면 **보낼 계좌가 있어야 하는가** (T2-D6).
      *
-     * 서버가 실행 게이트와 같은 술어로 판정해 내려 준다(`refund_account_required`). 화면이
-     * 결제수단 코드로 재현하면 확장 결제수단에서 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸이
-     * 없는 계좌 환불」 또는 「PG 환불인데 계좌를 요구」가 된다.
+     * 서버가 실행 게이트와 같은 술어로 **환불 수단마다** 판정해 내려 준다(`refund_account_by_method`) —
+     * 지금 고른 수단의 값을 쓴다. 화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈리고, 어긋난 쪽은
+     * 오류 없이 「계좌 칸이 없는 계좌 환불」 또는 「PG 환불인데 계좌를 요구」가 된다.
      */
     refundAccountRequired: boolean;
+    /** 지금 고른 수단으로 실행하면 돈이 고객 계좌로 나가는가 — 저장 계좌 줄의 표시 조건 */
+    refundAccountUsed: boolean;
+    /** 사용 마일리지를 차감하지 않은 주문이라 반환액이 0 인가(Q15) — 창이 그 이유를 보인다 */
+    pointsNotDeducted: boolean;
     /** 환불 계좌 은행명 (계좌 이체 환불일 때만) */
     refundBankName: string;
     /** 환불 계좌번호 (열람 권한이 없으면 마스킹된 값) */
@@ -2668,6 +2740,34 @@ function sumAmounts(a: number, b: number): number {
 }
 
 /**
+ * [금액 수정] 칸의 최종 환불 합계를 상점 통화 표기로 다시 적습니다. (S3-D27)
+ *
+ * 합계 줄은 숫자에 통화 코드를 이어 붙여 `22500 KRW` 였다 — 같은 화면의 다른 금액과 실행 창(S3-D1)은
+ * `22,500원` 이다. 화면 표현식은 상점 통화 설정을 읽는 포맷터를 부를 수 없어, 두 입력 칸이 바뀔 때 이
+ * 핸들러가 표기 문자열을 `_local.refundInputTotalFormatted` 에 적는다. 첫 표기는 상세 응답의
+ * `refund_total_formatted` 가 채운다.
+ *
+ * @param action 액션 객체 (params: refundAmount · refundPointsAmount · currencyCode)
+ * @param _context 액션 컨텍스트
+ */
+export function formatRefundInputTotalHandler(
+    action: ActionWithParams<{
+        refundAmount?: string | number | null;
+        refundPointsAmount?: string | number | null;
+        currencyCode?: string | null;
+    }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const total = sumAmounts(amountOrNull(params.refundAmount) ?? 0, amountOrNull(params.refundPointsAmount) ?? 0);
+
+    G7Core.state.setLocal?.({ refundInputTotalFormatted: formatAmountInCurrency(total, params.currencyCode) });
+}
+
+/**
  * 환불 실행 확인 모달을 엽니다. (D18 — 진입 지점)
  *
  * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다. 그래서 **지금 입력된
@@ -2686,11 +2786,17 @@ export async function openClaimRefundExecuteHandler(
         refundAmount?: string | number | null;
         refundPointsAmount?: string | number | null;
         refundMethod?: string | null;
+        /** 상세가 준 저장(실효) 수단의 이름 — 수단이 선택지 밖일 때(꺼진 플러그인의 PG 등) 대신 그린다(S3-D25) */
+        refundMethodLabel?: string | null;
         refundMethods?: Array<{ value?: string; label?: string }>;
         refundBankName?: string | null;
         refundBankAccount?: string | null;
         refundBankHolder?: string | null;
         refundAccountRequired?: boolean | string | null;
+        refundAccountByMethod?: Record<string, { used?: boolean; required?: boolean; required_if_cash?: boolean }> | null;
+        exchangeDifferenceTotal?: string | number | null;
+        exchangeDifferenceFormatted?: string | null;
+        pointsNotDeducted?: boolean | string | null;
     }>,
     _context?: ActionContext,
 ): Promise<void> {
@@ -2707,27 +2813,52 @@ export async function openClaimRefundExecuteHandler(
     }
 
     const method = (params.refundMethod ?? '').trim();
+    // 선택지 밖의 수단은 상세가 준 저장(실효) 수단이다 — 결제 플러그인이 꺼지면 선택지에서 PG 가 빠져,
+    // 값을 그대로 그리면 창에 「pg」 가 찍힌다(S3-D25). 그 수단의 이름으로 그린다.
     const methodLabel = (params.refundMethods ?? [])
-        .find((option) => option?.value === method)?.label ?? method;
+        .find((option) => option?.value === method)?.label
+        ?? ((params.refundMethodLabel ?? '').trim() || method);
+
+    // 계좌 줄·입력 칸은 **지금 고른 수단**의 판정을 쓴다 — 운영자가 상세에서 수단을 바꾼 뒤 이 창을 연다.
+    // 서버 판정이 없는 응답(구버전 등)이면 저장 수단 판정으로 떨어지고 계좌 줄은 값이 있을 때 보인다(종전 동작).
+    const judgement = params.refundAccountByMethod?.[method] ?? null;
+    // 교환 차액 환급은 별도 칼럼이라 두 환불액에 들어 있지 않다 — 고객에게 실제로 나가는 총액에 더한다.
+    const exchangeDifference = amountOrNull(params.exchangeDifferenceTotal) ?? 0;
 
     // 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌인지 이 창에 없으면 다른 화면을
     // 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 이미 적힌 계좌의 은행명은 서버가
     // 해석해 실어 준다. 계좌를 새로 적는 칸의 은행 선택지는 셸의 `paymentSettings`(공개 결제
     // 설정 — 권한 게이트가 없다)가 나른다: 관리자 설정 엔드포인트(`settings.read`)를 읽으면
     // 클레임만 볼 수 있는 운영자에게는 403 이 되어 선택지가 조용히 빈다.
+    const refundAmount = amountOrNull(params.refundAmount) ?? 0;
+    const refundPointsAmount = amountOrNull(params.refundPointsAmount) ?? 0;
+    const refundTotal = sumAmounts(sumAmounts(refundAmount, refundPointsAmount), exchangeDifference);
     const context: ClaimRefundExecuteContext = {
         claimId,
         claimNumber: params.claimNumber ?? '',
         currencyCode: params.currencyCode ?? '',
-        refundAmount: amountOrNull(params.refundAmount) ?? 0,
-        refundPointsAmount: amountOrNull(params.refundPointsAmount) ?? 0,
-        refundTotal: sumAmounts(amountOrNull(params.refundAmount) ?? 0, amountOrNull(params.refundPointsAmount) ?? 0),
+        refundAmount,
+        refundPointsAmount,
+        refundTotal,
+        refundAmountFormatted: formatAmountInCurrency(refundAmount, params.currencyCode),
+        refundPointsAmountFormatted: formatAmountInCurrency(refundPointsAmount, params.currencyCode),
+        refundTotalFormatted: formatAmountInCurrency(refundTotal, params.currencyCode),
+        exchangeDifferenceTotal: exchangeDifference,
+        exchangeDifferenceFormatted: exchangeDifference > 0 ? (params.exchangeDifferenceFormatted ?? '') : '',
         refundMethod: method,
         refundMethodLabel: methodLabel,
         refundBankName: (params.refundBankName ?? '').trim(),
         refundBankAccount: (params.refundBankAccount ?? '').trim(),
         refundBankHolder: (params.refundBankHolder ?? '').trim(),
-        refundAccountRequired: params.refundAccountRequired === true || params.refundAccountRequired === 'true',
+        // 실행 게이트는 본문의 현금액(지금 입력칸 값)으로 계좌를 요구한다 — 저장 현금으로 판정하면 현금 0원 신청서에 현금을
+        // 입력하고 실행할 때 창에 계좌 칸·동의가 없는 채 거절된다. 현금 축을 뺀 판정(required_if_cash)이 있으면 입력값과 합친다.
+        refundAccountRequired: judgement
+            ? (typeof judgement.required_if_cash === 'boolean'
+                ? judgement.required_if_cash && (amountOrNull(params.refundAmount) ?? 0) > 0
+                : judgement.required === true)
+            : params.refundAccountRequired === true || params.refundAccountRequired === 'true',
+        refundAccountUsed: judgement ? judgement.used === true : true,
+        pointsNotDeducted: params.pointsNotDeducted === true || params.pointsNotDeducted === 'true',
     };
 
     // 계좌 칸·동의는 **창을 열 때마다 비운다**. 남겨 두면 앞 신청서에 적은 계좌가 다음 건의

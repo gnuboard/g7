@@ -368,6 +368,114 @@ class ConfirmDepositControllerTest extends ModuleTestCase
     }
 
     /**
+     * 결제 통화가 USD 인 무통장 주문을 만듭니다 — 23,000원 × 0.000742 = $17.066 → 0.01 절사 $17.06.
+     *
+     * 결제 통화가 소수 통화여야 입금액(주 단위)과 PG 비교 기준(최소 화폐단위)의 단위 차이가 드러난다.
+     * KRW 주문은 두 단위가 같아 어느 쪽으로 비교해도 통과한다.
+     *
+     * @return Order 입금대기 상태의 USD 결제 무통장 주문
+     */
+    private function makeUsdDbankOrder(): Order
+    {
+        $order = $this->makeDbankOrder(23000);
+        $order->update(['currency_snapshot' => [
+            'base_currency' => 'KRW',
+            'order_currency' => 'USD',
+            'base_unit' => 1,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1, 'decimal_places' => 0, 'rounding_unit' => '1', 'rounding_method' => 'floor'],
+                'USD' => ['rate' => 0.000742, 'decimal_places' => 2, 'rounding_unit' => '0.01', 'rounding_method' => 'floor'],
+            ],
+        ]]);
+        $order->payment->update(['currency' => 'USD']);
+
+        return $order->fresh();
+    }
+
+    /**
+     * USD 결제 주문: 입금확인 창이 안내하는 결제 통화 금액($17.06)을 넣으면 결제완료된다
+     *
+     * 입금액은 결제 통화의 주 단위로 들어온다. 이를 정수로 자른 뒤(17) 최소 화폐단위 청구액(1706)과
+     * 비교하면, 안내대로 넣은 금액이 늘 불일치로 거절된다.
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
+     *
+     * @effects manual_deposit_confirm_accepts_payment_currency_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_confirm_deposit_accepts_payment_currency_amount_for_usd_order(): void
+    {
+        $order = $this->makeUsdDbankOrder();
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->url($order), [
+                'amount' => 17.06,
+                'depositor_name' => '홍길동',
+                'mark_order_complete' => true,
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
+        $this->assertEqualsWithDelta(17.06, (float) $order->fresh()->payment->paid_amount_local, 0.001);
+    }
+
+    /**
+     * USD 결제 주문: 입금을 「기록만」 해도 결제행의 결제 통화 입금액이 센트까지 남는다
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, actor=admin
+     *
+     * @effects manual_deposit_record_keeps_payment_currency_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_record_deposit_keeps_payment_currency_amount_for_usd_order(): void
+    {
+        $order = $this->makeUsdDbankOrder();
+
+        $this->actingAs($this->adminUser)
+            ->patchJson($this->url($order), [
+                'amount' => 17.06,
+                'mark_order_complete' => false,
+            ])
+            ->assertOk();
+
+        $payment = $order->fresh()->payment;
+        $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertEqualsWithDelta(17.06, (float) $payment->paid_amount_local, 0.001, '입금액이 정수로 잘려 기록되면 안 된다.');
+    }
+
+    /**
+     * USD 결제 주문: 금액이 다르면 422 이고, 진단 문구는 결제 통화로 「예상 = 결제예정금액, 실제 = 입금액」 이다
+     *
+     * @scenario terminal_path=manual_deposit_confirm, payment_method=dbank, option_mix=all_active, actor=admin
+     *
+     * @effects manual_deposit_mismatch_reports_due_and_received_in_payment_currency
+     *
+     * @return void 반환값 없음
+     */
+    public function test_usd_deposit_mismatch_reports_amounts_in_payment_currency(): void
+    {
+        $order = $this->makeUsdDbankOrder();
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->url($order), [
+                'amount' => 17.00,
+                'mark_order_complete' => true,
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertSame(
+            __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
+                'expected' => ecommerce_format_price(17.06, 'USD'),
+                'actual' => ecommerce_format_price(17.00, 'USD'),
+            ]),
+            $response->json('errors.detail'),
+        );
+        $this->assertNotEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
+    }
+
+    /**
      * 무통장이 아닌 주문 → 422 (가드)
      *
      * @scenario terminal_path=manual_deposit_confirm, payment_method=card_pg, option_mix=all_active, actor=admin

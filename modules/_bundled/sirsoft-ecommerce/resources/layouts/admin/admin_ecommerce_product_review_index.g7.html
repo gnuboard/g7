@@ -371,14 +371,14 @@
         <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.date_range</span>
           <div class="flex-center flex-wrap gap-2">
-            <input type="date" class="input w-36" value="{{_local.filter.startDate ?? ''}}">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.startDate ?? ''}}">
               <on type="change">
                 <!-- 날짜를 직접 고르면 빠른 선택 표시를 푼다 — 둘 다 켜져 있으면 어느 쪽이 지금 조건인지 알 수 없다 -->
                 <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
             <span class="text-secondary">~</span>
-            <input type="date" class="input w-36" value="{{_local.filter.endDate ?? ''}}">
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.endDate ?? ''}}">
               <on type="change">
                 <!-- 종료일도 같다 -->
                 <set-state target="local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
@@ -546,7 +546,10 @@
           <column field="product_name" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.product_name" :sortable="false" :required="true">
             <cell>
               <div class="flex-center gap-2">
-                <img src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-10 h-10 rounded object-cover shrink-0 border border-gray-200 dark:border-gray-700"/>
+                <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-10 h-10 rounded object-cover shrink-0 border border-gray-200 dark:border-gray-700"/>
+                <div data-if="{{!row.product?.thumbnail_url}}" class="w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <icon name="image" class="text-lg text-gray-400 dark:text-gray-500"/>
+                </div>
                 <div>
                   <div class="text-primary font-medium">{{row.product?.name ?? ''}}</div>
                   <div data-if="{{row.option_snapshot_label}}" class="text-secondary text-xs">{{row.option_snapshot_label}}</div>
@@ -619,7 +622,10 @@
                   <div class="px-4 py-4">
                     <!-- 상품 이미지 + 상품명/옵션 2단 배치 -->
                     <div class="flex items-start gap-3 mb-4">
-                      <img src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"/>
+                      <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"/>
+                      <div data-if="{{!row.product?.thumbnail_url}}" class="w-16 h-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+                      </div>
                       <div class="row-stack min-w-0">
                         <a href="{{`/admin/ecommerce/products/${row.product?.product_code ?? row.product?.id}/edit`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium text-sm leading-snug">{{row.product?.name ?? ''}}</a>
                         <span data-if="{{row.option_snapshot_label}}" class="text-secondary text-xs">{{row.option_snapshot_label}}</span>

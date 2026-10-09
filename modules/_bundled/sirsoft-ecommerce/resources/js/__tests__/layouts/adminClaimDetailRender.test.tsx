@@ -674,6 +674,36 @@ describe('재발송지 뱃지 2종 (D14)', () => {
   });
 });
 
+describe('재발송지 주소 — 해외 주문 (S2-D8)', () => {
+  /**
+   * 해외 재발송지는 도시·주를 따로 담는다 — 운영자가 보는 주소에서 빠지면 교환품을 보낼 수 없다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_redelivery_address_shows_the_international_city_and_state
+   */
+  it('재발송지 주소 줄에 도시·주가 함께 나온다', async () => {
+    const utils = await renderProbe(
+      shippingSection as Node,
+      claimResponse({
+        redelivery_address_snapshot: {
+          recipient_name: 'Jane Doe',
+          phone: '+1-212-555-0101',
+          zipcode: '10118',
+          address1: '350 5th Ave',
+          address2: 'Suite 2',
+          city: 'New York',
+          state: 'NY',
+          country_code: 'US',
+          changed_by_user: false,
+        },
+      })
+    );
+
+    expect(document.getElementById('cs_012_redelivery_address')?.textContent ?? '').toContain('10118 350 5th Ave Suite 2 New York NY');
+    utils.cleanup();
+  });
+});
+
 describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
   /**
    * 청구액이 없는 건에는 결제 두 칸이 없다 — 서버가 추린 배열을 그대로 그린다.
@@ -1433,6 +1463,63 @@ describe('취소 상세 — 조회 전용 (취소 정보 카드 · 메모 안내
   });
 
   /**
+   * 재활성 기록이 있으면 머리 뱃지와 취소 정보 카드의 재활성 줄이 서고, 없으면 둘 다 없다(Q29).
+   *
+   * @scenario claim_type=cancel, claim_stage=final
+   * @effects claim_detail_header_shows_reactivated_badge, claim_detail_cancel_card_shows_reactivated_time_and_quantity
+   */
+  it('재활성 뱃지와 취소 카드 재활성 줄', async () => {
+    const findById = (node: unknown, id: string): Node | undefined => {
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const hit = findById(child, id);
+          if (hit) return hit;
+        }
+        return undefined;
+      }
+      if (node && typeof node === 'object') {
+        if ((node as Node).id === id) return node as Node;
+        for (const value of Object.values(node as Node)) {
+          const hit = findById(value, id);
+          if (hit) return hit;
+        }
+      }
+      return undefined;
+    };
+    const badgeParent = { type: 'basic', name: 'Div', children: [
+      findById(detailLayout, 'cd_006b_reactivated_badge'),
+      findById(detailLayout, 'cd_006c_reactivated_partial_badge'),
+    ] };
+
+    const reactivated = cancelResponse({
+      reactivated_at_formatted: '2026-10-05 14:00',
+      reactivated_quantity: 1,
+      total_cancel_quantity: 2,
+      is_partially_reactivated: true,
+    });
+
+    const header = await renderProbe(badgeParent as Node, reactivated);
+    expect(document.getElementById('cd_006b_reactivated_badge')).toBeNull();
+    expect(document.getElementById('cd_006c_reactivated_partial_badge')).not.toBeNull();
+    header.cleanup();
+
+    const card = await renderProbe(reasonBlock as Node, reactivated);
+    expect(document.getElementById('cc_005_reactivated_row')).not.toBeNull();
+    expect(document.getElementById('cc_005_reactivated_at')?.textContent).toContain('reactivated_value');
+    expect(document.getElementById('cc_006_reactivated_hint')).not.toBeNull();
+    card.cleanup();
+
+    const plain = await renderProbe(reasonBlock as Node, cancelResponse());
+    expect(document.getElementById('cc_005_reactivated_row')).toBeNull();
+    plain.cleanup();
+
+    const plainHeader = await renderProbe(badgeParent as Node, cancelResponse());
+    expect(document.getElementById('cd_006b_reactivated_badge')).toBeNull();
+    expect(document.getElementById('cd_006c_reactivated_partial_badge')).toBeNull();
+    plainHeader.cleanup();
+  });
+
+  /**
    * @scenario claim_type=cancel, claim_stage=final
    * @effects claim_detail_cancel_is_read_only
    */
@@ -1926,5 +2013,120 @@ describe('정산 칸 추가결제 건 — 부분 환급액 (3차 검증 인터�
     walk(paymentSection);
 
     expect(texts).toContain("$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}");
+  });
+});
+
+describe('연결 신청서 (보완 5)', () => {
+  /**
+   * 레이아웃 트리에서 id 로 노드를 찾는다.
+   *
+   * @param node 시작 노드
+   * @param id 찾을 id
+   * @returns 찾은 노드
+   */
+  function nodeById(node: unknown, id: string): Node | undefined {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const hit = nodeById(child, id);
+        if (hit) return hit;
+      }
+
+      return undefined;
+    }
+    if (node && typeof node === 'object') {
+      if ((node as Node).id === id) return node as Node;
+      for (const value of Object.values(node as Node)) {
+        const hit = nodeById(value, id);
+        if (hit) return hit;
+      }
+    }
+
+    return undefined;
+  }
+
+  const linkedRefund = (n: number, live: boolean) => ({
+    claim_type: 'refund',
+    claim_type_label: '환불',
+    claim_number: `RF2026092100000${n}`,
+    status: live ? 'requested' : 'rejected',
+    status_label: live ? '환불신청' : '반려',
+    status_variant: live ? 'info' : 'danger',
+    is_live: live,
+    requested_at_formatted: '2026-09-21 10:00',
+    detail_url: `/admin/ecommerce/claims/RF2026092100000${n}`,
+    refund_method_label: 'PG사 환불',
+    refund_total_formatted: `${n},000원`,
+    refunded_at_formatted: null,
+  });
+
+  /**
+   * 반품 정산 카드는 후속 환불신청서 전부를 서버 표기 그대로 그리고, 비면 안내를 띄운다.
+   *
+   * @scenario claim_type=return, claim_stage=final
+   * @effects claim_linked_refunds_listed_from_source_axis, claim_linked_refunds_empty_notice
+   */
+  it('반품 정산 카드에 후속 환불 목록 · 빈 안내', async () => {
+    let utils = await renderProbe(
+      paymentSection as Node,
+      claimResponse({ claim_type: 'return', claim_number: 'RT20260921000001', status: 'completed' }, {
+        linked_claims: { source: null, refunds: [linkedRefund(1, false), linkedRefund(2, true)], latest_refund: linkedRefund(2, true), result_cancel: null },
+      }),
+    );
+    expect(document.getElementById('cst_013_linked_refund_0')?.textContent).toContain('RF20260921000001');
+    expect(document.getElementById('cst_013_linked_refund_1')?.textContent).toContain('2,000원');
+    expect(document.getElementById('cst_015_linked_refunds_empty')).toBeNull();
+    utils.cleanup();
+
+    utils = await renderProbe(
+      paymentSection as Node,
+      claimResponse({ claim_type: 'return', claim_number: 'RT20260921000001', status: 'completed' }, {
+        linked_claims: { source: null, refunds: [], latest_refund: null, result_cancel: null },
+      }),
+    );
+    expect(document.getElementById('cst_015_linked_refunds_empty')).not.toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * 헤더 연결 줄 — 환불이면 원 신청서와 처리 결과 취소, 연결이 없으면 줄 전체가 사라진다.
+   *
+   * @scenario claim_type=exchange, claim_stage=final
+   * @effects claim_header_links_source_and_result_cancel
+   */
+  it('헤더 연결 줄 — 원 신청서 · 처리 결과 취소 · 없으면 숨김', async () => {
+    const row = nodeById(detailLayout, 'cd_019_linked_claims_row') as Node;
+    expect(row).toBeDefined();
+
+    let utils = await renderProbe(
+      row,
+      claimResponse({ claim_type: 'refund', claim_number: 'RF20260921000002' }, {
+        linked_claims: {
+          source: { claim_type: 'return', claim_type_label: '반품', claim_number: 'RT20260921000001', status_label: '반품완료', status_variant: 'success', detail_url: '/admin/ecommerce/claims/RT20260921000001' },
+          refunds: [],
+          latest_refund: null,
+          result_cancel: { claim_type: 'cancel', claim_number: 'CN20260921000009', detail_url: '/admin/ecommerce/claims/CN20260921000009' },
+        },
+      }),
+    );
+    expect(document.getElementById('cd_020_source_claim_link')?.textContent).toContain('RT20260921000001');
+    expect(document.getElementById('cd_023_result_cancel_link')?.textContent).toContain('CN20260921000009');
+    utils.cleanup();
+
+    utils = await renderProbe(row, claimResponse({}, { linked_claims: { source: null, refunds: [], latest_refund: null, result_cancel: null } }));
+    expect(document.getElementById('cd_019_linked_claims_row')).toBeNull();
+    utils.cleanup();
+  });
+
+  /**
+   * 링크는 서버가 준 `detail_url` 을 새 창으로 연다 — 화면이 경로를 조립하지 않는다.
+   *
+   * @scenario claim_type=return, claim_stage=final
+   * @effects claim_linked_refunds_listed_from_source_axis
+   */
+  it('open-window 경로는 detail_url 이다', () => {
+    const json = JSON.stringify([nodeById(detailLayout, 'cd_019_linked_claims_row'), nodeById(paymentSection, 'cst_linked_refunds_block')]);
+    expect(json).toContain('linkedRefund.detail_url');
+    expect(json).toContain('claim.data.linked_claims.source.detail_url');
+    expect(json).not.toContain('/admin/ecommerce/claims/{{');
   });
 });

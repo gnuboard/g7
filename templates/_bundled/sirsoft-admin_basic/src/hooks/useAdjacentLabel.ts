@@ -9,6 +9,15 @@
  * 부품이 스스로 이름(aria-label·aria-labelledby·`<label for>`)을 갖지 않을 때만, 가까운 조상 안에서
  * **앞에 놓인 가장 가까운 라벨**을 찾아 `aria-labelledby` 로 잇는다. 레이아웃을 한 줄도 고치지 않고
  * 라벨 문구(다국어)가 그대로 이름이 된다.
+ *
+ * 어느 칸의 이름인지 알 수 없는 라벨은 잇지 않는다(이커머스 전수 실측 B7, 2026-10-08):
+ * - 라벨 범위(라벨 뒤 형제들 가운데 다음 라벨 전까지)에 이 칸 말고 다른 칸이 있으면 — 기간 시작·끝 두 칸을 든 상자,
+ *   우편번호·기본주소·상세주소를 묶는 「주소」 같은 그룹 제목. 첫 칸에 그룹 제목을 이으면 안내 글자 이름이 덮인다.
+ * - 레이아웃이 준 id 가 문서에서 이 라벨을 가리키지 않으면(반복 안의 고정 id) — `aria-labelledby` 는 id 로 찾으므로
+ *   겹친 id 를 이으면 엉뚱한 행의 라벨로 읽힌다.
+ *
+ * id 없는 라벨에는 문서에 없는 id 를 골라 단다(`window.__g7AutoLabelSeq`). Label 부품은 id prop 이 없으면 id 속성을
+ * 그리지 않으므로 React 가 이 속성을 덮어쓰지 않는다.
  */
 
 import { useEffect, type RefObject } from 'react';
@@ -29,7 +38,33 @@ const MAX_DEPTH = 3;
 /** 라벨을 못 찾은 요소를 다시 살펴보는 최대 횟수(라벨이 늦게 그려지는 경우 대비) */
 const MAX_TRIES = 3;
 
-let labelSeq = 0;
+/**
+ * 문서에 아직 없는 자동 id 를 만듭니다 — 일련번호는 window 에 두어 번들이 여러 번 평가돼도 겹치지 않는다.
+ *
+ * @param doc 대상 문서
+ * @param prefix id 접두(`g7-auto-label-`·`g7-auto-control-`)
+ * @returns 새 id
+ */
+function nextAutoId(doc: Document, prefix: string): string {
+  const w = window as unknown as { __g7AutoLabelSeq?: number };
+  let id: string;
+  do {
+    w.__g7AutoLabelSeq = (w.__g7AutoLabelSeq ?? 0) + 1;
+    id = `${prefix}${w.__g7AutoLabelSeq}`;
+  } while (doc.getElementById(id));
+
+  return id;
+}
+
+/**
+ * 레이아웃이 준 id 가 문서에서 이 요소 하나만 가리키는지 판정합니다(id 가 없으면 true).
+ *
+ * @param el 대상 요소
+ * @returns 겹치지 않으면 true
+ */
+function hasUniqueIdOrNone(el: HTMLElement): boolean {
+  return !el.id || el.ownerDocument.getElementById(el.id) === el;
+}
 
 /**
  * 요소가 이미 접근 가능한 이름을 갖는지 판정합니다.
@@ -61,6 +96,7 @@ function isUsableLabel(label: HTMLElement, el: HTMLElement, following = false, s
   const ok = following ? position & Node.DOCUMENT_POSITION_PRECEDING : position & Node.DOCUMENT_POSITION_FOLLOWING;
   if (!ok) return false;
   if ((label.textContent ?? '').trim() === '') return false;
+  if (!hasUniqueIdOrNone(label)) return false;
 
   // 라벨과 이 요소 사이에 다른 입력 부품이 끼어 있으면 그 라벨은 앞 칸의 것이다 — 집지 않는다.
   // (스케줄 추가 창: 「타임아웃 (초)」 라벨 → 숫자칸 → 스위치 3개가 모두 「타임아웃 (초)」 로 읽혔다)
@@ -87,6 +123,77 @@ function hasControlBetween(label: HTMLElement, el: HTMLElement, following: boole
   }
 
   return false;
+}
+
+/**
+ * `ancestor` 의 자식 가운데 `node` 를 품은 것(자기 자신 포함)을 찾습니다.
+ *
+ * @param ancestor 조상
+ * @param node 자손
+ * @returns 자식 요소 또는 null
+ */
+function childContaining(ancestor: HTMLElement, node: HTMLElement): HTMLElement | null {
+  let cur: HTMLElement | null = node;
+  while (cur && cur.parentElement !== ancestor) cur = cur.parentElement;
+
+  return cur;
+}
+
+/**
+ * 형제 하나가 라벨 자리(라벨 자체, 또는 칸 없이 라벨을 품은 상자)인지 — 라벨 범위의 끝을 정한다.
+ *
+ * @param node 형제 요소
+ * @returns 라벨 자리면 true
+ */
+function isLabelSlot(node: Element): boolean {
+  if (node.matches(LABEL_SELECTOR)) return true;
+
+  return !node.querySelector(CONTROL_SELECTOR) && !!node.querySelector(LABEL_SELECTOR);
+}
+
+/**
+ * 요소(또는 그 안)에 이 부품 밖의 입력 부품이 있는지 판정합니다.
+ *
+ * @param node 살펴볼 요소
+ * @param el 이름을 받을 부품(라벨 탐색 시작점)
+ * @returns 다른 칸이 있으면 true
+ */
+function hasForeignControl(node: HTMLElement, el: HTMLElement): boolean {
+  const controls = Array.from(node.querySelectorAll<HTMLElement>(CONTROL_SELECTOR));
+  if (node.matches(CONTROL_SELECTOR)) controls.push(node);
+
+  return controls.some((control) => !el.contains(control) && !control.contains(el));
+}
+
+/**
+ * 라벨 범위(라벨 자리에서 칸 쪽으로, 다음 라벨 자리 전까지)에 든 칸이 이 부품 하나뿐인지 판정합니다.
+ *
+ * 범위에 다른 칸이 있으면 라벨은 여러 칸을 묶는 그룹 제목(「주소」)이거나 칸이 둘인 상자(「기간」 시작·끝)의 제목이라
+ * 어느 칸의 이름인지 알 수 없다. 라벨·칸이 번갈아 놓인 한 줄(그리드)은 다음 라벨에서 끊기므로 각 칸이 자기 라벨만 받는다.
+ *
+ * @param label 라벨
+ * @param el 이름을 받을 부품
+ * @param ancestor 라벨을 찾은 조상
+ * @param following true 면 라벨이 부품 뒤에 있다
+ * @returns 이 부품만의 라벨이면 true
+ */
+function labelOwnsOnly(label: HTMLElement, el: HTMLElement, ancestor: HTMLElement, following: boolean): boolean {
+  const labelSlot = childContaining(ancestor, label);
+  const elSlot = childContaining(ancestor, el);
+  if (!labelSlot || !elSlot || labelSlot === elSlot) return false;
+
+  let seen = false;
+  const step = (node: Element) => (following ? node.previousElementSibling : node.nextElementSibling);
+  for (let sib = step(labelSlot) as HTMLElement | null; sib; sib = step(sib) as HTMLElement | null) {
+    if (sib === elSlot) {
+      seen = true;
+    } else if (isLabelSlot(sib)) {
+      break;
+    }
+    if (hasForeignControl(sib, el)) return false;
+  }
+
+  return seen;
 }
 
 /**
@@ -132,13 +239,16 @@ export function findAdjacentLabel(el: HTMLElement): HTMLElement | null {
     const scope = ancestor;
     const before = all.filter((label) => isUsableLabel(label, el, false, scope));
     if (before.length > 0) {
-      return before[before.length - 1];
+      // 가장 가까운 라벨이 여러 칸의 제목이면 잇지 않는다 — 더 먼 라벨은 사이에 칸이 끼어 어차피 쓸 수 없다
+      const nearest = before[before.length - 1];
+
+      return labelOwnsOnly(nearest, el, ancestor, false) ? nearest : null;
     }
     // 바로 위 상자 안에서만, 스위치 뒤에 제목을 두는 배치(「[스위치] 레이아웃 캐시」)도 받는다
     if (depth === 0) {
       const after = all.filter((label) => isUsableLabel(label, el, true, scope));
       if (after.length > 0) {
-        return after[0];
+        return labelOwnsOnly(after[0], el, ancestor, true) ? after[0] : null;
       }
     }
   }
@@ -168,17 +278,15 @@ export function linkAdjacentLabel(
   el.dataset.g7AutoLabelTries = String(tries + 1);
   const start = anchor ?? el;
   const label = findAdjacentLabel(start) ?? (rowTitleFallback ? findRowTitle(start) : null);
-  if (!label) return null;
+  if (!label || !hasUniqueIdOrNone(label)) return null;
 
   if (!label.id) {
-    labelSeq += 1;
-    label.id = `g7-auto-label-${labelSeq}`;
+    label.id = nextAutoId(label.ownerDocument, 'g7-auto-label-');
   }
   let ids = label.id;
   if (includeSelf) {
     if (!el.id) {
-      labelSeq += 1;
-      el.id = `g7-auto-control-${labelSeq}`;
+      el.id = nextAutoId(el.ownerDocument, 'g7-auto-control-');
     }
     ids = `${label.id} ${el.id}`;
   }

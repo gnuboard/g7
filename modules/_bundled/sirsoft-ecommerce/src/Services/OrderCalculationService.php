@@ -78,6 +78,13 @@ use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
  */
 class OrderCalculationService
 {
+    /**
+     * 이번 계산에서 외부 배송비 API 대신 기본 배송비를 쓴 정책 (B9)
+     *
+     * @var array<int, array{policy_id: int, country_code: string, reason: string}>
+     */
+    protected array $shippingApiFallbacks = [];
+
     use ResolvesAdditionalOptions;
 
     /**
@@ -107,6 +114,9 @@ class OrderCalculationService
      */
     public function calculate(CalculationInput $input): OrderCalculationResult
     {
+        // 이번 계산의 외부 배송비 API 폴백 기록을 비운다(B9) — 서비스 인스턴스가 재사용돼도 앞 계산의 기록이 섞이지 않게.
+        $this->shippingApiFallbacks = [];
+
         // 아이템 데이터 준비 (상품/옵션 정보 로드 또는 스냅샷 사용)
         $preparedItems = $this->prepareItems($input->items, $input);
 
@@ -823,6 +833,13 @@ class OrderCalculationService
             ? MileageRounding::fromOrderSnapshot($input->mileagePolicySnapshot)
             : MileageRounding::normalize($this->resolveMileageCurrencyRule($input));
 
+        // 같은 상품옵션 라인이 여럿이면(상태·클레임 분할 뒤 재계산) 결과는 키 하나로 합쳐진다. 정액 적립은
+        // 키 전체 수량에 곱해야 한다 — 라인 수량을 키에 대입하면 마지막 라인 수량만 남는다(S-Q26-c).
+        $keyQuantity = [];
+        foreach ($preparedItems as $item) {
+            $keyQuantity[$item['product_option_id']] = ($keyQuantity[$item['product_option_id']] ?? 0) + (int) $item['quantity'];
+        }
+
         foreach ($preparedItems as $item) {
             $optionId = $item['product_option_id'];
             $option = $item['product_option'];
@@ -851,8 +868,8 @@ class OrderCalculationService
             // 옵션별 마일리지 설정이 있는 경우 활용
             if ($option->mileage_value !== null && $option->mileage_type !== null) {
                 if ($option->mileage_type === 'fixed') {
-                    // 정액 적립: mileage_value를 그대로 사용 (수량 곱)
-                    $pointsPerItem[$optionId] = MileageRounding::apply($option->mileage_value * $item['quantity'], $rounding);
+                    // 정액 적립: mileage_value를 그대로 사용 (키 전체 수량 곱)
+                    $pointsPerItem[$optionId] = MileageRounding::apply($option->mileage_value * $keyQuantity[$optionId], $rounding);
                 } else {
                     // 정률 적립: earnableAmount 기준으로 계산
                     $pointsPerItem[$optionId] = MileageRounding::apply($earnableAmount * $option->mileage_value / 100, $rounding);
@@ -1627,7 +1644,37 @@ class OrderCalculationService
             summary: $summary,
             promotions: $promotionsSummary,
             validationErrors: $validationErrors,
+            // 외부 배송비 API 가 실패해 기본 배송비로 계산한 정책(B9) — 주문 생성이 order_meta 로 남긴다.
+            metadata: $this->shippingApiFallbacks === [] ? [] : ['shipping_fee_fallback' => $this->shippingApiFallbacks],
         );
+    }
+
+    /**
+     * 직전 계산에서 외부 배송비 API 대신 기본 배송비를 쓴 정책 목록을 반환합니다. (B9)
+     *
+     * @return array<int, array{policy_id: int, country_code: string, reason: string}> 폴백 기록
+     */
+    public function shippingApiFallbacks(): array
+    {
+        return $this->shippingApiFallbacks;
+    }
+
+    /**
+     * 외부 배송비 API 폴백을 기록합니다. (B9)
+     *
+     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
+     * @param  string  $reason  폴백 사유 (no_endpoint · http_error · unparsable · exception)
+     * @return int 기본 배송비
+     */
+    protected function fallbackShippingFee(ShippingPolicyCountrySetting $countrySetting, string $reason): int
+    {
+        $this->shippingApiFallbacks[] = [
+            'policy_id' => (int) $countrySetting->shipping_policy_id,
+            'country_code' => (string) $countrySetting->country_code,
+            'reason' => $reason,
+        ];
+
+        return (int) round((float) $countrySetting->base_fee);
     }
 
     /**
@@ -2005,6 +2052,14 @@ class OrderCalculationService
         $groups = [];
         $shippingPolicySnapshots = $input?->shippingPolicySnapshots ?? [];
 
+        // 같은 상품옵션 라인 수 — 키 금액을 라인에 나눌 때 마지막 라인을 가린다(S-Q26-c)
+        $keyLineCount = [];
+        foreach ($preparedItems as $item) {
+            $keyLineCount[$item['product_option_id']] = ($keyLineCount[$item['product_option_id']] ?? 0) + 1;
+        }
+        $keySeen = [];
+        $keyAllocated = [];
+
         foreach ($preparedItems as $item) {
             $product = $item['product'];
             $isSnapshotMode = ! empty($item['_snapshot_mode']);
@@ -2064,9 +2119,25 @@ class OrderCalculationService
                 $groups[$policyId]['_snapshot_country_setting'] = $this->buildSnapshotCountrySetting($shippingPolicySnapshots[$optionId]);
             }
 
-            $amount = $discountedItems[$optionId]['discounted_subtotal']
+            // 같은 상품옵션 라인이 둘이면 discountedItems 는 키 합계라, 라인마다 그대로 더하면 그룹 금액이 두 배가
+            // 되어 조건부무료 기준을 잘못 넘긴다(S-Q26-c 엔진 측). 키 금액을 라인 소계 비중으로 나누고 마지막 라인이
+            // 나머지를 받는다. 체크아웃은 키당 한 라인이라 첫 분기(종전과 같음)만 탄다.
+            $keyAmount = (int) ($discountedItems[$optionId]['discounted_subtotal']
                 ?? $discountedItems[$optionId]['subtotal']
-                ?? 0;
+                ?? 0);
+            $keySeen[$optionId] = ($keySeen[$optionId] ?? 0) + 1;
+            if ($keyLineCount[$optionId] === 1) {
+                $amount = $keyAmount;
+            } elseif ($keySeen[$optionId] === $keyLineCount[$optionId]) {
+                $amount = $keyAmount - ($keyAllocated[$optionId] ?? 0);
+            } else {
+                $keySubtotal = (int) ($discountedItems[$optionId]['subtotal'] ?? 0);
+                $lineSubtotal = ((int) $item['unit_price'] + (int) ($item['additional_options_total'] ?? 0)) * (int) $item['quantity'];
+                $amount = $keySubtotal > 0
+                    ? intdiv($keyAmount * $lineSubtotal, $keySubtotal)
+                    : intdiv($keyAmount, $keyLineCount[$optionId]);
+                $keyAllocated[$optionId] = ($keyAllocated[$optionId] ?? 0) + $amount;
+            }
 
             $productOption = $item['product_option'];
             $itemWeight = (float) ($productOption->weight ?? 0) * $item['quantity'];
@@ -2348,7 +2419,7 @@ class OrderCalculationService
 
         // 엔드포인트 미설정 시 기본 배송비 폴백
         if (empty($apiEndpoint)) {
-            return (int) round((float) $countrySetting->base_fee);
+            return $this->fallbackShippingFee($countrySetting, 'no_endpoint');
         }
 
         try {
@@ -2358,12 +2429,12 @@ class OrderCalculationService
             $response = $this->dispatchApiRequest($apiEndpoint, $requestData, $config);
 
             if ($response === null || ! $response->successful()) {
-                return (int) round((float) $countrySetting->base_fee);
+                return $this->fallbackShippingFee($countrySetting, 'http_error');
             }
 
             $fee = $this->extractFeeFromApiResponse($response, $countrySetting, $config);
 
-            return $fee ?? (int) round((float) $countrySetting->base_fee);
+            return $fee ?? $this->fallbackShippingFee($countrySetting, 'unparsable');
         } catch (\Throwable $e) {
             // 예외 발생 시 기본 배송비 반환 (토큰 등 민감값은 로그에 남기지 않음)
             Log::warning('API 배송비 계산 실패', [
@@ -2374,7 +2445,7 @@ class OrderCalculationService
                 'error' => $e->getMessage(),
             ]);
 
-            return (int) round((float) $countrySetting->base_fee);
+            return $this->fallbackShippingFee($countrySetting, 'exception');
         }
     }
 
@@ -2643,6 +2714,7 @@ class OrderCalculationService
      */
     protected function apportionShippingFee(array $items, int $totalFee): array
     {
+        // 결과는 상품옵션 키로 모은다 — 같은 키 라인이 둘이면 몫을 더한다(대입하면 앞 라인 몫이 사라진다, S-Q26-c).
         if (empty($items) || $totalFee <= 0) {
             $result = [];
             foreach ($items as $item) {
@@ -2662,7 +2734,7 @@ class OrderCalculationService
             foreach ($items as $index => $item) {
                 $isLast = ($index === count($items) - 1);
                 $result[$item['product_option_id']] = [
-                    'amount' => $isLast ? ($totalFee - $allocated) : $share,
+                    'amount' => ($result[$item['product_option_id']]['amount'] ?? 0) + ($isLast ? ($totalFee - $allocated) : $share),
                 ];
                 $allocated += $share;
             }
@@ -2685,7 +2757,7 @@ class OrderCalculationService
                 $allocated += $share;
             }
 
-            $result[$item['product_option_id']] = ['amount' => $share];
+            $result[$item['product_option_id']] = ['amount' => ($result[$item['product_option_id']]['amount'] ?? 0) + $share];
         }
 
         return $result;

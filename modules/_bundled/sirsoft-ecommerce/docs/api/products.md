@@ -754,7 +754,7 @@ HTTP/1.1 200
 | items | body | array | 아니오 | — | 처리 대상 항목 배열 (각 항목: id + 개별 수정할 상품 필드 — name/list_price/selling_price/sales_status/display_status. bulk_changes 로 지정된 필드는 제외됨) |
 | option_bulk_changes | body | array | 아니오 | — | 옵션 조건 기반 일괄 변경값 (price_adjustment/stock_quantity 를 method+value 로 일괄 조정) |
 | option_bulk_changes.price_adjustment | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 추가금 일괄 변경 블록 (method + value 쌍) |
-| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 비율 적용) |
+| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
 | option_bulk_changes.price_adjustment.value | body | number | 아니오 | — | 옵션 추가금 변경 값 (method 에 따라 설정값·가산값·비율로 해석) |
 | option_bulk_changes.stock_quantity | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 재고 일괄 변경 블록 (method + value 쌍) |
 | option_bulk_changes.stock_quantity.method | body | string | 아니오 | `set`, `add`, `subtract` | 옵션 재고 변경 방식 (set 지정값으로 설정 / add 증가 / subtract 감소) |
@@ -1175,6 +1175,9 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+> **다국어 이름 필수 언어(수정)**: 이름류(`option_groups.*.name`·`options.*.option_name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`/`content`)는 사이트 기본 언어(`app.site_locale`) 값이 필수지만, **같은 상품에 이미 저장된 값과 같은 이름**은 길이·형식만 검사한다(필수 언어 기준이 바뀌기 전에 다른 언어로만 저장된 이름이 수정 화면에 고칠 칸이 없어도 저장을 막지 않게 — 제품 결정 2026-10-08). 바꾸거나 새로 넣은 이름은 종전대로 필수다.
+
+
 **설명** 상품코드로 기존 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, `ProductService::findByCode()`로 `code` 대상 상품을 찾은 뒤 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`에 넘겨 상품·옵션·이미지·SEO 등을 갱신하고 `ProductResource`를 반환합니다. `{product}` ID 경로 대신 상품코드 기반으로 수정할 때 사용하며, 대상 상품이 없으면 404, 검증 실패는 422로 응답합니다.
 
 
@@ -1539,7 +1542,7 @@ HTTP/1.1 200
 
 이 엔드포인트는 **부분 성공**을 계약으로 합니다. 존재하지 않거나 권한 스코프 밖인 상품 ID 는 404 를 만들지 않고 응답의 `product_ids` 에서 빠집니다 — 하나가 없다고 나머지의 정상 조회를 버릴 이유가 없고, 배치에서 "무엇이 없었는지" 는 상태코드로 표현할 수 없기 때문입니다. 단건 404 semantics 가 필요하면 `GET /admin/products/{identifier}` 를 사용합니다. 권한 스코프는 옵션 테이블이 아니라 상품 쿼리에서 먼저 적용되므로, `scope=self` 사용자가 타인 상품 ID 를 실어 보내도 옵션이 노출되지 않습니다.
 
-라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z_-]+` 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
+라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z_-]+`(상품코드 허용 문자 — 영숫자·하이픈·밑줄) 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/products/{identifier}
@@ -2103,6 +2106,9 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+> **다국어 이름 필수 언어(수정)**: 이름류(`option_groups.*.name`·`options.*.option_name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`/`content`)는 사이트 기본 언어(`app.site_locale`) 값이 필수지만, **같은 상품에 이미 저장된 값과 같은 이름**은 길이·형식만 검사한다(필수 언어 기준이 바뀌기 전에 다른 언어로만 저장된 이름이 수정 화면에 고칠 칸이 없어도 저장을 막지 않게 — 제품 결정 2026-10-08). 바꾸거나 새로 넣은 이름은 종전대로 필수다.
+
 
 **설명** ID 경로로 지정한 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, 라우트 모델 바인딩된 `Product`에 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`로 반영해 상품 기본정보·옵션·이미지·SEO 메타를 갱신하고 `ProductResource`를 반환합니다. `by-code` 변형과 동일 서비스 메서드를 쓰지만 상품코드 조회 단계 없이 바로 대상 모델을 받습니다. 검증 실패는 422, 대상이 없으면 404로 응답합니다.
 

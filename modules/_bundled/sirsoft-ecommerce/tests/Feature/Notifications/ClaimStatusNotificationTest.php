@@ -306,6 +306,32 @@ class ClaimStatusNotificationTest extends ModuleTestCase
     }
 
     /**
+     * 알림의 운송장 줄은 「택배사 · 운송장 · 상품명 × 수량」 이다 — 상품명이 빠지면 고객은 어느 상자에 무엇이
+     * 담겼는지 모른다. 알림 경로는 신청서를 관계 없이 다시 읽으므로 상품 행의 주문옵션을 스스로 불러야 한다
+     * (2026-10-07 실측: 메일 「CJ대한통운 · S1C1RTNA02 ·  × 2」 — 상품명 자리가 비었다).
+     *
+     * @effects tracking_lines_carry_product_names
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tracking_lines_carry_product_names(): void
+    {
+        $return = app(OrderReturnService::class)->transition($this->requestedReturn(), ReturnStatusEnum::APPROVED);
+        $item = $return->fresh('returnOptions.orderOption')->returnOptions->first();
+        $raw = $item->orderOption->product_name;
+        $expected = is_array($raw) ? ($raw[app()->getLocale()] ?? reset($raw)) : (string) $raw;
+        $captured = $this->captureEventHooks();
+
+        app(OrderReturnService::class)->writeItemTracking($return->fresh(), ClaimTrackingDirectionEnum::COLLECTION, [(int) $item->id], $this->testClaimCarrier()->id, 'NOTI-NAME');
+
+        $line = (string) ($captured[0][1]['tracking_lines'] ?? '');
+        $this->assertNotSame('', $expected);
+        $this->assertStringContainsString('NOTI-NAME', $line);
+        $this->assertStringContainsString($expected, $line, '운송장 줄에 상품명이 없습니다: '.$line);
+        $this->assertStringNotContainsString(' ·  × ', $line);
+    }
+
+    /**
      * 같은 요청에서 신청서가 회수중으로 옮겨지면 상태 알림(회수중)이 운송장 줄을 싣고 나가고, 송장 등록 알림은 억제된다.
      *
      * @effects tracking_registered_notification_is_suppressed_by_the_status_notification

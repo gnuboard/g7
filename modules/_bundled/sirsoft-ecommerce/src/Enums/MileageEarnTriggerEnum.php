@@ -39,6 +39,22 @@ enum MileageEarnTriggerEnum: string
     }
 
     /**
+     * 이 시점에 도달했거나 지난 상품 상태 목록을 반환합니다. (F4 — 스케줄러 적립 대상)
+     *
+     * 배송완료 트리거면 지연 중 구매확정된 상품도 적립 대상이다 — 상태가 트리거와 같을 때만 고르면 그 상품은 영영
+     * 적립되지 않는다.
+     *
+     * @return array<int, string> 상품 상태 값 목록
+     */
+    public function eligibleStatuses(): array
+    {
+        return match ($this) {
+            self::CONFIRMED => [OrderStatusEnum::CONFIRMED->value],
+            self::DELIVERED => [OrderStatusEnum::DELIVERED->value, OrderStatusEnum::CONFIRMED->value],
+        };
+    }
+
+    /**
      * 모든 값 배열을 반환합니다.
      *
      * @return array<int, string> 값 배열

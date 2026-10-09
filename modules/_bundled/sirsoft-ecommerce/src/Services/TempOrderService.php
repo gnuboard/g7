@@ -875,8 +875,9 @@ class TempOrderService
                 continue;
             }
 
-            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일)
-            if (! $product->isPurchasable()) {
+            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일).
+            //    옵션이 판매 중지(비활성)여도 같은 사유로 막는다 — 담은 뒤 중지된 옵션·옵션 id 직접 지정 모두.
+            if (! $product->isPurchasable() || ! $option->is_active) {
                 $unavailableItems[] = [
                     'cart_id' => $item->id,
                     'product_id' => $product->id,
@@ -1063,8 +1064,9 @@ class TempOrderService
                 continue;
             }
 
-            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일)
-            if (! $product->isPurchasable()) {
+            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일).
+            //    옵션이 판매 중지(비활성)여도 같은 사유로 막는다 — 담은 뒤 중지된 옵션·옵션 id 직접 지정 모두.
+            if (! $product->isPurchasable() || ! $option->is_active) {
                 $unavailableItems[] = [
                     'cart_id' => $item['cart_id'] ?? null,
                     'product_id' => $product->id,

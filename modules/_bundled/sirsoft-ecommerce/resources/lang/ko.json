@@ -476,7 +476,8 @@
         "available": "사용 가능",
         "expiring_soon": "소멸 예정 {{amount}} P",
         "view_history": "마일리지 내역",
-        "disabled_notice": "마일리지 기능이 비활성화되어 있습니다."
+        "disabled_notice": "마일리지 기능이 비활성화되어 있습니다.",
+        "withdraw_refund_credit_warning": "환불로 받은 마일리지 {{amount}} P 도 탈퇴하면 소멸되어 되돌릴 수 없습니다. 필요하면 탈퇴 전에 사용하거나 고객센터에 문의하세요."
     },
     "user_address_card": {
         "title": "기본 배송지",

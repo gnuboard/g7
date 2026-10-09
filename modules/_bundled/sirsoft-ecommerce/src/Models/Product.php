@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 모델
@@ -461,7 +462,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedText::pick($name, $locale);
     }
 
     /**
@@ -503,12 +504,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name이 다국어 객체인 경우
-            $localizedName = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
+            $localizedName = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
 
             // values가 다국어 객체 배열인 경우
             $localizedValues = [];
             foreach ($values as $value) {
-                $localizedValues[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
+                $localizedValues[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
             }
 
             $result[] = [
@@ -541,12 +542,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name_localized
-            $nameLocalized = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
+            $nameLocalized = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
 
             // values_localized
             $valuesLocalized = [];
             foreach ($values as $value) {
-                $valuesLocalized[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
+                $valuesLocalized[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
             }
 
             $result[] = [

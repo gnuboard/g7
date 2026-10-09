@@ -152,7 +152,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 | `redirect_fail_url` | 결제 실패 리다이렉트 URL | `{shopBase}/checkout` |
 | `use_escrow` | 에스크로 결제 활성화 | `false` |
 | `escrow_test_site_cd` | 테스트 에스크로 사이트 코드 | - |
-| `vbank_expire_days` | 가상계좌 입금 만료(일) | `3` |
+| `vbank_expire_days` | 가상계좌 입금 만료(일) — 사용 안 함 | `3` |
 | `easy_pay_allow_with_other_pg` | - | `false` |
 | `easy_pay_payco` | - | `false` |
 | `easy_pay_naverpay` | - | `false` |

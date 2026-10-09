@@ -1,0 +1,16 @@
+# e2e:allow 화면 변경 없음 — 경합 시 기존 실패 화면으로 간다(동시성은 브라우저로 재현할 수 없다).
+feature: 클레임 PG 결제 승인과 철회의 경합 — 망취소 후 실패 (F5) — #747 C9
+
+description: |
+  PG 승인이 오가는 사이 철회·고아 정리가 결제 건을 취소하면 확정(결제 대기일 때만)이 빈 손으로 끝났는데, 결제 건을 그대로
+  돌려줘 화면은 성공이었고 PG 승인 금액은 취소된 결제 건 뒤에 남았다. 이제 다른 요청이 먼저 확정한 경우가 아니면
+  망취소(claim_payment.void_approval 또는 콜백의 PG 보상 클로저)하고 claim_payment_withdrawn_during_approval 로 실패한다.
+
+axes:
+  timing: [withdrawn_during_approval]
+
+effects:
+  - approval_racing_withdrawal_is_voided_and_fails
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimPaymentApprovalWithdrawRaceTest.php

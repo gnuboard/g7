@@ -2,7 +2,7 @@
     "comment": "주문서 안에서 배송지를 관리하는 창 — 마이페이지로 나가지 않고 여기서 고르고 더하고 지운다.\n     한 창이 `_local.addressModalMode` 로 «목록»과 «입력 폼» 두 얼굴을 갖고, 제목도 그 값으로 갈린다.\n     폼 모드의 «추가/수정» 판정은 저장 버튼과 같은 SSoT 인 `editingAddress?.id` 를 쓴다 — 목록 헤더의\n     «새 배송지» 버튼이 `editingAddress` 를 `{is_default:false}` 객체로 열기 때문에, 객체 truthy 로\n     갈리면 빈 폼인데 제목이 「배송지 수정」으로 뜬다(#599 세션A 실측).",
     "meta": {
         "is_partial": true,
-        "_e2e_allow": "e2e:allow SA-D1 — 창 제목을 고르는 **표현식의 판정 키 하나**만 바꿨다(`editingAddress` 객체 truthy → `editingAddress?.id`). 노출 조건·저장 동작·API 는 그대로이고, 이미 그 키로 갈리던 저장 버튼 라벨·target·method 와 기준을 맞춘 것이다. 회귀는 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-checkout-address-modal-title.test.ts (4케이스 · 되돌리면 2 failed 대조 확인). 기존 주문서 spec(checkout-address-manual-entry)은 **배송지가 없는 회원**을 전제로 직접 입력 경로를 재서 이 창의 «목록 → 새 배송지» 경로가 열리지 않는다. 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 빈 폼 제목 「배송지 수정」 → 수정 후 「배송지 추가」(저장 버튼 「새 주소 추가」와 일치) · 기존 배송지 [수정] 경로는 제목 「배송지 수정」 + 버튼 「저장」 + 값 6칸 유지.",
+        "_e2e_allow": "e2e:allow S4-D9 — 저장 성공 안내를 상태 초기화보다 먼저 두고 기본 배송지 라벨에 for/id 를 이었다(Vitest 구조 검사 + 전용 Chrome 실측). SA-D1 — 창 제목을 고르는 **표현식의 판정 키 하나**만 바꿨다(`editingAddress` 객체 truthy → `editingAddress?.id`). 노출 조건·저장 동작·API 는 그대로이고, 이미 그 키로 갈리던 저장 버튼 라벨·target·method 와 기준을 맞춘 것이다. 회귀는 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-checkout-address-modal-title.test.ts (4케이스 · 되돌리면 2 failed 대조 확인). 기존 주문서 spec(checkout-address-manual-entry)은 **배송지가 없는 회원**을 전제로 직접 입력 경로를 재서 이 창의 «목록 → 새 배송지» 경로가 열리지 않는다. 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 빈 폼 제목 「배송지 수정」 → 수정 후 「배송지 추가」(저장 버튼 「새 주소 추가」와 일치) · 기존 배송지 [수정] 경로는 제목 「배송지 수정」 + 버튼 「저장」 + 값 6칸 유지.",
         "description": "체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제",
         "editor_label": "$t:user.modal_label.shop.addressManageModal"
     },
@@ -919,6 +919,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "id": "checkout_address_is_default",
                                         "name": "is_default",
                                         "checked": "{{!!_local.editingAddress?.is_default}}",
                                         "autoBinding": false,
@@ -926,9 +927,11 @@
                                     }
                                 },
                                 {
+                                    "comment": "문구를 눌러도 체크되게 체크박스 id 로 잇는다(마이페이지 배송지 창과 같다)",
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
+                                        "htmlFor": "checkout_address_is_default",
                                         "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
                                     },
                                     "text": "$t:mypage.addresses.form.set_default"
@@ -998,6 +1001,14 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "안내 문구는 편집 중 배송지를 비우기 «전에» 고른다 — 비운 뒤에 고르면 수정도 「추가되었습니다」 가 된다",
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{_local.editingAddress?.id ? '$t:mypage.addresses.updated' : '$t:mypage.addresses.added'}}"
+                                                            }
+                                                        },
+                                                        {
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
@@ -1005,13 +1016,6 @@
                                                                 "addressModalMode": "list",
                                                                 "editingAddress": null,
                                                                 "addressErrors": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "{{_local.editingAddress?.id ? '$t:mypage.addresses.updated' : '$t:mypage.addresses.added'}}"
                                                             }
                                                         }
                                                     ],

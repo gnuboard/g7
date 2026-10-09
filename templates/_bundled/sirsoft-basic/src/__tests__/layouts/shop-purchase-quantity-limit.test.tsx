@@ -61,6 +61,9 @@ function collectNodes(obj: any, predicate: (node: any) => boolean, acc: any[] = 
 }
 
 describe('_purchase_card.json - 옵션 라인 max clamp (A25)', () => {
+    /**
+     * @effects option_line_quantity_clamped_to_max_purchase
+     */
     it('QuantitySelector 의 max 가 상품 max_purchase_qty 로 clamp 된다', () => {
         // 옵션 라인 셀렉터는 `item.*` 을 바인딩하는 쪽이다 (다른 하나는 옵션 없는 상품용).
         const selector = collectNodes(
@@ -84,10 +87,17 @@ describe('_purchase_card.json - 합계 버튼 한도 차단 (A25)', () => {
         (n) => n.name === 'Button' && typeof n.props?.disabled === 'string'
     );
 
+    /**
+     * @effects purchase_total_checked_against_purchase_limits
+     */
     it('구매/장바구니 버튼이 2개 이상 존재한다', () => {
         expect(buttons.length).toBeGreaterThanOrEqual(2);
     });
 
+    /**
+     * @scenario purchase_case=multi_option_selected
+     * @effects purchase_total_checked_against_purchase_limits
+     */
     it('모든 구매 버튼 disabled 가 min 미달 / max 초과 합계 검증을 포함한다', () => {
         buttons.forEach((btn) => {
             const disabled = btn.props.disabled as string;
@@ -99,14 +109,24 @@ describe('_purchase_card.json - 합계 버튼 한도 차단 (A25)', () => {
         });
     });
 
-    it('옵션 없는 상품은 합계 조건에 걸리지 않는다 (option_groups 게이트)', () => {
+    /**
+     * @scenario purchase_case=single_option
+     * @effects single_option_product_purchasable_without_selection
+     */
+    it('옵션이 없거나 하나뿐인 상품은 합계 조건에 걸리지 않는다 (옵션 2개 이상 게이트 — 수량 선택기 분기와 같은 기준)', () => {
         buttons.forEach((btn) => {
-            expect(btn.props.disabled as string).toContain('option_groups');
+            const disabled = btn.props.disabled as string;
+            expect(disabled).toContain('(product.data?.options?.length ?? 0) > 1');
+            // option_groups 로 가르면 옵션 하나짜리 상품(option_groups 1개·옵션 행 1개)이 합계 0 으로 영영 잠긴다
+            expect(disabled).not.toContain('option_groups');
         });
     });
 });
 
 describe('_purchase_card.json - 한도 위반 안내 문구 (A25)', () => {
+    /**
+     * @effects purchase_limit_notices_present
+     */
     it('min/max 구매수량 안내 Span 이 존재한다', () => {
         const minNotice = findNode(
             purchaseCard,

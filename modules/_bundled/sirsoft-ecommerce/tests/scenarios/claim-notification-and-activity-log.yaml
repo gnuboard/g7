@@ -113,6 +113,7 @@ effects:
   - non_claim_notification_types_pass_through_untouched
   - a_claim_type_without_a_claim_argument_passes_through
   - refund_notification_amount_matches_what_the_screen_reports
+  - refund_notification_splits_cash_and_mileage   # 수단은 실제로 돈이 간 수단 — 현금·마일리지 줄 분리 (#747 S7)
   # 활동 로그 (Unit — ClaimActivityLogListenerTest)
   - request_writes_one_activity_row_with_the_claim_number
   - service_transition_writes_exactly_one_status_change_row
@@ -149,6 +150,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimActivityLogListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimActivityLogTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimRefundBreakdown.test.ts
 
 validation:
   audit_rule: test-scenario-coverage

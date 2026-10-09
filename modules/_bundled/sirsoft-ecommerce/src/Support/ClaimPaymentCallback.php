@@ -57,7 +57,10 @@ final class ClaimPaymentCallback
                 'reason' => $e->getMessageKey(),
             ]);
 
-            if ($onAmountMismatch !== null && str_ends_with($e->getMessageKey(), 'claim_payment_amount_mismatch')) {
+            // 승인이 성립한 뒤의 거절(금액 불일치 · 승인 중 철회 F5)은 PG 별 보상으로 되돌린다.
+            if ($onAmountMismatch !== null
+                && (str_ends_with($e->getMessageKey(), 'claim_payment_amount_mismatch')
+                    || str_ends_with($e->getMessageKey(), 'claim_payment_withdrawn_during_approval'))) {
                 $onAmountMismatch($e);
             }
 

@@ -396,6 +396,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `FileInput` | 파일 입력 (검증 포함) | accept, maxSize, onChange, onError, buttonText, placeholder, disabled | - |
 | `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`), size (`sm`\|`md`\|`lg`), lockRepeatClick (boolean — 첫 클릭 즉시 잠가 처리 중 `disabled` 가 그려지기 전의 두 번째 클릭 무시. 접수형 실행 버튼에 `:lockRepeatClick="true"`) | - |
 
+##### 라벨 자동 연결 (Input · Select · Textarea)
+
+레이아웃은 `<label class="form-label">우편번호</label><input …>` 처럼 보이는 라벨과 칸을 형제로만 두고 `for` 로 잇지 않는다. 세 부품은 그려진 뒤 **바로 앞 형제 라벨**, 없으면 **칸이 그 하나뿐인 상자의 바로 앞 라벨**(최대 두 단계 위, 라벨 하나만 든 상자도 포함 — `<label/><div class="relative"><input/><span>KRW</span></div>`, FormField 의 라벨 칸·입력 칸)을 찾아 `aria-labelledby` 로 잇는다. 선택 상자(목록형)는 버튼이 「라벨 + 고른 값」 으로 읽힌다.
+
+- 잇지 않는 경우: 호출처가 `aria-label`·`aria-labelledby` 를 준 칸, 라벨 안의 칸·`for` 로 이어진 칸(이미 이름이 있음), 라벨 뒤 상자에 칸이 둘 이상(기간 시작·끝, 금액 + 통화 선택 등), **라벨 뒤 범위(다음 라벨 전까지)에 칸이 둘 이상인 그룹 제목 라벨**(회원 등록 「주소」 아래 우편번호·주소·상세 주소 — 각 칸은 안내 글자 이름을 지킨다), `for` 가 있거나 안에 칸이 든 라벨, 같은 id 가 문서에 여럿인 라벨(반복 안의 고정 `data-ref`).
+- id 가 없는 라벨에는 겹치지 않는 `g7-auto-label-N` 을 단다. Label 부품 자체는 훅을 쓰지 않는다 — 확장 레이아웃 시험이 엔진(저장소 루트 React)과 이 템플릿 부품(템플릿 React)을 함께 그려 훅이 깨지기 때문이다.
+- 그룹 제목처럼 칸 이름이 아닌 라벨을 칸 바로 앞에 둘 때는 칸에 `aria-label` 을 직접 준다.
+
 #### 테이블
 
 | 컴포넌트 | 설명 |
@@ -506,7 +514,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 - **탭 방식(`layout="tabs"`)의 한 칸은 `Span` 안에 선택 버튼과 삭제 버튼을 나란히 둔다.** 버튼 안에 버튼을 넣는 것은
   HTML 규격 위반이라, 삭제 버튼을 선택 버튼 바깥의 형제로 옮겼다(삭제 클릭이 선택으로 번지지 않으므로
   `stopPropagation` 도 필요 없다). 기본 언어 칸에는 삭제 버튼이 없다.
-- 회귀 테스트: `src/components/composite/__tests__/MultilingualInput.test.tsx`.
+- **삭제(×) 버튼은 어느 언어를 지우는지 읽기 이름으로 단다** — `common.remove_language`(「English 입력 제거」). 아이콘만 그리면 화면 낭독기가 아이콘 이름 「xmark」 로 읽는다(`tabs`·`inline` 두 자리).
+- **기본(필수) 언어는 보는 사람의 언어가 아니라 사이트 기본 언어다.** `defaultLocale` prop 이 없으면
+  `src/support/siteLocale.ts` 의 `getSiteLocale()` — 전역 `appConfig.siteLocale`(서버 `app.site_locale`) → 없으면
+  `window.G7Config.appConfig.siteLocale` → 없거나 지원 언어 밖이면 첫 지원 언어 — 를 쓴다. 서버 다국어 필수 규칙
+  (`LocaleRequiredTranslatable`)이 같은 값을 보므로, 영어로 보는 관리자도 `*` 가 붙은 칸을 채우면 저장된다.
+  `HtmlEditor`(필수 `*` 탭)·`MultilingualTagInput`(새 태그 값을 담는 칸)도 같은 함수를 쓴다. 단 태그 제거 버튼의
+  읽기 이름처럼 **읽는 쪽은 보는 언어**로 둔다. `MultilingualTabPanel` 은 보기 전용 탭이라 보는 언어 그대로다.
+- 회귀 테스트: `src/components/composite/__tests__/MultilingualInput.test.tsx` · `MultilingualInputRemoveName.test.tsx` · `MultilingualSiteLocaleRequired.test.tsx`.
 
 ##### FileUploader 크기(`size`)
 
@@ -559,7 +574,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `AdminFooter` | 관리자 푸터 | copyright, version, quickLinks |
 | `PageHeader` | 페이지 헤더 (제목, 브레드크럼, 액션) | title, subtitle, breadcrumbItems, tabs, onTabChange, ... |
 | `LoginForm` | 로그인 폼 (이메일/비밀번호 검증) | submitButtonText, emailPlaceholder, passwordPlaceholder, forgotPasswordText, forgotPasswordUrl, ... |
-| `UserProfile` | 사용자 프로필 드롭다운 (`logoutEndpoint` 는 동일 출처일 때만 토큰을 싣고, `redirectPath` 가 동일 출처가 아니면 `/admin/login` 으로 이동) | user, profileText, logoutText, onProfileClick, onLogoutClick, logoutEndpoint, redirectPath |
+| `UserProfile` | 사용자 프로필 드롭다운 (`logoutEndpoint` 는 동일 출처일 때만 토큰을 싣고, `redirectPath` 가 동일 출처가 아니면 `/admin/login` 으로 이동. `dropdownOnly` 는 글자 없는 투명 버튼이라 「사용자 메뉴」(`common.user_menu`)를 읽기 이름으로 달고, 두 형태 모두 `aria-haspopup`·`aria-expanded` 로 메뉴 열림을 알린다) | user, profileText, logoutText, onProfileClick, onLogoutClick, logoutEndpoint, redirectPath, dropdownOnly |
 | `NotificationCenter` | 알림 센터 | notifications, titleText, emptyText, onNotificationClick |
 | `ThemeToggle` | 테마 모드 전환 (다크/라이트/자동) | onThemeChange, autoText, lightText, darkText |
 | `LanguageSelector` | 언어 선택 드롭다운 (`apiEndpoint` 가 동일 출처일 때만 토큰을 싣는다) | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |

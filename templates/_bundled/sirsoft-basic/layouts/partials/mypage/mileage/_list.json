@@ -2,6 +2,7 @@
     "comment": "적립금 내역 탭 본체. 분류 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는\n     `mileage_history` 가 채우고(그래서 navigate 가 필요하고), 지금 눌린 칩 강조는 `_local` 을 읽는다.\n     `replace` 로 이동하므로 필터를 여러 번 눌러도 뒤로가기 이력이 쌓이지 않는다.",
     "meta": {
         "is_partial": true,
+        "_e2e_allow": "e2e:allow S4-D12 — 내역 금액 글자 표현식 하나만 바꿨다(통화 서식 → 숫자 서식 + P). 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측. 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다",
         "description": "마이페이지 마일리지 내역 탭"
     },
     "type": "basic",
@@ -614,6 +615,7 @@
                                             "text": "{{tx.description ?? ''}}"
                                         },
                                         {
+                                            "comment": "금액은 숫자에 P 만 붙인다(위 요약 칸과 같은 방식) — amount_formatted 는 통화 서식(「240원」)이라 쓰면 「240원 P」 가 된다",
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
@@ -632,7 +634,7 @@
                                                         },
                                                         "default": "text-gray-700 dark:text-gray-300"
                                                     },
-                                                    "text": "{{tx.amount >= 0 ? '+' : ''}}{{tx.amount_formatted}} P"
+                                                    "text": "{{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P"
                                                 }
                                             ]
                                         },
@@ -718,7 +720,7 @@
                                                 },
                                                 "default": "text-gray-700 dark:text-gray-300"
                                             },
-                                            "text": "{{tx.amount >= 0 ? '+' : ''}}{{tx.amount_formatted}} P"
+                                            "text": "{{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P"
                                         }
                                     ]
                                 },

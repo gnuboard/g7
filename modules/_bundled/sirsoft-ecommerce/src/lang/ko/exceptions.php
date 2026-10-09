@@ -8,6 +8,16 @@
 return [
     'exchange_rate_save_failed' => '환율 설정을 저장하지 못했습니다.',
     // 마일리지 검증 예외
+    // 수동 결제 처리 확인 창 — 재고 부족 (Q13)
+    'manual_paid' => [
+        'stock_insufficient' => '재고가 부족해 상태를 바꿀 수 없습니다. :reason',
+        'stock_insufficient_for_order' => '주문(:order_number) — :reason 「재고 차감」 을 끄면 차감 없이 바꿀 수 있습니다.',
+    ],
+    // 취소 주문 재활성 — 쿠폰 충돌 (Q27)
+    'reactivation' => [
+        'coupon_unavailable' => '주문(:order_number)에 쓴 쿠폰(:coupons)을 다른 주문이 이미 사용했거나 회수되어 주문을 되살릴 수 없습니다.',
+        'coupon_unavailable_bulk' => '쿠폰 문제로 되살릴 수 없는 주문 :count건이 있어 일괄 변경하지 않았습니다. (주문번호: :order_numbers)',
+    ],
     'mileage' => [
         'insufficient_balance' => '사용 가능한 마일리지 잔액이 부족합니다.',
         'use_exceeds_balance' => '보유 마일리지(:amount점)를 초과하여 사용할 수 없습니다.',
@@ -16,6 +26,8 @@ return [
         'invalid_use_unit' => '마일리지는 :unit점 단위로 사용할 수 있습니다.',
         'exceeds_max_use' => '최대 사용 한도를 초과했습니다. (사용 가능 최대 :amount점)',
         'base_currency_rule_missing' => '기본 통화에 대한 마일리지 사용 단위가 설정되지 않아 마일리지를 사용할 수 없습니다.',
+        'insufficient_for_payment_complete' => '회원 마일리지 잔액이 부족해 주문(:order_number)의 상태를 바꿀 수 없습니다. 이 주문에서 차감할 마일리지 :amount 이 필요합니다. 「사용 마일리지 차감」 을 끄면 차감 없이 바꿀 수 있습니다.',
+        'insufficient_for_payment_complete_bulk' => '회원 마일리지 잔액이 부족한 주문 :count건이 있어 일괄 변경하지 않았습니다. (주문번호: :order_numbers)',
     ],
 
     'brand_not_found' => '브랜드를 찾을 수 없습니다.',
@@ -86,7 +98,10 @@ return [
     'cancel_quantity_invalid' => '취소 수량이 유효하지 않습니다.',
     'cancel_refund_negative' => '이 상품을 취소하면 적용 중인 할인 조건이 바뀌어 결제금액이 늘어나 취소할 수 없습니다.',
     'partial_cancel_not_supported' => '이 주문의 결제수단은 부분취소를 지원하지 않습니다. 전액취소만 가능합니다.',
+    'partial_cancel_not_supported_vbank_awaiting_deposit' => '입금 전 가상계좌 주문은 전액취소만 가능합니다. 발급된 가상계좌의 입금액은 바꿀 수 없어 일부만 취소하면 고객 입금을 확인할 수 없습니다.',
     'pg_refund_failed' => 'PG 환불 처리에 실패했습니다. (:error)',
+    'pg_refund_unsupported' => '결제수단이 PG 를 거치지 않아 PG 환불을 할 수 없습니다. 환불 수단을 계좌 환불로 바꾸세요.',
+    'pg_provider_inactive' => '이 주문의 결제 플러그인(:provider)이 꺼져 있어 PG 환불을 할 수 없습니다. 결제 플러그인을 활성화하거나 환불 수단을 계좌 환불로 바꾸세요.',
     'order_cancel_failed' => '주문 취소 처리에 실패했습니다.',
     'order_estimate_refund_failed' => '환불 예상금액 계산에 실패했습니다.',
     'order_create_failed' => '주문 생성에 실패했습니다.',
@@ -129,7 +144,12 @@ return [
     'claim_refund_already_executed' => '이미 환불이 실행됐거나 실행 중인 신청 건입니다. 새로고침 후 상태를 확인해 주세요.',
     'claim_refund_exceeds_method_remaining' => ':method 환불액(:requested)이 그 수단의 잔여(:remaining)를 초과합니다. 금액을 나눠 다시 시도해 주세요.',
     'claim_refund_exceeds_cancellable' => '환불액(:requested)이 취소 가능 금액(:cancellable)을 초과합니다.',
-    'claim_refund_points_requires_member' => '비회원 주문에는 마일리지 환불을 지정할 수 없습니다.',
+    'claim_refund_points_requires_member' => '비회원 주문에는 「마일리지로 환불」을 지정할 수 없습니다.',
+    'mileage_refund_failed' => '마일리지 반환·지급에 실패해 환불을 진행하지 않았습니다. 잠시 후 다시 시도해 주세요.',
+    'coupon_restore_failed' => '쿠폰 복원에 실패해 처리를 진행하지 않았습니다. 잠시 후 다시 시도해 주세요.',
+    'stock_restore_failed' => '재고 복원에 실패해 처리를 진행하지 않았습니다. 잠시 후 다시 시도해 주세요.',
+    'refund_ledger_outside_transaction' => 'prepareLedger 는 트랜잭션 안에서만 부를 수 있습니다 — PG 앞에서 저장한 환불 누적은 트랜잭션 롤백만이 되돌립니다.',
+    'refund_ledger_commit_failed' => 'PG 환불은 처리됐지만 장부 반영에 실패했습니다. [환불하기]를 다시 누르면 장부만 확정합니다.',
     'claim_refund_method_unavailable' => '이 주문의 결제수단으로는 선택하신 환불수단을 쓸 수 없습니다.',
     'claim_tracking_incomplete' => '택배사와 운송장 번호를 함께 입력해 주세요.',
     'claim_tracking_required' => '회수중·발송중으로 바꾸려면 택배사와 운송장 번호를 입력해 주세요.',
@@ -160,8 +180,10 @@ return [
     'claim_refund_not_requestable' => '현재 상품 상태(:status)에서는 취소·환불을 신청할 수 없습니다.',
     'claim_payment_not_found' => '결제 건을 찾을 수 없습니다.',
     'claim_payment_not_pending' => '결제 대기 상태가 아니라 결제를 진행할 수 없습니다.',
+    'claim_payment_withdrawn_during_approval' => '신청이 철회되어 결제를 완료할 수 없습니다. 승인된 결제는 취소됩니다.',
     'claim_payment_not_required' => '이 신청서에는 결제할 청구액이 없습니다.',
     'claim_payment_outstanding' => '미수납 청구액이 남아 있어 승인할 수 없습니다. 결제 완료 후 다시 승인해 주세요.',
+    'charge_deduct_insufficient' => '환불금이 청구액보다 적어 차감할 수 없습니다. 청구 방식을 추가결제로 바꾸세요.',
     'claim_payment_method_not_allowed' => '선택한 결제 수단은 클레임 추가결제에 사용할 수 없습니다.',
     'claim_payment_provider_unavailable' => '클레임 추가결제를 승인할 수 있는 결제 연동이 없습니다. 관리자에게 문의해 주세요.',
     'claim_payment_currency_unavailable' => '주문의 결제 통화 정보를 확인할 수 없어 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.',

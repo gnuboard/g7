@@ -30,4 +30,7 @@ return [
         'vbank_valid_hours_range' => 'Virtual account deposit deadline must be between :min and :max hours (max 90 days).',
         'use_escrow_invalid' => 'The escrow usage setting value is invalid.',
     ],
+    'settings' => [
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
 ];

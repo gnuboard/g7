@@ -18,16 +18,49 @@
   <!-- 분류 필터의 4단 선택지. 계층 전체를 한 번에 받아 두고 아래 computed 가 단계별로 잘라 쓴다 — 단계를 고를 때마다 서버를 부르지 않기 위해서다 -->
   <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <params hierarchical="1"/>
+    <error-handling>
+      <on-code code="403">
+        <!-- 분류는 상품 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 억제하지 않으면 진입할 때마다 「해당 권한이 없습니다」 알림이 뜬다(S3-D6). 비면 분류 필터 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 국가·결제수단·배송방식 필터의 선택지가 쇼핑몰 설정에서 온다(사용 중인 것만 세운다). 목록 표시를 막지 않도록 뒤늦게 받는다 -->
-  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <!-- 쇼핑몰 설정은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 비면 국가·결제수단·배송방식 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <!-- 일괄 운송장 입력에서 고를 택배사 — 목록 조회가 아니라 아래 일괄처리 구획이 쓴다 -->
-  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <!-- 택배사 목록은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 그 운영자는 일괄처리를 할 수 없으므로 선택지가 비어도 잃는 것이 없다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <!-- 배송정책 필터 선택지 — 사용 중인 것만 받는다 -->
-  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <!-- 배송정책 목록은 배송정책 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 비면 배송정책 필터 선택지만 빈다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <!-- 이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다 -->
   <data-source id="presets" label_key="$t:sirsoft-ecommerce.editor.data_source.presets" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/presets" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <params target_screen="orders"/>
+    <error-handling>
+      <on-code code="403">
+        <!-- 프리셋은 상품·클레임·주문 조회 권한 중 하나로 열린다(S3-D6) — 그래도 403 이면 프리셋 칩만 비우고 목록은 그대로 쓴다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <init-local>
     <field name="showDetailFilter" :value="false"/>
@@ -216,7 +249,7 @@
       <div data-ref="page_header" class="page-header">
         <div class="flex-center gap-3">
           <!-- MB-001 모바일 뒤로가기 버튼 -->
-          <button data-ref="mb_001_back_button" type="button" class="btn-icon hidden">
+          <button data-ref="mb_001_back_button" type="button" class="btn-icon hidden" aria-label="$t:common.back">
             <responsive on="portable" class="btn-icon flex"/>
             <on type="click">
               <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
@@ -233,7 +266,7 @@
         </div>
         <div class="page-actions">
           <!-- H-004 -->
-          <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
+          <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon" aria-label="$t:common.refresh">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75). -->
               <navigate path="/admin/ecommerce/orders" :mergeQuery="true">

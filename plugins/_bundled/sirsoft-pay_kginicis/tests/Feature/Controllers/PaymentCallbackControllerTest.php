@@ -12,7 +12,10 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
@@ -1381,6 +1384,130 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
         $this->assertSame($tid, $payment->transaction_id);
         $this->assertSame('12345678901', $payment->vbank_number);
+    }
+
+    /**
+     * 가상계좌 계좌가 발급되면 입금 전이라도 주문한 장바구니 항목을 정리한다 — 재고 차감이 입금 완료 시점이라
+     * 장바구니도 입금 때까지 남아, 주문을 마친 고객의 장바구니에 같은 상품이 그대로 보였다.
+     *
+     * @effects vbank_issue_clears_ordered_cart_items
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_clears_ordered_cart_items(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $product = Product::factory()->create();
+        $option = ProductOption::factory()->create(['product_id' => $product->id]);
+        $cart = Cart::create([
+            'user_id' => User::factory()->create()->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $order->update([
+            'order_meta' => array_merge($order->order_meta ?? [], ['cart_items' => [['cart_id' => $cart->id, 'quantity' => 1]]]),
+        ]);
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_VBANK_CART_'.uniqid(), $order->order_number, 50000, '0000', [
+                    'payMethod' => 'VBank',
+                    'VACT_Num' => '12345678902',
+                    'vactBankName' => '국민은행',
+                ]),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $this->makeCallbackParams($order->order_number, 50000))
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $order->payment->fresh()->payment_status);
+        $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart->id]);
+    }
+
+    /**
+     * 가상계좌 입금 기한(VACT_Date·VACT_Time)은 한국 시각이다 — 저장은 UTC(앱 시간대)로 환산한다.
+     *
+     * 종전에는 한국 시각 숫자를 그대로 UTC 로 읽어, 주문완료·주문 상세에 기한이 9시간 늦게 보이고
+     * 기한 만료 판정도 그만큼 늦었다(20260521 235959 KST 는 14:59:59 UTC).
+     *
+     * @effects vbank_issue_due_at_stored_as_utc_from_kst
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_due_at_is_converted_from_kst_to_utc(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_VBANK_DUE_'.uniqid(), $order->order_number, 50000, '0000', [
+                    'payMethod' => 'VBank',
+                    'VACT_Num' => '12345678901',
+                    'vactBankName' => '국민은행',
+                    'VACT_Date' => '20260521',
+                    'VACT_Time' => '235959',
+                ]),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $this->makeCallbackParams($order->order_number, 50000))
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $payment = $order->payment->fresh();
+        $this->assertSame('2026-05-21 14:59:59', $payment->vbank_due_at->copy()->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * 모바일 가상계좌 입금 기한(P_VACT_DATE·P_VACT_TIME)도 한국 시각을 UTC 로 환산해 저장한다.
+     *
+     * @effects mobile_vbank_issue_due_at_stored_as_utc_from_kst
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mobile_vbank_issue_due_at_is_converted_from_kst_to_utc(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $tid = 'MOBILE_VBANK_DUE_'.uniqid();
+
+        Http::fake([
+            'fcmobile.inicis.com/smart/payReq.ini' => Http::response(http_build_query([
+                'P_STATUS' => '00',
+                'P_RMESG1' => '성공',
+                'P_TID' => $tid,
+                'P_OID' => $order->order_number,
+                'P_TYPE' => 'VBank',
+                'P_AMT' => '50000',
+                'P_VACT_NUM' => '12345678901',
+                'P_VACT_BANK_NAME' => '국민은행',
+                'P_VACT_DATE' => '20260521',
+                'P_VACT_TIME' => '235959',
+            ]), 200),
+            '*' => Http::response(['resultCode' => '00'], 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/callback?'.http_build_query([
+            'orderId' => $order->order_number,
+        ]), [
+            'P_STATUS' => '00',
+            'P_TID' => $tid,
+            'P_REQ_URL' => 'https://fcmobile.inicis.com/smart/payReq.ini',
+            'P_AMT' => '50000',
+            'P_OID' => $order->order_number,
+            'idc_name' => 'fc',
+        ])->assertRedirect();
+
+        $payment = $order->payment->fresh();
+        $this->assertSame('12345678901', $payment->vbank_number);
+        $this->assertSame('2026-05-21 14:59:59', $payment->vbank_due_at->copy()->utc()->format('Y-m-d H:i:s'));
     }
 
     /**

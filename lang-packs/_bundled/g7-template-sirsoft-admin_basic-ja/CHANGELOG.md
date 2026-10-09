@@ -8,6 +8,7 @@
 
 ### Added
 
+- 목록 필터 기간 칸의 읽기 이름 「{{label}} 開始日」·「{{label}} 終了日」(`common.range_start`·`common.range_end`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 개인정보 탭의 「동의 관리 제공자」 카드 문구(`settings.privacy.consent_provider.*` — 제목·설명·자동 선택·제공자 2개 이상/선택 제공자 비활성/제공자 없음/동의 수집 꺼짐 안내), 확장 상세 창의 「함께 쓰면 연동되는 확장」 절(`extension_integrations.*`), 방문자 통계 설정의 「제공자 선택 필요」·「개인정보 탭에서 고르기」(`analytics.settings.privacy.consent_source_needs_selection`·`consent_source_choose`)의 일본어 번역을 추가했습니다.
 - 코드 편집기 경고·오류 항목의 줄 이동 안내(`admin.templates.layout_edit.go_to_line` 「{{line}} 行目へ移動」)와 휴대폰 폭 파일 정보 펼치기·접기(`info_toggle_show`·`info_toggle_hide`)의 일본어 번역을 추가했습니다.
 - 확장 설치 창에서 함께 고른 언어팩을 설치하지 못했을 때의 경고 문구(`extensions.alerts.language_pack_install_failed`)를 일본어로 번역했습니다.
@@ -95,6 +96,10 @@
 - 공통 UI 접근 가능한 이름 문구(전체 선택·행 선택·더보기·선택 지우기·화면 테마·사용자 메뉴·값 보기/숨기기·파일 고르개·수신자 규칙 삭제) 일본어를 추가했습니다.
 - 파일 업로더의 0바이트 파일 안내(`attachment.empty_file`)와 크기 초과 안내(`attachment.file_too_large`), 업로드 응답 해석 실패 안내(`attachment.upload_response_invalid`)의 일본어를 추가했습니다. 정보 탭 「Write Only」 값(`admin.settings.info.write_only`)을 「Write 単一」 로 번역했습니다.
 - 관리자 기본 레이아웃 페이지 제목(`admin.base_layout_title`)과 언어팩 manifest 미리보기 실패 안내(`admin.language_packs.messages.preview_failed`)의 일본어 번역을 추가했습니다.
+- 아이콘 버튼의 읽기 이름 「外す」(`common.remove` — 칩·선택 해제)의 일본어 번역을 추가했습니다.
+- 화면 이동 중 로딩 막대의 읽기 이름 「ページ読み込み中」(`common.page_loading`)의 일본어 번역을 추가했습니다.
+- 다국어 입력칸 언어 제거 버튼의 읽기 이름 「{{language}} の入力を削除」(`common.remove_language`)의 일본어 번역을 추가했습니다.
+- 다국어 태그 칸의 태그 제거 버튼 읽기 이름 「{{tag}} を外す」(`common.remove_tag`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

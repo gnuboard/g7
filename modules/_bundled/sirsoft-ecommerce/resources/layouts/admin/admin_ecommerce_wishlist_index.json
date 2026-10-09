@@ -372,6 +372,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.wishlists.filters.date_label')}}",
                                                             "type": "date",
                                                             "className": "text-sm",
                                                             "value": "{{_local.filter.startDate ?? ''}}"
@@ -403,6 +404,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.wishlists.filters.date_label')}}",
                                                             "type": "date",
                                                             "className": "text-sm",
                                                             "value": "{{_local.filter.endDate ?? ''}}"

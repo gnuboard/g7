@@ -6,10 +6,11 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * 현재 로케일 필수 다국어 필드 검증 규칙
+ * 사이트 기본 언어 필수 다국어 필드 검증 규칙
  *
- * 현재 로케일(또는 지정된 로케일)의 값만 필수로 검증하고,
- * 다른 로케일은 선택적으로 검증합니다.
+ * 사이트 기본 언어(`app.site_locale`, 또는 지정된 로케일)의 값만 필수로 검증하고,
+ * 다른 로케일은 선택적으로 검증합니다. 요청 언어(`app()->getLocale()`)를 쓰지 않는 것은
+ * 필수 언어가 보는 사람마다 달라지면 다른 언어 관리자가 만든 레코드를 이어 고칠 수 없기 때문입니다.
  */
 class LocaleRequiredTranslatable implements ValidationRule
 {
@@ -18,7 +19,7 @@ class LocaleRequiredTranslatable implements ValidationRule
      *
      * @param  int  $maxLength  각 번역의 최대 길이
      * @param  int  $minLength  각 번역의 최소 길이 (기본: 0)
-     * @param  string|null  $requiredLocale  필수 로케일 (null이면 현재 로케일 사용)
+     * @param  string|null  $requiredLocale  필수 로케일 (null이면 사이트 기본 언어 사용)
      * @param  bool  $strictLocales  지원 목록 밖 로케일 키를 실패로 처리할지 여부
      */
     public function __construct(
@@ -34,6 +35,7 @@ class LocaleRequiredTranslatable implements ValidationRule
      * @param  string  $attribute  필드명
      * @param  mixed  $value  검증 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -47,8 +49,8 @@ class LocaleRequiredTranslatable implements ValidationRule
         // 허용된 언어 목록 가져오기
         $allowedLanguages = config('app.translatable_locales', ['ko', 'en']);
 
-        // 필수 로케일 결정 (지정된 값 또는 현재 로케일)
-        $requiredLocale = $this->requiredLocale ?? app()->getLocale();
+        // 필수 로케일 결정 (지정된 값 또는 사이트 기본 언어 — 요청 언어가 아니다)
+        $requiredLocale = $this->requiredLocale ?? config('app.site_locale', config('app.locale'));
 
         // 필수 로케일이 지원 언어에 없으면 첫 번째 언어 사용
         if (! in_array($requiredLocale, $allowedLanguages)) {

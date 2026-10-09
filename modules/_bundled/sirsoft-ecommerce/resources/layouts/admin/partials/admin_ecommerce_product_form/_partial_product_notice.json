@@ -171,6 +171,31 @@
                                             "text": "{{$localized(template.name)}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "comment": "고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다",
+                                    "id": "notice_template_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{notice_templates?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 mt-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.notice_templates"
+                                        }
+                                    ]
                                 }
                             ]
                         }

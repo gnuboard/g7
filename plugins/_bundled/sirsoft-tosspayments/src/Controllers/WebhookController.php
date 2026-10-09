@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\Tosspayments\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
@@ -109,10 +110,22 @@ class WebhookController
             // 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
             // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이
             // 그 가드를 통과한다. 재전송을 멈추도록 200 으로 응답한다.
+            //
+            // 들어온 돈은 기록하고 운영자에게 알린다(P-D1 · Q11) — 주문은 되살리지 않고 자동 환불도 하지 않는다.
+            // 금액은 발급 때 대조해 둔 청구액이다(통보 본문에는 금액이 없다). 같은 거래의 재전송은 한 번만 기록된다.
             if ($order->order_status === OrderStatusEnum::CANCELLED) {
                 Log::warning('TossPayments: deposit webhook - order is cancelled', [
                     'orderId' => $orderId,
                 ]);
+
+                if ($status === 'DONE') {
+                    app(DepositAfterCancelRecorder::class)->record(
+                        $order,
+                        (float) ($payment->payment_meta['toss_approved_amount'] ?? $payment->paid_amount_local ?? 0),
+                        'tosspayments',
+                        $transactionKey !== '' ? $transactionKey : null,
+                    );
+                }
 
                 return $this->plain('OK');
             }

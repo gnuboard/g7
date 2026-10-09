@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
+use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -82,5 +84,32 @@ class ClaimPaymentMethodChoicesTest extends ModuleTestCase
 
         $this->assertNotContains(PaymentMethodEnum::POINT->value, $choices, '비회원에게 낼 수 없는 수단을 권한다');
         $this->assertContains(PaymentMethodEnum::CARD->value, $choices);
+    }
+
+    /**
+     * 신청 화면 설정이 허용 수단마다 표시명을 함께 싣는지 검증합니다.
+     *
+     * 화면은 수단 값만 받으면 `point` 가 아닌 것을 모두 「카드·간편결제」로 그렸다. 운영자가
+     * 계좌이체 등을 허용하면 구매자는 카드로 낸다고 읽고 고르는데 실제로는 다른 수단이 열린다.
+     *
+     * 회귀 배경 (S1-D14, 2026-10-07 실측): `claim.charge_payment_methods` 를 `['card','bank']` 로
+     * 두자 두 라디오가 모두 「카드·간편결제」로 보였다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_method_choices_carry_their_own_labels
+     */
+    public function test_신청_설정은_허용_수단마다_표시명을_싣는다(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', ['card', 'bank']);
+        app(EcommerceSettingsService::class)->clearCache();
+
+        $settings = app(UserClaimService::class)->publicSettings();
+        $labels = $settings['charge_payment_method_labels'] ?? null;
+
+        $this->assertIsArray($labels, '수단 표시명이 실리지 않는다');
+        $this->assertSame(['card', 'bank'], array_keys($labels));
+        $this->assertSame(app(PaymentMethodResolver::class)->label('bank'), $labels['bank']);
+        $this->assertNotSame($labels['card'], $labels['bank'], '서로 다른 수단이 같은 이름으로 보인다');
     }
 }

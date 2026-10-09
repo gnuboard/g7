@@ -165,6 +165,53 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     }
 
     /**
+     * 수량을 나눠 처리해 같은 주문옵션을 가리키는 행이 둘이 되어도 완료 미리보기는 두 행의 수량을 합쳐 계산한다.
+     *
+     * 재계산 입력 맵은 주문옵션 단위라, 행을 그대로 이어 넘기면 뒤 행이 앞 행을 덮어 1개 몫이 빠진다
+     * (2026-10-07 실측: 3개 중 1개 먼저 승인 → 두 행 모두 회수도착 → 완료 창 환불 예정이 1개 몫 적게 예고됨).
+     *
+     * @effects completion_preview_sums_split_rows_of_one_order_option
+     *
+     * @return void 반환값 없음
+     */
+    public function test_completion_preview_sums_split_rows_of_the_same_order_option(): void
+    {
+        $order = $this->deliveredClaimOrder(20000, 3);
+        $return = app(OrderReturnService::class)->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 3]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+        $firstId = (int) $return->fresh('returnOptions')->returnOptions->first()->id;
+        $url = $this->base().'/returns/'.$return->id.'/options/bulk-status';
+
+        // 3개 중 1개만 먼저 승인해 행을 나눈다
+        $this->actingAs($this->admin)->patchJson($url, ['items' => [['id' => $firstId, 'quantity' => 1]], 'status' => 'approved'])->assertStatus(200);
+        $rows = $return->fresh('returnOptions')->returnOptions;
+        $this->assertCount(2, $rows);
+        $this->assertSame(1, $rows->pluck('order_option_id')->unique()->count());
+
+        foreach ([['approved', []], ['collecting', $this->claimTrackingFor(ReturnStatusEnum::COLLECTING)], ['collected', []]] as [$status, $extra]) {
+            $items = $return->fresh('returnOptions')->returnOptions
+                ->filter(fn ($row) => $row->option_status->value !== $status)
+                ->map(fn ($row) => ['id' => (int) $row->id, 'quantity' => (int) $row->return_quantity])->values()->all();
+            if ($items !== []) {
+                $this->actingAs($this->admin)->patchJson($url, ['items' => $items, 'status' => $status] + $extra)->assertStatus(200);
+            }
+        }
+
+        $response = $this->actingAs($this->admin)->postJson($this->base().'/claims/completion-preview', [
+            'claim_type' => 'return',
+            'create_refund_request' => true,
+            'claims' => [['id' => $return->id]],
+        ]);
+
+        $response->assertStatus(200);
+        // 20,000 × 3 − 회수배송비 3,000 = 57,000 (덮어쓰면 20,000 × 2 − 3,000 = 37,000)
+        $this->assertSame(57000.0, (float) $response->json('data.claims.0.refund.refund_amount'));
+    }
+
+    /**
      * 재고 복구를 끄고 '접수하지 않음' 을 고르면 미리보기가 그 선택을 그대로 반영한다.
      *
      * 복구 0·폐기 1 로 세고, 환불은 접수 대상이 아니므로 `applicable=false`·합계 0 이 된다.

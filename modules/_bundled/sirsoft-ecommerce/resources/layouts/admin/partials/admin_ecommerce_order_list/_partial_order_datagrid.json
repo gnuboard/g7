@@ -407,6 +407,24 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{!row.first_option?.thumbnail_url}}",
+                                                "props": {
+                                                    "className": "w-10 h-10 rounded flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "image",
+                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
                                                 "props": {
                                                     "className": "space-y-0.5 min-w-0"
                                                 },

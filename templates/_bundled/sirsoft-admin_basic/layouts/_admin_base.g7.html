@@ -143,6 +143,7 @@
         <div data-ref="header_left" class="header_left">
           <button data-ref="menu_toggle_btn" type="button" class="menu_toggle_btn" aria-label="{{_global.sidebarCollapsed ? '$t:common.expand_sidebar' : '$t:common.collapse_sidebar'}}" aria-expanded="{{!_global.sidebarCollapsed}}">
             <on type="click">
+              <!-- 데스크톱 사이드바 접기·펼치기. 아이콘만 있어 이름과 펼침 여부를 속성으로 알린다(이름이 없으면 화면 낭독기가 「버튼」 으로만 읽는다). -->
               <action handler="toggleSidebar"/>
             </on>
             <i class="menu_toggle_btn_icon fas fa-bars"/>
@@ -270,7 +271,7 @@
           <button data-ref="mobile_menu_toggle" type="button" class="flex-center btn-icon" aria-label="{{_global.sidebarOpen ? '$t:common.collapse_sidebar' : '$t:common.expand_sidebar'}}" aria-expanded="{{!!_global.sidebarOpen}}">
             <on type="click">
               <!-- 모바일 헤더의 햄버거 — 사이드바를 연다/닫는다. 데스크톱 토글(`toggleSidebar` 핸들러)은
-                   접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다. -->
+                   접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다. 글자 「☰」 만 있어 이름·열림 여부는 속성으로 알린다. -->
               <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
             </on>
             <span class="text-primary text-lg leading-none">☰</span>

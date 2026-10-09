@@ -43,7 +43,8 @@
                 "chargeMethod": "{{data.claim?.charge_method ?? ''}}",
                 "refundAmount": "{{data.claim?.refund_amount === undefined || data.claim?.refund_amount === null ? '' : String(data.claim.refund_amount)}}",
                 "refundPointsAmount": "{{data.claim?.refund_points_amount === undefined || data.claim?.refund_points_amount === null ? '' : String(data.claim.refund_points_amount)}}",
-                "refundMethod": "{{data.claim?.refund_method ?? ''}}"
+                "refundMethod": "{{data.claim?.refund_method ?? ''}}",
+                "refundInputTotalFormatted": "{{data.claim?.refund_total_formatted ?? ''}}"
             },
             "comment": "번호 기반 진입이다 — 유형 스코프 API 는 `(유형, id)` 를 받지만 화면 라우트는 번호(§5-3)이고, 번호에서 유형을 읽어내는 것은 채번 규칙(운영자가 바꿀 수 있다)을 아는 서버의 일이다. 응답은 신청서 외에 능력·완료 기본값·진행단계·택배사 선택지를 함께 나른다 — 그 넷을 각자의 엔드포인트에서 읽으면 게이트가 이 화면(`claims.read`)보다 좁아, 클레임 권한만 가진 운영자(기본 역할 manager)에게만 403 이 되어 값이 조용히 빈다."
         },
@@ -253,6 +254,28 @@
                                                             "variant": "secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.claim.column.guest_badge"
+                                                    },
+                                                    {
+                                                        "comment": "재활성 뱃지(Q29) — 취소 유형만 값이 온다. 목록 행과 같은 서버 값을 읽는다.",
+                                                        "id": "cd_006b_reactivated_badge",
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "if": "{{!!claim?.data?.claim?.reactivated_at_formatted && claim?.data?.claim?.is_partially_reactivated !== true}}",
+                                                        "props": {
+                                                            "variant": "info"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}"
+                                                    },
+                                                    {
+                                                        "comment": "일부만 되살린 취소의 뱃지",
+                                                        "id": "cd_006c_reactivated_partial_badge",
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "if": "{{!!claim?.data?.claim?.reactivated_at_formatted && claim?.data?.claim?.is_partially_reactivated === true}}",
+                                                        "props": {
+                                                            "variant": "info"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -578,6 +601,141 @@
                                             "className": "text-xs text-gray-500 dark:text-gray-400"
                                         },
                                         "text": "{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "연결 신청서(보완 5) — 이 신청서와 이어진 원 신청서·후속 환불·처리 결과 취소 내역. 판정·번호·상태 라벨은 전부 서버(`linked_claims`)가 준다. 같은 화면(레이아웃)으로의 이동은 `_local` 이 남으므로 새 창으로 연다(cd_009 와 같은 규칙). 연결이 하나도 없으면 줄 전체가 사라진다.",
+                                "id": "cd_019_linked_claims_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!claim?.data?.linked_claims?.source || (claim?.data?.linked_claims?.refunds ?? []).length > 0 || !!claim?.data?.linked_claims?.result_cancel}}",
+                                "props": {
+                                    "className": "mt-4 flex-center gap-3 flex-wrap"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!!claim?.data?.linked_claims?.source}}",
+                                        "props": {
+                                            "className": "text-sm text-secondary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.source"
+                                    },
+                                    {
+                                        "id": "cd_020_source_claim_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{!!claim?.data?.linked_claims?.source}}",
+                                        "actions": [
+                                            {
+                                                "comment": "원 신청서를 새 창으로 연다 — 지금 보던 신청서의 입력 상태를 잃지 않게 한다",
+                                                "type": "click",
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "{{claim.data.linked_claims.source.detail_url}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "#",
+                                            "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                        },
+                                        "text": "{{(claim?.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim?.data?.linked_claims?.source?.claim_number ?? '')}}"
+                                    },
+                                    {
+                                        "id": "cd_021_source_claim_badge",
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{!!claim?.data?.linked_claims?.source}}",
+                                        "props": {
+                                            "variant": "{{claim?.data?.linked_claims?.source?.status_variant ?? 'default'}}",
+                                            "size": "sm"
+                                        },
+                                        "text": "{{claim?.data?.linked_claims?.source?.status_label ?? ''}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{(claim?.data?.linked_claims?.refunds ?? []).length > 0}}",
+                                        "props": {
+                                            "className": "text-sm text-secondary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.refunds"
+                                    },
+                                    {
+                                        "id": "cd_022_linked_refund_{{lrIdx}}",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "iteration": {
+                                            "source": "{{claim?.data?.linked_claims?.refunds ?? []}}",
+                                            "item_var": "linkedRefund",
+                                            "index_var": "lrIdx"
+                                        },
+                                        "props": {
+                                            "className": "flex-center gap-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "actions": [
+                                                    {
+                                                        "comment": "후속 환불신청서를 새 창으로 연다",
+                                                        "type": "click",
+                                                        "handler": "openWindow",
+                                                        "params": {
+                                                            "path": "{{linkedRefund.detail_url}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "href": "#",
+                                                    "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                },
+                                                "text": "{{linkedRefund.claim_number}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "variant": "{{linkedRefund.status_variant ?? 'default'}}",
+                                                    "size": "sm"
+                                                },
+                                                "text": "{{linkedRefund.status_label ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!!claim?.data?.linked_claims?.result_cancel}}",
+                                        "props": {
+                                            "className": "text-sm text-secondary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.result_cancel"
+                                    },
+                                    {
+                                        "id": "cd_023_result_cancel_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{!!claim?.data?.linked_claims?.result_cancel}}",
+                                        "actions": [
+                                            {
+                                                "comment": "환불이 실행돼 생긴 취소 내역을 새 창으로 연다",
+                                                "type": "click",
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "{{claim.data.linked_claims.result_cancel.detail_url}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "#",
+                                            "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                        },
+                                        "text": "{{claim?.data?.linked_claims?.result_cancel?.claim_number ?? ''}}"
                                     }
                                 ]
                             }

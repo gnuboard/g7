@@ -17,6 +17,7 @@ axes:
     - split_row_self_parent      # 분할 가족의 머리 행(parent_option_id = 자기 id)도 담긴다
     - out_of_stock_row           # 재고 0 행은 skip, 나머지만 담긴다
     - skip_reason_is_specific    # skip 사유가 일반 폴백 문구로 뭉개지지 않는다
+    - skip_name_uses_fallback_locale # skip 행 상품명은 보는 언어 → app.fallback_locale 순(ko·en 고정 아님)
     - existing_cart_row          # 같은 옵션이 이미 장바구니에 있으면 수량 누적
     - other_users_order          # 남의 주문 → 422
     - nonexistent_order          # 없는 주문 id → 422
@@ -27,6 +28,7 @@ effects:
   - split_head_row_included_in_reorder             # 분할 머리 행도 담긴다
   - unavailable_rows_reported_in_skipped           # 담지 못한 행이 skipped 에 남는다
   - reorder_skip_reason_uses_user_message          # skip 사유가 구체 문구다
+  - reorder_skip_name_follows_app_fallback_locale  # skip 행 상품명이 앱 폴백 언어를 따른다
   - existing_cart_row_quantity_accumulated         # 기존 장바구니 행의 수량에 누적
   - foreign_or_missing_order_rejected_422          # 남의 주문·없는 주문은 422
   - reorder_requires_authentication                # 비로그인은 401

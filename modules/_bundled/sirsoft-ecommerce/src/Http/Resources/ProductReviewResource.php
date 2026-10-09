@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 리뷰 리소스
@@ -125,7 +126,7 @@ class ProductReviewResource extends BaseApiResource
         if (is_array($optionName)) {
             $locale = app()->getLocale();
 
-            return $optionName[$locale] ?? $optionName[config('app.fallback_locale', 'ko')] ?? array_values($optionName)[0] ?? '';
+            return LocalizedText::pick($optionName, $locale);
         }
 
         return (string) $optionName;

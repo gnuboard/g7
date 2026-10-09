@@ -1116,6 +1116,36 @@ describe('Partial 레이아웃 구조 검증', () => {
             const invalidKeys = keys.filter((key) => !key.startsWith('$t:sirsoft-ecommerce.'));
             expect(invalidKeys).toEqual([]);
         });
+
+        /**
+         * 취소된 줄의 배송비 몫은 0 이다(부분취소·재활성 재계산 — S-Q26-b). 「무료배송 0원」 으로 읽히지 않게
+         * 유료/무료 줄과 배송비 줄을 숨긴다.
+         *
+         * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
+         * @effects cancelled_lines_hide_shipping_fee_on_admin_and_member_screens
+         */
+        it('취소된 줄은 배송비 줄을 숨긴다', () => {
+            const found: Record<string, any>[] = [];
+            const walk = (node: any): void => {
+                if (Array.isArray(node)) {
+                    node.forEach(walk);
+                    return;
+                }
+                if (node && typeof node === 'object') {
+                    const text = typeof node.text === 'string' ? node.text : '';
+                    if (text.includes('delivery_info.paid_shipping') || text.includes('delivery_info.shipping_fee')) {
+                        found.push(node);
+                    }
+                    Object.values(node).forEach(walk);
+                }
+            };
+            walk(orderInfoPartial);
+
+            expect(found).toHaveLength(2);
+            for (const node of found) {
+                expect(node.if).toContain("row.option_status !== 'cancelled'");
+            }
+        });
     });
 
     describe('_partial_payment_info.json (결제정보 탭)', () => {
@@ -1171,6 +1201,17 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('order.data?.total_points_used_amount');
             expect(json).toContain('order.data?.total_points_used_amount_formatted');
             expect(json).toContain('order.data?.total_earned_points_amount');
+        });
+
+        // 현금 환불 중 「마일리지로 환불」로 지급한 몫은 환불금액의 그중 내역으로 따로 그린다(Q3).
+        /**
+         * @scenario surface=payment_info
+         * @effects payment_info_shows_mileage_credited_cash_share
+         */
+        it('마일리지로 지급한 현금분 행이 주문 집계를 읽는다', () => {
+            const json = JSON.stringify(paymentInfoPartial);
+            expect(json).toContain('order.data?.total_refunded_mileage_credit_amount');
+            expect(json).toContain('order.data?.total_refunded_mileage_credit_amount_formatted');
         });
 
         // 결함 C-2: 환불 금액/환불 마일리지는 결제(payment) 레벨이 아니라
@@ -1600,6 +1641,34 @@ describe('#599 직권·대리 입력 창 — 글자 수 제한 prop', () => {
     });
 
     expect(limits).toEqual(['1000', '1000', '2000']);
+  });
+});
+
+describe('직권 접수 — 해외 주문 재발송지 (S2-D8)', () => {
+  /**
+   * 해외 주문은 재발송지에 도시·주가 있어야 주소가 완결된다 — 창이 국내형 칸만 두면 운영자가 도시·주를
+   * 고칠 수 없다. 국내 주문에는 칸이 서지 않도록 핸들러가 정한 해외 표식으로 가른다.
+   *
+   * @effects admin_request_modal_seeds_the_international_redelivery_address
+   */
+  it('재발송지 칸 묶음이 해외 표식일 때만 도시·주 입력을 세운다', () => {
+    const nodes: any[] = [];
+    const walk = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (n && typeof n === 'object') {
+        nodes.push(n);
+        Object.values(n).forEach(walk);
+      }
+    };
+    walk(adminClaimRequestModal);
+
+    const block = nodes.find((n) => n.id === 'acr_006_redelivery');
+    const fields = JSON.stringify(block);
+    expect(fields).toContain('"field":"redelivery.city"');
+    expect(fields).toContain('"field":"redelivery.state"');
+
+    const cityInput = nodes.find((n) => (n.actions ?? []).some((a: any) => a.params?.field === 'redelivery.city'));
+    expect(cityInput?.if).toBe('{{_global.adminClaimRequest?.redeliveryInternational === true}}');
   });
 });
 

@@ -236,11 +236,11 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
             </div>
           </div>
         </div>
-        <!-- 마일리지 환불분 — 마일리지를 쓴 주문에서만 -->
-        <div data-if="{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0}}" class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_points">
+        <!-- 마일리지 환불분 — 마일리지를 쓴 주문에서만. 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지를 돌려주지 않아 몫이 0 인데(Q15), 줄을 숨기면 마일리지를 썼는데 왜 안 돌아오는지 알 수 없다 — 「0원 (차감되지 않은 마일리지)」로 이유와 함께 세운다. -->
+        <div data-if="{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0 || order?.data?.points_not_deducted === true}}" class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_points">
           <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.refund_points</span>
           <div class="text-right">
-            <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.refund_points ?? ''}}</span>
+            <span class="text-gray-700 dark:text-gray-300">{{order?.data?.points_not_deducted === true ? '$t:claim.apply.comparison.refund_points_not_deducted' : (_local.claimEstimateFormatted?.refund_points ?? '')}}</span>
             <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_points ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
               <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
             </div>

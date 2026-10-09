@@ -9,6 +9,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
@@ -240,7 +241,7 @@ class MobileApprovalController
             // 가상계좌 전용 파라미터
             if ($mobilePayMethod === 'VCNT') {
                 $settings = plugin_settings(self::PLUGIN_IDENTIFIER) ?? [];
-                $fields['vcnt_expire_term'] = (string) ((int) ($settings['vbank_expire_days'] ?? 3));
+                $fields = array_merge($fields, $this->buildVbankExpireFields($order, $settings));
                 $fields['disp_tax_yn'] = 'N';
 
                 // 모바일 가상계좌 콜백은 계좌번호를 브라우저 평문으로만 전달한다.
@@ -282,6 +283,32 @@ class MobileApprovalController
                 'error' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * 가상계좌 계좌 만료 기간 필드를 만듭니다. (주문 입금 기한 = 쇼핑몰 자동취소 기한)
+     *
+     * KCP 는 만료를 「발급일로부터 N일(`vcnt_expire_term`) · 그날 HHMMSS(`vcnt_expire_term_time`)까지」로 받는다.
+     * 일수는 한국 날짜로 센다. 기한이 없거나 오늘 이전이면 종전 예비값(플러그인 `vbank_expire_days`, 없으면 3일)으로 연다
+     * — PC 결제창(`buildKcpVbankExpireFields`)과 같은 규칙이다.
+     *
+     * @param  Order|null  $order  대상 주문
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @return array<string, string> KCP 가상계좌 만료 필드
+     */
+    private function buildVbankExpireFields(?Order $order, array $settings): array
+    {
+        $due = $order?->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul');
+
+        if ($due !== null) {
+            $days = (int) Carbon::now()->setTimezone('Asia/Seoul')->startOfDay()->diffInDays($due->copy()->startOfDay(), false);
+
+            if ($days >= 1) {
+                return ['vcnt_expire_term' => (string) $days, 'vcnt_expire_term_time' => $due->format('His')];
+            }
+        }
+
+        return ['vcnt_expire_term' => (string) ((int) ($settings['vbank_expire_days'] ?? 3))];
     }
 
     /**

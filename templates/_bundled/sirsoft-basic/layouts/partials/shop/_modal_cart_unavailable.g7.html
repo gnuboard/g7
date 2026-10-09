@@ -13,7 +13,10 @@
         <div data-each="unavailableItem, unavailableIdx in {{$parent._local.unavailableModal.items ?? []}}" class="space-y-2">
           <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded">
             <div class="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0">
-              <img src="{{unavailableItem.thumbnail}}" alt="{{unavailableItem.name}}" class="w-full h-full object-cover"/>
+              <img data-if="{{unavailableItem.thumbnail}}" src="{{unavailableItem.thumbnail}}" alt="{{unavailableItem.name}}" class="w-full h-full object-cover"/>
+              <div data-if="{{!unavailableItem.thumbnail}}" class="w-full h-full flex items-center justify-center">
+                <icon name="image" size="md" class="text-gray-400 dark:text-gray-500"/>
+              </div>
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{unavailableItem.name}}</p>

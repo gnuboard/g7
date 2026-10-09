@@ -40,4 +40,7 @@ return [
         'order_id_mismatch' => '承認応答の注文番号が承認対象のクレーム決済番号と一致しません。',
         'compensation_cancel_reason' => 'クレーム決済承認拒否に伴う自動キャンセル',
     ],
+    'settings' => [
+        'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
 ];

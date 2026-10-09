@@ -97,6 +97,14 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
         <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.cancelled_at</span>
         <span data-ref="cc_004_cancelled_at" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.cancelled_at_formatted ?? '-'}}</span>
       </div>
+      <!-- 재활성 줄(Q29) — 이 취소로 빠진 상품을 나중에 다시 판매 상태로 되살린 경우에만. 취소·환불 기록은 지우지 않으므로 카드 값은 그대로 두고, 되살린 일시와 수량만 덧붙인다. -->
+      <div data-ref="cc_005_reactivated_row" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted}}" class="text-sm py-1.5">
+        <div class="flex justify-between">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_at</span>
+          <span data-ref="cc_005_reactivated_at" class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_value|at={{claim?.data?.claim?.reactivated_at_formatted ?? '-'}}|quantity={{claim?.data?.claim?.reactivated_quantity ?? 0}}|total={{claim?.data?.claim?.total_cancel_quantity ?? 0}}</span>
+        </div>
+        <p data-ref="cc_006_reactivated_hint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint</p>
+      </div>
     </div>
     <div data-ref="claim_memo_card" class="admin-card">
       <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.claim.detail.memo.title</h2>

@@ -72,5 +72,11 @@
   },
   "theme_select": "Theme",
   "expand": "Expand",
-  "collapse": "Collapse"
+  "collapse": "Collapse",
+  "quantity": "Quantity",
+  "quantity_decrease": "Decrease quantity",
+  "quantity_increase": "Increase quantity",
+  "close_menu": "Close menu",
+  "page_transitioning": "Changing page",
+  "page_loading": "Loading page"
 }

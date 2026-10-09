@@ -51,6 +51,10 @@
 - 영수증 링크는 결제사 주소를 글자 그대로 적지 않는다. 적으면 레이아웃 편집기의 저장 게이트(외부 URL 금지)가 거절한다 — API 가 준
   `receipt_url` 로 그린다.
 - 주문 완료 조각이 붙는 id `order_complete_payment_summary` 는 템플릿 소유다. 템플릿이 그 id 를 달지 않으면 조각은 오류 없이 나타나지 않는다.
+- 주문 상세(회원·비회원)의 영수증 줄은 조각이 id `kginicis-mp-receipt-row` 로 그린다.
+- [구매결정](에스크로) 링크는 영수증 조회 응답의 `escrow_confirm_url`(본인 에스크로 결제에만 내려 주는 10분 서명 주소)로 열고, 그 주소가
+  없으면 그리지 않는다. 새 창에는 화면의 토큰 로그인이 실리지 않으므로, 구매결정 창(`UserEscrowConfirmController::show`)은 세션 로그인
+  또는 그 서명(`uid`)으로 본인을 확인한다.
 
 ### 영수증 글자는 요청 언어로 오고, 조각은 항목을 키로 찾는다
 
@@ -62,6 +66,8 @@
 입금 안내의 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입혀 주는 `payment.vbank_due_at_formatted` 를 그대로 쓴다.
 플러그인은 날짜에 서식을 입히지 않는다 — 원시 값(`vbank_due_at`)을 한국 서식·한국 시간으로 바꿔 쓰면 영어·일본어 화면에도
 한국식 날짜가 나온다.
+
+입금 안내에는 은행·계좌번호·예금주 다음에 **입금 금액**(`user.vbank_amount`)과 끝에 **자동 취소 안내**(`user.vbank_notice`)를 붙인다 — 나이스·KCP 와 같은 구성이다. 입금 금액은 실제로 입금할 결제예정금액(`total_due_amount_formatted`, 마일리지 차감 뒤)이고, 그 값이 없는 비회원 응답에서는 주문금액(`total_amount_formatted`)으로 대신한다(비회원은 마일리지를 쓰지 못한다). 이 영역은 입금 대기 주문에만 붙으므로 경고도 늘 함께 붙는다.
 
 ## 액션 핸들러
 
@@ -166,4 +172,17 @@ KG 이니시스가 제공하는 `INIStdPay.js`/모바일 결제창 스크립트�
 결제창을 닫았을 때 체크아웃 제출 상태를 푸는 일은 체크아웃 화면에서만 한다. 체크아웃 화면은 템플릿 상태 계약 `_global.shopBase`
 (쇼핑몰 경로 앞머리, 루트면 빈 문자열)로 `{shopBase}/checkout` 인지 판정한다 — 경로 글자 `/shop/checkout` 을 박지 않는다.
 상태 계약이 아직 채워지지 않았으면 체크아웃으로 단정하지 않고 잠시 다시 본다.
+<!-- @intent END -->
+
+## 클레임 추가결제 창을 닫을 때
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제는 주문 결제가 아니다. 이커머스가 결제 데이터에 `pg_payment_data.claim_cancel_return_url`
+(회원은 신청서 상세 `?claim_payment=cancelled`, 비회원은 주문 조회 화면 — `ClaimPaymentRedirect::cancelled`)을 실어 보내면,
+결제창을 닫을 때 닫힘 보고를 보내지 않고 그 주소로 이동한다. 닫힘 보고는 결제대기 **주문**을 실패로 바꾸는 요청이라
+클레임 결제에는 대상이 없고, 이동하지 않으면 신청서 상세가 「결제 진행 중…」 버튼에 멈춘 채 안내도 뜨지 않는다.
+신청은 그대로 남고, 신청서 상세가 「결제를 취소하셨습니다」 안내와 함께 [결제하기]를 다시 연다.
+
+처리 위치: 결제 요청이 `markStandardPaymentCloseReportContext()` 에 `claimCancelReturnUrl` 을 함께 기억하고,
+`resources/js/paymentCloseMessageListener.ts` 가 닫힘 메시지를 받으면 `returnToClaimDetailIfClaimPayment()` 로 먼저 이동한다.
 <!-- @intent END -->

@@ -44,12 +44,19 @@
       <button data-ref="extend_submit_button" type="button" disabled="{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}" class="flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <!-- 일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).
-            성공 갈래에서 `mileageExtend` 를 비우는 것은 다음 연장에 이전 선택이 남지 않게 하기
-            위해서다. 실패 갈래는 창을 닫지 않고 서버 응답을 통째로 담아 위 배너에 넘긴다. -->
+            성공 갈래에서 `mileageExtend` 와 목록 화면의 표 선택(`$parent._local.selectedItems`)을 함께
+            비우는 것은 다음 연장에 이전 선택이 남지 않게 하기 위해서다 — 표 선택이 남으면 체크가 켜진 채
+            버튼이 다시 눌려 같은 적립건이 한 번 더 연장된다. 실패 갈래는 창을 닫지 않고 서버 응답을
+            통째로 담아 위 배너에 넘기며, 선택은 고쳐서 다시 시도할 수 있게 그대로 둔다. -->
           <sequence>
             <set-state target="global" :mileageExtend.isSaving="true" :mileageExtend.errors="null"/>
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry" method="POST" body="{{({ lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}">
               <success>
+                <!-- 표 선택 해제는 창을 닫기 **전에** 한다 — 창이 닫히면 `$parent` 가 가리킬 레이아웃 문맥이 사라져 쓰기가 버려진다.
+                  두 자리에 같은 값을 쓴다(docs/frontend/modal-usage.md 「부모 폼 커밋」): 창의 `$parent._local` 쓰기는 액션이 읽는
+                  `_global._local` 미러에서 빠지므로, 화면 쪽만 비우면 다음 [일괄 연장]이 옛 선택을 실어 보낼 수 있다. -->
+                <set-state target="global" :_local.selectedItems="[]"/>
+                <set-state target="$parent._local" :selectedItems="[]"/>
                 <close-modal/>
                 <refetch-data-source dataSourceId="transactions"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"/>

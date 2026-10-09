@@ -8,7 +8,8 @@
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">$t:mypage.withdraw.confirm_title</h3>
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:mypage.withdraw.confirm_message</p>
-      <ul class="text-left text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
+      <!-- 탈퇴 시 잃는 것 목록 — 확장(모듈)이 항목을 덧붙일 수 있게 data-ref 를 둔다(이커머스: 환불로 받은 마일리지 소멸 안내). -->
+      <ul data-ref="withdraw_warning_list" class="text-left text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
         <li class="flex items-center gap-2 mb-2">
           <icon name="x" size="sm" class="text-red-500"/>
           <span>$t:mypage.withdraw.warning_posts</span>
@@ -21,6 +22,8 @@
           <icon name="x" size="sm" class="text-red-500"/>
           <span>$t:mypage.withdraw.warning_points</span>
         </li>
+        <!-- 확장이 경고 항목을 덧붙이는 자리. 모달 안이라 target-id 오버레이는 닿지 않고, 확장점 주입만 모달 트리까지 순회한다. -->
+        <extension-point name="withdraw_warnings" data-ref="withdraw_warnings_slot"/>
       </ul>
       <div class="flex items-center gap-2 mb-4">
         <checkbox name="confirmWithdraw" checked="{{_local.form?.confirmWithdraw ?? false}}">

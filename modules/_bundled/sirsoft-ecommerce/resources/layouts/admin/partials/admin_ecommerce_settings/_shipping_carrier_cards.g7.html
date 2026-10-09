@@ -20,7 +20,7 @@
               <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}" :hasChanges="true"/>
             </on>
           </toggle>
-          <button type="button" class="btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <button type="button" class="btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.delete">
             <on type="click">
               <!-- 택배사 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다. -->
               <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete" target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== $carrier._idx)}}" :hasChanges="true"/>
@@ -42,7 +42,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name</label>
-          <multilingual-input data-type="composite" value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 택배사 이름(언어별). 고객 화면에 그대로 보인다. -->
               <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}" :hasChanges="true"/>
