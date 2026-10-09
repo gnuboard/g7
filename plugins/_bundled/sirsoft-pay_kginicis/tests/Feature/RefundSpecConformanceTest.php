@@ -22,7 +22,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  * - 가상계좌 환불은 `/v2/pg/refund/vacct`·`/v2/pg/partialRefund/vacct` 로 보내고 `refundAcctNum` 은 AES 암호화 대상이다.
  * - P-D11: 부분취소 응답의 회차 거래번호는 `prtcTid` 다.
  *
- * @scenario refund-spec-conformance
+ * 시나리오 매니페스트: `tests/scenarios/refund-spec-conformance.yaml`
  */
 class RefundSpecConformanceTest extends PluginTestCase
 {

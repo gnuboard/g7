@@ -197,7 +197,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 수정 전: 클레임 권한 범위만 보고 거르므로 남의 주문 신청서까지 2건이 모두 나온다.
      *
-     * @scenario order_read_scope=self claim_scope=all surface=list
+     * @scenario order_read_scope=self, claim_scope=all, surface=list
      *
      * @effects claim_list_is_bounded_by_order_read_scope
      *
@@ -221,7 +221,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 수정 전: 가드가 클레임 조회 범위(전체)만 판정해 200 이다 — 환불 계좌가 실린 상세가 열린다.
      *
-     * @scenario order_read_scope=self claim_scope=all surface=detail
+     * @scenario order_read_scope=self, claim_scope=all, surface=detail
      *
      * @effects claim_detail_is_bounded_by_order_read_scope
      *
@@ -247,7 +247,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 수정 전: 전이·실행 가드가 클레임 권한 범위만 판정해 남의 주문 신청서가 보류·환불 완료된다.
      *
-     * @scenario order_read_scope=self claim_scope=all surface=transition
+     * @scenario order_read_scope=self, claim_scope=all, surface=transition
      *
      * @effects claim_actions_are_bounded_by_order_read_scope
      *
@@ -276,7 +276,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 수정 전: 일괄 가드가 클레임 권한 범위(전체)만 보고 건너뛰어 남의 주문 신청서까지 보류된다.
      *
-     * @scenario order_read_scope=self claim_scope=all surface=bulk
+     * @scenario order_read_scope=self, claim_scope=all, surface=bulk
      *
      * @effects claim_bulk_actions_are_bounded_by_order_read_scope
      *
@@ -305,7 +305,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 수정 전: 미들웨어가 그 라우트의 클레임 권한 범위(전체)만 판정해 남의 주문으로도 200 이다.
      *
-     * @scenario order_read_scope=self claim_scope=all surface=order_linked
+     * @scenario order_read_scope=self, claim_scope=all, surface=order_linked
      *
      * @effects order_linked_claim_routes_are_bounded_by_order_read_scope
      *
@@ -334,7 +334,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
     /**
      * 주문 조회·클레임 모두 「전체」 인 운영자는 종전대로 모든 신청서를 보고 처리하는지 검증합니다. (회귀)
      *
-     * @scenario order_read_scope=all claim_scope=all surface=list
+     * @scenario order_read_scope=all, claim_scope=all, surface=list
      *
      * @effects unscoped_operator_keeps_full_claim_access
      *
@@ -369,7 +369,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      *
      * 교집합이므로 더 좁은 쪽(클레임 「본인만」)이 그대로 이긴다.
      *
-     * @scenario order_read_scope=all claim_scope=self surface=detail
+     * @scenario order_read_scope=all, claim_scope=self, surface=detail
      *
      * @effects claim_self_scope_still_narrows_under_wider_order_read
      *
@@ -395,7 +395,7 @@ class ClaimScopeOrderReadIntersectionTest extends ModuleTestCase
      * 보유하지 않은 권한은 범위 진술이 아니다(코어 판정이 null = 제한 없음). 클레임 「전체」 면 전부,
      * 클레임 「본인만」 이면 본인 주문의 것만 보인다 — 종전 동작 그대로다.
      *
-     * @scenario order_read_scope=none claim_scope=all surface=list
+     * @scenario order_read_scope=none, claim_scope=all, surface=list
      *
      * @effects claim_only_operator_is_judged_by_claim_scope_alone
      *

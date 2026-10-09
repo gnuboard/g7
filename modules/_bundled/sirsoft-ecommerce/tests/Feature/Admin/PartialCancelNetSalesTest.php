@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 같은 행 cancelled_quantity 에 취소 수량을 더한다. 집계가 이 카운터를 또 빼면 748 주문처럼 6개 중
  * 1개 취소가 4개로 집계된다.
  *
- * @scenario admin-dashboard-commerce
+ * 시나리오 매니페스트: `tests/scenarios/admin-dashboard-commerce.yaml`
  */
 class PartialCancelNetSalesTest extends ModuleTestCase
 {

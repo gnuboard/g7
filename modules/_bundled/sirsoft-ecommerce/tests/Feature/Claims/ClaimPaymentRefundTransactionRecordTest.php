@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 환급 결과의 `transaction_id` 를 버려, 결제사 정산·취소 내역과 대사할 근거가 우리 쪽에 없었다. 부분 환급이 여러 번이면
  * 몇 번째 환급이 어느 거래인지도 알 수 없었다.
  *
- * @scenario claim-payment-refund-transaction-record
+ * 시나리오 매니페스트: `tests/scenarios/claim-payment-refund-transaction-record.yaml`
  */
 class ClaimPaymentRefundTransactionRecordTest extends ModuleTestCase
 {

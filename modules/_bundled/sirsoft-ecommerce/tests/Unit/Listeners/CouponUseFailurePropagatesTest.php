@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 같은 쿠폰을 다음 주문에 또 쓸 수 있었다. 이 리스너는 동기(`sync`)라 예외가 주문 생성 트랜잭션을 되돌린다
  * (선점 실패의 롤백은 OrderProcessingServiceTest 가 잠근다).
  *
- * @scenario coupon-use-failure-propagates
+ * 시나리오 매니페스트: `tests/scenarios/coupon-use-failure-propagates.yaml`
  */
 class CouponUseFailurePropagatesTest extends ModuleTestCase
 {

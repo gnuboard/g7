@@ -27,3 +27,9 @@ effects:
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/range-date-input-names.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-range-date-input-names.spec.ts
+
+validation:
+  note: |
+    레이아웃 시험은 소스의 aria-label 표현식을 전수로 본다. 브라우저 spec 은 회원 목록 기간 칸 8개가
+    엔진에서 「가입일 시작일」 처럼 풀리는지(ko), 영어 화면에서 「Joined start date」 로 풀리는지(en)를 잰다.

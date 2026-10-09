@@ -51,7 +51,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * 요청 상태에서 멈추게 하고(P16 정지 경로), 환불수단 변경은 실행 본문(override)으로 준다. 자동 완료
  * 갈래 자체는 P16 매니페스트의 테스트가 잰다.
  *
- * @scenario claim-money-arrival-matrix
+ * 시나리오 매니페스트: `tests/scenarios/claim-money-arrival-matrix.yaml`
  */
 class ClaimMoneyArrivalMatrixTest extends ModuleTestCase
 {

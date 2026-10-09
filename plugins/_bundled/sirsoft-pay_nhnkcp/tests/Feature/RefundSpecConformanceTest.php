@@ -20,7 +20,7 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  * - P-D9: 입금된 가상계좌 환불은 플러그인이 보내던 계좌 필드가 공개 사양 어디와도 맞지 않아, 결제사로 보내지 않고 계좌 환불로 안내한다.
  * - P-D11: 부분취소 응답의 `tno` 는 원거래 번호다 — 회차는 `mod_pcan_seq_no`(부분취소 일련번호)로 구분한다.
  *
- * @scenario refund-spec-conformance
+ * 시나리오 매니페스트: `tests/scenarios/refund-spec-conformance.yaml`
  */
 class RefundSpecConformanceTest extends PluginTestCase
 {

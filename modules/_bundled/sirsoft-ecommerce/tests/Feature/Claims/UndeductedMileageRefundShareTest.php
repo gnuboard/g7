@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 화면과 관리자 환불 확인 창이 「사용 마일리지 반환액 3,000」·환불 예정 24,000 을 보였다(실제 결과 21,000).
  * 계산 원천에서 같은 수로 맞춘다 — 현금으로 옮기지 않는다(실행과 같은 수).
  *
- * @scenario claim-undeducted-mileage-share
+ * 시나리오 매니페스트: `tests/scenarios/claim-undeducted-mileage-share.yaml`
  */
 class UndeductedMileageRefundShareTest extends ModuleTestCase
 {

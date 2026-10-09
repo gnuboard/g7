@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - P-D3 신청 때 리스너가 없어 계좌 환불로 폴백된 카드 주문은, 플러그인을 다시 켜도 PG 를 부르지 않고 완료됐다.
  * - P-D4 환불수단이 PG 인데 결제수단이 PG 를 거치지 않으면 PG 단계를 건너뛰고 「환불완료」 로 남았다.
  *
- * @scenario pg-refund-provider-guard
+ * 시나리오 매니페스트: `tests/scenarios/pg-refund-provider-guard.yaml`
  */
 class PgRefundProviderGuardTest extends ModuleTestCase
 {

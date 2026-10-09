@@ -9579,7 +9579,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 엔진은 결과를 product_option_id 키로 합친다. 키로 맞춰 쓰면 상태가 다른 두 행이 각각 합계를 받아
      * 금액과 적립 예정액이 두 배가 된다(1521: 30,000원 행 둘이 각 60,000원·600P).
      *
-     * @scenario partial-cancel-row-allocation
+     * @scenario same_option_lines=two_lines_different_status, trigger=partial_cancel_split, row_data=fresh
      *
      * @effects option_amounts_are_allocated_per_order_row_not_per_option_key, allocation_sums_equal_recalculated_totals
      *
@@ -9618,7 +9618,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 키당 한 행이면 배분은 엔진 결과 그대로다 — 대부분의 주문이 지나는 경로의 회귀 가드.
      *
-     * @scenario partial-cancel-row-allocation
+     * @scenario same_option_lines=single_line, trigger=partial_cancel_split, row_data=fresh
      *
      * @effects single_line_keys_keep_engine_values
      *
@@ -9652,7 +9652,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 재계산 결과가 입력 라인과 어긋나면 경고를 남기고 입력 수량 비중으로 나눈다. 결과에 없는 키의 행은 쓰지 않는다.
      *
-     * @scenario partial-cancel-row-allocation
+     * @scenario same_option_lines=two_lines_different_status, trigger=partial_cancel_split, row_data=fresh
      *
      * @effects misaligned_result_falls_back_to_input_quantity_weights
      *
@@ -9711,7 +9711,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 배송 행 합으로 구하면 정책별 차액이 부풀어 보인다. 종결 행이 있으면 기준선 재계산(priorResult)이
      * 이미 있으므로 그 값을 쓴다.
      *
-     * @scenario partial-cancel-row-allocation
+     * @scenario shipping_policy=two_policies, trigger=partial_cancel_split, row_data=legacy_inflated
      *
      * @effects shipping_details_original_side_uses_prior_recalc
      *

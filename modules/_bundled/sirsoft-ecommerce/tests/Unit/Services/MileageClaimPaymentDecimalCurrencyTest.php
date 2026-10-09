@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 예전에는 `(int) round(총액)` 으로 차감해, 소수 통화에서 청구 2.40 에 2 만 차감됐다. 결제 건은 PAID 인데 미수납
  * 0.40 이 남아 `confirmPaid` 가 신청서를 옮기지 않았고, 대기 행은 이미 PAID 라 남은 돈을 낼 곳이 없었다.
  *
- * @scenario mileage-claim-payment-decimal-currency
+ * 시나리오 매니페스트: `tests/scenarios/mileage-claim-payment-decimal-currency.yaml`
  */
 class MileageClaimPaymentDecimalCurrencyTest extends ModuleTestCase
 {

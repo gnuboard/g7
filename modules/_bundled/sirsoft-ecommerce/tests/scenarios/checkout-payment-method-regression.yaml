@@ -2,7 +2,7 @@ feature: 체크아웃 결제수단 — 주문 생성 본문과 계산값
 
 description: |
   주문서 [결제하기] 의 주문 생성 요청(_checkout_summary apiCall)이 화면에서 고른(또는 기본) 결제수단을 그대로 싣는지,
-  그 값의 출처인 주문서 계산값(checkout.json computed)이 어떻게 정의돼 있는지를 원문 대조로 지킨다.
+  그 값의 출처인 주문서 계산값(레이아웃 소스 checkout.g7.html 의 computed)이 어떻게 정의돼 있는지를 원문 대조로 지킨다.
 
   수정 이력:
     - 결제 버튼이 _local.paymentMethod 를 직접 읽어, 무통장을 고른 뒤에도 값이 비어 기본값 card 가 전송됐다 →

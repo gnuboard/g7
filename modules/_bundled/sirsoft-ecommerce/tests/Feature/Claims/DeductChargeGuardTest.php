@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 신청 경로는 차감 가능 여부를 비교했지만, 관리자 금액 수정은 허용 목록만 보았다. 환불액 2,000원인 반품의 청구
  * 방식을 차감으로 바꾸고 회수비 6,000원으로 완료하면 환불은 0원이 되고 부족분 4,000원은 어디에도 청구되지 않았다.
  *
- * @scenario claim-deduct-charge-guard
+ * 시나리오 매니페스트: `tests/scenarios/claim-deduct-charge-guard.yaml`
  */
 class DeductChargeGuardTest extends ModuleTestCase
 {

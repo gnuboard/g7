@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 환불 예상의 배송비 정책별 차액은 재계산 측을 이 메서드로 구한다. 같은 정책에 상품옵션이 둘 이상이면
  * 몫을 더해야 하고, 같은 상품옵션 아이템(재계산 라인 둘)은 같은 키 몫을 공유하므로 한 번만 센다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class OrderCalculationResultTest extends ModuleTestCase
 {

@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - B1·B2 프로바이더가 예외를 던지면 이력이 생기지 않아 관리자 화면에 재발급 버튼이 없었다(호출부는 로그만 남겼다).
  * - B3 결제 통화 환산이 실패하면 기준 통화 금액으로 그대로 발급해, 실제로 낸 금액과 다른 증빙이 신고될 수 있었다.
  *
- * @scenario cash-receipt-failure-record
+ * 시나리오 매니페스트: `tests/scenarios/cash-receipt-failure-record.yaml`
  */
 class CashReceiptFailureRecordTest extends ModuleTestCase
 {

@@ -286,7 +286,7 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
      * (살아 있는 행 + 부모를 가리키는 취소 조각)이다. 예전 테스트의 「qty 5, cq 2 단일 행」 픽스처는 코드
      * 경로가 만들 수 없는 모양이라 폐기했다.
      *
-     * @scenario admin-dashboard-commerce
+     * @scenario module_state=active, data_state=has_orders, user_role=admin_with_dashboard_permission
      *
      * @effects net_sales_counts_remaining_quantity_once
      *
@@ -323,7 +323,7 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
      * SQLSTATE 22003(1690 BIGINT UNSIGNED out of range)으로 쿼리 전체를 실패시켰다. 개발 DB 옵션
      * 199(qty 1, cq 2) 같은 행이 판매 상태가 되면 그날 집계 커맨드가 멈췄다.
      *
-     * @scenario admin-dashboard-commerce
+     * @scenario module_state=active, data_state=has_orders, user_role=admin_with_dashboard_permission
      *
      * @effects net_sales_aggregate_survives_counter_above_quantity
      *

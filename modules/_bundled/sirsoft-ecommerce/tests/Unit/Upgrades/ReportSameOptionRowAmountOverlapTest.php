@@ -18,7 +18,7 @@ use Psr\Log\AbstractLogger;
  * 1.2.1 의 부분취소 재계산이 같은 상품옵션의 활성 두 행에 각각 키 합계를 써 둔 주문(1521 형태)만 경고한다.
  * 교환 후속 행은 원 행 금액을 의도적으로 승계하므로 오탐 대상이 아니다. 금액은 바꾸지 않는다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  *
  * @effects upgrade_reports_same_option_amount_overlap_without_writing
  */

@@ -20,7 +20,7 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  * 취소 응답(manual-cancel.php)의 `TID` 는 원거래 ID 이고 회차를 가리키는 값은 `CancelNum`(취소번호)이다 — 부분취소를
  * 여러 번 하면 환불 기록의 거래 ID 가 모두 같아져 회차를 구분할 수 없었다.
  *
- * @scenario partial-cancel-constraints
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-constraints.yaml`
  */
 class PartialCancelConstraintsTest extends PluginTestCase
 {

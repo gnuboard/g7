@@ -13,7 +13,7 @@
  * 기간 칸 밖으로도 같은 규칙을 넓힌다(c03) — 훅의 「라벨 하나 뒤 칸 둘 이상」 판정을 시험 함수로 옮겨 레이아웃
  * 전체에서 그런 칸이 칸마다 이름(aria-label·aria-labelledby·placeholder·label[for])을 갖는지 본다.
  *
- * @scenario range-date-input-names
+ * 시나리오 매니페스트: `tests/scenarios/range-date-input-names.yaml`
  * @effects range_date_inputs_named, label_group_controls_named
  */
 

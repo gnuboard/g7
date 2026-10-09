@@ -12,7 +12,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  *
  * 실제 HTTP 는 Http::fake 로 막고, 보낸 경로·필드·해시가 이니시스 매뉴얼과 맞는지 단언한다.
  *
- * @scenario inicis-api-service-requests
+ * 시나리오 매니페스트: `tests/scenarios/inicis-api-service-requests.yaml`
  */
 class KgInicisApiServiceTest extends PluginTestCase
 {

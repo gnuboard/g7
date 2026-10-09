@@ -35,7 +35,7 @@ function walk(node: unknown, visit: (n: Node) => void): void {
 
 describe('회원 주문 상세 배송 현황 — 취소 상품 카드 제외 (S-Q26-b)', () => {
   /**
-   * @scenario partial-cancel-row-allocation
+   * 시나리오 매니페스트: `modules/_bundled/sirsoft-ecommerce/tests/scenarios/partial-cancel-row-allocation.yaml`
    * @effects cancelled_lines_hide_shipping_fee_on_admin_and_member_screens
    */
   it('배송 목록 반복 소스가 취소된 상품 행의 배송 카드를 거른다', () => {

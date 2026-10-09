@@ -19,7 +19,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 승인 확정은 「아직 결제 대기일 때만」 쓰는데, PG 승인이 오가는 사이 철회·고아 정리가 결제 건을 취소하면 확정이 빈 손으로
  * 끝났다. 그런데도 결제 건을 그대로 돌려줘 화면은 성공이었고, PG 에서 승인된 돈은 취소된 결제 건 뒤에 남았다.
  *
- * @scenario claim-payment-approval-withdraw-race
+ * 시나리오 매니페스트: `tests/scenarios/claim-payment-approval-withdraw-race.yaml`
  */
 class ClaimPaymentApprovalWithdrawRaceTest extends ModuleTestCase
 {

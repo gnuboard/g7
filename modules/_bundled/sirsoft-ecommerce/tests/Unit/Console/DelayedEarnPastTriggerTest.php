@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 적립 대상 조회가 `option_status = 트리거` 만 보아, 「배송완료 + 지연 N일」 설정에서 지연 중에 구매확정된 상품은 배송완료가
  * 아니라서 스케줄러가 영영 적립하지 않았다. 즉시 적립이 실패한 뒤 상품이 다음 단계로 넘어간 경우도 같았다.
  *
- * @scenario delayed-earn-past-trigger
+ * 시나리오 매니페스트: `tests/scenarios/delayed-earn-past-trigger.yaml`
  */
 class DelayedEarnPastTriggerTest extends ModuleTestCase
 {

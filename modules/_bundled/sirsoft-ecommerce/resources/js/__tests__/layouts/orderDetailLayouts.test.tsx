@@ -1121,7 +1121,7 @@ describe('Partial 레이아웃 구조 검증', () => {
          * 취소된 줄의 배송비 몫은 0 이다(부분취소·재활성 재계산 — S-Q26-b). 「무료배송 0원」 으로 읽히지 않게
          * 유료/무료 줄과 배송비 줄을 숨긴다.
          *
-         * @scenario partial-cancel-row-allocation
+         * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
          * @effects cancelled_lines_hide_shipping_fee_on_admin_and_member_screens
          */
         it('취소된 줄은 배송비 줄을 숨긴다', () => {

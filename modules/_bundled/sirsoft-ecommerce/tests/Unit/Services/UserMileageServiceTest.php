@@ -562,7 +562,7 @@ class UserMileageServiceTest extends ModuleTestCase
     /**
      * 탈퇴 — 활성 lot 을 원장 소멸 거래로 기록하고 lot 을 소멸시킨다(E3, 거래 행 보존).
      *
-     * @scenario withdrawn-member-mileage-ledger
+     * @scenario member_state=active, event=withdraw
      *
      * @effects withdrawal_forfeits_balance_and_keeps_ledger
      *
@@ -587,7 +587,7 @@ class UserMileageServiceTest extends ModuleTestCase
     /**
      * 탈퇴 회원에게 환불 반환이 도착하면 원래 거래를 기록하고 바로 「탈퇴로 소멸」 거래로 0 을 만든다(Q18).
      *
-     * @scenario withdrawn-member-mileage-ledger
+     * @scenario member_state=withdrawn, event=credit_after_withdraw, refund_credit=absent
      *
      * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
      *
@@ -614,7 +614,7 @@ class UserMileageServiceTest extends ModuleTestCase
     /**
      * 현금 대신 지급하는 마일리지(refund_credit)와 구매 적립도 탈퇴 회원이면 같은 규칙이다(Q18).
      *
-     * @scenario withdrawn-member-mileage-ledger
+     * @scenario member_state=withdrawn, event=credit_after_withdraw, refund_credit=present
      *
      * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
      *
@@ -644,7 +644,7 @@ class UserMileageServiceTest extends ModuleTestCase
     /**
      * 활성 회원에게는 소멸 거래가 생기지 않는다(회귀 가드).
      *
-     * @scenario withdrawn-member-mileage-ledger
+     * @scenario member_state=active, refund_credit=absent
      *
      * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
      *

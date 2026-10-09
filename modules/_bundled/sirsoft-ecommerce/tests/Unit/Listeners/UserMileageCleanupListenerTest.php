@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 예전에는 탈퇴·삭제 때 원장·잔액 캐시 행을 지워 지급·사용·소멸 경위가 사라졌다. 이제 탈퇴는 남은 마일리지를
  * 「탈퇴로 소멸」 거래로 기록하고 행을 보존하며, 삭제는 소멸 기록 뒤 회원 연결만 끊는다.
  *
- * @scenario withdrawn-member-mileage-ledger
+ * 시나리오 매니페스트: `tests/scenarios/withdrawn-member-mileage-ledger.yaml`
  */
 class UserMileageCleanupListenerTest extends ModuleTestCase
 {

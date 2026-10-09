@@ -39,7 +39,7 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  * OrderCancellationService → PaymentRefundListener → NhnKcpApiService 의
  * 통합 경로를 점검한다.
  *
- * @scenario shipping-coupon-cancellation
+ * 시나리오 매니페스트: `tests/scenarios/shipping-coupon-cancellation.yaml`
  */
 class ShippingAndCouponCancellationTest extends PluginTestCase
 {

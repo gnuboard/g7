@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 병합 이전분으로 한 주문 행에 배송 행이 여럿일 수 있다. 재계산은 그중 id 가 가장 작은 행에만 몫을 쓰고
  * 나머지는 0 으로 둔다. 첫 행만 읽으면 0 행이 앞에 올 때 몫이 사라지므로 행들의 합을 표시한다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class OrderOptionResourceShippingAmountTest extends ModuleTestCase
 {

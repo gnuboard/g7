@@ -24,7 +24,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 보존기간 파기도 구매확정·취소만 종결로 봐서 영영 대상이 되지 못했다. 살아 있는 상품이 하나도 남지 않을 때만
  * 반품완료로 바꾼다 — 부분 반품·진행 중 클레임·전량 교환은 종전대로다.
  *
- * @scenario order-fully-returned-status
+ * 시나리오 매니페스트: `tests/scenarios/order-fully-returned-status.yaml`
  */
 class FullyReturnedOrderStatusTest extends ModuleTestCase
 {

@@ -30,7 +30,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 부가 작업 실패의 처리 — 삼키지 않거나, 삼키더라도 흔적과 복구 경로를 남긴다 (C9 · 동시성 · B6 · B7 · B8 · B10)
  *
- * @scenario side-effect-failure-handling
+ * 시나리오 매니페스트: `tests/scenarios/side-effect-failure-handling.yaml`
  */
 class SideEffectFailureHandlingTest extends ModuleTestCase
 {

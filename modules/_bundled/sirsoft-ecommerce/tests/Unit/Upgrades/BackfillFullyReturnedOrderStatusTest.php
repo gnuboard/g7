@@ -16,7 +16,7 @@ use Psr\Log\AbstractLogger;
  * 1.2.1 까지 전량 반품을 마친 주문은 「배송완료」 등으로 남았다. 업그레이드는 모든 행이 반품완료·취소이고 반품완료가
  * 하나 이상인 주문만 반품완료로 바꾼다 — 부분 반품·진행 중 클레임이 남은 주문은 그대로다.
  *
- * @scenario order-fully-returned-status
+ * 시나리오 매니페스트: `tests/scenarios/order-fully-returned-status.yaml`
  */
 class BackfillFullyReturnedOrderStatusTest extends ModuleTestCase
 {

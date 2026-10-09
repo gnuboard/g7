@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 관리자 반품 상세에 그 반품으로 접수된 환불신청서로 가는 길이 없었고, 상품 행 `refund_id` 를 거치는 관계는 반려·철회 뒤
  * 재접수할 때 덮어써져 앞선 신청서를 잃었다. 표시는 출처 축(`refund_source_type` + `refund_source_id`)으로 모은다.
  *
- * @scenario admin-claim-detail-payment
+ * 시나리오 매니페스트: `tests/scenarios/admin-claim-detail-payment.yaml`
  */
 class ClaimLinkedClaimsTest extends ModuleTestCase
 {

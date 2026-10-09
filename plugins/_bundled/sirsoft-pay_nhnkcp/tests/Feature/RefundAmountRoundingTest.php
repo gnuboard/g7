@@ -19,7 +19,7 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  * 이커머스는 결제 통화로 환산한 실환불액(소수 포함)을 넘긴다. 이 플러그인은 `(int)` 로 잘라 1원 적게 돌려줬고, 토스는
  * 반올림해 같은 환불이 PG 마다 1원씩 달랐다(소수 환산이 생기는 다통화 주문).
  *
- * @scenario refund-amount-rounding
+ * 시나리오 매니페스트: `tests/scenarios/refund-amount-rounding.yaml`
  */
 class RefundAmountRoundingTest extends PluginTestCase
 {

@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 엔진이 결과를 상품옵션 키로 합치고, 키로 맞춰 쓰면 두 행이 모두 합계를 받기 때문이다. 상태 분할과 부분취소는
  * 실제 관리자 API 로 한다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class SameOptionRowsPartialCancelTest extends ModuleTestCase
 {

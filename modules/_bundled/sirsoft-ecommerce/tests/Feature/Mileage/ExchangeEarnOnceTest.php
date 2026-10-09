@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 원 행(교환 전 상품)의 적립을 포함한다. 원 행이 분할 조각이면 적립 거래는 부모 행에 붙어 있으므로 부모가 자기
  * 목표보다 더 받은 몫을 원 행 몫으로 본다.
  *
- * @scenario exchange-earn-once
+ * 시나리오 매니페스트: `tests/scenarios/exchange-earn-once.yaml`
  */
 class ExchangeEarnOnceTest extends ModuleTestCase
 {

@@ -34,7 +34,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 받은 돈이 결제행에 기록돼 있으면 결제 전 취소라도 그 금액을 돌려주는 환불신청서를 만든다. 관리자 취소·
  * 구매자 취소·입금기한 만료 자동취소가 모두 같은 접수 지점을 지나므로 같은 규칙을 받는다.
  *
- * @scenario recorded-deposit-before-payment-cancel
+ * 시나리오 매니페스트: `tests/scenarios/recorded-deposit-before-payment-cancel.yaml`
  */
 class RecordedDepositBeforePaymentCancelTest extends ModuleTestCase
 {

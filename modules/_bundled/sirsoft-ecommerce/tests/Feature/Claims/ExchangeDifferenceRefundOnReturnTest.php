@@ -36,7 +36,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 원 행 단가만 돌려주고 차액은 클레임 추가결제 장부에 남아 돌아오지 않았다. 교환 완료 상태는 저장소에 직접
  * 만들고(교환 흐름 자체는 다른 테스트가 소유), 반품·환불은 실제 서비스 경로로 한다.
  *
- * @scenario exchange-difference-refund
+ * 시나리오 매니페스트: `tests/scenarios/exchange-difference-refund.yaml`
  */
 class ExchangeDifferenceRefundOnReturnTest extends ModuleTestCase
 {

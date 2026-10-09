@@ -41,7 +41,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  * 제어하고, 코어 OrderCancellationService 의 환불 금액 계산 + 쿠폰 복원 + 환불 레코드
  * 생성 동작은 실제로 실행시킨다.
  *
- * @scenario shipping-coupon-cancellation
+ * 시나리오 매니페스트: `tests/scenarios/shipping-coupon-cancellation.yaml`
  */
 class ShippingAndCouponCancellationTest extends PluginTestCase
 {

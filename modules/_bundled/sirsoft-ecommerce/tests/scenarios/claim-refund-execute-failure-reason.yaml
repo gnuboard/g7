@@ -1,4 +1,4 @@
-feature: [환불하기] 실패 안내 — 서버가 준 실제 사유 (S3-D11)
+feature: "[환불하기] 실패 안내 — 서버가 준 실제 사유 (S3-D11)"
 
 description: |
   PG 거절 시 서버는 일반 문구 `message` 와 함께 사유를 `errors.detail` 에 싣는데 화면은 `message` 만 읽었다(실측: KCP 입금 완료

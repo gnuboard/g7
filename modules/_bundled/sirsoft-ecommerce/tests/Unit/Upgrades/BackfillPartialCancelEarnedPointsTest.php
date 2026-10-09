@@ -18,7 +18,7 @@ use Psr\Log\AbstractLogger;
  * 두었다. 1.3.0 은 재계산 때 헤더도 맞추고, 업그레이드는 이미 틀린 채 남은 부분취소 주문의 헤더를 회계 주체 행의 합으로
  * 바로잡는다. 적립 원장은 행 단위라 헤더는 표시값이다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class BackfillPartialCancelEarnedPointsTest extends ModuleTestCase
 {

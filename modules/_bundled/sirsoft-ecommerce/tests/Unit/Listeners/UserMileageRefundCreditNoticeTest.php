@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 현금 환불을 마일리지로 받은 회원이 탈퇴하면 그 돈도 소멸한다. 탈퇴 확인 창이 그 금액을 알리도록 회원 응답에
  * `refund_credit_available`(refund_credit lot 의 남은 금액 합)을 싣는다. 기능이 꺼져 있어도 싣는다.
  *
- * @scenario withdrawn-member-mileage-ledger
+ * 시나리오 매니페스트: `tests/scenarios/withdrawn-member-mileage-ledger.yaml`
  */
 class UserMileageRefundCreditNoticeTest extends ModuleTestCase
 {

@@ -17,7 +17,7 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 /**
  * 입금 전 취소된 가상계좌 — 토스 발급 취소와 취소 후 입금 기록 (P-D1 · Q11)
  *
- * @scenario vbank-cancel-before-deposit
+ * 시나리오 매니페스트: `tests/scenarios/vbank-cancel-before-deposit.yaml`
  */
 class VbankCancelBeforeDepositTest extends PluginTestCase
 {

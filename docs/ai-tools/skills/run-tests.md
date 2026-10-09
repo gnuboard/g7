@@ -17,7 +17,7 @@
 ## 절차
 
 1. (backend) `.env.testing` 을 확인한다. 없으면 생성 필요를 알리고 기존 사용자 허가를 확인한다. 허가가 없으면 생성에 필요한 확인만 요청하고, 허가 후 `.env.testing.example` 을 복사해 `php artisan key:generate --env=testing` 을 실행한다. 존재 여부와 관계없이 테스트 DB가 개발 DB와 다른지 확인한 뒤 실행하며 접속 정보는 출력에 노출하지 않는다.
-2. 대상을 고른다 — 변경 파일에 걸리는 테스트와 그 변경이 영향을 주는 연관 테스트(run-every-test-class-that-pokes-the-changed-contract). 새 화면·기존 화면 수정·데이터 흐름 변경은 백엔드 + 프론트엔드 + 레이아웃 렌더링(+해당 시 E2E)이 한 묶음이며 단일 계층으로 완료를 선언하지 않는다.
+2. 대상을 고른다 — 변경 파일에 걸리는 테스트와 그 변경이 영향을 주는 호출처·구독자·데이터 흐름의 연관 테스트(run-every-test-class-that-pokes-the-changed-contract). 새 화면·기존 화면 수정·데이터 흐름 변경은 백엔드 + 프론트엔드 + 레이아웃 렌더링(+해당 시 E2E)이 한 묶음이며 단일 계층으로 완료를 선언하지 않는다.
 3. 실행한다. Windows 에서 Vitest 는 PowerShell 래퍼로, PHPUnit 은 Bash 로 직접 실행한다. 스위트는 한 번에 하나씩 순차로 띄우고 앞 스위트가 끝난 뒤 다음을 시작한다(never-run-two-phpunit-suites-concurrently, never-run-two-e2e-suites-concurrently). 진행 중인 스위트는 진행률 확인 목적으로도 중단하지 않는다(never-interrupt-running-test-db-corruption). 실행 중에는 훅·라우트 캐시를 다시 굽는 artisan 을 돌리지 않는다(no-cache-regeneration-while-phpunit-runs). 출력은 처음부터 상세 오류까지 `<agent-tmp>/test-<name>.txt` 로 저장한다(save-test-output-to-file, test-show-full-error-output-first-run).
 
    ```bash
@@ -147,8 +147,6 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 | `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` (확장 주입 fragment) |
 
 확장 테스트는 확장 디렉토리에서 수집한다. 코어와 확장 테스트를 한 `--filter` 로 섞어 수집하면 모듈 마이그레이션이 누락된다(test-filter-cross-pollination).
-
-변경 파일에 직접 걸리는 테스트만이 아니라 그 변경이 영향을 주는 호출처·구독자·데이터 흐름의 연관 테스트까지 포함한다(run-every-test-class-that-pokes-the-changed-contract).
 
 ### 다계층 묶음
 

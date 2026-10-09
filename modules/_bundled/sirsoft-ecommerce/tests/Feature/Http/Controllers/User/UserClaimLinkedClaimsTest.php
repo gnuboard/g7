@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 주소는 서버가 회원/비회원을 갈라 준다 — 화면(partial)이 회원 여부를 스스로 판단하지 않는다.
  *
- * @scenario user-claim-list-detail-edit
+ * 시나리오 매니페스트: `tests/scenarios/user-claim-list-detail-edit.yaml`
  */
 class UserClaimLinkedClaimsTest extends ModuleTestCase
 {

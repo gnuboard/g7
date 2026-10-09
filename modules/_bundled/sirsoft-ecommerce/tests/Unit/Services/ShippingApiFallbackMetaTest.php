@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 폴백 자체는 설계다(주문을 막지 않는다). 그러나 흔적이 경고 로그뿐이라, 실제 배송비보다 적게 받은 주문을 운영자가 찾을 수
  * 없었다. 계산 결과 metadata 에 폴백 정책을 싣고, 주문 생성이 `order_meta.shipping_fee_fallback` 으로 남긴다.
  *
- * @scenario shipping-api-fallback-meta
+ * 시나리오 매니페스트: `tests/scenarios/shipping-api-fallback-meta.yaml`
  */
 class ShippingApiFallbackMetaTest extends ModuleTestCase
 {

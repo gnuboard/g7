@@ -43,7 +43,7 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  *   - 호출되면 안 되는 테스트: $mock->expects($this->never())->method(...)
  *   ※ 같은 메서드에 method()와 expects()를 동시에 걸면 PHPUnit이 이중 호출로 인식하므로 혼용 금지.
  *
- * @scenario shipping-coupon-cancellation
+ * 시나리오 매니페스트: `tests/scenarios/shipping-coupon-cancellation.yaml`
  */
 class ShippingAndCouponCancellationTest extends PluginTestCase
 {

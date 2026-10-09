@@ -327,7 +327,7 @@ describe('QuantitySelector 컴포넌트', () => {
       expect(icons.length).toBe(2);
       for (const icon of icons) {
         expect(icon.className).toContain('text-base');
-        expect(icon.className).not.toMatch(/w-4|h-4/);
+        expect(icon.className).not.toMatch(/\bw-4\b|\bh-4\b/);
       }
     });
   });

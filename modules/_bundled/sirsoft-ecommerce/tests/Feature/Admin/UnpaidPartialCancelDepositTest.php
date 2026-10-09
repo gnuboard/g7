@@ -26,7 +26,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 불러도 금액 검증(구성요소 합 = due)이 어떤 금액으로도 통과하지 못했다. 가상계좌는 PG 가 발급한 입금액이 고정
  * 이라 일부 취소 뒤에는 입금을 확인할 길이 없으므로 전액취소만 허용한다(Q17).
  *
- * @scenario unpaid-partial-cancel-deposit
+ * 시나리오 매니페스트: `tests/scenarios/unpaid-partial-cancel-deposit.yaml`
  */
 class UnpaidPartialCancelDepositTest extends ModuleTestCase
 {

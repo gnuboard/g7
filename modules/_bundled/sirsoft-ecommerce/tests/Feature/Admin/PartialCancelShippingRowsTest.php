@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 행에 같은 값으로 써서 748 의 배송 행 네 개가 모두 5,500 이 되었고, mc_* 는 갱신하지 않아 base 와 갈렸다.
  * 취소·재활성은 실제 관리자 API 로 한다.
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class PartialCancelShippingRowsTest extends ModuleTestCase
 {

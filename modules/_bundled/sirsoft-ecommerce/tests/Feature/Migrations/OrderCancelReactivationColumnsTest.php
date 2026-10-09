@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 스키마를 **읽기만** 한다(`Schema::getColumns`) — DDL 을 돌리면 MySQL 이 암묵 커밋해 테스트 트랜잭션이
  * 깨지므로 down→up 왕복은 마이그레이션 파일의 hasTable·hasColumn 가드로 대신한다(기존 스키마 테스트와 같은 방식).
  *
- * @scenario cancel-reactivation-badge
+ * 시나리오 매니페스트: `tests/scenarios/cancel-reactivation-badge.yaml`
  */
 class OrderCancelReactivationColumnsTest extends ModuleTestCase
 {

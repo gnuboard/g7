@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  *
  * 거래조회 HTTP 는 Http::fake 로, 취소·배송등록 CLI 는 인자를 기록하는 스텁 바이너리로 막고 보낸 값을 단언한다.
  *
- * @scenario kcp-api-service-requests
+ * 시나리오 매니페스트: `tests/scenarios/kcp-api-service-requests.yaml`
  */
 class NhnKcpApiServiceTest extends PluginTestCase
 {

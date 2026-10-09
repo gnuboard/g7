@@ -24,7 +24,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * (`policy_snapshot`)·훅 배송비(`hook_overridden`·`shipping_amount`)는 다음 취소·재활성 재계산의 입력이라 주문 시점
  * 값으로 둔다(두 번째 취소의 기준선은 살아 있는 행을 정책 규칙으로 다시 계산한 값이다).
  *
- * @scenario partial-cancel-row-allocation
+ * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
 class ShippingSnapshotDisplayAfterCancelTest extends ModuleTestCase
 {

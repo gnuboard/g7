@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 예전에는 종결 전이를 먼저 커밋한 뒤 트랜잭션 밖에서 환급을 불렀다. 카드 회수비를 낸 반품을 반려했는데 PG 가 환급을
  * 거절하면 신청서는 반려로 굳고 결제 건은 PAID 로 남아, 다시 시도할 길이 없었다(반려는 이미 끝난 전이다).
  *
- * @scenario claim-terminate-refund-atomicity
+ * 시나리오 매니페스트: `tests/scenarios/claim-terminate-refund-atomicity.yaml`
  */
 class TerminateRollsBackOnChargeRefundFailureTest extends ModuleTestCase
 {

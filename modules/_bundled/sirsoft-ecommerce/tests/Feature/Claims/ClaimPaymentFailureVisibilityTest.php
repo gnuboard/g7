@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - B4 금액 불일치로 거절한 승인을 망취소하지 못해도 로그 한 줄뿐이었다 — 고객 돈이 PG 에 묶인 사실이 결제 건에 없었다.
  * - B5 결제가 확정됐는데 신청서 전이가 거절되면 `Log::info` 로만 남아, 신청서가 결제대기에 멈춘 이유를 운영자가 알 수 없었다.
  *
- * @scenario claim-payment-failure-visibility
+ * 시나리오 매니페스트: `tests/scenarios/claim-payment-failure-visibility.yaml`
  */
 class ClaimPaymentFailureVisibilityTest extends ModuleTestCase
 {

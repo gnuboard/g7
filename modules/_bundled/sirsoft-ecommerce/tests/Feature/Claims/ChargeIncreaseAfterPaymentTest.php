@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 「신청 시점 결제」로 회수비 3,000원을 낸 반품을 운영자가 5,000원으로 올리면 예전에는 결제 자리가 생기지 않았고
  * (수납액이 0 일 때만 정산), 미수납인 채로 완료가 통과했다.
  *
- * @scenario claim-charge-increase-after-payment
+ * 시나리오 매니페스트: `tests/scenarios/claim-charge-increase-after-payment.yaml`
  */
 class ChargeIncreaseAfterPaymentTest extends ModuleTestCase
 {

@@ -19,7 +19,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 검증 축: ① 영향받은 날짜(카운터 있는 판매 행)만 새 식으로 갱신 ② 카운터 없는 날짜 불변
  * ③ 집계 행이 없는 날짜는 만들지 않음 ④ 멱등
  *
- * @scenario admin-dashboard-commerce
+ * 시나리오 매니페스트: `tests/scenarios/admin-dashboard-commerce.yaml`
  *
  * @effects upgrade_recalculates_past_net_sales_stats
  */

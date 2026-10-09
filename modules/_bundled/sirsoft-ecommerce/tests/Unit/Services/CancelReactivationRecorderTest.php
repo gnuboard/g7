@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 저장소는 실제 DB 를 쓴다(테스트 트랜잭션 안). 취소신청서 상품은 분할 전 원 행을 가리키므로 되살린 분할
  * 조각은 부모 행을 통해 귀속되고, 나중 취소부터 되돌린다. 반품·교환 발 환불이 만든 취소는 대상이 아니다.
  *
- * @scenario cancel-reactivation-badge
+ * 시나리오 매니페스트: `tests/scenarios/cancel-reactivation-badge.yaml`
  */
 class CancelReactivationRecorderTest extends ModuleTestCase
 {

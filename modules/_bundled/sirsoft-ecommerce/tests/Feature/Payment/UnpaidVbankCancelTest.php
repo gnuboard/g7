@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 입금 전 취소는 돌려줄 돈이 없어 PG 를 부르지 않았고, 발급된 가상계좌가 PG 에 남아 고객이 뒤늦게 입금할 수 있었다.
  * 취소된 주문에 들어온 입금은 로그 한 줄로만 남았다.
  *
- * @scenario unpaid-vbank-cancel
+ * 시나리오 매니페스트: `tests/scenarios/unpaid-vbank-cancel.yaml`
  */
 class UnpaidVbankCancelTest extends ModuleTestCase
 {

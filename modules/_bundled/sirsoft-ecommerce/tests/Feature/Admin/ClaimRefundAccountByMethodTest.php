@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 수단별로 내려 화면이 고른다 — 화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다. 입금된 가상계좌는
  * PG 환불이어도 PG 가 고객 계좌로 송금하므로 계좌가 필요하다.
  *
- * @scenario claim-refund-account-by-method
+ * 시나리오 매니페스트: `tests/scenarios/claim-refund-account-by-method.yaml`
  */
 class ClaimRefundAccountByMethodTest extends ModuleTestCase
 {
